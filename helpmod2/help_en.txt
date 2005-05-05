@@ -1,0 +1,1034 @@
+English support
+ *Hello and welcome to the automated help and information service of QuakeNet. To use the service, simply select the option that interests you.
+ *If you require support to solve a problem, e.g. "I can't auth with Q", select "Online support". If you are after Information or have a question 
+ *about QuakeNet itself, e.g. "What channel modes are available on QuakeNet?", select "Information and FAQs".
+ Online support
+  *What do you need help with?
+  IRC (including channel issues other than abuse)
+   *General IRC and channel related problems.
+   I'm new to IRC. What is it/How do I use it?
+    *IRC stands for Internet Relay Chat. For a full description and getting started guide, please see the QuakeNet website - http://www.quakenet.org .
+   My friend is the only user with ops in a channel, he's on holiday/away, can you op me?
+    $opme
+    *No. If there are ops in the channel, the IRCops will not give you ops. If noone has ops, you can use
+    */msg O requestop #channel and try to get ops (it will only op you if it knows you as an op in that channel).
+   How do I get ops in a channel with no other operators?
+    *If there are no channel operators in a channel (L and Q count as channel ops) you may request ops by typing: /msg O REQUESTOP #channel [<nickname>].
+    *If there is currently a netsplit you will be unable to request ops.
+   I can't speak in a channel (“Cannot send to channel”)!
+    *There may be several reasons for this: 
+    ** The channel may be moderated (channel mode +m) and you may not be voiced/opped.
+    ** You may be attempting to send coloured text to a channel with channel mode +c set.
+    ** You may be attempting to CTCP a channel which has channel mode +C set.
+    ** You may be attempting to notice a channel which has channel mode +N set.
+    ** You may be banned on the channel and not have voice/op status.
+   I can't see people joining my channel!
+    *Check to see if you have channel mode +D set. This is a delayed join mode where joining users are not shown until they are 
+    *voiced/opped, speak or change the topic.
+   Why can’t I remove channel mode +D/+d?
+    *If you find that channel mode +d is set automatically when you remove channel mode +D, this means that there are still invisible 
+    *users in the channel. Channel mode +d will be removed by the server when all users in the channel are visible. To view invisible 
+    *users, use /NAMES –d #channel.
+   I get "Access is denied on this server" when trying to join a channel. What's wrong?
+    *This error means that the channel has been banned. See the G/K-Lines section for more information.
+   How can I hide my hostname on QuakeNet?
+    *In order to hide your hostname on QuakeNet you must auth with Q and set user mode +x (/MODE your_nickname +x). This will change 
+    *your hostname to qauth.users.quakenet.org. If you do not have a Q account type: /msg Q HELLO email@address email@address.
+   I have set user mode +x (hidden my host), how do I get my old hostname back?
+    *The only way to get back your original hostname is to reconnect to QuakeNet.
+  Q
+   *Q is QuakeNet's channel service bot, and controls access to the rest of QuakeNet's services.
+   *What is your problem with Q?
+   How do I create an account with Q?
+    *To create an account on Q, type: /msg Q HELLO email@address email@address. Your email is sent twice for verification purposes. Q 
+    *will send you back a notice/message, either saying that an account has been created or that an account under that name already 
+    *exists. If the account has been created, check the email you specified for an email from Q regarding your account and how to continue 
+    *further (during busy times it can take 20 minutes for the email to arrive).
+    *If you get an account already exists message, you need to change your nickname on IRC as the process uses your current nickname as 
+    *the username.
+    *Once you've created the account, you can then change it back to your normal nickname. It is strongly advised that you change your 
+    *password the first time you auth. Do not change it to something similar to your name, something that can be easily guessed such as 
+    *where you live or something you can find in a dictionary. A mixture of characters and numbers is advisable.
+    *Each time you connect to QuakeNet you need to auth to Q using the command /msg Q@CServe.quakenet.org AUTH authname password.
+    *If you are already authed, you cannot auth again. You also cannot de-auth, you need to reconnect to QuakeNet to de-auth.
+    *
+    *Has this solved your problem?
+    No
+     *If you are still having problems creating a Q account, seek advice from the QuakeNet support staff in #help.
+   I can't auth!
+    *The first thing to do when you can't auth is make sure that you are typing your password correctly. The passwords are case sensitive. 
+    *You should also check you are trying to auth in the correct way. You do this by typing: /msg Q@CServe.quakenet.org AUTH username password.
+    *Next you should check to see if you are auth'ed already. If so, you cannot auth again without reconnecting to QuakeNet. If you are using 
+    *a bouncer you should get your bouncer to reconnect.
+    *If your client supports scripting of any form, you should check that there are no scripts interfering with the auth process.
+    *Should you be using mIRC, try typing: /raw PRIVMSG Q@CServe.quakenet.org :AUTH username password. If this fails, reconnect and try again. 
+    *Finally, you should try requesting your password from Q. Do this by typing: /msg Q REQUESTPASSWORD email@address.
+    *
+    *Has this solved your problem?
+    No
+     *If you are still having problems auth'ing with Q, seek advice from the QuakeNet support staff in #help.
+   I can't remember my password!
+    *If you have forgotten your Q auth password, simply request it again by typing: /msg Q REQUESTPASSWORD email@address.
+    *If you no longer have access to the email address from which you created your Q account, or your Q account has expired due to inactivity, 
+    *then you will need to create a new account.
+   Q doesn't op me any more.
+    *Q will only op people if they are auth'ed and known by Q on that channel. If you are not auth'ed, type: /msg Q@CServe.quakenet.org AUTH username password.
+    *If you are auth'ed with Q, you should check if you are still known on the channel by typing: /msg Q WHOAMI. If the channel is not listed then 
+    *you will need to speak to the owner of that channel.
+    *Has this solved your problem?
+    No
+     *If you are still having problems auth'ing with Q, seek advice from the QuakeNet support staff in #help.
+   Q has left my channel, why?
+    *If Q has left your channel and users are no longer being automatically voiced or op'ed then there are
+    *several reasons why it may have left:
+    ** The channel has expired due to inactivity or low amount of users.
+    ** An owner removed Q from the channel.
+    ** Q has been suspended from your channel.
+    *Contact #help to find out if your channel has had Q suspended.
+   I want a channel but it already has Q in it.
+    *If nobody with a CHANLEV on that channel enters for at least 40 days, Q will be removed automatically and you may use the channel. Otherwise you 
+    *will have to choose another channel.
+   Q is not op'ed in my channel!
+    *If Q is not op'ed in your channel, first leave and rejoin the channel to make sure that your client has not got itself confused. If Q is 
+    *still de-op'ed you may re-op it by typing: /msg O requestop #channel.
+   There is no owner on my channel!
+    *If nobody has the owner flag on your channel you may use: /msg Q requestowner #channel
+    *This command works for anyone added as master (+m), or op (+o) if no masters are added
+   More help
+    *If you are still having problems with Q, which are not answered here, seek advice from the QuakeNet support staff in #help.
+  L
+   *L is QuakeNet's lightweight channel service, availible to new/smaller channels.
+   *What problems are you having with L?
+   L doesn't op me any more.
+    *L will only op people if they are auth'ed to Q and known by L on that channel. If you are not auth'ed, type: /msg Q@CServe.quakenet.org AUTH username password.
+    *If you are auth'ed with Q, you should check if you are still known on the channel by typing: /msg L WHOAMI. If the channel is not listed then 
+    *you will need to speak to the owner of that channel.
+   L has left my channel, why?
+    *If L has left your channel and users are no longer being automatically voiced or op'ed then there are
+    *several reasons why it may have left:
+    ** The channel has expired due to inactivity or low amount of users.
+    ** An owner removed L from the channel.
+    ** L has been suspended from your channel.
+    *Contact #help to find out if your channel has had L suspended.
+   I want a channel but it already has L in it.
+    *If nobody with a CHANLEV on that channel enters for at least 20 days, L will be removed automatically and you may use the channel. Otherwise you 
+    *will have to choose another channel.
+   L is not op'ed in my channel!
+    *If L is not op'ed in your channel, first leave and rejoin the channel to make sure that your client has not got itself confused. If L is 
+    *still de-op'ed you may re-op it by typing: /msg O requestop #channel.
+   There is no owner on my channel!
+    *If nobody has the owner flag on your channel you may use: /msg L requestowner #channel
+    *This command works for anyone added as master (+m), or op (+o) if no masters are added
+   More help
+    *If you are still having problems with L, which are not answered here, seek advice from the QuakeNet support staff in #help.
+  S
+   *S is QuakeNet's anti-spam service, which has the ability to disconnect users who spam in channels.
+   *What problems are you having with S?
+   S keeps killing me!
+    *Well, the way that S detects spam is not publicly known, but try not to use the /amsg command too much,
+    *try to write lines in one continuous sentence rather than a line for each word and
+    *don't advertise channels (see the QuakeNet rules for clarification on this). That should help in most cases.
+   How do I get S?
+    *S is available for request from the QuakeNet website: http://www.quakenet.org/request/.
+    *If it tells you that you do not fulfill the requirements, then you simply cannot get S.
+    *Whining in the support channels will not help you.
+   How can I remove S from my channel?
+    *To remove S from your channel you need to speak to the IRC operators in #feds.
+   More help
+    *If you are still having problems with S, which are not solved here, seek advice from the QuakeNet support staff in #feds (the QuakeNet 
+    *IRC operator channel).
+  Trusts
+   *Trusts allow users to open more than 5 connections per IP address.
+   *What trust issues do you need help with?
+   How do I get a trust?
+    *To get a trust, you must visit http://trustrequest.quakenet.org and fill the form in with the following information: 
+    *
+    *1. The IP addresses to be trusted. These must be tatic (ie unchanging) addresses. We do not give trusts to non-static addresses. 
+    *If you do not have a guaranteed static IP (and most ADSL providers do NOT give out static IP addresses) you will not get a trust. 
+    *It doesn't matter if you've had the same IP for months - if there is any possibility it will change, you will not get a trust. 
+    *The only exception to this rule is for short-term use, such as a LAN party, in which case we will give a one-time temporary trust 
+    *to a non-static IP. This will never be more than 4 days. 
+    *
+    *2. An abuse email address. We require the email address of the IP or service administrator so that we can contact them about abuses 
+    *of the trust. This is a requirement and will not be waived.
+    *
+    *3. A reason for the trust. You must explain to us the reason you want to have more than 5 connections to QuakeNet.
+    *
+    *4. The number of connections required (can be changed by the oper if it is too many).
+    *
+    *5. And the home channel on QuakeNet (if you have one).
+    *
+    *Please note: We will require a working identd from a bouncer.
+    *
+    *We are presently going though a process of development on our trust systems. You should refer to the latest news on http://www.quakenet.org 
+    *for information on how to obtain a trust, and what trusts are currently being offered.
+   I got a trust and now I get G-Lined.
+    *If you recently got a trust and you find that you get G-Lined, you probably aren't running an IDENT server. This is required by certain trust 
+    *types. You should either set up an IDENT server, or contact #feds to have the trust removed.
+    I am still getting G-Lined!
+     *If you are still having problems with trust G-Lines, and you are running an IDENT server, contact #feds for advice.
+   My trust request was rejected. Why?
+    *There may be various reasons for your trust request having been denied. Most of the reasons can be avoided if you thoroughly read 
+    *through this documentation before requesting a trust. Common reasons for your trust request being denied are:
+    You need identd installed on the server to get a long term trust. We will not accept clients without ident on trusted hosts.
+     *If you apply for a trust on QuakeNet, the source machine that houses the trust (ie your server) must be running an Ident server. 
+     *If you are not running an identserver you will get K-Lined (banned) automatically when you try to connect. 
+     *
+     *Trusts require a unique userident for each user, as we allow the maximum of 5 connections per userident. 
+     *
+     *Please note: We do not provide installation or configuration support for IDENT services, and all such queries will be ignored.
+    No trusts for generic hostnames.
+     *A lot of ISPs use what is known as a 'generic' hostname for their users. These are normally constructed from a series of letters 
+     *and numbers, followed by the ISP's name. Some good examples are those used by T-Dialin (example: pD9551B44.dip.t-dialin.net) or 
+     *nextgentel (example: 55.80-202-24.nextgentel.com). 
+     *
+     *You cannot apply for a trust if you have one of these generic hostnames, unless it is for an ISP-based NAT (in which case the ISP 
+     *needs to contact us, not you) or for a LAN party (in which case you will get a temporary trust, typically no more than 4 days, for 
+     *a low number of users, and it will not be able to be renewed).
+    You need to request as a NAT gateway. LAN trusts are only temporary (4 days).
+     *If you are on a LAN and you all share the same external IP, and you want a temporary trust, you must apply for a NAT gateway trust.
+     *LAN trusts are for LAN parties only and as such are only temporary.
+    That host is already trusted.
+     *You have requested a trust for an IP address that is already trusted by QuakeNet. An IP address cannot be trusted more than once.
+    Too many connections requested.
+     *QuakeNet will not normally add a new trust that has requested a large number of connections to the network. In this case, anything 
+     *more than 100-150 connections will be rejected.
+    Incorrect trust type.
+     *Depending on the trust type you request, the trust setup will be slightly different. It is therefore very important that you request 
+     *as the correct type, or your request will be rejected. The current types are:
+     **Bouncer - Use this type for a small clan or home bouncer.
+     **Non-commercial bouncer - For non-commercial organisations that provide bouncers free of charge or for their staff.
+     **Commercial bouncer - To be used by people wishing to sell bouncers, or sponsor other clans/organisations with them.
+     **Non-commercial shell - This type is for non-commercial organisations that offer shell accounts free of charge, e.g. public access systems.
+     **Commercial shell - To be used by commercial shell providers, who charge or sponsor people with shells.
+     **LAN - This is for use by people who are holding a short LAN (4 days). This trust type is temporary.
+     **NAT gateway - A NAT gateway forces everybody behind it to use the same IP. Use this if you are behind a NAT gateway.
+     **Other/special - Anything not fitting into the above categories should be requested as Other/special.
+    NAT gateway rejections.
+     *The most common reason for a NAT gateway trust request rejection is because the Network Admin (the person who owns or administrates the 
+     *NAT gateway) has not requested a trust. It is essential that that person is the requestor, otherwise the application will be denied.
+    More help
+     *If your trust was rejected with a reason you don't understand, contact #help.
+   More help
+    *If you are still having problems with trusts, which are not answered here, seek advice from the QuakeNet support staff in #feds (the QuakeNet 
+    *IRC operator channel).
+  G/K-Lines (including banned channels)
+   *A G-Line is a network wide ban from the QuakeNet IRC network, of either a user or a channel (also known as a badchannel). A K-Line is a 
+   *ban from a particular QuakeNet IRC server. All of these bans are set for user's who violate QuakeNet's rules. 
+   *Which of these are you experiencing problems with?
+   G-Lines
+    *Glines will NOT be removed unless they were placed in error. Glines are normally for short periods of time. You will need to wait for 
+    *the gline to expire.
+    *What is your G-Line reason?
+    Too many clones from your host.
+     *Glines for clones indicate that you had more then 5 connections to quakenet from your host. A trust is required for more then 5 
+     *connections
+    Flood clones / trojans.
+     *Glines for floodclones or trojans, indicate that your pc may be infected with a virus or trojan. You should check your firewall/virus 
+     *scanner are up to date and secure.
+    Don't IRC as root.
+     *If you are logged into a Unix/Linux/*BSD box as root, and are connecting to QuakeNet you will be G-Lined. This is because using IRC as 
+     *the root user is insecure. Simply run your IRC client as a different user and you will be able to connect.
+    All other reasons.
+     *For assistance with all other G-Lines, please contact the IRC operators in #feds.
+   K-Lines
+    *K-Lines are very rarely used on QuakeNet now, with G-Lines being used instead. What is your K-Line reason?
+    Please use a european server.
+     *You are K-Lined because you are connecting to whole.ny.us.quakenet.org (us.quakenet.org) and you are a European IRC user. The US QuakeNet 
+     *experiences quite heavy load, and as such all European users have been K-Lined. Please connect to a European server. A list of QuakeNet 
+     *servers may be viewed at http://staff.quakenet.org/servers.phtml .
+    No <your country here> hosts on this server.
+     *Some servers only allow connections from clients located in the same country as the server.
+     *If no servers work for you, you will have to use a bouncer (a computer relaying your connection, making it seem like you're from another 'country'/host)
+    All other reasons.
+     *For assistance with all other K-Lines, please contact the IRC operators in #feds.
+   Badchannels (channel G-Lines)
+    *If you or other operators from your channel have been breaking QuakeNet's rules, you may find that your channel is banned. People trying 
+    *to join it will receive "Access is denied on this server". For all channel bans you should contact the IRC operators in #feds for advice.
+  Connection issues (other than G/K-Lines)
+   *This section deals with connection issues you may be experiencing with QuakeNet. This section does not deal with bans from QuakeNet (i.e. 
+   *G/K-Lines). What issues are you having problems with?
+   10053 connection errors.
+    *The technical meaning of a 10053 error is "An established connection was aborted by the software in your host machine.". This basically 
+    *means that your computer closed the connection due to a ping timeout. Often this is caused by a poor connection between you and the IRC 
+    *server. Try connecting to a different QuakeNet server and see if it solves the problem. A full server list can be found at 
+    *http://staff.quakenet.org/servers.phtml .
+   Slow connection / No Ident Response.
+    *A long connect time is often due to the fact that the IRC server is unable to connect to an IDENT server on your computer. Running one of 
+    *these usually solves the problem. If you use mIRC, try typing: /IDENTD ON. You may still experience the problem if you are behind a router, 
+    *firewall or NAT gateway.
+    *
+    *For technical users behind a NAT gateway: Rejecting connections to TCP port 113 with a TCP reset packet will also speed up the connect time.
+   Couldn't look up your hostname.
+    *This is not really a problem at all, it simply means that there was no reverse DNS entry for your IP address.
+   All other connection issues.
+    *For all other connection issues please contact the QuakeNet support staff in #help.
+  Abuse issues
+   This user is spamming me in private or in a channel.
+    *The simplest way is to ban them from all the channels that you are opped in and add them to your ignore list by doing
+    *the command /ignore nickname!ident@host where nickname is their nickname, ident is their ident field (the bit before
+    *the @ when you /whois them) and the host is their host. A "*" can be used as a wildcard, for example 
+    */ignore fred!*@* will ignore any user called fred, however, if they change names to fred2, they will no longer be
+    *ignored. You could use /ignore *fred*!*@* and that will ignore any user with fred in their name, for example fred,
+    *fred2, imfredaswell. You can also ignore anyone from a certain host by using /ignore *!*@1234567890.isp.com. That 
+    *would ignore all users using the host '1234567890.isp.com'. You can also use their ident with the host or on its own.
+    *There are many combinations you can use.
+    *If you are still having problems with this user, the operators in #feds may be interested if the user is being disruptive.
+    *Involving the IRCops is the last resort, the /ignore method should take care of most annoying users.
+   This user is threatening me, telling me to change my nickname.
+    *Nicknames aren't owned by anyone, if a nickname is free, anyone can use it. If they continue to contact you about
+    *your nickname to change it, you can ignore them by using the /ignore command.
+    *The only exception being network staff and services nicknames, and in those cases you may be disconnected without a warning.
+   This user is spamming me with an onjoin message each time I join or leave a channel.
+    *Depending what the message is, there are a number of actions. If it contains a URL, don't click it. Most worms 
+    *and trojans replicate by getting a user to click a URL. The same advice also goes with a script being pasted to you when
+    *you join (these normally have a $decode() text in), do not run the script. If you find user pasting either a
+    *URL or script on join, contact #feds or #help. If they are in a channel you have ops in, you can
+    *also ban them to avoid any other users getting possibly infected.
+    *If they are just advertising a channel, just ignore them by adding them to your ignore list or just closing the
+    *message window. 
+   Other issues
+    *If there is an abuse issue which you believe requires attention from a QuakeNet staff member, please contact #feds to ask for advice and 
+    *to report the issue.
+ Information and FAQs
+  *Information about QuakeNet, its staff and services.
+  IRC in general
+   $irc
+   Channel modes available on QuakeNet.
+    $chanmode
+    $chanmodes
+    *There are three different types of channel modes available on QuakeNet, as shown below. Protection and miscellaneous modes may be 
+    *set with "/MODE #channel +mode", and removed with "/MODE #channel -mode". Modes that are set on users may be set with: 
+    *"/MODE #channel +mode nickname|mask", and remove with "/MODE #channel -mode nickname|mask". The flags are case sensitive.
+    Modes set on users
+     *Modes you can set on users in your channel.
+     Channel mode +b
+      *Bans an address from a channel. Any user with a host mask matching this address will be denied entry to the channel. 
+      *If the user is already in the channel and does not have op/voice status, the user will not be able to speak. 
+      *Usage: /MODE #channel +b nick!ident@host. Note: When a new QuakeNet fake host is banned (i.e. *!*@authname.users.quakenet.org) 
+      *that authname is banned regardless of the user's host.
+     Channel mode +o
+      *Gives operator status to a user on a channel, allowing them to set or remove channel modes, kick/ban users, set the topic when 
+      *channel mode +t is set and invite users into the channel. Usage: /MODE #channel +o <nickname>.
+     Channel mode +v
+      *Gives voice status to a user on a channel, thus allowing them to speak when the channel is moderated. 
+      *Usage: /MODE #channel +v <nickname>.
+    Protection modes
+     *Modes set on the channel itself, for protection, prohibition and control.
+     Channel mode +c
+      *Prohibits mIRC & ANSI colour codes from being sent to a channel.
+     Channel mode +C
+      *Prohibits channel wide CTCPs.
+     Channel mode +i
+      *Invite only. This prevents users from joining a channel until they are invited by a channel op. You may invite users by typing 
+      */INVITE <nickname> #channel.
+     Channel mode +k
+      *Sets a key/password on a channel, without which people will be unable to join the channel. Usage: /MODE #channel +k <key>. To 
+      *join use /JOIN #channel <key>.
+     Channel mode +l
+      *Only allows a certain number of people to join the channel. Usage: /mode #channel +l <limit>.
+     Channel mode +m
+      *This mode moderates the channel, i.e. prevents users without voice or op status from sending messages to a channel.
+     Channel mode +n
+      *This prevents users from externally messaging a channel. The users must be on the channel to message it.
+     Channel mode +N
+      *Prohibits the sending of channel notices.
+     Channel mode +p
+      *This mode is outdated and it is recommended you use channel mode +s.
+     Channel mode +r
+      *This mode only allows users authed with Q to join the channel. They will receive the message "You must have a registered nick" 
+      *when they attempt to join your channel when not authed. Once they have authed they will be able to join the channel normally. 
+      *+r is a useful mode to set during flood attacks rather than +i (invite only).
+     Channel mode +s
+      *Secret. This prevents the users in the channel or the topic being viewed externally. The channel also does not appear in a 
+      */LIST or /WHOIS.
+     Channel mode +t
+      *Only channel operators may set the topic.
+    Miscellaneous modes
+     *Other channel modes.
+     Channel mode +d
+      *This mode is set automatically by a server when channel mode +D is cleared and there are still users hidden in the channel. 
+      *It can only be set or cleared by the server and is removed automatically when all users become visible. Hidden users can be 
+      *seen with /NAMES -d #channel. 
+     Channel mode +D
+      *Delayed join mode. Joining users will not be shown until they are opped/voiced, change the topic or speak. Note that hidden 
+      *users will not be revealed when the mode is cleared. Hidden users can be seen with /NAMES -d #channel.
+     Channel mode +u
+      *If a user is in any channel with channel mode +u set their quit and part messages are stripped, e.g. Quit (User definable quit 
+      *message) would appear as Quit (Signed off).
+   User modes available on QuakeNet.
+    $usermode
+    $usermodes
+    $umode
+    *The following modes get set on a user by the user rather than on a channel by someone else, for example, 
+    */mode user +i and the mode can be removed by /mode user -i
+    User mode +d
+     *Deaf. You will not receive channel notices or messages. Queries and private messages will still be received.
+    User mode +i
+     *Invisible. No normal user can find you using /WHO, /NAMES or similar search facilities.
+    User mode +R
+     *Only allows users authed with Q to privmsg/notice/CTCP you.
+    User mode +w
+     *Wallops/walluser. As a normal user you will receive walluser messages sent by IRC operators. If you are an IRC operator you 
+     *will also receive wallops.
+    User mode +x
+     *Fake host. Changes your host to "authname.users.quakenet.org", where authname is your Q account name. Users will see you quit 
+     *and rejoin IRC with this new host. You are advised to set this mode before entering any channels for maximum security. 
+     *Note: You must reconnect to revert to your old hostname.
+   How to set/unset channel/user modes.
+    *To set a channel mode, use the following command: /MODE #channel +modes <params> - where <params> are optional parameters, depending 
+    *on the modes being set. User modes are essentially the same: /MODE nickname +modes. You must use your current nickname, NOT your Q 
+    *authname. For the mIRC users out there, you may also use //MODE $me +modes. 
+    *
+    *To unset a mode, simply use – instead of +.
+   Description of the symbols before channels, in a WHOIS.
+    *There are several symbols you may see prefixed to channel names in a user’s WHOIS. These are: 
+    ** @#channel – the user has operator status in the channel. 
+    ** +#channel – the user has voice status in the channel. 
+    ** <#channel – the user is invisible in a channel with channel mode +D or +d set. 
+    ** -#channel – the user has user mode +d set, and won’t receive channel messages.
+   Reasons for receiving “Cannot send to channel”.
+    *There may be several reasons for this: 
+    ** The channel may be moderated (channel mode +m) and you may not be voiced/opped.
+    ** You may be attempting to send coloured text to a channel with channel mode +c set.
+    ** You may be attempting to CTCP a channel which has channel mode +C set.
+    ** You may be attempting to notice a channel which has channel mode +N set.
+    ** You may be banned on the channel and not have voice/op status.
+   How to hide your hostname on QuakeNet.
+    *In order to hide your hostname on QuakeNet you must auth with Q and set user mode +x (/MODE your_nickname +x). This will change 
+    *your hostname to qauth.users.quakenet.org.
+   Quit messages on QuakeNet.
+    *The quit messages that you may see on QuakeNet are:
+    Excess flood
+     *This quit message shows that you attempted to send too much data to the IRC server, in too short a time period, and the server 
+     *thought you were attempting to flood it. A good way to prevent this is to enable flood protection in your IRC client. mIRC users 
+     *may click File -> Options -> IRC -> Flood, and then check Enable flood protection. The default values should be sufficient for 
+     *most users.
+    Max sendQ exceeded
+     *This quit message occurs when you failed to receive the data from the server quick enough, in other words the IRC server tried 
+     *to send you too much data and closed the connection. This is often caused if you perform a LIST of all IRC channels on QuakeNet, 
+     *or if you execute a WHO query on a large channel; if you have a poor internet connection you may find yourself getting disconnected.
+    Ping timeout
+     *All IRC servers periodically send what is known as a PING request, to check that the client connection is still alive. The IRC 
+     *client has to respond to this request within a certain time period, or the connection is deemed to no longer be alive and is closed 
+     *(with this quit message). If you find yourself getting a lot of Ping timeout errors you may need to try a different (preferably 
+     *closer) QuakeNet server; see http://www.staff.quakenet.org/servers.phtml for a complete listing of public servers.
+    Connection reset by peer
+     *This quit message is caused when the IRC client closes the connection to the server uncleanly, and the server doesn't realise the 
+     *connection has been terminated. This leaves behind what is known as a ghost user, which gives the appearance that the client is 
+     *still connected, even though it isn't. When the server attempts to send data to the client, it realises the connection no longer 
+     *exists and it is reset. This causes the termination of the ghost user, with the aforementioned quit messsage.
+    Read error: EOF from client
+     *This quit message is displayed when the client terminated the connection to the IRC server prematurely, and the server expected 
+     *more data. This is often caused if the IRC client software crashes or exits suddenly, when it doesn’t have the chance to close 
+     *the connection ‘gracefully’.
+    Write error, closing link
+     *This quit message means that the IRC server, for some reason or another, failed to send data to the client. Due to this the client 
+     *was disconnected.
+    Broken pipe
+     *This quit message is caused when there is a sudden break in the connection between the IRC server and client. This can occur for 
+     *many different reasons, but is generally due to the volatile nature of the internet. 
+    .net .split
+     *This quit message shows that the user was on a server that split from the rest of the IRC network, known as a net split. When the 
+     *servers reconnect, the user will rejoin all channels he/she was in and the server will also give that user voice or operator status 
+     *as necessary.
+    Nick collision
+     *This quit message is caused when two or more users change to the same nickname at the same time. Obviously only one person can have 
+     *a nickname at any time, so the server disconnects the users.
+    Older nick overruled
+     *This quit message is only seen after a netsplit, when servers reconnect to each other. If you changed nick during a netsplit, and 
+     *a user on a server that split already had the nickname, then you will be disconnected to allow the older user to continue with that 
+     *nickname.
+    G-lined
+     *This quit message is displayed when a user is banned from the entire IRC network, for various reasons. QuakeNet *always* sends the 
+     *G-Line reason, if you can't see it you should check your IRC client may be hiding it. The Rules FAQ provides a section explaining 
+     *the reasons for disconnection or banning from the network. For G-line enquiries you may email info@quakenet.org.
+    K-lined
+     *This quit message is displayed when a user is banned from a particular IRC server, for various reasons. As for G-lines, QuakeNet 
+     **always* sends the K-line reason. On QuakeNet, K-lines and G-lines are effectively the same thing. For K-line enquiries you may 
+     *email info@quakenet.org. 
+    Killed (*.quakenet.org (reason)))
+     *This quit message is displayed when a user is forceably disconnected from the IRC network by an IRC operator (KILLed). The reason 
+     *is displayed in the quit message. A common kill reason is "You are violating QuakeNet rules. Please read http://www.quakenet.org/rules/. 
+     *ID: xxxxxxx", which means that you were disconnected by QuakeNet's anti-spam service, S.
+   How to voice all users entering your channel.
+    $autovoice
+    $avoice
+    *Q9 has this function, so we'll explain about that when we know more about it.
+    *mIRC users can use /avoice *!*@* #channel
+   What is a netsplit?
+    $netsplit
+    *A netsplit is when 1 or more servers become split from the rest of the network. This may be due to server problems
+    *or just the fact that the network connections between the server and the hub it was connected to have failed.
+    *Netsplits happen, it's a fact of IRC life. During the time you may notice users connecting and reconnecting, servers
+    *giving users ops or voice and some services, such as Q and L behaving slowly or even parting the channel for a short
+    *time. If you notice these problems, please be patience, the staff will be doing all they can to restore the full,
+    *working service to you as quickly as possible.
+   IRC command summary
+    *The commands available to users on QuakeNet are as follows:
+    ADMIN, AWAY
+     *ADMIN displays information about the administrator of the IRC server to which you are connected.
+     *Usage: /ADMIN
+     *
+     *AWAY marks you as being away to the IRC network, or marks you as being back if no away reason is given.
+     *Usage: /AWAY [reason]
+    CNOTICE, CPRIVMSG
+     *CNOTICE is a new command which allows you to bypass any "target change too fast" warnings and send notices to people on a common 
+     *channel, provided you are op'd on that channel.
+     *Usage: /CNOTICE nickname #channel :Message
+     *
+     *CPRIVMSG is a new command which allows you to bypass any "target change too fast" warnings and send privmsgs to people on a common 
+     *channel, provided you are op'd on that channel.
+     *Usage: /CPRIVMSG nickname #channel :Message
+    GLINE
+     *GLINE displays information about a G-Line applied to the IRC network.
+     *Usage: /GLINE mask - where mask is in the form nick!ident@host
+    HELP
+     *HELP displays a list of all commands available on the IRC server.
+     *Usage: /HELP
+    INFO, INVITE, ISON
+     *INFO displays information about the IRC server software.
+     *Usage: /INFO
+     *
+     *INVITE is used to invite another user to an IRC channel. You must be a channel operator to invite a user to the channel.
+     *Usage: /INVITE nickname #channel
+     *
+     *ISON is used to ask the IRC server if the specified user is online.
+     *Usage: /ISON nickname
+    JOIN
+     *JOIN is used to join an IRC channel.
+     *Usage: /JOIN #channel
+    KICK
+     *KICK is used to forcibly remove a user from an IRC channel. You must be a channel operator to kick a user from a channel.
+     *Usage: /KICK #channel nickname [reason]
+    LIST, LUSERS
+     *LIST is used to list the channels available on the network. If an exact channel name is specified the topic and user count 
+     *of that channel are returned.
+     *Usage: /LIST parameters - where parameters is a channel name or other flags. See the guides on the QuakeNet website for more information.
+     *
+     *LUSERS displays information about the number of users connected to the IRC network and local server, as well as channel information.
+     *Usage: /LUSERS
+    MODE, MOTD
+     *MODE is used to set channel or user modes on a user. See the list of channel and user modes available on QuakeNet for examples of this 
+     *command.
+     *Usage: /MODE nickname|#channel +|-modes [parameters]
+     *
+     *MOTD displays the local IRC server's message of the day.
+     *Usage: /MOTD
+    NAMES, NICK, NOTICE
+     *NAMES is used to list the users on an IRC channel.
+     *Usage: /NAMES #channel
+     *
+     *NICK changes your nickname on the network.
+     *Usage: /NICK nickname
+     *
+     *NOTICE is used to send a notice to a channel or user.
+     *Usage: /NOTICE nickname|#channel Message
+    PART, PRIVMSG
+     *PART is used to leave an IRC channel.
+     *Usage: /PART #channel Leaving message
+     *
+     *PRIVMSG is used to send a message to a channel or user.
+     *Usage: /MSG nickname|#channel Message.
+    QUIT
+     *QUIT is used to disconnect from the IRC server.
+     *Usage: /QUIT Quit message.
+    SILENCE
+     *SILENCE adds, removes or lists your server side ignores.
+     *Usage: /SILENCE [+|-][mask] - where mask is of the form nick!user@host
+    TIME, TOPIC
+     *TIME displays the current time on the IRC server to which you are connected.
+     *Usage: /TIME
+     *
+     *TOPIC is used to set or display the topic on and IRC channel.
+     *Usage: /TOPIC #channel [topic]
+    VERSION
+     *VERSION displays information about the version of the IRC server you are using, as well as the supported commands and modes.
+     *Usage: /VERSION
+    WALLCHOPS, WALLVOICES, WHO, WHOIS, WHOWAS
+     *WALLCHOPS sends a message to the operators of a channel only.
+     *Usage: /WALLCHOPS #channel :message
+     *
+     *WALLVOICES sends a message to the voiced users of a channel only.
+     *Usage: /WALLVOICES #channel :message
+     *
+     *WHO is used to query the IRC server for information about users.
+     *Usage: /WHO parameters - See the guides on the QuakeNet website for more information about this command.
+     *
+     *WHOIS displays information about a particular IRC user.
+     *Usage: /WHOIS nickname [nickname] - if the nickname is specified twice, an extended WHOIS is performed.
+     *
+     *WHOWAS displays information about a previously connected IRC user.
+     *Usage: /WHOWAS nickname
+  QuakeNet services
+   $services
+   *QuakeNet run a number of services for use by the users. Some will interact with you, whilst
+   *others will work in the background to improve and protect the network without you even knowing.
+   *The services that QuakeNet currently provides for request are: Q, S and trusts.
+   Q
+    $q
+    *Q is QuakeNet's channel service bot, analagous to the ChanServ used on other networks.
+    *If provides the following facilities:
+    ** Authentication with all QuakeNet services.
+    ** Channel protection: Against take overs and so forth.
+    ** Auto op/voice facilities for users.
+    ** Ban and topic handling facilities.
+    *and many more channel management features. See the Q guide for more information.
+    How does Q recognise me? / How do I auth to Q?
+     $auth
+     $hello
+     *QuakeNet doesn't use a Nickserv, so in order for Q to recognise you, you need to auth. To create an account on Q, type 
+     */msg Q HELLO email@address email@address (your email is sent twice for verification purposes). Q will send you back a 
+     *notice/message, either saying that an account has been created or that an account under that name already exists. If the 
+     *account has been created, check the email you specified for an email from Q regarding your account and how to continue 
+     *further (during busy times it can take 20 minutes for the email to arrive). If you get an account already exists message, 
+     *you need to change your nickname on IRC as the process uses your current nickname as the username. Once you've created the 
+     *account, you can then change it back to your normal nickname. It is strongly advised that you change your password the 
+     *first time you auth. Do not change it to something similar to your name, something that can be easily guessed such as where 
+     *you live or something you can find in a dictionary. A mixture of characters and numbers is advisable. Each time you connect 
+     *to QuakeNet you need to auth to Q using the command /msg Q@CServe.quakenet.org AUTH authname password.
+     *If you are already authed, you cannot auth again. You also cannot de-auth, you need to reconnect to QuakeNet to de-auth.
+    How do I request Q?
+     *Q is available for request on IRC: /msg R REQUESTQ #channel
+     *The requirements for requesting Q are as follows:
+     ** L must be in the channel and you must have owner rights (+n) on it.
+     ** Average of 50 users during the past 2 weeks
+    How do I remove Q from my channel?
+     *To remove Q from your channel you must remove every user that you have added to it. Removing yourself last.
+     *As soon as the last user has been removed from Q it will leave the channel.
+    Using Q
+     Adding and removing users with Q
+       *You can add users to your channel with the commands ADDUSER and CHANLEV.
+       *Remove them with REMOVEUSER or CHANLEV.
+       *
+       */msg Q ADDUSER #channel nickname/#account
+       *This command will give a user flags +aot (auto op and access to SETTOPIC command).
+       *
+       */msg Q REMOVEUSER #channel nickname/#account
+       *This command will remove a user from your channel, no matter what his/her flags are
+       *(assuming your level is higher than the user you are trying to remove).
+       *
+       */msg Q CHANLEV #channel nickname/#account +-flags
+       *This command can be used both to add and remove users
+       *Availible flags are:
+       ** a - auto (should be combined with +o or +v)
+       ** v - voice
+       ** o - op
+       ** t - access to SETTOPIC command
+       ** m - master
+       ** n - owner
+       ** b - banned
+       *
+       *Note:
+       *You need master access to add/remove flags +avotb
+       *You need owner access to add/remove flags +mn
+     Channel flags
+       *You can customize Q's behaviour on a channel using its channel flags.
+       *They are set via the CHANFLAGS command, with a syntax like channel modes,
+       * e.g.: /MSG Q chanflags #channel +bc
+       *
+       *Availible flags are:
+       ** +b (Bitchmode)
+       *   Prevents users who have no respective chanlev on the channel from being opped/voiced.
+       ** +c (Autolimit)
+       *   Makes Q adjust the user limit in certain intervals - the adjustion value can be set with Q's AUTOLIMIT command.
+       ** +f (Force topic)
+       *   Prevents people from changing the topic manually, it has to be done via Q's SETTOPIC command.
+       ** +k (Force Key)
+       *   Enforces a channel key which can be set via Q's KEY command.
+       ** +l (Force Limit)
+       *   Enforces a user limit which can be set via Q's LIMIT command.
+       ** +p (Protect ops)
+       *   Makes Q reop users with op/master/owner chanlev if they get deopped.
+       ** +t (Topic save)
+       *   Makes Q set the topic if it is restarted.
+       ** +w (Welcome msg)
+       *   Enables the welcome message, which can be set via Q's WELCOME command.
+     Banning with Q
+       *There are two ways to ban users with Q: by account name, or by hostmask.
+       *
+       *To ban a user's account, use Q's CHANLEV command to give them the +b chanlev:
+       * /msg Q CHANLEV #channel nickname/#account +b
+       *
+       *To ban a user/multiple users by hostmask, use Q's BAN command:
+       * /msg Q BAN #channel nick!user@host
+       *This command supports wildcards such as * and ?
+       *
+       *You can view the hostmask bans on a channel with Q's BANLIST command:
+       * /msg Q BANLIST #channel
+       *
+       *To remove a hostmask ban, use Q's BANDEL command:
+       * /msg Q BANDEL #channel nick!user@host
+       *or
+       * /msg Q BANDEL #channel #number(from banlist)
+     Topic handling
+       *Q can set the topic and make sure that a certain topic remains set.
+       *
+       *To set the topic with Q, use the SETTOPIC command:
+       * /msg Q SETTOPIC #channel topic
+       *For this to work you have to be either master/owner or have the +t chanlev.
+       *
+       *If you want Q to prevent users from setting the topic manually (ie, not through Q), set chanflag +f:
+       * /msg Q CHANFLAGS #channel +f
+       *This will make Q restore the topic last set via SETTOPIC when someone changes it.
+       *
+       *If you want Q to reset the topic if Q itself should get restarted, set chanflag +t:
+       * /msg Q CHANFLAGS #channel +t
+     Welcome messages
+       *Q can send a welcome message to users joining your channel.
+       *
+       *To enable this function, set chanflag +w:
+       * /msg Q CHANFLAGS #channel +w
+       *To set the welcome message text, use Q's WELCOME command:
+       * /msg Q WELCOME #channel message
+     More help
+       *For further help, join #help on IRC
+    Problems with Q
+     I've forgotten my Q password
+      *If you have lost the password for your Q account use this command to request it: /msg Q REQUESTPASSWORD email@address.
+      *If you no longer have access to the email address from which you created your Q account, or your Q account has expired due to 
+      *inactivity, then you will need to create a new account.
+     How do I remove peoples' CHANLEV when they are offline?
+      *If a user is offline and you wish to remove their CHANLEV from Q, simply use #authname instead of the users nickname. Use 
+      */msG Q CHANLEV #channel to obtain a list of auth names added to the channel.
+      *Example: /msg Q REMOVEUSER #channel #authname
+     There is no owner on my channel
+      *If nobody has the owner flag on your channel you may use: /msg Q requestowner #channel
+      *This command works for anyone added as master (+m), or op (+o) if no masters are added
+     Q has left my channel
+      *If Q has left your channel and users are no longer being automatically voiced or op'ed then there are
+      *several reasons why it may have left:
+      ** The channel has expired due to inactivity or low amount of users.
+      ** An owner removed Q from the channel.
+      ** Q has been suspended from your channel.
+      *Contact #help to find out if your channel has had Q suspended.
+     Q has been suspended from my channel
+      *If Q has been suspended from your channel it means that you or the users in your channel were in violation of QuakeNet rules. 
+      *You should contact #feds for further information.
+     Q won't let me op or voice users
+      *Q provides a channel flag that prevents users that do not have the appropriate access level on that 
+      *channel from being op'ed or voiced.
+     A channel I want already has Q in it. What can I do?
+      *Nothing. You will have to choose a different channel.
+     A channel I want already has Q in it and nobody uses the channel. Can I have it?
+      *If nobody with a CHANLEV on that channel enters for at least 40 days, Q will be removed automatically and you may use the channel.
+   L
+    $l
+    *L is QuakeNet's lightweight channel service bot.
+    *If provides the following facilities:
+    ** Channel protection: Against take overs and so forth.
+    ** Auto op/voice facilities for users.
+    ** Welcome message and function for forcing +i on a channel
+    How does L recognise me? / How do I auth to L?
+     *You cannot auth to L - L recognises users by their Q accounts/auths.
+     *See 'Q' for more information on this.
+    How do I request L?
+     *L is available for request from the QuakeNet website: http://www.quakenet.org/request/.
+     *The requirements for requesting L are as follows:
+     ** Channel must be known by "chanfix"
+     ** You must be in the top 5 operators list
+     *
+     *Your channel operator status is tracked via points in a system called chanfix.
+     *The longer that you are opped on the channel, the higher your score will be.
+     *Once your score is in the top 5, you may request L.
+     *
+     * Note that chanfix doesn't start counting until your channel has had 4 users for atleast 2 hours.
+    I get an error when trying to request L, why?
+     *You do most likely not fulfill the requirements.
+     *
+     *If you get an error reporting 'Score too low...', then you will simply either need to ask another
+     *channel operator to make the request, or try again later once your score is higher.
+     *
+     *If you get an error reporting ‘An error occurred adding the channel’, then you are already known on the maximum number of channels.
+     *When you add L, it adds another channel to your chanlev, you must make space for one more entry.
+     *
+     *If you get an error reporting ‘System overloaded, try again in 5 minutes’,
+     *then the system is currently being bombarded with requests, and cannot handle the traffic.
+     *You should try again in 5 minutes.
+    How do I remove L from my channel?
+     *To remove L from your channel you must remove every user that you have added to it. Removing yourself last.
+     *As soon as the last user has been removed from L it will leave the channel.
+    Using L
+     Adding users to L
+       *You can add users to your channel with the commands ADDUSER and CHANLEV.
+       *Remove them with REMOVEUSER or CHANLEV.
+       *
+       */msg L ADDUSER #channel nickname/#account
+       *This command will give a user flags +ao (auto op).
+       *
+       */msg L REMOVEUSER #channel nickname/#account
+       *This command will remove a user from your channel, no matter what his/her flags are
+       *(assuming your level is higher than the user you are trying to remove).
+       *
+       */msg L CHANLEV #channel nickname/#account +-flags
+       *This command can be used both to add and remove users
+       *Availible flags are:
+       ** a - auto (should be combined with +o or +v)
+       ** g - auto (works only for +v, allowing a +ogv combination)
+       ** v - voice
+       ** o - op
+       ** m - master
+       ** n - owner
+       *
+       *Note:
+       *You need master access to add/remove flags +agvo
+       *You need owner access to add/remove flags +mn
+     Setting "invite only" with L
+       *If you have L in your internal clan channel or similar, you might want it set to "invited users only"
+       *L can be used to make sure +i is always set
+       *
+       */msg L setinvite #channel
+       *And to remove it: /msg L clearinvite #channel
+       *
+       *While using this mode, users will have to invite themselves using L:
+       */msg L invite #channel
+     Welcome messages
+       *L can send a welcome message to users joining your channel.
+       *
+       *To enable this function, simply set a message with L's WELCOME command:
+       * /msg L WELCOME #channel message
+       *
+       *To disable it, use:
+       * /msg L WELCOME #channel REMOVE
+     More help
+       *For further help, join #help on IRC
+    Problems with L
+     How do I remove peoples' CHANLEV when they are offline?
+      *If a user is offline and you wish to remove their CHANLEV from L, simply use #authname instead of the users nickname. Use 
+      */msg L CHANLEV #channel to obtain a list of auth names added to the channel.
+      *Example: /msg L REMOVEUSER #channel #authname
+     There is no owner on my channel
+      *If nobody has the owner flag on your channel you may use: /msg L requestowner #channel
+      *This command works for anyone added as master (+m), or op (+o) if no masters are added
+     L has left my channel
+      *If L has left your channel and users are no longer being automatically voiced or op'ed then there are
+      *several reasons why it may have left:
+      ** The channel has expired due to inactivity or low amount of users.
+      ** An owner removed L from the channel.
+      ** L has been suspended from your channel.
+      *Contact #help to find out if your channel has had L suspended.
+     L has been suspended from my channel
+      *If L has been suspended from your channel it means that you or the users in your channel were in violation of QuakeNet rules. 
+      *You should contact #feds for further information.
+     A channel I want already has L in it. What can I do?
+      *Nothing. You will have to choose a different channel.
+     A channel I want already has L in it and nobody uses the channel. Can I have it?
+      *If nobody with a CHANLEV on that channel enters for at least 20 days, L will be removed automatically and you may use the channel.
+   S
+    $s
+    *S is QuakeNet's SpamScan and sits it certain channels. If it detects you as spamming, it will disconnect you
+    *from the network. Most of the time you can simply rejoin, however if you do it consistently, you may find
+    *you have been banned for a short time.
+    How can I stop being kicked (killed) by S?
+     *Well, the way that S detects spam is not publicly known, but try not to use the /amsg command too much,
+     *try to write lines in one continuous sentence rather than a line for each word and
+     *don't advertise channels (see the QuakeNet rules for clarification on this). That should help in most cases.
+    How do I request S?
+     *S is available for request from the QuakeNet website: http://www.quakenet.org/request/.
+     *If it tells you that you do not fulfill the requirements, then you simply cannot get S.
+     *Whining in the support channels will not help you.
+    How do I remove S from my channel?
+     *To remove S from your channel you need to speak to the IRC operators in #feds.
+   Where is Nickserv?
+    $nickserv
+    *QuakeNet does not use a Nickserv, nicknames are free for anyone to use with the exception of network staff
+    *and services.
+    *
+    *In order to gain access to QuakeNet services, you must instead register to Q. On IRC, type /msg Q HELP HELLO, for further details.
+   Where is ChanServ?
+    $chanserv
+    *QuakeNet doesn't have chanserv, we use Q for channel support.
+   What is O?
+    $o
+    $requestop
+    *O is the operserv and is designed for use by the IRC operators. There is, however, one command that can be used by all users.
+    *To request ops in a channel with no op at all (ops include S and Q) use /msg O requestop #channel [nickname]. Use the nickname 
+    *part if you wish to request ops for another user, otherwise it will try to op you. You cannot use this command during a netsplit, 
+    *and O will tell you this when you try. O will also only op you if it recognises you as a known op for that channel.
+   What is H?
+    $h
+    *H is the service providing the help you are reading right now.
+    *It also has various commands and systems for the official support channels.
+    *You cannot request H for your own channel.
+   Trusts
+    *You are not allowed to have more than 5 IRC clients running from the same computer when you connect to QuakeNet. This is to 
+    *prevent floodclones and other sorts of IRC attacks. A trust is a setting on QuakeNet that allows you to have more than 5 
+    *connections from the same computer without being automatically banned.
+    How do I get a trust?
+     *To get a trust, you must visit http://trustrequest.quakenet.org and fill the form in with the following information: 
+     *1. The IP addresses to be trusted. These must be tatic (ie unchanging) addresses. We do not give trusts to non-static addresses. 
+     *If you do not have a guaranteed static IP (and most ADSL providers do NOT give out static IP addresses) you will not get a trust. 
+     *It doesn't matter if you've had the same IP for months - if there is any possibility it will change, you will not get a trust. 
+     *The only exception to this rule is for short-term use, such as a LAN party, in which case we will give a one-time temporary trust 
+     *to a non-static IP. This will never be more than 4 days. 
+     *
+     *2. An abuse email address. We require the email address of the IP or service administrator so that we can contact them about abuses 
+     *of the trust. This is a requirement and will not be waived.
+     *
+     *3. A reason for the trust. You must explain to us the reason you want to have more than 5 connections to QuakeNet.
+     *
+     *4. The number of connections required (can be changed by the oper if it is too many).
+     *
+     *5. And the home channel on QuakeNet (if you have one).
+     *
+     *Please note: We will require a working identd from a bouncer.
+     *
+     *We are presently going though a process of development on our trust systems. You should refer to the latest news on http://www.quakenet.org 
+     *for information on how to obtain a trust, and what trusts are currently being offered.
+    I want to use CGI:IRC. Can I get a trust?
+     *No. We do not give trusts to web-based IRC clients such as CGI:IRC that do not pass-through the real conection information of the 
+     *person using the CGI:IRC client.
+    I have a dynamic ADSL connection - can I get a trust?
+     *No. We no longer provide trusts to hostnames or IP addresses that are not static (ie unchanging). Even if you have had the same 
+     *hostname or IP address for several months, if it is not guaranteed to be unchanging, then we will not provide a trust.
+    Generic Hostnames
+     *A lot of ISPs use what is known as a 'generic' hostname for their users. These are normally constructed from a series of letters 
+     *and numbers, followed by the ISP's name. Some good examples are those used by T-Dialin (example: pD9551B44.dip.t-dialin.net) or 
+     *nextgentel (example: 55.80-202-24.nextgentel.com). 
+     *
+     *You cannot apply for a trust if you have one of these generic hostnames, unless it is for an ISP-based NAT (in which case the ISP 
+     *needs to contact us, not you) or for a LAN party (in which case you will get a temporary trust, typically no more than 4 days, for 
+     *a low number of users, and it will not be able to be renewed).
+    I have a trust but I keep getting glined for clones! What's wrong?
+     *If you have a trust and keep getting glined for clones, this is probably because you are breaking the clone rule. A clone is when 
+     *you have more than one connection from a single address (ident@hostmask), so if you have more than 5 connections where the ident 
+     *is the same these are classified as clones, regardless of the level of trust you have. 
+     *
+     *A trust is given based on a set number of connections from a fixed host, with up to 5 connections per user. If you have more than 
+     *5 connections from a trusted host with the same ident, that ident will be glined for clones. This is correct behaviour and does 
+     *not mean your trust no longer exists - it means that you are using it incorrectly.
+    IDENT and Trusts
+     *If you apply for a trust on QuakeNet, the source machine that houses the trust (ie your server) must be running an Ident server. 
+     *If you are not running an identserver you will get K-Lined (banned) automatically when you try to connect. 
+     *
+     *Trusts require a unique userident for each user, as we allow the maximum of 5 connections per userident. 
+     *
+     *Please note: We do not provide installation or configuration support for IDENT services, and all such queries will be ignored.
+    The nature of trusts
+     *When QuakeNet gives a trust to a shell provider or a BNC provider, we are trusting that provider with a certain number of connections 
+     *from a specific hostname. This means that more than one person can use the same hostname (the bit after the @ symbol), and we allow 
+     *up to 5 users per ident (the bit before the @ symbol). 
+     *
+     *As we are trusting a shell provider to be responsible in their provision of services, so we expect responsibility in return. We have 
+     *seen increasing abuses of existing trusts, most prominently from large service providers who do not afford QuakeNet the same level 
+     *of consideration that we afford them when we grant the trust. 
+     *
+     *If a trust for 100 connections is granted, we do not expect there to be more than 100 connections from the one host, and we expect 
+     *the provider to automatically limit outgoing connections from their service to ours so that a granted trust is never exceeded. 
+     *
+     *If as a trusted provider you find that your users exceeds the number of trusted connections you have, we expect you to contact us 
+     *for an increase in the trust *before* you add extra users to your service. We expect you to afford us this courtesy for the trust 
+     *we have placed in you by giving you a trusted connection. 
+     *
+     *It is up to you as a trusted provider to monitor your user connections - it is not up to us to tell you when you are exceeding your 
+     *trust.
+    How do I request a trust modification?
+     *If you require a modification to your trust you may request one using the form at http://trustrequest.quakenet.org
+     *Make sure you enter all the information from the mail you received when you first requested the trust.
+     *
+     *Alternatively, #feds can be used for minor changes
+    My trust request was denied, why?
+     *There may be various reasons for your trust request having been denied. Most of the reasons can be avoided if you thoroughly read 
+     *through this documentation before requesting a trust. Common reasons for your trust request being denied are:
+     You need identd installed on the server to get a long term trust. We will not accept clients without ident on trusted hosts.
+      *If you apply for a trust on QuakeNet, the source machine that houses the trust (ie your server) must be running an Ident server. 
+      *If you are not running an identserver you will get K-Lined (banned) automatically when you try to connect. 
+      *
+      *Trusts require a unique userident for each user, as we allow the maximum of 5 connections per userident. 
+      *
+      *Please note: We do not provide installation or configuration support for IDENT services, and all such queries will be ignored.
+     No trusts for generic hostnames.
+      *A lot of ISPs use what is known as a 'generic' hostname for their users. These are normally constructed from a series of letters 
+      *and numbers, followed by the ISP's name. Some good examples are those used by T-Dialin (example: pD9551B44.dip.t-dialin.net) or 
+      *nextgentel (example: 55.80-202-24.nextgentel.com). 
+      *
+      *You cannot apply for a trust if you have one of these generic hostnames, unless it is for an ISP-based NAT (in which case the ISP 
+      *needs to contact us, not you) or for a LAN party (in which case you will get a temporary trust, typically no more than 4 days, for 
+      *a low number of users, and it will not be able to be renewed).
+     You need to request as a NAT gateway. LAN trusts are only temporary (4 days).
+      *If you are on a LAN and you all share the same external IP, and you want a temporary trust, you must apply for a NAT gateway trust.
+      *LAN trusts are for LAN parties only and as such are only temporary.
+     That host is already trusted.
+      *You have requested a trust for an IP address that is already trusted by QuakeNet. An IP address cannot be trusted more than once.
+     Too many connections requested.
+      *QuakeNet will not normally add a new trust that has requested a large number of connections to the network. In this case, anything 
+      *more than 100-150 connections will be rejected.
+     Incorrect trust type.
+      *Depending on the trust type you request, the trust setup will be slightly different. It is therefore very important that you request 
+      *as the correct type, or your request will be rejected. The current types are:
+      **Bouncer - Use this type for a small clan or home bouncer.
+      **Non-commercial bouncer - For non-commercial organisations that provide bouncers free of charge or for their staff.
+      **Commercial bouncer - To be used by people wishing to sell bouncers, or sponsor other clans/organisations with them.
+      **Non-commercial shell - This type is for non-commercial organisations that offer shell accounts free of charge, e.g. public access systems.
+      **Commercial shell - To be used by commercial shell providers, who charge or sponsor people with shells.
+      **LAN - This is for use by people who are holding a short LAN (4 days). This trust type is temporary.
+      **NAT gateway - A NAT gateway forces everybody behind it to use the same IP. Use this if you are behind a NAT gateway.
+      **Other/special - Anything not fitting into the above categories should be requested as Other/special.
+     NAT gateway rejections.
+      *The most common reason for a NAT gateway trust request rejection is because the Network Admin (the person who owns or administrates the 
+      *NAT gateway) has not requested a trust. It is essential that that person is the requestor, otherwise the application will be denied.
+  QuakeNet staff
+   $staff
+   *QuakeNet staff composes of network operators and support staff.
+   *All members of QuakeNet staff are volunteers and do not get paid for the work they do for QuakeNet.
+   Who are the IRC operators?
+    $oper
+    $ircop
+    *IRCops, or more formally IRC operators, are responsible for maintaining the network and enforcing the network
+    *rules as necessary. Like all staff members, ircops are also volunteers and do not get paid for their work.
+    How can I tell if someone is an IRC operator ?
+     *It's easy to tell if someone is an IRC operator, when you use the /whois command, it will show IRC operator status
+     *on a separate line saying "<nick> is an IRC operator", if someone says to you that he's an IRC operator and his
+     */whois information does not show that line, then he's lying and you should consider him possibly hostile.
+    Can I Become an IRC operator ?
+     $becomeoper
+     *Unfortunately no, becoming an IRC operator is not possible. We choose our operators carefully from the people
+     *we know and trust. New operators are added when there's need and one is always invited to the position, so
+     *you never apply to become an IRCop.
+    What can the IRC operators do that I can't?
+     *IRC operators connect/disconnect servers, they can disconnect/ban users violating the network rules and
+     *also maintain network services such as Q or L.
+    Are IRC operators gods or something?
+     *No, IRC operators are perfectly normal human beings (most of the time anyway).
+    Where can I learn more about QuakeNet IRC operators ?
+     *All public information concerning the QuakeNet IRC operators is available from
+     *http://www.staff.quakenet.org/operators.phtml
+   Who are the support staff ?
+    *Support staff specialise in providing user support for matters both involving IRC and Quakenet,
+    *as well as for any general matter that you might have a problem with
+    *(assuming of course that the particular supporter is familiar with the topic).
+    *
+    *Support staff can be found in:
+    *#feds - Operator support.
+    *#help - General support.
+    *#help.script - mIRC scripting support.
+    *#tutorial - Scheduled tutorials for newbies.
+    Can I join the support staff?
+     *We are currently not recruiting new support staff.
+  QuakeNet rules
+   $rules
+   *QuakeNet is a friendly place, and we do put up with a wide variety of users and needs, however we have some rules
+   *that are enforced to help keep this network a nice place to be and to keep problems to a minimum. The rules may be 
+   *viewed in detail at http://www.quakenet.org/rules .
+   *
+   *This network may NOT be used for:
+   *
+   ** Flooding (including flood/clonebots).
+   ** Distribution of copyrighted material (eg, warez, mp3, movies) or pornography.
+   ** Channels dedicated to cheats designed to cause unfair advantage in multiplayer games.
+   ** Clones. Please visit http://trustrequest.quakenet.org if you require more than five clients (LAN parties, bots, etc).
+   ** Attempts to takeover existing channels or network services.
+   ** Racism and/or Nazism.
+   ** Spamming and/or advertising.
+   ** Hacking (including Virus/Trojan distribution).
+   *
+   *Continued use of QuakeNet indicates acceptance of these conditions.
+ How to use this service
+  $use
+  $usage
+  *To use this service via IRC, you only need to make a selection from given options. Selection is made by using the number of the option 
+  *for example, if option number 3 interests you, you can either command 'help 3' or just '3' to view information related to that 
+  *option. There's also the possibility of accessing information using an alias, there's however no list of these aliases and all 
+  *the information visible with an alias, for example 'help takeover', is available by the normal means.
+  *To use this service via the website, you need only click on the links instead of typing your selection.
+  *More information concerning this service is available from the QuakeNet staff members in #help or #feds.

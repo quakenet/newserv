@@ -1,0 +1,6 @@
+
+.PHONY: all
+all: server.so  
+
+server.so: server.o
+	ld -shared -Bdynamic -o $@ $^

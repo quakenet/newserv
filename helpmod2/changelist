@@ -1,0 +1,198 @@
+2807
+fixed delchan crash
+fixed queue inconsistency problem
+queue should now set +m/-m when set on/off respectively
+fixed the repeat kick bug
+channel commands can now be disabled, on by default
+when using verbose queue users get noticed their position change (%5)
+opers can make the verbose queue less verbose by setting the H_NOSPAM flag
+please state your questions to X nick no longer contains the real H userlevel
+reporting now done completely
+global bans now work (add,del,list) command help also writted
+channel bans now have the code done (add, del, list), command help written
+Fixed a possible crash resulting from topic change by non-existing user
+Fixed channel moderation (again)
+Minor fixes here and there, mostly output formatting.
+stats and chanstats now have a common way to print them
+2907
+Fixed remove_expired_bans crash
+
+2907
+tuned huser_get_level to a oper-friendly form
+fixed a message typo in queue
+fix the listusers to list by userlevel aswell
+modified hban_add to be oper safe
+fixed stats to give 10 instead of just 7 weeks history
+fixed a top10 issue of not printing the array under some special conditions
+status command replaced with a modern one
+? is now a command trigger
+fixed a bug that only long chanstats could be printed
+H's real nick (if other than H) is now the command trigger
+MOST LIKELY DONE fix bug caused by queue, couldn't track to source, might be related to dnmo
+added (the forgotten) queue reset
+fixed !next 0 to do nothing
+added sanity checks to database handling
+fixed a small bug with lamer control, flood/spam values weren't initialised
+autoqueue is now checked on join as well, fixed useless spam when autoqueue and user leaves under certain conditions
+MOST LIKELY DONE fix freeze bug, possible causes: autoqueue or status command
+fixed showcommands and acconf for opers without accounts (rare though)
+Term list now lists terms based on pattern and gives number of matches
+help command no longer causes a crash when no help entries are loaded
+join flood thing refined, tolerance is now time(NULL) + 30 -> kicks and +r for 1 minute
+added support for ?+ and ?-, further ?X commands are also possible, no multitarget yet.
+fixed a bug with chanmodes during H startup
+??+ fixed to be the same as -next
+fixed the ban listing to have the real expiration instead of something odd
+fixed adding bans, the wrong expire time was used
+added a time input function similar to the one on O
+TODO critical inconsistency bug with channel users
+added the long message send for terms                         	
+kick message now accepts a reason (:reason), fixed a small bug aswell in the kick
+fixed two critical (free causing) bugs in queue and config reading
+fixed a minor +v bug and a critical loop-of-death bug in queue
+fixed the queue reporting bug
+
+RELEASE CANDIDATE
+? ?+ ?- now support multiple targets
+dnmo now works on voiced users as well. User is devoiced and placed back to the queue for being lame.
+whois now shows if the user is receiving support on any channel
+Added command everyoneout to clear a channel of peons
+New chanmode oper only to prevent non-opers of doing anything on the channel.
+Added command invite
+Reporting now reports a daily summary of channel activity
+Fixed a minor bug in channel status reporting
+Fixed the autoqueue annoying spam with netsplits (thanks to splidge)
+Fixed a bug when reading terms larger than 256 bytes
+Changed isnumber() to isdigit()
+Fixed a really silly bug in hterm_del_all()
+Fixed a small bug in term find
+Fixed delchan bug
+Fixed a problem with module unloading
+Added a HELPMOD_AUTH macro instead of the hardcoded "H"
+The old help system is once again working
+
+RELEASE CANDIDATE 2 (hope this number doesn't grow too large)
+Fixed the idle kick time for people who got off queue
+Fixed a two small bugs with autoqueue
+Autoqueue now handles -v event aswell
+The bug meeb found in stats was fixed
+
+RELEASE CANDIDATE 2.1
+Fixed a small annoyance with autoqueue & everyoneout
+
+RELEASE CANDIDATE 2.2
+Fixed some problems with the autoqueue
+Added assertions
+Added queue on/off channel messages
+Some internal changes, the empty database problem should no longer occur
+Added debug code
+
+RELEASE CANDIDATE 2.3
+Fixex a small bug in the klingon command
+Made queue default action summary
+Added a chanstat option to prevent lame (bold, underline, etc.) lines
+Removed host checks from trojan check
+
+RELEASE CANDIDATE 3
+Fixed some annoyances when using the queue
+Added command autoqueue (same as queue maintain), wrote command help
+Fixed a silly but critical bug with dnmo (finally !!!)
+Removed the debug code needed to find the last bug
+
+RELEASE CANDIDATE 4
+H is now +k
+Did a very, very minor modification to the way chanstats are printed
+Fixed some issues with statistics
+showcommands can be used to list lower userlevels
+dnmo & autoqueue now work better together
+fixed a silly bug in queue on/off found by mikec
+fixed another silly bug in term found by mikec
+some more fixes in stats
+fixed a bug where a user could have more than one account
+The daily stats handling is now better
+
+RELEASE CANDIDATE 5
++X users (T clones) now count as staff
+Fixed an account bug found by salt
+Tuned the command help for top10
+Added new userlevel, trial, wrote command help and set some commands for trials
+Fixed a few small bug in stats
+Fixed G assigning users to idle opers/staff
+Queue can now be set to expire if staff is idle
+changed the term search order
+Changed the wording of on queue event a bit, it's now more idiot compatible
+Changed help alias find to be case insensitive
+
+RELEASE CANDIDATE 6
+Fixed an issue with the trial userlevel
+Added expiring chanbans
+Some minor cleanups
+Trojans should now be banned correctly
+A minor fix with passive state
+slight modifications to chanbans
+
+RELEASE CANDIDATE 7
+Fixed the stats bug where queue use and joins where mixed
+Fixed(?) the top10 crash bug
+Fixed a minor bug with top10
+Fixed a small issue with stats
+Fixed strregexp (X* didn't match X)
+
+RELEASE CANDIDATE 8
+Fixed the bold text identification not depending on the chanconf setting
+Fixed a small bug with writing the database to disk
+
+RELEASE CANDIDATE 9
+TODO everyoneout tarvitsee jonkinlaisen ajastimen +i:n kanssa
+Added a message to tell users that there's no one in the channel to help them
+Fixed a bug with changeuserlevel, user being authed was checked incorrectly
+Fixed a minor inconsistency with -next command
+Added an assertion and a new if condition to the top10 command, hopefully it stops segfaulting
+Fixed the static channel name in a hhooks.c message
+Added an assertion to a possible eternal loop
+Bans changed, the banstring is now generated in just one place
+Some header file tidying
+Fixed a silly bug when printing long lines.
+Added some code to the channel user mode commands to help find a bug
+
+RELEASE CANDIDATE 9.1
+Fixed the wording on the seen command
+Fixed a nasty bug with bans
+
+RELEASE CANDIDATE 9.2
+Added a missing command help for ? (Noticed by user xiKe)
+Fixed a +r and join floods problem, also improved the join flood code a bit
+Internal modes are no more written to the database
+dnmo now sets users to the back of the queue even if the queue is off
+
+RELEASE CANDIDATE 10
+Made a very minor modification to hconf.c
+Fixed a bug haunting the writing of bans to database
+Changed default idlekick time from 1 minute to 5 minutes
+Added the ticket system
+helpmod_strtime can now print negative times
+Fixed a minor bug with acconf command
+
+Version 2.0
+Fixed the DNMO command a bit
+Fixed the ticket count in status
+Fixed a small bug in term find resulting in garbled output
+Fixed the expired ticket removal to remove expired not valid tickets..
+Top10 is now topN
+Fixed chanconf error message
+
+Version 2.01
+G now in CVS as well!
+Changed one out command error message a bit
+Fixed the out command help, out doesn't take channel like in the example
+Fixed the hticket_remove_expired from being left after rmmod
+Added ticket resolving based on authname
+Changed the G version string on the status command a bit
+Tickets are now preserved between runs
+Channel reporting is now preserved between runs
+The listtickets command is now just tickets
+Status command now reports G module uptime
+ticket command is now available to trials as well
+Fixed a bug in ticket resolve
+Added a command showticket
+Tickets can no longer be granted to lamers (improper users)

@@ -1,0 +1,143 @@
+% H2 database, live Quakenet #feds version
+% A minimal start, can be used for a radical reset
+
+lamercontrol profile
+	liberal
+        50 25
+        4 9
+        8 10 14
+        7 0.006 12
+        2 5 8
+        
+lamercontrol profile
+	default
+        40 20
+        3 7
+        6 7 9
+        5 0.008 10
+        1 3 5
+        
+lamercontrol profile
+	strict
+        35 15
+        2 6
+        4 5 7
+        4 0.01 10
+        0 2 3
+        
+lamercontrol profile
+	nazi
+        25 10
+        1 4
+        3 4 5
+        3 0.01 7
+	0 1 2
+        
+% Initial channel (#feds), needed to have the terms for the channel
+channel
+	#feds
+	F03A
+        Welcome to #feds
+        default
+        0 % censor
+        17 % terms 17 total
+	#feds
+	This channel is for matters REQUIRING the assistance of an IRC operator. Questions answered in the FAQs, or that do not require an IRC operator, will be ignored. Read the FAQs at www.quakenet.org, and if that does not help, visit #help.
+	question 
+	State your question. Do not ask if you can ask a question, or if particular staff are available. Do not use 1 word per line when stating your question, and if it is about a channel, provide the #channel name. Do not paste logs or other large text items in the channel.
+	eggdrop
+	We do not provide help with other people`s bots/eggdrops. see the bot administrator for help (a /whois of the bot will often provide information on where to find the administrator).
+	business
+	QuakeNet does NOT offer any additional support to users wishing to operate, or propogate, a business on our servers. If you wish to do so in spite of this, you will NOT recieve support from our staff, and will be dealt with like any other user on the network. All business activities which make use of QuakeNet resources are at your own risk and QuakeNet in no way guarantees or warrants that a service available currently will be available on a continued basis.
+	freeop 
+	Operator help for takeovers on freeop channels is not available. If you want support in protecting your channel then use the channel modes and chanlevs wisely and use them to manage your channel, not to win friends and influence.
+	gaveowner
+	If you give another user the +n chanlev on Q or L, this user is then allowed to take away your own +n. It does not matter who originally requested the service. For this reason, you should exercise extreme caution when setting the owner on users in channels you currently control.
+	IPv6
+	QuakeNet does not support IPv6, and there are no plans to support IPV6 in the near future 
+	ircops
+	IRC Operators of QuakeNet are volunteers. They do not get paid for their work, and often contribute out of their own pocket towards QuakeNet`s costs. Most of the IRC Operators have ordinary work to attend to at day and/or night time, families etc. The IRC Operators of QuakeNet are NOT required or obligated to help users at any time.
+	L 
+	QuakeNet's channel service L can be requested at www.quakenet.org, Read the LFAQ on the site before requesting.
+	logs
+	Log files cannot be taken as evidence by IRC operators in most situations, due to the ease with which they can be faked. As such, you should not attempt to send logs to an operator or paste large amounts of them into the channel unless asked to do so.
+	removebot
+	Delete all CHANLEV's from the channel, and then L or Q will leave the channel. If the users are not online you will have to use their authname. Type ?? #auth for more.
+	abuse
+	This channel can be used for reporting abusive users, not requesting specific punishment for the alleged crimes. Tell us where it is happening, and who is doing it, we will monitor the situation and decide how to deal with it. You may leave once the abuse has been reported. The decision of an operator is final.
+	S
+	This is QuakeNet's antispam service. It can be requested from www.quakenet.org. Read the LFAQ on the site before requesting.
+	stats
+	Please do not join #feds to question the statistical monitoring we carry out to check your L, Q or S request. Our services count according to internal rules designed to avoid network overload. Despite what you may perceive, services check these statistics much more accurately than you can. If you have failed in a request then you will simply have to try again in the future.
+	score
+	You must be in the top 5 recognised chanops to request L. Statistics for L are only recorded when you have op in the channel and there are at least 3 other people in the channel with you (who may or may not be channel ops). Previous op history is kept for approximately 10 days therefore it is possible for previous ops to have op time that greatly exceeds 2 hours, preventing you requesting L to a channel that appears unused. You will simply have to wait until the op time is exceeded or the records expire. 
+	serverapp
+	You can find a server application at http://www.quakenet.org/server_application *READ IT CAREFULLY* Do not ask questions about the application form in #feds. Response time for submitted applications is typically between 2 to 4 weeks.
+	takeover
+	Support for recovering stolen channels is limited as the responsibility for protecting those channels is your own. However, if you have not already done so, state the #channelname and be patient. If the operator informs you that he or she will not intervene in this case then there is no appeal and you should choose a new channel and consider what security mistakes you made which resulted in the loss of the original channel.
+        0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+
+% Initial account (mine)
+account
+	strutsi
+	5	0
+        0
+
+term
+	#auth
+	If the user is not online at the moment you can still modify his/her account by using the user's auth nick and putting # infront of it (If user John have auth Clan^John it would be #Clan^John). You can list the auth nicks by doing /msg Q chanlev #channel or /msg L chanlev #channel.
+term
+	authsecure 
+	If you are concerned that your auth account is compromised first do /MSG Q WHOIS #authname. If you are the only person authed to the account do /MSG Q WHOAMI and check the email address listed is yours (check it is EXACTLY your email address). If it is incorrect, change it with the EMAIL command. Following this you should use /MSG Q NEWPASS to change the current password. 
+term
+	authhack
+	Auth accounts are not 'hacked'. Poor security on your computer, using a compromised/free BNC, messaging your auth details to someone other than Q, clicking URLs pasted in channels and running decode scripts and commands without understanding beforehand what they do is the cause of lost auths. If you want help you will have to identify HOW your auth was compromised first.
+term
+	FAQ
+	QuakeNet FAQs can be found at www.quakenet.org. These contain information on security, channel and user modes, IRCing, channel services and our network rules.
+term
+	modes
+	QuakeNet channels have a number of channel and user modes to provide protection against harrasment, advertising and other unwelcome behaviour, and to help you manage your channel. Visit www.quakenet.org and read the IRC FAQ for a full list of the current modes.
+term
+	chanserv
+	You can not register channels on QuakeNet. Instead, you can request the channel service bot called 'L' to join your channel. You will first need an auth account, and then you can request the L bot using that auth account. Visit www.quakenet.org and read the General FAQ for details of auth accounts, and the L FAQ for details of the L bot.
+term
+	fishbot
+	Fishbot exists to remind our users that fish do indeed go m00! To get fishbot in your channel, do /invite fishbot #channel. To remove fishbot from your channel, just kick it. Fishbot has NO other purpose and is not part of some secret, evil conspiracy. 
+term
+	fixtakeover
+	Use /msg L (or Q) recover #channel to recover your channel. This command requires at least +m in your chanlev. If you are +ao only you can /msg L (or Q) invite #channel to enter the channel and remove channel modes manually. Note that if a Q ban has been set on you the invite command will not be effective.
+term
+	expire
+	An unused L bot will expire from a channel after 20 days of inactivity (No known users joining), or if the channel usercount is insufficient over a period of time. A Q bot will expire after 40 days of inactivity. You will need to request L into the channel again if you wish to secure it. These unused services are removed during a cleanup process which typically takes place every 40 days, but may on occasion occur later.
+term
+	netrider
+	If you create a channel during a netsplit which exists on the other side of the split and has +i or +k set, then you will be automatically kicked off the channel when the net rejoins with the kick message 'NetRider'. 
+term
+	nickserv
+	QuakeNet does not use Nickserv to reserve nicknames. As a result of this, you cannot register your nickname on QuakeNet. If a nickname is available, any user is allowed to use it. However, this does NOT apply to the nicknames of IRC Operators, Helpers and Network services, due to security related issues. If a user uses any of these nicknames, an operator may immediately disconnect the user from the network WITHOUT prior notice.
+term
+	requestop
+	You can use /msg o requestop #channel to request channel operator status in a channel that has no ops. This command will not work during a netsplit, or if you are not a recognised chanop. If you cannot get op in a channel then an operator will not assist you.
+term
+	P
+	All clients are scanned upon connection for open proxies. That means that the service tries to connect to the user`s computer, and if successful, try to connect back to QuakeNet, through the proxy. If successful with that, the user gets a temporary ban from QuakeNet. It is up to the user to secure his or her computer. The action of connecting to QuakeNet indicates your acceptance of this security test.
+term
+	password
+	If you have forgotten your auth password use /msg q requestpassword. If you have not set your email address then the auth account is lost - an oper will NOT tell you the password for any auth account. Accounts that formely had owner on a channel will expire in 40 days at which point the next highest chanlev in the channel may use /MSG L (or Q) REQUESTOWNER. 
