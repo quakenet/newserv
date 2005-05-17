@@ -11,5 +11,6 @@ int deregistercontrolcmd(const char *name, CommandHandler handler);
 void controlreply(nick *target, char *message, ... );
 void controlchanmsg(channel *cp, char *message, ...);
 void controlnotice(nick *target, char *message, ...);
+void controlnoticeopers(char *format, ...);
 
 #endif  

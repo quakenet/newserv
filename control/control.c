@@ -299,7 +299,7 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   sendmessagetouser(mynick,(nick *)sender,"Channel : %s",cp->index->name->content);
   if (cp->topic) {
     sendmessagetouser(mynick,(nick *)sender,"Topic   : %s",cp->topic->content);
-    sendmessagetouser(mynick,(nick *)sender,"T-time  : %ld [%s\]",cp->topictime,ctime(&(cp->topictime)));
+    sendmessagetouser(mynick,(nick *)sender,"T-time  : %ld [%s]",cp->topictime,ctime(&(cp->topictime)));
   }
   sendmessagetouser(mynick,(nick *)sender,"Mode(s) : %s %s%s%s",printflags(cp->flags,cmodeflags),IsLimit(cp)?buf2:"",
     IsLimit(cp)?" ":"",IsKey(cp)?cp->key->content:"");
@@ -453,3 +453,19 @@ void controlnotice(nick *target, char *message, ... ) {
   sendnoticetouser(mynick,target,"%s",buf);
 }
 
+/* Send a notice to all opers, O(n) and a notice otherwise we'll get infinite loops with services */
+void controlnoticeopers(char *format, ...) {
+  int i;
+  nick *np;
+  char broadcast[BUFSIZE];
+  va_list va;
+  
+  va_start(va, format);
+  vsnprintf(broadcast, sizeof(broadcast), format, va);
+  va_end(va);
+
+  for(i=0;i<NICKHASHSIZE;i++)
+    for(np=nicktable[i];np;np=np->next)
+      if (IsOper(np))
+        controlnotice(np, "%s", broadcast);
+}
