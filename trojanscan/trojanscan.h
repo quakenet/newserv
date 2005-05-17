@@ -15,10 +15,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TROJANSCAN_VERSION "2.33"
+#define TROJANSCAN_VERSION "2.43"
 
-#define TROJANSCAN_CLONE_MAX      80
-#define TROJANSCAN_WATCHCLONE_MAX 20
+#define TROJANSCAN_CLONE_MAX        160 /* 80 */
+#define TROJANSCAN_WATCHCLONE_MAX   20
 #define TROJANSCAN_CLONE_TOTAL TROJANSCAN_CLONE_MAX + TROJANSCAN_WATCHCLONE_MAX
 
 #define TROJANSCAN_POOLSIZE 1000
@@ -38,6 +38,13 @@
 #define TROJANSCAN_DEFAULT_MAXUSERS 20
 
 #define TROJANSCAN_POOL_REGENERATION 3600
+
+#define TROJANSCAN_HOST_POOL      0x00
+#define TROJANSCAN_STEAL_HOST     0x01
+
+#define TROJANSCAN_EPIDEMIC_MULTIPLIER 12
+
+#define TROJANSCAN_HOST_MODE      TROJANSCAN_STEAL_HOST
 
 #define TROJANSCAN_CAT "./trojanscan/cat.txt"
 
@@ -59,7 +66,7 @@
 #define TROJANSCAN_IPLEN         20
 
 #define TROJANSCAN_VERSION_DETECT "\001VERSION"
-#define TROJANSCAN_CLONE_VERSION_REPLY "mIRC v6.14 Khaled Mardam-Bey"
+#define TROJANSCAN_CLONE_VERSION_REPLY "mIRC v6.16 Khaled Mardam-Bey"
 
 typedef struct trojanscan_clones {
   int              remaining, sitting, index;
@@ -80,6 +87,7 @@ typedef struct trojanscan_worms {
   unsigned datalen   : 1;
   unsigned hitpriv   : 1;
   unsigned hitchans  : 1;
+  unsigned epidemic  : 1;
 } trojanscan_worms;
 
 typedef struct trojanscan_phrases {
@@ -99,6 +107,7 @@ typedef struct trojanscan_db {
 typedef struct trojanscan_prechannels {
   sstring *name;
   int size;
+  struct trojanscan_clones *watch_clone;
   struct trojanscan_prechannels *next;
   unsigned exempt : 1;
 } trojanscan_prechannels;
@@ -138,6 +147,16 @@ typedef struct trojanscan_rejoinlist {
   struct trojanscan_realchannels *rp;
   struct trojanscan_rejoinlist *next;
 } trojanscan_rejoinlist;
+
+typedef struct trojanscan_inchannel {
+  sstring *channel;
+  struct trojanscan_clones *watch_clone;
+} trojanscan_inchannel;
+
+typedef struct trojanscan_templist {
+  struct trojanscan_clones *watch_clone;
+  char active;  /* required as copy of trojanscan_inchannel could be nil unfortunatly */
+} trojanscan_templist;
 
 typedef MYSQL_RES trojanscan_database_res;
 typedef MYSQL_ROW trojanscan_database_row;
@@ -247,7 +266,7 @@ struct trojanscan_clones trojanscan_swarm[TROJANSCAN_CLONE_TOTAL];
 struct trojanscan_db trojanscan_database;
 
 sstring *trojanscan_hostpool[TROJANSCAN_POOLSIZE], *trojanscan_tailpool[TROJANSCAN_POOLSIZE];
-sstring **trojanscan_chans = NULL;
+struct trojanscan_inchannel *trojanscan_chans = NULL;
 
 unsigned int trojanscan_cycletime, trojanscan_maxchans, trojanscan_part_time, trojanscan_activechans = 0, trojanscan_tailpoolsize = 0, trojanscan_hostpoolsize = 0, trojanscan_channumber = 0, trojanscan_maxusers;
 int trojanscan_watchclones_count = 0;

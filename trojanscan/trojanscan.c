@@ -1,16 +1,14 @@
 /*
- * trojanscan.c version 2
+ * Trojanscan version 2
  *
  * Trojanscan  copyright (C) Chris Porter 2002-2004
  * Newserv bits copyright (C) David Mansell 2002-2003
  * 
- * TODO:
- *   - Put bots in channels
-       - On kick stuff (different to normal handling)
-       - select the correct user to join >= TROJANSCAN_WATCHCLONE_MAX
-       - rejoin on kill
- *   - Steal hosts from users
- *   - Poke splidge about +r'ing bots
+ * TODO: CHECK::
+ *   - Poke splidge about +r'ing bots, potential problems:
+ *     - users whining about T clone stealing account
+ *       - would have to steal one already in use, so if trojans start using /msg q whois they'll see
+ *       (though they have to be authed for this, they could use a clone of their own however)
  */
 
 #include "trojanscan.h"
@@ -175,8 +173,8 @@ void trojanscan_connect(void *arg) {
     return; /* PPA: splidge: do something here 8]! */
   }
   
-  trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL)");
-  trojanscan_database_query("CREATE TABLE worms (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormname TEXT NOT NULL, glinetype INT DEFAULT 0, data text, hitmsgs BOOL DEFAULT 1, hitchans BOOL DEFAULT 0)");
+  trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL, dateadded int(10))");
+  trojanscan_database_query("CREATE TABLE worms (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormname TEXT NOT NULL, glinetype INT DEFAULT 0, data text, hitmsgs BOOL DEFAULT 1, hitchans BOOL DEFAULT 0, epidemic BOOL DEFAULT 0)");
   trojanscan_database_query("CREATE TABLE logs (id INT(10) PRIMARY KEY AUTO_INCREMENT, userid INT(10) NOT NULL, act TEXT NOT NULL, description TEXT NOT NULL, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE channels (id INT(10) PRIMARY KEY AUTO_INCREMENT, channel VARCHAR(%d) NOT NULL, exempt BOOL DEFAULT 0)", CHANNELLEN);
   trojanscan_database_query("CREATE TABLE users (id INT(10) PRIMARY KEY AUTO_INCREMENT, authname VARCHAR(%d) NOT NULL, authlevel TINYINT(4) NOT NULL)", ACCOUNTLEN);
@@ -386,7 +384,7 @@ void trojanscan_read_database(int first_time) {
     }
   } 
  
-  if (!(trojanscan_database_query("SELECT id, wormname, glinetype, length(data), hitmsgs, hitchans FROM worms"))) {
+  if (!(trojanscan_database_query("SELECT id, wormname, glinetype, length(data), hitmsgs, hitchans, epidemic FROM worms"))) {
     if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
       trojanscan_database.total_worms = trojanscan_database_num_rows(res);
       if (trojanscan_database.total_worms > 0) {
@@ -407,6 +405,7 @@ void trojanscan_read_database(int first_time) {
             
             trojanscan_database.worms[i].hitpriv = (atoi(sqlrow[4]) == 1);
             trojanscan_database.worms[i].hitchans = (atoi(sqlrow[5]) == 1);
+            trojanscan_database.worms[i].epidemic = (atoi(sqlrow[6]) == 1);
             
             i++;
           }
@@ -465,8 +464,10 @@ void trojanscan_log(nick *np, char *event, char *details, ...) {
 }
 
 void trojanscan_generateclone(void *arg) {
-  int i = (int)arg, loops = 0, modes = UMODE_XOPER;
+  int i, loops = 0, modes = UMODE_XOPER;
   char c_nick[NICKLEN+1], c_ident[USERLEN+1], c_host[HOSTLEN+1], c_real[REALLEN+1];
+
+  i = (int)arg;
 
   /* PPA: unlikely to be infinite */
   do {
@@ -483,8 +484,9 @@ void trojanscan_generateclone(void *arg) {
   
   if(trojanscan_hostmode) {
     trojanscan_generatehost(c_host, HOSTLEN);
-    if(!c_host)
+    if(!c_host) {
         trojanscan_genhost(c_host, HOSTLEN);
+    }
   } else {
     trojanscan_genhost(c_host, HOSTLEN);
   }
@@ -507,7 +509,7 @@ void trojanscan_free_channels(void) {
   int i;
   if(trojanscan_chans) {
     for(i=0;i<trojanscan_activechans;i++) 
-      freesstring(trojanscan_chans[i]);
+      freesstring(trojanscan_chans[i].channel);
     free(trojanscan_chans);
     trojanscan_chans = NULL;
     trojanscan_activechans = 0;
@@ -563,7 +565,7 @@ int trojanscan_chanlist(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
   trojanscan_reply(np, "Channel list (%d total):", trojanscan_activechans);
   for(i=0;i<trojanscan_activechans;i++)
-    trojanscan_reply(np, "%s", trojanscan_chans[i]->content);
+    trojanscan_reply(np, "%s", trojanscan_chans[i].channel->content);
   trojanscan_reply(np, "Done.");
   return CMD_OK;
 }
@@ -904,7 +906,7 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
   
   if(type == TROJANSCAN_WATCH_CLONES) {
     minlimit = TROJANSCAN_CLONE_MAX;
-    maxlimit = minlimit + TROJANSCAN_WATCH_CLONES - 1;
+    maxlimit = minlimit + TROJANSCAN_WATCHCLONE_MAX - 1;
   } else {
     minlimit = 0;
     maxlimit = TROJANSCAN_CLONE_MAX - 1;
@@ -942,7 +944,7 @@ struct trojanscan_realchannels *trojanscan_allocaterc(char *chan) {
   struct trojanscan_realchannels *rc;
   struct trojanscan_clones *clonep;
   channel *cp;
-  
+  int attempts_left = 10;
   
   if (!chan) {
     trojanscan_errorcode = 1; /* sorry splidge ;( */
@@ -971,10 +973,22 @@ struct trojanscan_realchannels *trojanscan_allocaterc(char *chan) {
     trojanscan_errorcode = 5;
     return NULL;
   }
-  if (!(clonep = trojanscan_selectclone(TROJANSCAN_NORMAL_CLONES))) {
-    trojanscan_errorcode = 6;
+
+  do {
+    clonep = trojanscan_selectclone(TROJANSCAN_NORMAL_CLONES);
+    if (!clonep) {
+      trojanscan_errorcode = 6;
+      return NULL;
+    }
+    if(!nickbanned(clonep->clone, cp))
+      break;
+  } while (--attempts_left > 0);
+
+  if (!attempts_left) {
+    trojanscan_errorcode = 7;
     return NULL;
   }
+
   rc = (struct trojanscan_realchannels *)malloc(sizeof(struct trojanscan_realchannels));
 
   rc->next = NULL;
@@ -1253,11 +1267,12 @@ int trojanscan_add_ll(struct trojanscan_prechannels **head, struct trojanscan_pr
 }
 
 void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count) {
-  int i, j, *markedlist, marked;
+  int i, j, marked;
   struct trojanscan_prechannels *lp;
-  
+  struct trojanscan_templist *markedlist;
+
   if(count > 0) {
-    markedlist = (int *)calloc(count, sizeof(int));
+    markedlist = (struct trojanscan_templist *)calloc(count, sizeof(struct trojanscan_templist));
     if (!markedlist)
       return;
   }
@@ -1265,23 +1280,42 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
   for(i=0;i<trojanscan_activechans;i++) {
     marked = 0;    
     for(lp=hp,j=0;j<count&&lp;j++,lp=lp->next) {
-      if(!markedlist[j] && !lp->exempt && !ircd_strcmp(lp->name->content, trojanscan_chans[i]->content)) { /* we're already on the channel */
-        markedlist[j] = 1;
+      if(!markedlist[j].active && !lp->exempt && !ircd_strcmp(lp->name->content, trojanscan_chans[i].channel->content)) { /* we're already on the channel */
+        if(trojanscan_chans[i].watch_clone) {
+          markedlist[j].active = 1;
+          markedlist[j].watch_clone = trojanscan_chans[i].watch_clone;
+          lp->watch_clone = trojanscan_chans[i].watch_clone;
+        }
         marked = 1;
         break;
       }
     }
-    if(!marked) {
-      trojanscan_mainchanmsg("perm clone parting %s", trojanscan_chans[i]->content);
-      //this channel no longer exists in the list, part
+    if(!marked && trojanscan_chans[i].watch_clone) {
+      channel *cp = findchannel(trojanscan_chans[i].channel->content);
+      if(cp)
+        localpartchannel(trojanscan_chans[i].watch_clone->clone, cp);
     }
   }
   
   for(j=0,lp=hp;j<count&&lp;j++,lp=lp->next) {
-    if(!markedlist[j] && !lp->exempt) {
-      trojanscan_mainchanmsg("perm clone joining %s", lp->name->content);
+    if((!markedlist[j].active || !markedlist[j].watch_clone) && !lp->exempt) {
+      channel *cp = findchannel(lp->name->content);
+      if(cp) {
+        int attempts = 10;
+        do {
+          lp->watch_clone = trojanscan_selectclone(TROJANSCAN_WATCH_CLONES);      
+          if(!lp->watch_clone)
+            break;
+          if(!nickbanned(lp->watch_clone->clone, cp)) {
+            localjoinchannel(lp->watch_clone->clone, cp);
+            break;
+          }
+        } while(--attempts > 0);
+        if(!attempts)
+          lp->watch_clone = NULL;
+
+      }
     }
-    //join channels here, as they're new to the list
   }
   
   free(markedlist);
@@ -1298,6 +1332,7 @@ void trojanscan_fill_channels(void *arg) {
     lp->name = trojanscan_database.channels[i].name;
     lp->size = 65535;
     lp->exempt = trojanscan_database.channels[i].exempt;
+    lp->watch_clone = NULL;
     if (trojanscan_add_ll(&head, lp))
       count++;
   }
@@ -1310,6 +1345,7 @@ void trojanscan_fill_channels(void *arg) {
         lp->name = chn->name;
         lp->size = chn->channel->users->totalusers;
         lp->exempt = 0;
+        lp->watch_clone = NULL;
         if (trojanscan_add_ll(&head, lp))
           count++;
       }
@@ -1319,19 +1355,18 @@ void trojanscan_fill_channels(void *arg) {
   count = TROJANSCAN_MMIN(count, trojanscan_maxchans);
   
   /* TODO */
-  /*
-    trojanscan_watch_clone_update(head, count);
-  */
+  trojanscan_watch_clone_update(head, count);
   
   trojanscan_free_channels();
-  trojanscan_chans = (sstring **)malloc(sizeof(sstring *) * count);
+  trojanscan_chans = (struct trojanscan_inchannel *)calloc(count, sizeof(struct trojanscan_inchannel));
   trojanscan_activechans = count;
   i = 0;
-  
-  
+    
   for(lp=head;lp;last=lp,lp=lp->next) {
-    if (!(lp->exempt) && (i < count))
-      trojanscan_chans[i++] = getsstring(lp->name->content, lp->name->length);
+    if (!(lp->exempt) && (i < count)) {
+      trojanscan_chans[i].channel = getsstring(lp->name->content, lp->name->length);
+      trojanscan_chans[i++].watch_clone = lp->watch_clone;
+    }
     if (last)
       free(last);
   }
@@ -1361,7 +1396,7 @@ void trojanscan_dojoin(void *arg) {
     trojanscan_schedule = NULL;
     trojanscan_fill_channels(NULL);
   } else {
-    if ((rc = trojanscan_allocaterc(trojanscan_chans[trojanscan_channumber++]->content)))
+    if ((rc = trojanscan_allocaterc(trojanscan_chans[trojanscan_channumber++].channel->content)))
       trojanscan_join(rc);
   }
 }
@@ -1570,7 +1605,8 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
   struct trojanscan_worms *worm;
   int vector[30];
   char mt = trojanscan_getmtfrommessagetype(messagetype);
-  
+  char *channel_name;
+
   switch(messagetype) {
     case LU_PRIVMSG:
     case LU_SECUREMSG:
@@ -1733,11 +1769,11 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s f: %d%s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
             } else {
               trojanscan_database.glines++;
-            
-              irc_send("%s GL * +%s %d :You are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency);
+              
+              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1));
               //trojanscan_mainchanmsg("%s GL * +%s %d :You are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency);
 
-              trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, frequency, mt);
+              trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
             }
             
             break;
@@ -1754,15 +1790,23 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
       break;         
     case LU_KILLED:
       /* someone killed me?  Bastards */
+      trojanscan_mainchanmsg("d: clone %s killed!", target->nick);
+
       /* PPA: we do NOT rejoin channels at this moment in time, it is possible to do this though */
-      for (i=0;i<TROJANSCAN_CLONE_MAX;i++) {
+      for (i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
         if (trojanscan_swarm[i].clone == target) {
-          trojanscan_mainchanmsg("d: clone %s killed!", target->nick);
           
           scheduleoneshot(time(NULL)+1, &trojanscan_generateclone, (void *)i);
-          for(rp=trojanscan_realchanlist;rp;rp=rp->next)
-            if ((rp->clone == &(trojanscan_swarm[i])))
-              rp->donotpart = 1;
+          if(i >= TROJANSCAN_CLONE_MAX) { /* PPA: check this is actually correct, might be > */
+            int j;
+            for(j=0;j<trojanscan_activechans;j++)
+              if(trojanscan_chans[j].watch_clone == &trojanscan_swarm[i])
+                trojanscan_chans[j].watch_clone = NULL;
+          } else {
+            for(rp=trojanscan_realchanlist;rp;rp=rp->next)
+              if ((rp->clone == &(trojanscan_swarm[i])))
+                rp->donotpart = 1;
+          }
           trojanscan_swarm[i].clone = NULL;
           trojanscan_swarm[i].remaining = 0; /* bah */
           break;
@@ -1771,40 +1815,55 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
       break;
 
     case LU_KICKED:
-      rj = (struct trojanscan_rejoinlist *)malloc(sizeof(struct trojanscan_rejoinlist));
-
+      channel_name = ((channel *)args[1])->index->name->content;
+      for (i=0;i<trojanscan_activechans;i++) {
+        if (!trojanscan_chans[i].watch_clone)
+          continue;
+        if ((trojanscan_chans[i].watch_clone->clone == target) && (!strcmp(trojanscan_chans[i].channel->content, channel_name)))
+          break;
+      }
+      if(i != trojanscan_activechans) {
+        int j;
+        for(j=0;j<TROJANSCAN_CLONE_TOTAL;j++) {
+          if(&trojanscan_swarm[j] == trojanscan_chans[i].watch_clone) {
+            trojanscan_chans[i].watch_clone = NULL;
+            break;
+          }
+        }
+      } else {
       /*
         trojanscan_mainchanmsg("k: %s on %s by %s", target->nick, ((channel *)args[1])->index->name->content, (((nick *)args[0])->nick)?(((nick *)args[0])->nick):"(server)");
       */
-      if (rj) {
-        rj->rp = NULL;
-        for(rp=trojanscan_realchanlist;rp;rp=rp->next)
-          if ((rp->clone->clone == target) && (rp->chan == args[1])) {
-            rp->kickedout++;
-            rj->rp = rp;
-            break;
+        rj = (struct trojanscan_rejoinlist *)malloc(sizeof(struct trojanscan_rejoinlist));
+        if (rj) {
+          rj->rp = NULL;
+          for(rp=trojanscan_realchanlist;rp;rp=rp->next)
+               if ((rp->clone->clone == target) && (rp->chan == args[1])) {
+                rp->kickedout++;
+                rj->rp = rp;
+                break;
+              }
+            if(!rj->rp) {
+              trojanscan_mainchanmsg("d: kicked from %s after parting", ((channel *)args[1])->index->name->content);
+              free(rj);
+              return;
+            }
+
+            rj->channel = getsstring(((channel *)args[1])->index->name->content, ((channel *)args[1])->index->name->length);
+            if(!rj->channel) {
+              trojanscan_mainchanmsg("d: unable to allocate memory for channel: %s upon rejoin", ((channel *)args[1])->index->name->content);
+              free(rj);
+              return;
+            }
+
+            rj->clone = target;
+            rj->next = trojanscan_schedulerejoins;
+            trojanscan_schedulerejoins = rj;
+
+            rj->schedule = scheduleoneshot(time(NULL)+1, &trojanscan_rejoin_channel, (void *)rj);
           }
-        if(!rj->rp) {
-          trojanscan_mainchanmsg("d: kicked from %s after parting", ((channel *)args[1])->index->name->content);
-          free(rj);
-          return;
         }
-
-        rj->channel = getsstring(((channel *)args[1])->index->name->content, ((channel *)args[1])->index->name->length);
-        if(!rj->channel) {
-          trojanscan_mainchanmsg("d: unable to allocate memory for channel: %s upon rejoin", ((channel *)args[1])->index->name->content);
-          free(rj);
-          return;
-        }
-
-        rj->clone = target;
-        rj->next = trojanscan_schedulerejoins;
-        trojanscan_schedulerejoins = rj;
-
-        rj->schedule = scheduleoneshot(time(NULL)+1, &trojanscan_rejoin_channel, (void *)rj);
-      }
-      break;
-      
+        break;
     default:
       break;
   }
@@ -2011,6 +2070,9 @@ int trojanscan_generatepool(void) {
   
   if(j < TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL)
     return 0;
+  
+  if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST)
+    return TROJANSCAN_MINPOOLSIZE;
     
   i = 0;
   do {
@@ -2054,41 +2116,53 @@ int trojanscan_generatepool(void) {
 }
 
 void trojanscan_generatehost(char *buf, int maxsize) {
-  char *cpos;
-  int pieces = trojanscan_minmaxrand(2, 4), totallen = 0, a = 0, i;
-  int *choices = malloc(sizeof(int) * (pieces + 1));
-  int *lengths = malloc(sizeof(int) * (pieces + 1));
+  if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST) {
+    int loops, j;
+    do {
+      for (j=trojanscan_minmaxrand(0, NICKHASHSIZE-1);j<NICKHASHSIZE;j++) {
+        if (nicktable[j]) {
+          strcpy(buf, nicktable[j]->host->name->content);
+          return;
+        }
+      }
+      loops++;
+    } while (loops < 10);
+  } else {
+    char *cpos;
+    int pieces = trojanscan_minmaxrand(2, 4), totallen = 0, a = 0, i;
+    int *choices = malloc(sizeof(int) * (pieces + 1));
+    int *lengths = malloc(sizeof(int) * (pieces + 1));
+  
+    choices[pieces] = trojanscan_minmaxrand(0, trojanscan_tailpoolsize-1);
+    lengths[pieces] = strlen(trojanscan_tailpool[choices[pieces]]->content) + 1;
+    totallen += lengths[pieces];
 
-  choices[pieces] = trojanscan_minmaxrand(0, trojanscan_tailpoolsize-1);
-  lengths[pieces] = strlen(trojanscan_tailpool[choices[pieces]]->content) + 1;
-  totallen += lengths[pieces];
-
-  for (i=0;i<pieces;i++) {
-    choices[i] = trojanscan_minmaxrand(0, trojanscan_hostpoolsize-1);
-    lengths[i] = strlen(trojanscan_hostpool[choices[i]]->content) + 1;
-    if (totallen+lengths[i] > maxsize) {
-      choices[i] = choices[pieces];
-      lengths[i] = lengths[pieces];
-      pieces-=(pieces-i);
-      break;
+    for (i=0;i<pieces;i++) {
+      choices[i] = trojanscan_minmaxrand(0, trojanscan_hostpoolsize-1);
+      lengths[i] = strlen(trojanscan_hostpool[choices[i]]->content) + 1;
+      if (totallen+lengths[i] > maxsize) {
+        choices[i] = choices[pieces];
+        lengths[i] = lengths[pieces];
+        pieces-=(pieces-i);
+        break;
+      }
+      totallen += lengths[i];
     }
-    totallen += lengths[i];
-  }
 
-  for (i=0;i<pieces;i++) {
-    for (cpos=trojanscan_hostpool[choices[i]]->content; *cpos;)
+    for (i=0;i<pieces;i++) {
+      for (cpos=trojanscan_hostpool[choices[i]]->content; *cpos;)
+        buf[a++] = *cpos++;
+      buf[a++] = '.';
+    }
+
+    for (cpos=trojanscan_tailpool[choices[i]]->content; *cpos;) {
       buf[a++] = *cpos++;
-    buf[a++] = '.';
+    }
+
+    buf[a] = '\0';
+    free(choices);
+    free(lengths);
   }
-
-  for (cpos=trojanscan_tailpool[choices[i]]->content; *cpos;) {
-    buf[a++] = *cpos++;
-  }
-
-  buf[a] = '\0';
-  free(choices);
-  free(lengths);
-
 }
 
 void trojanscan_generatenick(char *buf, int maxsize) {
