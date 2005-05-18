@@ -20,7 +20,7 @@
 #include "../chanstats/chanstats.h"
 #include "../localuser/localuserchannel.h"
 #include "../channel/channel.h"
-#include "../lib/strlcat.h"
+#include "../lib/strlfunc.h"
 #include "../control/control.h"
 #include "../core/hooks.h"
 #include "../lib/irc_string.h"
