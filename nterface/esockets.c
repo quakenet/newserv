@@ -296,7 +296,7 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
                 return 1;
 
               deregisterhandler(sock->fd, 0); /* now we need to ignore the socket until it's unblocked */
-              registerhandler(sock->fd, POLLIN | POLLOUT | POLLERR | POLLHUP, esocket_poll_event);
+              registerhandler(sock->fd, POLLOUT | POLLERR | POLLHUP, esocket_poll_event);
 
               return 0;
               break;

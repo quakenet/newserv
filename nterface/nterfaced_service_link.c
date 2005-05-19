@@ -209,8 +209,8 @@ void connect_link(void *vlink) {
     return;
   }
 
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt))) {
-    nterface_log(ndl, NL_ERROR, "SL: Unable to set SO_REUSEADDR on socket (%s:%d), retrying in %d seconds.", nlink->hostname->content, nlink->port, RECONNECT_DURATION);
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_KEEPALIVE, (const char *)&opt, sizeof(opt))) {
+    nterface_log(ndl, NL_ERROR, "SL: Unable to set SO_REUSEADDR | SO_KEEPALIVE on socket (%s:%d), retrying in %d seconds.", nlink->hostname->content, nlink->port, RECONNECT_DURATION);
     close(fd);
     link_schedule_reconnect(nlink);
     return;
