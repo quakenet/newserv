@@ -25,6 +25,8 @@
 #define PROTOCOL_VERSION    "1"
 #define ANTI_FULL_VERSION   "nterfacer " PROTOCOL_VERSION
 
+#define PING_DURATION       5 * 60
+
 typedef struct slink {
   sstring *hostname;
   sstring *password;
@@ -35,6 +37,7 @@ typedef struct slink {
   unsigned char nonce[NONCE_LEN];
   unsigned char theirnonce[NONCE_LEN];
   struct esocket *socket;
+  void *pingschedule;
 } slink;
 
 extern struct slink *slinks;

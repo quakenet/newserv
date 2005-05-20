@@ -2,6 +2,8 @@
   nterfacer
   Copyright (C) 2004 Chris Porter.
   
+  v1.05
+    - added application level ping support
   v1.04
     - modified for new logging system
   v1.03
@@ -40,6 +42,10 @@ struct rline *rlines = NULL;
 unsigned short nterfacer_token = BLANK_TOKEN;
 struct nterface_auto_log *nrl;
 
+struct service_node *ping;
+
+int ping_handler(struct rline *ri, int argc, char **argv);
+
 void _init(void) {
   int loaded;
   int debug_mode = getcopyconfigitemintpositive("nterfacer", "debug", 0);
@@ -59,6 +65,13 @@ void _init(void) {
   nterfacer_events.on_disconnect = NULL;
 
   nterfacer_token = esocket_token();
+
+  ping = register_service("nterfacer");
+  if(!ping) {
+    MemError();
+  } else {
+    register_handler(ping, "ping", 0, ping_handler);
+  }
 
   accept_fd = setup_listening_socket();
   if(accept_fd == -1) {
@@ -87,6 +100,9 @@ void free_handlers(struct service_node *tp) {
 void _fini(void) {
   struct service_node *tp, *lp;
   int i;
+
+  if(ping)
+    deregister_service(ping);
 
   for(tp=tree;tp;) {
     lp = tp;
@@ -671,4 +687,9 @@ int ri_final(struct rline *li) {
   }
 
   return RE_OK;
+}
+
+int ping_handler(struct rline *ri, int argc, char **argv) {
+  ri_append(ri, "OK");
+  return ri_final(ri);
 }

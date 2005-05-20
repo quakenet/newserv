@@ -28,5 +28,6 @@ int new_request(struct transport *input, int tag, char *line, int *number);
 void finish_request(struct transport *output, char *data);
 void free_request(struct request *rp);
 struct transport *transport_from_service(char *service);
+int get_output_token(void);
 
 #endif

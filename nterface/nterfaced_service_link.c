@@ -139,6 +139,7 @@ int load_links(void) {
     item->status = SL_IDLE;
     item->reconnect = NULL;
     item->tagid = i;
+    item->pingschedule = NULL;
 
     item++;
     loaded_lines++;
@@ -272,9 +273,23 @@ void link_schedule_reconnect(void *vlink) {
   nlink->reconnect = scheduleoneshot(time(NULL) + RECONNECT_DURATION, &connect_link, nlink);
 }
 
+void s_l_ping(void *vlink) {
+  struct slink *nlink = (struct slink *)vlink;
+
+  /* nasty hack */
+  esocket_write_line(nlink->socket, "nterfacer,%d,ping", get_output_token());
+
+  nterface_log(ndl, NL_DEBUG|NL_LOG_ONLY, "SL: Ping sent to %s:%d.", nlink->hostname->content, nlink->port);
+}
+
 void disconnect_link(struct slink *nlink) {
   if(nlink->status == SL_IDLE)
     return;
+
+  if(nlink->pingschedule) {
+    deleteschedule(nlink->pingschedule, &s_l_ping, nlink);
+    nlink->pingschedule = NULL;
+  }
 
   nlink->status = SL_IDLE;
 
@@ -389,6 +404,7 @@ int s_l_buffer_line_event(struct esocket *sock, char *newline) {
       vlink->status = SL_AUTHENTICATED;
       nterface_log(ndl, NL_INFO, "SL: Authenticated with %s:%d, switching to crypted mode", vlink->hostname->content, vlink->port);
       switch_buffer_mode(sock, vlink->password->content, vlink->nonce, vlink->theirnonce);
+      vlink->pingschedule = schedulerecurring(time(NULL) + PING_DURATION, 0, PING_DURATION, s_l_ping, vlink);
       break;
   }
   return 0;

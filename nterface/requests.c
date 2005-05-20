@@ -15,6 +15,10 @@ struct request *requests;
 
 unsigned short total_count = 1;
 
+int get_output_token(void) {
+  return total_count++;
+}
+
 /* modifies input */
 int new_request(struct transport *input, int tag, char *line, int *number) {
   /* should probably check for duplicate tokens at the input side */
@@ -71,7 +75,7 @@ int new_request(struct transport *input, int tag, char *line, int *number) {
   prequest->input.tag = tag;
   prequest->output.transport = service->transport;
   prequest->output.tag = 0;
-  prequest->output.token = total_count++;
+  prequest->output.token = get_output_token();
   prequest->service = service;
 
   if(service->transport->on_line(prequest, p + 1)) {
