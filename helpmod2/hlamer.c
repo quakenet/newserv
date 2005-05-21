@@ -68,7 +68,7 @@ static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
 {
         if (husr->lc[violation] >= hchan->lc_profile->tolerance_remove) /* get rid of the thing */
         {
-            const char *banmask = hban_ban_string(husr->real_user, HBAN_REAL_HOST);
+            const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
 
             switch (violation)
             {

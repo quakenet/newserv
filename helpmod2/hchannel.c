@@ -223,7 +223,7 @@ void hchannel_remove_inactive_users(void)
                 {
                     if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
                     {
-                        const char *banmask = hban_ban_string((*hchanuser)->husr->real_user, HBAN_REAL_HOST);
+                        const char *banmask = hban_ban_string((*hchanuser)->husr->real_user, HBAN_HOST);
                         helpmod_setban(hchan, banmask, time(NULL) + 10 * HDEF_m, MCB_ADD, HNOW);
 
                         helpmod_kick(hchan, (*hchanuser)->husr, "Please do not idle in %s", hchannel_get_name(hchan));

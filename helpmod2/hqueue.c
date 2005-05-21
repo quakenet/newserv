@@ -305,14 +305,14 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             {
                 if (strlen(buffer) >= 250)
                 {
-                    helpmod_reply(sender, returntype, buffer);
+                    helpmod_reply(sender, returntype, "%s", buffer);
                     buffer[0] = '\0';
                 }
                 if (hqueue_on_queue(hqueue))
                     sprintf(buffer+strlen(buffer) /* :) */, "%s (%s@%s) [%s] ", hqueue->hchanuser->husr->real_user->nick, hqueue->hchanuser->husr->real_user->ident, hqueue->hchanuser->husr->real_user->host->name->content, helpmod_strtime(time(NULL) - hqueue->hchanuser->time_joined));
             }
             if  (buffer[0])
-                helpmod_reply(sender, returntype, buffer);
+                helpmod_reply(sender, returntype, "%s", buffer);
         }
         return;
     case HQ_NONE: /* if no parameters are given print the summary */

@@ -121,7 +121,7 @@ void helpmod_hook_channel_newnick(int unused, void *args)
         hban *hb = hban_check(nck);
         if (hb)
         {
-            const char *banmask = hban_ban_string(nck, HBAN_REAL_HOST);
+            const char *banmask = hban_ban_string(nck, HBAN_HOST);
 
             helpmod_setban(hchan, banmask, time(NULL) + 1 * HDEF_d, MCB_ADD, HNOW);
 

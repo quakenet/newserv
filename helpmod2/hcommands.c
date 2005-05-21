@@ -735,7 +735,7 @@ void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int ar
     {
 	if (i > 256)
 	{
-	    helpmod_reply(sender, returntype, buf);
+	    helpmod_reply(sender, returntype, "%s", buf);
 	    i = 0;
 	}
 	if (!node)
@@ -747,7 +747,7 @@ void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int ar
     }
     helpmod_list_aliases(aliases);
     if (i)
-	helpmod_reply(sender, returntype, buf);
+	helpmod_reply(sender, returntype, "%s", buf);
 }
 
 void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -981,7 +981,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
         {
             if (strlen(buffer) >= 250)
             {
-                helpmod_reply(sender, returntype, buffer);
+                helpmod_reply(sender, returntype, "%s", buffer);
                 buffer[0] = '\0';
             }
             if (strregexp(htrm->description->content, pattern) || strregexp(htrm->name->content, pattern))
@@ -991,7 +991,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
             }
         }
         if  (buffer[0])
-            helpmod_reply(sender, returntype, buffer);
+            helpmod_reply(sender, returntype, "%s", buffer);
         helpmod_reply(sender, returntype, "%d term%s match%s pattern '%s'", count, (count == 1)?"":"s", (count == 1)?"es":"", pattern);
     }
     else if (!ci_strcmp(argv[0], "listfull"))
@@ -1531,7 +1531,7 @@ void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int argc, 
             continue;
         }
         {
-            const char *banmask = hban_ban_string(husr->real_user, HBAN_REAL_HOST);
+            const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
 
             hban_add(banmask, "Banned", time(NULL) + HCMD_OUT_DEFAULT, 0);
         }
@@ -1744,22 +1744,22 @@ void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, int argc
     if (days)
     {
         helpmod_reply(sender, returntype, "Last %d day%s", days, (days==1)?"":"s");
-        helpmod_reply(sender, returntype, hstat_header(type));
+        helpmod_reply(sender, returntype, "%s", hstat_header(type));
         for (i=0;i<days;i++)
         {
             stat_entry = &ptr->week[(tstruct->tm_wday - i + 7)  % 7];
-            helpmod_reply(sender, returntype, hstat_account_print(stat_entry, type));
+            helpmod_reply(sender, returntype, "%s", hstat_account_print(stat_entry, type));
         }
     }
 
     if (weeks)
     {
         helpmod_reply(sender, returntype, "Last %d week%s", weeks, (weeks==1)?"":"s");
-        helpmod_reply(sender, returntype, hstat_header(type));
+        helpmod_reply(sender, returntype, "%s", hstat_header(type));
         for (i=0;i<weeks;i++)
         {
             stat_entry = &ptr->longterm[(hstat_week() - i + 10) % 10];
-            helpmod_reply(sender, returntype, hstat_account_print(stat_entry, type));
+            helpmod_reply(sender, returntype, "%s", hstat_account_print(stat_entry, type));
         }
     }
 }
@@ -1842,22 +1842,22 @@ void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int 
     if (days)
     {
         helpmod_reply(sender, returntype, "Last %d day%s", days, (days==1)?"":"s");
-        helpmod_reply(sender, returntype, hstat_header(type));
+        helpmod_reply(sender, returntype, "%s", hstat_header(type));
         for (i=0;i<days;i++) /* latest week */ 
         {
             stat_entry = &hchan->stats->week[(tstruct->tm_wday - i + 7)  % 7];
-            helpmod_reply(sender, returntype, hstat_channel_print(stat_entry, type));
+            helpmod_reply(sender, returntype, "%s", hstat_channel_print(stat_entry, type));
         }
     }
 
     if (weeks)
     {
         helpmod_reply(sender, returntype, "Last %d week%s", weeks, (weeks==1)?"":"s");
-        helpmod_reply(sender, returntype, hstat_header(type));
+        helpmod_reply(sender, returntype, "%s", hstat_header(type));
         for (i=0;i<weeks;i++) /* latest weeks */
         {
             stat_entry = &hchan->stats->longterm[(hstat_week() - i + 10)  % 10];
-            helpmod_reply(sender, returntype, hstat_channel_print(stat_entry, type));
+            helpmod_reply(sender, returntype, "%s", hstat_channel_print(stat_entry, type));
         }
     }
 }

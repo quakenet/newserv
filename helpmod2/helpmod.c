@@ -128,7 +128,7 @@ void helpmod_message_channel(hchannel *hchan, const char *message, ...)
     vsnprintf(buf,512,message,va);
     va_end(va);
 
-    sendmessagetochannel(helpmodnick, hchan->real_channel, buf);
+    sendmessagetochannel(helpmodnick, hchan->real_channel, "%s", buf);
 }
 
 void helpmod_message_channel_long(hchannel *hchan, const char *message, ...)
@@ -155,11 +155,11 @@ void helpmod_message_channel_long(hchannel *hchan, const char *message, ...)
             }
         if (i == 50)
             bp[390 + i] = '\0';
-        sendmessagetochannel(helpmodnick, hchan->real_channel, bp);
+        sendmessagetochannel(helpmodnick, hchan->real_channel, "%s", bp);
         bp+=(390+i+1);
     }
     if (*bp)
-        sendmessagetochannel(helpmodnick, hchan->real_channel, bp);
+        sendmessagetochannel(helpmodnick, hchan->real_channel, "%s", bp);
 }
 
 void helpmod_kick(hchannel *hchan, huser *target, const char *reason, ...)
@@ -346,7 +346,7 @@ void helpconnect(void) {
     helpmodnick=registerlocaluser(HELPMOD_NICK,
 				  "help",
 				  "quakenet.org",
-				  "NewServ HelpMod 2, /msg H help",
+				  "NewServ HelpMod 2, /msg "HELPMOD_NICK" help",
 				  HELPMOD_AUTH,
 				  UMODE_OPER|UMODE_ACCOUNT|UMODE_SERVICE,&helpmodmessagehandler);
     /* register hooks */

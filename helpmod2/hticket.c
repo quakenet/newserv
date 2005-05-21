@@ -23,8 +23,9 @@ hticket *hticket_del(hticket *htick, struct hchannel_struct *hchan)
     for (ptr = &hchan->htickets;*ptr;ptr = &(*ptr)->next)
         if (*ptr == htick)
         {
-            *ptr = htick->next;
-            free(htick);
+            hticket *tmp = (*ptr)->next;
+            free(*ptr);
+            *ptr = tmp;
             return NULL;
         }
 
@@ -68,13 +69,14 @@ int hticket_count(void)
 void hticket_remove_expired(void)
 {
     hchannel *hchan;
-    hticket *htick, *next;
+    hticket **tmp;
     for (hchan = hchannels;hchan;hchan = hchan->next)
-        for (htick = hchan->htickets; htick; htick = next)
-        {
-            next = htick->next;
-            if (htick->time_expiration < time(NULL))
-                hticket_del(htick, hchan);
-        }
+    {
+        tmp = &hchan->htickets;
+        while (*tmp)
+            if ((*tmp)->time_expiration < time(NULL))
+                hticket_del(*tmp, hchan);
+            else
+                tmp = &(*tmp)->next;
+    }
 }
-

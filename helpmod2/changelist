@@ -196,3 +196,11 @@ ticket command is now available to trials as well
 Fixed a bug in ticket resolve
 Added a command showticket
 Tickets can no longer be granted to lamers (improper users)
+
+2.011
+Fixed some function calls to a more secure form
+
+2.02
+Changed the ban system a bit, real host no longer preferred
+fixed G realname
+Fixed the annoying term bug

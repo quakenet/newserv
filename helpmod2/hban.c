@@ -65,7 +65,7 @@ hban *hban_huser(void *target, const char* rsn, time_t exp, int now)
     const char *banmask;
     huser *husr = (huser*)target;
 
-    banmask = hban_ban_string(husr->real_user, HBAN_REAL_HOST);
+    banmask = hban_ban_string(husr->real_user, HBAN_HOST);
 
     return hban_add(banmask, rsn, exp, now);
 }
@@ -168,9 +168,12 @@ const char *hban_ban_string(nick *nck, int banflags)
 
     strcat(buffer, "@");
 
-    if (banflags & HBAN_HOST)
-        strcat(buffer, nck->host->name->content);
-    else if (banflags & HBAN_REAL_HOST)
+    if ((banflags & HBAN_HOST) && IsAccount(nck))
+    {
+        strcat(buffer, nck->authname);
+        strcat(buffer, ".users.quakenet.org");
+    }
+    else if ((banflags & HBAN_REAL_HOST) || ((banflags & HBAN_HOST) && !IsAccount(nck)))
         strcat(buffer, nck->host->name->content);
     else
         strcat(buffer, "*");
