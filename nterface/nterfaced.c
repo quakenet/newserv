@@ -2,6 +2,8 @@
   nterfaced
   Copyright (C) 2003-2004 Chris Porter.
 
+  v1.04
+    - dumped transport mechanism
   v1.03
     - altnames actually made useful (now called realname)
     - modified for new logging system
@@ -19,6 +21,8 @@
 #include "../core/config.h"
 
 #include "nterfaced.h"
+#include "nterfaced_service_link.h"
+#include "nterfaced_uds.h"
 #include "library.h"
 #include "logging.h"
 
@@ -40,9 +44,14 @@ void _init(void) {
     nterface_log(ndl, NL_INFO, "ND: Loaded %d service%s successfully.", loaded, loaded==1?"":"s");
   }
 
+  sl_startup();
+  uds_startup();
 }
 
 void _fini(void) {
+  uds_shutdown();
+  sl_shutdown();
+
   if(service_count) {
     service_count = 0;
     if(services) {
@@ -51,7 +60,6 @@ void _fini(void) {
         freesstring(services[i].service);
         if(services[i].realname)
           freesstring(services[i].realname);
-        freesstring(services[i].transport_name);
       }
       free(services);
       services = NULL;
@@ -135,17 +143,7 @@ int load_config_file(void) {
       continue;
     }
 
-    snprintf(buf, sizeof(buf), "transport%d", i);
-    item->transport_name = getcopyconfigitem("nterfaced", buf, "", 50);
-    if(!item->transport_name) {
-      MemError();
-      freesstring(item->service);
-      if(item->realname)
-        freesstring(item->realname);
-      continue;
-    }
-
-    nterface_log(ndl, NL_DEBUG, "ND: Loaded service: %s, transport: %s tag: %d.", item->service->content, item->transport_name->content, item->tag);
+    nterface_log(ndl, NL_DEBUG, "ND: Loaded service: %s tag: %d.", item->service->content, item->tag);
 
     item++;
     loaded_lines++;

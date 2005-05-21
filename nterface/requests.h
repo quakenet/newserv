@@ -7,10 +7,8 @@
 #define __nterfaced_requests_H
 
 #include "nterfaced.h"
-#include "transports.h"
 
 typedef struct request_transport {
-  struct transport *transport;
   int tag;
   int token;
 } request_transport;
@@ -24,10 +22,9 @@ typedef struct request {
 
 extern struct request *requests;
 
-int new_request(struct transport *input, int tag, char *line, int *number);
-void finish_request(struct transport *output, char *data);
+int new_request(int tag, char *line, int *number);
+void finish_request(char *data);
 void free_request(struct request *rp);
-struct transport *transport_from_service(char *service);
 int get_output_token(void);
 
 #endif

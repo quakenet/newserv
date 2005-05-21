@@ -21,6 +21,7 @@
 #include "../lib/sstring.h"
 
 #include "nterfaced_service_link.h"
+#include "nterfaced_uds.h"
 #include "logging.h"
 
 struct transport *otsl;
@@ -29,28 +30,26 @@ int link_count = 0;
 
 struct esocket_events sl_events;
 
-void _init(void) {
-  otsl = register_transport("service_link");
-  MemCheck(otsl);
-  
-  otsl->on_line = s_l_transport_line_event;
-  otsl->on_disconnect = s_l_transport_disconnect_event;
-  otsl->type = TT_OUTPUT;
-
+void sl_startup(void) {
+  int loaded, i;
   sl_events.on_connect = s_l_buffer_connect_event;
   sl_events.on_disconnect = s_l_buffer_disconnect_event;
   sl_events.on_line = s_l_buffer_line_event;
 
-  scheduleoneshot(time(NULL) + 1, service_link_startup, NULL);
+  loaded = load_links();
+  if(!loaded) {
+    nterface_log(ndl, NL_ERROR, "SL: No config lines loaded successfully.");
+    return;
+  } else {
+    nterface_log(ndl, NL_INFO, "SL: Loaded %d link%s successfully.", loaded, loaded==1?"":"s");
+  }
+
+  for(i=0;i<loaded;i++)
+    connect_link(&slinks[i]);
 }
 
-void _fini(void) {
+void sl_shutdown(void) {
   int i;
-
-  if(otsl) {
-    deregister_transport(otsl);
-    otsl = NULL;
-  }
 
   if(slinks) {
     for(i=0;i<link_count;i++) {
@@ -68,19 +67,6 @@ void _fini(void) {
     slinks = NULL;
     link_count = 0;
   }
-}
-
-void service_link_startup(void *args) {
-  int loaded = load_links(), i;
-  if(!loaded) {
-    nterface_log(ndl, NL_ERROR, "SL: No config lines loaded successfully.");
-    return;
-  } else {
-    nterface_log(ndl, NL_INFO, "SL: Loaded %d link%s successfully.", loaded, loaded==1?"":"s");
-  }
-
-  for(i=0;i<loaded;i++)
-    connect_link(&slinks[i]);
 }
 
 int load_links(void) {
@@ -283,6 +269,8 @@ void s_l_ping(void *vlink) {
 }
 
 void disconnect_link(struct slink *nlink) {
+  struct request *rp, *lp = NULL;
+
   if(nlink->status == SL_IDLE)
     return;
 
@@ -293,7 +281,26 @@ void disconnect_link(struct slink *nlink) {
 
   nlink->status = SL_IDLE;
 
-  transport_disconnect(otsl, nlink->socket->fd);
+  for(rp=requests;rp;) {
+    if(rp->output.tag == nlink->socket->fd) {
+      if(lp) {
+        lp->next = rp->next;
+        rp->next = NULL;
+        uds_transport_disconnect(rp);
+        free_request(rp);
+        rp = lp->next;
+      } else {
+        requests = rp->next;
+        rp->next = NULL;
+        uds_transport_disconnect(rp);
+        free_request(rp);
+        rp = requests;
+      }
+    } else {
+      lp = rp;
+      rp = rp->next;
+    }
+  }
 
   nlink->socket = NULL;
 
@@ -321,7 +328,7 @@ void s_l_buffer_connect_event(struct esocket *socket) {
   authenticate_link(nlink);
 }
 
-int s_l_transport_line_event(struct request *request, char *buf) {
+int sl_transport_online(struct request *request, char *buf) {
   int i;
   
   for(i=0;i<service_count;i++)
@@ -341,10 +348,6 @@ int s_l_transport_line_event(struct request *request, char *buf) {
     }
 
   return 1;
-}
-
-void s_l_transport_disconnect_event(struct request *req) {
-  /* we can't do much about this, request has already gone into oblivion */
 }
 
 int s_l_buffer_line_event(struct esocket *sock, char *newline) {
@@ -372,7 +375,7 @@ int s_l_buffer_line_event(struct esocket *sock, char *newline) {
       }
       break;
     case SL_AUTHENTICATED:
-      finish_request(otsl, newline);
+      finish_request(newline);
       break;
     case SL_VERSIONED:
       for(response=newline;*response;response++) {

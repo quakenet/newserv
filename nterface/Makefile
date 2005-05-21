@@ -1,14 +1,8 @@
 
 .PHONY: all
-all: nterfaced.so nterfaced_uds.so nterfaced_service_link.so nterface_shared.so nterfacer.so nterfacer_control.so nterfacer_relay.so
+all: nterfaced.so nterface_shared.so nterfacer.so nterfacer_control.so nterfacer_relay.so
 
-nterfaced.so: nterfaced.o transports.o requests.o
-	ld -shared -Bdynamic -o $@ $^
-
-nterfaced_uds.so: nterfaced_uds.o
-	ld -shared -Bdynamic -o $@ $^
-
-nterfaced_service_link.so: nterfaced_service_link.o
+nterfaced.so: nterfaced.o requests.o nterfaced_uds.o nterfaced_service_link.o
 	ld -shared -Bdynamic -o $@ $^
 
 nterface_shared.so: logging.o library.o esockets.o

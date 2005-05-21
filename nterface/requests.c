@@ -12,6 +12,8 @@ struct request *requests;
 #include "requests.h"
 #include "library.h"
 #include "logging.h"
+#include "nterfaced_uds.h"
+#include "nterfaced_service_link.h"
 
 unsigned short total_count = 1;
 
@@ -20,7 +22,7 @@ int get_output_token(void) {
 }
 
 /* modifies input */
-int new_request(struct transport *input, int tag, char *line, int *number) {
+int new_request(int tag, char *line, int *number) {
   /* should probably check for duplicate tokens at the input side */
   char *sp, *p;
   struct request *prequest;
@@ -64,21 +66,16 @@ int new_request(struct transport *input, int tag, char *line, int *number) {
   if (!service)
     return RE_SERVICE_NOT_FOUND;
 
-  if (!service->transport)
-    return RE_TRANSPORT_NOT_FOUND;
-
   prequest = (struct request *)malloc(sizeof(struct request));
   MemCheckR(prequest, RE_MEM_ERROR);
   prequest->next = NULL;
-  prequest->input.transport = input;
   prequest->input.token = *number;
   prequest->input.tag = tag;
-  prequest->output.transport = service->transport;
   prequest->output.tag = 0;
   prequest->output.token = get_output_token();
   prequest->service = service;
 
-  if(service->transport->on_line(prequest, p + 1)) {
+  if(sl_transport_online(prequest, p + 1)) {
     free_request(prequest);
     return RE_REQUEST_REJECTED;
   }
@@ -90,7 +87,7 @@ int new_request(struct transport *input, int tag, char *line, int *number) {
 }
 
 
-void finish_request(struct transport *output, char *data) {
+void finish_request(char *data) {
   int id;
   char *p;
   struct request *cr = NULL, *lastcr = NULL;
@@ -123,7 +120,7 @@ void finish_request(struct transport *output, char *data) {
 
   /* AWOOOGA */
   cr->next = NULL;
-  cr->input.transport->on_line(cr, p + 1);
+  uds_transport_line(cr, p + 1);
   free_request(cr);
 }
 

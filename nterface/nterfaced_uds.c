@@ -20,21 +20,14 @@
 #include "nterfaced.h"
 #include "logging.h"
 #include "library.h"
-#include "transports.h"
 #include "requests.h"
 
-struct transport *otu;
 struct esocket_events uds_events;
 unsigned short uds_token;
+sstring *socket_path = NULL;
+int uds = -1;
 
-void _init(void) {
-  otu = register_transport("uds");
-  MemCheck(otu);
-
-  otu->on_line = uds_transport_line_event;
-  otu->on_disconnect = uds_transport_disconnect_event;
-  otu->type = TT_INPUT;
-
+void uds_startup(void) {
   socket_path = getcopyconfigitem("nterfaced", "socketpath", "/tmp/nterfaced", 100);
   MemCheck(socket_path);
 
@@ -60,7 +53,7 @@ void _init(void) {
   uds_events.on_disconnect = uds_buffer_disconnect_event;
 }
 
-void _fini(void) {
+void uds_shutdown(void) {
   if(uds != -1) {
     esocket_clean_by_token(uds_token);
 
@@ -70,10 +63,6 @@ void _fini(void) {
 
   if(socket_path)
     freesstring(socket_path);
-
-  if(otu)
-    deregister_transport(otu);
-
 }
 
 int create_uds(void) {
@@ -147,7 +136,7 @@ int uds_buffer_line_event(struct esocket *socket, char *newline) {
   int number, reason;
   
   nterface_log(ndl, NL_INFO|NL_LOG_ONLY, "UDS: L: %s", newline);
-  reason = new_request(otu, socket->fd, newline, &number);
+  reason = new_request(socket->fd, newline, &number);
   if(reason) {
     if(reason == RE_BAD_LINE) {
       return 1;
@@ -160,7 +149,7 @@ int uds_buffer_line_event(struct esocket *socket, char *newline) {
   return 0;
 }
 
-int uds_transport_line_event(struct request *request, char *buf) {
+int uds_transport_line(struct request *request, char *buf) {
   struct esocket *es;
   es = find_esocket_from_fd(request->input.tag);
 
@@ -170,7 +159,7 @@ int uds_transport_line_event(struct request *request, char *buf) {
   return esocket_write_line(es, "%s,%d,%s", request->service->service->content, request->input.token, buf);
 }
 
-void uds_transport_disconnect_event(struct request *req) {
+void uds_transport_disconnect(struct request *req) {
   struct esocket *es = find_esocket_from_fd(req->input.tag);
   if(!es)
     return;
@@ -179,5 +168,21 @@ void uds_transport_disconnect_event(struct request *req) {
 }
 
 void uds_buffer_disconnect_event(struct esocket *socket) {
-  transport_disconnect(otu, socket->fd);
+  struct request *rp, *lp = NULL;
+  for(rp=requests;rp;) {
+    if(rp->input.tag == socket->fd) {
+      if(lp) {
+        lp->next = rp->next;
+        free_request(rp);
+        rp = lp->next;
+      } else {
+        requests = rp->next;
+        free_request(rp);
+        rp = requests;
+      }
+    } else {
+      lp = rp;
+      rp = rp->next;
+    }
+  }
 }

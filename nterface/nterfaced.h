@@ -7,13 +7,10 @@
 #define __nterfaced_H
 
 #include "../lib/sstring.h"
-#include "transports.h"
 
 typedef struct service {
   sstring *service;
   sstring *realname;
-  sstring *transport_name;
-  struct transport *transport;
   int tag;
 } service;
 

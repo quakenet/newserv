@@ -6,9 +6,9 @@
 #ifndef __nterfaced_service_link_H
 #define __nterfaced_service_link_H
 
-#include "transports.h"
 #include "esockets.h"
 #include "library.h"
+#include "requests.h"
 
 #define DNSERROR_DURATION   120
 #define RECONNECT_DURATION  60
@@ -57,5 +57,8 @@ struct slink *find_s_l_from_fd(int fd);
 int s_l_buffer_line_event(struct esocket *socket, char *newline);
 void s_l_buffer_disconnect_event(struct esocket *socket);
 void s_l_buffer_connect_event(struct esocket *socket);
+void sl_startup(void);
+void sl_shutdown(void);
+int sl_transport_online(struct request *request, char *buf);
 
 #endif
