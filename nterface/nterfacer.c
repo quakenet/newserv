@@ -359,7 +359,7 @@ void nterfacer_accept_event(struct esocket *socket) {
 
   if(ioctl(newfd, FIONBIO, &opt) !=0) {
     nterface_log(nrl, NL_ERROR, "Unable to set listen socket non-blocking.");
-    return -1;
+    return;
   }
   
   for(i=0;i<permit_count;i++) {
