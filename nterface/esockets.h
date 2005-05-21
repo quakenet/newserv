@@ -30,6 +30,7 @@
 
 #define BUF_CONT -1
 #define BUF_OVERFLOW -2
+#define BUF_ERROR -3
 
 #define MAX_BUFSIZE 50000
 

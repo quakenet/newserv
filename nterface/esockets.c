@@ -156,8 +156,10 @@ void esocket_poll_event(int fd, short events) {
         return;
       }
       if(events & POLLIN) { /* read buffer */
-        if(esocket_read(active)) {
-          esocket_disconnect(active);
+        int ret = esocket_read(active);
+        if(ret) {
+          if(ret != BUF_ERROR)
+            esocket_disconnect(active);
           return;
         }
       }
@@ -477,8 +479,10 @@ int buffer_parse_crypt(struct esocket *sock) {
     buf->packet_length = 0;
 
     ret = sock->events.on_line(sock, newline);
-    if(ret)
+    if(ret) {
+      printf("returning error\n");
       return ret;
+    }
 
     return BUF_CONT;
   }

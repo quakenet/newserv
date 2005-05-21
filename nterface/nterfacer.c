@@ -445,6 +445,8 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       nterface_log(nrl, NL_INFO|NL_LOG_ONLY, "L(%s): %s", socket->permit->hostname->content, newline);
       reason = nterfacer_new_rline(newline, sock, &number);
       if(reason) {
+        if(reason == RE_SOCKET_ERROR)
+          return BUF_ERROR;
         if(reason != RE_BAD_LINE) {
           return esocket_write_line(sock, "%d,E%d,%s", number, reason, request_error(reason));
         } else {
@@ -670,10 +672,12 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
 
 int ri_final(struct rline *li) {
   struct rline *pp, *lp = NULL;
+  int retval = RE_OK;
 
   if(li->socket)
-    esocket_write_line(li->socket, "%d,OO%s", li->id, li->buf);
-  
+    if(esocket_write_line(li->socket, "%d,OO%s", li->id, li->buf))
+      retval = RE_SOCKET_ERROR;
+
   for(pp=rlines;pp;lp=pp,pp=pp->next) {
     if(pp == li) {
       if(lp) {
@@ -686,7 +690,7 @@ int ri_final(struct rline *li) {
     }
   }
 
-  return RE_OK;
+  return retval;
 }
 
 int ping_handler(struct rline *ri, int argc, char **argv) {

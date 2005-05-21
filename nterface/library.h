@@ -19,6 +19,7 @@
 #define RE_WRONG_ARG_COUNT     0x08
 #define RE_TOO_MANY_ARGS       0x09
 #define RE_SERVICER_NOT_FOUND  0x0A
+#define RE_SOCKET_ERROR        0x0B
 
 #define snc(err, f) strncpy(err, f, sizeof(err) - 1)
 #define TwentyByteHex(output, buf) snprintf(output, sizeof(output), "%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x", buf[0], buf[1],  buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]);
