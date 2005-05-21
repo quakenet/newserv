@@ -479,10 +479,8 @@ int buffer_parse_crypt(struct esocket *sock) {
     buf->packet_length = 0;
 
     ret = sock->events.on_line(sock, newline);
-    if(ret) {
-      printf("returning error\n");
+    if(ret)
       return ret;
-    }
 
     return BUF_CONT;
   }
