@@ -1,6 +1,6 @@
 
 .PHONY: all
-all: nterfaced.so nterface_shared.so nterfacer.so nterfacer_control.so nterfacer_relay.so
+all: nterfaced.so nterface_shared.so nterfacer.so nterfacer_control.so nterfacer_relay.so nterfacer_chanstats.so
 
 nterfaced.so: nterfaced.o requests.o nterfaced_uds.o nterfaced_service_link.o
 	ld -shared -Bdynamic -o $@ $^
@@ -16,4 +16,7 @@ nterfacer_control.so: nterfacer_control.o
 
 nterfacer_relay.so: nterfacer_relay.o
 	ld -shared -Bdynamic ${LIBPCRE} -o $@ $^
+
+nterfacer_chanstats.so: nterfacer_chanstats.o
+	ld -shared -Bdynamic -o $@ $^
 

@@ -1,0 +1,5 @@
+Syntax:  out [nick1 ... nickn]
+Example: out luser
+Removes an unwanted user from H visibility.
+Sets a short duration ban to keep the user away.
+Up to 6 users can be specified.

@@ -1,0 +1,4 @@
+Syntax:  report [channel of] [channel to]
+Example: report #feds #qnet.feds
+Sets the channel where some channel statistics are reported every 5 minutes.
+H must be active on both the source and the target channel.

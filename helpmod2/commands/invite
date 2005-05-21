@@ -1,0 +1,5 @@
+Syntax:  invite [channel1] .. [channeln]
+Example: invite #feds
+Invites you to the channel.
+For users a valid ticket for the channel is required.
+For others up to 6 channels can be specified.

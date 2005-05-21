@@ -1,0 +1,4 @@
+Syntax:  autoqueue [channel] [amount]
+Example: autoqueue #feds 2
+Same as 'queue maintain'.
+Sets the autoqueue for the channel, autoqueue can be disabled with value of 0.

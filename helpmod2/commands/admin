@@ -1,0 +1,6 @@
+Syntax:  admin [target1 ... targetn]
+Example: admin #user
+Sets the userlevel of the target to H administrator.
+Target can be specified as either nick or #account.
+Admin userlevel requires the user to be opered, otherwise the effective userlevel is a staff member instead of administrator.
+Up to 6 targets can be specified.

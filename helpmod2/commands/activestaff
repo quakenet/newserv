@@ -1,0 +1,7 @@
+Syntax:  activestaff [channel] [user class] [type]
+Example: activestaff #feds opers inactive
+Lists active or inactive opers or staff members for a channel.
+Type can be either active or inactive.
+User can be either opers or staff.
+The default is to list active opers.
+The definition of activity is based on specceh's description.

@@ -1,0 +1,5 @@
+Syntax:  dnmo [nick1] ... [nickn]
+Example: dnmo CS^kiddie
+dnmo (DoNotMessageOpers) is meant to be used with the H queue system.
+When used, the target is set to the last position on any channels where he/she is on queue.
+Target is also sent a message explaining the error of his/her lame behaviour.

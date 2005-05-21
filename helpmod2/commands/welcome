@@ -1,0 +1,4 @@
+Syntax:  welcome [channel] [new message]
+Example: welcome #feds welcome to #feds, may we recommend a good book while you're in queue ?
+Views or sets the channel welcome message.
+When called with just the channel name, the welcome message for the channel is printed.

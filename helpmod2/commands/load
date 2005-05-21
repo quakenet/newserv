@@ -1,0 +1,3 @@
+Syntax:  load [filename]
+Example: load database1
+Loads a new help database (help command). Users currently using the help system are reset.

@@ -1,0 +1,5 @@
+Syntax:  resolve channel [target1] .. [targetn]
+Example: resolve #feds user
+Resolves (deletes) the ticket for a user for the channel.
+Up to 6 users can be specified.	#authname can be used instead
+of nick for offline users.

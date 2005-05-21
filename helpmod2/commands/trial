@@ -1,0 +1,5 @@
+Syntax:  trial [target1 ... targetn]
+Example: trial #user
+Sets the userlevel of the target to trial staff member.
+Target can be specified as either nick or #account.
+Up to 6 targets can be specified.

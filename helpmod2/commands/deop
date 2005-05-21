@@ -1,0 +1,5 @@
+Syntax:  deop [channel] [nick1 ... nickn]
+Example: deop #feds
+Deops the target on the channel.
+If no targets are specified, you are considered the target.
+Up to 6 targets can be specified.

@@ -1,0 +1,4 @@
+Syntax:  kick [channel] [nick1] ... [nickn] :[reason]
+Example: kick #feds luser
+Kicks the target nick from the channel. Reason is optional.
+Up to 6 targets can be specified.

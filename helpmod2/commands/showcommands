@@ -1,0 +1,4 @@
+Syntax:  showcommands [level]
+Example: showcommands
+Lists all commands available to the given level.
+If the level is invalid or higher than yours, commands available to your userlevel are printed.

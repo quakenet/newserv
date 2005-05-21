@@ -1,0 +1,4 @@
+Syntax:  klingon [channel] [user]
+Example: klingon #feds
+Makes H say something in klingon on the channel.
+If a user is specified the message is targeted to that user.

@@ -11,5 +11,7 @@
 #define ERR_TARGET_NOT_FOUND            0x01
 #define ERR_CHANSTATS_STATS_NOT_FOUND   0x02
 
+struct service_node *n_node;
+
 #endif
 

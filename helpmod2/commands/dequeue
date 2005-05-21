@@ -1,0 +1,4 @@
+Syntax:  dequeue [channel]
+Example: dequeue #feds
+Same as 'queue off'.
+Turns the queue off for the given channel.

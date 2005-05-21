@@ -1,0 +1,5 @@
+Syntax:  delchan [channel] YesImSure
+Example: delchan #feds.fi YesImSure
+Deletes H from the channel.
+All data related to the channel is removed.
+The YesImSure is an additional parameter to protect against accidents.

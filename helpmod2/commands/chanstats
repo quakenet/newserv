@@ -1,0 +1,5 @@
+Syntax:  chanstats [channel] [type] [ndays] [nweeks]
+Example: chanstats #feds long 0 4
+Gives you statistics of a channel. Type must be either short or long.
+Parameters ndays and nweeks tell how many lines of statistics to print. Statistics are kept for a duration of 10 weeks.
+Default is to print the short statistics for the last day.

@@ -1,0 +1,4 @@
+Syntax:  listtickets [channel]
+Example: listtickets #feds
+Lists all valid tickets for a channel.
+The list is in the order the tickets were added.

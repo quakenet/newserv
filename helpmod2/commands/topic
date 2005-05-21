@@ -1,0 +1,8 @@
+Syntax:  topic [channel] [operation] [parameters]
+Example: topic #feds add Q will be back soon
+Handles the channel topic. Following operations are supported:
+add     [position] [text]       Adds the text to channel topic, if position is omitted the text is added as the first element to the topic.
+del     [position]              Removes an element of the topic.
+refresh                         Refreshes the channel topic, usefull if the topic is lost.
+erase                           Removes the channel topic.
+set     [new topic]             Sets the channel topic.

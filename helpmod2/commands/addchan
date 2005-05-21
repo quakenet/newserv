@@ -1,0 +1,4 @@
+Syntax:  addchan [channel]
+Example: addchan #help
+Adds H to the given channel.
+Don't forget to configure the channel using chanconf as the default configuration is most likely not what you want.

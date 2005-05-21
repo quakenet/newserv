@@ -1,0 +1,7 @@
+Syntax:  chanban [channel] [operation] [parameters]
+Example: chanban #feds add *.de
+Handles channel bans. Following operations are supported:
+add [mask1] .. [maskn]  Adds bans to channel
+del [mask1] .. [maskn]  Removes bans from channel 
+list [pattern]          Lists bans matching pattern
+Up to 6 masks can be given for add and del.

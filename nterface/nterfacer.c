@@ -84,14 +84,18 @@ void _init(void) {
   nterfacer_events.on_disconnect = nterfacer_disconnect_event;
 }
 
+void free_handler(struct handler *hp) {
+  freesstring(hp->command);
+  free(hp);
+}
+
 void free_handlers(struct service_node *tp) {
   struct handler *hp, *lp;
 
   for(hp=tp->handlers;hp;) {
     lp = hp;
     hp = hp->next;
-    freesstring(lp->command);
-    free(lp);
+    free_handler(lp);
   }
 
   tp->handlers = NULL;
@@ -277,9 +281,26 @@ struct handler *register_handler(struct service_node *service, char *command, in
   hp->args = args;
 
   hp->next = service->handlers;
+  hp->service = service;
   service->handlers = hp;
 
   return hp;
+}
+
+void deregister_handler(struct handler *hl) {
+  struct service_node *service = (struct service_node *)hl->service;  
+  struct handler *np, *lp = NULL;
+  for(np=service->handlers;np;lp=np,np=np->next) {
+    if(hl == np) {
+      if(lp) {
+        lp->next = np->next;
+      } else {
+        service->handlers = np->next;
+      }
+      free_handler(np);
+      return;
+    }
+  }
 }
 
 void deregister_service(struct service_node *service) {

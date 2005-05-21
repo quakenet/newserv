@@ -1,0 +1,4 @@
+Syntax:  command [command]
+Example: command command
+Gives detailed information on a specific H command.
+For a list of commands available to you, use the command 'showcommands'.

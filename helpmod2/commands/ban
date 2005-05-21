@@ -1,0 +1,7 @@
+Syntax:  ban [operation] [parameters]
+Example: ban del CS^kiddie!*@*.de
+Handles global bans.
+Following operations are supported:
+list    [pattern]                       Lists global bans based on pattern, if pattern is omitted all bans are listed
+add     [mask] [duration] [reason]      Adds a global ban, duration and reason are optional
+del     [mask1] ... [maskn]             Removes global banmasks, up to 6 masks can be defined at once

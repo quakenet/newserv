@@ -1,0 +1,5 @@
+Syntax:  devoice [channel] [nick1 ... nickn]
+Example: devoice #feds luser
+Sets mode -v on the target for the given channel.
+If no targets are specified, you are considered the target.
+Up to 6 targets can be specified.

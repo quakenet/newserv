@@ -1,0 +1,4 @@
+Syntax:  whois [nick1] ... [nickn]
+Example: whois user
+Gives the information H has on a user.
+Up to 6 nicks can be specified.

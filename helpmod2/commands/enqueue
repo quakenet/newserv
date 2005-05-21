@@ -1,0 +1,4 @@
+Syntax:  enqueue [channel]
+Example: enqueue #feds
+Same as 'queue on'.
+Turns the queue on for the given channel.

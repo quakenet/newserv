@@ -1,0 +1,7 @@
+Syntax:  chanconf [channel] [[+/-]]value1] ... [[+/-]]valuen]
+Example: chanconf #feds +10 -9
+Handles channel configuration. Chanconf is used to enable and disable H features for a channel.
+Most features are configured by their own command but are enabled from chanconf.
+Chanconf without parameters lists channel configuration.
+Up to 6 values can be disabled or enabled at once.
+NOTE: chanconf value 0 (passive mode) completely disables any H activity for a channel, it is provided as a way to disable H without delchan.

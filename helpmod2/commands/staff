@@ -1,0 +1,5 @@
+Syntax:  staff [target1 ... targetn]
+Example: staff #user
+Sets the userlevel of the target to staff member.
+Target can be specified as either nick or #account.
+Up to 6 targets can be specified.

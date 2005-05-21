@@ -1,0 +1,4 @@
+Syntax:  lamercontrol [channel]
+Example: lamercontrol #feds strict
+Views or sets the lamercontrol profile for a channel.
+To list all available lamercontrol profiles, use the keyword list.

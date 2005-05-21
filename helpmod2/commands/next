@@ -1,0 +1,4 @@
+Syntax:  next [channel] [amount]
+Example: next #feds 2
+Same as 'queue next'.
+Moves the queue forward by the given amount.

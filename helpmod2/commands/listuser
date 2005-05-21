@@ -1,0 +1,4 @@
+Syntax:  listuser [pattern]
+Example: listuser *
+Lists H accounts based on the pattern.
+If no pattern is specified, all accounts are listed.

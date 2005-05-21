@@ -1,0 +1,11 @@
+Syntax:	 term [channel] [operation] [parameters]
+Example: term #feds add user user is the source of all problems
+Handles terms for channels, if the channel is omitted, global terms are handled.
+Following operations are supported:
+add             [term] [description]     Adds a term
+del             [term]                   Deletes a term, up to 6 terms can be specified
+get             [term]                   Gets a specific term
+find            [pattern]                Returns the first term matching the pattern
+list                                     Lists all term names
+listfull                                 Lists all terms with their descriptions
+Command '?' is available to all users and is the same as term [channel] find.

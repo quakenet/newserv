@@ -1,0 +1,5 @@
+Syntax:  op [channel] [nick1 ... nickn]
+Example: op #feds Q
+If the target is allowed to have +o on the target channel, ops the target.
+If no target is specified, you are considered the target.
+Up to 6 targets can be specified.

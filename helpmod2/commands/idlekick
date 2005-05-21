@@ -1,0 +1,5 @@
+Syntax:  idlekick [channel] [timeout]
+Example: idlekick #feds 60s
+Views or sets the idle kick timeout for the channel.
+Minimum value is 60 seconds, the actual timeout is "close enough" to the timeout value.
+Non-peons and Users currently in queue are not considered idle.

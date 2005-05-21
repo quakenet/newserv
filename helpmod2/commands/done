@@ -1,0 +1,5 @@
+Syntax:	 done [channel] [nick1 .. nickn]
+Example: done #feds user
+Same as 'queue done'.
+Tells that the user is finished with and devoices him.
+Up to 6 nicks can be specified.

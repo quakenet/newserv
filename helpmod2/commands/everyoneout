@@ -1,0 +1,4 @@
+Syntax:  everyoneout [channel] [reason]
+Example: everyoneout #feds enough laming
+Removes all normal users from the channel and sets H to enforce +i on the channel.
+If reason is omitted the default reason is 'clearing channel'.

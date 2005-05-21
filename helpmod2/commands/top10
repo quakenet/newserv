@@ -1,0 +1,6 @@
+Syntax:  top10 [channel] [type] [number]
+Example: top10 #feds
+Lists the 10 most active staff members / operators for the channel.
+Type can be opers (default) or staff.
+If the number parameter is included, top10 lists that number of top stats
+for the channel. The value of number can vary between [10, 50].

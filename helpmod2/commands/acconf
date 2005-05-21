@@ -1,0 +1,5 @@
+Syntax:  acconf [[+/-]value1] ... [[+/-]valuen]
+Example: acconf +1 -3
+Acconf configures the account specific H features.
+Up to 6 values can be changed with one command.
+When called without parameters, acconf will print your account configuration.

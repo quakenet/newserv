@@ -30,6 +30,7 @@ typedef struct handler {
   int args; /* MINIMUM ARGUMENTS */
   void *function;
   struct handler *next;
+  void *service;
 } handler;
 
 typedef struct service_node {
@@ -73,6 +74,7 @@ typedef int (*handler_function)(struct rline *ri, int argc, char **argv);
 struct service_node *register_service(char *name);
 struct handler *register_handler(struct service_node *service, char *command, int args, handler_function fp);
 void deregister_service(struct service_node *service);
+void deregister_handler(struct handler *hp);
 int respond(struct rline *li, int argc, ...);
 int error_respond(struct rline *li, int error_code, char *format, ...);
 

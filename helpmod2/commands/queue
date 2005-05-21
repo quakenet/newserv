@@ -1,0 +1,12 @@
+Syntax:  queue [channel] [operation] [parameters]
+Example: queue #feds next 2
+Queue handler, following operations are supported:
+on                      Turns the queue on
+off                     Turns the queue off
+done [nick1 ... nickn]  Tells that a user is finished with. Up to 6 targets can be specified
+next [amount]           Moves queue forward by amount. If amount is not specified, 1 is assumed.   	                                                                                       
+maintain [amount]       Automatic queue, keeps a constant amount of users voiced. If amount is 0, disables the autoqueue.
+list                    Lists all users in queue
+summary                 Gives a short summary of the queues status
+reset                   Resets the queue
+Some common commands like done or next have a shortcut, see showcommands for a list.

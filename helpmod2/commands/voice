@@ -1,0 +1,5 @@
+Syntax:  voice [channel] [nick1 ... nickn]
+Example: voice #feds luser
+Gives the target +v on the given channel.
+If no targets are specified, you are considered the target.
+Up to 6 targets can be specified.

@@ -1,0 +1,5 @@
+Syntax:	 deluser [target1 ... targetn]
+Example: deluser #strutsi
+Deletes a H account of a user.
+Target can be either the nick or the #account of the user.
+Up to 6 targets can be specified.
