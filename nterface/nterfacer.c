@@ -141,7 +141,7 @@ int load_permits(void) {
   struct hostent *host;
   char buf[50];
 
-  lines = getcopyconfigitemintpositive("nterfacer", "lines", 0);
+  lines = getcopyconfigitemintpositive("nterfacer", "permits", 0);
   if(lines < 1) {
     nterface_log(nrl, NL_ERROR, "No permits found in config file.");
     return 0;
@@ -155,7 +155,7 @@ int load_permits(void) {
     snprintf(buf, sizeof(buf), "hostname%d", i);
     item->hostname = getcopyconfigitem("nterfacer", buf, "", 100);
     if(!item->hostname) {
-      MemError();
+      nterface_log(nrl, NL_ERROR, "No hostname found for item %d.", item->hostname->content, i);
       continue;
     }
 
@@ -182,7 +182,7 @@ int load_permits(void) {
     snprintf(buf, sizeof(buf), "password%d", i);
     item->password = getcopyconfigitem("nterfacer", buf, "", 100);
     if(!item->password) {
-      MemError();
+      nterface_log(nrl, NL_ERROR, "No password found for item %d.", item->hostname->content, i);
       freesstring(item->hostname);
       continue;
     }
@@ -231,7 +231,7 @@ int setup_listening_socket(void) {
   /* Initialiase the addresses */
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  sin.sin_port = htons(NTERFACER_PORT);
+  sin.sin_port = htons(getcopyconfigitemintpositive("nterfacer", "port", NTERFACER_PORT));
   
   if(bind(fd, (struct sockaddr *) &sin, sizeof(sin))) {
     nterface_log(nrl, NL_ERROR, "Unable to bind listen socket (%d).", errno);
@@ -350,12 +350,18 @@ void nterfacer_accept_event(struct esocket *socket) {
   struct sconnect *temp;
   struct permitted *item = NULL;
   struct esocket *newsocket;
+  unsigned int opt = 1;
 
   if(newfd == -1) {
     nterface_log(nrl, NL_WARNING, "Unable to accept nterfacer fd!");
     return;
   }
 
+  if(ioctl(newfd, FIONBIO, &opt) !=0) {
+    nterface_log(nrl, NL_ERROR, "Unable to set listen socket non-blocking.");
+    return -1;
+  }
+  
   for(i=0;i<permit_count;i++) {
     if(permits[i].ihost == sin.sin_addr.s_addr) {
       item = &permits[i];

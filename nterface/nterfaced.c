@@ -133,10 +133,10 @@ int load_config_file(void) {
       }      
     }
 
-    snprintf(buf, sizeof(buf), "tag%d", i);
+    snprintf(buf, sizeof(buf), "link%d", i);
     item->tag = getcopyconfigitemintpositive("nterfaced", buf, 0);
     if(item->tag < 0) {
-      nterface_log(ndl, NL_WARNING, "ND: Unable to load tag for item %d (service %s).", i, item->service->content);
+      nterface_log(ndl, NL_WARNING, "ND: Unable to load link for item %d (service %s).", i, item->service->content);
       freesstring(item->service);
       if(item->realname)
         freesstring(item->realname);

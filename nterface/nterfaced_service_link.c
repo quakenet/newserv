@@ -88,14 +88,14 @@ int load_links(void) {
     snprintf(buf, sizeof(buf), "port%d", i);
     item->port = getcopyconfigitemintpositive("nterfaced", buf, 0);
     if(item->port < 1) {
-      nterface_log(ndl, NL_WARNING, "SL: Error loading port for item %d.", i);
-      continue;
+      nterface_log(ndl, NL_WARNING, "SL: Error loading port for item %d, setting to default (2438)", i);
+      item->port = 2438;
     }
 
     snprintf(buf, sizeof(buf), "hostname%d", i);
     item->hostname = getcopyconfigitem("nterfaced", buf, "", 100);
     if(!item->hostname) {
-      MemError();
+      nterface_log(ndl, NL_ERROR, "SL: No hostname found for item %d.", i);
       continue;
     }
 
@@ -115,7 +115,7 @@ int load_links(void) {
     snprintf(buf, sizeof(buf), "password%d", i);
     item->password = getcopyconfigitem("nterfaced", buf, "", 100);
     if(!item->password) {
-      MemError();
+      nterface_log(ndl, NL_ERROR, "SL: No password found for item %d.", i);
       freesstring(item->hostname);
       continue;
     }

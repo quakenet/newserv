@@ -28,7 +28,7 @@ sstring *socket_path = NULL;
 int uds = -1;
 
 void uds_startup(void) {
-  socket_path = getcopyconfigitem("nterfaced", "socketpath", "/tmp/nterfaced", 100);
+  socket_path = getcopyconfigitem("nterfaced", "path", "/tmp/nterfaced", 100);
   MemCheck(socket_path);
 
   uds = create_uds();
