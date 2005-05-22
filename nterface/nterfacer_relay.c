@@ -297,7 +297,12 @@ void relay_messages(nick *target, int messagetype, void **args) {
 
     case LU_KILLED:
       ri_error(item->rline, RELAY_KILLED, "Killed");
-      dispose_rld_prev(item, prev);
+      if(prev) {
+        prev->next = item->next;
+      } else {
+        list = item->next;
+      }
+      dispose_rld_dontquit(item, 1);
       break;
   }
 }
@@ -314,7 +319,7 @@ void dispose_rld_prev(struct rld *item, struct rld *prev) {
 void dispose_rld_dontquit(struct rld *item, int dontquit) {
   if(item->schedule)
     deleteschedule(item->schedule, &relay_timeout, item);
-  if(dontquit)
+  if(!dontquit)
     deregisterlocaluser(item->nick, NULL);
   if(item->mode & MODE_TAG) {
     pcre_free(item->termination.pcre.phrase);
@@ -349,11 +354,11 @@ void relay_quits(int hook, void *args) {
       ri_error(cp->rline, RELAY_TARGET_LEFT, "Target left QuakeNet");
       if(lp) {
         lp->next = cp->next;
-        dispose_rld_dontquit(cp, 1);
+        dispose_rld(cp);
         cp = lp->next;
       } else {
         list = cp->next;
-        dispose_rld_dontquit(cp, 1);
+        dispose_rld(cp);
         cp = list;
       }
     } else {
