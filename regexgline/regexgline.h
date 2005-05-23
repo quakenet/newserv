@@ -29,7 +29,8 @@
 #define RG_EXPIRY_TIME_DEFAULT    1800
 
 #define RGStringise(x)            #x
-#define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+#define RGBuildMatchHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+#define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s", np->nick, np->ident, np->host->name->content);
 #define RGMasksEqual(a, b)        !strcasecmp(a, b)
 
 typedef MYSQL_RES *rg_sqlresult;

@@ -186,7 +186,7 @@ void rg_nick(int hooknum, void *arg) {
 
   rg_initglinelist(&gll);
 
-  hostlen = RGBuildHostname(hostname, np);
+  hostlen = RGBuildMatchHostname(hostname, np);
   
   for(rp=rg_list;rp;rp=rp->next) {
     if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
@@ -280,7 +280,7 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(tnp=nicktable[j];tnp;tnp=tnp->next) {
-      hostlen = RGBuildHostname(hostname, tnp);
+      hostlen = RGBuildMatchHostname(hostname, tnp);
       if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0)
         rg_dogline(&gll, tnp, rp, hostname);
     }
@@ -323,7 +323,7 @@ int rg_sanitycheck(char *mask, int *count) {
   *count = 0;
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
-     hostlen = RGBuildHostname(hostname, np);
+     hostlen = RGBuildMatchHostname(hostname, np);
       if(pcre_exec(regex, hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
         (*count)++;
       }
@@ -559,7 +559,7 @@ void rg_startup(void) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
-      hostlen = RGBuildHostname(hostname, np);
+      hostlen = RGBuildMatchHostname(hostname, np);
       for(rp=rg_list;rp;rp=rp->next) {
         if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
           rg_dogline(&gll, np, rp, hostname);
@@ -773,7 +773,7 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
     } else {
       account[0] = '\0';
     }
-    masklen = RGBuildHostname(mask, np);
+    masklen = RGBuildMatchHostname(mask, np);
   } else {
     mask[0] = '\0';
     masklen = 0;
