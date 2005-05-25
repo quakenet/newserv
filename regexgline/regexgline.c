@@ -160,7 +160,7 @@ int rg_dbconnect(void) {
 int rg_dbload(void) {
   rg_sqlquery("CREATE TABLE regexglines (id INT(10) PRIMARY KEY AUTO_INCREMENT, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires BIGINT NOT NULL, type TINYINT(4) NOT NULL DEFAULT 1)", ACCOUNTLEN, RG_REASON_MAX);
   rg_sqlquery("CREATE TABLE regexlogs (id INT(10) PRIMARY KEY AUTO_INCREMENT, host VARCHAR(%d) NOT NULL, account VARCHAR(%d) NOT NULL, event TEXT NOT NULL, arg TEXT NOT NULL, ts TIMESTAMP)", RG_MASKLEN - 1, ACCOUNTLEN);
-  rg_sqlquery("CREATE TABLE regexglinelog (id INT(10) PRIMARY KEY AUTO_INCREMENT, glineid INT(10) NOT NULL, ts TIMESTAMP, matched TEXT NOT NULL)");
+  rg_sqlquery("CREATE TABLE regexglinelog (id INT(10) PRIMARY KEY AUTO_INCREMENT, glineid INT(10) NOT NULL, ts TIMESTAMP, nickname VARCHAR(%d) NOT NULL, username VARCHAR(%d) NOT NULL, hostname VARCHAR(%d) NOT NULL, realname VARCHAR(%d))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
   
   if(!rg_sqlquery("SELECT id, gline, setby, reason, expires, type FROM regexglines")) {
     rg_sqlresult res;
@@ -186,7 +186,7 @@ void rg_nick(int hooknum, void *arg) {
 
   rg_initglinelist(&gll);
 
-  hostlen = RGBuildMatchHostname(hostname, np);
+  hostlen = RGBuildHostname(hostname, np);
   
   for(rp=rg_list;rp;rp=rp->next) {
     if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
@@ -280,7 +280,7 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(tnp=nicktable[j];tnp;tnp=tnp->next) {
-      hostlen = RGBuildMatchHostname(hostname, tnp);
+      hostlen = RGBuildHostname(hostname, tnp);
       if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0)
         rg_dogline(&gll, tnp, rp, hostname);
     }
@@ -323,7 +323,7 @@ int rg_sanitycheck(char *mask, int *count) {
   *count = 0;
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
-     hostlen = RGBuildMatchHostname(hostname, np);
+     hostlen = RGBuildHostname(hostname, np);
       if(pcre_exec(regex, hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
         (*count)++;
       }
@@ -465,7 +465,9 @@ int rg_spew(void *source, int cargc, char **cargv) {
   pcre_extra *hint;
   const char *error;
   char hostname[RG_MASKLEN];
-  
+  int ovector[30];
+  int pcreret;
+
   if(cargc < 1) {
     controlreply(np, "syntax: regexspew [mask]");
     return CMD_ERROR;
@@ -488,11 +490,39 @@ int rg_spew(void *source, int cargc, char **cargv) {
   for(j=0;j<NICKHASHSIZE;j++) {
     for(tnp=nicktable[j];tnp;tnp=tnp->next) {
       hostlen = RGBuildHostname(hostname, tnp);
-      if(pcre_exec(regex, hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
+      pcreret = pcre_exec(regex, hint, hostname, hostlen, 0, 0, ovector, sizeof(ovector) / sizeof(int));
+      if(pcreret >= 0) {
         if(counter == rg_max_spew) {
           controlreply(np, "Reached maximum spew count (%d) - aborting display.", rg_max_spew);
         } else if (counter < rg_max_spew) {
-          controlreply(np, "%s=(%s) (%s)", hostname, IPtostr(tnp->ipaddress), tnp->realname->name->content);
+          /* 15 should be number of bolds */
+          char boldbuf[RG_MASKLEN + 15], *tp, *fp, *realname = NULL;
+          int boldon = 0;
+          for(tp=hostname,fp=boldbuf;*tp;) {
+            if(tp - hostname == ovector[0]) {
+              *fp++ = '\002';
+              boldon = 1;
+            }
+            if(tp - hostname == ovector[1]) {
+              *fp++ = '\002';
+              boldon = 0;
+            }
+            if(*tp == '\r') {
+              if(boldon)
+                *fp++ = '\002';
+              *fp++ = '\0';
+              realname = fp;
+              if(boldon)
+                *fp++ = '\002';
+              tp++;
+            } else {
+              *fp++ = *tp++;
+            }
+          }
+          if(boldon)
+            *fp++ = '\002';
+          *fp++ = '\0';
+          controlreply(np, "%s (%s) (%dC)", boldbuf, realname, tnp->channels->cursi);
         }
         counter++;
       }
@@ -559,7 +589,7 @@ void rg_startup(void) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
-      hostlen = RGBuildMatchHostname(hostname, np);
+      hostlen = RGBuildHostname(hostname, np);
       for(rp=rg_list;rp;rp=rp->next) {
         if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
           rg_dogline(&gll, np, rp, hostname);
@@ -717,7 +747,7 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   char hostname[RG_MASKLEN];
   int usercount;
 
-  rg_loggline(rp, matched);
+  rg_loggline(rp, np);
 
   if (rp->type == 1) {
     nick *tnp;
@@ -773,7 +803,7 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
     } else {
       account[0] = '\0';
     }
-    masklen = RGBuildMatchHostname(mask, np);
+    masklen = RGBuildHostname(mask, np);
   } else {
     mask[0] = '\0';
     masklen = 0;
@@ -787,10 +817,13 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
   rg_sqlquery("INSERT INTO regexlogs (host, account, event, arg) VALUES ('%s', '%s', '%s', '%s')", eemask, eeaccount, eeevent, eedetails);
 }
 
-void rg_loggline(struct rg_struct *rg, char *matched) {
-  char eematched[RG_QUERY_BUF_SIZE];
+void rg_loggline(struct rg_struct *rg, nick *np) {
+  char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
 
-  rg_sqlescape_string(eematched, matched, strlen(matched));
+  rg_sqlescape_string(eenick, np->nick, strlen(np->nick));
+  rg_sqlescape_string(eeuser, np->ident, strlen(np->ident));
+  rg_sqlescape_string(eehost, np->host->name->content, strlen(np->host->name->content));
+  rg_sqlescape_string(eereal, np->realname->name->content, strlen(np->realname->name->content));
 
-  rg_sqlquery("INSERT INTO regexglinelog (glineid, matched) VALUES (%d, '%s')", rg->id, eematched);
+  rg_sqlquery("INSERT INTO regexglinelog (glineid, nickname, username, hostname, realname) VALUES (%d, '%s', '%s', '%s', '%s')", rg->id, eenick, eeuser, eehost, eereal);
 }

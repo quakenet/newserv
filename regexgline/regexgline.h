@@ -29,8 +29,7 @@
 #define RG_EXPIRY_TIME_DEFAULT    1800
 
 #define RGStringise(x)            #x
-#define RGBuildMatchHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);
-#define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s", np->nick, np->ident, np->host->name->content);
+#define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);
 #define RGMasksEqual(a, b)        !strcasecmp(a, b)
 
 typedef MYSQL_RES *rg_sqlresult;
@@ -89,7 +88,7 @@ void rg_sendtoallopers(char *format, ...);
 void rg_checkexpiry(void *arg);
 
 void rg_logevent(nick *np, char *event, char *details, ...);
-void rg_loggline(struct rg_struct *rg, char *matched);
+void rg_loggline(struct rg_struct *rg, nick *np);
 
 unsigned char rc_hexlookup[256] = {
                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
