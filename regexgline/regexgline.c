@@ -522,7 +522,7 @@ int rg_spew(void *source, int cargc, char **cargv) {
           if(boldon)
             *fp++ = '\002';
           *fp++ = '\0';
-          controlreply(np, "%s (%s) (%dC)", boldbuf, realname, tnp->channels->cursi);
+          controlreply(np, "%s (%s) (%dc)", boldbuf, realname, tnp->channels->cursi);
         }
         counter++;
       }
