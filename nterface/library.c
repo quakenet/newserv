@@ -138,9 +138,9 @@ int generate_nonce(unsigned char *nonce, int nterfacer) {
   memcpy(nonce + sizeof(struct timeval) - 2, entropy, NONCE_LEN - sizeof(struct timeval) + 2);
 
   if(nterfacer) {
-    nonce[6]&=128;
+    nonce[7]&=128;
   } else {
-    nonce[6]|=127;
+    nonce[7]|=127;
   }
 
   return 1;
