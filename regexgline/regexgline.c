@@ -13,6 +13,7 @@
 typedef struct rg_glinenode {
   nick *np;
   struct rg_struct *reason;
+  short punish;
   struct rg_glinenode *next;
 } rg_glinenode;
 
@@ -124,7 +125,7 @@ void rg_flushglines(struct rg_glinelist *gll) {
   struct rg_glinenode *nn, *pn;
   for(nn=gll->start;nn;nn=pn) {
     pn = nn->next;
-    if(nn->reason->type == 3)
+    if(nn->punish == 3)
       killuser(NULL, nn->np, "%s (ID: %08lx)", nn->reason->reason->content, nn->reason->glineid);
     free(nn);
   }
@@ -775,6 +776,7 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
       }
       nn->np = np;
       nn->reason = rp;
+      nn->punish = 3;
     }
     return;
   }
