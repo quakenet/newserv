@@ -760,7 +760,9 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   } else if (rp->type == 2) {
     usercount = np->host->clonecount;    
     snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(np->ipaddress));
-  } else if (rp->type == 3) {
+  }
+
+  if ((rp->type == 3) || (usercount > rg_max_per_gline)) {
     struct rg_glinenode *nn = (struct rg_glinenode *)malloc(sizeof(struct rg_glinenode));
     if(nn) {
       nn->next = NULL;
@@ -777,11 +779,6 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
     return;
   }
   
-  if (usercount > rg_max_per_gline) { /* too many users on this host, so we're ignoring it */
-    /* controlchanmsg(findchannel("#twilightzone"), "Looks like I'm ignoring another Nomad gline: GL * +%s %d :%s due to %d clones\r\n", hostname, time(NULL) + rg_expiry_time, rp->reason->content, usercount); */
-    return;
-  }
-
   irc_send("%s GL * +%s %d :%s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
 }
 
