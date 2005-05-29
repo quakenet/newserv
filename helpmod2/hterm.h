@@ -9,6 +9,8 @@ typedef struct hterm_struct
     sstring *name;
     sstring *description;
 
+    int usage;
+
     struct hterm_struct *next;
 } hterm;
 

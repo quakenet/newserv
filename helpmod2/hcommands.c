@@ -1,6 +1,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "../nick/nick.h"
 #include "../channel/channel.h"
@@ -77,7 +78,7 @@ enum
     H_TERM_PLUS
 };
 
-void helpmod_cmd_addchan (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_addchan (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     if (argc == 0)
     {
@@ -104,7 +105,7 @@ void helpmod_cmd_addchan (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_delchan (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_delchan (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     char buffer[256];
@@ -126,7 +127,7 @@ void helpmod_cmd_delchan (huser *sender, channel* returntype, char* ostr, int ar
     helpmod_reply(sender, returntype, "Channel %s deleted succesfully", buffer);
 }   
 
-void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     helpmod_reply(sender, returntype, "You are %s", sender->real_user->nick);
     helpmod_reply(sender, returntype, "Your userlevel is %s", hlevel_name(huser_get_level(sender)));
@@ -164,7 +165,7 @@ void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, int arg
     }
 }
 
-void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     huser *husr;
     int i;
@@ -243,7 +244,7 @@ void helpmod_cmd_test (huser *sender, channel* returntype, char* ostr, int argc,
 }
 */
 
-void helpmod_cmd_seen (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_seen (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     huser *target_huser;
     haccount *target_haccount;
@@ -290,7 +291,7 @@ void helpmod_cmd_seen (huser *sender, channel* returntype, char* ostr, int argc,
     }
 }
 
-void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, channel* returntype, char* ostr, int argc, char *argv[])
 {
     huser *target_huser;
     haccount *target_haccount;
@@ -387,14 +388,14 @@ void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, channel* r
 }
 
 /* pseudo commands for the above */
-void helpmod_cmd_improper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_LAMER, returntype, ostr, argc, argv); }
-void helpmod_cmd_peon (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_PEON, returntype, ostr, argc, argv); }
-void helpmod_cmd_trial (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_TRIAL, returntype, ostr, argc, argv); }
-void helpmod_cmd_staff (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_STAFF, returntype, ostr, argc, argv); }
-void helpmod_cmd_oper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_OPER, returntype, ostr, argc, argv); }
-void helpmod_cmd_admin (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_ADMIN, returntype, ostr, argc, argv); }
+static void helpmod_cmd_improper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_LAMER, returntype, ostr, argc, argv); }
+static void helpmod_cmd_peon (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_PEON, returntype, ostr, argc, argv); }
+static void helpmod_cmd_trial (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_TRIAL, returntype, ostr, argc, argv); }
+static void helpmod_cmd_staff (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_STAFF, returntype, ostr, argc, argv); }
+static void helpmod_cmd_oper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_OPER, returntype, ostr, argc, argv); }
+static void helpmod_cmd_admin (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_ADMIN, returntype, ostr, argc, argv); }
 
-void helpmod_cmd_deluser (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_deluser (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int i;
     huser *target_huser;
@@ -444,7 +445,7 @@ void helpmod_cmd_deluser (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_listuser (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_listuser (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     char *pattern;
     haccount *hack = haccounts;
@@ -484,7 +485,7 @@ void helpmod_cmd_listuser (huser *sender, channel* returntype, char* ostr, int a
         helpmod_reply(sender, returntype, "Accounts matching pattern %d", count);
 }
 
-void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hcensor *hcens;
@@ -567,7 +568,7 @@ void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, int arg
     }
 }
 
-void helpmod_cmd_chanconf (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_chanconf (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     int old_flags=0;
@@ -638,7 +639,7 @@ void helpmod_cmd_chanconf (huser *sender, channel* returntype, char* ostr, int a
     }
 }
 
-void helpmod_cmd_acconf (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_acconf (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     haccount *hacc = sender->account;
 
@@ -702,7 +703,7 @@ void helpmod_cmd_acconf (huser *sender, channel* returntype, char* ostr, int arg
     }
 }
 
-void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
 
@@ -727,7 +728,7 @@ void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     char buf[512];
     int i = 0;
@@ -750,7 +751,7 @@ void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int ar
 	helpmod_reply(sender, returntype, "%s", buf);
 }
 
-void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int level = H_PEON;
     hcommand *tmp;
@@ -768,7 +769,7 @@ void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* ostr, i
     return;
 }
 
-void helpmod_cmd_lamercontrol (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_lamercontrol (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hlc_profile *ptr;
@@ -813,7 +814,7 @@ void helpmod_cmd_lamercontrol (huser *sender, channel* returntype, char* ostr, i
 
 }
 
-void helpmod_cmd_term_find_general (huser *sender, channel* returntype, int type, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_term_find_general (huser *sender, channel* returntype, int type, char* ostr, int argc, char *argv[])
 {
     hterm *htrm;
     hterm *source;
@@ -897,22 +898,22 @@ void helpmod_cmd_term_find_general (huser *sender, channel* returntype, int type
         helpmod_reply(sender, returntype, "(%s): %s", htrm->name->content, htrm->description->content);
 }
 
-void helpmod_cmd_term_find (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_term_find (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     helpmod_cmd_term_find_general(sender, returntype, H_TERM_FIND, ostr, argc, argv);
 }
 
-void helpmod_cmd_term_find_minus (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_term_find_minus (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     helpmod_cmd_term_find_general(sender, returntype, H_TERM_MINUS, ostr, argc, argv);
 }
 
-void helpmod_cmd_term_find_plus (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_term_find_plus (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     helpmod_cmd_term_find_general(sender, returntype, H_TERM_PLUS, ostr, argc, argv);
 }
 
-void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     huser *target = NULL;
@@ -942,7 +943,7 @@ void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hterm *htrm;
     hterm **source;
@@ -971,7 +972,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
         buffer[0] = '\0';
         htrm = *source;
 
-        if (argc > 2)
+        if (argc >= 2)
             pattern = argv[1];
         else
             pattern = "*";
@@ -1049,10 +1050,9 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
                 helpmod_reply(sender, returntype, "Can not delete term: Term %s not found", argv[i]);
                 continue;
             }
-            hterm_del(source, htrm);
+            hterm_del(source != NULL?source:&hterms, htrm);
             helpmod_reply(sender, returntype, "Term %s deleted succesfully", argv[i]);
         }
-
     }
     else if (!ci_strcmp(argv[0], "find"))
     {
@@ -1079,7 +1079,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
     }
 }
 
-void helpmod_cmd_queue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_queue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     int operation;
@@ -1118,7 +1118,7 @@ void helpmod_cmd_queue (huser *sender, channel* returntype, char* ostr, int argc
     helpmod_queue_handler(sender, returntype, hchan, operation, ostr, argc, argv);
 }
 
-void helpmod_cmd_done (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_done (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1126,7 +1126,7 @@ void helpmod_cmd_done (huser *sender, channel* returntype, char* ostr, int argc,
     helpmod_queue_handler(sender, returntype, hchan, HQ_DONE, ostr, argc, argv);
 }
 
-void helpmod_cmd_next (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_next (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1134,7 +1134,7 @@ void helpmod_cmd_next (huser *sender, channel* returntype, char* ostr, int argc,
     helpmod_queue_handler(sender, returntype, hchan, HQ_NEXT, ostr, argc, argv);
 }
 
-void helpmod_cmd_enqueue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_enqueue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1142,7 +1142,7 @@ void helpmod_cmd_enqueue (huser *sender, channel* returntype, char* ostr, int ar
     helpmod_queue_handler(sender, returntype, hchan, HQ_ON, ostr, argc, argv);
 }
 
-void helpmod_cmd_dequeue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_dequeue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1150,7 +1150,7 @@ void helpmod_cmd_dequeue (huser *sender, channel* returntype, char* ostr, int ar
     helpmod_queue_handler(sender, returntype, hchan, HQ_OFF, ostr, argc, argv);
 }
 
-void helpmod_cmd_autoqueue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_autoqueue (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1158,7 +1158,7 @@ void helpmod_cmd_autoqueue (huser *sender, channel* returntype, char* ostr, int 
     helpmod_queue_handler(sender, returntype, hchan, HQ_MAINTAIN, ostr, argc, argv);
 }
 
-void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int i;
     if (argc == 0)
@@ -1195,7 +1195,7 @@ void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, int argc,
     }
 }
 
-void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     if (argc == 0)
     {
@@ -1285,7 +1285,7 @@ void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int argc, 
     }
 }
 
-void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     int i;
@@ -1375,7 +1375,7 @@ void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_idlekick (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_idlekick (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     int tmp;
@@ -1406,7 +1406,7 @@ void helpmod_cmd_idlekick (huser *sender, channel* returntype, char* ostr, int a
     }
 }
 
-void helpmod_cmd_topic (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_topic (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     DEFINE_HCHANNEL;
@@ -1505,7 +1505,7 @@ void helpmod_cmd_topic (huser *sender, channel* returntype, char* ostr, int argc
         helpmod_reply(sender, returntype, "Can not handle the topic of channel %s: Unknown operation %s", hchannel_get_name(hchan), argv[0]);
 }
 
-void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     huser *husr;
     int i;
@@ -1539,7 +1539,7 @@ void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int argc, 
     }
 }
 
-void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hchannel_user **hchanuser;
@@ -1584,7 +1584,7 @@ void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* ostr, in
     helpmod_reply(sender, returntype, "Channel %s has been cleared of normal users", hchannel_get_name(hchan));
 }
 
-void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     int i;
@@ -1640,7 +1640,7 @@ void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, int argc,
         helpmod_kick(hchan, targets[i], reason);
 }
 
-void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     haccount *target = sender->account;
@@ -1764,7 +1764,7 @@ void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, int argc
     }
 }
 
-void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hstat_channel *channel_stats;
@@ -1862,7 +1862,7 @@ void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int 
     }
 }
 
-void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hstat_accounts_array arr;
@@ -1924,7 +1924,7 @@ void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* ostr, in
     free(arr.array);
 }
 
-void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hstat_accounts_array arr;
@@ -1964,7 +1964,7 @@ void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, int argc
     free(arr.array);
 }
 
-void helpmod_cmd_report (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_report (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan, *target;
     DEFINE_HCHANNEL;
@@ -1999,7 +1999,7 @@ void helpmod_cmd_report (huser *sender, channel* returntype, char* ostr, int arg
     helpmod_reply(sender, returntype, "Channel %s is now reported to channel %s (%s)", hchannel_get_name(hchan), hchannel_get_name(hchan->report_to), hchannel_get_state(hchan, H_REPORT));
 }
 
-void helpmod_cmd_mode(huser *sender, channel* returntype, int change, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     huser_channel *huserchan;
@@ -2132,12 +2132,12 @@ void helpmod_cmd_mode(huser *sender, channel* returntype, int change, char* ostr
     }
 }
 
-void helpmod_cmd_op (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_OP, ostr, argc, argv); }
-void helpmod_cmd_deop (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_DEOP, ostr, argc, argv); }
-void helpmod_cmd_voice (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_VOICE, ostr, argc, argv); }
-void helpmod_cmd_devoice (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_DEVOICE, ostr, argc, argv); }
+static void helpmod_cmd_op (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_OP, ostr, argc, argv); }
+static void helpmod_cmd_deop (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_DEOP, ostr, argc, argv); }
+static void helpmod_cmd_voice (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_VOICE, ostr, argc, argv); }
+static void helpmod_cmd_devoice (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_mode(sender, returntype, H_CMD_DEVOICE, ostr, argc, argv); }
 
-void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, int argc, char *argv[])
+static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, int argc, char *argv[])
 {
     hchannel *hchan;
     int i;
@@ -2164,16 +2164,21 @@ void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, int argc
             return;
         }
         htick = hticket_get(sender->real_user->authname ,hchan);
+
         if (htick == NULL)
         {
             helpmod_reply(sender, returntype, "Can not invite: You do not have an invite ticket for channel %s", argv[0]);
             return;
         }
-        else
+
+        if (nickbanned(sender->real_user, hchan->real_channel))
         {
-            helpmod_invite(hchan, sender);
-            helpmod_reply(sender, returntype, "Invited you to channel %s", hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Can not invite: You are banned from channel channel %s", argv[0]);
+            return;
         }
+
+        helpmod_invite(hchan, sender);
+        helpmod_reply(sender, returntype, "Invited you to channel %s", hchannel_get_name(hchan));
         return;
     }
 
@@ -2203,7 +2208,7 @@ void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, int argc
     }
 }
 
-void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int expiration = HTICKET_EXPIRATION_TIME;
     hchannel *hchan;
@@ -2268,7 +2273,7 @@ void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, int arg
     helpmod_reply(husr, NULL, "You have been issued an invite ticket for channel %s. This ticket is valid for a period of %s. You can use my invite command to get to the channel now. Type /msg %s invite %s",hchannel_get_name(hchan), helpmod_strtime(HTICKET_EXPIRATION_TIME), helpmodnick->nick, hchannel_get_name(hchan));
 }
 
-void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int i;
     hchannel *hchan;
@@ -2326,7 +2331,7 @@ void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr, int ar
     }
 }
 
-void helpmod_cmd_tickets (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_tickets (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     hticket *htick;
@@ -2364,7 +2369,7 @@ void helpmod_cmd_tickets (huser *sender, channel* returntype, char* ostr, int ar
     helpmod_reply(sender, returntype, "Done listing tickets. Channel %s had %d valid tickets", hchannel_get_name(hchan), i);
 }
 
-void helpmod_cmd_showticket (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
     huser *husr;
@@ -2404,6 +2409,136 @@ void helpmod_cmd_showticket (huser *sender, channel* returntype, char* ostr, int
         }
         helpmod_reply(sender, returntype, "User %s has a ticket for chanenl %s expiring in %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
     }
+}
+
+static int helpmod_cmd_termstats_sort(const void *left, const void *right)
+{
+    return (*((hterm**)left))->usage - (*((hterm**)right))->usage;
+}
+
+static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hterm **arr, *origin;
+    hchannel *hchan;
+    int i, count;
+
+    DEFINE_HCHANNEL;
+
+    if (hchan == NULL)
+        origin = hterms;
+    else
+        origin = hchan->channel_hterms;
+
+    count = hterm_count(origin);
+
+    if (count == 0)
+    {
+        helpmod_reply(sender, returntype, "Can not list term usage statistics: No terms available");
+        return;
+    }
+
+    arr = malloc(sizeof(hterm*) * count);
+    assert(arr != NULL);
+
+    for (i=0;i < count;i++,origin = origin->next)
+        arr[i] = origin;
+
+    qsort(arr, count, sizeof(hterm*), helpmod_cmd_termstats_sort);
+
+    if (hchan == NULL)
+        helpmod_reply(sender, returntype, "10 Most used global terms");
+    else
+        helpmod_reply(sender, returntype, "10 Most used terms for channel %s", hchannel_get_name(hchan));
+
+    for (i=0;i < 10 && i < count;i++)
+        helpmod_reply(sender, returntype, "#%02d %32s :%d",i, arr[i]->name->content,arr[i]->usage);
+
+    free(arr);
+}
+
+static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    channel *chan;
+    nick *nck;
+    int i;
+
+    if (argc == 0)
+    {
+        helpmod_reply(sender, returntype, "Can not check channel: Channel not defined");
+        return;
+    }
+
+    chan = findchannel(argv[0]);
+    if (chan == NULL)
+    {
+        helpmod_reply(sender, returntype, "Can not check channel: Channel %s not found", argv[0]);
+        return;
+    }
+    /* first pass */
+    for (i=0;i < chan->users->hashsize;i++)
+        {
+            nck = getnickbynumeric(chan->users->content[i]);
+            if (!nck) /* it's a hash, not an array */
+                continue;
+
+            if (IsOper(nck) && strlen(nck->nick) > 1)
+            {
+                helpmod_reply(sender, returntype, "Can not check channel: Permission denied. Channel %s has an oper on it", argv[0]);
+                return;
+            }
+        }
+
+    helpmod_reply(sender, returntype, "Information on channel %s", argv[0]);
+    helpmod_reply(sender, returntype, "Channel created %s ago", helpmod_strtime(time(NULL) - chan->timestamp));
+    /* second pass */
+    for (i=0;i < chan->users->hashsize;i++)
+        {
+            nck = getnickbynumeric(chan->users->content[i]);
+            char buf[256];
+            if (!nck) /* it's a hash, not an array */
+                continue;
+            helpmod_reply(sender, returntype, "%s", visiblehostmask(nck, buf));
+
+        }
+}
+
+static void helpmod_cmd_statsdebug (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    haccount *hacc = haccounts;
+    hstat_account *ptr;
+    int i;
+
+    helpmod_reply(sender, returntype, "Account statistics");
+    for (;hacc;hacc = hacc->next)
+        for (ptr = hacc->stats;ptr;ptr = ptr->next)
+        {
+            helpmod_reply(sender, returntype, "Account %s channel %s short-term", hacc->name->content, hchannel_get_name(ptr->hchan));
+            for (i = 0;i < 7;i++)
+                helpmod_reply(sender, returntype, "%d %d %d %d", ptr->week[i].time_spent, ptr->week[i].prime_time_spent, ptr->week[i].lines, ptr->week[i].words);
+            helpmod_reply(sender, returntype, "Account %s channel %s long-term", hacc->name->content, hchannel_get_name(ptr->hchan));
+            for (i = 0;i < 10;i++)
+                helpmod_reply(sender, returntype, "%d %d %d %d", ptr->longterm[i].time_spent, ptr->longterm[i].prime_time_spent, ptr->longterm[i].lines, ptr->longterm[i].words);
+        }
+}
+
+static void helpmod_cmd_message (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+
+    if (argc < 2)
+    {
+        helpmod_reply(sender, returntype, "Can not send a message: Insufficient arguments");
+        return;
+    }
+    hchan = hchannel_get_by_name(argv[0]);
+    if (hchan == NULL)
+    {
+        helpmod_reply(sender, returntype, "Can not send a message: Invalid channel %s", argv[0]);
+        return;
+    }
+    SKIP_WORD;
+    helpmod_message_channel(hchan, "(%s) %s", sender->real_user->nick, ostr);
+    helpmod_reply(sender, returntype, "Message sent to %s", hchannel_get_name(hchan));
 }
 
 /* old H stuff */
@@ -2628,6 +2763,10 @@ void hcommands_add(void)
     hcommand_add("tickets", H_STAFF, helpmod_cmd_tickets, "Lists all valid tickets for a channel");
     hcommand_add("showticket", H_STAFF, helpmod_cmd_showticket, "Shows the ticket for the user");
 
+    hcommand_add("termstats", H_OPER, helpmod_cmd_termstats, "Lists usage statistics for terms");
+    hcommand_add("checkchannel", H_STAFF, helpmod_cmd_checkchannel, "Shows channel information for any channel");
+    hcommand_add("statsdebug", H_ADMIN, helpmod_cmd_statsdebug, "Statistics debug command");
+    hcommand_add("message", H_TRIAL, helpmod_cmd_message, "Sends a message to a channel");
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
 }

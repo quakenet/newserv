@@ -1,0 +1,4 @@
+Syntax:  termstats [channel]
+Example: termstats #feds
+Lists term usage statistics for a channel.
+If no channel is defined then the statistics for global term usage is listed.

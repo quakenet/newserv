@@ -1,0 +1,5 @@
+Syntax:  checkchannel [channel]
+Example: checkchannel #chan
+Lists some information on a channel.
+The information currently consists of the channel creation time and a list of users on the channel.
+As a security restriction, channels with opers on them can not be checked using this command.

@@ -18,9 +18,10 @@ hterm *hterm_add(hterm** ptr, const char *name, const char *desc)
     if (name == NULL || desc == NULL || hterm_get(*ptr, name))
         return NULL;
 
-    htrm = (hterm*)malloc(sizeof(htrm));
+    htrm = (hterm*)malloc(sizeof(hterm));
     htrm->name = getsstring(name, strlen(name));
     htrm->description = getsstring(desc, strlen(desc));
+    htrm->usage = 0;
 
     htrm->next = *ptr;
     *ptr = htrm;
@@ -30,27 +31,18 @@ hterm *hterm_add(hterm** ptr, const char *name, const char *desc)
 
 hterm *hterm_get(hterm *source, const char *str)
 {
-    hterm *ptr;
-    if (source == NULL)
-        ptr = hterms;
-    else
-        ptr = source;
+    hterm *ptr = source;
+
     for (;ptr;ptr = ptr->next)
         if (!ci_strcmp(ptr->name->content, str))
             return ptr;
-    if (source != NULL)
-        return hterm_get(NULL, str);
-    else
-        return NULL;
+    return NULL;
 }
 
 hterm *hterm_find(hterm *source, const char *str)
 {
     hterm *ptr;
     char buffer[512];
-
-    if (source == NULL)
-        source = hterms;
 
     sprintf(buffer, "*%s*", str);
 
@@ -60,39 +52,29 @@ hterm *hterm_find(hterm *source, const char *str)
     for (ptr = source;ptr;ptr = ptr->next)
         if (strregexp(ptr->description->content, buffer))
             return ptr;
-    if (source == NULL)
-        return hterm_find(NULL, str);
-    else
-        return NULL;
+    return NULL;
 }
 
 hterm *hterm_get_and_find(hterm *source, const char *str)
 {
-    /*hterm *ptr = hterm_get(source, str);
-    if (ptr == NULL)
-        ptr = hterm_find(source, str);
-        return ptr;*/
-    /* search order: get source, get NULL, find source, find NULL */
+    /* search order: get source, get hterms, find source, find hterms */
     hterm *ptr;
     ptr = hterm_get(source, str);
     if (ptr != NULL)
         return ptr;
-    ptr = hterm_get(NULL, str);
+    ptr = hterm_get(hterms, str);
     if (ptr != NULL)
         return ptr;
     ptr = hterm_find(source, str);
     if (ptr != NULL)
         return ptr;
-    ptr = hterm_find(NULL, str);
+    ptr = hterm_find(hterms, str);
     return ptr;
 }
 
 hterm *hterm_del(hterm** start, hterm *htrm)
 {
     hterm** ptr = start;
-
-    if (start == NULL)
-        ptr = &hterms;
 
     for (;*ptr;ptr = &(*ptr)->next)
         if (*ptr == htrm)
@@ -106,10 +88,7 @@ hterm *hterm_del(hterm** start, hterm *htrm)
             return NULL;
         }
 
-    if (start != NULL)
-        return hterm_del(NULL, htrm);
-    else
-        return htrm;
+    return htrm;
 }
 
 void hterm_del_all(hterm **source)

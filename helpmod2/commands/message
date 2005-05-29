@@ -1,0 +1,3 @@
+Syntax:  message <channel> <message>
+Sends a message to the channel. The message sent is prefixed with your nick. 
+G must be on the channel the message is sent to.

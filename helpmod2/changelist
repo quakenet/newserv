@@ -204,3 +204,13 @@ Fixed some function calls to a more secure form
 Changed the ban system a bit, real host no longer preferred
 fixed G realname
 Fixed the annoying term bug
+
+2.03
+Fixed a bug in term finding
+Some code cleanup
+Added two new commands checkchannel and termstats
+Added a debug command for finding the annoying stats bug
+Banned users can no longer invite themselves to channels they're banned from
+Added a new command message and wrote command help for it
+Fixed a nasty bug concerning terms
+Fixed a minor bug in term listing
