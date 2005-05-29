@@ -22,7 +22,7 @@
 
 #define MAX_ARGS 100
 
-#define PROTOCOL_VERSION "1"
+#define PROTOCOL_VERSION "2"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
 
 typedef struct handler {

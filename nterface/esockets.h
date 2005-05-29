@@ -7,6 +7,7 @@
 #define __esockets_H
 
 #include "../lib/helix.h"
+#include <endian.h>
 
 #define ESOCKET_UNIX_DOMAIN            ESOCKET_LISTENING
 #define ESOCKET_UNIX_DOMAIN_CONNECTED  ESOCKET_INCOMING
@@ -93,6 +94,8 @@ typedef struct esocket {
   void *tag;
   helix_ctx keysend;
   helix_ctx keyreceive;
+  unsigned char sendnonce[NONCE_LEN];
+  unsigned char recvnonce[NONCE_LEN];
 } esocket;
 
 struct esocket *esocket_add(int fd, char socket_type, struct esocket_events *events, unsigned short token);
@@ -109,6 +112,16 @@ void esocket_clean_by_token(unsigned short token);
 void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce, unsigned char *theirnonce);
 void esocket_disconnect_when_complete(struct esocket *active);
 int esocket_raw_write(struct esocket *sock, char *buffer, int bytes);
+
+#ifndef htonq
+#if BYTE_ORDER == BIG_ENDIAN
+  #define htonq(x) x
+  #define ntohq(x) x
+#else
+  #define htonq(x) ntohq(x)
+  #define ntohq(x) (((u_int64_t)htonl((x)>>32))|(((u_int64_t)htonl(x))<<32))
+#endif
+#endif
 
 #endif
 

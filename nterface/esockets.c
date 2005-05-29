@@ -2,6 +2,8 @@
   Easy async socket library with HELIX encryption and authentication
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.03
+    - changed nonce logic
   v1.02
     - added some \n stripping in crypto code
   v1.01
@@ -362,6 +364,12 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
   return 1;
 }
 
+unsigned char *increase_nonce(unsigned char *nonce) {
+  u_int64_t *inonce = (u_int64_t *)(nonce + 8);
+  *inonce = htonq(ntohq(*inonce) + 1);
+  return nonce;
+}
+
 int esocket_write(struct esocket *sock, char *buffer, int bytes) {
   int ret;
   if(sock->in.on_parse == buffer_parse_ascii) {
@@ -375,6 +383,7 @@ int esocket_write(struct esocket *sock, char *buffer, int bytes) {
     packetlength = htons(bytes + USED_MAC_LEN);
 
     memcpy(newbuf, &packetlength, sizeof(packet_t));
+    h_nonce(&sock->keysend, increase_nonce(sock->sendnonce));
     h_encrypt(&sock->keysend, (unsigned char *)buffer, bytes, mac);
 
     memcpy(newbuf + sizeof(packet_t), buffer, bytes);
@@ -463,6 +472,7 @@ int buffer_parse_crypt(struct esocket *sock) {
   if(buf->packet_length <= buf->writepos - buf->startpos) {
     int ret;
     char *newline, *p;
+    h_nonce(&sock->keyreceive, increase_nonce(sock->recvnonce));
     h_decrypt(&sock->keyreceive, (unsigned char *)buf->startpos, buf->packet_length - USED_MAC_LEN, mac);
     
     if(memcmp(mac, buf->startpos + buf->packet_length - USED_MAC_LEN, USED_MAC_LEN))
@@ -493,6 +503,9 @@ void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce
   unsigned char ukey[20];
   SHA1_CTX context;
 
+  memcpy(sock->sendnonce, ournonce, sizeof(sock->sendnonce));
+  memcpy(sock->recvnonce, theirnonce, sizeof(sock->recvnonce));
+
   SHA1Init(&context);
   SHA1Update(&context, (unsigned char *)key, strlen(key));
   SHA1Update(&context, (unsigned char *)" ", 1);
@@ -502,10 +515,8 @@ void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce
 
   sock->in.on_parse = buffer_parse_crypt;
   sock->in.buffer_size = MAX_BINARY_LINE_SIZE;
-
   
   h_key(&sock->keysend, ukey, sizeof(ukey));
-  h_nonce(&sock->keysend, ournonce);
 
   SHA1Init(&context);
   SHA1Update(&context, (unsigned char *)key, strlen(key));
@@ -514,6 +525,5 @@ void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce
   SHA1Final(ukey, &context);
 
   h_key(&sock->keyreceive, ukey, sizeof(ukey));
-  h_nonce(&sock->keyreceive, theirnonce);
 }
 
