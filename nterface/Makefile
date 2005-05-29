@@ -2,7 +2,7 @@
 .PHONY: all
 all: nterfacer.so nterfacer_control.so nterfacer_relay.so nterfacer_chanstats.so
 
-nterfacer.so: nterfacer.o logging.o esockets.o
+nterfacer.so: nterfacer.o logging.o esockets.o library.o
 	ld -shared -Bdynamic -o $@ $^
 
 nterfacer_control.so: nterfacer_control.o
