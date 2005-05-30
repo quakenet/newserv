@@ -42,7 +42,7 @@ typedef unsigned short packet_t;
 #define MAX_BINARY_LINE_SIZE MAX_BUFSIZE
 #define MAX_ASCII_LINE_SIZE  MAX_BINARY_LINE_SIZE - sizeof(packet_t) - USED_MAC_LEN
 
-#define MAX_OUT_QUEUE_SIZE   1500
+#define MAX_OUT_QUEUE_SIZE   5000
 
 struct buffer;
 struct esocket;

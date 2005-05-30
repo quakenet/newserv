@@ -429,7 +429,9 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
           return 1;
         }
 
-        return esocket_write_line(sock, "%s %s", hex, int_to_hex(socket->ournonce, hexbuf, NONCE_LEN));
+        if(esocket_write_line(sock, "%s %s", hex, int_to_hex(socket->ournonce, hexbuf, NONCE_LEN)))
+           return BUF_ERROR;
+        return 0;
       }
       break;
     case SS_VERSIONED:
@@ -460,7 +462,7 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         if(!ret) {
           switch_buffer_mode(sock, socket->permit->password->content, socket->ournonce, theirnonce);
         } else {
-          return ret;
+          return BUF_ERROR;
         }
       } else {
         nterface_log(nrl, NL_INFO, "Bad CR drop: %s", socket->permit->hostname->content);
