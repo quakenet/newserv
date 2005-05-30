@@ -25,10 +25,14 @@
 #define PROTOCOL_VERSION "2"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
 
+struct rline;
+
+typedef int (*handler_function)(struct rline *ri, int argc, char **argv);
+
 typedef struct handler {
   sstring *command;
   int args; /* MINIMUM ARGUMENTS */
-  void *function;
+  handler_function function;
   struct handler *next;
   void *service;
 } handler;
@@ -68,8 +72,6 @@ extern struct nterface_auto_log *nrl;
 int accept_fd = -1;
 struct permitted *permits;
 int permit_count = 0;
-
-typedef int (*handler_function)(struct rline *ri, int argc, char **argv);
 
 struct service_node *register_service(char *name);
 struct handler *register_handler(struct service_node *service, char *command, int args, handler_function fp);

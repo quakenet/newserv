@@ -64,6 +64,7 @@ typedef struct esocket_in_buffer {
 typedef struct esocket_packet {
   char *line;
   packet_t size;
+  packet_t startpos;
   struct esocket_packet *next;
 } esocket_packet;
 

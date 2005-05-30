@@ -185,6 +185,7 @@ void esocket_disconnect(struct esocket *active) {
         socklist = p->next;
       }
      
+
       deregisterhandler(p->fd, 1);
 
       for(;pkt;) {
@@ -268,6 +269,7 @@ struct esocket_packet *esocket_new_packet(struct esocket_out_buffer *buf, char *
 
   nw->next = NULL;
   nw->size = bytes;
+  nw->startpos = 0;
 
   memcpy(nw->line, buffer, bytes);
 
@@ -318,7 +320,7 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
   } else if(buf->count) { /* if we're just flushing the buffer */
     int ret;
     for(;;) {
-      ret = write(sock->fd, buf->head->line, buf->head->size);
+      ret = write(sock->fd, buf->head->line + buf->head->startpos, buf->head->size);
       if(!ret) {
         return 0;
       } else if(ret == buf->head->size) {
@@ -353,7 +355,7 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
             break;
         }
       } else {
-        buf->head->line+=ret;
+        buf->head->startpos+=ret;
         buf->head->size-=ret;
       }
     }

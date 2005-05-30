@@ -277,7 +277,7 @@ struct handler *register_handler(struct service_node *service, char *command, in
     return NULL;
   }
 
-  hp->function = (handler_function *)fp;
+  hp->function = fp;
   hp->args = args;
 
   hp->next = service->handlers;
@@ -475,7 +475,9 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         if(reason == RE_SOCKET_ERROR)
           return BUF_ERROR;
         if(reason != RE_BAD_LINE) {
-          return esocket_write_line(sock, "%d,E%d,%s", number, reason, request_error(reason));
+          if(esocket_write_line(sock, "%d,E%d,%s", number, reason, request_error(reason)))
+            return BUF_ERROR;
+          return 0;
         } else {
           return 1;
         }
@@ -609,7 +611,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   prequest->socket = socket;
 
   rlines = prequest;
-  re = ((handler_function)hl->function)(prequest, argcount, args);
+  re = (hl->function)(prequest, argcount, args);
   
   if(argcount)
     free(parsebuf);
@@ -669,6 +671,7 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
   char buf[MAX_BUFSIZE], escapedbuf[MAX_BUFSIZE * 2 + 1], *p, *tp;
   struct rline *pp, *lp = NULL;
   va_list ap;
+  int retval = RE_OK;
 
   if(li->socket) {
     va_start(ap, format);
@@ -679,7 +682,8 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
       if((*p == ',') || (*p == '\\'))
         *tp++ = '\\';
 
-    esocket_write_line(li->socket, "%d,OE%d,%s", li->id, error_code, escapedbuf);
+    if(esocket_write_line(li->socket, "%d,OE%d,%s", li->id, error_code, escapedbuf))
+      retval = RE_SOCKET_ERROR;
   }
 
   for(pp=rlines;pp;lp=pp,pp=pp->next) {
@@ -694,7 +698,7 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
     }
   }
   
-  return RE_OK;
+  return retval;
 }
 
 int ri_final(struct rline *li) {
