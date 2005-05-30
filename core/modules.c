@@ -102,6 +102,17 @@ int getindex(char *modulename) {
   return -1;
 }
 
+char *lsmod(int index) {
+  int i;
+  module *mods;
+
+  if (index < 0 || index >= modules.cursi)
+    return NULL;
+
+  mods=(module *)(modules.content);
+  return mods[index].name->content;
+}
+
 int isloaded(char *modulename) {
   if (getindex(modulename)==-1)
     return 0;

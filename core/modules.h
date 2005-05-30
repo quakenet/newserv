@@ -18,4 +18,5 @@ int insmod(char *modulename);
 int getindex(char *modulename);
 int isloaded(char *modulename);
 int rmmod(char *modulename);
+char *lsmod(int index);
 #endif

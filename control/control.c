@@ -40,6 +40,7 @@ int relink(void *sender, int cargc, char **cargv);
 int die(void *sender, int cargc, char **cargv);
 int controlinsmod(void *sender, int cargc, char **cargv);
 int controlrmmod(void *sender, int cargc, char **cargv);
+int controllsmod(void *sender, int cargc, char **cargv);
 int controlrehash(void *sender, int cargc, char **cargv);
 int controlshowcommands(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
@@ -54,6 +55,7 @@ void _init() {
   addcommandtotree(controlcmds,"die",10,1,&die);
   addcommandtotree(controlcmds,"insmod",10,1,&controlinsmod);
   addcommandtotree(controlcmds,"rmmod",10,1,&controlrmmod);
+  addcommandtotree(controlcmds,"lsmod",10,1,&controllsmod);
   addcommandtotree(controlcmds,"rehash",10,1,&controlrehash);
   addcommandtotree(controlcmds,"showcommands",10,0,&controlshowcommands);
   addcommandtotree(controlcmds,"reload",10,1,&controlreload);
@@ -221,7 +223,7 @@ int controlinsmod(void *sender, int cargc, char **cargv) {
 
 int controlrmmod(void *sender, int cargc, char **cargv) {
   if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: insmod <modulename>");
+    sendmessagetouser(mynick,(nick *)sender,"Usage: rmmod <modulename>");
     return CMD_ERROR;
   }
   
@@ -238,6 +240,24 @@ int controlrmmod(void *sender, int cargc, char **cargv) {
       sendmessagetouser(mynick,(nick *)sender,"An unknown error occured.");
       return CMD_ERROR;
   }
+}
+
+int controllsmod(void *sender, int cargc, char **cargv) {
+  int i=0;
+  char *ptr;
+
+  if (cargc < 1) { /* list all loaded modules */
+    ptr = lsmod(i);
+    sendmessagetouser(mynick,(nick *)sender,"Module");
+    while (ptr != NULL) {
+      sendmessagetouser(mynick,(nick *)sender,"%s", ptr);
+      ptr = lsmod(++i);
+    }
+  } else {
+    ptr = lsmod(getindex(cargv[0]));
+    sendmessagetouser(mynick,(nick *)sender,"Module \"%s\" %s", cargv[0], (ptr ? "is loaded." : "is NOT loaded."));
+  }
+  return CMD_OK;
 }
 
 int controlreload(void *sender, int cargc, char **cargv) {
