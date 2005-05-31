@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.06
+    - found \r bug, and another format string problem...
   v1.05
     - oops, fixed quit bug
     - oops, forgot about rehash hook
@@ -18,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
@@ -143,6 +146,30 @@ void _fini(void) {
     deregister_service(node);
 }
 
+void stripmessagetouser(nick *np, nick *dest, char *servername, char *format, ...) {
+  char buf[BUFSIZE], *cp, *writebuf;
+  va_list va;
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+  
+  for(writebuf=cp=buf;*cp;) {
+    if(*cp == '\r') {
+      cp++;
+    } else {
+      *writebuf++ = *cp++;
+    }
+  }
+  *writebuf = '\0';
+
+  if(servername) {
+    sendsecuremessagetouser(np, dest, servername, "%s", buf);
+  } else {
+    sendmessagetouser(np, dest, "%s", buf);
+  }
+}
+
 int relay_handler(struct rline *ri, int argc, char **argv) {
   char ournick[NICKLEN + 1];
   struct rld *np;
@@ -242,11 +269,11 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
   
   if(pcre_exec(onickname.phrase, onickname.hint, dest->nick, strlen(dest->nick), 0, 0, NULL, 0) >= 0) {
     np->mode|=MODE_IS_O;
-    sendsecuremessagetouser(np->nick, dest, serverlist[dest->numeric>>18].name->content, "AUTH %s %s", ousername->content, opassword->content);
+    stripmessagetouser(np->nick, dest, serverlist[dest->numeric>>18].name->content, "AUTH %s %s", ousername->content, opassword->content);
   }
 
   for(i=3;i<argc;i++)
-    sendmessagetouser(np->nick, dest, argv[i]);
+    stripmessagetouser(np->nick, dest, NULL, "%s", argv[i]);
 
   return RE_OK;
 }
