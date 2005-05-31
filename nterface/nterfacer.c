@@ -240,7 +240,7 @@ int setup_listening_socket(void) {
   
   listen(fd, 5);
   
-  if(ioctl(fd, FIONBIO, &opt) !=0) {
+  if(ioctl(fd, FIONBIO, &opt)) {
     nterface_log(nrl, NL_ERROR, "Unable to set listen socket non-blocking.");
     return -1;
   }
@@ -357,8 +357,8 @@ void nterfacer_accept_event(struct esocket *socket) {
     return;
   }
 
-  if(ioctl(newfd, FIONBIO, &opt) !=0) {
-    nterface_log(nrl, NL_ERROR, "Unable to set listen socket non-blocking.");
+  if(ioctl(newfd, FIONBIO, &opt)) {
+    nterface_log(nrl, NL_ERROR, "Unable to set accepted socket non-blocking.");
     return;
   }
   
