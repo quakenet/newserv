@@ -26,6 +26,8 @@ void handledata(int fd, short events);
 int parseline();
 int registerserverhandler(const char *command, CommandHandler handler, int maxparams);
 int deregisterserverhandler(const char *command, CommandHandler handler);
+int registernumerichandler(const int numeric, CommandHandler handler, int maxparams);
+int deregisternumerichandler(const int numeric, CommandHandler handler);
 char *getmynumeric();
 time_t getnettime();
 void setnettime(time_t newtime);

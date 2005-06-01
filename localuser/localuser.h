@@ -15,6 +15,8 @@
 #define LU_INVITE      0x0006 /* (sender, channel) */
 #define LU_KICKED      0x0007 /* (kicker, channel, reason) */
 #define LU_KILLED      0x0010 /* () */
+#define LU_STATS       0x0020 /* (server, numeric, data) */
+#define LU_STATS_END   0x0021 /* server */
 
 /* Callback function for privmsg etc. */
 typedef void (*UserMessageHandler)(nick *,int,void **);

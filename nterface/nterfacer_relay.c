@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.10
+    - added stats support
   v1.06
     - found \r bug, and another format string problem...
   v1.05
@@ -35,6 +37,8 @@ regex onickname;
 int number = 1;
 char started = 0;
 
+int stats_handler(struct rline *ri, int argc, char **argv);
+
 void _init(void) {
   if(!load_config())
     return;
@@ -43,6 +47,8 @@ void _init(void) {
   MemCheck(node);
 
   register_handler(node, "relay", 4, relay_handler);
+  register_handler(node, "stats", 2, stats_handler);
+
   registerhook(HOOK_NICK_QUIT, &relay_quits);
   registerhook(HOOK_IRC_DISCON, &relay_disconnect);
   registerhook(HOOK_CORE_REHASH, &relay_rehash);
@@ -146,34 +152,27 @@ void _fini(void) {
     deregister_service(node);
 }
 
-void stripmessagetouser(nick *np, nick *dest, char *servername, char *format, ...) {
-  char buf[BUFSIZE], *cp, *writebuf;
-  va_list va;
+nick *relay_getnick(void) {
+  static char ournick[NICKLEN + 1];
+  int attempts = 100;
 
-  va_start(va, format);
-  vsnprintf(buf, sizeof(buf), format, va);
-  va_end(va);
-  
-  for(writebuf=cp=buf;*cp;) {
-    if(*cp == '\r') {
-      cp++;
-    } else {
-      *writebuf++ = *cp++;
-    }
-  }
-  *writebuf = '\0';
+  do {
+    snprintf(ournick, sizeof(ournick), "nterfacer%d", number++);
+    if(number > 60000)
+      number = 1;
 
-  if(servername) {
-    sendsecuremessagetouser(np, dest, servername, "%s", buf);
-  } else {
-    sendmessagetouser(np, dest, "%s", buf);
-  }
+    if(!getnickbynick(ournick))
+       return registerlocaluser(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
+
+    attempts--;
+  } while(attempts > 0);
+
+  return NULL;
 }
 
 int relay_handler(struct rline *ri, int argc, char **argv) {
-  char ournick[NICKLEN + 1];
   struct rld *np;
-  int lines = 0, attempts = 10, i;
+  int lines = 0, i;
   nick *dest;
   const char *rerror;
   int erroroffset;
@@ -192,6 +191,10 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
   dest = getnickbynick(argv[2]);
   if(!dest)
     return ri_error(ri, RELAY_NICK_NOT_FOUND, "Nickname not found!");
+
+  for(i=3;i<argc;i++)
+    if(strchr(argv[i], '\r'))
+      return ri_error(ri, RELAY_INVALID_CHARS, "Invalid character in input");
 
   np = malloc(sizeof(struct rld));
   MemCheckR(np, ri_error(ri, RELAY_MEMORY_ERROR, "Memory error"));
@@ -217,19 +220,7 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
     np->termination.remaining_lines = lines;
   }
 
-  do {
-    snprintf(ournick, sizeof(ournick), "nterfacer%d", number++);
-    if(number > 60000)
-      number = 1;
-
-    if(!getnickbynick(ournick)) {
-      np->nick = registerlocaluser(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
-      break;
-    }
-    attempts--;
-  } while(attempts > 0);
-  
-  if(attempts == 0) {
+  if(!(np->nick = relay_getnick())) {
     if(!lines) {
       pcre_free(np->termination.pcre.phrase);
       if(np->termination.pcre.hint)
@@ -237,17 +228,6 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
     }
     free(np);
     return ri_error(ri, RELAY_NICK_ERROR, "Unable to get a nickname!");
-  }
-
-  if(!np->nick) {
-    MemError();
-    if(!lines) {
-      pcre_free(np->termination.pcre.phrase);
-      if(np->termination.pcre.hint)
-        pcre_free(np->termination.pcre.hint);
-    }
-    free(np);
-    return ri_error(ri, RELAY_MEMORY_ERROR, "Memory error");
   }
 
   np->schedule = scheduleoneshot(time(NULL) + MESSAGE_TIMEOUT, &relay_timeout, np);
@@ -260,6 +240,7 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
     }
     deregisterlocaluser(np->nick, NULL);
     free(np);
+    return ri_error(ri, RELAY_MEMORY_ERROR, "Memory error");
   }
 
   np->dest = dest;
@@ -269,11 +250,64 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
   
   if(pcre_exec(onickname.phrase, onickname.hint, dest->nick, strlen(dest->nick), 0, 0, NULL, 0) >= 0) {
     np->mode|=MODE_IS_O;
-    stripmessagetouser(np->nick, dest, serverlist[dest->numeric>>18].name->content, "AUTH %s %s", ousername->content, opassword->content);
+    sendsecuremessagetouser(np->nick, dest, serverlist[dest->numeric>>18].name->content, "AUTH %s %s", ousername->content, opassword->content);
   }
 
   for(i=3;i<argc;i++)
-    stripmessagetouser(np->nick, dest, NULL, "%s", argv[i]);
+    sendmessagetouser(np->nick, dest, "%s", argv[i]);
+
+  return RE_OK;
+}
+
+int stats_handler(struct rline *ri, int argc, char **argv) {
+  struct rld *np;
+  char *server = argv[0], *command = argv[1], *more;
+  int serverid = findserver(server);
+  char targetnumeric[3];
+
+  if(serverid == -1)
+    return ri_error(ri, RELAY_SERVER_NOT_FOUND, "Server not found");
+
+  if(!command || !command[0] || (command[0] == ' ') || (command[0] == '\r') || (command[0] == ':'))
+    return ri_error(ri, RELAY_INVALID_COMMAND, "Invalid command");
+
+  if(argc > 2) {
+    more = argv[2];
+    if(strchr(more, '\r'))
+      return ri_error(ri, RELAY_INVALID_CHARS, "Invalid character in input");
+  } else {
+    more = NULL;
+  }
+
+  np = malloc(sizeof(struct rld));
+  MemCheckR(np, ri_error(ri, RELAY_MEMORY_ERROR, "Memory error"));
+
+  np->rline = ri;
+  np->mode = MODE_STATS;
+  np->dest = NULL;
+
+  if(!(np->nick = relay_getnick())) {
+    free(np);
+    return ri_error(ri, RELAY_NICK_ERROR, "Unable to get a nickname!");
+  }
+
+  np->schedule = scheduleoneshot(time(NULL) + MESSAGE_TIMEOUT, &relay_timeout, np);
+  if(!np->schedule) {
+    MemError();
+    deregisterlocaluser(np->nick, NULL);
+    free(np);
+  }
+
+  np->next = list;
+  list = np;
+
+  memcpy(targetnumeric, longtonumeric(serverid, 2), 3);
+  targetnumeric[2] = '\0';
+  if(more) {
+    irc_send("%s R %c %s :%s\r\n", longtonumeric(np->nick->numeric,5), command[0], targetnumeric, more);
+  } else {
+    irc_send("%s R %c :%s\r\n", longtonumeric(np->nick->numeric,5), command[0], targetnumeric);
+  }
 
   return RE_OK;
 }
@@ -291,8 +325,7 @@ void relay_messages(nick *target, int messagetype, void **args) {
     case LU_PRIVNOTICE:
     case LU_PRIVMSG:
     case LU_SECUREMSG:
-
-      if(item->dest != (nick *)args[0])
+      if(!item->dest || (item->dest != (nick *)args[0]))
         return;
      
       if((item->mode & MODE_IS_O) && !(item->mode & MODE_O_AUTH2)) {
@@ -330,6 +363,19 @@ void relay_messages(nick *target, int messagetype, void **args) {
         list = item->next;
       }
       dispose_rld_dontquit(item, 1);
+      break;
+
+    case LU_STATS:
+      if(item->mode != MODE_STATS)
+        return;
+      ri_append(item->rline, "%s", (char *)args[2]);
+      break;
+
+    case LU_STATS_END:
+      if(item->mode != MODE_STATS)
+        return;
+      ri_final(item->rline);
+      dispose_rld_prev(item, prev);
       break;
   }
 }

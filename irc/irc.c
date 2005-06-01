@@ -316,7 +316,13 @@ int parseline() {
   } else {
     if (cargv[1][0]>='0' && cargv[1][0]<='9') {
       /* It's a numeric! */
-     
+      int numeric = strtol(cargv[1], NULL, 0);
+      if((numeric >= MIN_NUMERIC) && (numeric <= MAX_NUMERIC)) {
+        for(c=numericcommands[numeric];c;c=c->next) {
+          if (((c->handler)((void *)numeric,cargc,cargv))==CMD_LAST)
+            return 0;
+        }
+      }
     } else {
       if ((c=findcommandintree(servercommands,cargv[1],1))==NULL) {
         /* We don't have a handler for this command */
@@ -340,6 +346,50 @@ int registerserverhandler(const char *command, CommandHandler handler, int maxpa
 
 int deregisterserverhandler(const char *command, CommandHandler handler) {
   return deletecommandfromtree(servercommands, command, handler);
+}
+
+int registernumerichandler(const int numeric, CommandHandler handler, int maxparams) {
+  Command *cp, *np;
+  if((numeric < MIN_NUMERIC) || (numeric > MAX_NUMERIC))
+    return 1;
+
+  /* doesn't happen that often */
+  np = (Command *)malloc(sizeof(Command));
+  np->handler = handler;
+  np->next = NULL;
+
+  /* I know I could just add to the beginning, but I guess since we have that LAST stuff
+   * it should go at the end */
+  if(!(cp = numericcommands[numeric])) {
+    numericcommands[numeric] = np;
+  } else {
+    for(;cp->next;cp=cp->next);
+      /* empty loop */
+
+    cp->next = np;
+  }
+
+  return 0;
+}
+
+int deregisternumerichandler(const int numeric, CommandHandler handler) {
+  Command *cp, *lp;
+  if((numeric < MIN_NUMERIC) || (numeric > MAX_NUMERIC))
+    return 1;
+
+  for(cp=numericcommands[numeric],lp=NULL;cp;lp=cp,cp=cp->next) {
+    if(cp->handler == handler) {
+      if(lp) {
+        lp->next = cp->next;
+      } else {
+        numericcommands[numeric] = cp->next;
+      }
+      free(cp);
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 char *getmynumeric() {
