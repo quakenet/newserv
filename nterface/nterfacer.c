@@ -1,7 +1,9 @@
 /*
   nterfacer
-  Copyright (C) 2004 Chris Porter.
+  Copyright (C) 2004-2005 Chris Porter.
   
+  v1.06
+    - tidy up
   v1.05
     - added application level ping support
   v1.04
@@ -42,7 +44,7 @@ struct rline *rlines = NULL;
 unsigned short nterfacer_token = BLANK_TOKEN;
 struct nterface_auto_log *nrl;
 
-struct service_node *ping;
+struct service_node *ping = NULL;
 
 int ping_handler(struct rline *ri, int argc, char **argv);
 

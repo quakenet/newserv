@@ -1,6 +1,6 @@
 /*
   nterfacer newserv control module
-  Copyright (C) 2004 Chris Porter.
+  Copyright (C) 2004-2005 Chris Porter.
 
   v1.07
     - added modes
