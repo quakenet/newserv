@@ -2,6 +2,8 @@
   nterfacer newserv control module
   Copyright (C) 2004 Chris Porter.
 
+  v1.07
+    - added modes
   v1.06
     - seperated chanstats
   v1.05
@@ -24,6 +26,8 @@
 #include "../lib/strlfunc.h"
 #include "../control/control.h"
 #include "../core/hooks.h"
+#include "../nick/nick.h"
+#include "../lib/flags.h"
 #include "../lib/irc_string.h"
 
 #include "library.h"
@@ -90,6 +94,7 @@ int handle_whois(struct rline *li, int argc, char **argv) {
   ri_append(li, "%s", np->host->name->content);
   ri_append(li, "%s", np->realname->name->content);
   ri_append(li, "%s", np->authname);
+  ri_append(li, "%s", printflags(np->umodes, umodeflags));
   
   channels = np->channels->content;
 
