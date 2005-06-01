@@ -214,3 +214,11 @@ Banned users can no longer invite themselves to channels they're banned from
 Added a new command message and wrote command help for it
 Fixed a nasty bug concerning terms
 Fixed a minor bug in term listing
+
+2.04
+Fixed the termstats output a bit
+Termstats now actually work
+Added a new acconf option to suppress the unknown command error
+Checkchannel command changed according to requests
+Showcommands now lists the commands in a bit more ordered fashion
+Top10 now prints the time spent fields in a different order

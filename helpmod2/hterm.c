@@ -61,15 +61,29 @@ hterm *hterm_get_and_find(hterm *source, const char *str)
     hterm *ptr;
     ptr = hterm_get(source, str);
     if (ptr != NULL)
+    {
+        ptr->usage++;
         return ptr;
+    }
     ptr = hterm_get(hterms, str);
     if (ptr != NULL)
+    {
+        ptr->usage++;
         return ptr;
+    }
     ptr = hterm_find(source, str);
     if (ptr != NULL)
+    {
+        ptr->usage++;
         return ptr;
+    }
     ptr = hterm_find(hterms, str);
-    return ptr;
+    if (ptr != NULL)
+    {
+        ptr->usage++;
+        return ptr;
+    }
+    return NULL;
 }
 
 hterm *hterm_del(hterm** start, hterm *htrm)

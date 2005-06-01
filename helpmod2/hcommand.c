@@ -14,7 +14,9 @@ hcommand* hcommand_add(const char *str, hlevel lvl, hcommand_function func, cons
 
     assert(hcommand_get(str, lvl) == NULL);
 
-    for (;*ptr && (*ptr)->level <= lvl;ptr = &(*ptr)->next);
+    /* Find the position */
+    for (;*ptr && (*ptr)->level < lvl;ptr = &(*ptr)->next);
+    for (;*ptr && (*ptr)->level <= lvl && strcmp(str, (*ptr)->name->content) > 0;ptr = &(*ptr)->next);
 
     tmp = *ptr;
     *ptr = (hcommand*)malloc(sizeof (hcommand));

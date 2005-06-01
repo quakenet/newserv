@@ -131,6 +131,8 @@ const char *haccount_get_sname(int index)
         return "Auto-op on join";
     case 4:
         return "Auto-voice on join";
+    case 5:
+        return "Suppress unknown command error";
     default:
         return "error. Please contact strutsi";
     }

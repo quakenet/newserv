@@ -18,12 +18,13 @@ enum
     H_NOSPAM       = 1 << 2,
     H_AUTO_OP      = 1 << 3,
     H_AUTO_VOICE   = 1 << 4,
+    H_NO_CMD_ERROR = 1 << 5,
     H_EXPIRES      = 1 << 31
 };
 
 #define H_ACCFLAGS_DEFAULT 0
 
-#define HACCOUNT_CONF_COUNT 4
+#define HACCOUNT_CONF_COUNT 5
 
 typedef struct haccount_struct
 {

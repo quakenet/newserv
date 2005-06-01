@@ -1959,7 +1959,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
 
     helpmod_reply(sender, returntype, "Top%d most active %ss of channel %s", top_n, hlevel_name(lvl), hchannel_get_name(hchan));
     for (i=0;i < arr.arrlen && i < top_n;i++)
-        helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s",i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
+        helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s",i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].time_spent), helpmod_strtime(arr.array[i].prime_time_spent));
 
     free(arr.array);
 }
@@ -2451,16 +2451,20 @@ static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr
         helpmod_reply(sender, returntype, "10 Most used terms for channel %s", hchannel_get_name(hchan));
 
     for (i=0;i < 10 && i < count;i++)
-        helpmod_reply(sender, returntype, "#%02d %32s :%d",i, arr[i]->name->content,arr[i]->usage);
+        helpmod_reply(sender, returntype, "#%02d %32s :%d",i+1, arr[i]->name->content,arr[i]->usage);
 
     free(arr);
 }
 
+static int helpmod_cmd_checkchannel_nicksort(const void *left, const void *right)
+{
+    return ci_strcmp((*((nick**)left))->nick, (*((nick**)right))->nick);
+}
 static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     channel *chan;
-    nick *nck;
-    int i;
+    nick *nck, **nick_array;
+    int i, j, nick_count = 0;
 
     if (argc == 0)
     {
@@ -2474,32 +2478,54 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
         helpmod_reply(sender, returntype, "Can not check channel: Channel %s not found", argv[0]);
         return;
     }
-    /* first pass */
+    /* first pass - verify validity and count nicks */
     for (i=0;i < chan->users->hashsize;i++)
         {
             nck = getnickbynumeric(chan->users->content[i]);
             if (!nck) /* it's a hash, not an array */
                 continue;
+
+            nick_count++;
 
             if (IsOper(nck) && strlen(nck->nick) > 1)
             {
                 helpmod_reply(sender, returntype, "Can not check channel: Permission denied. Channel %s has an oper on it", argv[0]);
                 return;
             }
-        }
+	}
+
+    nick_array = (nick**)malloc(nick_count * sizeof (nick *));
+
+    /* second pass - construct array */
+    for (i=0,j=0;i < chan->users->hashsize;i++)
+    {
+	nck = getnickbynumeric(chan->users->content[i]);
+	if (!nck) /* it's a hash, not an array */
+	    continue;
+
+        nick_array[j++] = nck;
+    }
 
     helpmod_reply(sender, returntype, "Information on channel %s", argv[0]);
     helpmod_reply(sender, returntype, "Channel created %s ago", helpmod_strtime(time(NULL) - chan->timestamp));
-    /* second pass */
-    for (i=0;i < chan->users->hashsize;i++)
-        {
-            nck = getnickbynumeric(chan->users->content[i]);
-            char buf[256];
-            if (!nck) /* it's a hash, not an array */
-                continue;
-            helpmod_reply(sender, returntype, "%s", visiblehostmask(nck, buf));
+    helpmod_reply(sender, returntype, "Channel topic: %s", chan->topic?chan->topic->content:"Not set");
+    helpmod_reply(sender, returntype, "Channel modes: %s", printflags(chan->flags, cmodeflags));
 
-        }
+    qsort(nick_array, nick_count, sizeof(nick*), helpmod_cmd_checkchannel_nicksort);
+    /* third pass - print results */
+    for (i=0;i < nick_count;i++)
+        {
+	    char buf[256];
+	    visiblehostmask(nick_array[i], buf);
+            if (IsAccount(nick_array[i]))
+		helpmod_reply(sender, returntype, "%s (%s)", buf, nick_array[i]->authname);
+	    else
+		helpmod_reply(sender, returntype, "%s", buf);
+	}
+
+    helpmod_reply(sender, returntype, "Users: %d, Clones %d", nick_count, nick_count - countuniquehosts(chan));;
+
+    free(nick_array);
 }
 
 static void helpmod_cmd_statsdebug (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2844,8 +2870,11 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
         char *ostr = args, **argv = (char**)&parsed_args; // for SKIP_WORD
         hcommand *hcom = hcommand_get(parsed_args[0], huser_get_level(sender));
 
-        if (hcom == NULL)
-            helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
+	if (hcom == NULL)
+	{
+            if (sender->account == NULL || !(sender->account->flags & H_NO_CMD_ERROR))
+		helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
+	}
         else
         {
             SKIP_WORD;
