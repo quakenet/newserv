@@ -50,9 +50,6 @@ qab_bot* qabot_getbot() {
   
   bot->micnumeric = 0;
   
-  bot->recording_section = 0;
-  bot->texts = 0;
-  
   bot->next = 0;
   bot->prev = 0;
 }
@@ -188,9 +185,6 @@ void qabot_delbot(qab_bot* bot) {
   deleteschedule(0, qabot_spamstored, (void*)bot);
   deleteschedule(0, qabot_createbotfakeuser, (void*)bot);
   deleteschedule(0, qabot_timer, (void*)bot);
-  
-  while (bot->texts)
-    qabot_freetext(bot, texts);
           
   while (bot->blocks) {
     b = bot->blocks;
@@ -330,12 +324,9 @@ void qabot_timer(void* arg) {
   if (bot->micnumeric && (bot->mic_timeout > 0) && (time(NULL) >= (bot->lastmic + bot->mic_timeout))) {
     bot->micnumeric = 0;
     
-    sendmessagetochannel(bot->np, bot->staff_chan->channel, "%s deactivated (idle timeout).", 
-      bot->recording_section ? "Recorder" : "Mic");
-    if (!bot->lastspam && !bot->recording_section)
+    sendmessagetochannel(bot->np, bot->staff_chan->channel, "Mic deactivated (idle timeout).");
+    if (!bot->lastspam)
       qabot_spamstored((void*)bot);
-    
-    bot->recording_section = 0;
   }
   
   scheduleoneshot(time(NULL) + 10, &qabot_timer, (void*)bot);

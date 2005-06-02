@@ -252,7 +252,7 @@ int qabot_dochanblock(void* np, int cargc, char** cargv) {
             if (!(qnick = getnickbynumeric(q->numeric)))
               continue;
             
-            sprintf(hostbuf, "%s!%s@%s", qnick->nick, qnick->ident, qnick->host->name->content);
+            sprintf(hostbuf,"%s!%s@%s", qnick->nick, qnick->ident, qnick->host->name->content);
             
             if (match(b->blockstr, hostbuf))
               continue;
@@ -277,11 +277,6 @@ int qabot_dochanclear(void* np, int cargc, char** cargv) {
   qab_spam* ns;
   qab_answer* a;
   qab_answer* na;
-  
-  if (bot->recording_section) {
-    sendmessagetochannel(bot->np, cp, "Deactivate recorder before using clear.");
-    return CMD_ERROR;
-  }
   
   for (s = bot->nextspam; s; s = ns) {
     ns = s->next;
@@ -660,9 +655,7 @@ int qabot_dochanmic(void* np, int cargc, char** cargv) {
   qab_bot* bot = qabot_getcurrentbot();
   channel* cp = qabot_getcurrentchannel();
   
-  if (bot->recording_section)
-    sendmessagetochannel(bot->np, cp, "Deactivate recorder before attempting to use mic.");
-  else if (bot->micnumeric) {
+  if (bot->micnumeric) {
     if (bot->micnumeric == sender->numeric) {
       bot->micnumeric = 0;
       sendmessagetochannel(bot->np, cp, "Mic deactivated.");
@@ -1001,243 +994,4 @@ int qabot_dochanunblock(void* np, int cargc, char** cargv) {
   sendnoticetouser(bot->np, sender, "No such block.");
   
   return CMD_ERROR;
-}
-
-int qabot_dochanlisttexts(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  
-  if (!texts) {
-    sendnoticetouser(bot->np, sender, "There are no texts added.");
-    return CMD_ERROR;
-  }
-  
-  sendnoticetouser(bot->np, sender, "Name:           Sections:");
-  for (; texts; texts = texts->next) {
-    sendnoticetouser(bot->np, sender, "%-15s %d", texts->name, texts->section_count);
-  }
-  
-  sendnoticetouser(bot->np, sender, "End of list.");
-  
-  return CMD_OK;
-}
-
-int qabot_dochanshowsection(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  qab_textsection* section;
-  int count = 0;
-  
-  if (cargc < 2) {
-    sendnoticetouser(bot->np, sender, "Syntax: !showsection <text name> <section number>");
-    return CMD_ERROR;
-  }
-  
-  if (!texts) {
-    sendnoticetouser(bot->np, sender, "There are no texts added.");
-    return CMD_ERROR;
-  }
-  
-  id = (int)strtol(cargv[1]);
-  
-  for (; texts; texts = texts->next) {
-    if (!ircd_strcmp(texts->name, cargv[0])) {
-      for (section = texts->sections; section && (count <= section->section_count); section = section->next) {
-        if (++count == id) {
-          qab_spam* lines;
-          int lineno = 0;
-          
-          sendnoticetouser(bot->np, sender, "Section %d (of text %s) contents:", count, texts->name);
-          for (lines = section->lines; lines; lines = lines->next)
-            sendnoticetouser(bot->np, sender, "%-2d> %s", ++lineno, lines->message);
-          sendnoticetouser(bot->np, sender, "End of section.");
-            
-          return CMD_OK;
-        }
-      }
-      sendnoticetouser(bot->np, sender, "No such section.");
-      return CMD_ERROR;
-    }
-  }
-  
-  sendnoticetouser(bot->np, sender, "No such text.");
-  
-  return CMD_ERROR;
-}
-
-int qabot_dochanaddtext(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  
-  if (cargc < 1) {
-    sendnoticetouser(bot->np, sender, "Syntax: !addtext <text name>");
-    return CMD_ERROR;
-  }
-  
-  for (; texts; texts = texts->next) {
-    if (!ircd_strcmp(texts->name, cargv[0])) {
-      sendnoticetouser(bot->np, sender, "A text with this name already exists.");
-      return CMD_ERROR;
-    }
-  }
-  
-  texts = (qab_text*)malloc(sizeof(qab_text));
-  strncpy(texts->name, cargc[0], NICKLEN);
-  texts->name[NICKLEN] = '\0';
-  texts->sections = 0;
-  texts->sections_tail = 0;
-  texts->section_count = 0;
-  texts->next = bot->texts;
-  texts->prev = 0;
-  if (bot->texts)
-    bot->texts->prev = texts;
-  bot->texts = texts;
-  
-  sendnoticetouser(bot->np, sender, "Added text '%s'.", texts->name);
-  
-  return CMD_OK;
-}
-
-int qabot_dochandeltext(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  
-  if (cargc < 1) {
-    sendnoticetouser(bot->np, sender, "Syntax: !deltext <text name>");
-    return CMD_ERROR;
-  }
-  
-  for (; texts; texts = texts->next) {
-    if (!ircd_strcmp(texts->name, cargv[0])) {
-      sendnoticetouser(bot->np, sender, "Text '%s' deleted.", texts->name);
-      qabot_freetext(bot, texts);
-      return CMD_OK;
-    }
-  }
-  
-  sendnoticetouser(bot->np, sender, "No such text.");
-  
-  return CMD_ERROR;
-}
-
-int qabot_dochanaddsection(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  qab_textsection* section;
-  
-  if (cargc < 1) {
-    sendnoticetouser(bot->np, sender, "Syntax: !addsection <text name> [<section number>]");
-    return CMD_ERROR;
-  }
-  
-  for (; texts; texts = texts->next) {
-    if (!ircd_strcmp(texts->name, cargv[0])) {
-      int num;
-      if (cargc == 1 || !texts->sections_tail) {
-        section = (qab_textsection*)malloc(sizeof(qab_textsection));
-        section->lines = 0;
-        section->lines_tail = 0;
-        section->line_count = 0;
-        section->prev = 0;
-        section->next = 0;
-        texts->sections = section;
-        texts->sections_tail = section;
-        texts->section_count++;
-        num = 1;
-      }
-      else {
-      }
-      
-      sendnoticetouser(bot->np, sender, "Section %d added.", num);
-      return CMD_OK;
-    }
-  }
-  
-  sendnoticetouser(bot->np, sender, "No such text.");
-  
-  return CMD_ERROR;
-}
-
-int qabot_dochandelsection(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  qab_text* texts = bot->texts;
-  qab_textsection* section;
-  
-  if (cargc < 2) {
-    sendnoticetouser(bot->np, sender, "Syntax: !delsection <text name> <section number>");
-    return CMD_ERROR;
-  }
-  
-  for (; texts; texts = texts->next) {
-    if (!ircd_strcmp(texts->name, cargv[0])) {
-      for (section = texts->sections; section && (count <= section->section_count); section = section->next) {
-        if (++count == id) {
-          qabot_freesection(texts, section);
-          sendnoticetouser(bot->np, sender, "Section deleted.");
-          return CMD_OK;
-        }
-      }
-      sendnoticetouser(bot->np, sender, "No such section.");
-      return CMD_ERROR;
-    }
-  }
-  
-  sendnoticetouser(bot->np, sender, "No such text.");
-  
-  return CMD_ERROR;
-}
-
-int qabot_dochanrecord(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
-  qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
-  
-  if (bot->recording_section) {
-    if (bot->micnumeric == sender->numeric) {
-      bot->micnumeric = 0;
-      bot->recording_section = 0;
-      sendmessagetochannel(bot->np, cp, "Recorder deactivated.");
-    }
-    else {
-      sendmessagetochannel(bot->np, cp, "The recorder is already in use.");
-    }
-  }
-  else if (bot->micnumeric)
-    sendmessagetochannel(bot->np, cp, "Deactivate mic before attempting to use recorder.");
-  else if (cargc >= 2) {
-    qab_text* texts = bot->texts;
-    qab_textsection* section;
-    int id = (int)strtol(cargv[1]);
-    
-    for (; texts; texts = texts->next) {
-      if (!ircd_strcmp(texts->name, cargv[0])) {
-        for (section = texts->sections; section && (count <= section->section_count); section = section->next) {
-          if (++count == id) {
-            bot->lastmic = time(NULL);
-            bot->micnumeric = sender->numeric;
-            bot->recording_section = count;
-            sendmessagetochannel(bot->np, cp, "Recorder activated. Anything said by %s will be relayed in %s.", 
-              sender->nick, bot->public_chan->name->content);
-            deleteschedule(0, qabot_spamstored, (void*)bot);
-            return CMD_OK;
-          }
-        }
-        sendnoticetouser(bot->np, sender, "No such section.");
-        return CMD_ERROR;
-      }
-    }
-    
-    sendnoticetouser(bot->np, sender, "No such text.");
-    return CMD_ERROR;
-  }
-  else
-    sendmessagetochannel(bot->np, cp, "syntax: !record [<text name> <section number>]");
-  
-  return CMD_OK;
 }

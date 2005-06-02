@@ -24,9 +24,7 @@ void qabot_loaddb() {
   int spam_interval;
   int ask_wait;
   int queued_question_interval;
-  qab_bot* bot;
-  qab_block* b;
-  char blocktype;
+  qab_bot* b;
   
   if (!(f = fopen("qab_users", "r")))
     return;
@@ -65,67 +63,12 @@ void qabot_loaddb() {
   }
   
   fclose(f);
-  
-  if (!(f = fopen("qab_blocks", "r")))
-    return;
-  
-  while (!feof(f)) {
-    if (fgets(buf, 2048, f)) {
-      buf[2048] = '\0';
-      if (splitline(buf, args, 50, 0) != 5) {
-        fclose(f);
-        return;
-      }
-      
-      /* args[0] = botname
-         args[1] = type
-         args[2] = creator
-         args[3] = created
-         args[4] = blockstr */
-      if (!strcmp(args[0], "q")) {
-        /* account block */
-        if (strchr(args[4], '*') || args[4](target, '?'))
-          continue; /* wildcard account blocks are not supported */
-        
-        blocktype = QABBLOCK_ACCOUNT;
-      }
-      else if (!strcmp(args[0], "t")) {
-        /* text block */
-        blocktype = QABBLOCK_TEXT;
-      }
-      else if (!strcmp(args[0], "h")) {
-        /* hostmask block */
-        blocktype = QABBLOCK_HOST;
-      }
-      else
-        continue; /* unknown block, lets skip and hope everything works out */
-      
-      if (!(bot = qabot_findbot(args[0])))
-        continue; /* no such bot added */
-      
-      b = (qab_block*)malloc(sizeof(qab_block));
-      b->type = blocktype;
-      b->created = (long)strol(args[3]);
-      strncpy(b->creator, args[2], ACCOUNTLEN);
-      b->creator[ACCOUNTLEN] = '\0';
-      b->blockstr = strdup(args[4]);
-      b->prev = 0;
-      b->next = bot->blocks;
-      if (bot->blocks)
-        bot->blocks->prev = b;
-      bot->blocks = b;
-      bot->block_count++;
-    }
-  }
-  
-  fclose(f);
 }
 
 void qabot_savedb() {
   FILE* f;
   qab_user* u;
   qab_bot* b;
-  qab_block* block;
   
   if (!(f = fopen("qab_users", "w")))
     return;
@@ -142,16 +85,6 @@ void qabot_savedb() {
     fprintf(f, "%s %s %s %s %s %s %d %d %d %d\n", b->nick, b->user, b->host, b->public_chan->name->content, 
       b->question_chan->name->content, b->staff_chan->name->content, (int)b->flags, b->spam_interval, 
       b->ask_wait, b->queued_question_interval);
-  
-  fclose(f);
-  
-  if (!(f = fopen("qab_blocks", "w")))
-    return;
-  
-  for (b = qab_bots; b; b = b->next)
-    for (block = b->blocks; block; block = block->next)
-      fprintf(f, "%s %c %s %ld %s\n", b->nick, block->type == QABBLOCK_ACCOUNT ? 'q' : block->type == QABBLOCK_HOST ? 'h' : 't', 
-        block->creator, block->created, block->blockstr);
   
   fclose(f);
 }
@@ -206,15 +139,5 @@ qab_user* qabot_getuser(const char* authname) {
     if (!ircd_strcmp(u->authname, authname))
       return u;
 
-  return 0;
-}
-
-qab_bot* qabot_findbot(const char* nickname) {
-  qab_bot* bot;
-  
-  for (bot = qab_bots; bot; bot = bot->next)
-    if (!ircd_strcmp(bot->nick, nickname))
-      return bot;
-  
   return 0;
 }

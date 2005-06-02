@@ -67,13 +67,6 @@ void _init() {
   addcommandtotree(qabot_chancommands, "spam", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 30, qabot_dochanspam);
   addcommandtotree(qabot_chancommands, "status", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 0, qabot_dochanstatus);
   addcommandtotree(qabot_chancommands, "unblock", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochanunblock);
-  addcommandtotree(qabot_chancommands, "listtexts", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 0, qabot_dochanlisttexts);
-  addcommandtotree(qabot_chancommands, "showsection", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochanshowsection);
-  addcommandtotree(qabot_chancommands, "addtext", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochanaddtext);
-  addcommandtotree(qabot_chancommands, "deltext", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 1, qabot_dochandeltext);
-  addcommandtotree(qabot_chancommands, "addsection", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochanaddsection);
-  addcommandtotree(qabot_chancommands, "delsection", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochandelsection);
-  addcommandtotree(qabot_chancommands, "record", QAC_STAFFCHAN, 2, qabot_dochanrecord);
 
   if ((qabot_nickext = registernickext("QABOT")) == -1) {
     return;
@@ -146,13 +139,6 @@ void _fini() {
   deletecommandfromtree(qabot_chancommands, "spam", qabot_dochanspam);
   deletecommandfromtree(qabot_chancommands, "status", qabot_dochanstatus);
   deletecommandfromtree(qabot_chancommands, "unblock", qabot_dochanunblock);
-  deletecommandfromtree(qabot_chancommands, "listtexts", qabot_dochanlisttexts);
-  deletecommandfromtree(qabot_chancommands, "showsection", qabot_dochanshowsection);
-  deletecommandfromtree(qabot_chancommands, "addtext", qabot_dochanaddtext);
-  deletecommandfromtree(qabot_chancommands, "deltext", qabot_dochandeltext);
-  deletecommandfromtree(qabot_chancommands, "addsection", qabot_dochanaddsection);
-  deletecommandfromtree(qabot_chancommands, "delsection", qabot_dochandelsection);
-  deletecommandfromtree(qabot_chancommands, "record", qabot_dochanrecord);
   destroycommandtree(qabot_chancommands);
 }
 
@@ -169,11 +155,9 @@ void qabot_lostnick(int hooknum, void* arg) {
   for (b = qab_bots; b; b = b->next) {
     if (b->micnumeric == np->numeric) {
       b->micnumeric = 0;
-      sendmessagetochannel(b->np, b->staff_chan->channel, "%s deactivated.", 
-        bot->recording_section ? "Recorder" : "Mic");
-      if (!b->lastspam && !b->recording_section)
+      sendmessagetochannel(b->np, b->staff_chan->channel, "Mic deactivated.");
+      if (!b->lastspam)
         qabot_spamstored((void*)b);
-      b->recording_section = 0;
     }
   }
 }
@@ -192,11 +176,9 @@ void qabot_channel_part(int hooknum, void* arg) {
   for (b = qab_bots; b; b = b->next) {
     if ((b->micnumeric == np->numeric) && (b->staff_chan->channel == cp)) {
       b->micnumeric = 0;
-      sendmessagetochannel(b->np, b->staff_chan->channel, "%s deactivated.", 
-        b->recording_section ? "Recorder" : "Mic");
-      if (!b->lastspam && !b->recording_section)
+      sendmessagetochannel(b->np, b->staff_chan->channel, "Mic deactivated.");
+      if (!b->lastspam)
         qabot_spamstored((void*)b);
-      b->recording_section = 0;
     }
   }
 }

@@ -92,7 +92,7 @@ typedef struct qab_answer {
 } qab_answer;
 
 typedef struct qab_block {
-  char              type;
+  char     type;
   char              creator[ACCOUNTLEN + 1];
   time_t            created;
   char*             blockstr;
@@ -101,68 +101,46 @@ typedef struct qab_block {
   struct qab_block* prev;
 } qab_block;
 
-typedef struct qab_textsection {
-  qab_spam*               lines;
-  qab_spam*               lines_tail;
-  int                     line_count;
-  
-  struct qab_textsection* next;
-  struct qab_textsection* prev;
-} qab_textsection;
-
-typedef struct qab_text {
-  char             name[NICKLEN + 1];
-  qab_textsection* sections;
-  qab_textsection* sections_tail;
-  int              section_count;
-  
-  struct qab_text* next;
-  struct qab_text* prev;
-} qab_text;
-
 typedef struct qab_bot {
-  char             nick[NICKLEN + 1];
-  char             user[USERLEN + 1];
-  char*            host;
+  char            nick[NICKLEN + 1];
+  char            user[USERLEN + 1];
+  char*           host;
   
-  nick*            np;
+  nick*           np;
   
-  chanindex*       public_chan;
-  chanindex*       question_chan;
-  chanindex*       staff_chan;
+  chanindex*      public_chan;
+  chanindex*      question_chan;
+  chanindex*      staff_chan;
   
-  flag_t           flags;
+  flag_t          flags;
   
-  /*int              question_interval;*/
-  int              spam_interval;
-  int              ask_wait;
-  int              queued_question_interval;
+  /*int             question_interval;*/
+  int             spam_interval;
+  int             ask_wait;
+  int             queued_question_interval;
   
-  time_t           lastmic;
-  int              mic_timeout;
+  time_t          lastmic;
+  int             mic_timeout;
   
-  qab_block*       blocks;
-  int              block_count;
+  qab_block*      blocks;
+  int             block_count;
   
-  qab_question*    questions[QUESTIONHASHSIZE];
-  int              lastquestionID;
-  int              answered;
+  qab_question*   questions[QUESTIONHASHSIZE];
+  int             lastquestionID;
+  int             answered;
   
-  int              spammed;
+  int             spammed;
   
-  qab_spam*        nextspam;
-  qab_spam*        lastspam;
-  time_t           spamtime;
+  qab_spam*       nextspam;
+  qab_spam*       lastspam;
+  time_t          spamtime;
   
-  qab_answer*      answers;
+  qab_answer*     answers;
   
-  unsigned long    micnumeric;
-  
-  qab_textsection* recording_section;
-  qab_text*        texts;
+  unsigned long   micnumeric;
 
-  struct qab_bot*  next;
-  struct qab_bot*  prev;
+  struct qab_bot* next;
+  struct qab_bot* prev;
 } qab_bot;
 
 extern time_t qab_startime;
@@ -215,13 +193,6 @@ int qabot_dochanreset(void* np, int cargc, char** cargv);
 int qabot_dochanspam(void* np, int cargc, char** cargv);
 int qabot_dochanstatus(void* np, int cargc, char** cargv);
 int qabot_dochanunblock(void* np, int cargc, char** cargv);
-int qabot_dochanlisttexts(void* np, int cargc, char** cargv);
-int qabot_dochanshowsection(void* np, int cargc, char** cargv);
-int qabot_dochanaddtext(void* np, int cargc, char** cargv);
-int qabot_dochandeltext(void* np, int cargc, char** cargv);
-int qabot_dochanaddsection(void* np, int cargc, char** cargv);
-int qabot_dochandelsection(void* np, int cargc, char** cargv);
-int qabot_dochanrecord(void* np, int cargc, char** cargv);
 
 /* qabot_commands.c */
 int qabot_doshowcommands(void* sender, int cargc, char** cargv);
@@ -247,13 +218,8 @@ void qabot_adduser(const char* authname, flag_t flags, time_t created);
 void qabot_deluser(const char* authname);
 void qabot_squelchuser(qab_user* user);
 qab_user* qabot_getuser(const char* authname);
-qab_bot* qabot_findbot(const char* nickname);
 
 /* qabot_help.c */
 int qabot_showhelp(nick* np, char* arg);
-
-/* qabot_texts.c */
-void qabot_freetext(qab_bot* bot, qab_text* text);
-void qabot_freesection(qab_text* text, qab_textsection* section);
 
 #endif
