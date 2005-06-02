@@ -40,6 +40,7 @@ nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname,
   nick *newuser,*np; 
   
   i=0;
+  currentlocalunum=(currentlocalunum+1)%262142;
   while (servernicks[numerictolong(mynumeric->content,2)][currentlocalunum&MAXLOCALUSER]!=NULL) {
     /* Numeric 262143 on our server is used for "nouser" by the channels module, so cannot be allocated */
     currentlocalunum=(currentlocalunum+1)%262142; 

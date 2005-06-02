@@ -2,6 +2,8 @@
   nterfacer
   Copyright (C) 2004-2005 Chris Porter.
   
+  v1.07
+    - made sure buf[0] = '\0'
   v1.06
     - tidy up
   v1.05
@@ -608,6 +610,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
 
   prequest->service = service;
   prequest->handler = hl;
+  prequest->buf[0] = '\0';
   prequest->curpos = prequest->buf;
   prequest->tag = NULL;
   prequest->id = *number;

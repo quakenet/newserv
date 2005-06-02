@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.11
+    - made sure stats buffer was checked (no security problem, just helps pauline)
   v1.10
     - added stats support
   v1.06
@@ -368,7 +370,10 @@ void relay_messages(nick *target, int messagetype, void **args) {
     case LU_STATS:
       if(item->mode != MODE_STATS)
         return;
-      ri_append(item->rline, "%s", (char *)args[2]);
+      if(ri_append(item->rline, "%s", (char *)args[2]) == BF_OVER) {
+        ri_error(item->rline, BF_OVER, "Buffer overflow");
+        dispose_rld_prev(item, prev);
+      }
       break;
 
     case LU_STATS_END:
