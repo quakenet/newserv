@@ -103,7 +103,6 @@ int getindex(char *modulename) {
 }
 
 char *lsmod(int index) {
-  int i;
   module *mods;
 
   if (index < 0 || index >= modules.cursi)

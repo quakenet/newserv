@@ -294,13 +294,17 @@ void qabot_child_handler(nick* me, int type, void** args) {
     text = (char*)args[2];
     
     if (*text == '!') {
-      cargc = splitline((char*)(++text), cargv, 50, 0);
-	  cmd = findcommandintree(qabot_chancommands, cargv[0], 1);
-	  if (!cmd) {
-  	    sendnoticetouser(me, sender, "Unknown command.");
-	    return;
+      if (*(++text) == '\0') {
+        sendnoticetouser(me, sender, "No command specified.");
+        return;
       }
-      
+      cargc = splitline((char*)text, cargv, 50, 0);
+      cmd = findcommandintree(qabot_chancommands, cargv[0], 1);
+      if (!cmd) {
+        sendnoticetouser(me, sender, "Unknown command.");
+        return;
+      }
+
       if ((cp->index == bot->staff_chan) && !(cmd->level & QAC_STAFFCHAN)) {
         sendnoticetouser(me, sender, "This command cannot be used in the staff channel.");
         return;
