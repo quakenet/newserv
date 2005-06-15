@@ -20,7 +20,10 @@ hcensor *hcensor_get_by_index(hcensor *hcens, int index)
         return NULL;
 
     while (index && hcens)
-        hcens = hcens->next;
+    {
+	hcens = hcens->next;
+	index--;
+    }
 
     return hcens;
 }

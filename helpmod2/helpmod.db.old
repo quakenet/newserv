@@ -1,46 +1,52 @@
-% H2 database, live Quakenet #feds version
-% A minimal start, can be used for a radical reset
+% H2 version 2.05 database
+% Fri Jun  3 17:57:10 2005
 
+
+% lamercontrol profile structure:
+%  X (string):
+%  Y (string):
+%  Z (int):
 lamercontrol profile
 	liberal
-        50 25
-        4 9
-        8 10 14
-        7 0.006 12
-        2 5 8
-        
+	50 25
+	4 9
+	8 10 10
+	7 0.006 12
+	2 5 8
 lamercontrol profile
 	default
-        40 20
-        3 7
-        6 7 9
-        5 0.008 10
-        1 3 5
-        
+	40 20
+	3 7
+	6 7 7
+	5 0.008 10
+	1 3 5
 lamercontrol profile
 	strict
-        35 15
-        2 6
-        4 5 7
-        4 0.01 10
-        0 2 3
-        
+	35 15
+	2 6
+	4 5 5
+	4 0.010 10
+	0 2 3
 lamercontrol profile
 	nazi
-        25 10
-        1 4
-        3 4 5
-        3 0.01 7
+	25 10
+	1 4
+	3 4 4
+	3 0.010 7
 	0 1 2
-        
-% Initial channel (#feds), needed to have the terms for the channel
+
+% channel structure:
+%  name (string):
+%  flags (integer):
+%  welcome message (string):
+%  lamercontrol profile (string):
 channel
 	#feds
-	F03A
-        Welcome to #feds
-        default
-        0 % censor
-        17 % terms 17 total
+	f03a
+	Welcome to #feds
+	default
+	0 % censor
+	17 % terms
 	#feds
 	This channel is for matters REQUIRING the assistance of an IRC operator. Questions answered in the FAQs, or that do not require an IRC operator, will be ignored. Read the FAQs at www.quakenet.org, and if that does not help, visit #help.
 	question 
@@ -75,7 +81,7 @@ channel
 	You can find a server application at http://www.quakenet.org/server_application *READ IT CAREFULLY* Do not ask questions about the application form in #feds. Response time for submitted applications is typically between 2 to 4 weeks.
 	takeover
 	Support for recovering stolen channels is limited as the responsibility for protecting those channels is your own. However, if you have not already done so, state the #channelname and be patient. If the operator informs you that he or she will not intervene in this case then there is no appeal and you should choose a new channel and consider what security mistakes you made which resulted in the loss of the original channel.
-        0 0 0 0 0 0
+	0 0 0 0 0 0
 	0 0 0 0 0 0
 	0 0 0 0 0 0
 	0 0 0 0 0 0
@@ -93,12 +99,24 @@ channel
 	0 0 0 0 0 0
 	0 0 0 0 0 0
 
-% Initial account (mine)
+
+% account structure:
+%  name (string):
+%  level (integer):
 account
 	strutsi
 	5	0
-        0
+	0 % statistics for this channel
 
+
+% ban structure:
+%  banmask (string):
+%  reason (string):
+%  expiration (int):
+
+% term structure:
+%  name (string):
+%  description (string):
 term
 	#auth
 	If the user is not online at the moment you can still modify his/her account by using the user's auth nick and putting # infront of it (If user John have auth Clan^John it would be #Clan^John). You can list the auth nicks by doing /msg Q chanlev #channel or /msg L chanlev #channel.
@@ -141,3 +159,17 @@ term
 term
 	password
 	If you have forgotten your auth password use /msg q requestpassword. If you have not set your email address then the auth account is lost - an oper will NOT tell you the password for any auth account. Accounts that formely had owner on a channel will expire in 40 days at which point the next highest chanlev in the channel may use /MSG L (or Q) REQUESTOWNER. 
+
+% ticket structure:
+%  channel (string)
+%  authname (string)
+%  expiration time (int)
+
+% report structure:
+%  channel reported
+%  channel reported to
+
+% global variables
+%  hstat_cycle
+globals
+	1

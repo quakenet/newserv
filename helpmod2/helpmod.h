@@ -10,7 +10,7 @@
 
 /* configuration */
 
-#define HELPMOD_VERSION "2.04"
+#define HELPMOD_VERSION "2.05"
 
 #define HELPMOD_USER_TIMEOUT 1200
 

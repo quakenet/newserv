@@ -13,7 +13,7 @@ enum
     HDEF_h = 60  * HDEF_m,
     HDEF_d = 24  * HDEF_h,
     HDEF_w = 7   * HDEF_d,
-    HDEF_M = 30  * HDEF_w,
+    HDEF_M = 30  * HDEF_d,
     HDEF_y = 365 * HDEF_d
 };
 

@@ -330,7 +330,7 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
 
             target_haccount->level = target_level;
 
-            helpmod_reply(sender, returntype, "Userlevel changed: Account '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
+	    helpmod_reply(sender, returntype, "Userlevel changed: Account '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
 
         }
         else
@@ -382,7 +382,8 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
             target_huser->account->level = target_level;
 
             helpmod_reply(sender, returntype, "Userlevel changed: User '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
-            helpmod_reply(target_huser, NULL, "Your userlevel has been changed, your current userlevel is %s", hlevel_name(target_level));
+            if (huser_get_level(target_huser) != H_LAMER)
+		helpmod_reply(target_huser, NULL, "Your userlevel has been changed, your current userlevel is %s", hlevel_name(target_level));
         }
     }
 }
@@ -2163,7 +2164,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
             helpmod_reply(sender, returntype, "Can not invite: Unknown channel %s", argv[0]);
             return;
         }
-        htick = hticket_get(sender->real_user->authname ,hchan);
+        htick = hticket_get(sender->real_user->authname, hchan);
 
         if (htick == NULL)
         {
@@ -2173,7 +2174,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
 
         if (nickbanned(sender->real_user, hchan->real_channel))
         {
-            helpmod_reply(sender, returntype, "Can not invite: You are banned from channel channel %s", argv[0]);
+            helpmod_reply(sender, returntype, "Can not invite: You are banned from channel %s", argv[0]);
             return;
         }
 
@@ -2193,7 +2194,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
             helpmod_reply(sender, returntype, "Can not invite: Unknown channel %s", argv[i]);
             continue;
         }
-        if (!hchannel_authority(hchan, sender))
+        if (!(hchannel_authority(hchan, sender) || hticket_get(sender->real_user->authname, hchan)))
         {
             helpmod_reply(sender, returntype, "Sorry, channel %s is oper only", hchannel_get_name(hchan));
             continue;
@@ -2413,7 +2414,7 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
 
 static int helpmod_cmd_termstats_sort(const void *left, const void *right)
 {
-    return (*((hterm**)left))->usage - (*((hterm**)right))->usage;
+    return (*((hterm**)right))->usage - (*((hterm**)left))->usage;
 }
 
 static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2458,13 +2459,32 @@ static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr
 
 static int helpmod_cmd_checkchannel_nicksort(const void *left, const void *right)
 {
-    return ci_strcmp((*((nick**)left))->nick, (*((nick**)right))->nick);
+    return ci_strcmp(getnickbynumeric(*((unsigned long*)left))->nick, getnickbynumeric(*((unsigned long*)right))->nick);
 }
+
+static int helpmod_cmd_checkchannel_statussort(const void *left, const void *right)
+{
+    int level1 = 0, level2 = 0;
+
+    if (*((unsigned long*)left) & CUMODE_VOICE)
+        level1 = 1;
+    if (*((unsigned long*)left) & CUMODE_OP)
+        level1 = 2;
+
+    if (*((unsigned long*)right) & CUMODE_VOICE)
+	level2 = 1;
+    if (*((unsigned long*)right) & CUMODE_OP)
+        level2 = 2;
+
+    return level2 - level1;
+}
+
 static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     channel *chan;
-    nick *nck, **nick_array;
-    int i, j, nick_count = 0;
+    nick *nck;
+    int i, j, nick_count = 0, authed_count = 0, o_limit = 0, v_limit = 0, summary_only = 0;
+    unsigned long *numeric_array;
 
     if (argc == 0)
     {
@@ -2478,14 +2498,26 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
         helpmod_reply(sender, returntype, "Can not check channel: Channel %s not found", argv[0]);
         return;
     }
+    if (argc > 1 && !ci_strcmp(argv[1], "summary"))
+        summary_only = 1;
+
+    if (IsKey(chan))
+    {
+	helpmod_reply(sender, returntype, "Can not check channel: Permission denied. Channel %s is +k", argv[0]);
+        return;
+    }
+
     /* first pass - verify validity and count nicks */
     for (i=0;i < chan->users->hashsize;i++)
-        {
+    {
             nck = getnickbynumeric(chan->users->content[i]);
             if (!nck) /* it's a hash, not an array */
                 continue;
 
-            nick_count++;
+	    nick_count++;
+
+	    if (IsAccount(nck))
+                authed_count++;
 
             if (IsOper(nck) && strlen(nck->nick) > 1)
             {
@@ -2494,16 +2526,24 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
             }
 	}
 
-    nick_array = (nick**)malloc(nick_count * sizeof (nick *));
+    numeric_array = (unsigned long*)malloc(nick_count * sizeof(unsigned long));
 
     /* second pass - construct array */
     for (i=0,j=0;i < chan->users->hashsize;i++)
     {
-	nck = getnickbynumeric(chan->users->content[i]);
-	if (!nck) /* it's a hash, not an array */
+	if (getnickbynumeric(chan->users->content[i]) == NULL) /* it's a hash, not an array */
 	    continue;
 
-        nick_array[j++] = nck;
+        numeric_array[j++] = chan->users->content[i];
+    }
+
+    qsort(numeric_array, nick_count, sizeof(unsigned long), helpmod_cmd_checkchannel_statussort);
+
+    /* third pass - find status boundaries */
+    {
+	for (;o_limit < nick_count && numeric_array[o_limit] & CUMODE_OP; o_limit++);
+        v_limit = o_limit;
+	for(v_limit = o_limit; (v_limit < nick_count) && numeric_array[v_limit] & CUMODE_VOICE; v_limit++);
     }
 
     helpmod_reply(sender, returntype, "Information on channel %s", argv[0]);
@@ -2511,21 +2551,39 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
     helpmod_reply(sender, returntype, "Channel topic: %s", chan->topic?chan->topic->content:"Not set");
     helpmod_reply(sender, returntype, "Channel modes: %s", printflags(chan->flags, cmodeflags));
 
-    qsort(nick_array, nick_count, sizeof(nick*), helpmod_cmd_checkchannel_nicksort);
-    /* third pass - print results */
-    for (i=0;i < nick_count;i++)
-        {
-	    char buf[256];
-	    visiblehostmask(nick_array[i], buf);
-            if (IsAccount(nick_array[i]))
-		helpmod_reply(sender, returntype, "%s (%s)", buf, nick_array[i]->authname);
+
+    /* sort the sub arrays */
+
+    if (o_limit > 0)
+	qsort(numeric_array, o_limit, sizeof(unsigned long), helpmod_cmd_checkchannel_nicksort);
+    if (v_limit - o_limit > 0)
+	qsort(numeric_array + o_limit, v_limit - o_limit, sizeof(unsigned long), helpmod_cmd_checkchannel_nicksort);
+    if (nick_count - v_limit > 0)
+	qsort(numeric_array + v_limit, nick_count - v_limit, sizeof(unsigned long), helpmod_cmd_checkchannel_nicksort);
+
+    /* fourth pass - print results */
+    if (!summary_only)
+	for (i=0;i < nick_count;i++)
+	{
+	    char buf[256], status;
+
+	    if (numeric_array[i] & CUMODE_OP)
+		status = '@';
+	    else if (numeric_array[i] & CUMODE_VOICE)
+		status = '+';
 	    else
-		helpmod_reply(sender, returntype, "%s", buf);
+		status = ' ';
+
+	    visiblehostmask(getnickbynumeric(numeric_array[i]), buf);
+	    if (IsAccount(getnickbynumeric(numeric_array[i])))
+		helpmod_reply(sender, returntype, "%c%s (%s)", status, buf, getnickbynumeric(numeric_array[i]));//nick_array[i]->authname);
+	    else
+		helpmod_reply(sender, returntype, "%c%s", status, buf);
 	}
 
-    helpmod_reply(sender, returntype, "Users: %d, Clones %d", nick_count, nick_count - countuniquehosts(chan));;
+    helpmod_reply(sender, returntype, "Users: %d  Clones: %d  Opped: %d  Voiced: %d  Authed: %3.0f%%", nick_count, nick_count - countuniquehosts(chan), o_limit, o_limit - v_limit, ((float)authed_count / (float)nick_count) * 100.0);
 
-    free(nick_array);
+    free(numeric_array);
 }
 
 static void helpmod_cmd_statsdebug (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2651,7 +2709,11 @@ void helpmod_cmd_command(huser* sender, channel* returntype, char* arg, int argc
     while (*(ptr++))
         *ptr = tolower(*ptr);
 
-    sprintf(buffer, "./helpmod/commands/%s", argv[0]);
+    /* ? is handled like this because windows is shit */
+    if (!ci_strcmp(argv[0], "?"))
+	sprintf(buffer, "./helpmod2/commands/questionmark");
+    else
+	sprintf(buffer, "./helpmod2/commands/%s", argv[0]);
 
     if ((in = fopen(buffer, "rt")) == NULL)
     {
@@ -2733,7 +2795,7 @@ void hcommands_add(void)
     hcommand_add("trial", H_OPER, helpmod_cmd_trial, "Sets the userlevel of the target to trial staff (lvl 2)");
     hcommand_add("staff", H_OPER, helpmod_cmd_staff, "Sets the userlevel of the target to staff (lvl 3)");
     hcommand_add("oper", H_OPER, helpmod_cmd_oper, "Sets the userlevel of the target to oper (lvl 4)");
-    hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 4)");
+    hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 5)");
     hcommand_add("deluser", H_OPER, helpmod_cmd_deluser, "Removes an account from H");
     hcommand_add("listuser", H_STAFF, helpmod_cmd_listuser, "Lists user accounts of H");
 
@@ -2853,7 +2915,6 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 
             *(ptr++) = '\0';
         }
-
     }
 
     if (!argc)

@@ -119,15 +119,16 @@ void helpmod_hook_channel_newnick(int unused, void *args)
     if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) == H_PEON && hban_check(nck)))
     {
         hban *hb = hban_check(nck);
-        if (hb)
-        {
-            const char *banmask = hban_ban_string(nck, HBAN_HOST);
 
-            helpmod_setban(hchan, banmask, time(NULL) + 1 * HDEF_d, MCB_ADD, HNOW);
+	const char *banmask = hban_ban_string(nck, HBAN_HOST);
+	helpmod_setban(hchan, banmask, time(NULL) + 1 * HDEF_d, MCB_ADD, HNOW);
 
-            helpmod_kick(hchan, husr,hban_get_reason(hb));
-        }
-        return;
+	if (hb)
+	    helpmod_kick(hchan, husr,hban_get_reason(hb));
+	else
+	    helpmod_kick(hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(hchan));
+
+	return;
     }
     if (hchan->flags & H_QUEUE)
         hqueue_handle_queue(hchan, NULL);
@@ -344,32 +345,32 @@ void helpmod_hook_nick_account(int unused, void *args)
 
 void helpmod_registerhooks(void)
 {
-    if (registerhook(HOOK_NICK_QUIT, &helpmod_hook_quit));
+    registerhook(HOOK_NICK_QUIT, &helpmod_hook_quit);
     /*if (registerhook(HOOK_CHANNEL_PART, &helpmod_hook_part));*/
-    if (registerhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join));
-    if (registerhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick));
-    if (registerhook(HOOK_CHANNEL_NEWNICK, &helpmod_hook_channel_newnick));
-    if (registerhook(HOOK_CHANNEL_LOSTNICK, &helpmod_hook_channel_lostnick));
-    if (registerhook(HOOK_CHANNEL_OPPED, &helpmod_hook_channel_opped));
-    if (registerhook(HOOK_CHANNEL_DEOPPED, &helpmod_hook_channel_deopped));
-    if (registerhook(HOOK_CHANNEL_VOICED, &helpmod_hook_channel_voiced));
-    if (registerhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced));
-    if (registerhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic));
-    if (registerhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account));
+    registerhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join);
+    registerhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick);
+    registerhook(HOOK_CHANNEL_NEWNICK, &helpmod_hook_channel_newnick);
+    registerhook(HOOK_CHANNEL_LOSTNICK, &helpmod_hook_channel_lostnick);
+    registerhook(HOOK_CHANNEL_OPPED, &helpmod_hook_channel_opped);
+    registerhook(HOOK_CHANNEL_DEOPPED, &helpmod_hook_channel_deopped);
+    registerhook(HOOK_CHANNEL_VOICED, &helpmod_hook_channel_voiced);
+    registerhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced);
+    registerhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic);
+    registerhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account);
 }
 
 void helpmod_deregisterhooks(void)
 {
-    if (deregisterhook(HOOK_NICK_QUIT, &helpmod_hook_quit));
+    deregisterhook(HOOK_NICK_QUIT, &helpmod_hook_quit);
     /*if (deregisterhook(HOOK_CHANNEL_PART, &helpmod_hook_part));*/
-    if (deregisterhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join));
-    if (deregisterhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick));
-    if (deregisterhook(HOOK_CHANNEL_NEWNICK, &helpmod_hook_channel_newnick));
-    if (deregisterhook(HOOK_CHANNEL_LOSTNICK, &helpmod_hook_channel_lostnick));
-    if (deregisterhook(HOOK_CHANNEL_OPPED, &helpmod_hook_channel_opped));
-    if (deregisterhook(HOOK_CHANNEL_DEOPPED, &helpmod_hook_channel_deopped));
-    if (deregisterhook(HOOK_CHANNEL_VOICED, &helpmod_hook_channel_voiced));
-    if (deregisterhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced));
-    if (deregisterhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic));
-    if (deregisterhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account));
+    deregisterhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join);
+    deregisterhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick);
+    deregisterhook(HOOK_CHANNEL_NEWNICK, &helpmod_hook_channel_newnick);
+    deregisterhook(HOOK_CHANNEL_LOSTNICK, &helpmod_hook_channel_lostnick);
+    deregisterhook(HOOK_CHANNEL_OPPED, &helpmod_hook_channel_opped);
+    deregisterhook(HOOK_CHANNEL_DEOPPED, &helpmod_hook_channel_deopped);
+    deregisterhook(HOOK_CHANNEL_VOICED, &helpmod_hook_channel_voiced);
+    deregisterhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced);
+    deregisterhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic);
+    deregisterhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account);
 }

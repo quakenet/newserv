@@ -150,7 +150,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
 
         if ((hchan->flags & H_QUEUE_SPAMMY) && (oper != NULL))
         {
-            helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem, please direct your questions to %s %s", (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), oper->real_user->nick);
+	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), hchannel_get_name(hchan), oper->real_user->nick);
             if (!(huser_get_account_flags(oper) & H_NOSPAM))
                 helpmod_reply(oper, hchan->real_channel, "User %s (%s@%s) is yours, he has been in queue for %s", hchanuser->husr->real_user->nick, hchanuser->husr->real_user->ident, hchanuser->husr->real_user->host->name->content, helpmod_strtime(time(NULL) - hchanuser->time_joined));
         }
@@ -161,9 +161,9 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
         hchanuser = hchanuser->next;
     }
     if (oper != NULL)
-        helpmod_message_channel(hchan, "user%s %s: Please direct your questions to %s %s", (nadv - counter == 1)?"":"s", buffer, (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), oper->real_user->nick);
+        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel and direct them to %s %s", (nadv - counter == 1)?"":"s", buffer, (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), oper->real_user->nick);
     else
-        helpmod_message_channel(hchan, "user%s %s: Please state your questions", (nadv - counter == 1)?"":"s", buffer);
+        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel", (nadv - counter == 1)?"":"s", buffer);
 
     if (hchan->flags & H_QUEUE_SPAMMY)
         hqueue_report_positions(hchan);
@@ -186,9 +186,9 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
         {
             hchan->flags |= H_QUEUE;
             helpmod_reply(sender, returntype, "Queue activated for channel %s", hchannel_get_name(hchan));
-        }
-        hchannel_conf_change(hchan, hchan->flags & ~(H_QUEUE));
-        hchan->autoqueue = 0;
+	    hchannel_conf_change(hchan, hchan->flags & ~(H_QUEUE));
+	    hchan->autoqueue = 0;
+	}
         return;
     case HQ_OFF:
         if (!(hchan->flags & H_QUEUE))
@@ -197,9 +197,9 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
         {
             hchan->flags &= ~H_QUEUE;
             helpmod_reply(sender, returntype, "Queue deactivated for channel %s", hchannel_get_name(hchan));
-        }
-        hchannel_conf_change(hchan, hchan->flags | H_QUEUE);
-        hchan->autoqueue = 0;
+	    hchannel_conf_change(hchan, hchan->flags | H_QUEUE);
+	    hchan->autoqueue = 0;
+	}
         return;
     }
     if (!(hchan->flags & H_QUEUE))

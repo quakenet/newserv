@@ -219,9 +219,14 @@ void hchannel_remove_inactive_users(void)
             hchannel_user **hchanuser = &hchan->channel_users;
             while (*hchanuser)
             {
-                if ((huser_get_level((*hchanuser)->husr) == H_PEON) && (time(NULL) - huser_on_channel((*hchanuser)->husr,hchan)->last_activity >= hchan->max_idle) && !on_queue((*hchanuser)->husr, huser_on_channel((*hchanuser)->husr, hchan)))
-                {
-                    if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
+		if (
+		    (huser_get_level((*hchanuser)->husr) == H_PEON) &&
+		    (time(NULL) - huser_on_channel((*hchanuser)->husr,hchan)->last_activity >= hchan->max_idle) &&
+		    !(on_queue((*hchanuser)->husr, huser_on_channel((*hchanuser)->husr, hchan))) &&
+                    !IsSetHost((*hchanuser)->husr->real_user)
+		   )
+		{
+		    if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
                     {
                         const char *banmask = hban_ban_string((*hchanuser)->husr->real_user, HBAN_HOST);
                         helpmod_setban(hchan, banmask, time(NULL) + 10 * HDEF_m, MCB_ADD, HNOW);
