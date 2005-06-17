@@ -2,6 +2,8 @@
   nterfacer newserv control module
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.08
+    - added counthost, removed isaccounton (as it didn't do anything!)
   v1.07
     - added modes
   v1.06
@@ -20,6 +22,8 @@
   v1.01
     - whois fixed to notice BUF_OVER
 */
+
+#include <string.h>
 
 #include "../localuser/localuserchannel.h"
 #include "../channel/channel.h"
@@ -41,7 +45,7 @@ int handle_channel(struct rline *li, int argc, char **argv);
 int handle_onchan(struct rline *li, int argc, char **argv);
 int handle_status(struct rline *li, int argc, char **argv);
 int handle_servicesonchan(struct rline *li, int argc, char **argv);
-int handle_isaccounton(struct rline *li, int argc, char **argv);
+int handle_counthost(struct rline *li, int argc, char **argv);
 
 struct rline *grli; /* used inline for status */
 
@@ -58,7 +62,7 @@ void _init(void) {
   register_handler(n_node, "onchan", 2, handle_onchan);
   register_handler(n_node, "status", 0, handle_status);
   register_handler(n_node, "servicesonchan", 1, handle_servicesonchan);
-  register_handler(n_node, "isaccounton", 1, handle_isaccounton);
+  register_handler(n_node, "counthost", 1, handle_counthost);
 }
 
 void _fini(void) {
@@ -69,14 +73,9 @@ void _fini(void) {
 int handle_ison(struct rline *li, int argc, char **argv) {
   int i;
   for(i=0;i<argc;i++)
-    ri_append(li, "%d", getnickbynick(argv[i])?1:0);
-  return ri_final(li);
-}
+    if(ri_append(li, "%d", getnickbynick(argv[i])?1:0) == BF_OVER)
+      return ri_error(li, BF_OVER, "Buffer overflow");
 
-int handle_isaccounton(struct rline *li, int argc, char **argv) {
-  int i;
-  for(i=0;i<argc;i++)
-    ri_append(li, "%d", getnickbynick(argv[i])?1:0);
   return ri_final(li);
 }
 
@@ -165,6 +164,7 @@ int handle_onchan(struct rline *li, int argc, char **argv) {
 }
 
 void handle_nterfacerstats(int hooknum, void *arg) {
+  /* hmm, not much we can do here, @ppa */
   ri_append(grli, "%s", (char *)arg);
 }
 
@@ -190,10 +190,39 @@ int handle_servicesonchan(struct rline *li, int argc, char **argv) {
     if(cp->users->content[i] != nouser) {      
       np = getnickbynumeric(cp->users->content[i]);
       if(np && IsService(np) && np->nick[0] && !np->nick[1])
-        ri_append(li, "%s", np->nick);
+        if(ri_append(li, "%s", np->nick) == BF_OVER)
+          return ri_error(li, BF_OVER, "Buffer overflow");
     }
   }
 #endif
 
   return ri_final(li);
 }
+
+int handle_counthost(struct rline *li, int argc, char **argv) {
+  int i, j;
+  unsigned int results[100];
+  host *hp;
+  if(argc > 100)
+    return ri_error(li, ERR_TOO_MANY_ARGS, "Too many arguments");
+
+  memset(results, 0, sizeof(results));
+
+  for(j=0;j<argc;j++)
+    collapse(argv[j]);
+
+  for(i=0;i<HOSTHASHSIZE;i++)
+    for(hp=hosttable[i];hp;hp=hp->next)
+      for(j=0;j<argc;j++)
+        if(!match(argv[j], hp->name->content))
+          results[j]+=hp->clonecount;
+
+  for(j=0;j<argc;j++)
+    if(ri_append(li, "%d", results[j]) == BF_OVER)
+      return ri_error(li, BF_OVER, "Buffer overflow");
+
+
+  return ri_final(li);
+}
+
+
