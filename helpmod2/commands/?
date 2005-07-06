@@ -1,3 +1,0 @@
-Syntax:	 ? [channel] [term]
-Example: ? #feds Q
-Command '?' is available to all users and is the same as term [channel] find.
