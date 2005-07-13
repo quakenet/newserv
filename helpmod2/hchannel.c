@@ -449,6 +449,7 @@ void hchannel_activate_join_flood(hchannel *hchan)
 
     scheduleoneshot(time(NULL) + 60, &hchannel_deactivate_join_flood, NULL);
 }
+
 /* goes to schedule */
 void hchannel_deactivate_join_flood()
 {
@@ -459,14 +460,6 @@ void hchannel_deactivate_join_flood()
             helpmod_simple_modes(hchan, 0, CHANMODE_REGONLY, 1);
             hchan->flags &= ~H_JOIN_FLOOD;
         }
-        /*if (IsRegOnly(hchan->real_channel) && hchan->jf_control < time(NULL))
-        {
-            helpmod_simple_modes(hchan, 0, CHANMODE_REGONLY, 1);
-            return;
-        }
-
-     scheduleoneshot(time(NULL) + 60, &hchannel_deactivate_join_flood, NULL);
-     */
 }
 
 const char *hchannel_get_sname(int flag)
@@ -517,6 +510,6 @@ const char *hchannel_get_sname(int flag)
     case 19:
         return "Require a ticket to join";
     default:
-        return "error, please contact strutsi";
+        return "Error, please contact strutsi";
     }
 }

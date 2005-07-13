@@ -9,7 +9,7 @@
 enum
 {
     HDEF_s = 1,
-    HDEF_m = 60,
+    HDEF_m = 60  * HDEF_s,
     HDEF_h = 60  * HDEF_m,
     HDEF_d = 24  * HDEF_h,
     HDEF_w = 7   * HDEF_d,

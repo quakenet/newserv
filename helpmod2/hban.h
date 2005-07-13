@@ -4,10 +4,11 @@
 #include <time.h>
 
 #include "../channel/channel.h"
-
 #include "../nick/nick.h"
-
 #include "../lib/sstring.h"
+
+/* Forward declarations */
+struct huser_struct;
 
 typedef struct hban_struct
 {
@@ -34,7 +35,7 @@ hban *hban_get(const char*);
 
 int hban_count(void);
 /* the first parameter is huser* */
-hban *hban_huser(void*, const char*, time_t, int);
+hban *hban_huser(struct huser_struct*, const char*, time_t, int);
 
 hban *hban_check(nick*);
 

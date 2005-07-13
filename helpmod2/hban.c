@@ -60,12 +60,9 @@ hban *hban_add(const char* pat, const char* rsn, time_t exp, int now)
     return ptr;
 }
 
-hban *hban_huser(void *target, const char* rsn, time_t exp, int now)
+hban *hban_huser(huser *husr, const char* rsn, time_t exp, int now)
 {
-    const char *banmask;
-    huser *husr = (huser*)target;
-
-    banmask = hban_ban_string(husr->real_user, HBAN_HOST);
+    const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
 
     return hban_add(banmask, rsn, exp, now);
 }

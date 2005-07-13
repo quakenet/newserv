@@ -40,27 +40,30 @@ void helpmod_hook_join(int unused, void *args)
     huser *husr;
 
     /* if we're not on this channel, the event is of no interest */
-    if (hchan == NULL || hchan->flags & H_PASSIVE)
+    if (hchan == NULL)
         return;
 
     husr = huser_get(nck);
 
     assert(husr != NULL); /* hook_channel_newnick should fix this */
 
-    if (hchan->flags & H_JOINFLOOD_PROTECTION)
+    if (hchan->flags & H_JOINFLOOD_PROTECTION & !(hchan->flags & H_PASSIVE))
     {
-        if (hchan->jf_control < time(NULL))
-            hchan->jf_control = time(NULL);
-        else
-            hchan->jf_control++;
+	if (hchan->jf_control < time(NULL))
+	    hchan->jf_control = time(NULL);
+	else
+	    hchan->jf_control++;
 
-        if (hchan->jf_control - time(NULL) > 25 && !IsRegOnly(hchan))
-        {
-            if (hchan->flags & H_REPORT && hchannel_is_valid(hchan->report_to))
+	if (hchan->jf_control - time(NULL) > 25 && !IsRegOnly(hchan))
+	{
+	    if (hchan->flags & H_REPORT && hchannel_is_valid(hchan->report_to))
                 helpmod_message_channel(hchan->report_to, "Warning: Possible join flood on %s, setting +r", hchannel_get_name(hchan));
             hchannel_activate_join_flood(hchan);
         }
     }
+
+    if (hchan->flags & H_PASSIVE)
+        return;
 
     if (hchan->flags & H_DO_STATS)
         hstat_add_join(hchan);
@@ -116,6 +119,9 @@ void helpmod_hook_channel_newnick(int unused, void *args)
     hchannel_add_user(hchan, husr);
     huser_add_channel(husr, hchan);
 
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) == H_PEON && hban_check(nck)))
     {
         hban *hb = hban_check(nck);
@@ -162,8 +168,8 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
     assert(hchannel_on_channel(hchan, husr) != NULL);
     assert(huserchan != NULL);
 
-    if ((hchan->flags & H_QUEUE) && (hchan->flags & H_QUEUE_MAINTAIN)) /* && (huser_get_level(husr) == H_PEON) && (huserchan->flags & HCUMODE_VOICE) && (hchannel_count_queue(hchan)))*/
-        if (serverlist[homeserver(husr->real_user->numeric)].linkstate != LS_SQUIT)
+    if ((hchan->flags & H_QUEUE) && (hchan->flags & H_QUEUE_MAINTAIN) && !(hchan->flags & H_PASSIVE)) /* && (huser_get_level(husr) == H_PEON) && (huserchan->flags & HCUMODE_VOICE) && (hchannel_count_queue(hchan)))*/
+	if (serverlist[homeserver(husr->real_user->numeric)].linkstate != LS_SQUIT)
             /* if it was a netsplit, we do not trigger autoqueue */
         {
             oper = huserchan->responsible_oper;
@@ -197,7 +203,7 @@ void helpmod_hook_nick_lostnick(int unused, void *args)
 
     /* it was someone we didn't even know */
     if (husr == NULL)
-            return;
+	return;
 
     huser_del(husr);
 }
@@ -221,6 +227,9 @@ void helpmod_hook_channel_opped(int unused, void *args)
     assert(huserchan != NULL);
 
     huserchan->flags |= HCUMODE_OP;
+
+    if (hchan->flags & H_PASSIVE)
+        return;
 
     /* if the +o was given by a network service, G will not interfere */
     if (husr2 == NULL || strlen(husr2->real_user->nick) == 1)
@@ -295,6 +304,9 @@ void helpmod_hook_channel_devoiced(int unused, void *args)
 
     huserchan->flags &= ~HCUMODE_VOICE;
 
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     if ((hchan->flags & H_QUEUE) && (hchan->flags & H_QUEUE_MAINTAIN) && (huser_get_level(husr) == H_PEON) && (huserchan->flags & HCUMODE_VOICE) && (hchannel_count_queue(hchan)))
     {
         if (serverlist[homeserver(husr->real_user->numeric)].linkstate != LS_SQUIT)
@@ -314,7 +326,7 @@ void helpmod_hook_channel_topic(int unused, void *args)
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser *husr;
 
-    if (hchan == NULL)
+    if (hchan == NULL || hchan->flags & H_PASSIVE)
         return;
 
     husr = huser_get(((nick**)args)[2]);

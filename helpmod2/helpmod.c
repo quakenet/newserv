@@ -34,11 +34,11 @@
 int HELPMOD_ACCOUNT_EXPIRATION[] =
 {
     14 * HDEF_d, /* H_LAMER */
-    7 * HDEF_d, /* H_PEON */
-    2 * HDEF_M, /* H_TRIAL */
-    6 * HDEF_M, /* H_STAFF */
-    1 * HDEF_y, /* H_OPER */
-    2 * HDEF_y /* H_ADMIN */
+    7  * HDEF_d, /* H_PEON */
+    2  * HDEF_M, /* H_TRIAL */
+    6  * HDEF_M, /* H_STAFF */
+    1  * HDEF_y, /* H_OPER */
+    2  * HDEF_y  /* H_ADMIN */
 };
 
 /* new H stuff */
@@ -128,6 +128,9 @@ void helpmod_message_channel(hchannel *hchan, const char *message, ...)
     vsnprintf(buf,512,message,va);
     va_end(va);
 
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     sendmessagetochannel(helpmodnick, hchan->real_channel, "%s", buf);
 }
 
@@ -144,6 +147,9 @@ void helpmod_message_channel_long(hchannel *hchan, const char *message, ...)
     va_start(va,message);
     vsnprintf(buf,2048,message,va);
     va_end(va);
+
+    if (hchan->flags & H_PASSIVE)
+        return;
 
     while (strlen(bp) > 450)
     {
@@ -179,6 +185,9 @@ void helpmod_kick(hchannel *hchan, huser *target, const char *reason, ...)
 
 void helpmod_invite(hchannel *hchan, huser *husr)
 {
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     localinvite(helpmodnick, hchan->real_channel, husr->real_user);
 }
 
@@ -200,6 +209,9 @@ void helpmod_channick_modes(huser *target, hchannel *hchan, short mode, int now)
         Error("helpmod", ERR_WARNING, "Channick mode for user %s not on channel %s", target->real_user->nick, hchannel_get_name(hchan));
         return;
     }
+
+    if (hchan->flags & H_PASSIVE)
+        return;
 
     switch (mode)
     {
@@ -224,6 +236,10 @@ void helpmod_channick_modes(huser *target, hchannel *hchan, short mode, int now)
 void helpmod_setban(hchannel *hchan, const char *banstr, time_t expiration, int type, int now)
 {
     hmode_set_channel(hchan);
+
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     localdosetmode_ban(&hmodechanges, banstr, type);
 
     if ((type == MCB_ADD) && (expiration > time(NULL)))
@@ -237,6 +253,9 @@ void helpmod_simple_modes(hchannel *hchan, int add, int remove, int now)
 {
     hmode_set_channel(hchan);
 
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     localdosetmode_simple(&hmodechanges, add, remove);
 
     if (now)
@@ -245,6 +264,9 @@ void helpmod_simple_modes(hchannel *hchan, int add, int remove, int now)
 
 void helpmod_set_topic(hchannel *hchan, const char* topic)
 {
+    if (hchan->flags & H_PASSIVE)
+        return;
+
     localsettopic(helpmodnick, hchan->real_channel, (char*)topic);
 }
 
@@ -397,7 +419,7 @@ void _init()
     schedulerecurring(time(NULL)+1,0,HDEF_d,(ScheduleCallback)&haccount_clear_inactives,NULL);
     schedulerecurring(time(NULL)+1,0,HDEF_m,(ScheduleCallback)&hban_remove_expired,NULL);
     schedulerecurring(time(NULL)+1,0,30 * HDEF_s, (ScheduleCallback)&hchannel_remove_inactive_users, NULL);
-    schedulerecurring(time(NULL)+1,0,5 * HDEF_m,(ScheduleCallback)&hchannel_report, NULL);
+    schedulerecurring(time(NULL)+1,0,60 * HDEF_m,(ScheduleCallback)&hchannel_report, NULL);
     schedulerecurring(time(NULL) + HDEF_h, 0, 6 * HDEF_h, (ScheduleCallback)&helpmod_config_scheduled_events, NULL);
     schedulerecurring(time(NULL)+1,0,10 * HDEF_m, (ScheduleCallback)&hticket_remove_expired, NULL);
     schedulerecurring(hstat_get_schedule_time() - 5 * HDEF_m, 0, HDEF_d, (ScheduleCallback)&hstat_scheduler, NULL);

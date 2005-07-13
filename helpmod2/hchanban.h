@@ -22,6 +22,6 @@ hchanban *hchanban_del_all(void);
 
 hchanban *hchanban_get(hchannel*, const char*);
 
-void hchanban_schedule_entry(void*);
+void hchanban_schedule_entry(hchanban*);
 
 #endif

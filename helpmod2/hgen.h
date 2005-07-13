@@ -9,7 +9,7 @@ int ci_strcmp(const char*, const char*);
 /* matches string (const char*) to the regular expression (? and *) (const char*) */
 int strregexp(const char *, const char *);
 
-/* prints the time in the common 1h 2m 3s format, hour is the maximum unit printed currently */
+/* prints the time in the common 1h 2m 3s format, has three internal buffers */
 const char *helpmod_strtime(int);
 /* reads a time string */
 int helpmod_read_strtime(const char *);

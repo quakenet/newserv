@@ -6,6 +6,10 @@
 
 #define HLC_DEFAULT_BANTIME (60 * 60 * 24)
 
+/* Forward declarations */
+struct hchannel_struct;
+struct huser_struct;
+
 typedef enum
 {
     HLC_CAPS,
@@ -48,8 +52,7 @@ hlc_profile *hlc_del(hlc_profile *);
 void hlc_del_all(void);
 hlc_profile *hlc_get(const char *);
 
-/* checks a string for lameness, returns non-zero if lameness is present and user is kicked */
-/* the first parameter is hchannel* and second is huser*, but since hchannel.h includes hlamer.h, this is needed */
-int hlc_check(void *, void*, const char *);
+/* checks a string for lameness, returns non-zero if lameness is present and the user is kicked */
+int hlc_check(struct hchannel_struct*, struct huser_struct*, const char *);
 
 #endif

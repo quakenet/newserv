@@ -24,55 +24,66 @@ void hstat_scheduler(void)
     struct tm *tstruct = localtime(&timer);
     int is_sunday = (tstruct->tm_wday == 0); /* is it sunday ? */
     int i;
-    hstat_cycle++;
+
+    /* Fix the hstat_cycle in case it's broken */
+    if (is_sunday)
+        hstat_cycle = hstat_cycle - (hstat_cycle % 7) + 6;
 
     {   /* accounts */
         haccount *ptr = haccounts;
-        if (is_sunday)
-            for (;ptr;ptr = ptr->next)
-                if (ptr->level > H_PEON)
-                {
-                    hstat_account *ptr2 = ptr->stats;
-                    for (;ptr2;ptr2 = ptr2->next)
-                    {
-                        HSTAT_ACCOUNT_ZERO(ptr2->longterm[(hstat_week() - 1) % 10]);
-                        for (i=0;i<7;i++)
-                        {
-                            HSTAT_ACCOUNT_SUM(ptr2->longterm[(hstat_week() - 1) % 10], ptr2->longterm[(hstat_week() - 1) % 10], ptr2->week[i]);
-                        }
-                        /*ptr2->longterm[(hstat_week() - 1) % 10] = ptr2->longterm[hstat_week()];*/
-                        /*for (i=0;i<7;i++)
-                        {
-                            HSTAT_ACCOUNT_ZERO(ptr2->week[i]);
-                        }*/
-                    }
-                }
+	for (;ptr;ptr = ptr->next)
+	    if (ptr->level > H_PEON)
+	    {
+		hstat_account *ptr2 = ptr->stats;
+		for (;ptr2;ptr2 = ptr2->next)
+		{
+		    if (is_sunday)
+		    {
+			HSTAT_ACCOUNT_ZERO(ptr2->longterm[(hstat_week() + 1) % 10]);
+			for (i=0;i<7;i++)
+			{
+			    HSTAT_ACCOUNT_SUM(ptr2->longterm[(hstat_week() + 1) % 10], ptr2->longterm[(hstat_week() + 1) % 10], ptr2->week[i]);
+			}
+		    }
+		    HSTAT_ACCOUNT_ZERO(ptr2->week[(hstat_day() + 1) % 7]);
+		    /*                        ptr2->longterm[(hstat_week() - 1) % 10] = ptr2->longterm[hstat_week()];
+		     for (i=0;i<7;i++)
+		     {
+		     HSTAT_ACCOUNT_ZERO(ptr2->day[i]);
+		     }*/
+		}
+	    }
     }
     {   /* hchannels */
         hchannel *ptr = hchannels;
         for (;ptr;ptr = ptr->next)
         {
-            if ((ptr->flags & H_REPORT) && hchannel_is_valid(ptr))
+	    hstat_channel *ptr2;
+	    if (ptr->flags & H_REPORT && hchannel_is_valid(ptr->report_to))
             {
                 hstat_channel_entry *entry = &ptr->stats->week[hstat_day()];
                 helpmod_message_channel(ptr->report_to, "Daily summary for channel %s: Time spent %s, joins %d and queue usage %d", hchannel_get_name(ptr),helpmod_strtime(entry->time_spent), entry->joins, entry->queue_use);
             }
-            if (is_sunday)
-            {
-                hstat_channel *ptr2 = ptr->stats;
-                HSTAT_CHANNEL_ZERO(ptr2->longterm[(hstat_week() - 1) % 10]);
+
+	    ptr2 = ptr->stats;
+	    if (is_sunday)
+	    {
+                HSTAT_CHANNEL_ZERO(ptr2->longterm[(hstat_week() + 1) % 10]);
                 for (i=0;i<7;i++)
                 {
-                    HSTAT_CHANNEL_SUM(ptr2->longterm[(hstat_week() - 1) % 10], ptr2->longterm[(hstat_week() - 1) % 10], ptr2->week[i]);
+                    HSTAT_CHANNEL_SUM(ptr2->longterm[(hstat_week() + 1) % 10], ptr2->longterm[(hstat_week() + 1) % 10], ptr2->week[i]);
                 }
-                /*ptr2->longterm[(hstat_week() - 1) % 10] = ptr2->longterm[hstat_week()];*/
-                /*for (i=0;i<7;i++)
-                {
-                    HSTAT_CHANNEL_ZERO(ptr2->week[i]);
+/*                ptr2->longterm[(hstat_week() - 1) % 10] = ptr2->longterm[hstat_week()];
+                for (i=0;i<7;i++)
+		{
+                    HSTAT_CHANNEL_ZERO(ptr2->day[i]);
                 }*/
-            }
+	    }
+	    HSTAT_CHANNEL_ZERO(ptr2->week[(hstat_day() + 1) % 7]);
         }
     }
+
+    hstat_cycle++;
 }
 
 int hstat_get_schedule_time(void)
@@ -94,9 +105,8 @@ hstat_channel *get_hstat_channel(void)
     return tmp;
 }
 
-void hstat_del_channel(void* ptr)
+void hstat_del_channel(hchannel *hchan)
 {
-    hchannel *hchan = (hchannel*)ptr;
     haccount *hacc = haccounts;
     hstat_account **hs_acc;
     for (;hacc;hacc = hacc->next)
@@ -123,10 +133,8 @@ hstat_account *get_hstat_account(void)
     return tmp;
 }
 
-void hstat_calculate_general(void* param1, void* param2, const char *message)
+void hstat_calculate_general(hchannel *hchan, huser* husr, const char *message)
 {
-    hchannel *hchan = (hchannel*)param1;
-    huser *husr = (huser*)param2;
     hstat_account **acc_stat;
     hstat_account_entry *acc_entry;
     hstat_channel_entry *chan_entry;
@@ -142,8 +150,7 @@ void hstat_calculate_general(void* param1, void* param2, const char *message)
             break;
 
     if (*acc_stat == NULL)
-    /* this user has no stats for the channel -> create them */
-    {
+    { /* this user has no stats for the channel -> create them */
         *acc_stat = get_hstat_account();
         (*acc_stat)->hchan = hchan;
     }
@@ -153,7 +160,7 @@ void hstat_calculate_general(void* param1, void* param2, const char *message)
 
     time_spent = time(NULL) - huserchan->last_activity;
 
-    if (time_spent < HSTAT_ACTIVITY_TRESHOLD)
+    if (time_spent > 0 && time_spent < HSTAT_ACTIVITY_TRESHOLD)
     {
         acc_entry->time_spent+=time_spent;
         chan_entry->time_spent+=time_spent;
@@ -174,18 +181,15 @@ void hstat_calculate_general(void* param1, void* param2, const char *message)
     chan_entry->words+=wordc;
 }
 
-void hstat_add_join(void *param)
+void hstat_add_join(hchannel *hchan)
 {
-    hchannel *hchan = (hchannel*)param;
     hchan->stats->week[hstat_day()].joins++;
 }
 
-void hstat_add_queue(void *param, int amount)
+void hstat_add_queue(hchannel *hchan, int amount)
 {
-    hchannel *hchan = (hchannel*)param;
     hchan->stats->week[hstat_day()].queue_use+=amount;
 }
-
 
 const char *hstat_channel_print(hstat_channel_entry *entry, int type)
 {
@@ -194,10 +198,10 @@ const char *hstat_channel_print(hstat_channel_entry *entry, int type)
     switch (type)
     {
     case HSTAT_CHANNEL_LONG:
-        sprintf(buffer, "%-15s %-15s %-10d %-10d %-10d %-10d", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent), entry->joins, entry->queue_use, entry->lines, entry->words);
+        sprintf(buffer, "%-18s %-18s %-10d %-10d %-10d %-10d", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent), entry->joins, entry->queue_use, entry->lines, entry->words);
         break;
     case HSTAT_CHANNEL_SHORT:
-        sprintf(buffer, "%-15s %-15s", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent));
+        sprintf(buffer, "%-18s %-18s", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent));
         break;
     }
     return buffer;
@@ -210,10 +214,10 @@ const char *hstat_account_print(hstat_account_entry *entry, int type)
     switch (type)
     {
     case HSTAT_ACCOUNT_LONG:
-        sprintf(buffer, "%-15s %-15s %-10d %-10d", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent), entry->lines, entry->words);
+        sprintf(buffer, "%-18s %-18s %-10d %-10d", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent), entry->lines, entry->words);
         break;
     case HSTAT_ACCOUNT_SHORT:
-        sprintf(buffer, "%-15s %-15s", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent));
+        sprintf(buffer, "%-18s %-18s", helpmod_strtime(entry->time_spent), helpmod_strtime(entry->prime_time_spent));
         break;
     }
     return buffer;
@@ -224,15 +228,15 @@ const char *hstat_header(hstat_type type)
     switch (type)
     {
     case HSTAT_ACCOUNT_SHORT:
-        return "TimeSpent       PrimeTimeSpent";
+        return "TimeSpent          PrimeTimeSpent";
     case HSTAT_ACCOUNT_LONG:
-        return "TimeSpent       PrimeTimeSpent  Lines      Words";
+        return "TimeSpent          PrimeTimeSpent     Lines      Words";
     case HSTAT_CHANNEL_SHORT:
-        return "TimeSpent       PrimeTimeSpent";
+        return "TimeSpent          PrimeTimeSpent";
     case HSTAT_CHANNEL_LONG:
-        return "TimeSpent       PrimeTimeSpent  Joins      QueueUse   Lines      Words";
+        return "TimeSpent          PrimeTimeSpent     Joins      QueueUse   Lines      Words";
     default:
-        return "error: please contact strutsi";
+        return "Error: please contact strutsi";
     }
 }
 
@@ -310,9 +314,8 @@ static int hstat_account_compare(hstat_account_entry_sum *e1, hstat_account_entr
     return e2->prime_time_spent - e1->prime_time_spent;
 }
 
-hstat_accounts_array create_hstat_account_array(void* tptr, hlevel lvl)
+hstat_accounts_array create_hstat_account_array(hchannel *hchan, hlevel lvl)
 {
-    hchannel *hchan = (hchannel*)tptr;
     hstat_accounts_array arr = {NULL, 0};
     hstat_account *ptr;
     hstat_account_entry_sum tmp1, tmp2;
@@ -329,21 +332,20 @@ hstat_accounts_array create_hstat_account_array(void* tptr, hlevel lvl)
     if (!initial_arrlen)
         return arr;
 
-    arr.array = malloc(sizeof(hstat_account_entry_sum) * initial_arrlen);
+    arr.array = (hstat_account_entry_sum*)malloc(sizeof(hstat_account_entry_sum) * initial_arrlen);
     for (;hacc;hacc = hacc->next)
         if ((lvl == H_OPER && (hacc->level == H_OPER || hacc->level == H_ADMIN)) ||
             (lvl == H_STAFF && (hacc->level == H_TRIAL || hacc->level == H_STAFF)))
-        //if ((lvl == H_OPER)?(hacc->level >= H_OPER && hacc->level < H_SERVICE):(hacc->level > H_PEON || hacc->level < H_OPER))
-            for (ptr = hacc->stats;ptr;ptr = ptr->next)
-                if (ptr->hchan == hchan)
-                {
-                    assert(arr.arrlen < initial_arrlen);
-                    tmp1 = hstat_account_last_month(ptr);
-                    tmp2 = hstat_account_last_week(ptr);
-                    HSTAT_ACCOUNT_SUM(arr.array[arr.arrlen], tmp1, tmp2);
-                    arr.array[arr.arrlen].owner = (void*)hacc;
-                    arr.arrlen++;
-                }
+	    for (ptr = hacc->stats;ptr;ptr = ptr->next)
+		if (ptr->hchan == hchan)
+		{
+		    assert(arr.arrlen < initial_arrlen);
+		    tmp1 = hstat_account_last_month(ptr);
+		    tmp2 = hstat_account_last_week(ptr);
+		    HSTAT_ACCOUNT_SUM(arr.array[arr.arrlen], tmp1, tmp2);
+		    arr.array[arr.arrlen].owner = hacc;
+		    arr.arrlen++;
+		}
 
     qsort(arr.array, arr.arrlen, sizeof(hstat_account_entry_sum), (int(*)(const void*, const void*))hstat_account_compare);
     return arr;

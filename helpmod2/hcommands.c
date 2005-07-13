@@ -299,7 +299,7 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Incorrect syntax, nick or account required");
+	helpmod_reply(sender, returntype, "Incorrect syntax: Nick or account required");
         return ;
     }
 
@@ -1066,7 +1066,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
 
         if (htrm == NULL)
         {
-            helpmod_reply(sender, returntype, "No term found matching '%s'", argv[0]);
+            helpmod_reply(sender, returntype, "No term found matching '%s'", argv[1]);
             return;
         }
         if (returntype != NULL && huser_get_level(sender) > H_PEON)
@@ -1510,6 +1510,10 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 {
     huser *husr;
     int i;
+    char *reason = "Banned";
+    huser *targets[H_CMD_MAX_ARGS];
+    int ntargets = 0;
+
     if (argc == 0)
     {
         helpmod_reply(sender, returntype, "Can not get rid of the user: User not specified");
@@ -1520,7 +1524,22 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
         argc = H_CMD_MAX_ARGS;
     for (i=0;i<argc;i++)
     {
-        husr = huser_get(getnickbynick(argv[i]));
+	if (argv[i][0] == ':')
+	{
+	    if (i == 0)
+	    {
+		helpmod_reply(sender, returntype, "Can not get rid of users: No users specified");
+		return;
+	    }
+	    while (i--)
+	    {
+		SKIP_WORD;
+	    }
+	    reason = ostr + 1;
+	    break;
+	}
+
+	husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
             helpmod_reply(sender, returntype, "Can not get rid of the user: User %s not found", argv[i]);
@@ -1530,13 +1549,17 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
         {
             helpmod_reply(sender, returntype, "Can not get rid of the user: User %s is not a peon", husr->real_user->nick);
             continue;
-        }
-        {
-            const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
+	}
+        targets[ntargets++] = husr;
+    }
 
-            hban_add(banmask, "Banned", time(NULL) + HCMD_OUT_DEFAULT, 0);
-        }
-        helpmod_reply(sender, returntype, "User %s is now gone", husr->real_user->nick);
+    for (i=0;i<ntargets;i++)
+    {
+	const char *banmask = hban_ban_string(targets[i]->real_user, HBAN_HOST);
+
+	hban_add(banmask, reason, time(NULL) + HCMD_OUT_DEFAULT, 0);
+
+	helpmod_reply(sender, returntype, "User %s is now gone", targets[i]->real_user->nick);
     }
 }
 
@@ -1589,7 +1612,7 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
 {
     hchannel *hchan;
     int i;
-    huser *husr, *targets[6];
+    huser *husr, *targets[H_CMD_MAX_ARGS];
     int ntargets = 0;
     char *reason = "out";
     DEFINE_HCHANNEL;
@@ -1599,15 +1622,27 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
     if (hchan == NULL)
     {
         helpmod_reply(sender, returntype, "Can not kick the user: Channel not defined or not found");
-        return;
+	return;
     }
+
+    if (argc == 0)
+    {
+	helpmod_reply(sender, returntype, "Can not kick users: No users specified");
+	return;
+    }
+
     if (argc > H_CMD_MAX_ARGS)
         argc = H_CMD_MAX_ARGS;
     for (i=0;i<argc;i++)
     {
         if (*argv[i] == ':')
         {
-            while (i--)
+	    if (i == 0)
+	    {
+		helpmod_reply(sender, returntype, "Can not kick the user: No users defined");
+		return;
+	    }
+	    while (i--)
             {
                 SKIP_WORD;
             }
@@ -1622,7 +1657,7 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
         }
         if (huser_on_channel(husr, hchan) == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not kick the user: User %s is on channel", husr->real_user->nick, hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Can not kick the user: User %s is not on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
             continue;
         }
         if (huser_get_level(husr) > H_PEON)
@@ -1632,11 +1667,7 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
         }
         targets[ntargets++] = husr;
     }
-    if (!ntargets)
-    {
-        helpmod_reply(sender, returntype, "Can not kick the user: No users defined");
-        return;
-    }
+
     for (i=0;i<ntargets;i++)
         helpmod_kick(hchan, targets[i], reason);
 }
@@ -1858,7 +1889,7 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
         for (i=0;i<weeks;i++) /* latest weeks */
         {
             stat_entry = &hchan->stats->longterm[(hstat_week() - i + 10)  % 10];
-            helpmod_reply(sender, returntype, "%s", hstat_channel_print(stat_entry, type));
+	    helpmod_reply(sender, returntype, "%s", hstat_channel_print(stat_entry, type));
         }
     }
 }
@@ -1949,7 +1980,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
         else if (!ci_strcmp(argv[0], "staff") || !ci_strcmp(argv[0], "s"))
             lvl = H_STAFF;
     }
-    if (argc == 2)
+    if (argc == 3)
     {
         int tmp;
         if (sscanf(argv[1], "%d", &tmp) && (tmp >= 10) && (tmp <= 50))
@@ -1960,7 +1991,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
 
     helpmod_reply(sender, returntype, "Top%d most active %ss of channel %s", top_n, hlevel_name(lvl), hchannel_get_name(hchan));
     for (i=0;i < arr.arrlen && i < top_n;i++)
-        helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s",i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].time_spent), helpmod_strtime(arr.array[i].prime_time_spent));
+	helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s",i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
 
     free(arr.array);
 }
@@ -2367,7 +2398,7 @@ static void helpmod_cmd_tickets (huser *sender, channel* returntype, char* ostr,
     for (i = 0;htick;htick = htick->next, i++)
         helpmod_reply(sender, returntype, "%4d %16s %48s", i, htick->authname, helpmod_strtime(time(NULL) - htick->time_expiration));
 
-    helpmod_reply(sender, returntype, "Done listing tickets. Channel %s had %d valid tickets", hchannel_get_name(hchan), i);
+    helpmod_reply(sender, returntype, "Done listing tickets. Channel %s had %d valid ticket%s", hchannel_get_name(hchan), i, (i==1)?"":"s");
 }
 
 static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2408,7 +2439,7 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
             helpmod_reply(sender, returntype, "Can not show the ticket: User %s does not have a valid ticket for channel %s", argv[i], hchannel_get_name(hchan));
             continue;
         }
-        helpmod_reply(sender, returntype, "User %s has a ticket for chanenl %s expiring in %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
+        helpmod_reply(sender, returntype, "User %s has a ticket for channel %s expiring in %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
     }
 }
 
@@ -2501,12 +2532,6 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
     if (argc > 1 && !ci_strcmp(argv[1], "summary"))
         summary_only = 1;
 
-    if (IsKey(chan))
-    {
-	helpmod_reply(sender, returntype, "Can not check channel: Permission denied. Channel %s is +k", argv[0]);
-        return;
-    }
-
     /* first pass - verify validity and count nicks */
     for (i=0;i < chan->users->hashsize;i++)
     {
@@ -2548,7 +2573,8 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 
     helpmod_reply(sender, returntype, "Information on channel %s", argv[0]);
     helpmod_reply(sender, returntype, "Channel created %s ago", helpmod_strtime(time(NULL) - chan->timestamp));
-    helpmod_reply(sender, returntype, "Channel topic: %s", chan->topic?chan->topic->content:"Not set");
+    if (!IsKey(chan) && !IsInviteOnly(chan))
+	helpmod_reply(sender, returntype, "Channel topic: %s", chan->topic?chan->topic->content:"Not set");
     helpmod_reply(sender, returntype, "Channel modes: %s", printflags(chan->flags, cmodeflags));
 
 
@@ -2576,17 +2602,17 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 
 	    visiblehostmask(getnickbynumeric(numeric_array[i]), buf);
 	    if (IsAccount(getnickbynumeric(numeric_array[i])))
-		helpmod_reply(sender, returntype, "%c%s (%s)", status, buf, getnickbynumeric(numeric_array[i]));//nick_array[i]->authname);
+		helpmod_reply(sender, returntype, "%c%s (%s)", status, buf, getnickbynumeric(numeric_array[i])->authname);//nick_array[i]->authname);
 	    else
 		helpmod_reply(sender, returntype, "%c%s", status, buf);
 	}
 
-    helpmod_reply(sender, returntype, "Users: %d  Clones: %d  Opped: %d  Voiced: %d  Authed: %3.0f%%", nick_count, nick_count - countuniquehosts(chan), o_limit, o_limit - v_limit, ((float)authed_count / (float)nick_count) * 100.0);
+    helpmod_reply(sender, returntype, "Users: %d  Clones: %d  Opped: %d  Voiced: %d  Authed: %3.0f%%", nick_count, nick_count - countuniquehosts(chan), o_limit, v_limit - o_limit, ((float)authed_count / (float)nick_count) * 100.0);
 
     free(numeric_array);
 }
 
-static void helpmod_cmd_statsdebug (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+static void helpmod_cmd_statsdump (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     haccount *hacc = haccounts;
     hstat_account *ptr;
@@ -2603,6 +2629,158 @@ static void helpmod_cmd_statsdebug (huser *sender, channel* returntype, char* os
             for (i = 0;i < 10;i++)
                 helpmod_reply(sender, returntype, "%d %d %d %d", ptr->longterm[i].time_spent, ptr->longterm[i].prime_time_spent, ptr->longterm[i].lines, ptr->longterm[i].words);
         }
+}
+
+static void helpmod_cmd_statsrepair (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    haccount *hacc = haccounts;
+    hstat_account *ptr;
+    int i;
+
+    helpmod_reply(sender, returntype, "Repairing account statistics");
+    for (;hacc;hacc = hacc->next)
+        for (ptr = hacc->stats;ptr;ptr = ptr->next)
+	{
+	    for (i = 0;i < 7;i++)
+	    {
+		if (ptr->week[i].time_spent > HDEF_d)
+		{
+		    ptr->week[i].time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired short term TimeSpent %s @ %s : Greater than one day",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->week[i].time_spent < 0)
+		{
+		    ptr->week[i].time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired short term TimeSpent %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->week[i].prime_time_spent > HDEF_d)
+		{
+		    ptr->week[i].prime_time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired short term PrimeTimeSpent %s @ %s : Greater than one day",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}                    
+		if (ptr->week[i].prime_time_spent < 0)
+		{
+		    ptr->week[i].prime_time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired short term PrimeTimeSpent %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->week[i].lines > 10000)
+		{
+		    ptr->week[i].lines = 0;
+		    helpmod_reply(sender, returntype, "repaired short term Lines %s @ %s : Greater than 10000",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->week[i].lines < 0)
+		{
+		    ptr->week[i].lines = 0;
+		    helpmod_reply(sender, returntype, "repaired short term Lines %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->week[i].words > 50000)
+		{
+		    ptr->week[i].words = 0;
+		    helpmod_reply(sender, returntype, "repaired short term Words %s @ %s : Greater than 50000",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->week[i].words < 0)
+		{
+		    ptr->week[i].words = 0;
+		    helpmod_reply(sender, returntype, "repaired short term Words %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+	    }
+	    for (i = 0;i < 10;i++)
+	    {
+		if (ptr->longterm[i].time_spent > HDEF_w)
+		{
+		    ptr->longterm[i].time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired long term TimeSpent %s @ %s : Greater than one week",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->longterm[i].time_spent < 0)
+		{
+		    ptr->longterm[i].time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired long term TimeSpent %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->longterm[i].prime_time_spent > HDEF_w)
+		{
+		    ptr->longterm[i].prime_time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired long term PrimeTimeSpent %s @ %s : Greater than one week",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}                    
+		if (ptr->longterm[i].prime_time_spent < 0)
+		{
+		    ptr->longterm[i].prime_time_spent = 0;
+		    helpmod_reply(sender, returntype, "repaired long term PrimeTimeSpent %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->longterm[i].lines > 50000)
+		{
+		    ptr->longterm[i].lines = 0;
+		    helpmod_reply(sender, returntype, "repaired long term Lines %s @ %s : Greater than 50000",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->longterm[i].lines < 0)
+		{
+		    ptr->longterm[i].lines = 0;
+		    helpmod_reply(sender, returntype, "repaired long term Lines %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+
+		if (ptr->longterm[i].words > 50000)
+		{
+		    ptr->longterm[i].words = 0;
+		    helpmod_reply(sender, returntype, "repaired long term Words %s @ %s : Greater than 50000",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+		if (ptr->longterm[i].words < 0)
+		{
+		    ptr->longterm[i].words = 0;
+		    helpmod_reply(sender, returntype, "repaired long term Words %s @ %s : Less than zero",hacc->name->content, hchannel_get_name(ptr->hchan));
+		}
+	    }
+	}
+    helpmod_reply(sender, returntype, "Account statistics repaired");
+
+}
+
+static void helpmod_cmd_statsreset (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    haccount *hacc = haccounts;
+    hstat_account *ptr;
+    hchannel *hchan;
+    int i, short_del, long_del;
+
+    if (argc < 2)
+    {
+	helpmod_reply(sender, returntype, "Insufficient parameters");
+	return;
+    }
+
+    if (sscanf(argv[0], "%d", &short_del) == 0)
+    {
+	helpmod_reply(sender, returntype, "Invalid parameter");
+	return;
+    }
+    if (sscanf(argv[1], "%d", &long_del) == 0)
+    {
+	helpmod_reply(sender, returntype, "Invalid parameter");
+	return;
+    }
+
+    for (;hacc;hacc = hacc->next)
+        for (ptr = hacc->stats;ptr;ptr = ptr->next)
+	{
+            for (i = 1;i < short_del + 1;i++)
+		HSTAT_ACCOUNT_ZERO(ptr->week[(hstat_day() + i) % 7]);
+	    for (i = 1;i < long_del + 1;i++)
+                HSTAT_ACCOUNT_ZERO(ptr->longterm[(hstat_week() + i) % 10]);
+	}
+
+    for (hchan = hchannels;hchan;hchan = hchan->next)
+    {
+	for (i = 1;i < short_del + 1;i++)
+	    HSTAT_CHANNEL_ZERO(hchan->stats->week[(hstat_day() + i) % 7]);
+	for (i = 1;i < long_del + 1;i++)
+	    HSTAT_CHANNEL_ZERO(hchan->stats->longterm[(hstat_week() + i) % 10]);
+
+    }
+
+    helpmod_reply(sender, returntype, "Statistics reset complete");
 }
 
 static void helpmod_cmd_message (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2796,11 +2974,11 @@ void hcommands_add(void)
     hcommand_add("staff", H_OPER, helpmod_cmd_staff, "Sets the userlevel of the target to staff (lvl 3)");
     hcommand_add("oper", H_OPER, helpmod_cmd_oper, "Sets the userlevel of the target to oper (lvl 4)");
     hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 5)");
-    hcommand_add("deluser", H_OPER, helpmod_cmd_deluser, "Removes an account from H");
-    hcommand_add("listuser", H_STAFF, helpmod_cmd_listuser, "Lists user accounts of H");
+    hcommand_add("deluser", H_OPER, helpmod_cmd_deluser, "Removes an account from " HELPMOD_NICK);
+    hcommand_add("listuser", H_STAFF, helpmod_cmd_listuser, "Lists user accounts of " HELPMOD_NICK);
 
     hcommand_add("chanconf", H_STAFF, helpmod_cmd_chanconf, "Channel configuration");
-    hcommand_add("acconf", H_TRIAL, helpmod_cmd_acconf, "Personalise H behaviour");
+    hcommand_add("acconf", H_TRIAL, helpmod_cmd_acconf, "Personalise " HELPMOD_NICK " behaviour");
     hcommand_add("welcome", H_STAFF, helpmod_cmd_welcome, "Views or changes the channel welcome message");
     hcommand_add("censor", H_STAFF, helpmod_cmd_censor, "Handles the censored patterns for a channel");
 
@@ -2833,11 +3011,11 @@ void hcommands_add(void)
     hcommand_add("top10", H_STAFF, helpmod_cmd_top10, "Shows the top 10 most active staff");
     hcommand_add("report", H_OPER, helpmod_cmd_report, "Sets the channel where to report this channels statistics every 5 minutes");
 
-    hcommand_add("whoami", H_LAMER, helpmod_cmd_whoami, "Tells who you are to H");
+    hcommand_add("whoami", H_LAMER, helpmod_cmd_whoami, "Tells who you are to " HELPMOD_NICK);
     hcommand_add("whois", H_STAFF, helpmod_cmd_whois, "Tells you who someone is");
     hcommand_add("command", H_LAMER, helpmod_cmd_command, "Gives detailed information on a command");
-    hcommand_add("addchan", H_ADMIN, helpmod_cmd_addchan, "Joins H to a new channel");
-    hcommand_add("delchan", H_ADMIN, helpmod_cmd_delchan, "Removes H permanently from a channel");
+    hcommand_add("addchan", H_ADMIN, helpmod_cmd_addchan, "Joins " HELPMOD_NICK " to a new channel");
+    hcommand_add("delchan", H_ADMIN, helpmod_cmd_delchan, "Removes " HELPMOD_NICK " permanently from a channel");
     hcommand_add("seen", H_STAFF, helpmod_cmd_seen, "Tells when a specific user/account has had activity");
 
     hcommand_add("op", H_STAFF, helpmod_cmd_op, "Sets mode +o on channels");
@@ -2853,7 +3031,10 @@ void hcommands_add(void)
 
     hcommand_add("termstats", H_OPER, helpmod_cmd_termstats, "Lists usage statistics for terms");
     hcommand_add("checkchannel", H_STAFF, helpmod_cmd_checkchannel, "Shows channel information for any channel");
-    hcommand_add("statsdebug", H_ADMIN, helpmod_cmd_statsdebug, "Statistics debug command");
+    hcommand_add("statsdump", H_ADMIN, helpmod_cmd_statsdump, "Statistics dump command");
+    hcommand_add("statsrepair", H_ADMIN, helpmod_cmd_statsrepair, "Statistics repair command");
+    hcommand_add("statsreset", H_ADMIN, helpmod_cmd_statsreset, "Statistics reset command");
+
     hcommand_add("message", H_TRIAL, helpmod_cmd_message, "Sends a message to a channel");
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
@@ -2924,7 +3105,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
     if (sscanf(parsed_args[0], "%d", &useless_var) && returntype == NULL)
     {
         helpmod_cmd_help(sender, NULL, parsed_args[0], 1, NULL);
-        return;
+	return;
     }
 
     {
@@ -2933,7 +3114,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 
 	if (hcom == NULL)
 	{
-            if (sender->account == NULL || !(sender->account->flags & H_NO_CMD_ERROR))
+	    if ((sender->account == NULL && returntype == NULL) || (sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR)))
 		helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
 	}
         else

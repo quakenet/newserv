@@ -222,3 +222,62 @@ Added a new acconf option to suppress the unknown command error
 Checkchannel command changed according to requests
 Showcommands now lists the commands in a bit more ordered fashion
 Top10 now prints the time spent fields in a different order
+
+2.05
+Termstats now really really work (sort order fixed)
+Checkchannel now shows +o/+v and sorts the output based on those
+Checkchannel now tells the % of users authed on the channel
+Fixed the admin command description
+Checkchannel no longer shows +k channels
+Banning lamers (userlevel H_LAMER) on join now works properly
+Users no longer receive the "your userlevel has been changed" when changed to lamer
+Some code cleanup
++h users are now excluded from idle user removal
+Queue on/off when queue is in the desired state no longer produces a channel message
+Censor del can now remove patterns other than the first
+Fixed a minor typo in invite messaging
+Non-opered staff can now invite themselves to oper-only channels they have tickets to
+A month is now 30 days instead of 30 weeks
+Queue message wording changed a bit
+Fixed a bug in the command help
+
+2.06
+The voiced count in checkchannel is now correct
+Time printing was changed a bit
+Account name is now shown correctly in checkchannel
+Added a sanity check to stats calculation
+Fixed a bug when reading/writing stats from disk
+Statistics printing fields widened a bit
+Changed ban expiration printing
+statsdebug command is now statsdump
+Added a statsrepair command
+All normal users are now devoiced when the queue is turned off
+Fixed a typo in the kick command
+Out command now accepts an optional reason
+Normal users no longer receive errors for commands issued on channels
+Incorrect term find reply is now fixed
+Added sanity checking to account adding
+Fixed some command help files
+
+2.07
+top10 number parameter now works
+top10 should now work
+top10 listing order changed a bit
+Statistics should now work better
+
+2.08
+Kick and out command replies changed a bit
+Some code cleanup, mostly void* stuff removed
+Added a statsreset command
+Fixed a bug with weekly calculation of stats
+
+2.09
+Fixed a minor bug in channel daily report
+Changed report interval from 5 minutes to one hour
+Passive state support improved
+Fixed the time print bug
+The +k restriction in checkchannel was removed
+Tickets command wording changed a bit
+Fixed a typo in showticket command
+Checkchannel does not show channel topic for +i/+k channels
+Some command descriptions changed

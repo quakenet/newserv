@@ -447,7 +447,7 @@ int helpmod_config_write_ban(FILE *out, hban *hb)
 {
     fprintf(out, "\t%s\n", bantostring(hb->real_ban));
     fprintf(out, "\t%s\n", hb->reason?hb->reason->content:NULL);
-    fprintf(out, "\t%d\n", hb->expiration);
+    fprintf(out, "\t%u\n", hb->expiration);
     return 0;
 }
 
@@ -590,7 +590,7 @@ int helpmod_config_read_chanstats(FILE *in, hstat_channel *hs_chan)
         if (i < 7) /* days */
             entry = &hs_chan->week[(hstat_day() + i) % 7];
         else /* weeks */
-            entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 7];
+            entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 10];
 
         if (sscanf(buf, "%d %d %d %d %d %d", &entry->time_spent, &entry->prime_time_spent, &entry->joins, &entry->queue_use, &entry->lines, &entry->words) != 6)
             return -1;
@@ -608,7 +608,7 @@ int helpmod_config_write_chanstats(FILE *out, hstat_channel *hs_chan)
         if (i < 7) /* days */
             entry = &hs_chan->week[(hstat_day() + i) % 7];
         else /* weeks */
-            entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 7];
+            entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 10];
 
         fprintf(out, "\t%d %d %d %d %d %d\n", entry->time_spent, entry->prime_time_spent, entry->joins, entry->queue_use, entry->lines, entry->words);
     }
@@ -641,7 +641,7 @@ int helpmod_config_read_stats(FILE *in, hstat_account *hs_acc)
         if (i < 7) /* days */
             entry = &hs_acc->week[(hstat_day() + i) % 7];
         else /* weeks */
-            entry = &hs_acc->longterm[(hstat_week() + (i-7)) % 7];
+            entry = &hs_acc->longterm[(hstat_week() + (i-7)) % 10];
 
         if (sscanf(buf, "%d %d %d %d", &entry->time_spent, &entry->prime_time_spent, &entry->lines, &entry->words) != 4)
             return -1;
@@ -661,7 +661,7 @@ int helpmod_config_write_stats(FILE *out, hstat_account *hs_acc)
         if (i < 7) /* days */
             entry = &hs_acc->week[(hstat_day() + i) % 7];
         else /* weeks */
-            entry = &hs_acc->longterm[(hstat_week() + (i-7)) % 7];
+            entry = &hs_acc->longterm[(hstat_week() + (i-7)) % 10];
 
         fprintf(out, "\t%d %d %d %d\n", entry->time_spent, entry->prime_time_spent, entry->lines, entry->words);
     }

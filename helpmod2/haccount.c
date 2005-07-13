@@ -33,6 +33,12 @@ haccount *haccount_add(const char *name, hlevel lvl)
 {
     haccount *tmp = (haccount*)malloc(sizeof (haccount));
 
+    if (haccount_get_by_name(name))
+    {
+	Error("helpmod", ERR_ERROR, "Attempt to add a duplicate account: %s", name);
+	return haccount_get_by_name(name);
+    }
+
     if (*name == '#')
         name++;
 

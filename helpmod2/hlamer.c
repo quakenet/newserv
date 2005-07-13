@@ -249,10 +249,10 @@ static int hlc_check_spam(hlc_profile *hlc_prof, huser *husr, const char *line)
 }
 
 /* checks a string for lameness, returns non-zero if lameness is present */
-int hlc_check(void *hchan_ptr, void *husr_ptr, const char *line)
+int hlc_check(hchannel *hchan, huser* husr, const char *line)
 {
-    hchannel *hchan = (hchannel*)hchan_ptr;
-    huser *husr = (huser*)husr_ptr;
+//    hchannel *hchan = (hchannel*)hchan_ptr;
+//    huser *husr = (huser*)husr_ptr;
 
     if (hchan == NULL || hchan->lc_profile == NULL)
         return 0;

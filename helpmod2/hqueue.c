@@ -4,6 +4,7 @@
 #include "hqueue.h"
 #include "hgen.h"
 #include "hstat.h"
+#include "huser.h"
 
 #include "hcommands.h"
 
@@ -199,6 +200,19 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             helpmod_reply(sender, returntype, "Queue deactivated for channel %s", hchannel_get_name(hchan));
 	    hchannel_conf_change(hchan, hchan->flags | H_QUEUE);
 	    hchan->autoqueue = 0;
+
+	    {   /* devoice all users of level H_PEON */
+		hchannel_user *hchanuser;
+                huser_channel *huserchan;
+		for (hchanuser = hchan->channel_users;hchanuser != NULL;hchanuser = hchanuser->next)
+		{
+		    huserchan = huser_on_channel(hchanuser->husr, hchan);
+		    if (huser_get_level(hchanuser->husr) == H_PEON && huserchan->flags & HCUMODE_VOICE)
+			helpmod_channick_modes(hchanuser->husr, hchan, MC_DEVOICE, HLAZY);
+		}
+
+	    }
+
 	}
         return;
     }

@@ -54,12 +54,10 @@ hchanban *hchanban_get(hchannel* hchan, const char* banmask)
     return NULL;
 }
 
-void hchanban_schedule_entry(void* ptr)
+void hchanban_schedule_entry(hchanban* item)
 {
-    hchanban *item = (hchanban*)ptr;
-
     if (hchannel_is_valid(item->hchan))
         helpmod_setban(item->hchan, item->banmask->content, 0, MCB_DEL, HNOW);
 
-    hchanban_del(ptr);
+    hchanban_del(item);
 }

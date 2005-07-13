@@ -1,5 +1,5 @@
-Syntax:  out [nick1 ... nickn]
-Example: out luser
+Syntax:  out [nick1 ... nickn] :[reason]
+Example: out luser :Enough complaining
 Removes an unwanted user from H visibility.
-Sets a short duration ban to keep the user away.
+Sets a short duration ban to keep the user away. Reason is optional.
 Up to 6 users can be specified.

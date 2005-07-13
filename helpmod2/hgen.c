@@ -78,13 +78,18 @@ if (elem)\
     buf+=tmp;\
 }\
 
-
+/* This implementation might look a little evil but it does work */
 const char *helpmod_strtime(int total_seconds)
 {
-    static char buffer[64];
-    char *buf = buffer;
+    static int buffer_index = 0;
+    static char buffers[3][64];
+
+    char *buf = buffers[buffer_index];
+    char *buffer = buf;
 
     int years, months, days, hours, minutes, seconds, tmp;
+
+    buffer_index = (buffer_index+1) % 3;
 
     /* trivial case */
     if (!total_seconds)
@@ -92,8 +97,8 @@ const char *helpmod_strtime(int total_seconds)
 
     if (total_seconds < 0)
     {
-        *buf = '-';
-        buf++;
+	*buf = '-';
+	buf++;
         total_seconds = -total_seconds;
     }
 
@@ -110,7 +115,7 @@ const char *helpmod_strtime(int total_seconds)
     total_seconds %= HDEF_h;
 
     minutes = total_seconds / HDEF_m;
-    total_seconds %= 60;
+    total_seconds %= HDEF_m;
 
     seconds = total_seconds;
 
@@ -121,7 +126,10 @@ const char *helpmod_strtime(int total_seconds)
     TIME_PRINT(minutes, "m");
     TIME_PRINT(seconds, "s");
 
-    return buffer+1;
+    if (*buffer != '-')
+	return buffer+1;
+    else
+        return buffer;
 }
 
 int helpmod_read_strtime(const char *str)

@@ -6,7 +6,12 @@
 extern int hstat_cycle;
 extern time_t hstat_last_cycle;
 
-#define HSTAT_ACTIVITY_TRESHOLD (3 * 60)
+/* forward declarations */
+struct haccount_struct;
+struct hchannel_struct;
+struct huser_struct;
+
+#define HSTAT_ACTIVITY_TRESHOLD (3 * HDEF_m)
 
 #define HSTAT_ACCOUNT_SUM(sum, op1, op2)\
 {\
@@ -66,7 +71,7 @@ typedef struct hstat_account_entry_sum_struct
     int prime_time_spent;
     int lines;
     int words;
-    void *owner; /* haccount* */
+    struct haccount_struct *owner; /* haccount* */
 } hstat_account_entry_sum;
 
 typedef struct hstat_channel_entry_struct
@@ -105,7 +110,7 @@ typedef struct hstat_accounts_array_struct
 } hstat_accounts_array;
 
 /* free() this.entries, arguments: channel, level to list */
-hstat_accounts_array create_hstat_account_array(void*, hlevel);
+hstat_accounts_array create_hstat_account_array(struct hchannel_struct*, hlevel);
 
 hstat_channel *get_hstat_channel(void);
 hstat_account *get_hstat_account(void);
@@ -116,15 +121,12 @@ const char *hstat_channel_print(hstat_channel_entry*, int);
 
 const char *hstat_account_print(hstat_account_entry*, int);
 
-/* void* = hchannel*, huser* */
-void hstat_calculate_general(void*, void*, const char *);
+void hstat_calculate_general(struct hchannel_struct*, struct huser_struct*, const char *);
 
-/* void* = hchannel* */
-void hstat_add_join(void*);
-void hstat_del_channel(void*);
+void hstat_add_join(struct hchannel_struct*);
+void hstat_del_channel(struct hchannel_struct*);
 
-/* void* = hchannel* */
-void hstat_add_queue(void*, int);
+void hstat_add_queue(struct hchannel_struct*, int);
 
 int is_prime_time(void); /* tells if now is the "main" time in #feds */
 
