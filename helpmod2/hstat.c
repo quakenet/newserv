@@ -277,10 +277,9 @@ hstat_account_entry_sum hstat_account_last_month(hstat_account *hs_acc)
     hstat_account_entry_sum tmp = {0,0,0,0};
     int i;
 
-    //HSTAT_ACCOUNT_SUM(tmp, tmp, hstat_account_last_week(hs_acc));
     for (i=0;i<4;i++)
     {
-        HSTAT_ACCOUNT_SUM(tmp, tmp, hs_acc->longterm[(hstat_week() + i) % 10]);
+        HSTAT_ACCOUNT_SUM(tmp, tmp, hs_acc->longterm[(hstat_week() - i + 10) % 10]);
     }
     return tmp;
 }
@@ -304,7 +303,7 @@ hstat_channel_entry hstat_channel_last_month(hstat_channel *hs_chan)
     //HSTAT_CHANNEL_SUM(tmp, tmp, hstat_channel_last_week(hs_chan));
     for (i=0;i<4;i++)
     {
-        HSTAT_CHANNEL_SUM(tmp, tmp, hs_chan->longterm[(hstat_week() + i) % 10]);
+        HSTAT_CHANNEL_SUM(tmp, tmp, hs_chan->longterm[(hstat_week() - i + 10) % 10]);
     }
     return tmp;
 }
