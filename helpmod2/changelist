@@ -281,3 +281,5 @@ Tickets command wording changed a bit
 Fixed a typo in showticket command
 Checkchannel does not show channel topic for +i/+k channels
 Some command descriptions changed
+Fixes to weekly stats
+A bug in listuser command was fixed

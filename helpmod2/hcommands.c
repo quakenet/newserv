@@ -465,7 +465,7 @@ static void helpmod_cmd_listuser (huser *sender, channel* returntype, char* ostr
     else
         pattern = argv[0];
 
-    if (lvl > 0)
+    if (lvl >= 0)
         helpmod_reply(sender, returntype, "%s accounts matching pattern %s: (account name, userlevel, expires in)", hlevel_name(lvl), pattern);
     else
         helpmod_reply(sender, returntype, "Accounts matching pattern %s: (account name, userlevel, expires in)", pattern);
@@ -473,14 +473,14 @@ static void helpmod_cmd_listuser (huser *sender, channel* returntype, char* ostr
     {
         if (strregexp(hack->name->content, pattern))
         {
-            if (lvl > 0 && hack->level != lvl)
+            if (lvl >= 0 && hack->level != lvl)
                 continue;
             timer = hack->last_activity + HELPMOD_ACCOUNT_EXPIRATION[hack->level];
             helpmod_reply(sender, returntype, "%-16s %-32s %s", hack->name->content, hlevel_name(hack->level), asctime(localtime(&timer)));
             count++;
         }
     }
-    if (lvl > 0)
+    if (lvl >= 0)
         helpmod_reply(sender, returntype, "%s accounts matching pattern %d", hlevel_name(lvl), count);
     else
         helpmod_reply(sender, returntype, "Accounts matching pattern %d", count);
