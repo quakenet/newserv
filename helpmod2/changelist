@@ -283,3 +283,6 @@ Checkchannel does not show channel topic for +i/+k channels
 Some command descriptions changed
 Fixes to weekly stats
 A bug in listuser command was fixed
+Minor internal changes
+Fixed a bug in the dnmo command
+Trials now have access to commands voice and devoice

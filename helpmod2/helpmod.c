@@ -316,8 +316,8 @@ void helpmod_chan_privmsg(void **args)
     {
         if ((hchan->flags & H_CENSOR) && (tmp = hcensor_check(hchan->censor, (char*)message)))
         { /* censor match */
-            helpmod_kick(hchan, sender_huser, tmp->reason?tmp->reason->content:"Improper user");
-            return;
+            if (hcensor_match(hchan, sender_huser, tmp))
+		return;
         }
         if ((hchan->flags & H_LAMER_CONTROL) && (hlc_check(hchan, sender_huser, (char*)message)))
             return;

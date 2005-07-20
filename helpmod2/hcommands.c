@@ -187,7 +187,7 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
             continue;
         }
         helpmod_reply(sender, returntype, "User %s has userlevel %s", husr->real_user->nick,hlevel_name(huser_get_level(husr)));
-        if (husr->account == NULL)
+	if (husr->account == NULL)
             helpmod_reply(sender, returntype, "User %s does not have an account with me", husr->real_user->nick);
         else
             helpmod_reply(sender, returntype, "User %s has account named %s", husr->real_user->nick,husr->account->name->content);
@@ -1176,7 +1176,12 @@ static void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, in
         {
             helpmod_reply(sender, returntype, "Can not correct the luser: User %s not found", argv[i]);
             continue;
-        }
+	}
+	if (huser_get_level(husr) > H_PEON)
+	{
+	    helpmod_reply(sender, returntype, "Can not correct the luser: User %s is not a peon", argv[i]);
+            continue;
+	}
         /*
         if (!hchannels_on_queue(husr) && !hchannels_on_desk(husr))
         {
@@ -2135,7 +2140,7 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
                 }
                 if (huserchan->flags & HCUMODE_VOICE)
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already -v on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already +v on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
                     continue;
                 }
                 helpmod_channick_modes(husr, hchan, MC_VOICE, HLAZY);
@@ -3020,8 +3025,8 @@ void hcommands_add(void)
 
     hcommand_add("op", H_STAFF, helpmod_cmd_op, "Sets mode +o on channels");
     hcommand_add("deop", H_STAFF, helpmod_cmd_deop, "Sets mode -o on channels");
-    hcommand_add("voice", H_STAFF, helpmod_cmd_voice, "Sets mode +v on channels");
-    hcommand_add("devoice", H_STAFF, helpmod_cmd_devoice, "Sets mode -v on channels");
+    hcommand_add("voice", H_TRIAL, helpmod_cmd_voice, "Sets mode +v on channels");
+    hcommand_add("devoice", H_TRIAL, helpmod_cmd_devoice, "Sets mode -v on channels");
 
     hcommand_add("invite", H_PEON, helpmod_cmd_invite, "Invites you to a channel");
     hcommand_add("ticket", H_TRIAL, helpmod_cmd_ticket, "Gives a ticket to be used with invite");

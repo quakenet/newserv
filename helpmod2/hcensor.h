@@ -3,6 +3,10 @@
 
 #include "../lib/sstring.h"
 
+/* forward declarations */
+struct hchannel_struct;
+struct huser_struct;
+
 typedef struct hcensor_struct
 {
     sstring *pattern;
@@ -15,6 +19,8 @@ hcensor *hcensor_get_by_index(hcensor *, int);
 hcensor *hcensor_check(hcensor *, const char *); /* first matching pattern is returned, NULL if ok */
 hcensor *hcensor_add(hcensor **, const char*, const char*);
 hcensor *hcensor_del(hcensor **, hcensor *);
+/* Handle a censor match, if returnvalue is non-zero then the user was removed from channel */
+int hcensor_match(struct hchannel_struct*, struct huser_struct*, hcensor*);
 int hcensor_count(hcensor *);
 
 void hcensor_del_all(hcensor **);

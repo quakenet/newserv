@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "hcensor.h"
-
+#include "helpmod.h"
 #include "hgen.h"
 
 hcensor *hcensor_get_by_pattern(hcensor *hcens, const char *pat)
@@ -83,4 +83,10 @@ int hcensor_count(hcensor *hcens)
     int count = 0;
     for (;hcens;hcens = hcens->next, count++);
     return count;
+}
+
+int hcensor_match(hchannel *hchan, huser *husr, hcensor *hcens)
+{
+    helpmod_kick(hchan, husr, hcens->reason?hcens->reason->content:"Improper user");
+    return !0;
 }

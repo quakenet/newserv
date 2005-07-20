@@ -7,7 +7,6 @@ extern int hstat_cycle;
 extern time_t hstat_last_cycle;
 
 /* forward declarations */
-struct haccount_struct;
 struct hchannel_struct;
 struct huser_struct;
 
