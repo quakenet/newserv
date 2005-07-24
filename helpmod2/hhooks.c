@@ -39,8 +39,8 @@ void helpmod_hook_join(int unused, void *args)
     nick *nck = ((nick**)args)[1];
     huser *husr;
 
-    /* if we're not on this channel, the event is of no interest */
-    if (hchan == NULL)
+    /* if we're not on this channel or the target is G, the event is of no interest */
+    if (hchan == NULL || nck == helpmodnick)
         return;
 
     husr = huser_get(nck);
@@ -103,8 +103,8 @@ void helpmod_hook_channel_newnick(int unused, void *args)
     nick *nck = ((nick**)args)[1];
     huser *husr;
 
-    /* if we're not on this channel, the event is of no interest */
-    if (hchan == NULL)
+    /* if we're not on this channel or the target is G, the event is of no interest */
+    if (hchan == NULL || nck == helpmodnick)
         return;
 
     if ((husr = huser_get(nck)) == NULL)
@@ -147,6 +147,10 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
     huser_channel *huserchan;
     nick *nck = ((nick**)args)[1];
     huser *husr;
+
+    /* In event that G was kicked, nothing is done */
+    if (nck == helpmodnick)
+        return;
 
     /* hackery, can't think of a better way to do this */
     huser *oper = NULL;
