@@ -3,8 +3,10 @@
 #include <string.h>
 
 #include "hcensor.h"
+#include "hcommands.h"
 #include "helpmod.h"
 #include "hgen.h"
+#include "hban.h"
 
 hcensor *hcensor_get_by_pattern(hcensor *hcens, const char *pat)
 {
@@ -36,7 +38,7 @@ hcensor *hcensor_check(hcensor *hcens, const char *str)
     return NULL;
 }
 
-hcensor *hcensor_add(hcensor **hcens, const char *pat, const char *rsn)
+hcensor *hcensor_add(hcensor **hcens, const char *pat, const char *rsn, hcensor_type type)
 {
     hcensor *tmp;
 
@@ -47,6 +49,8 @@ hcensor *hcensor_add(hcensor **hcens, const char *pat, const char *rsn)
     tmp->next = *hcens;
 
     tmp->pattern = getsstring(pat, strlen(pat));
+    tmp->type = type;
+
     if (rsn)
         tmp->reason = getsstring(rsn, strlen(rsn));
     else
@@ -87,6 +91,35 @@ int hcensor_count(hcensor *hcens)
 
 int hcensor_match(hchannel *hchan, huser *husr, hcensor *hcens)
 {
-    helpmod_kick(hchan, husr, hcens->reason?hcens->reason->content:"Improper user");
-    return !0;
+    switch (hcens->type)
+    {
+    case HCENSOR_WARN:
+        if (hcens->reason)
+	    helpmod_reply(husr, NULL, hcens->reason->content);
+	return 0;
+    case HCENSOR_KICK:
+	helpmod_kick(hchan, husr, hcens->reason?hcens->reason->content:"Improper user");
+        return !0;
+    case HCENSOR_BAN:
+	hban_add(hban_ban_string(husr->real_user, HBAN_HOST), hcens->reason?hcens->reason->content:"Censor violation", HCMD_OUT_DEFAULT + time(NULL), 1);
+	return !0;
+    default:
+	Error("helpmod", ERR_ERROR, "Unknown censor type %d", hcens->type);
+        return !0;
+    }
+}
+
+const char *hcensor_get_typename(hcensor_type type)
+{
+    switch (type)
+    {
+    case HCENSOR_WARN:
+	return "warn";
+    case HCENSOR_KICK:
+	return "kick";
+    case HCENSOR_BAN:
+        return "ban";
+    default:
+        return "error";
+    }
 }

@@ -18,9 +18,9 @@ typedef struct hticket_struct
     struct hticket_struct *next;
 } hticket;
 
-hticket *hticket_get(char *, struct hchannel_struct*);
+hticket *hticket_get(const char *, struct hchannel_struct*);
 hticket *hticket_del(hticket *, struct hchannel_struct*);
-hticket *hticket_add(char *, time_t expiration, struct hchannel_struct*);
+hticket *hticket_add(const char *, time_t expiration, struct hchannel_struct*);
 int hticket_count(void);
 void hticket_remove_expired(void);
 

@@ -18,6 +18,8 @@ const char *hlevel_name(hlevel lvl)
         return "administrator";
     case H_SERVICE:
         return "network service";
+    case H_ANY:
+        return "user";
     default:
         return "error, please contact strutsi";
     }

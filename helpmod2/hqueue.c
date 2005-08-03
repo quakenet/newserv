@@ -143,7 +143,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
 
         counter--;
 
-        strcat(buffer, hchanuser->husr->real_user->nick);
+        strcat(buffer, huser_get_nick(hchanuser->husr));
         strcat(buffer, " ");
 
         if (hchan->flags & H_DO_STATS)
@@ -151,9 +151,9 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
 
         if ((hchan->flags & H_QUEUE_SPAMMY) && (oper != NULL))
         {
-	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), hchannel_get_name(hchan), oper->real_user->nick);
+	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), hchannel_get_name(hchan), huser_get_nick(oper));
             if (!(huser_get_account_flags(oper) & H_NOSPAM))
-                helpmod_reply(oper, hchan->real_channel, "User %s (%s@%s) is yours, he has been in queue for %s", hchanuser->husr->real_user->nick, hchanuser->husr->real_user->ident, hchanuser->husr->real_user->host->name->content, helpmod_strtime(time(NULL) - hchanuser->time_joined));
+                helpmod_reply(oper, hchan->real_channel, "User %s (%s@%s) is yours, he has been in queue for %s", huser_get_nick(hchanuser->husr), huser_get_ident(hchanuser->husr), huser_get_host(hchanuser->husr), helpmod_strtime(time(NULL) - hchanuser->time_joined));
         }
 
         helpmod_channick_modes(hchanuser->husr, hchan, MC_VOICE, HLAZY);
@@ -162,7 +162,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
         hchanuser = hchanuser->next;
     }
     if (oper != NULL)
-        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel and direct them to %s %s", (nadv - counter == 1)?"":"s", buffer, (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), oper->real_user->nick);
+        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel and direct them to %s %s", (nadv - counter == 1)?"":"s", buffer, (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), huser_get_nick(oper));
     else
         helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel", (nadv - counter == 1)?"":"s", buffer);
 
@@ -238,7 +238,6 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             for (i=0;i<argc;i++)
             {
                 huser *husr = huser_get(getnickbynick(argv[i]));
-                /*huser_channel *husrchan;*/
                 if (husr == NULL)
                 {
                     helpmod_reply(sender, returntype, "Can not advance queue: User %s not found", argv[i]);
@@ -246,14 +245,7 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
                 }
                 helpmod_channick_modes(husr, hchan, MC_DEVOICE, HLAZY);
             }
-            /*
-            if ((hchan->flags & H_QUEUE_MAINTAIN) && hchan->autoqueue)
-            {
-                int dif = hchan->autoqueue - hqueue_count_off_queue(hchan);
-                if (dif)
-                    hqueue_advance(hchan, sender, dif);
-                    }
-                    */
+
             hqueue_handle_queue(hchan, sender);
         }
         return;
@@ -323,7 +315,7 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
                     buffer[0] = '\0';
                 }
                 if (hqueue_on_queue(hqueue))
-                    sprintf(buffer+strlen(buffer) /* :) */, "%s (%s@%s) [%s] ", hqueue->hchanuser->husr->real_user->nick, hqueue->hchanuser->husr->real_user->ident, hqueue->hchanuser->husr->real_user->host->name->content, helpmod_strtime(time(NULL) - hqueue->hchanuser->time_joined));
+                    sprintf(buffer+strlen(buffer) /* :) */, "%s (%s@%s) [%s] ", huser_get_nick(hqueue->hchanuser->husr), huser_get_ident(hqueue->hchanuser->husr), huser_get_host(hqueue->hchanuser->husr), helpmod_strtime(time(NULL) - hqueue->hchanuser->time_joined));
             }
             if  (buffer[0])
                 helpmod_reply(sender, returntype, "%s", buffer);

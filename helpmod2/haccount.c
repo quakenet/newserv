@@ -106,9 +106,9 @@ void haccount_set_level(haccount *hack, hlevel lvl)
 const char *haccount_get_state(haccount* hacc, int mask)
 {
     if (hacc->flags & mask)
-        return "On";
+        return "Yes";
     else
-        return "Off";
+        return "No";
 }
 
 int haccount_count(hlevel lvl)
@@ -140,6 +140,6 @@ const char *haccount_get_sname(int index)
     case 5:
         return "Suppress unknown command error";
     default:
-        return "error. Please contact strutsi";
+        return "Error. Please contact strutsi";
     }
 }

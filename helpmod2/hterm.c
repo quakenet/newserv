@@ -18,6 +18,8 @@ hterm *hterm_add(hterm** ptr, const char *name, const char *desc)
     if (name == NULL || desc == NULL || hterm_get(*ptr, name))
         return NULL;
 
+    for (;*ptr && strcmp(name, (*ptr)->name->content) > 0;ptr = &(*ptr)->next);
+
     htrm = (hterm*)malloc(sizeof(hterm));
     htrm->name = getsstring(name, strlen(name));
     htrm->description = getsstring(desc, strlen(desc));

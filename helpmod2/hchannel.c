@@ -51,6 +51,8 @@ hchannel *hchannel_add(const char *cname)
 
     hchan->htickets = NULL;
 
+    hchan->last_activity = time(NULL);
+    hchan->last_staff_activity = time(NULL);
     hchan->stats = get_hstat_channel();
 
     hchan->next = hchannels;
@@ -69,11 +71,8 @@ hchannel *hchannel_add(const char *cname)
 
             if ((husr = huser_get(nck)) == NULL)
                 husr = huser_add(nck);
-/*
-            fprintf(hdebug_file, "%d ADD (hchannel_add) %s to %s\n", time(NULL), husr->real_user->nick, hchannel_get_name(hchan));
-            fflush(hdebug_file);
-*/
-            tmp = huser_add_channel(husr, hchan);
+
+	    tmp = huser_add_channel(husr, hchan);
             hchannel_add_user(hchan, husr);
 
             if (hchan->real_channel->users->content[i] & CUMODE_OP)
@@ -143,14 +142,6 @@ hchannel *hchannel_get_by_channel(channel *chan)
         if (tmp->real_channel == chan)
             return tmp;
     return NULL;
-}
-
-const char *hchannel_get_state(hchannel* hchan, int mask)
-{
-    if (hchan->flags & mask)
-        return "active";
-    else
-        return "inactive";
 }
 
 const char *hchannel_get_name(hchannel *hchan)
@@ -301,7 +292,7 @@ void hchannels_match_accounts(void)
     for (;hchan;hchan = hchan->next)
         for (hchanuser = hchan->channel_users;hchanuser;hchanuser = hchanuser->next)
             if (hchanuser->husr->account == NULL && IsAccount(hchanuser->husr->real_user))
-                hchanuser->husr->account = haccount_get_by_name(hchanuser->husr->real_user->authname);
+                hchanuser->husr->account = haccount_get_by_name(huser_get_auth(hchanuser->husr));
 }
 
 int hchannels_on_queue(huser *husr)
@@ -461,6 +452,15 @@ void hchannel_deactivate_join_flood()
             hchan->flags &= ~H_JOIN_FLOOD;
         }
 }
+
+const char *hchannel_get_state(hchannel* hchan, int mask)
+{
+    if (hchan->flags & mask)
+        return "Yes";
+    else
+        return "No";
+}
+
 
 const char *hchannel_get_sname(int flag)
 {

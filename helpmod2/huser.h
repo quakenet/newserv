@@ -79,6 +79,12 @@ void huser_reset_states(void);
 hlevel huser_get_level(huser*);
 int huser_get_account_flags(huser*);
 
+const char *huser_get_nick(huser *);
+const char *huser_get_ident(huser *);
+const char *huser_get_host(huser *);
+const char *huser_get_auth(huser *);
+const char *huser_get_realname(huser *);
+
 /* defines the "being on queue" and being on desk (getting service) */
 int on_queue(huser*, huser_channel*);
 int on_desk(huser*, huser_channel*);

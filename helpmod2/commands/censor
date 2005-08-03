@@ -2,6 +2,7 @@ Syntax:  censor [channel] [operation] [parameters]
 Example: censor #feds add bist silly .de person
 Handles the censor for a channel. Censor allows certain patterns to result in an automatic kick.
 Following operations are supported:
-add [pattern] [reason]   Adds the pattern to censor with the given reason
-del [#pattern]           Removes the pattern for the index
+add [type] [pattern] [reason]   Adds the pattern to censor with the given reason
+del [#pattern]                  Removes the pattern for the index
 If no operation or parameters are specified, all censor entries are listed.
+The type for the add command can be either: warn, kick or ban.

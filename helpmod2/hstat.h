@@ -30,6 +30,8 @@ struct huser_struct;
 
 #define HSTAT_CHANNEL_SUM(sum, op1, op2)\
 {\
+    (sum).active_time = (op1).active_time + (op2).active_time;\
+    (sum).staff_active_time = (op1).staff_active_time + (op2).staff_active_time;\
     (sum).time_spent = (op1).time_spent + (op2).time_spent;\
     (sum).prime_time_spent = (op1).prime_time_spent + (op2).prime_time_spent;\
     (sum).lines = (op1).lines + (op2).lines;\
@@ -40,6 +42,8 @@ struct huser_struct;
 
 #define HSTAT_CHANNEL_ZERO(target)\
 {\
+    (target).active_time = 0;\
+    (target).staff_active_time = 0;\
     (target).time_spent = 0;\
     (target).prime_time_spent = 0;\
     (target).lines = 0;\
@@ -75,6 +79,9 @@ typedef struct hstat_account_entry_sum_struct
 
 typedef struct hstat_channel_entry_struct
 {
+    int active_time;
+    int staff_active_time;
+
     int time_spent;
     int prime_time_spent;
 
@@ -120,7 +127,8 @@ const char *hstat_channel_print(hstat_channel_entry*, int);
 
 const char *hstat_account_print(hstat_account_entry*, int);
 
-void hstat_calculate_general(struct hchannel_struct*, struct huser_struct*, const char *);
+void hstat_calculate_account(struct hchannel_struct*, struct huser_struct*, const char *);
+void hstat_calculate_channel(struct hchannel_struct*, struct huser_struct*, const char *);
 
 void hstat_add_join(struct hchannel_struct*);
 void hstat_del_channel(struct hchannel_struct*);

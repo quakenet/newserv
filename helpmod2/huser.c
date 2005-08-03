@@ -177,8 +177,8 @@ void huser_reset_states(void)
 
 hlevel huser_get_level(huser *husr)
 {
-    if ((strlen(husr->real_user->nick)) == 1 && isalpha(husr->real_user->nick[0]))
-        return H_SERVICE; /* network services, keeps them out of harms way */
+    if ((strlen(huser_get_nick(husr))) == 1 && isalpha(huser_get_nick(husr)[0]))
+	return H_SERVICE; /* network services, keeps them out of harms way */
 
     if (husr->account != NULL)
     {
@@ -232,11 +232,52 @@ int huser_get_account_flags(huser *husr)
         return H_ACCFLAGS_DEFAULT;
 }
 
+const char *huser_get_nick(huser *husr)
+{
+    if (husr == NULL)
+	return "Error";
+    else
+        return husr->real_user->nick;
+}
+
+const char *huser_get_ident(huser *husr)
+{
+    if (husr == NULL)
+	return "Error";
+    else
+        return husr->real_user->ident;
+}
+
+const char *huser_get_host(huser *husr)
+{
+    if (husr == NULL)
+	return "Error";
+    else
+        return husr->real_user->host->name->content;
+}
+
+const char *huser_get_auth(huser *husr)
+{
+    if (husr == NULL || !IsAccount(husr->real_user))
+	return "Error";
+    else
+        return husr->real_user->authname;
+}
+
+const char *huser_get_realname(huser *husr)
+{
+    if (husr == NULL)
+	return "Error";
+    else
+        return husr->real_user->realname->name->content;
+
+}
+
 int huser_valid(huser* husr)
 {
     huser *ptr = husers;
     for (;ptr;ptr = ptr->next)
-        if (ptr == husr)
+	if (ptr == husr)
             return !0;
     return 0;
 }
@@ -250,26 +291,21 @@ int huser_is_trojan(huser *husr)
         return 0;
 
     if (!IsAccount(husr->real_user))
-        if (strisupper(husr->real_user->nick) && (strnumcount(husr->real_user->nick) >= 2))
+        if (strisupper(huser_get_nick(husr)) && (strnumcount( huser_get_nick(husr)) >= 2))
         {
-            sprintf(buffer, "*%s*", husr->real_user->nick);
-            if (hword_count(husr->real_user->realname->name->content) == 1)
-                if (strregexp(husr->real_user->realname->name->content, buffer))
+            sprintf(buffer, "*%s*",  huser_get_nick(husr));
+            if (hword_count(huser_get_realname(husr)) == 1)
+                if (strregexp(huser_get_realname(husr), buffer))
                     return 1;
         }
 
     /* case 2 */
-    if (!IsAccount(husr->real_user) && (husr->real_user->ident[0] == '~'))
-        if (strislower(husr->real_user->nick) && strisalpha(husr->real_user->nick))
-            if (strislower(husr->real_user->ident) && strisalpha(husr->real_user->ident))
-                if (strislower(husr->real_user->realname->name->content) && strisalpha(husr->real_user->realname->name->content))
-                    if (hword_count(husr->real_user->realname->name->content) == 1)
-                        /*if (strregexp(husr->real_user->host->name->content, "8?.*") ||
-                            strregexp(husr->real_user->host->name->content, "*.fr") ||
-                            strregexp(husr->real_user->host->name->content, "*.de") ||
-                            strregexp(husr->real_user->host->name->content, "*.be") ||
-                            strregexp(husr->real_user->host->name->content, "*.net"))*/
-                        return 1;
+    if (!IsAccount(husr->real_user) && (huser_get_ident(husr)[0] == '~'))
+        if (strislower(huser_get_nick(husr)) && strisalpha( huser_get_nick(husr)))
+            if (strislower(huser_get_ident(husr)) && strisalpha(huser_get_ident(husr)))
+                if (strislower(huser_get_realname(husr)) && strisalpha(huser_get_realname(husr)))
+                    if (hword_count(huser_get_realname(husr)) == 1)
+			return 1;
 
     return 0;
-    }
+}

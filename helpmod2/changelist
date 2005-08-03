@@ -286,3 +286,18 @@ A bug in listuser command was fixed
 Minor internal changes
 Fixed a bug in the dnmo command
 Trials now have access to commands voice and devoice
+
+2.10
+Added a version command
+Added censor types, censor command changed accordingly
+Changed whoami and whois to show flooding and spamming violations
+Some code cleanup
+Acconf and chanconf output changed a bit
+Fixed a welcome command error message
+Command error wordings changed a bit
+Top10 now has an all option to cover all users
+Internal changes
+Terms are now in alphabetical order
+Fixed a critical bug with the stats cycle
+hstat_cycle changed to a more sane form
+Two evilhack commands added to fix everything recently broken

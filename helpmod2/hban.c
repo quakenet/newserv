@@ -39,8 +39,8 @@ hban *hban_add(const char* pat, const char* rsn, time_t exp, int now)
 
     { /* additional logic here */
         huser* tmpu;
-        for (tmpu = husers;tmpu;tmpu = tmpu->next)
-            if (nickmatchban(tmpu->real_user, tmp) && !IsOper(tmpu->real_user))
+	for (tmpu = husers;tmpu;tmpu = tmpu->next)
+	    if (nickmatchban(tmpu->real_user, tmp) && !IsOper(tmpu->real_user))
             {
                 hchannel *assert_hchan = NULL;
                 while (tmpu->hchannels)
@@ -54,7 +54,7 @@ hban *hban_add(const char* pat, const char* rsn, time_t exp, int now)
                     helpmod_setban(tmpu->hchannels->hchan, bantostring(ptr->real_ban), HELPMOD_BAN_DURATION, MCB_ADD, now);
                     helpmod_kick(tmpu->hchannels->hchan, tmpu, hban_get_reason(ptr));
                 }
-            }
+	    }
     }
 
     return ptr;

@@ -204,17 +204,8 @@ int helpmod_is_lame_line(const char *line)
     const char lamechars[] = {(char)2, (char)3, (char)22, (char)31, (char)0};
     if (strpbrk(line, lamechars) != NULL)
         return 1;
-    /*
-     if (strchr(line, (char)2))  bold
-     return 1;
-     if (strchr(line, (char)3))  colour
-        return 1;
-    if (strchr(line, (char)22)) reverse
-        return 1;
-    if (strchr(line, (char)31)) underline
-        return 1;
-*/
-    return 0;
+    else
+	return 0;
 }
 
 int strislower(const char *str)
@@ -248,4 +239,12 @@ int strnumcount(const char *str)
         if (isdigit(*str))
             count++;
     return count;
+}
+
+float helpmod_percentage(int larger, int smaller)
+{
+    if (larger == 0)
+	return 0.0;
+
+    return 100.0 * ((float)smaller / (float)larger);
 }

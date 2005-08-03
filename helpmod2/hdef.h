@@ -38,8 +38,9 @@ typedef enum
     H_OPER,
     H_ADMIN,
     H_SERVICE,
-    H_NONE, /* _NOT_ a real level, just used for resetting */
-    H_ANY /* for the count function, NOT a real level */
+    /* The following are not real user levels and they're only used internally */
+    H_NONE, 
+    H_ANY
 } hlevel;
 
 const char *hlevel_name(hlevel);

@@ -7,10 +7,13 @@
 #include "../nick/nick.h"
 #include "../localuser/localuserchannel.h"
 #include "huser.h"
+#include "hversions.h"
 
 /* configuration */
 
-#define HELPMOD_VERSION "2.09"
+/* These should always be equal */
+#define HELPMOD_VERSION_INTERNAL HELPMOD_VERSION_2_10
+#define HELPMOD_VERSION "2.10"
 
 #define HELPMOD_USER_TIMEOUT 1200
 

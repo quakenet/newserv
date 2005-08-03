@@ -44,12 +44,16 @@ int helpmod_config_write_report(FILE *, hchannel*);
 int helpmod_config_read_ticket(FILE *);
 int helpmod_config_write_ticket(FILE *, hticket*, hchannel*);
 
+int helpmod_config_read_version(FILE *);
+int helpmod_config_write_version(FILE *);
+
 void helpmod_config_scheduled_events(void);
 
 /* FILEFORMAT
 
 Any line starting with '%' is considered a comment and ignored
 Empty lines between sections are allowed
+White space is allowed in the entries
 
 */
 

@@ -6,7 +6,7 @@
 #include "hticket.h"
 #include "hgen.h"
 
-hticket *hticket_get(char *authname, struct hchannel_struct *hchan)
+hticket *hticket_get(const char *authname, struct hchannel_struct *hchan)
 {
     hticket *tmp;
     if (hchan == NULL)
@@ -32,7 +32,7 @@ hticket *hticket_del(hticket *htick, struct hchannel_struct *hchan)
     return htick;
 }
 
-hticket *hticket_add(char *authname, time_t expiration, struct hchannel_struct *hchan)
+hticket *hticket_add(const char *authname, time_t expiration, struct hchannel_struct *hchan)
 {
     hticket *tmp = hticket_get(authname, hchan);
 

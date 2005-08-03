@@ -69,6 +69,8 @@ typedef struct hchannel_struct
     /* this is also the queue, so it's "sorted" */
     struct hchannel_user_struct *channel_users;
 
+    time_t last_activity;
+    time_t last_staff_activity;
     hstat_channel *stats;
 
     hlc_profile *lc_profile;

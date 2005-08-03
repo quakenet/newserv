@@ -90,7 +90,7 @@ static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
             }
 
             if (IsAccount(husr->real_user))
-                haccount_add(husr->real_user->authname, H_LAMER);
+                haccount_add(huser_get_auth(husr), H_LAMER);
 
             return !0;
         }
@@ -99,19 +99,19 @@ static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
             switch (violation)
             {
             case HLC_CAPS:
-                helpmod_kick(hchan, husr, "channel rule violation: Excessive use of capital letters");
+                helpmod_kick(hchan, husr, "Channel rule violation: Excessive use of capital letters");
                 break;
             case HLC_REPEAT:
-                helpmod_kick(hchan, husr, "channel rule violation: Repeating");
+                helpmod_kick(hchan, husr, "Channel rule violation: Repeating");
                 break;
             case HLC_CHARACTER_REPEAT:
-                helpmod_kick(hchan, husr, "channel rule violation: Improper use of language");
+                helpmod_kick(hchan, husr, "Channel rule violation: Improper use of language");
                 break;
             case HLC_FLOOD:
-                helpmod_kick(hchan, husr, "channel rule violation: Flooding");
+                helpmod_kick(hchan, husr, "Channel rule violation: Flooding");
                 break;
             case HLC_SPAM:
-                helpmod_kick(hchan, husr, "channel rule violation: Spamming");
+                helpmod_kick(hchan, husr, "Channel rule violation: Spamming");
                 break;
             }
             return !0;
@@ -251,9 +251,6 @@ static int hlc_check_spam(hlc_profile *hlc_prof, huser *husr, const char *line)
 /* checks a string for lameness, returns non-zero if lameness is present */
 int hlc_check(hchannel *hchan, huser* husr, const char *line)
 {
-//    hchannel *hchan = (hchannel*)hchan_ptr;
-//    huser *husr = (huser*)husr_ptr;
-
     if (hchan == NULL || hchan->lc_profile == NULL)
         return 0;
 

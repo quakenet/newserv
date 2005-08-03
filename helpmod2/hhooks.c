@@ -109,10 +109,7 @@ void helpmod_hook_channel_newnick(int unused, void *args)
 
     if ((husr = huser_get(nck)) == NULL)
         husr = huser_add(nck);
-/*
-    fprintf(hdebug_file, "%d ADD %s to %s\n", time(NULL), husr->real_user->nick, hchannel_get_name(hchan));
-    fflush(hdebug_file);
-*/
+
     assert(huser_on_channel(husr, hchan) == NULL);
     assert(hchannel_on_channel(hchan, husr) == NULL);
 
@@ -165,10 +162,7 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
     assert(husr != NULL);
 
     huserchan = huser_on_channel(husr, hchan);
-/*
-    fprintf(hdebug_file, "%d DEL %s from %s\n", time(NULL), husr->real_user->nick, hchannel_get_name(hchan));
-    fflush(hdebug_file);
-*/
+
     assert(hchannel_on_channel(hchan, husr) != NULL);
     assert(huserchan != NULL);
 
@@ -187,10 +181,6 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
     { /* if H left the channel, we remove all the users from the channel */
         while (hchan->channel_users)
         {
-            /*
-            fprintf(hdebug_file, "%d DEL %s from %s\n", time(NULL), hchan->channel_users->husr->real_user->nick, hchannel_get_name(hchan));
-            fflush(hdebug_file);
-            */
             huser_del_channel(hchan->channel_users->husr, hchan);
             hchannel_del_user(hchan, hchan->channel_users->husr);
         }
@@ -236,7 +226,7 @@ void helpmod_hook_channel_opped(int unused, void *args)
         return;
 
     /* if the +o was given by a network service, G will not interfere */
-    if (husr2 == NULL || strlen(husr2->real_user->nick) == 1)
+    if (husr2 == NULL || strlen(huser_get_nick(husr2)) == 1)
         return;
 
     if (huser_get_level(husr) < H_STAFF)
@@ -316,11 +306,6 @@ void helpmod_hook_channel_devoiced(int unused, void *args)
         if (serverlist[homeserver(husr->real_user->numeric)].linkstate != LS_SQUIT)
         { /* if it was a netsplit, we do not trigger autoqueue */
             hqueue_handle_queue(hchan, huserchan->responsible_oper);
-            /*if (huser_valid(huserchan->responsible_oper) && huser_on_channel(huserchan->responsible_oper, hchan))
-                hqueue_advance(hchan, huserchan->responsible_oper, 1);
-            else
-            hqueue_advance(hchan, huserchan->responsible_oper, 1);
-            */
         }
     }
 }

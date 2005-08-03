@@ -24,4 +24,6 @@ int strisupper(const char*);
 int strisalpha(const char*);
 int strnumcount(const char*);
 
+float helpmod_percentage(int, int);
+
 #endif

@@ -206,7 +206,7 @@ void helpmod_channick_modes(huser *target, hchannel *hchan, short mode, int now)
 
     if (huser_on_channel(target, hchan) == NULL)
     {
-        Error("helpmod", ERR_WARNING, "Channick mode for user %s not on channel %s", target->real_user->nick, hchannel_get_name(hchan));
+        Error("helpmod", ERR_WARNING, "Channick mode for user %s not on channel %s", huser_get_nick(target), hchannel_get_name(hchan));
         return;
     }
 
@@ -308,8 +308,11 @@ void helpmod_chan_privmsg(void **args)
         sender_huser = huser_add(sender_nick);
 
     if (hchan->flags & H_DO_STATS)
-        hstat_calculate_general(hchan, sender_huser, message);
-
+    {
+        if (sender_huser->account != NULL)
+	    hstat_calculate_account(hchan, sender_huser, message);
+        hstat_calculate_channel(hchan, sender_huser, message);
+    }
     huser_activity(sender_huser, hchan);
 
     if (huser_get_level(sender_huser) < H_TRIAL) /* staff and staff trials are not subject to any control */
@@ -323,7 +326,7 @@ void helpmod_chan_privmsg(void **args)
             return;
         if ((hchan->flags & H_DISALLOW_LAME_TEXT) && helpmod_is_lame_line(message))
         {
-            helpmod_kick(hchan, sender_huser, "Please use only normal text on %s", hchannel_get_name(hchan));
+            helpmod_kick(hchan, sender_huser, "Please only use normal text on %s", hchannel_get_name(hchan));
             return;
         }
     }

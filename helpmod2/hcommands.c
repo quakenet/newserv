@@ -24,8 +24,6 @@
 
 #include "hticket.h"
 
-#define HCMD_OUT_DEFAULT (10 * HDEF_m)
-
 /* following are macros for use ONLY IN HERE
  they may not look pretty, but work surprisingly well */
 
@@ -82,7 +80,7 @@ static void helpmod_cmd_addchan (huser *sender, channel* returntype, char* ostr,
 {
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not add channel: Channel not defined");
+        helpmod_reply(sender, returntype, "Cannot add channel: Channel not defined");
         return;
     }
 
@@ -129,7 +127,7 @@ static void helpmod_cmd_delchan (huser *sender, channel* returntype, char* ostr,
 
 static void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
-    helpmod_reply(sender, returntype, "You are %s", sender->real_user->nick);
+    helpmod_reply(sender, returntype, "You are %s", huser_get_nick(sender));
     helpmod_reply(sender, returntype, "Your userlevel is %s", hlevel_name(huser_get_level(sender)));
     if (sender->account == NULL)
         helpmod_reply(sender, returntype, "You do not have an account with me");
@@ -137,9 +135,9 @@ static void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, 
         helpmod_reply(sender, returntype, "Your accounts name is %s", sender->account->name->content);
     if (huser_get_level(sender) < H_TRIAL)
     {
-        if (sender->lc[0] || sender->lc[1] || sender->lc[2])
-            helpmod_reply(sender, returntype, "You violated the following rules: Excessive use of capital letters %d, repeating %d and improper use of language %d", sender->lc[0], sender->lc[1], sender->lc[2]);
-        else
+	if (sender->lc[0] || sender->lc[1] || sender->lc[2] || sender->lc[3] || sender->lc[4])
+	    helpmod_reply(sender, returntype, "You violated the following rules: Excessive use of capital letters: %d, repeating: %d, improper use of language: %d, flooding: %d and spamming: %d", sender->lc[0], sender->lc[1], sender->lc[2], sender->lc[3], sender->lc[4]);
+	else
             helpmod_reply(sender, returntype, "You have not violated any rules");
     }
 
@@ -158,7 +156,7 @@ static void helpmod_cmd_whoami (huser *sender, channel* returntype, char* ostr, 
         for (hchan = hchannels;hchan;hchan = hchan->next)
             if (hchan->flags & H_REQUIRE_TICKET)
             {
-                htick = hticket_get(sender->real_user->authname, hchan);
+                htick = hticket_get(huser_get_auth(sender), hchan);
                 if (htick != NULL)
                     helpmod_reply(sender, returntype, "You have an invite ticket for channel %s that expires in %s", hchannel_get_name(hchan), helpmod_strtime(time(NULL) - htick->time_expiration));
             }
@@ -172,7 +170,7 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not get user information: User not specified");
+        helpmod_reply(sender, returntype, "Cannot get user information: User not specified");
         return;
     }
     if (argc > H_CMD_MAX_ARGS)
@@ -183,20 +181,20 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not get user information: User %s not found", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot get user information: User %s not found", argv[i]);
             continue;
         }
-        helpmod_reply(sender, returntype, "User %s has userlevel %s", husr->real_user->nick,hlevel_name(huser_get_level(husr)));
+        helpmod_reply(sender, returntype, "User %s has userlevel %s", huser_get_nick(husr), hlevel_name(huser_get_level(husr)));
 	if (husr->account == NULL)
-            helpmod_reply(sender, returntype, "User %s does not have an account with me", husr->real_user->nick);
+            helpmod_reply(sender, returntype, "User %s does not have an account with me", huser_get_nick(husr));
         else
-            helpmod_reply(sender, returntype, "User %s has account named %s", husr->real_user->nick,husr->account->name->content);
+            helpmod_reply(sender, returntype, "User %s has account named %s", huser_get_nick(husr),husr->account->name->content);
         if (huser_get_level(husr) < H_TRIAL)
         {
-            if (husr->lc[0] || husr->lc[1] || husr->lc[2])
-                helpmod_reply(sender, returntype, "User %s has lamercontrol entries: Excessive use of capital letters %d, repeating %d and improper use of language %d", husr->real_user->nick, husr->lc[0], husr->lc[1], husr->lc[2]);
-            else
-                helpmod_reply(sender, returntype, "User %s has no lamercontrol entries", husr->real_user->nick);
+	    if (husr->lc[0] || husr->lc[1] || husr->lc[2] || husr->lc[3] || husr->lc[4])
+		helpmod_reply(sender, returntype, "User %s has lamercontrol entries: Excessive use of capital letters: %d, repeating: %d, improper use of language: %d, flooding: %d and spamming: %d", huser_get_nick(husr), husr->lc[0], husr->lc[1], husr->lc[2], husr->lc[3], husr->lc[4]);
+	    else
+		helpmod_reply(sender, returntype, "User %s has no lamercontrol entries", huser_get_nick(husr));
         }
         {
             int pos;
@@ -204,9 +202,9 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
             for (;huserchan;huserchan = huserchan->next)
             {
                 if ((pos = hqueue_get_position(huserchan->hchan, husr)) > -1)
-                    helpmod_reply(sender, returntype, "User %s has queue queue position #%d on channel %s", husr->real_user->nick, pos, hchannel_get_name(huserchan->hchan));
+                    helpmod_reply(sender, returntype, "User %s has queue queue position #%d on channel %s", huser_get_nick(husr), pos, hchannel_get_name(huserchan->hchan));
                 if (on_desk(husr, huserchan))
-                    helpmod_reply(sender, returntype, "User %s is receiving support on channel %s", husr->real_user->nick, hchannel_get_name(huserchan->hchan));
+                    helpmod_reply(sender, returntype, "User %s is receiving support on channel %s", huser_get_nick(husr), hchannel_get_name(huserchan->hchan));
             }
         }
         if (IsAccount(husr->real_user))
@@ -216,9 +214,9 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
             for (hchan = hchannels;hchan;hchan = hchan->next)
                 if (hchan->flags & H_REQUIRE_TICKET)
                 {
-                    htick = hticket_get(husr->real_user->authname, hchan);
+                    htick = hticket_get(huser_get_auth(husr), hchan);
                     if (htick != NULL)
-                        helpmod_reply(sender, returntype, "User %s has an invite ticket for channel %s that expires in %s", husr->real_user->nick, hchannel_get_name(hchan), helpmod_strtime(time(NULL) - htick->time_expiration));
+                        helpmod_reply(sender, returntype, "User %s has an invite ticket for channel %s that expires in %s", huser_get_nick(husr), hchannel_get_name(hchan), helpmod_strtime(time(NULL) - htick->time_expiration));
                 }
         }
     }
@@ -227,22 +225,11 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
 void helpmod_cmd_megod (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     if (sender->account == NULL)
-        sender->account = haccount_add(sender->real_user->nick, H_ADMIN);
+        sender->account = haccount_add(huser_get_nick(sender), H_ADMIN);
 
     sender->account->level = H_ADMIN;
     }
     */
-/*
-void helpmod_cmd_test (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
-{
-    //lpmod_config_write("helpmod.db.test");
-    hchannel *hchan;
-
-    DEFINE_HCHANNEL;
-
-    helpmod_channick_modes(huser_get(getnickbynick(argv[0])), hchan, MC_DEVOICE, 1);
-}
-*/
 
 static void helpmod_cmd_seen (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
@@ -286,7 +273,7 @@ static void helpmod_cmd_seen (huser *sender, channel* returntype, char* ostr, in
                 helpmod_reply(sender, returntype, "User %s not found", argv[i]);
                 continue;
             }
-            helpmod_reply(sender, returntype, "User %s's last recorded activity was %s ago", target_huser->real_user->nick, helpmod_strtime(time(NULL) - target_huser->last_activity));
+            helpmod_reply(sender, returntype, "User %s's last recorded activity was %s ago", huser_get_nick(target_huser), helpmod_strtime(time(NULL) - target_huser->last_activity));
         }
     }
 }
@@ -313,18 +300,18 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
             target_haccount = haccount_get_by_name(argv[i]);
             if (target_haccount == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: Account '%s' not found", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: Account '%s' not found", argv[i]);
                 continue;
             }
             if (target_haccount->level > huser_get_level(sender))
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: Account '%s' has a userlevel higher than yours", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: Account '%s' has a userlevel higher than yours", argv[i]);
                 continue;
             }
 
             if (target_haccount->level == target_level)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: Account '%s' already has userlevel %s", argv[i], hlevel_name(target_level));
+                helpmod_reply(sender, returntype, "Cannot change userlevel: Account '%s' already has userlevel %s", argv[i], hlevel_name(target_level));
                 continue;
             }
 
@@ -338,45 +325,45 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
             target_huser = huser_get(getnickbynick(argv[i]));
             if (target_huser == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: User '%s' not found", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' not found", argv[i]);
                 continue;
             }
             if (huser_get_level(target_huser) > huser_get_level(sender))
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: User '%s' has a userlevel higher than yours", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' has a userlevel higher than yours", argv[i]);
                 continue;
             }
             if (huser_get_level(target_huser) == H_STAFF && huser_get_level(sender) == H_STAFF)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: User '%s' has the same userlevel as you have", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' has the same userlevel as you have", argv[i]);
                 continue;
             }
 
             if (huser_get_level(target_huser) == target_level)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: User '%s' already has userlevel %s", argv[i], hlevel_name(target_level));
+                helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' already has userlevel %s", argv[i], hlevel_name(target_level));
                 continue;
             }
             if (target_huser == sender)
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: Sanity check, you're changing your own userlevel, use #account instead of nick if you really wish to do this");
+                helpmod_reply(sender, returntype, "Cannot change userlevel: Sanity check, you're changing your own userlevel, use #account instead of nick if you really wish to do this");
                 continue;
             }
             if (!IsAccount(target_huser->real_user))
             {
-                helpmod_reply(sender, returntype, "Can not change userlevel: User '%s' is not authed", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' is not authed", argv[i]);
                 continue;
             }
 
             if (target_huser->account == NULL)
             {
-                if (haccount_get_by_name(target_huser->real_user->authname) != NULL)
+                if (haccount_get_by_name(huser_get_auth(target_huser)) != NULL)
                 {
-                    helpmod_reply(sender, returntype, "Can not change userlevel: Unable to create an account. Account %s already exists", target_huser->real_user->authname);
+                    helpmod_reply(sender, returntype, "Cannot change userlevel: Unable to create an account. Account %s already exists", huser_get_auth(target_huser));
                     continue;
                 }
                 else
-                    target_huser->account = haccount_add(target_huser->real_user->authname, target_level);
+                    target_huser->account = haccount_add(huser_get_auth(target_huser), target_level);
             }
 
             target_huser->account->level = target_level;
@@ -498,7 +485,7 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not handle the censor: Channel not specified or found");
+        helpmod_reply(sender, returntype, "Cannot handle the censor: Channel not specified or found");
         return;
     }
 
@@ -510,7 +497,7 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
         {
             helpmod_reply(sender, returntype, "Censored patterns for channel %s (%s):", hchan->real_channel->index->name->content, (hchan->flags & H_CENSOR)?"active":"inactive");
             for (hcens = hchan->censor;hcens;hcens = hcens->next)
-                helpmod_reply(sender, returntype, "#%d %s%s%s", i++, hcens->pattern->content, hcens->reason?" :: ":"", hcens->reason?hcens->reason->content:"");
+                helpmod_reply(sender, returntype, "#%d %-8s %s%s%s", i++, hcensor_get_typename(hcens->type), hcens->pattern->content, hcens->reason?" :: ":"", hcens->reason?hcens->reason->content:"");
         }
     }
     else
@@ -519,9 +506,36 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
         {
             char *pattern;
             char *reason;
+	    int type = HCENSOR_KICK;
 
             SKIP_WORD;
-            pattern = argv[0];
+
+            /* not very elegant but will have to do */
+	    if (argc > 1)
+	    {
+		if (!ci_strcmp(argv[0], "warn"))
+		{
+		    type = HCENSOR_WARN;
+		    if (argc <= 2)
+		    {
+			helpmod_reply(sender, returntype, "Cannot add censor entry: Entries of type warn require a reason");
+			return;
+		    }
+                    SKIP_WORD;
+		}
+		else if (!ci_strcmp(argv[0], "kick"))
+		{
+                    type = HCENSOR_KICK;
+                    SKIP_WORD;
+		}
+		else if (!ci_strcmp(argv[0], "ban"))
+		{
+                    type = HCENSOR_BAN;
+                    SKIP_WORD;
+		}
+	    }
+
+	    pattern = argv[0];
             SKIP_WORD;
             if (argc)
                 reason = ostr;
@@ -530,14 +544,14 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
 
             if (hcensor_get_by_pattern(hchan->censor, pattern))
             {
-                helpmod_reply(sender, returntype, "Cannot add censor entry: Pattern '%s' already censored", pattern);
+                helpmod_reply(sender, returntype, "Cannot add censor entry: Pattern '%s' is already censored", pattern);
                 return;
             }
 
-            if (hcensor_add(&hchan->censor, pattern, reason))
-                helpmod_reply(sender, returntype, "Pattern '%s' (%s) censored succesfully", pattern, reason?reason:"no reason specified");
-            else
-                helpmod_reply(sender, returntype, "Cannot add censor entry: Pattern '%s' already censored", pattern);
+            if (hcensor_add(&hchan->censor, pattern, reason, type))
+		helpmod_reply(sender, returntype, "Pattern '%s' (%s) with type %s, censored succesfully", pattern, reason?reason:"no reason specified", hcensor_get_typename(type));
+	    else
+		helpmod_reply(sender, returntype, "Cannot add censor entry: Pattern '%s' is already censored", pattern);
 
         }
         else if (!ci_strcmp(argv[0], "del"))
@@ -580,7 +594,7 @@ static void helpmod_cmd_chanconf (huser *sender, channel* returntype, char* ostr
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not change or view channel configuration: Channel not specified or found");
+        helpmod_reply(sender, returntype, "Cannot change or view channel configuration: Channel not specified or found");
         return;
     }
 
@@ -617,7 +631,7 @@ static void helpmod_cmd_chanconf (huser *sender, channel* returntype, char* ostr
 
             if (!sscanf(argv[i], "%d", &tmp) || (tmp < 0) || (tmp > HCHANNEL_CONF_COUNT))
             {
-                helpmod_reply(sender, returntype, "Can not change channel configuration: Expected integer between [0, %d]", HCHANNEL_CONF_COUNT);
+                helpmod_reply(sender, returntype, "Cannot change channel configuration: Expected integer between [0, %d]", HCHANNEL_CONF_COUNT);
                 continue;
             }
 
@@ -682,7 +696,7 @@ static void helpmod_cmd_acconf (huser *sender, channel* returntype, char* ostr, 
 
             if (!sscanf(argv[i], "%d", &tmp) || (tmp < 0) || (tmp > HACCOUNT_CONF_COUNT))
             {
-                helpmod_reply(sender, returntype, "Can not change account configuration: Expected integer between [0, %d]", HACCOUNT_CONF_COUNT);
+                helpmod_reply(sender, returntype, "Cannot change account configuration: Expected integer between [0, %d]", HACCOUNT_CONF_COUNT);
                 continue;
             }
 
@@ -714,18 +728,18 @@ static void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr,
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not change or view chanflags: Channel not specified or found");
+        helpmod_reply(sender, returntype, "Cannot change or view the welcome message: Channel not specified or found");
         return;
     }
 
     if (argc == 0) /* view  */
     {
-        helpmod_reply(sender, returntype, "Welcome for channel %s (%s): %s", hchan->real_channel->index->name->content, hchannel_get_state(hchan, H_WELCOME), hchan->welcome);
+        helpmod_reply(sender, returntype, "Welcome message for channel %s (%s): %s", hchan->real_channel->index->name->content, hchannel_get_state(hchan, H_WELCOME), hchan->welcome);
     }
     else
     {
         strcpy(hchan->welcome, ostr);
-        helpmod_reply(sender, returntype, "Welcome for channel %s (%s) is now: %s", hchan->real_channel->index->name->content, hchannel_get_state(hchan, H_WELCOME), hchan->welcome);
+        helpmod_reply(sender, returntype, "Welcome message for channel %s (%s) is now: %s", hchan->real_channel->index->name->content, hchannel_get_state(hchan, H_WELCOME), hchan->welcome);
     }
 }
 
@@ -804,7 +818,7 @@ static void helpmod_cmd_lamercontrol (huser *sender, channel* returntype, char* 
     ptr = hlc_get(argv[0]);
     if (ptr == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not set the lamercontrol profile: Profile %s does not exist:", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot set the lamercontrol profile: Profile %s does not exist:", argv[0]);
         return;
     }
     else
@@ -835,7 +849,7 @@ static void helpmod_cmd_term_find_general (huser *sender, channel* returntype, i
         if (type == H_TERM_PLUS)
             hqueue_advance(hchan, sender, 1);
         else
-            helpmod_reply(sender, returntype, "Can not find term: Term not specified");
+            helpmod_reply(sender, returntype, "Cannot find term: Term not specified");
         return;
     }
     htrm = hterm_get_and_find(source, argv[0]);
@@ -874,7 +888,7 @@ static void helpmod_cmd_term_find_general (huser *sender, channel* returntype, i
             for (i=0;i<ntargets;i++)
             {
                 strcat(buffer, " ");
-                strcat(buffer, targets[i]->real_user->nick);
+                strcat(buffer, huser_get_nick(targets[i]));
             }
 
             helpmod_message_channel_long(hchannel_get_by_channel(returntype), "%s: (%s) %s", buffer, htrm->name->content, htrm->description->content);
@@ -925,7 +939,7 @@ static void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr,
     if (hchan == NULL)
     {
         rand_val = rand() % KLINGON_NTARGETED;
-        helpmod_reply(sender, NULL, "%s: %s", sender->real_user->nick, klingon_targeted[rand_val]);
+        helpmod_reply(sender, NULL, "%s: %s", huser_get_nick(sender), klingon_targeted[rand_val]);
         return;
     }
 
@@ -935,7 +949,7 @@ static void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr,
     if (target)
     {
         rand_val = rand() % KLINGON_NTARGETED;
-        helpmod_message_channel(hchan, "%s: %s", target->real_user->nick, klingon_targeted[rand_val]);
+        helpmod_message_channel(hchan, "%s: %s", huser_get_nick(target), klingon_targeted[rand_val]);
     }
     else
     {
@@ -961,7 +975,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not handle terms: Operation not specified");
+        helpmod_reply(sender, returntype, "Cannot handle terms: Operation not specified");
         return;
     }
     if (!ci_strcmp(argv[0], "list"))
@@ -1007,23 +1021,23 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
     {
         if (argc < 2)
         {
-            helpmod_reply(sender, returntype, "Can not get term: Term not specified");
+            helpmod_reply(sender, returntype, "Cannot get term: Term not specified");
             return;
         }
         htrm = hterm_get(*source, argv[1]);
         if (htrm == NULL)
-            helpmod_reply(sender, returntype, "Can not get term: Term %s not found", argv[1]);
+            helpmod_reply(sender, returntype, "Cannot get term: Term %s not found", argv[1]);
         else
             helpmod_reply(sender, returntype, "(%s): %s", htrm->name->content, htrm->description->content);
     }
     else if (!ci_strcmp(argv[0], "add"))
     {
         if (argc < 2)
-            helpmod_reply(sender, returntype, "Can not add term: Term name not specified");
+            helpmod_reply(sender, returntype, "Cannot add term: Term name not specified");
         else if (argc < 3)
-            helpmod_reply(sender, returntype, "Can not add term: Term description not specified");
+            helpmod_reply(sender, returntype, "Cannot add term: Term description not specified");
         else if ((htrm = hterm_get(*source, argv[1])) != NULL)
-            helpmod_reply(sender, returntype, "Can not add term: Term %s is already added", argv[1]);
+            helpmod_reply(sender, returntype, "Cannot add term: Term %s is already added", argv[1]);
         else
         {
             char *name = argv[1], *description;
@@ -1038,7 +1052,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
         int i;
         if (argc < 2)
         {
-            helpmod_reply(sender, returntype, "Can not delete term: Term name not specified");
+            helpmod_reply(sender, returntype, "Cannot delete term: Term name not specified");
             return;
         }
         if (argc > H_CMD_MAX_ARGS)
@@ -1048,7 +1062,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
             htrm = hterm_get(*source, argv[i]);
             if (htrm == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not delete term: Term %s not found", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot delete term: Term %s not found", argv[i]);
                 continue;
             }
             hterm_del(source != NULL?source:&hterms, htrm);
@@ -1059,7 +1073,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
     {
         if (argc < 2)
         {
-            helpmod_reply(sender, returntype, "Can not find term: Term name not specified");
+            helpmod_reply(sender, returntype, "Cannot find term: Term name not specified");
             return;
         }
         htrm = hterm_get_and_find(*source, argv[1]);
@@ -1076,7 +1090,7 @@ static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, in
     }
     else
     {
-        helpmod_reply(sender, returntype, "Can not handle terms: Operation not specified");
+        helpmod_reply(sender, returntype, "Cannot handle terms: Operation not specified");
     }
 }
 
@@ -1091,7 +1105,7 @@ static void helpmod_cmd_queue (huser *sender, channel* returntype, char* ostr, i
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not handle queue: Operation not specified");
+        helpmod_reply(sender, returntype, "Cannot handle queue: Operation not specified");
         return;
     }
 
@@ -1164,7 +1178,7 @@ static void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, in
     int i;
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not correct the luser: User not defined");
+        helpmod_reply(sender, returntype, "Cannot correct the luser: User not defined");
         return;
     }
     if (argc > H_CMD_MAX_ARGS)
@@ -1174,18 +1188,18 @@ static void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, in
         huser *husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not correct the luser: User %s not found", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot correct the luser: User %s not found", argv[i]);
             continue;
 	}
 	if (huser_get_level(husr) > H_PEON)
 	{
-	    helpmod_reply(sender, returntype, "Can not correct the luser: User %s is not a peon", argv[i]);
+	    helpmod_reply(sender, returntype, "Cannot correct the luser: User %s is not a peon", argv[i]);
             continue;
 	}
         /*
         if (!hchannels_on_queue(husr) && !hchannels_on_desk(husr))
         {
-            helpmod_reply(sender, returntype, "Can not correct the luser: User %s is not in any queue", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot correct the luser: User %s is not in any queue", argv[i]);
             continue;
         }
         */
@@ -1205,7 +1219,7 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
 {
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not global handle bans: Operation not defined");
+        helpmod_reply(sender, returntype, "Cannot global handle bans: Operation not defined");
         return;
     }
 
@@ -1240,14 +1254,14 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
 
         if (argc == 1)
         {
-            helpmod_reply(sender, returntype, "Can not add global ban: Target hostmask not defined");
+            helpmod_reply(sender, returntype, "Cannot add global ban: Target hostmask not defined");
             return;
         }
         if (argc >= 3)
         {
             if ((duration = helpmod_read_strtime(argv[2])) < 0)
             {
-                helpmod_reply(sender, returntype, "Can not add global ban: Invalid time %s", argv[2]);
+                helpmod_reply(sender, returntype, "Cannot add global ban: Invalid time %s", argv[2]);
                 return;
             }
         }
@@ -1267,7 +1281,7 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
         int i;
         if (argc == 1)
         {
-            helpmod_reply(sender, returntype, "Can not remove global ban: Target hostmask not defined");
+            helpmod_reply(sender, returntype, "Cannot remove global ban: Target hostmask not defined");
             return;
         }
         if (argc > H_CMD_MAX_ARGS)
@@ -1277,7 +1291,7 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
             hban *ptr = hban_get(argv[i]);
             if (ptr == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not remove global ban: Hostmask %s is not banned", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot remove global ban: Hostmask %s is not banned", argv[i]);
                 continue;
             }
             helpmod_reply(sender, returntype, "Global ban for hostmask %s removed", argv[i]);
@@ -1286,7 +1300,7 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
     }
     else
     {
-        helpmod_reply(sender, returntype, "Can not handle global bans: Unknown operation %s", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot handle global bans: Unknown operation %s", argv[0]);
         return;
     }
 }
@@ -1300,7 +1314,7 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not handle channel bans: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot handle channel bans: Channel not defined or not found");
         return;
     }
 
@@ -1308,7 +1322,7 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not handle channel bans: Operation not defined");
+        helpmod_reply(sender, returntype, "Cannot handle channel bans: Operation not defined");
         return;
     }
 
@@ -1339,7 +1353,7 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
     {
         if (argc == 1)
         {
-            helpmod_reply(sender, returntype, "Can not add channel bans: Pattern not defined");
+            helpmod_reply(sender, returntype, "Cannot add channel bans: Pattern not defined");
             return;
         }
         if (argc > H_CMD_MAX_ARGS)
@@ -1355,7 +1369,7 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
     {
         if (argc == 1)
         {
-            helpmod_reply(sender, returntype, "Can not remove channel bans: Pattern not defined");
+            helpmod_reply(sender, returntype, "Cannot remove channel bans: Pattern not defined");
             return;
         }
         if (argc > H_CMD_MAX_ARGS)
@@ -1371,12 +1385,12 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
                     break;
                 }
             if (ptr == NULL)
-                helpmod_reply(sender, returntype, "Can not remove channel ban: Pattern %s not banned on channel %s", argv[i], hchannel_get_name(hchan));
+                helpmod_reply(sender, returntype, "Cannot remove channel ban: Pattern %s not banned on channel %s", argv[i], hchannel_get_name(hchan));
         }
     }
     else
     {
-        helpmod_reply(sender, returntype, "Can not handle channel bans: Unknown operation %s", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot handle channel bans: Unknown operation %s", argv[0]);
         return;
     }
 }
@@ -1392,7 +1406,7 @@ static void helpmod_cmd_idlekick (huser *sender, channel* returntype, char* ostr
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not handle the idlekick: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot handle the idlekick: Channel not defined or not found");
         return;
     }
     if (argc == 0) /* view */
@@ -1402,7 +1416,7 @@ static void helpmod_cmd_idlekick (huser *sender, channel* returntype, char* ostr
     }
     else if ((tmp = helpmod_read_strtime(argv[0])) < 0 || tmp < HDEF_m || tmp > HDEF_w)
     {
-        helpmod_reply(sender, returntype, "Can not set the idlekick: Invalid time given '%s'", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot set the idlekick: Invalid time given '%s'", argv[0]);
         return;
     }
     else /* set it ! */
@@ -1421,7 +1435,7 @@ static void helpmod_cmd_topic (huser *sender, channel* returntype, char* ostr, i
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not handle the topic: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot handle the topic: Channel not defined or not found");
         return;
     }
     if (!(hchan -> flags & H_HANDLE_TOPIC))
@@ -1508,7 +1522,7 @@ static void helpmod_cmd_topic (huser *sender, channel* returntype, char* ostr, i
         hchannel_set_topic(hchan);
     }
     else
-        helpmod_reply(sender, returntype, "Can not handle the topic of channel %s: Unknown operation %s", hchannel_get_name(hchan), argv[0]);
+        helpmod_reply(sender, returntype, "Cannot handle the topic of channel %s: Unknown operation %s", hchannel_get_name(hchan), argv[0]);
 }
 
 static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -1521,7 +1535,7 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not get rid of the user: User not specified");
+        helpmod_reply(sender, returntype, "Cannot get rid of the user: User not specified");
         return;
     }
 
@@ -1533,7 +1547,7 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 	{
 	    if (i == 0)
 	    {
-		helpmod_reply(sender, returntype, "Can not get rid of users: No users specified");
+		helpmod_reply(sender, returntype, "Cannot get rid of users: No users specified");
 		return;
 	    }
 	    while (i--)
@@ -1547,12 +1561,12 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 	husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not get rid of the user: User %s not found", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot get rid of the user: User %s not found", argv[i]);
             continue;
         }
         if (huser_get_level(husr) > H_PEON)
         {
-            helpmod_reply(sender, returntype, "Can not get rid of the user: User %s is not a peon", husr->real_user->nick);
+            helpmod_reply(sender, returntype, "Cannot get rid of the user: User %s is not a peon", huser_get_nick(husr));
             continue;
 	}
         targets[ntargets++] = husr;
@@ -1564,7 +1578,7 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 
 	hban_add(banmask, reason, time(NULL) + HCMD_OUT_DEFAULT, 0);
 
-	helpmod_reply(sender, returntype, "User %s is now gone", targets[i]->real_user->nick);
+	helpmod_reply(sender, returntype, "User %s is now gone", huser_get_nick(targets[i]));
     }
 }
 
@@ -1581,7 +1595,7 @@ static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* o
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not clear channel: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot clear channel: Channel not defined or not found");
         return;
     }
 
@@ -1626,13 +1640,13 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not kick the user: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot kick the user: Channel not defined or not found");
 	return;
     }
 
     if (argc == 0)
     {
-	helpmod_reply(sender, returntype, "Can not kick users: No users specified");
+	helpmod_reply(sender, returntype, "Cannot kick users: No users specified");
 	return;
     }
 
@@ -1644,7 +1658,7 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
         {
 	    if (i == 0)
 	    {
-		helpmod_reply(sender, returntype, "Can not kick the user: No users defined");
+		helpmod_reply(sender, returntype, "Cannot kick the user: No users defined");
 		return;
 	    }
 	    while (i--)
@@ -1657,17 +1671,17 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not kick the user: User %s not found", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot kick the user: User %s not found", argv[i]);
             continue;
         }
         if (huser_on_channel(husr, hchan) == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not kick the user: User %s is not on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot kick the user: User %s is not on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
             continue;
         }
         if (huser_get_level(husr) > H_PEON)
         {
-            helpmod_reply(sender, returntype, "Can not kick the user: User %s is not a peon", husr->real_user->nick);
+            helpmod_reply(sender, returntype, "Cannot kick the user: User %s is not a peon", huser_get_nick(husr));
             continue;
         }
         targets[ntargets++] = husr;
@@ -1697,7 +1711,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not show user statistics: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot show user statistics: Channel not defined or not found");
         return;
     }
 
@@ -1708,7 +1722,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
             target = haccount_get_by_name(argv[0]+1);
             if (target == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not show user statistics: Account %s not found", argv[0]);
+                helpmod_reply(sender, returntype, "Cannot show user statistics: Account %s not found", argv[0]);
                 return;
             }
             SKIP_WORD;
@@ -1717,7 +1731,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
 
     if (target == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not show user statistics: You do not have an account");
+        helpmod_reply(sender, returntype, "Cannot show user statistics: You do not have an account");
         return;
     }
     
@@ -1740,7 +1754,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
         {
             if (days < 0 || days > 7)
             {
-                helpmod_reply(sender, returntype, "Can not show user statistics: Expected integer between [0, 7]");
+                helpmod_reply(sender, returntype, "Cannot show user statistics: Expected integer between [0, 7]");
                 return;
             }
             else
@@ -1754,7 +1768,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
         {
             if (weeks < 0 || weeks > 10)
             {
-                helpmod_reply(sender, returntype, "Can not show user statistics: Expected integer between [0, 10]");
+                helpmod_reply(sender, returntype, "Cannot show user statistics: Expected integer between [0, 10]");
                 return;
             }
             else
@@ -1769,7 +1783,7 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
 
     if (ptr == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not show user statistics: User %s has no statistics for channel %s", target->name->content, hchannel_get_name(hchan));
+        helpmod_reply(sender, returntype, "Cannot show user statistics: User %s has no statistics for channel %s", target->name->content, hchannel_get_name(hchan));
         return;
     }
 
@@ -1822,7 +1836,7 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not show channel statistics: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot show channel statistics: Channel not defined or not found");
         return;
     }
 
@@ -1845,7 +1859,7 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
         {
             if (days < 0 || days > 7)
             {
-                helpmod_reply(sender, returntype, "Can not show channel statistics: Expected integer between [0, 7]");
+                helpmod_reply(sender, returntype, "Cannot show channel statistics: Expected integer between [0, 7]");
                 return;
             }
             else
@@ -1859,7 +1873,7 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
         {
             if (weeks < 0 || weeks > 10)
             {
-                helpmod_reply(sender, returntype, "Can not show channel statistics: Expected integer between [0, 10]");
+                helpmod_reply(sender, returntype, "Cannot show channel statistics: Expected integer between [0, 10]");
                 return;
             }
             else
@@ -1911,7 +1925,7 @@ static void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* o
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not list active staff: Channel not specified or not found");
+        helpmod_reply(sender, returntype, "Cannot list active staff: Channel not specified or not found");
         return;
     }
 
@@ -1974,7 +1988,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not list channel Top10: Channel not specified or not found");
+        helpmod_reply(sender, returntype, "Cannot list channel Top10: Channel not specified or not found");
         return;
     }
 
@@ -1982,8 +1996,10 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
     {
         if (!ci_strcmp(argv[0], "opers") || !ci_strcmp(argv[0], "o"))
             lvl = H_OPER;
-        else if (!ci_strcmp(argv[0], "staff") || !ci_strcmp(argv[0], "s"))
-            lvl = H_STAFF;
+	else if (!ci_strcmp(argv[0], "staff") || !ci_strcmp(argv[0], "s"))
+	    lvl = H_STAFF;
+	else if (!ci_strcmp(argv[0], "all") || !ci_strcmp(argv[0], "a"))
+            lvl = H_ANY;
     }
     if (argc == 3)
     {
@@ -2016,7 +2032,7 @@ static void helpmod_cmd_report (huser *sender, channel* returntype, char* ostr, 
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not view or set channel reporting: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot view or set channel reporting: Channel not defined or not found");
         return;
     }
     if (argc != 1)
@@ -2029,7 +2045,7 @@ static void helpmod_cmd_report (huser *sender, channel* returntype, char* ostr, 
     }
     if ((target = hchannel_get_by_name(argv[0])) == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not set channel reporting: Channel %s not found", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot set channel reporting: Channel %s not found", argv[0]);
         return;
     }
     hchan->report_to = target;
@@ -2049,14 +2065,14 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not change mode: Channel not specified or not found");
+        helpmod_reply(sender, returntype, "Cannot change mode: Channel not specified or not found");
         return;
     }
 
     if (argc==0) /* for a simple opme */
     {
         argc = 1;
-        argv[0] = sender->real_user->nick;
+        argv[0] = (char*)huser_get_nick(sender);
     }
 
     if (argc > H_CMD_MAX_ARGS)
@@ -2067,13 +2083,13 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not change mode: User %s not found", argv[i], hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot change mode: User %s not found", argv[i], hchannel_get_name(hchan));
             continue;
         }
         huserchan = huser_on_channel(husr, hchan);
         if (huserchan == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not change mode: User %s it not on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot change mode: User %s it not on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
             continue;
         }
 
@@ -2092,12 +2108,12 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
                 }
                 if (huserchan->flags & HCUMODE_OP)
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already +o on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is already +o on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 if (huser_get_level(husr) < H_STAFF)
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is not allowed to have +o on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is not allowed to have +o on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 helpmod_channick_modes(husr, hchan, MC_OP, HLAZY);
@@ -2116,12 +2132,12 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
                 }
                 if (!(huserchan->flags & HCUMODE_OP))
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already -o on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is already -o on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 if (huser_get_level(husr) > huser_get_level(sender))
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is meant to have +o on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is meant to have +o on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 helpmod_channick_modes(husr, hchan, MC_DEOP, HLAZY);
@@ -2140,7 +2156,7 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
                 }
                 if (huserchan->flags & HCUMODE_VOICE)
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already +v on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is already +v on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 helpmod_channick_modes(husr, hchan, MC_VOICE, HLAZY);
@@ -2159,7 +2175,7 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
                 }
                 if (!(huserchan->flags & HCUMODE_VOICE))
                 {
-                    helpmod_reply(sender, returntype, "Can not change mode: User %s is already -v on channel %s", husr->real_user->nick, hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Cannot change mode: User %s is already -v on channel %s", huser_get_nick(husr), hchannel_get_name(hchan));
                     continue;
                 }
                 helpmod_channick_modes(husr, hchan, MC_DEVOICE, HLAZY);
@@ -2181,7 +2197,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not invite: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot invite: Channel not defined or not found");
         return;
     }
 
@@ -2191,26 +2207,26 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
         hchan = hchannel_get_by_name(argv[0]);
         if (hchan == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not invite: Unknown channel %s", argv[0]);
+            helpmod_reply(sender, returntype, "Cannot invite: Unknown channel %s", argv[0]);
             return;
         }
         /* if tickets don't work, it's better that the user doesn't know that the channel really exists */
         if (!(hchan->flags & H_REQUIRE_TICKET))
         {
-            helpmod_reply(sender, returntype, "Can not invite: Unknown channel %s", argv[0]);
+            helpmod_reply(sender, returntype, "Cannot invite: Unknown channel %s", argv[0]);
             return;
         }
-        htick = hticket_get(sender->real_user->authname, hchan);
+        htick = hticket_get(huser_get_auth(sender), hchan);
 
         if (htick == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not invite: You do not have an invite ticket for channel %s", argv[0]);
+            helpmod_reply(sender, returntype, "Cannot invite: You do not have an invite ticket for channel %s", argv[0]);
             return;
         }
 
         if (nickbanned(sender->real_user, hchan->real_channel))
         {
-            helpmod_reply(sender, returntype, "Can not invite: You are banned from channel %s", argv[0]);
+            helpmod_reply(sender, returntype, "Cannot invite: You are banned from channel %s", argv[0]);
             return;
         }
 
@@ -2227,17 +2243,17 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
         hchan = hchannel_get_by_name(argv[0]);
         if (hchan == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not invite: Unknown channel %s", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot invite: Unknown channel %s", argv[i]);
             continue;
         }
-        if (!(hchannel_authority(hchan, sender) || hticket_get(sender->real_user->authname, hchan)))
+        if (!(hchannel_authority(hchan, sender) || hticket_get(huser_get_auth(sender), hchan)))
         {
             helpmod_reply(sender, returntype, "Sorry, channel %s is oper only", hchannel_get_name(hchan));
             continue;
         }
         if (huser_on_channel(sender, hchan) != NULL)
         {
-            helpmod_reply(sender, returntype, "Can not invite: You are already on channel %s", hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot invite: You are already on channel %s", hchannel_get_name(hchan));
             continue;
         }
         helpmod_invite(hchan, sender);
@@ -2254,41 +2270,41 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
 
     if (argc < 1)
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: Channel not specified");
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: Channel not specified");
         return;
     }
 
     hchan = hchannel_get_by_name(argv[0]);
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: Unknown channel %s", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: Unknown channel %s", argv[0]);
         return;
     }
     if (!(hchan->flags & H_REQUIRE_TICKET))
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: Tickets are not enabled for channel %s", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: Tickets are not enabled for channel %s", argv[0]);
         return;
     }
     if (argc < 2)
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: Target user not specified");
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: Target user not specified");
         return;
     }
 
     husr = huser_get(getnickbynick(argv[1]));
     if (husr == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: Unknown user %s", argv[1]);
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: Unknown user %s", argv[1]);
         return;
     }
     if (!IsAccount(husr->real_user))
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: User %s is not authed", argv[1]);
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s is not authed", argv[1]);
         return;
     }
     if (huser_get_level(husr) < H_PEON)
     {
-        helpmod_reply(sender, returntype, "Can not issue a ticket: User %s is considered improper and not worthy of a ticket", argv[1]);
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s is considered improper and not worthy of a ticket", argv[1]);
         return;
     }
     if (argc >= 3)
@@ -2299,14 +2315,14 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
             expiration = tmp;
     }
 
-    htick = hticket_get(husr->real_user->authname, hchan);
+    htick = hticket_get(huser_get_auth(husr), hchan);
 
     if (htick != NULL)
         htick->time_expiration = time(NULL) + expiration;
     else
-        hticket_add(husr->real_user->authname, time(NULL) + expiration, hchan);
+        hticket_add(huser_get_auth(husr), time(NULL) + expiration, hchan);
 
-    helpmod_reply(sender, returntype, "Issued an invite ticket to user %s for channel %s expiring in %s", husr->real_user->nick, hchannel_get_name(hchan), helpmod_strtime(expiration));
+    helpmod_reply(sender, returntype, "Issued an invite ticket to user %s for channel %s expiring in %s", huser_get_nick(husr), hchannel_get_name(hchan), helpmod_strtime(expiration));
     helpmod_reply(husr, NULL, "You have been issued an invite ticket for channel %s. This ticket is valid for a period of %s. You can use my invite command to get to the channel now. Type /msg %s invite %s",hchannel_get_name(hchan), helpmod_strtime(HTICKET_EXPIRATION_TIME), helpmodnick->nick, hchannel_get_name(hchan));
 }
 
@@ -2326,7 +2342,7 @@ static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr,
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not resolve a ticket: The channel is not specified");
+        helpmod_reply(sender, returntype, "Cannot resolve a ticket: The channel is not specified");
         return;
     }
 
@@ -2337,7 +2353,7 @@ static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr,
             htick = hticket_get(&argv[i][1], hchan);
             if (htick == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not resolve a ticket: Authname %s does not have a ticket for channel %s", &argv[i][1], hchannel_get_name(hchan));
+                helpmod_reply(sender, returntype, "Cannot resolve a ticket: Authname %s does not have a ticket for channel %s", &argv[i][1], hchannel_get_name(hchan));
                 continue;
             }
             hticket_del(htick, hchan);
@@ -2348,18 +2364,18 @@ static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr,
             husr = huser_get(getnickbynick(argv[i]));
             if (husr == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not resolve a ticket: User %s not found", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot resolve a ticket: User %s not found", argv[i]);
                 continue;
             }
             if (!IsAccount(husr->real_user))
             {
-                helpmod_reply(sender, returntype, "Can not resolve a ticket: User %s is not authed", argv[i]);
+                helpmod_reply(sender, returntype, "Cannot resolve a ticket: User %s is not authed", argv[i]);
                 continue;
             }
-            htick = hticket_get(husr->real_user->authname,hchan);
+            htick = hticket_get(huser_get_auth(husr),hchan);
             if (htick == NULL)
             {
-                helpmod_reply(sender, returntype, "Can not resolve a ticket: User %s does not have a ticket for channel %s", argv[i], hchannel_get_name(hchan));
+                helpmod_reply(sender, returntype, "Cannot resolve a ticket: User %s does not have a ticket for channel %s", argv[i], hchannel_get_name(hchan));
                 continue;
             }
             hticket_del(htick, hchan);
@@ -2380,13 +2396,13 @@ static void helpmod_cmd_tickets (huser *sender, channel* returntype, char* ostr,
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not list tickets: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot list tickets: Channel not defined or not found");
         return;
     }
 
     if (!(hchan->flags & H_REQUIRE_TICKET))
     {
-        helpmod_reply(sender, returntype, "Can not list tickets: Channel %s does not use the ticket system", hchannel_get_name(hchan));
+        helpmod_reply(sender, returntype, "Cannot list tickets: Channel %s does not use the ticket system", hchannel_get_name(hchan));
         return;
     }
 
@@ -2422,7 +2438,7 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
 
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not show the ticket: Channel not defined or not found");
+        helpmod_reply(sender, returntype, "Cannot show the ticket: Channel not defined or not found");
         return;
     }
     for (i = 0;i < argc;i++)
@@ -2430,18 +2446,18 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not show the ticket: User %s not found", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot show the ticket: User %s not found", argv[i]);
             continue;
         }
         if (!IsAccount(husr->real_user))
         {
-            helpmod_reply(sender, returntype, "Can not show the ticket: User %s is not authed", argv[i]);
+            helpmod_reply(sender, returntype, "Cannot show the ticket: User %s is not authed", argv[i]);
             continue;
         }
-        htick = hticket_get(husr->real_user->authname, hchan);
+        htick = hticket_get(huser_get_auth(husr), hchan);
         if (htick == NULL)
         {
-            helpmod_reply(sender, returntype, "Can not show the ticket: User %s does not have a valid ticket for channel %s", argv[i], hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot show the ticket: User %s does not have a valid ticket for channel %s", argv[i], hchannel_get_name(hchan));
             continue;
         }
         helpmod_reply(sender, returntype, "User %s has a ticket for channel %s expiring in %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
@@ -2470,7 +2486,7 @@ static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr
 
     if (count == 0)
     {
-        helpmod_reply(sender, returntype, "Can not list term usage statistics: No terms available");
+        helpmod_reply(sender, returntype, "Cannot list term usage statistics: No terms available");
         return;
     }
 
@@ -2524,14 +2540,14 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 
     if (argc == 0)
     {
-        helpmod_reply(sender, returntype, "Can not check channel: Channel not defined");
+        helpmod_reply(sender, returntype, "Cannot check channel: Channel not defined");
         return;
     }
 
     chan = findchannel(argv[0]);
     if (chan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not check channel: Channel %s not found", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot check channel: Channel %s not found", argv[0]);
         return;
     }
     if (argc > 1 && !ci_strcmp(argv[1], "summary"))
@@ -2551,7 +2567,7 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 
             if (IsOper(nck) && strlen(nck->nick) > 1)
             {
-                helpmod_reply(sender, returntype, "Can not check channel: Permission denied. Channel %s has an oper on it", argv[0]);
+                helpmod_reply(sender, returntype, "Cannot check channel: Permission denied. Channel %s has an oper on it", argv[0]);
                 return;
             }
 	}
@@ -2607,7 +2623,7 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 
 	    visiblehostmask(getnickbynumeric(numeric_array[i]), buf);
 	    if (IsAccount(getnickbynumeric(numeric_array[i])))
-		helpmod_reply(sender, returntype, "%c%s (%s)", status, buf, getnickbynumeric(numeric_array[i])->authname);//nick_array[i]->authname);
+		helpmod_reply(sender, returntype, "%c%s (%s)", status, buf, getnickbynumeric(numeric_array[i])->authname);
 	    else
 		helpmod_reply(sender, returntype, "%c%s", status, buf);
 	}
@@ -2794,18 +2810,86 @@ static void helpmod_cmd_message (huser *sender, channel* returntype, char* ostr,
 
     if (argc < 2)
     {
-        helpmod_reply(sender, returntype, "Can not send a message: Insufficient arguments");
+        helpmod_reply(sender, returntype, "Cannot send a message: Insufficient arguments");
         return;
     }
     hchan = hchannel_get_by_name(argv[0]);
     if (hchan == NULL)
     {
-        helpmod_reply(sender, returntype, "Can not send a message: Invalid channel %s", argv[0]);
+        helpmod_reply(sender, returntype, "Cannot send a message: Invalid channel %s", argv[0]);
         return;
     }
     SKIP_WORD;
-    helpmod_message_channel(hchan, "(%s) %s", sender->real_user->nick, ostr);
+    helpmod_message_channel(hchan, "(%s) %s", huser_get_nick(sender), ostr);
     helpmod_reply(sender, returntype, "Message sent to %s", hchannel_get_name(hchan));
+}
+
+static void helpmod_cmd_version (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    helpmod_reply(sender, returntype, "HelpMod version " HELPMOD_VERSION " by strutsi (strutsi@quakenet.org)");
+}
+
+static void helpmod_cmd_evilhack1 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    int tmp;
+
+    if (argc == 0)
+	helpmod_reply(sender, returntype, "hstat_cycle: %d", hstat_cycle);
+    else
+    {
+	if (!sscanf(argv[0], "%d", &tmp) || tmp < 0)
+	{
+            helpmod_reply(sender, returntype, "Invalid argument");
+            return;
+	}
+	hstat_cycle = tmp;
+	helpmod_reply(sender, returntype, "hstat_cycle is now: %d", hstat_cycle);
+    }
+}
+
+static void helpmod_cmd_evilhack2 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    haccount *hacc = haccounts;
+    hchannel *hchan;
+    hstat_account *ptr;
+    hstat_account_entry tmp_account;
+    hstat_channel_entry tmp_channel;
+    int first, second;
+
+    if (argc != 2)
+    {
+	helpmod_reply(sender, returntype, "Syntax error: evilhack2 <first> <second>");
+	return;
+    }
+
+    if (!sscanf(argv[0],"%d", &first) || first < 0 || first > 9)
+    {
+	helpmod_reply(sender, returntype, "Syntax error: Invalid first");
+	return;
+    }
+
+    if (!sscanf(argv[1],"%d", &second) || second < 0 || second > 9)
+    {
+	helpmod_reply(sender, returntype, "Syntax error: Invalid second");
+	return;
+    }
+
+    for (;hacc;hacc = hacc->next)
+        for (ptr = hacc->stats;ptr;ptr = ptr->next)
+	{
+	    tmp_account = ptr->longterm[first];
+	    ptr->longterm[first] = ptr->longterm[second];
+            ptr->longterm[second] = tmp_account;
+	}
+
+    for (hchan = hchannels;hchan;hchan = hchan->next)
+    {
+	    tmp_channel = hchan->stats->longterm[first];
+	    hchan->stats->longterm[first] = hchan->stats->longterm[second];
+	    hchan->stats->longterm[second] = tmp_channel;
+    }
+
+    helpmod_reply(sender, returntype, "Evilhack2 done: Swapped %d and %d", first, second);
 }
 
 /* old H stuff */
@@ -3041,6 +3125,12 @@ void hcommands_add(void)
     hcommand_add("statsreset", H_ADMIN, helpmod_cmd_statsreset, "Statistics reset command");
 
     hcommand_add("message", H_TRIAL, helpmod_cmd_message, "Sends a message to a channel");
+    hcommand_add("version", H_PEON, helpmod_cmd_version, "G version information");
+
+    hcommand_add("evilhack1", H_ADMIN, helpmod_cmd_evilhack1, "An evil hack, don't use");
+    hcommand_add("evilhack2", H_ADMIN, helpmod_cmd_evilhack2, "Another evil hack, don't use");
+
+
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
 }
@@ -3114,7 +3204,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
     }
 
     {
-        char *ostr = args, **argv = (char**)&parsed_args; // for SKIP_WORD
+        char *ostr = args, **argv = (char**)&parsed_args;
         hcommand *hcom = hcommand_get(parsed_args[0], huser_get_level(sender));
 
 	if (hcom == NULL)

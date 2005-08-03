@@ -9,6 +9,7 @@
 #include "helpmod.h"
 #include "hterm.h"
 
+static int hconf_version;
 
 static void helpmod_line_fix(char **ptr)
 {
@@ -27,6 +28,9 @@ int helpmod_config_read(const char *fname)
 {
     FILE *in;
     char buf[512], *ptr;
+
+    /* Assume G 2.0 configuration */
+    hconf_version = HELPMOD_VERSION_2_0;
 
     if ((in = fopen(fname,"rt")) == NULL)
         return -1;
@@ -48,7 +52,15 @@ int helpmod_config_read(const char *fname)
             continue;
 
         /* check what kind of a line it was */
-        if (!strcmp(ptr, "channel"))
+	if (!strcmp(ptr, "version"))
+	{ /* If no version is present, then the assumed G 2.0 version is used */
+	    if (helpmod_config_read_version(in))
+		Error("helpmod", ERR_WARNING, "Reading of database entry 'version' failed");
+
+	    if (hconf_version > HELPMOD_VERSION_INTERNAL)
+		Error("helpmod", ERR_WARNING, "Database version is higher than the current version");
+	}
+	else if (!strcmp(ptr, "channel"))
         {
             if (helpmod_config_read_channel(in))
                 Error("helpmod", ERR_WARNING, "Reading of database entry 'channel' failed");
@@ -88,7 +100,7 @@ int helpmod_config_read(const char *fname)
             if (helpmod_config_read_ticket(in))
                 Error("helpmod", ERR_WARNING, "Reading of database entry 'ticket' failed");
         }
-        else
+	else
             Error("helpmod", ERR_WARNING, "Unknown database entry '%s'", ptr);
     }
 
@@ -101,15 +113,28 @@ int helpmod_config_read(const char *fname)
 int helpmod_config_write(const char *fname)
 {
     FILE *out;
-    /*char buf[512];*/
     time_t timer = time(NULL);
 
     if ((out = fopen(fname,"wt")) == NULL)
         return -1;
 
-    fprintf(out, "%% H2 version %s database\n", HELPMOD_VERSION);
+    fprintf(out, "%% G2 version %s database\n", HELPMOD_VERSION);
     fprintf(out, "%% %s\n\n", asctime(localtime(&timer)));
 
+
+    { /* version */
+	fprintf(out, "%% G internal version\n");
+        fprintf(out, "version\n");
+        helpmod_config_write_version(out);
+    }
+
+    { /* globals */
+
+        fprintf(out,"\n%% global variables\n");
+        fprintf(out,"%%  hstat_cycle\n");
+        fprintf(out,"globals\n");
+        helpmod_config_write_globals(out);
+    }
 
     { /* lamercontrol profiles */
         hlc_profile *ptr = hlc_profiles;
@@ -223,14 +248,6 @@ int helpmod_config_write(const char *fname)
         }
     }
 
-    { /* globals */
-
-        fprintf(out,"\n%% global variables\n");
-        fprintf(out,"%%  hstat_cycle\n");
-        fprintf(out,"globals\n");
-        helpmod_config_write_globals(out);
-    }
-
     fclose(out);
 
     return 0;
@@ -286,19 +303,36 @@ int helpmod_config_read_channel(FILE *in)
         return -1;
     for (i = 0;i<entries;i++)
     {
-        char buf2[512], *ptr2;
+	char buf2[512], *ptr2;
+	int type;
 
         fgets((ptr = buf), 256, in);
-        if (feof(in))
+	if (feof(in))
             return -1;
         helpmod_line_fix(&ptr);
+
+	if (hconf_version >= HELPMOD_VERSION_2_10)
+	{
+	    if (!sscanf(ptr, "%d", &type))
+		return -1;
+
+	    fgets((ptr = buf), 256, in);
+	    if (feof(in))
+		return -1;
+	    helpmod_line_fix(&ptr);
+	}
+	else
+            type = HCENSOR_KICK;
 
         fgets((ptr2 = buf2), 256, in);
         if (feof(in))
             return -1;
         helpmod_line_fix(&ptr2);
 
-        hcensor_add(&hchan->censor, ptr, ptr2);
+	if (ptr2[0] == '\0')
+            ptr2 = NULL;
+
+        hcensor_add(&hchan->censor, ptr, ptr2, type);
     }
     /* channel specific hterms */
     fgets((ptr = buf), 256, in);
@@ -334,9 +368,10 @@ int helpmod_config_write_channel(FILE *out, hchannel *target)
     {
         hcensor *hcens = target->censor;
         for (;hcens;hcens = hcens->next)
-        {
+	{
+            fprintf(out, "\t\t%d\n", hcens->type);
             fprintf(out, "\t\t%s\n", hcens->pattern->content);
-            fprintf(out, "\t\t%s\n", hcens->reason->content);
+	    fprintf(out, "\t\t%s\n", hcens->reason?hcens->reason->content:"");
         }
     }
 
@@ -447,7 +482,7 @@ int helpmod_config_write_ban(FILE *out, hban *hb)
 {
     fprintf(out, "\t%s\n", bantostring(hb->real_ban));
     fprintf(out, "\t%s\n", hb->reason?hb->reason->content:NULL);
-    fprintf(out, "\t%u\n", hb->expiration);
+    fprintf(out, "\t%u\n", (unsigned int)hb->expiration);
     return 0;
 }
 
@@ -592,8 +627,16 @@ int helpmod_config_read_chanstats(FILE *in, hstat_channel *hs_chan)
         else /* weeks */
             entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 10];
 
-        if (sscanf(buf, "%d %d %d %d %d %d", &entry->time_spent, &entry->prime_time_spent, &entry->joins, &entry->queue_use, &entry->lines, &entry->words) != 6)
+	if (hconf_version < HELPMOD_VERSION_2_10)
+	{
+	    if (sscanf(buf, "%d %d %d %d %d %d", &entry->time_spent, &entry->prime_time_spent, &entry->joins, &entry->queue_use, &entry->lines, &entry->words) != 6)
             return -1;
+	}
+	else
+	{
+	    if (sscanf(buf, "%d %d %d %d %d %d %d %d", &entry->active_time, &entry->staff_active_time, &entry->time_spent, &entry->prime_time_spent, &entry->joins, &entry->queue_use, &entry->lines, &entry->words) != 8)
+		return -1;
+	}
     }
     return 0;
 }
@@ -610,7 +653,7 @@ int helpmod_config_write_chanstats(FILE *out, hstat_channel *hs_chan)
         else /* weeks */
             entry = &hs_chan->longterm[(hstat_week() + (i-7)) % 10];
 
-        fprintf(out, "\t%d %d %d %d %d %d\n", entry->time_spent, entry->prime_time_spent, entry->joins, entry->queue_use, entry->lines, entry->words);
+        fprintf(out, "\t%d %d %d %d %d %d %d %d\n", entry->active_time, entry->staff_active_time, entry->time_spent, entry->prime_time_spent, entry->joins, entry->queue_use, entry->lines, entry->words);
     }
     return 0;
 }
@@ -758,7 +801,29 @@ int helpmod_config_write_ticket(FILE *out, hticket *htick, hchannel *hchan)
 {
     fprintf(out, "\t%s\n", hchannel_get_name(hchan));
     fprintf(out, "\t%s\n", htick->authname);
-    fprintf(out, "\t%u\n", htick->time_expiration);
+    fprintf(out, "\t%u\n", (unsigned int)htick->time_expiration);
+
+    return 0;
+}
+
+int helpmod_config_read_version(FILE *in)
+{
+    char buf[256], *ptr=(char*)buf;
+
+    fgets(ptr = buf, 256, in);
+    if (feof(in))
+        return -1;
+    helpmod_line_fix(&ptr);
+
+    if (sscanf(ptr, "%d", &hconf_version) != 1)
+        return -1;
+
+    return 0;
+}
+
+int helpmod_config_write_version(FILE *out)
+{
+    fprintf(out, "\t%d\n", HELPMOD_VERSION_INTERNAL);
 
     return 0;
 }
