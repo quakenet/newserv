@@ -131,6 +131,15 @@ int rmmod(char *modulename) {
   
   mods=(module *)(modules.content);
     
+#ifdef BROKEN_DLCLOSE
+  {
+    void (*fini)();
+    fini = dlsym(mods[i].handle, "__fini");
+    if(!dlerror())
+      fini();
+  }
+#endif
+
   dlclose(mods[i].handle);
   freesstring(mods[i].name);
   array_delslot(&modules,i);

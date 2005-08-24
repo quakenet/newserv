@@ -170,6 +170,22 @@ int deregisterlocaluser(nick *np, char *reason) {
 }
 
 /*
+ * hooklocaluserhandler:
+ *  This function adds a new handler to the hook chain for a local user
+ *  THIS RELIES ON MODULES BEING UNLOADED IN THE CORRECT ORDER.
+ */
+UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler) {
+  UserMessageHandler oldhandler = NULL;
+  if (np==NULL || (homeserver(np->numeric)!=mylongnum)) {
+    /* Non-existent user, or user not on this server */
+    return NULL;
+  }
+  oldhandler = umhandlers[np->numeric&MAXLOCALUSER];
+  umhandlers[np->numeric&MAXLOCALUSER]=newhandler;
+  return oldhandler;
+}
+
+/*
  * sendnickmsg:
  *  Sends details of a given local nick to the network.
  */

@@ -26,6 +26,7 @@ extern UserMessageHandler umhandlers[MAXLOCALUSER+1];
 nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname, char *authname, flag_t umodes, UserMessageHandler hander);
 int renamelocaluser(nick *np, char *newnick);
 int deregisterlocaluser(nick *np, char *reason);
+UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler);
 void sendnickmsg(nick *np);
 void sendnickburst(int hooknum, void *arg);
 int handleprivatemsgcmd(void *source, int cargc, char **cargv);
