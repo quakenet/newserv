@@ -7,7 +7,7 @@
 #define __esockets_H
 
 #include "../lib/helix.h"
-#include <endian.h>
+#include <sys/types.h>
 
 #define ESOCKET_UNIX_DOMAIN            ESOCKET_LISTENING
 #define ESOCKET_UNIX_DOMAIN_CONNECTED  ESOCKET_INCOMING
