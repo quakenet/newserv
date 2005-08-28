@@ -92,6 +92,7 @@ Command *addcommandtotree(CommandTree *ct, const char *cmdname, int level, int m
   nc->level=level;
   nc->maxparams=maxparams;
   nc->handler=handler;
+  nc->ext=NULL;
   nc->next=NULL;
   
   /* Sanity check the string */
