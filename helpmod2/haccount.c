@@ -90,9 +90,9 @@ void haccount_clear_inactives(void)
 {
     haccount **ptr = &haccounts;
     while (*ptr)
-        if (time(NULL) - (*ptr)->last_activity > HELPMOD_ACCOUNT_EXPIRATION[(*ptr)->level])
-            haccount_del(*ptr);
-        else
+	if ((time(NULL) - (*ptr)->last_activity > HELPMOD_ACCOUNT_EXPIRATION[(*ptr)->level]) && !(*ptr)->flags & H_NO_EXPIRE)
+	    haccount_del(*ptr);
+	else
             ptr = &(*ptr)->next;
 }
 

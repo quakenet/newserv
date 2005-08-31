@@ -151,7 +151,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
 
         if ((hchan->flags & H_QUEUE_SPAMMY) && (oper != NULL))
         {
-	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), hchannel_get_name(hchan), huser_get_nick(oper));
+	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", hlevel_title(huser_get_level(oper)), hchannel_get_name(hchan), huser_get_nick(oper));
             if (!(huser_get_account_flags(oper) & H_NOSPAM))
                 helpmod_reply(oper, hchan->real_channel, "User %s (%s@%s) is yours, he has been in queue for %s", huser_get_nick(hchanuser->husr), huser_get_ident(hchanuser->husr), huser_get_host(hchanuser->husr), helpmod_strtime(time(NULL) - hchanuser->time_joined));
         }
@@ -162,7 +162,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
         hchanuser = hchanuser->next;
     }
     if (oper != NULL)
-        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel and direct them to %s %s", (nadv - counter == 1)?"":"s", buffer, (huser_get_level(oper) < H_OPER)?hlevel_name(H_STAFF):hlevel_name(H_OPER), huser_get_nick(oper));
+        helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel and direct them to %s %s", (nadv - counter == 1)?"":"s", buffer, hlevel_title(huser_get_level(oper)), huser_get_nick(oper));
     else
         helpmod_message_channel(hchan, "user%s %s: Please state your questions on this channel", (nadv - counter == 1)?"":"s", buffer);
 

@@ -1,5 +1,5 @@
-Syntax:  ticket channel [nick1] .. [nickn]
+Syntax:  ticket channel [nick1] [expiration]
 Example: ticket #feds user
 Gives the user an invite ticket for the channel.
-With the ticket, the user can use the invite command to get
-to the channel. Up to 6 users can be specified.
+With the ticket, the user can use the invite command to get to the channel.
+Ticket expiration time is optional.

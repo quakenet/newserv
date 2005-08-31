@@ -134,10 +134,7 @@ const char *helpmod_strtime(int total_seconds)
 
 int helpmod_read_strtime(const char *str)
 {
-    int sum = 0;
-    int tmp_sum;
-    int tmp;
-
+    int sum = 0, tmp_sum, tmp;
 
     while (*str)
     {
@@ -247,4 +244,18 @@ float helpmod_percentage(int larger, int smaller)
 	return 0.0;
 
     return 100.0 * ((float)smaller / (float)larger);
+}
+
+int helpmod_select(const char *str, const char **strs, int *enums, int count)
+{
+    int i;
+
+    if (count == 0)
+	return -1;
+
+    for (i = 0;i < count;i++)
+	if (!ci_strcmp(strs[i], str))
+            return enums[i];
+
+    return -1;
 }

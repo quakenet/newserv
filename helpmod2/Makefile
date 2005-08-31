@@ -4,7 +4,7 @@
 CFLAGS=-g -std=c99 -pedantic -Wall
 #-Wno-unused
 
-TARGETS=huser.o hhooks.o hconf.o hgen.o hchannel.o hban.o hchanban.o hlamer.o htopic.o hstat.o hqueue.o hterm.o hcensor.o haccount.o hdef.o hcommand.o hcommands.o helpmod.o helpmod_entries.o helpmod_alias.o hticket.o
+TARGETS=huser.o hhooks.o hconf.o hgen.o hchannel.o hban.o hchanban.o hlamer.o htopic.o hstat.o hqueue.o hterm.o hcensor.o haccount.o hdef.o hcommand.o hcommands.o helpmod.o helpmod_entries.o helpmod_alias.o hticket.o hed.o
 
 all: helpmod2.so
 

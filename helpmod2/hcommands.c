@@ -2,6 +2,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "../nick/nick.h"
 #include "../channel/channel.h"
@@ -368,8 +370,14 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
 
             target_huser->account->level = target_level;
 
-            helpmod_reply(sender, returntype, "Userlevel changed: User '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
-            if (huser_get_level(target_huser) != H_LAMER)
+	    helpmod_reply(sender, returntype, "Userlevel changed: User '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
+
+	    if (huser_get_level(target_huser) == H_LAMER)
+	    {
+		const char *banmask = hban_ban_string(target_huser->real_user, HBAN_HOST);
+                hban_add(banmask, "Improper user", time(NULL) + HCMD_OUT_DEFAULT, 1);
+	    }
+	    else
 		helpmod_reply(target_huser, NULL, "Your userlevel has been changed, your current userlevel is %s", hlevel_name(target_level));
         }
     }
@@ -489,7 +497,7 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
         return;
     }
 
-    if (argc < 2) /* view */
+    if (argc < 2 || !ci_strcmp(argv[0], "list")) /* view */
     {
         if (hchan->censor == NULL)
             helpmod_reply(sender, returntype, "Nothing is censored on channel %s", hchan->real_channel->index->name->content);
@@ -497,7 +505,7 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
         {
             helpmod_reply(sender, returntype, "Censored patterns for channel %s (%s):", hchan->real_channel->index->name->content, (hchan->flags & H_CENSOR)?"active":"inactive");
             for (hcens = hchan->censor;hcens;hcens = hcens->next)
-                helpmod_reply(sender, returntype, "#%d %-8s %s%s%s", i++, hcensor_get_typename(hcens->type), hcens->pattern->content, hcens->reason?" :: ":"", hcens->reason?hcens->reason->content:"");
+                helpmod_reply(sender, returntype, "#%-4d %-8s %s%s%s", i++, hcensor_get_typename(hcens->type), hcens->pattern->content, hcens->reason?" :: ":"", hcens->reason?hcens->reason->content:"");
         }
     }
     else
@@ -526,6 +534,11 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
 		else if (!ci_strcmp(argv[0], "kick"))
 		{
                     type = HCENSOR_KICK;
+                    SKIP_WORD;
+		}
+		else if (!ci_strcmp(argv[0], "chanban"))
+		{
+                    type = HCENSOR_CHANBAN;
                     SKIP_WORD;
 		}
 		else if (!ci_strcmp(argv[0], "ban"))
@@ -768,7 +781,7 @@ static void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr,
 
 static void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
-    int level = H_PEON;
+    int level = H_PEON, previous_level = H_PEON;
     hcommand *tmp;
 
     if (!(argc && (sscanf(argv[0], "%d", &level)) && (level >= 0) && (level <= huser_get_level(sender))))
@@ -779,7 +792,14 @@ static void helpmod_cmd_showcommands (huser *sender, channel* returntype, char* 
     hcommand_list(H_NONE);
 
     while ((tmp = hcommand_list(level)) != NULL)
-        helpmod_reply(sender, returntype, "%-16s %s", tmp->name->content, tmp->help->content);
+    {
+	if (tmp->level > previous_level)
+	{
+	    helpmod_reply(sender, returntype, "--- Additional commands for userlevel %s ---", hlevel_name(tmp->level));
+	    previous_level = tmp->level;
+	}
+	helpmod_reply(sender, returntype, "%-16s %s", tmp->name->content, tmp->help->content);
+    }
 
     return;
 }
@@ -887,8 +907,9 @@ static void helpmod_cmd_term_find_general (huser *sender, channel* returntype, i
             char buffer[256] = "";
             for (i=0;i<ntargets;i++)
             {
-                strcat(buffer, " ");
-                strcat(buffer, huser_get_nick(targets[i]));
+                if (i != 0)
+		    strcat(buffer, " ");
+		strcat(buffer, huser_get_nick(targets[i]));
             }
 
             helpmod_message_channel_long(hchannel_get_by_channel(returntype), "%s: (%s) %s", buffer, htrm->name->content, htrm->description->content);
@@ -958,7 +979,7 @@ static void helpmod_cmd_klingon (huser *sender, channel* returntype, char* ostr,
     }
 }
 
-static void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hterm *htrm;
     hterm **source;
@@ -1319,20 +1340,20 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
     }
 
     HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
-
+/*
     if (argc == 0)
     {
         helpmod_reply(sender, returntype, "Cannot handle channel bans: Operation not defined");
         return;
     }
-
-    if (!ci_strcmp(argv[0], "list"))
+*/
+    if (argc == 0 || !ci_strcmp(argv[0], "list"))
     {
         char *pattern, *cban;
         chanban *ptr = hchan->real_channel->bans;
         int count = 0;
 
-        if (argc ==  1)
+        if (argc <=  1)
             pattern = "*";
         else
             pattern = argv[1];
@@ -1576,10 +1597,11 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
     {
 	const char *banmask = hban_ban_string(targets[i]->real_user, HBAN_HOST);
 
-	hban_add(banmask, reason, time(NULL) + HCMD_OUT_DEFAULT, 0);
+	hban_add(banmask, reason, time(NULL) + HCMD_OUT_DEFAULT, HLAZY);
 
 	helpmod_reply(sender, returntype, "User %s is now gone", huser_get_nick(targets[i]));
     }
+    hcommit_modes();
 }
 
 static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -1882,7 +1904,6 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
             }
         }
 
-
     channel_stats = hchan->stats;
 
     if (!days && !weeks)
@@ -1940,7 +1961,12 @@ static void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* o
         {
             lvl = H_STAFF;
             SKIP_WORD;
-        }
+	}
+	else if (!ci_strcmp(argv[0], "staff") || !ci_strcmp(argv[0], "s"))
+	{
+            lvl = H_ANY;
+            SKIP_WORD;
+	}
     }
 
     if (argc == 1)
@@ -2240,7 +2266,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
 
     for (i = 0;i < argc; i++)
     {
-        hchan = hchannel_get_by_name(argv[0]);
+        hchan = hchannel_get_by_name(argv[i]);
         if (hchan == NULL)
         {
             helpmod_reply(sender, returntype, "Cannot invite: Unknown channel %s", argv[i]);
@@ -2307,6 +2333,11 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
         helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s is considered improper and not worthy of a ticket", argv[1]);
         return;
     }
+    if (huser_get_level(husr) > H_PEON)
+    {
+        helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s does not require a ticket", argv[1]);
+        return;
+    }
     if (argc >= 3)
     {
         int tmp;
@@ -2324,8 +2355,10 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
 
     helpmod_reply(sender, returntype, "Issued an invite ticket to user %s for channel %s expiring in %s", huser_get_nick(husr), hchannel_get_name(hchan), helpmod_strtime(expiration));
     helpmod_reply(husr, NULL, "You have been issued an invite ticket for channel %s. This ticket is valid for a period of %s. You can use my invite command to get to the channel now. Type /msg %s invite %s",hchannel_get_name(hchan), helpmod_strtime(HTICKET_EXPIRATION_TIME), helpmodnick->nick, hchannel_get_name(hchan));
-}
+    if (hchan->flags & H_TICKET_MESSAGE && hchan->ticket_message != NULL)
+	helpmod_reply(husr, NULL, "Ticket information for %s: %s", hchannel_get_name(hchan), hchan->ticket_message->content);
 
+}
 static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int i;
@@ -2476,6 +2509,8 @@ static void helpmod_cmd_termstats(huser *sender, channel* returntype, char* ostr
     int i, count;
 
     DEFINE_HCHANNEL;
+
+    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
 
     if (hchan == NULL)
         origin = hterms;
@@ -2829,6 +2864,394 @@ static void helpmod_cmd_version (huser *sender, channel* returntype, char* ostr,
     helpmod_reply(sender, returntype, "HelpMod version " HELPMOD_VERSION " by strutsi (strutsi@quakenet.org)");
 }
 
+static void helpmod_cmd_ticketmsg (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+
+    DEFINE_HCHANNEL;
+
+    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
+
+    if (hchan == NULL)
+    {
+	helpmod_reply(sender, returntype, "Can not view or set ticket message: No channel is specified.");
+	return;
+    }
+
+    if (argc == 0)
+    { /* view */
+	if (hchan->ticket_message == NULL)
+	    helpmod_reply(sender, returntype, "No ticket message is set for channel %s", hchannel_get_name(hchan));
+	else
+	    helpmod_reply(sender, returntype, "Ticket message for channel %s is: %s", hchannel_get_name(hchan), hchan->ticket_message->content);
+	return;
+    }
+
+    /* set */
+    if (hchan->ticket_message != NULL)
+	freesstring(hchan->ticket_message);
+
+    hchan->ticket_message = getsstring(ostr, strlen(ostr));
+    helpmod_reply(sender, returntype, "Ticket message for channel %s set to: %s", hchannel_get_name(hchan), hchan->ticket_message->content);
+}
+
+static void helpmod_cmd_lcedit (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hlc_profile *profile;
+
+    if (argc == 0)
+    {
+	helpmod_reply(sender, returntype, "Can not handle lamer control profiles: Operation not defined");
+        return;
+    }
+
+    if (!ci_strcmp(argv[0], "list"))
+    {
+	if (hlc_profiles == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not list lamer control profiles: No profiles");
+            return;
+	}
+	helpmod_reply(sender, returntype, "Following lamer control profiles are currently available:");
+	for (profile = hlc_profiles;profile != NULL;profile = profile->next)
+	    helpmod_reply(sender, returntype, "%s", profile->name->content);
+    }
+    else if (!ci_strcmp(argv[0], "add"))
+    {
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not add a lamer control profile: Profile name not defined");
+            return;
+	}
+
+	profile = hlc_get(argv[1]);
+
+	if (profile != NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not add a lamer control profile: Profile named %s already exists", argv[1]);
+	    return;
+	}
+	profile = hlc_add(argv[1]);
+
+	{ /* set the default values */
+	    profile->caps_max_percentage = 40;
+	    profile->caps_min_count = 20;
+
+	    profile->repeats_max_count = 3;
+	    profile->repeats_min_length = 7;
+
+	    profile->symbol_repeat_max_count = 6;
+	    profile->character_repeat_max_count = 7;
+	    profile->symbol_max_count = 9;
+
+	    profile->tolerance_flood = 5;
+
+	    profile->tolerance_spam = 0.008;
+	    profile->constant_spam = 10;
+
+	    profile->tolerance_warn = 1;
+	    profile->tolerance_kick = 3;
+	    profile->tolerance_remove = 5;
+	}
+
+	helpmod_reply(sender, returntype, "Lamer control profile %s added", argv[1]);
+    }
+    else if (!ci_strcmp(argv[0], "del"))
+    {
+        hchannel *hchan;
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not delete a lamer control profile: Profile name not defined");
+            return;
+	}
+
+	profile = hlc_get(argv[1]);
+
+	if (profile == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not delete a lamer control profile: Profile named %s does not exist", argv[1]);
+	    return;
+	}
+	for (hchan = hchannels;hchan != NULL;hchan = hchan->next)
+	    if (hchan->lc_profile == profile)
+	    {
+		helpmod_reply(sender, returntype, "Can not delete a lamer control profile: Profile %s is in use", argv[1]);
+		return;
+	    }
+	hlc_del(profile);
+	helpmod_reply(sender, returntype, "Lamer control profile %s deleted", argv[1]);
+    }
+    else if (!ci_strcmp(argv[0], "view"))
+    {
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not view a lamer control profile: Profile name not defined");
+	    return;
+	}
+
+	profile = hlc_get(argv[1]);
+
+	if (profile == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not view a lamer control profile: Profile named %s not found", argv[1]);
+	    return;
+	}
+
+	helpmod_reply(sender, returntype, "Lamer control profile %s:", profile->name->content);
+	helpmod_reply(sender, returntype, "Maximum caps percentage:    %d", profile->caps_max_percentage);
+	helpmod_reply(sender, returntype, "Caps minimum count:         %d", profile->caps_min_count);
+	helpmod_reply(sender, returntype, "Repeat tolerance:           %d", profile->repeats_max_count);
+        helpmod_reply(sender, returntype, "Repeat minimum length:      %d", profile->repeats_min_length);
+        helpmod_reply(sender, returntype, "Symbol repeat tolerance:    %d", profile->symbol_repeat_max_count);
+	helpmod_reply(sender, returntype, "Character repeat tolerance: %d", profile->character_repeat_max_count);
+	helpmod_reply(sender, returntype, "Continous symbol tolerance: %d", profile->symbol_max_count);
+	helpmod_reply(sender, returntype, "Flood tolerance:            %d", profile->tolerance_flood);
+	helpmod_reply(sender, returntype, "Spam tolerance:             %d", profile->tolerance_spam);
+	helpmod_reply(sender, returntype, "Spam multiplier:            %f", profile->constant_spam);
+	helpmod_reply(sender, returntype, "Warning limit:              %d", profile->tolerance_warn);
+	helpmod_reply(sender, returntype, "Kick limit:                 %d", profile->tolerance_kick);
+	helpmod_reply(sender, returntype, "Ban limit:                  %d", profile->tolerance_remove);
+    }
+    else if (!ci_strcmp(argv[0], "edit"))
+    {
+	int int_val = -1;
+	double dbl_val = -1;
+
+	if (argc != 4)
+	{
+	    helpmod_reply(sender, returntype, "Can not edit a lamer control profile: Syntax error");
+            return;
+	}
+
+	profile = hlc_get(argv[1]);
+
+	if (profile == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not edit a lamer control profile: Profile %s not found", argv[1]);
+	    return;
+	}
+
+	sscanf(argv[3], "%d", &int_val);
+        sscanf(argv[3], "%lf", &dbl_val);
+
+	if (dbl_val < 0)
+	{   /* All int values are also valid double values */
+	    helpmod_reply(sender, returntype, "Can not edit a lamer control profile: Invalid argument");
+            return;
+	}
+
+	if (!ci_strcmp(argv[2], "caps_percentage"))
+	    profile->caps_max_percentage = int_val;
+        else if (!ci_strcmp(argv[2], "caps_count"))
+	    profile->caps_min_count = int_val;
+        else if (!ci_strcmp(argv[2], "repeat_tolerance"))
+	    profile->repeats_max_count = int_val;
+        else if (!ci_strcmp(argv[2], "repeat_length"))
+	    profile->repeats_min_length = int_val;
+        else if (!ci_strcmp(argv[2], "symbol_repeat"))
+	    profile->symbol_repeat_max_count = int_val;
+        else if (!ci_strcmp(argv[2], "character_repeat"))
+	    profile->character_repeat_max_count = int_val;
+	else if (!ci_strcmp(argv[2], "continuous_symbol"))
+	    profile->symbol_max_count = int_val;
+	else if (!ci_strcmp(argv[2], "flood_tolerance"))
+	    profile->tolerance_flood = int_val;
+	else if (!ci_strcmp(argv[2], "spam_tolerance"))
+	    profile->tolerance_spam = int_val;
+	else if (!ci_strcmp(argv[2], "spam_multiplier"))
+	    profile->constant_spam = dbl_val;
+	else if (!ci_strcmp(argv[2], "warn_limit"))
+	    profile->tolerance_warn = int_val;
+	else if (!ci_strcmp(argv[2], "kick_limit"))
+	    profile->tolerance_kick = int_val;
+	else if (!ci_strcmp(argv[2], "ban_limit"))
+	    profile->tolerance_remove = int_val;
+	else
+	{
+	    helpmod_reply(sender, returntype, "Can not edit a lamer control profile: No component named %s", argv[2]);
+	    return;
+	}
+	helpmod_reply(sender, returntype, "Lamer control profile component value changed succesfully.");
+    }
+}
+
+static void helpmod_cmd_ged (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    helpmod_editor *editor;
+
+    if (sender->editor == NULL)
+    { /* Start a new editor */
+	if (argc == 0)
+	{
+	    helpmod_reply(sender, returntype, "Can not use ged: Filename not specified");
+	    return;
+	}
+	editor = hed_open(sender, argv[0]);
+	if (editor == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not use ged: Invalid filename %s", argv[0]);
+            return;
+	}
+	if (editor->user != sender)
+	{
+	    helpmod_reply(sender, returntype, "Can not use ged: File %s is currently being edited by %s", editor->filename, huser_get_nick(editor->user));
+            return;
+	}
+	editor->user = sender;
+	sender->editor = editor;
+
+	helpmod_reply(sender, returntype, "Ged: %d", hed_byte_count(editor));
+    }
+    else
+    {
+	hed_command(sender, returntype, ostr, argc, argv);
+    }
+}
+
+static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+    DEFINE_HCHANNEL;
+    FILE *in;
+/*
+    if (argc == 0)
+    {
+	helpmod_reply(sender, returntype, "Can not handle text: No command specified");
+        return;
+    }
+*/
+    if (argc == 0 || !ci_strcmp(argv[0], "list"))
+    {
+	DIR *dir;
+	struct dirent *dent;
+	char buffer[384];
+        int nwritten, bufpos = 0;
+
+	dir = opendir(HELPMOD_TEXT_DIR);
+	assert(dir != NULL);
+
+	helpmod_reply(sender, returntype, "Following texts are available:");
+
+	for (dent = readdir(dir);dent != NULL;dent = readdir(dir))
+	{
+            /* Skip stuff like . and .. */
+	    if (!strncmp(dent->d_name, ".", 1))
+		continue;
+
+	    if (bufpos)
+	    {
+		buffer[bufpos] = ' ';
+		bufpos++;
+	    }
+	    sprintf(buffer + bufpos, "%s%n", dent->d_name, &nwritten);
+	    bufpos+=nwritten;
+
+	    if (bufpos > 256)
+	    {
+		helpmod_reply(sender, returntype, buffer);
+		bufpos = 0;
+	    }
+	}
+        if (bufpos)
+	    helpmod_reply(sender, returntype, buffer);
+	return;
+    }
+    else if (!ci_strcmp(argv[0], "show"))
+    {
+        char fname_buffer[128], buffer[512];
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not show text: Text not specified");
+            return;
+	}
+	if (!hed_is_valid_filename(argv[1]))
+	{
+	    helpmod_reply(sender, returntype, "Can not show text: Invalid filename");
+            return;
+	}
+	sprintf(fname_buffer, HELPMOD_TEXT_DIR"/%s" ,argv[1]);
+	in = fopen(fname_buffer, "rwt");
+	if (in == NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not show text: Text %s not found", argv[1]);
+            return;
+	}
+	while (!feof(in))
+	{
+	    if (!fgets(buffer, 512, in))
+                break;
+	    if (returntype != NULL && huser_get_level(sender) > H_PEON)
+		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s", buffer);
+	    else
+                helpmod_reply(sender, returntype, "%s", buffer);
+	}
+	fclose (in);
+        return;
+    }
+
+    if (huser_get_level(sender) < H_STAFF)
+    {
+	helpmod_reply(sender, returntype, "Can not handle text: Insufficient user level");
+        return;
+    }
+
+    if (!ci_strcmp(argv[0], "add"))
+    {
+	char fname_buffer[128];
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not add text: Text not specified");
+            return;
+	}
+	if (!hed_is_valid_filename(argv[1]))
+	{
+	    helpmod_reply(sender, returntype, "Can not add text: Invalid filename");
+	    return;
+	}
+	sprintf(fname_buffer, HELPMOD_TEXT_DIR"/%s" ,argv[1]);
+	if ((in = fopen(fname_buffer, "rt")) != NULL)
+	{
+	    helpmod_reply(sender, returntype, "Can not add text: Text %s already exists", argv[1]);
+            return;
+	}
+	else
+	{
+	    if ((in = fopen(fname_buffer, "wt")) == NULL)
+	    {
+		helpmod_reply(sender, returntype, "Can not add text: Unexpected error, please contact strutsi");
+                return;
+	    }
+	    fclose(in);
+	}
+	helpmod_reply(sender, returntype, "Text %s added succesfully", argv[1]);
+    }
+    else if (!ci_strcmp(argv[0], "del"))
+    {
+	char fname_buffer[128];
+	if (argc < 2)
+	{
+	    helpmod_reply(sender, returntype, "Can not delete text: Text not specified");
+            return;
+	}
+	if (!hed_is_valid_filename(argv[1]))
+	{
+	    helpmod_reply(sender, returntype, "Can not delete text: Invalid filename");
+	    return;
+	}
+	sprintf(fname_buffer, HELPMOD_TEXT_DIR"/%s" ,argv[1]);
+
+	if (!remove(fname_buffer))
+	    helpmod_reply(sender, returntype, "Text %s removed", argv[1]);
+	else
+	    helpmod_reply(sender, returntype, "Can not delete text: Text %s does not exist or can not be deleted", argv[1]);
+    }
+    else
+    {
+	helpmod_reply(sender, returntype, "Can not handle text: Unknown operation %s", argv[0]);
+        return;
+    }
+}
+
 static void helpmod_cmd_evilhack1 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int tmp;
@@ -3104,9 +3527,9 @@ void hcommands_add(void)
     hcommand_add("whois", H_STAFF, helpmod_cmd_whois, "Tells you who someone is");
     hcommand_add("command", H_LAMER, helpmod_cmd_command, "Gives detailed information on a command");
     hcommand_add("addchan", H_ADMIN, helpmod_cmd_addchan, "Joins " HELPMOD_NICK " to a new channel");
-    hcommand_add("delchan", H_ADMIN, helpmod_cmd_delchan, "Removes " HELPMOD_NICK " permanently from a channel");
-    hcommand_add("seen", H_STAFF, helpmod_cmd_seen, "Tells when a specific user/account has had activity");
+    hcommand_add("delchan", H_PEON, helpmod_cmd_delchan, "Removes " HELPMOD_NICK " permanently from a channel");
 
+    hcommand_add("seen", H_STAFF, helpmod_cmd_seen, "Tells when a specific user/account has had activity");
     hcommand_add("op", H_STAFF, helpmod_cmd_op, "Sets mode +o on channels");
     hcommand_add("deop", H_STAFF, helpmod_cmd_deop, "Sets mode -o on channels");
     hcommand_add("voice", H_TRIAL, helpmod_cmd_voice, "Sets mode +v on channels");
@@ -3120,15 +3543,19 @@ void hcommands_add(void)
 
     hcommand_add("termstats", H_OPER, helpmod_cmd_termstats, "Lists usage statistics for terms");
     hcommand_add("checkchannel", H_STAFF, helpmod_cmd_checkchannel, "Shows channel information for any channel");
-    hcommand_add("statsdump", H_ADMIN, helpmod_cmd_statsdump, "Statistics dump command");
-    hcommand_add("statsrepair", H_ADMIN, helpmod_cmd_statsrepair, "Statistics repair command");
-    hcommand_add("statsreset", H_ADMIN, helpmod_cmd_statsreset, "Statistics reset command");
-
     hcommand_add("message", H_TRIAL, helpmod_cmd_message, "Sends a message to a channel");
     hcommand_add("version", H_PEON, helpmod_cmd_version, "G version information");
+    hcommand_add("ticketmsg", H_STAFF, helpmod_cmd_ticketmsg, "Handle the ticket message for a channel");
+
+    hcommand_add("lcedit", H_ADMIN, helpmod_cmd_lcedit, "Lamer control profile manager");
+    hcommand_add("ged", H_STAFF, helpmod_cmd_ged, "Ged IRC text editor");
+    hcommand_add("text", H_PEON, helpmod_cmd_text, "Lists or shows text files");
 
     hcommand_add("evilhack1", H_ADMIN, helpmod_cmd_evilhack1, "An evil hack, don't use");
     hcommand_add("evilhack2", H_ADMIN, helpmod_cmd_evilhack2, "Another evil hack, don't use");
+    hcommand_add("statsdump", H_ADMIN, helpmod_cmd_statsdump, "Statistics dump command");
+    hcommand_add("statsrepair", H_ADMIN, helpmod_cmd_statsrepair, "Statistics repair command");
+    hcommand_add("statsreset", H_ADMIN, helpmod_cmd_statsreset, "Statistics reset command");
 
 
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
@@ -3142,7 +3569,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
     char *parsed_args[H_CMD_MAX_ARGS + 3], *ptr = args_copy;
 
     /* only accept commands from valid sources */
-    if (huser_get_level(sender) < H_PEON || huser_get_level(sender) > H_ADMIN)
+    if (huser_get_level(sender) > H_ADMIN)
         return;
 
     if (returntype && !strncmp(args, helpmodnick->nick, strlen(helpmodnick->nick)))
@@ -3209,7 +3636,8 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 
 	if (hcom == NULL)
 	{
-	    if ((sender->account == NULL && returntype == NULL) || (sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR)))
+	    if ((sender->account == NULL && returntype == NULL) ||
+		(sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR) && returntype == NULL))
 		helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
 	}
         else

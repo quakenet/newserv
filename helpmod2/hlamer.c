@@ -62,81 +62,98 @@ hlc_profile *hlc_get(const char *str)
     return NULL;
 }
 
+const char *hlc_get_cname(hlc_component comp)
+{
+    switch (comp)
+    {
+    default:
+        return "Error, contact strutsi";
+    }
+}
+
 /* static functions, used internally */
 
 static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
 {
-        if (husr->lc[violation] >= hchan->lc_profile->tolerance_remove) /* get rid of the thing */
-        {
-            const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
+    if (husr->lc[violation] >= hchan->lc_profile->tolerance_remove) /* get rid of the thing */
+    {
+	const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
+	char reason_buffer[128];
+        /*
+	switch (violation)
+	{
+	case HLC_CAPS:
+	    hban_add(banmask, "Excessive use of capital letters", time(NULL) + HLC_DEFAULT_BANTIME, 0);
+	    break;
+	case HLC_REPEAT:
+	    hban_add(banmask, "Excessive repeating", time(NULL) + HLC_DEFAULT_BANTIME, 0);
+	    break;
+	case HLC_CHARACTER_REPEAT:
+	    hban_add(banmask, "Excessive improper use of language", time(NULL) + HLC_DEFAULT_BANTIME, 0);
+	    break;
+	case HLC_FLOOD:
+	    hban_add(banmask, "Excessive flooding", time(NULL) + HLC_DEFAULT_BANTIME, 0);
+	    break;
+	case HLC_SPAM:
+	    hban_add(banmask, "Excessive spamming", time(NULL) + HLC_DEFAULT_BANTIME, 0);
+	    break;
+	}
+	*/
+	sprintf(reason_buffer, "Excessive violations: %s", hlc_get_violation_name(violation));
+	hban_add(banmask, reason_buffer, time(NULL) + HLC_DEFAULT_BANTIME, 0);
 
-            switch (violation)
-            {
-            case HLC_CAPS:
-                hban_add(banmask, "Excessive use of capital letters", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-                break;
-            case HLC_REPEAT:
-                hban_add(banmask, "Excessive repeating", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-                break;
-            case HLC_CHARACTER_REPEAT:
-                hban_add(banmask, "Excessive improper use of language", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-                break;
-            case HLC_FLOOD:
-                hban_add(banmask, "Excessive flooding", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-                break;
-            case HLC_SPAM:
-                hban_add(banmask, "Excessive spamming", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-                break;
-            }
+	if (IsAccount(husr->real_user))
+	    haccount_add(huser_get_auth(husr), H_LAMER);
 
-            if (IsAccount(husr->real_user))
-                haccount_add(huser_get_auth(husr), H_LAMER);
-
-            return !0;
-        }
-        if (husr->lc[violation] >= hchan->lc_profile->tolerance_kick) /* get rid of the thing */
-        {
-            switch (violation)
-            {
-            case HLC_CAPS:
-                helpmod_kick(hchan, husr, "Channel rule violation: Excessive use of capital letters");
-                break;
-            case HLC_REPEAT:
-                helpmod_kick(hchan, husr, "Channel rule violation: Repeating");
-                break;
-            case HLC_CHARACTER_REPEAT:
-                helpmod_kick(hchan, husr, "Channel rule violation: Improper use of language");
-                break;
-            case HLC_FLOOD:
-                helpmod_kick(hchan, husr, "Channel rule violation: Flooding");
-                break;
-            case HLC_SPAM:
-                helpmod_kick(hchan, husr, "Channel rule violation: Spamming");
-                break;
-            }
-            return !0;
-        }
-        if (husr->lc[violation] >= hchan->lc_profile->tolerance_warn) /* get rid of the thing */
-        {
-            switch (violation)
-            {
-            case HLC_CAPS:
-                helpmod_reply(husr, hchan->real_channel, "You are violating the channel rule of %s : Excessive use of capital letters", hchannel_get_name(hchan));
-                break;
-            case HLC_REPEAT:
-                helpmod_reply(husr, hchan->real_channel, "You are violating the channel rule of %s : Repeating", hchannel_get_name(hchan));
-                break;
-            case HLC_CHARACTER_REPEAT:
-                helpmod_reply(husr, hchan->real_channel, "You are violating the channel rule of %s : Improper use of language", hchannel_get_name(hchan));
-                break;
-            case HLC_FLOOD:
-                helpmod_reply(husr, hchan->real_channel, "You are violating the channel rule of %s : Flooding", hchannel_get_name(hchan));
-                break;
-            case HLC_SPAM:
-                helpmod_reply(husr, hchan->real_channel, "You are violating the channel rule of %s : Spamming", hchannel_get_name(hchan));
-                break;
-            }
-        }
+	return !0;
+    }
+    if (husr->lc[violation] >= hchan->lc_profile->tolerance_kick) /* get rid of the thing */
+    {
+   /*     switch (violation)
+	{
+	case HLC_CAPS:
+	    helpmod_kick(hchan, husr, "Channel rule violation: Excessive use of capital letters");
+	    break;
+	case HLC_REPEAT:
+	    helpmod_kick(hchan, husr, "Channel rule violation: Repeating");
+	    break;
+	case HLC_CHARACTER_REPEAT:
+	    helpmod_kick(hchan, husr, "Channel rule violation: Improper use of language");
+	    break;
+	case HLC_FLOOD:
+	    helpmod_kick(hchan, husr, "Channel rule violation: Flooding");
+	    break;
+	case HLC_SPAM:
+	    helpmod_kick(hchan, husr, "Channel rule violation: Spamming");
+	    break;
+	    }
+	    */
+	helpmod_kick(hchan, husr, "Channel rule violation: %s", hlc_get_violation_name(violation));
+	return !0;
+    }
+    if (husr->lc[violation] >= hchan->lc_profile->tolerance_warn) /* get rid of the thing */
+    {
+/*	switch (violation)
+	{
+	case HLC_CAPS:
+	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Excessive use of capital letters", hchannel_get_name(hchan));
+	    break;
+	case HLC_REPEAT:
+	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Repeating", hchannel_get_name(hchan));
+	    break;
+	case HLC_CHARACTER_REPEAT:
+	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Improper use of language", hchannel_get_name(hchan));
+	    break;
+	case HLC_FLOOD:
+	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Flooding", hchannel_get_name(hchan));
+	    break;
+	case HLC_SPAM:
+	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Spamming", hchannel_get_name(hchan));
+	    break;
+	    }
+	    */
+	helpmod_reply(husr, NULL, "You are violating the channel rule of %s : %s. Continuos violation of this rule will result in you being removed from %s", hchannel_get_name(hchan), hlc_get_violation_name(violation), hchannel_get_name(hchan));
+    }
     return 0;
 
 }
@@ -172,6 +189,8 @@ static int hlc_check_caps(hlc_profile *hlc_prof, huser *husr, const char *line)
 static int hlc_check_repeat(hlc_profile *hlc_prof, huser *husr, const char *line)
 {
     if (!strncmp(husr->last_line, line, strlen(husr->last_line)) && (strlen(husr->last_line) >= hlc_prof->repeats_min_length))
+        husr->last_line_repeats++;
+    else if (!strcmp(husr->last_line, line))
         husr->last_line_repeats++;
     else
         husr->last_line_repeats = 0;
@@ -224,7 +243,7 @@ static int hlc_check_flood(hlc_profile *hlc_prof, huser *husr, const char *line)
     else
         husr->flood_val++;
 
-    if ((husr->flood_val - time(NULL)) >= (hlc_prof->tolerance_flood))
+    if ((husr->flood_val - time(NULL)) > (hlc_prof->tolerance_flood))
     {
         husr->flood_val = time(NULL);
         return ++husr->lc[HLC_FLOOD];
@@ -254,6 +273,12 @@ int hlc_check(hchannel *hchan, huser* husr, const char *line)
     if (hchan == NULL || hchan->lc_profile == NULL)
         return 0;
 
+    if (hlc_check_flood(hchan->lc_profile, husr, line))
+        if (hlc_violation_handle(hchan, husr, HLC_FLOOD))
+            return -1;
+    if (hlc_check_spam(hchan->lc_profile, husr, line))
+        if (hlc_violation_handle(hchan, husr, HLC_SPAM))
+	    return -1;
     if (hlc_check_caps(hchan->lc_profile, husr, line))
         if (hlc_violation_handle(hchan, husr, HLC_CAPS))
             return -1;
@@ -263,13 +288,26 @@ int hlc_check(hchannel *hchan, huser* husr, const char *line)
     if (hlc_check_character_repeats(hchan->lc_profile, husr, line))
         if (hlc_violation_handle(hchan, husr, HLC_CHARACTER_REPEAT))
             return -1;
-    if (hlc_check_flood(hchan->lc_profile, husr, line))
-        if (hlc_violation_handle(hchan, husr, HLC_FLOOD))
-            return -1;
-    if (hlc_check_spam(hchan->lc_profile, husr, line))
-        if (hlc_violation_handle(hchan, husr, HLC_SPAM))
-            return -1;
 
     return 0;
+}
+
+const char *hlc_get_violation_name(hlc_violation violation)
+{
+    switch (violation)
+    {
+    case HLC_CAPS:
+	return "Excessive use of capital letters";
+    case HLC_REPEAT:
+	return "Repeating";
+    case HLC_CHARACTER_REPEAT:
+	return "Improper use of language";
+    case HLC_FLOOD:
+	return "Flooding";
+    case HLC_SPAM:
+	return "Spamming";
+    default:
+        return "Error, please contact strutsi";
+    }
 }
 

@@ -30,6 +30,7 @@
 #include "hgen.h"
 #include "hdef.h"
 #include "hticket.h"
+#include "hed.h"
 
 int HELPMOD_ACCOUNT_EXPIRATION[] =
 {
@@ -50,6 +51,7 @@ hlc_profile *hlc_profiles;
 hban *hbans;
 huser *husers;
 hchanban *hchanbans;
+helpmod_editor *helpmod_editors;
 
 modechanges hmodechanges;
 time_t helpmod_startup_time;
@@ -95,6 +97,9 @@ void helpmod_reply(huser *target, channel* returntype, const char *message, ... 
     va_start(va,message);
     vsnprintf(buf,512,message,va);
     va_end(va);
+
+    if (buf[0] == '\0' || buf[0] == '\n')
+        return;
 
     if (returntype) /* channel */
         reply_type = H_REPLY_NOTICE;

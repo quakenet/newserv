@@ -45,4 +45,6 @@ typedef enum
 
 const char *hlevel_name(hlevel);
 
+const char *hlevel_title(hlevel);
+
 #endif

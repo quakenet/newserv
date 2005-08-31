@@ -119,8 +119,6 @@ void helpmod_load_entries(char* setting_file)
 	    return;
 	if (*buffer == '$')
 	{
-	    helpmod_base->options = (helpmod_entry*)realloc(helpmod_base->options, sizeof(helpmod_entry) * ++helpmod_base->option_count);
-            helpmod_base->options[helpmod_base->option_count-1] = NULL;
 	    /* remove the \n, it's not wanted */
 	    for (i=0;i<strlen(buffer+1);i++)
 		if ((buffer+1)[i] == '\n')
@@ -134,6 +132,9 @@ void helpmod_load_entries(char* setting_file)
 		Error("helpmod", ERR_ERROR, "File %s specified in %s not found",buffer+1, setting_file);
 		return;
 	    }
+	    helpmod_base->options = (helpmod_entry*)realloc(helpmod_base->options, sizeof(helpmod_entry) * ++helpmod_base->option_count);
+            helpmod_base->options[helpmod_base->option_count-1] = NULL;
+
             helpmod_parse_line(tmp_input);
 	    helpmod_load_entry(&helpmod_base->options[helpmod_base->option_count-1], tmp_input, 0, helpmod_base);
             fclose(tmp_input);

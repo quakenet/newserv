@@ -11,6 +11,7 @@ typedef enum
 {
     HCENSOR_WARN,
     HCENSOR_KICK,
+    HCENSOR_CHANBAN,
     HCENSOR_BAN
 } hcensor_type;
 

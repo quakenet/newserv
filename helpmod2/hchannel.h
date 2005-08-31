@@ -40,6 +40,7 @@ enum
     H_DISALLOW_LAME_TEXT   = 1 << 17,
     H_QUEUE_TIMEOUT        = 1 << 18,
     H_REQUIRE_TICKET       = 1 << 19,
+    H_TICKET_MESSAGE       = 1 << 20,
 
     /* the following are not real channel flags, they're used only internally */
     H_UNUSED_1             = 1 << 28,
@@ -50,7 +51,7 @@ enum
 
 #define H_CHANFLAGS_DEFAULT (H_CHANNEL_COMMANDS)
 
-#define HCHANNEL_CONF_COUNT 19
+#define HCHANNEL_CONF_COUNT 20
 
 typedef struct hchannel_struct
 {
@@ -76,6 +77,7 @@ typedef struct hchannel_struct
     hlc_profile *lc_profile;
 
     struct hticket_struct *htickets;
+    sstring *ticket_message;
 
     struct hchannel_struct *next;
 } hchannel;

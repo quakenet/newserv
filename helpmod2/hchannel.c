@@ -50,6 +50,7 @@ hchannel *hchannel_add(const char *cname)
     hchan->censor = NULL;
 
     hchan->htickets = NULL;
+    hchan->ticket_message = NULL;
 
     hchan->last_activity = time(NULL);
     hchan->last_staff_activity = time(NULL);
@@ -220,7 +221,7 @@ void hchannel_remove_inactive_users(void)
 		    if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
                     {
                         const char *banmask = hban_ban_string((*hchanuser)->husr->real_user, HBAN_HOST);
-                        helpmod_setban(hchan, banmask, time(NULL) + 10 * HDEF_m, MCB_ADD, HNOW);
+                        helpmod_setban(hchan, banmask, time(NULL) + 10 * HDEF_m, MCB_ADD, HLAZY);
 
                         helpmod_kick(hchan, (*hchanuser)->husr, "Please do not idle in %s", hchannel_get_name(hchan));
                         continue;
@@ -229,8 +230,9 @@ void hchannel_remove_inactive_users(void)
                     {
                         helpmod_reply((*hchanuser)->husr, NULL, "You are currently idle in %s. Please part the channel if you have nothing to do there", hchannel_get_name(hchan));
                         huser_on_channel((*hchanuser)->husr, hchan)->flags |= H_IDLE_WARNING;
-                    }
-                }
+		    }
+		}
+                hcommit_modes();
                 hchanuser = &(*hchanuser)->next;
             }
         }
@@ -508,7 +510,9 @@ const char *hchannel_get_sname(int flag)
     case 18:
         return "Queue inactivity deactivation";
     case 19:
-        return "Require a ticket to join";
+	return "Require a ticket to join";
+    case 20:
+        return "Send a message on ticket issue";
     default:
         return "Error, please contact strutsi";
     }

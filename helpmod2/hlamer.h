@@ -19,6 +19,15 @@ typedef enum
     HLC_SPAM
 } hlc_violation;
 
+/* under construction */
+typedef enum
+{
+    HLC_X,
+    HLC_Y
+} hlc_component;
+
+#define HLC_COMPONENT_COUNT 0
+
 typedef struct hlamercontrol_profile_struct
 {
     sstring *name;
@@ -54,5 +63,9 @@ hlc_profile *hlc_get(const char *);
 
 /* checks a string for lameness, returns non-zero if lameness is present and the user is kicked */
 int hlc_check(struct hchannel_struct*, struct huser_struct*, const char *);
+
+/* Returns the component name for the given component */
+const char *hlc_get_cname(hlc_component);
+const char *hlc_get_violation_name(hlc_violation);
 
 #endif

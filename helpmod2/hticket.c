@@ -34,7 +34,7 @@ hticket *hticket_del(hticket *htick, struct hchannel_struct *hchan)
 
 hticket *hticket_add(const char *authname, time_t expiration, struct hchannel_struct *hchan)
 {
-    hticket *tmp = hticket_get(authname, hchan);
+    hticket *tmp = hticket_get(authname, hchan), **ptr;
 
     if (hchan == NULL)
         return NULL;
@@ -46,9 +46,12 @@ hticket *hticket_add(const char *authname, time_t expiration, struct hchannel_st
 
     strcpy(tmp->authname, authname);
     tmp->time_expiration = expiration;
-    tmp->next = hchan->htickets;
 
-    hchan->htickets = tmp;
+    /* find the correct position */
+    for (ptr = &hchan->htickets;*ptr && (*ptr)->time_expiration >= expiration;ptr = &(*ptr)->next);
+
+    tmp->next = *ptr;
+    *ptr = tmp;
 
     return tmp;
 }

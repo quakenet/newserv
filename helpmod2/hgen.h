@@ -26,4 +26,9 @@ int strnumcount(const char*);
 
 float helpmod_percentage(int, int);
 
+/* A select for strings, case insensitive
+ * String to match, strings, corresponding int values (enums) and amount of both
+ * In case of no match, -1 is returned */
+int helpmod_select(const char*, const char**, int*, int);
+
 #endif

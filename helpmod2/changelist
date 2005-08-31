@@ -301,3 +301,36 @@ Terms are now in alphabetical order
 Fixed a critical bug with the stats cycle
 hstat_cycle changed to a more sane form
 Two evilhack commands added to fix everything recently broken
+
+2.11
+Fixed a long time bug in hooks
+Removed an unused hook for quit
+Internal flag H_NO_EXPIRE now works
+Account last activity is now stored properly
+Chanban command now defaults to list instead of error on 0 arguments
+Censor listing changed a bit
+Censor now supports a list operation
+?? with target no longer prints a useless space in front of the first nick
+New censor type chanban, all previous bans are now chanbans
+Lamercontrol repeat minimum length only applies to incremential repeat
+Tickets are now in order of expiration
+Channel idlekick time is no longer forgotten
+Added ticket message support and a command ticketmsg
+Added a missing command help for version
+Bug fixed in the invite command involving multiple channels
+Suppressing command errors only suppresses errors from channel commands
+Joinflood protection fixed and limit lowered by 20%
+Added an lc_edit command for editing lamer control profiles
+Trial staff member now separate on queue messages
+lamer control flood tolerance handled in a bit more sane way
+Lamer control warnings are now sent as private messages
+Fixed the term command help to include the pattern for find
+Idlekick and out now default to lazy commit of +b
+Topic's are now refreshed on the end of netsplit
+Added a text command to view and manage stored text files
+Added a ged command to edit stored text files
+Users of level H_LAMER now have access to the commands they should.
+Internal lamer control changes and order of test changed
+Empty old H type helps no longer cause a crash
+Fixed the ticket command help
+Userlevel spacers added to showcommands

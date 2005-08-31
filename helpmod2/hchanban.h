@@ -16,6 +16,7 @@ typedef struct hchanban_struct
 
 extern hchanban *hchanbans;
 
+/* This does not really add a chanban, use helpmod_setban instead */
 hchanban *hchanban_add(hchannel*, const char*, time_t);
 hchanban *hchanban_del(hchanban*);
 hchanban *hchanban_del_all(void);

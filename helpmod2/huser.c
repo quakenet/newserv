@@ -12,6 +12,7 @@
 #include "helpmod.h"
 #include "hban.h"
 #include "hgen.h"
+#include "hed.h"
 
 huser *huser_add(nick *nck)
 {
@@ -42,6 +43,8 @@ huser *huser_add(nick *nck)
     tmp->flood_val = 0;
     tmp->spam_val = 0.0;
 
+    tmp->editor = NULL;
+
     tmp->next = husers;
     husers = tmp;
 
@@ -56,9 +59,12 @@ void huser_del(huser *husr)
 
     for (;*ptr;ptr = &(*ptr)->next)
         if (*ptr  == husr)
-        {
-            huser *tmp = (*ptr)->next;
-            free(*ptr);
+	{
+	    huser *tmp = (*ptr)->next;
+
+            hed_close(husr->editor);
+
+	    free(*ptr);
             *ptr = tmp;
 
             return;
@@ -75,12 +81,12 @@ void huser_del_all(void)
 
 huser *huser_get(nick *nck)
 {
-    huser *tmp = husers;
+    huser *tmp;
 
     if (nck == NULL)
         return NULL;
 
-    for (;tmp;tmp = tmp->next)
+    for (tmp = husers;tmp;tmp = tmp->next)
         if (tmp->real_user == nck)
             return tmp;
     return NULL;

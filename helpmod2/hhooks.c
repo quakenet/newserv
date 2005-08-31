@@ -12,15 +12,17 @@
 #include "hqueue.h"
 #include "hgen.h"
 #include "hstat.h"
-
+/*
 void helpmod_hook_quit(int unused, void *args)
 {
     nick *nck = ((nick**)args)[0];
     huser *husr = huser_get(nck);
-    /* it was someone we didn't even know */
+    / * it was someone we didn't even know * /
     if (husr == NULL)
         return;
 }
+*/
+
 /*
 void helpmod_hook_part(int unused, void *args)
 {
@@ -28,7 +30,6 @@ void helpmod_hook_part(int unused, void *args)
     hchannel *hchan = hchannel_get_by_channel(chan);
     nick *nck = ((nick**)args)[1];
     huser *husr;
-
 
 }
 */
@@ -47,19 +48,19 @@ void helpmod_hook_join(int unused, void *args)
 
     assert(husr != NULL); /* hook_channel_newnick should fix this */
 
-    if (hchan->flags & H_JOINFLOOD_PROTECTION & !(hchan->flags & H_PASSIVE))
+    if ((hchan->flags & H_JOINFLOOD_PROTECTION) && !(hchan->flags & H_PASSIVE))
     {
 	if (hchan->jf_control < time(NULL))
 	    hchan->jf_control = time(NULL);
 	else
 	    hchan->jf_control++;
 
-	if (hchan->jf_control - time(NULL) > 25 && !IsRegOnly(hchan))
+	if (hchan->jf_control - time(NULL) > 20 && !IsRegOnly(hchan))
 	{
 	    if (hchan->flags & H_REPORT && hchannel_is_valid(hchan->report_to))
-                helpmod_message_channel(hchan->report_to, "Warning: Possible join flood on %s, setting +r", hchannel_get_name(hchan));
-            hchannel_activate_join_flood(hchan);
-        }
+		helpmod_message_channel(hchan->report_to, "Warning: Possible join flood on %s, setting +r", hchannel_get_name(hchan));
+	    hchannel_activate_join_flood(hchan);
+	}
     }
 
     if (hchan->flags & H_PASSIVE)
@@ -192,7 +193,7 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
 
 void helpmod_hook_nick_lostnick(int unused, void *args)
 {
-    nick *nck = ((nick**)args)[0];
+    nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
 
     /* it was someone we didn't even know */
@@ -344,9 +345,24 @@ void helpmod_hook_nick_account(int unused, void *args)
         husr->account = haccount_get_by_name(nck->authname);
 }
 
+void helpmod_hook_server_newserver(int unused, void *args)
+{
+    hchannel *hchan;
+    int numeric = (int)args;
+    server srv = serverlist[numeric];
+
+    /* check linkstate to prevent spam */
+    if (srv.linkstate == LS_LINKING)
+    {
+	for (hchan = hchannels;hchan != NULL;hchan = hchan->next)
+	    if ((hchan->flags & H_HANDLE_TOPIC) && (hchan->topic != NULL))
+		hchannel_set_topic(hchan);
+    }
+}
+
 void helpmod_registerhooks(void)
 {
-    registerhook(HOOK_NICK_QUIT, &helpmod_hook_quit);
+/*    registerhook(HOOK_NICK_QUIT, &helpmod_hook_quit); */
     /*if (registerhook(HOOK_CHANNEL_PART, &helpmod_hook_part));*/
     registerhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join);
     registerhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick);
@@ -358,11 +374,12 @@ void helpmod_registerhooks(void)
     registerhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced);
     registerhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic);
     registerhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account);
+    registerhook(HOOK_SERVER_NEWSERVER, &helpmod_hook_server_newserver);
 }
 
 void helpmod_deregisterhooks(void)
 {
-    deregisterhook(HOOK_NICK_QUIT, &helpmod_hook_quit);
+/*    deregisterhook(HOOK_NICK_QUIT, &helpmod_hook_quit); */
     /*if (deregisterhook(HOOK_CHANNEL_PART, &helpmod_hook_part));*/
     deregisterhook(HOOK_CHANNEL_JOIN, &helpmod_hook_join);
     deregisterhook(HOOK_NICK_LOSTNICK, &helpmod_hook_nick_lostnick);
@@ -374,4 +391,5 @@ void helpmod_deregisterhooks(void)
     deregisterhook(HOOK_CHANNEL_DEVOICED, &helpmod_hook_channel_devoiced);
     deregisterhook(HOOK_CHANNEL_TOPIC, &helpmod_hook_channel_topic);
     deregisterhook(HOOK_NICK_ACCOUNT, &helpmod_hook_nick_account);
+    deregisterhook(HOOK_SERVER_NEWSERVER, &helpmod_hook_server_newserver);
 }

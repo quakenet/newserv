@@ -11,6 +11,7 @@
 #include "hchannel.h"
 #include "haccount.h"
 
+#include "hed.h"
 #include "helpmod_entries.h"
 
 #define H_USRFLAGS_DEFAULT 0
@@ -35,6 +36,8 @@ typedef struct huser_struct
 
     int lc[5];
     /* end lamer control */
+
+    helpmod_editor *editor;
 
     struct huser_channel_struct *hchannels;
 

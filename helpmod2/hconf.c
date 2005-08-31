@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -174,7 +173,7 @@ int helpmod_config_write(const char *fname)
 
         fprintf(out,"\n%% account structure:\n");
         fprintf(out,"%%  name (string):\n");
-        fprintf(out,"%%  level (integer):\n");
+        fprintf(out,"%%  level (integer) flags (integer) last_activity (integer):\n");
 
         for(;ptr;ptr=ptr->next)
         {
@@ -258,7 +257,7 @@ int helpmod_config_read_channel(FILE *in)
     hchannel *hchan;
 
     char buf[256],*ptr=(char*)buf;
-    int flags, entries, i;
+    int flags, entries, idlekick, i;
     /* name */
     fgets(buf, 256, in);
     if (feof(in))
@@ -291,6 +290,26 @@ int helpmod_config_read_channel(FILE *in)
     helpmod_line_fix(&ptr);
 
     hchan->lc_profile = hlc_get(ptr);
+
+    if (hconf_version >= HELPMOD_VERSION_2_11)
+    {
+	fgets((ptr = buf), 256, in);
+	if (feof(in))
+	    return -1;
+	helpmod_line_fix(&ptr);
+
+	if (sscanf(ptr, "%d", &idlekick) != 1)
+	    return -1;
+
+        hchan->max_idle = idlekick;
+
+	fgets((ptr = buf), 256, in);
+	if (feof(in))
+	    return -1;
+	helpmod_line_fix(&ptr);
+
+        hchan->ticket_message = getsstring(ptr,strlen(ptr));
+    }
 
     /* censor entries for channel, a bit complex */
     fgets((ptr = buf), 256, in);
@@ -362,7 +381,14 @@ int helpmod_config_write_channel(FILE *out, hchannel *target)
     if (target->lc_profile == NULL)
         fprintf(out, "\t(null)\n");
     else
-        fprintf(out, "\t%s\n", target->lc_profile->name->content);
+	fprintf(out, "\t%s\n", target->lc_profile->name->content);
+
+    fprintf(out, "\t%d\n", target->max_idle);
+
+    if (target->ticket_message == NULL)
+	fprintf(out, "\t(null)\n");
+    else
+	fprintf(out, "\t%s\n", target->ticket_message->content);
 
     fprintf(out, "\t%d %% censor\n", hcensor_count(target->censor));
     {
@@ -396,7 +422,7 @@ int helpmod_config_read_account(FILE *in)
     int nstats;
 
     char buf[256],*ptr=(char*)buf;
-    int flags, level;
+    int flags, level, last_activity = time(NULL);
 
     fgets(ptr = buf, 256, in);
     if (feof(in))
@@ -409,12 +435,18 @@ int helpmod_config_read_account(FILE *in)
     if (feof(in))
         return -1;
     helpmod_line_fix(&ptr);
-
-    if (sscanf(ptr, "%x %x", (unsigned int*)&level, (unsigned int*)&flags) != 2)
-        return -1;
+    if (hconf_version < HELPMOD_VERSION_2_11)
+    {
+	if (sscanf(ptr, "%x %x", (unsigned int*)&level, (unsigned int*)&flags) != 2)
+	    return -1;
+    }
+    else
+	if (sscanf(ptr, "%x %x %x", (unsigned int*)&level, (unsigned int*)&flags, (unsigned int *)&last_activity) != 3)
+	    return -1;
 
     hack->level = level;
     hack->flags = flags;
+    hack->last_activity = last_activity;
 
     fgets(ptr = buf, 256, in);
     if (feof(in))
@@ -441,7 +473,7 @@ int helpmod_config_write_account(FILE *out, haccount *target)
 {
     hstat_account *tmp;
     fprintf(out, "\t%s\n", target->name->content);
-    fprintf(out, "\t%x\t%x\n", target->level, target->flags);
+    fprintf(out, "\t%x\t%x\t%x\n", target->level, target->flags, (unsigned int)target->last_activity);
 
     fprintf(out, "\t%d %% statistics for this channel\n", hstat_account_count(target->stats));
     for (tmp = target->stats;tmp;tmp = tmp->next)
@@ -500,7 +532,7 @@ int helpmod_config_read_hlc_profile(FILE *in)
     helpmod_line_fix(&ptr);
 
     if ((hlc_prof = hlc_add(ptr)) == NULL)
-        return -1;
+	return -1;
 
     /*  caps */
     fgets(ptr = buf, 256, in);
