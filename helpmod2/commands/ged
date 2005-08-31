@@ -1,0 +1,8 @@
+Syntax:  ged [operation]
+Example: ged 1,$n
+Ged is the G irc based text editor. Ged is a limited form of the ed standard editor.
+Following ed features are implemented: . $ ^ - +
+Following ed commands are implemented: a i c d f h H j l p n m q Q r w x =
+For information on how to use ed please read the approriate man page.
+Ged <filename> starts Ged.
+Note that the Ged cut buffer is extremely volatile and is flushed on most operations.

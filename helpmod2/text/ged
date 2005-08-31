@@ -1,0 +1,16 @@
+Ged - G Text editor 31/8/2005
+p  Print lines, n to print lines with line numbers
+To return to command mode use .
+Ged is an adaptation of the unix standard editor ed.
+While Ged lacks the regular expression capabilities of ed it implements most of ed commands.
+commands have the form <command>, <start><command>, <start>,<stop>command or <start>,<stop><command><target> where limits are line numbers starting from one.
+a  Append text
+i  Insert text
+h  Show last error
+d  Delete lines
+j  Join lines
+wq Save and quit
+x  Paste deleted lines
+m  Move lines
+f  Show filename
+c  Replace

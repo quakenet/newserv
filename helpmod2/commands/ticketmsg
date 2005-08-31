@@ -1,0 +1,4 @@
+Syntax:  ticketmsg [channel] [message]
+Example: ticketmsg #feds Read the FAQ!
+Views or sets the ticket message for a channel.
+If the message parameter is omitted, the ticket message for the channel is shown.
