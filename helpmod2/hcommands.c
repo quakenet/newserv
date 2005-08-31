@@ -3527,7 +3527,7 @@ void hcommands_add(void)
     hcommand_add("whois", H_STAFF, helpmod_cmd_whois, "Tells you who someone is");
     hcommand_add("command", H_LAMER, helpmod_cmd_command, "Gives detailed information on a command");
     hcommand_add("addchan", H_ADMIN, helpmod_cmd_addchan, "Joins " HELPMOD_NICK " to a new channel");
-    hcommand_add("delchan", H_PEON, helpmod_cmd_delchan, "Removes " HELPMOD_NICK " permanently from a channel");
+    hcommand_add("delchan", H_ADMIN, helpmod_cmd_delchan, "Removes " HELPMOD_NICK " permanently from a channel");
 
     hcommand_add("seen", H_STAFF, helpmod_cmd_seen, "Tells when a specific user/account has had activity");
     hcommand_add("op", H_STAFF, helpmod_cmd_op, "Sets mode +o on channels");
