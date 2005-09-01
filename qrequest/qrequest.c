@@ -123,7 +123,7 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
 
     sendnoticetouser(qr_np, tnp, "%s", msgbuf);
     /* This is a failure message.  Add disclaimer. */
-    sendnoticetouser(qr_np, tnp, "Please do not complain about this result in #help or #feds.");
+    sendnoticetouser(qr_np, tnp, "Please do not complain about this result.");
     free(req);
   }
 }
@@ -333,8 +333,7 @@ void qr_handlenotice(nick *sender, char *message) {
 	    qr_result(nextreq, QR_OK, "OK");
 	  } else {
 	    qr_result(nextreq, QR_FAILED, 
-		      "Sorry, your channel is not large enough to request Q. "
-		      "A long-term average of %d users is required to obtain Q.",QREQUIREDSIZE);
+		      "Sorry, your channel is not large enough to request Q. Please continue to use L instead.");
 	  }
 	} else {
 	  qr_result(nextreq, QR_FAILED,
