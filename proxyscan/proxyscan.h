@@ -20,6 +20,7 @@
 #define STYPE_HTTP          2
 #define STYPE_WINGATE       3
 #define STYPE_CISCO         4
+#define STYPE_DIRECT        5
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1

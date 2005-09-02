@@ -113,6 +113,10 @@ const char *scantostr(int type) {
     case STYPE_CISCO:
       reason="router";
       break;
+      
+    case STYPE_DIRECT:
+      reason="forward";
+      break;
   }
    
   return reason;

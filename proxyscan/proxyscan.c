@@ -213,7 +213,9 @@ void _init(void) {
   proxyscan_addscantype(STYPE_SOCKS5, 3331);
   proxyscan_addscantype(STYPE_HTTP, 65506);
   proxyscan_addscantype(STYPE_HTTP, 63809);
-
+  proxyscan_addscantype(STYPE_HTTP, 63000);
+  proxyscan_addscantype(STYPE_SOCKS4, 559);
+  
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
 
@@ -619,6 +621,10 @@ void handlescansock(int fd, short events) {
         return;
       }
       
+      break;
+      
+    case STYPE_DIRECT:
+      /* Do nothing */
       break;    
     }                
     break;
@@ -642,8 +648,12 @@ void handlescansock(int fd, short events) {
         /* If the offset is 0, this means it was the first thing we got from the socket, 
          * so it's an actual IRCD (sheesh).  Note that when the buffer is full and moved,
          * the thing moved to offset 0 would previously have been tested as offset 
-         * PSCAN_READBUFSIZE/2. */
-        if (i==0) {
+         * PSCAN_READBUFSIZE/2. 
+         *
+         * Skip this checking for STYPE_DIRECT scans, which are used to detect trojans setting
+         * up portforwards (which will therefore show up as ircds, we rely on the port being
+         * strange enough to avoid false positives */
+        if (i==0 && (sp->type != STYPE_DIRECT)) {
           killsock(sp, SOUTCOME_CLOSED);
           return;
         }
@@ -716,9 +726,17 @@ void sendlagwarning() {
   }
 }
 
+int pscansort(const void *a, const void *b) {
+  int ra = *((const int *)a);
+  int rb = *((const int *)b);
+  
+  return thescans[ra].hits - thescans[rb].hits;
+}
+
 void proxyscandostatus(nick *np) {
   int i;
   int totaldetects=0;
+  int ord[PSCAN_MAXSCANS];
   
   sendnoticetouser(proxyscannick,np,"Service uptime: %s",longtoduration(time(NULL)-starttime, 1));
   sendnoticetouser(proxyscannick,np,"Total scans completed:  %d",scansdone);
@@ -736,10 +754,15 @@ void proxyscandostatus(nick *np) {
   for (i=0;i<numscans;i++)
     totaldetects+=thescans[i].hits;
   
+  for (i=0;i<numscans;i++)
+    ord[i]=i;
+  
+  qsort(ord,numscans,sizeof(int),pscansort);
+  
   sendnoticetouser(proxyscannick,np,"Scan type Port  Detections");
   for (i=0;i<numscans;i++)
     sendnoticetouser(proxyscannick,np,"%-9s %-5d %d (%.2f%%)",
-                     scantostr(thescans[i].type), thescans[i].port, thescans[i].hits, ((float)thescans[i].hits*100)/totaldetects);
+                     scantostr(thescans[ord[i]].type), thescans[ord[i]].port, thescans[ord[i]].hits, ((float)thescans[ord[i]].hits*100)/totaldetects);
   
   sendnoticetouser(proxyscannick,np,"End of list.");
 }
