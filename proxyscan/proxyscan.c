@@ -304,7 +304,29 @@ void proxyscanuserhandler(nick *target, int message, void **params) {
       if (!ircd_strncmp(msg,"debug",5)) {
 	proxyscandebug(sender);
       }
-      
+
+      if (!ircd_strncmp(msg,"spew ",5)) {
+        /* check our database for the ip supplied */
+        unsigned long a,b,c,d;
+        if (4 != sscanf(&msg[5],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
+          sendnoticetouser(proxyscannick,sender,"Usage: spew x.x.x.x");
+        } else {
+          /* check db */
+          proxyscanspewip(proxyscannick,sender,a,b,c,d);
+        }
+      }
+
+      if (!ircd_strncmp(msg,"showkill ",9)) {
+        /* check our database for the id supplied */
+        unsigned long a;
+        if (1 != sscanf(&msg[9],"%lu",&a)) {
+          sendnoticetouser(proxyscannick,sender,"Usage: showkill <id>");
+        } else {
+          /* check db */
+          proxyscanshowkill(proxyscannick,sender,a);
+        }
+      }
+
       if (!ircd_strncmp(msg,"scan ",5)) {
         unsigned long a,b,c,d;
         if (4 != sscanf(&msg[5],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
@@ -339,13 +361,16 @@ void proxyscanuserhandler(nick *target, int message, void **params) {
 	}
       }	  
 
-      if (!ircd_strncmp(msg,"help",4)) {
+      if ((!ircd_strncmp(msg,"help",4)) || (!ircd_strncmp(msg,"showcommands",12))) {
 	sendnoticetouser(proxyscannick,sender,"Proxyscan commands:");
-	sendnoticetouser(proxyscannick,sender,"-------------------------------------------");
-	sendnoticetouser(proxyscannick,sender,"help      Shows this help");
-	sendnoticetouser(proxyscannick,sender,"status    Prints status information");
-	sendnoticetouser(proxyscannick,sender,"listopen  Shows open proxies found recently");
-	sendnoticetouser(proxyscannick,sender,"save      Saves the clean host database");
+	sendnoticetouser(proxyscannick,sender,"----------------------------------------------------------------------");
+	sendnoticetouser(proxyscannick,sender,"help              Shows this help");
+	sendnoticetouser(proxyscannick,sender,"status            Prints status information");
+	sendnoticetouser(proxyscannick,sender,"listopen          Shows open proxies found recently");
+	sendnoticetouser(proxyscannick,sender,"save              Saves the clean host database");
+	sendnoticetouser(proxyscannick,sender,"scan <ip>         Force scan of the supplied IP");
+	sendnoticetouser(proxyscannick,sender,"spew <ip>         Find <ip> in our list of open proxies");
+	sendnoticetouser(proxyscannick,sender,"showkill <id>     Shows details of a kill or gline made by the service");
       }
     }
 

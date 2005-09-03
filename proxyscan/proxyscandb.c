@@ -218,3 +218,70 @@ void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
   sendnoticetouser(mynick,usernick,"--- End of list ---");
   mysql_free_result(myres);
 }
+
+/*
+ * proxyscanspewip
+ *  Check db for open proxies matching the given IP, send to user usernick.
+ */
+
+void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned long b, unsigned long c, unsigned long d) {
+  char mysqlquery[2000];
+  MYSQL_RES *myres;
+  MYSQL_ROW myrow;
+
+  sprintf(mysqlquery, "SELECT ID,IP,TS,RH FROM openproxies WHERE IP='%lu.%lu.%lu.%lu' ORDER BY TS DESC LIMIT 10",a,b,c,d);
+
+  if ((mysql_query(&proxyscansql,mysqlquery))!=0) {
+    sendnoticetouser(mynick,usernick,"Error performing database query!");
+    Error("proxyscan",ERR_ERROR,"Error performing spew query");
+    return;
+  }
+
+  myres=mysql_use_result(&proxyscansql);
+  if (mysql_num_fields(myres)!=4) {
+    sendnoticetouser(mynick,usernick,"Error performing database query!");
+    Error("proxyscan",ERR_ERROR,"Error performing spew query");
+    return;
+  }
+
+  sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
+  while ((myrow=mysql_fetch_row(myres))) {
+    sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s",myrow[0],myrow[1],myrow[2],myrow[3]);
+  }
+  sendnoticetouser(mynick,usernick,"--- End of list ---");
+  mysql_free_result(myres);
+}
+
+/*
+ * proxyscanshowkill
+ *  Check db for open proxies matching the given kill/gline ID, send to user usernick.
+ */
+
+void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a) {
+  char mysqlquery[2000];
+  MYSQL_RES *myres;
+  MYSQL_ROW myrow;
+
+  sprintf(mysqlquery, "SELECT ID,IP,TS,RH FROM openproxies WHERE ID='%lu'",a);
+
+  if ((mysql_query(&proxyscansql,mysqlquery))!=0) {
+    sendnoticetouser(mynick,usernick,"Error performing database query!");
+    Error("proxyscan",ERR_ERROR,"Error performing showkill query");
+    return;
+  }
+
+  myres=mysql_use_result(&proxyscansql);
+  if (mysql_num_fields(myres)!=4) {
+    sendnoticetouser(mynick,usernick,"Error performing database query!");
+    Error("proxyscan",ERR_ERROR,"Error performing showkill query");
+    return;
+  }
+
+  sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
+  /* even though we should only ever have 1 result, still loop below - who knows eh? */
+  while ((myrow=mysql_fetch_row(myres))) {
+    sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s",myrow[0],myrow[1],myrow[2],myrow[3]);
+  }
+  sendnoticetouser(mynick,usernick,"--- End of list ---");
+  mysql_free_result(myres);
+}

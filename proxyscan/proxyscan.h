@@ -131,6 +131,8 @@ void loggline(cachehost *chp);
 void proxyscandbclose();
 int proxyscandbinit();
 void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce);
+void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned long b, unsigned long c, unsigned long d);
+void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a);
 const char *scantostr(int type);
 
 #if defined(PROXYSCAN_MAIL)
