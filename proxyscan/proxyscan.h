@@ -97,6 +97,10 @@ extern int brokendb;
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;
 
+extern unsigned long countpendingscan;
+
+extern unsigned long scanspermin;
+
 /* proxyscancache.c */
 cachehost *addcleanhost(unsigned long IP, time_t timestamp);
 cachehost *findcachehost(unsigned long IP);

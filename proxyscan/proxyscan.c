@@ -57,6 +57,10 @@ unsigned int ps_mailip;
 unsigned int ps_mailport;
 sstring *ps_mailname;
 
+unsigned long scanspermin;
+unsigned long tempscanspermin=0;
+unsigned long lastscants=0;
+
 nick *proxyscannick;
 
 FILE *ps_logfile;
@@ -121,6 +125,9 @@ void _init(void) {
   warningsent=0;
   starttime=time(NULL);
   glinedhosts=0;
+
+  scanspermin=0;
+  lastscants=time(NULL);
 
   /* Listen port */
   cfgstr=getcopyconfigitem("proxyscan","port","9999",6);
@@ -215,6 +222,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
   proxyscan_addscantype(STYPE_SOCKS4, 559);
+  proxyscan_addscantype(STYPE_SOCKS4, 29992);
   
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
@@ -420,6 +428,24 @@ scan *findscan(int fd) {
 
 void startscan(unsigned int IP, int type, int port, int class) {
   scan *sp;
+
+  float scantmp;
+
+  if (scansdone>maxscans)
+  {
+    /* ignore the first maxscans as this will skew our scans per second! */
+    tempscanspermin++;
+    if ((lastscants+60) <= time(NULL))
+    {
+      /* ok, at least 60 seconds has passed, calculate the scans per minute figure */
+      scantmp = time(NULL) - lastscants;
+      scantmp = tempscanspermin / scantmp;
+      scantmp = (scantmp * 60);
+      scanspermin = scantmp;
+      lastscants = time(NULL);
+      tempscanspermin = 0;
+    }
+  }
   
   sp=getscan();
   
@@ -767,7 +793,11 @@ void proxyscandostatus(nick *np) {
   sendnoticetouser(proxyscannick,np,"Total scans completed:  %d",scansdone);
   sendnoticetouser(proxyscannick,np,"Total hosts glined:     %d",glinedhosts);
 
+  sendnoticetouser(proxyscannick,np,"pendingscan structures: %lu x %lu bytes = %lu bytes total",countpendingscan,
+	sizeof(pendingscan), (countpendingscan * sizeof(pendingscan)));
+
   sendnoticetouser(proxyscannick,np,"Currently active scans: %d/%d",activescans,maxscans);
+  sendnoticetouser(proxyscannick,np,"Processing speed:       %lu scans per minute",scanspermin);
   sendnoticetouser(proxyscannick,np,"Normal queued scans:    %d",normalqueuedscans);
   sendnoticetouser(proxyscannick,np,"Timed queued scans:     %d",prioqueuedscans);
   sendnoticetouser(proxyscannick,np,"'Clean' cached hosts:   %d",cleancount());

@@ -4,6 +4,7 @@
  */
 
 #include "proxyscan.h"
+#include "../irc/irc.h"
 
 pendingscan *ps_normalqueue=NULL;
 pendingscan *ps_prioqueue=NULL;
@@ -11,6 +12,8 @@ pendingscan *ps_normalqueueend=NULL;
 
 unsigned int normalqueuedscans=0;
 unsigned int prioqueuedscans=0;
+
+unsigned long countpendingscan=0;
 
 void queuescan(unsigned int IP, short scantype, unsigned short port, char class, time_t when) {
   pendingscan *psp, *psp2;
@@ -23,7 +26,16 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
   }
 
   /* We have to queue it */
-  psp=getpendingscan();
+  psp = (struct pendingscan *) malloc(sizeof(pendingscan));
+  if (!psp)
+  {
+    /* shutdown due to no memory */
+    irc_send("%s SQ %s 0 :Out of memory - exiting.",mynumeric->content,myserver->content);
+    irc_disconnected();
+    exit(0);
+  } else {
+    countpendingscan++;
+  }
   psp->IP=IP;
   psp->type=scantype;
   psp->port=port;
@@ -75,7 +87,8 @@ void startqueuedscans() {
     
     if (psp) {
       startscan(psp->IP, psp->type, psp->port, psp->class);
-      freependingscan(psp);
+      free(psp);
+      countpendingscan--;
       psp=NULL;
     } else {
       break;
