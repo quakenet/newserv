@@ -1,0 +1,3 @@
+Syntax:  rating [channel]
+Example: rating #feds
+Shows a simple rating of your activity in the last week.

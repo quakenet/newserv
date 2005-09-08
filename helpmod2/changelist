@@ -334,3 +334,15 @@ Internal lamer control changes and order of test changed
 Empty old H type helps no longer cause a crash
 Fixed the ticket command help
 Userlevel spacers added to showcommands
+
+2.12
+Fixed the . escape in ged
+Fixed a minor bug in ged
+Ban now defaults to list on 0 parameters
+Ban list ban duration width increased to accomodate longer durations
+Changed the whois output a bit
+Fixed a bug in chanban list
+Fixed the unknown error suppression bug (again)
+Fixed a bug when adding bans to authed -x users
+Added a rating command
+Added missing command help for ?+ and ?-

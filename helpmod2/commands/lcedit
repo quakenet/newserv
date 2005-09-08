@@ -1,0 +1,22 @@
+Syntax:  lc_edit [operation] [parameters]
+Example: lc_edit edit strict warn_limit 1
+Edits lamer control profiles. Following operations are supported:
+add [name]
+del [name]
+view [name]
+list
+edit [name] [component] [value]
+The components are:
+caps_percentage 	Maximum caps percentage
+caps_count 		Caps minimum count
+repeat_tolerance 	Repeat tolerance
+repeat_length 		Repeat minimum length
+symbol_repeat  		Symbol repeat tolerance
+character_repeat 	Character repeat tolerance
+continuous_symbol 	Continous symbol tolerance
+flood_tolerance 	Flood tolerance
+spam_tolerance 		Spam tolerance
+spam_multiplier 	Spam multiplier
+warn_limit 		Warning limit
+kick_limit 		Kick limit
+ban_limit 		Ban limit

@@ -426,9 +426,13 @@ void hed_command (huser *sender, channel* returntype, char* ostr, int argc, char
     }
     else
     { /* HED_INPUT */
-        char *str;
+	char *str;
+
+	if (argc == 0)
+	    ostr[0] = '\0';
+
 	/* return to command mode */
-	if (!strcmp(argv[0], "."))
+	if (!strcmp(ostr, "."))
 	{
             editor->state = HED_COMMAND;
 	    return;

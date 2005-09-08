@@ -49,7 +49,7 @@ hchanban *hchanban_get(hchannel* hchan, const char* banmask)
 {
     hchanban *ptr = hchanbans;
     for (;ptr;ptr = ptr->next)
-        if (ptr->hchan == hchan && ircd_strcmp(ptr->banmask->content, banmask))
+        if (ptr->hchan == hchan && !ircd_strcmp(ptr->banmask->content, banmask))
             return ptr;
     return NULL;
 }

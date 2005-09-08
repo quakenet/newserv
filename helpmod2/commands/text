@@ -2,8 +2,8 @@ Syntax:  text [operation] [parameter]
 Example: text show guide
 Manages texts. Adding or removing texts is restricted to high user levels.
 Supported operations are:
-add [name]	Adds a new text entry
-del [name]	Removes an existing text entry
-show [name]	Shows a text entry
-list		Lists all texts
+add [name]      Adds a new text entry
+del [name]      Removes an existing text entry
+show [name]     Shows a text entry
+list            Lists all texts
 Stored texts can be edited with ged.

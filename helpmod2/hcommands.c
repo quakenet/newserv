@@ -25,6 +25,7 @@
 #include "hchanban.h"
 
 #include "hticket.h"
+#include "hconf.h"
 
 /* following are macros for use ONLY IN HERE
  they may not look pretty, but work surprisingly well */
@@ -182,9 +183,12 @@ static void helpmod_cmd_whois (huser *sender, channel* returntype, char* ostr, i
     {
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
-        {
-            helpmod_reply(sender, returntype, "Cannot get user information: User %s not found", argv[i]);
-            continue;
+	{
+	    if (getnickbynick(argv[i]) == NULL)
+                helpmod_reply(sender, returntype, "Cannot get user information: User %s does not exist in the network", argv[i]);
+	    else
+		helpmod_reply(sender, returntype, "Cannot get user information: User %s exists but is not known to me", argv[i]);
+	    continue;
         }
         helpmod_reply(sender, returntype, "User %s has userlevel %s", huser_get_nick(husr), hlevel_name(huser_get_level(husr)));
 	if (husr->account == NULL)
@@ -1238,19 +1242,13 @@ static void helpmod_cmd_dnmo (huser *sender, channel* returntype, char* ostr, in
 
 static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
-    if (argc == 0)
-    {
-        helpmod_reply(sender, returntype, "Cannot global handle bans: Operation not defined");
-        return;
-    }
-
-    else if (!ci_strcmp(argv[0], "list"))
+    if (argc == 0 || !ci_strcmp(argv[0], "list"))
     {
         hban *ptr = hbans;
         char *pattern;
         int count = 0;
 
-        if (argc == 1)
+        if (argc <= 1)
             pattern = "*";
         else
             pattern = argv[1];
@@ -1260,13 +1258,12 @@ static void helpmod_cmd_ban (huser *sender, channel* returntype, char* ostr, int
         for (;ptr;ptr = ptr->next)
             if (strregexp(bantostring(ptr->real_ban), pattern))
             {
-                helpmod_reply(sender, returntype, "%-64s %-15s %s", bantostring(ptr->real_ban), helpmod_strtime(ptr->expiration - time(NULL)), ptr->reason?ptr->reason->content:"");
+                helpmod_reply(sender, returntype, "%-64s %-20s %s", bantostring(ptr->real_ban), helpmod_strtime(ptr->expiration - time(NULL)), ptr->reason?ptr->reason->content:"");
                 count++;
             }
 
         helpmod_reply(sender, returntype, "%d Global bans match pattern %s", count, pattern);
     }
-
     else if (!ci_strcmp(argv[0], "add"))
     {
         int duration = 4 * HDEF_h;
@@ -1363,8 +1360,8 @@ static void helpmod_cmd_chanban (huser *sender, channel* returntype, char* ostr,
             if (strregexp((cban = bantostring(ptr)), pattern))
             {
                 count++;
-                if (hchanban_get(hchan,cban))
-                    helpmod_reply(sender, returntype, "%s Expires in %s", bantostring(ptr), helpmod_strtime(hchanban_get(hchan, cban)->expiration - time(NULL)));
+                if (hchanban_get(hchan,cban) != NULL)
+		    helpmod_reply(sender, returntype, "%s Expires in %s", bantostring(ptr), helpmod_strtime(hchanban_get(hchan, cban)->expiration - time(NULL)));
                 else
                     helpmod_reply(sender, returntype, "%s", bantostring(ptr));
             }
@@ -3113,13 +3110,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
     hchannel *hchan;
     DEFINE_HCHANNEL;
     FILE *in;
-/*
-    if (argc == 0)
-    {
-	helpmod_reply(sender, returntype, "Can not handle text: No command specified");
-        return;
-    }
-*/
+
     if (argc == 0 || !ci_strcmp(argv[0], "list"))
     {
 	DIR *dir;
@@ -3250,6 +3241,55 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	helpmod_reply(sender, returntype, "Can not handle text: Unknown operation %s", argv[0]);
         return;
     }
+}
+
+static void helpmod_cmd_rating (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+    hstat_account_entry sum = {0,0,0,0};
+    hstat_account *ptr;
+    int i;
+
+    DEFINE_HCHANNEL;
+
+    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
+
+    if (hchan == NULL)
+    {
+	helpmod_reply(sender, returntype, "Can not show rating: Unknown channel");
+        return;
+    }
+    if (sender->account == NULL)
+    {
+	helpmod_reply(sender, returntype, "Can not show rating: You do not have an account");
+        return;
+    }
+    for (ptr = sender->account->stats;ptr != NULL;ptr = ptr->next)
+	if (ptr->hchan == hchan)
+	{
+	    if (hstat_day() == 0)
+	    { /* Sunday screws the indexing */
+		for (i = 0;i < 7;i++)
+		    HSTAT_ACCOUNT_SUM(sum, sum, ptr->week[i]);
+	    }
+	    else
+	    { /* Normal case */
+		for (i = 1;i <= hstat_day();i++)
+		    HSTAT_ACCOUNT_SUM(sum, sum, ptr->week[i]);
+	    }
+
+	    helpmod_reply(sender, returntype, "Your rating for channel %s for this week is: %s", hchannel_get_name(hchan), helpmod_strtime(sum.time_spent));
+	    return;
+	}
+    helpmod_reply(sender, returntype, "Can not show rating: You do not have any statistics for channel %s", hchannel_get_name(hchan));
+}
+
+static void helpmod_cmd_writedb (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    rename(HELPMOD_DEFAULT_DB, HELPMOD_DEFAULT_DB".old");
+    helpmod_config_write(HELPMOD_DEFAULT_DB);
+
+    helpmod_reply(sender, returntype, "Database written");
 }
 
 static void helpmod_cmd_evilhack1 (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -3399,9 +3439,13 @@ void helpmod_cmd_command(huser* sender, channel* returntype, char* arg, int argc
     while (*(ptr++))
         *ptr = tolower(*ptr);
 
-    /* ? is handled like this because windows is shit */
+    /* ?,?+.?- is handled like this because windows is shit */
     if (!ci_strcmp(argv[0], "?"))
 	sprintf(buffer, "./helpmod2/commands/questionmark");
+    else if (!ci_strcmp(argv[0], "?+"))
+	sprintf(buffer, "./helpmod2/commands/questionmarkplus");
+    else if (!ci_strcmp(argv[0], "?-"))
+	sprintf(buffer, "./helpmod2/commands/questionmarkminus");
     else
 	sprintf(buffer, "./helpmod2/commands/%s", argv[0]);
 
@@ -3550,13 +3594,14 @@ void hcommands_add(void)
     hcommand_add("lcedit", H_ADMIN, helpmod_cmd_lcedit, "Lamer control profile manager");
     hcommand_add("ged", H_STAFF, helpmod_cmd_ged, "Ged IRC text editor");
     hcommand_add("text", H_PEON, helpmod_cmd_text, "Lists or shows text files");
-
     hcommand_add("evilhack1", H_ADMIN, helpmod_cmd_evilhack1, "An evil hack, don't use");
     hcommand_add("evilhack2", H_ADMIN, helpmod_cmd_evilhack2, "Another evil hack, don't use");
+
     hcommand_add("statsdump", H_ADMIN, helpmod_cmd_statsdump, "Statistics dump command");
     hcommand_add("statsrepair", H_ADMIN, helpmod_cmd_statsrepair, "Statistics repair command");
     hcommand_add("statsreset", H_ADMIN, helpmod_cmd_statsreset, "Statistics reset command");
-
+    hcommand_add("rating", H_TRIAL, helpmod_cmd_rating, "Simple rating for the current week");
+    hcommand_add("writedb", H_OPER, helpmod_cmd_writedb, "Writes the " HELPMOD_NICK " database to disk");
 
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
@@ -3636,8 +3681,8 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 
 	if (hcom == NULL)
 	{
-	    if ((sender->account == NULL && returntype == NULL) ||
-		(sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR) && returntype == NULL))
+	    if ((returntype == NULL) ||
+		(sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR)))
 		helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
 	}
         else

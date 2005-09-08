@@ -1,0 +1,3 @@
+Syntax:  ?- [channel] [term] [user1] .. [usern]
+Example: ?- #feds Q user
+?- Is similar to the command ? but removes targeted users from queue without advancing the queue.
