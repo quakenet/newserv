@@ -1874,7 +1874,8 @@ int csc_dorenchan(void *source, int cargc, char **cargv) {
 
   cs_log(sender,"RENCHAN %s -> %s",cip1->name->content,cip2->name->content);
 
-  if (!CIsSuspended(rcp)) {
+  /* Remove from the channel.  Don't bother if the channel doesn't exist. */
+  if (!CIsSuspended(rcp) && cip1->channel) {
     CSetSuspended(rcp);    
     chanservjoinchan(cip1->channel);
     CClearSuspended(rcp);
