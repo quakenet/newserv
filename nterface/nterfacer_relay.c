@@ -27,6 +27,7 @@
 #include <stdarg.h>
 
 #include "../lib/irc_string.h"
+#include "../lib/strlfunc.h"
 #include "../core/schedule.h"
 #include "../irc/irc.h"
 #include "../core/config.h"
@@ -38,6 +39,7 @@ sstring *ousername, *opassword;
 regex onickname;
 int number = 1;
 char started = 0;
+char nickprefix[NICKLEN - 5 + 1];
 
 int stats_handler(struct rline *ri, int argc, char **argv);
 
@@ -60,10 +62,14 @@ void _init(void) {
 
 int load_config(void) {
   /* eww, I don't know how to make this any nicer! */
-  sstring *ou, *op, *on;
+  sstring *ou, *op, *on, *opr;
   regex newregex;
 
   memset(&newregex, 0, sizeof(newregex));
+
+  opr = getcopyconfigitem("nterfacer", "nickprefix", DEFAULT_NICK_PREFIX, sizeof(nickprefix) - 1); /* the terminator is included in nickprefix */
+  strlcpy(nickprefix, (opr&&opr->content)?opr->content:DEFAULT_NICK_PREFIX, sizeof(nickprefix));
+  freesstring(opr); /* works fine with NULL */
 
   ou = getcopyconfigitem("nterfacer", "serviceusername", "nterfacer", 100);
   op = getcopyconfigitem("nterfacer", "servicepassword", "setme", 100);
@@ -83,12 +89,9 @@ int load_config(void) {
   }
 
   if(!ou || !op || !on || !newregex.phrase) {
-    if(ou)
-      freesstring(ou);
-    if(op)
-      freesstring(op);
-    if(on)
-      freesstring(on);
+    freesstring(ou);
+    freesstring(op);
+    freesstring(on);
     if(newregex.phrase) {
       pcre_free(newregex.phrase);
       if(newregex.hint)
@@ -159,7 +162,7 @@ nick *relay_getnick(void) {
   int attempts = 100;
 
   do {
-    snprintf(ournick, sizeof(ournick), "nterfacer%d", number++);
+    snprintf(ournick, sizeof(ournick), "%s%d", nickprefix, number++);
     if(number > 60000)
       number = 1;
 

@@ -41,6 +41,8 @@
 
 #define PCRE_FLAGS PCRE_CASELESS | PCRE_ANCHORED
 
+#define DEFAULT_NICK_PREFIX "nterfacer"
+
 #define dispose_rld(a) dispose_rld_dontquit(a, 0)
 
 typedef struct regex {
