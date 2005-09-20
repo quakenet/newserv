@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.12
+    - added nickprefix
   v1.11
     - made sure stats buffer was checked (no security problem, just helps pauline)
   v1.10
