@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.13
+    - found a load of stuff on froo's box
   v1.12
     - added nickprefix
   v1.11
@@ -55,7 +57,7 @@ void _init(void) {
   register_handler(node, "relay", 4, relay_handler);
   register_handler(node, "stats", 2, stats_handler);
 
-  registerhook(HOOK_NICK_QUIT, &relay_quits);
+  registerhook(HOOK_NICK_LOSTNICK, &relay_quits);
   registerhook(HOOK_IRC_DISCON, &relay_disconnect);
   registerhook(HOOK_CORE_REHASH, &relay_rehash);
 
@@ -143,7 +145,7 @@ void _fini(void) {
       pcre_free(onickname.hint);
   }
     
-  deregisterhook(HOOK_NICK_QUIT, &relay_quits);
+  deregisterhook(HOOK_NICK_LOSTNICK, &relay_quits);
   deregisterhook(HOOK_IRC_DISCON, &relay_disconnect);
   deregisterhook(HOOK_CORE_REHASH, &relay_rehash);
 
@@ -428,8 +430,7 @@ void relay_timeout(void *arg) {
 }
 
 void relay_quits(int hook, void *args) {
-  void **vargs = (void **)args;
-  nick *np = (nick *)vargs[0];
+  nick *np = (nick *)args;
   struct rld *cp, *lp;
   
   for(lp=NULL,cp=list;cp;) {
