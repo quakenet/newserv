@@ -213,6 +213,10 @@ struct searchNode *search_parse(int type, char *input) {
 	if (*ch==' ') {
 	  *ch='\0';
 	  j++;
+          if(j >= (sizeof(argvector) / sizeof(*argvector))) {
+            parseError = "Too many arguments";
+            return NULL;
+          }
 	  i=-1;
 	}
       } else {
@@ -228,6 +232,9 @@ struct searchNode *search_parse(int type, char *input) {
       parseError = "Bracket mismatch!";
       return NULL;
     }
+
+    if (*(ch-1) == 0) /* if the last character was a space */
+      j--; /* remove an argument */
     
     if (!(cmd=findcommandintree(searchTree,argvector[0],1))) {
       parseError = "Unknown command";
