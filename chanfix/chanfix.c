@@ -817,10 +817,12 @@ void cfsched_doexpire(void *arg) {
   regop *ro;
   struct timeval start;
   struct timeval end;
+  time_t currenttime;
 
   cffreeuh = cfscore = cfregop = 0;
 
   gettimeofday(&start, NULL);
+  currenttime=getnettime();
 
   for (i=0; i<CHANNELHASHSIZE; i++) {
     for (cip=chantable[i]; cip; cip=cip->next) {
@@ -832,7 +834,7 @@ void cfsched_doexpire(void *arg) {
         for (a=0;a<cf->regops.cursi;a++) {
           ro = rolist[a];
 
-          if ((getnettime() - ro->lastopped > 2 * CFSAMPLEINTERVAL) && ro->score) {
+          if ((currenttime - ro->lastopped > 2 * CFSAMPLEINTERVAL) && ro->score) {
             ro->score--;
             cfscore++;
           }
@@ -844,7 +846,7 @@ void cfsched_doexpire(void *arg) {
             cffreeuh++;
           }
 
-          if (ro->score == 0 || ro->lastopped < getnettime() - CFREMEMBEROPS) {
+          if (ro->score == 0 || ro->lastopped < currenttime - CFREMEMBEROPS) {
             cf_deleteregop(cip, ro);
             cfregop++;
           }
