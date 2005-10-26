@@ -201,6 +201,7 @@ struct searchNode *search_parse(int type, char *input) {
     /* Split further args */
     i=-1; /* i = -1 BoW, 0 = inword, 1 = bracket nest depth */
     j=0;  /* j = current arg */
+    argvector[0]="";
     for (ch=input;*ch;ch++) {
       if (i==-1) {
 	argvector[j]=ch;
