@@ -19,6 +19,6 @@
 
 #define HIS_SERVER  1
 #define HIS_SERVERNAME "*.quakenet.org"
-#define HIS_SERVERDESC "QuakeNet IRC server"
+#define HIS_SERVERDESC "QuakeNet IRC Server"
 #define HIS_HIDDENHOST "users.quakenet.org"
 
