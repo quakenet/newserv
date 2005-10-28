@@ -46,7 +46,10 @@ void initchansearch() {
   regchansearchfunc("moderated", 0, cs_moderated);
   regchansearchfunc("modes", 1, cs_modes);
   
-  registercontrolcmd("chansearch",10,19,&dochansearch);
+  registercontrolhelpcmd("chansearch",NO_OPER,19,&dochansearch,
+    "Usage: chansearch <search terms>\n"
+    " Valid search terms are: name, exists, size, nick, namelen, keyed, secret, invite\n"
+    " Terms can be inverted with !");
 }
 
 void finichansearch() {
@@ -73,12 +76,8 @@ int dochansearch(void *source, int cargc, char **cargv) {
   int offset;
   int res;
     
-  if (cargc<1) {
-    controlreply(sender,"Usage: chansearch (search terms)");
-    controlreply(sender," Valid search terms are: name, exists, size, nick, namelen, keyed, secret, invite");
-    controlreply(sender," Terms can be inverted with !");
-    return CMD_OK;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   for (i=0;i<cargc;) {
     if (cargv[i][0]=='!') {

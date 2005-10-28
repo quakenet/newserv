@@ -8,7 +8,7 @@
 int dofsck(void *source, int cargc, char **cargv);
 
 void _init() {
-  registercontrolcmd("fsck",10,0,dofsck);
+  registercontrolhelpcmd("fsck",NO_DEVELOPER,0,dofsck, "Usage: fsck\nRuns internal structure check.");
 }
 
 void _fini() {

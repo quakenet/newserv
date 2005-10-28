@@ -7,10 +7,8 @@ int ho_horse(void *source, int cargc, char **cargv) {
   nick *victim;
   channel *cp;
   
-  if (cargc<1) {
-    controlreply(sender,"Usage: horse <target>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   if ((victim=getnickbynick(cargv[0]))!=NULL) {
     controlreply(victim,"       _ ___,;;;^");
@@ -32,7 +30,7 @@ int ho_horse(void *source, int cargc, char **cargv) {
 }
 
 void _init() {
-  registercontrolcmd("horse",10,2,ho_horse);
+  registercontrolhelpcmd("horse",NO_OPERED,2,ho_horse,"Usage: horse <target>\nSpams a horse at target.");
 }
 
 void _fini() {

@@ -7,13 +7,11 @@
 int do_countusers(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source, *np;
   host *hp;
-  unsigned int i=0,count=0;
+  unsigned int count=0;
   char *chp,*host,*ident;
 
-  if (cargc<1) {
-    controlreply(sender, "Usage: countusers <user@host or host>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
 
   for (chp=cargv[0]; ;chp++) {
     if (*chp=='@') {
@@ -51,7 +49,7 @@ int do_countusers(void *source, int cargc, char **cargv) {
 } 
 
 void _init() {
-  registercontrolcmd("countusers", 10, 1, do_countusers);
+  registercontrolhelpcmd("countusers", NO_OPER, 1, do_countusers, "Usage: countusers <hostmask>\nReturns users on specified hostmask.");
 }
 
 void _fini() {

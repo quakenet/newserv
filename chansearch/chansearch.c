@@ -56,7 +56,7 @@ void _init() {
   regchansearchdisp("topic", cs_desctopic);
   regchansearchdisp("services", cs_descservices);
   
-  registercontrolcmd("chansearch",10,19,&dochansearch);
+  registercontrolhelpcmd("chansearch",NO_OPER,19,&dochansearch,"Usage: chansearch <criteria>\nSearches for channels with specified criteria.\nSend chanstats with no arguments for more information.");
 }
 
 void _fini() {

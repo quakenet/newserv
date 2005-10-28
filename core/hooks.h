@@ -27,6 +27,7 @@
 #define HOOK_NICK_ACCOUNT          304  /* Argument is nick* */
 #define HOOK_NICK_QUIT             305  /* Argument is void*[2] (nick, reason) */
 #define HOOK_NICK_SETHOST          306  /* Argument is nick* */
+#define HOOK_NICK_MODEOPER         307  /* Argument is void*[2] (nick, modes) */
 
 #define HOOK_CHANNEL_BURST         400  /* Argument is channel pointer */
 #define HOOK_CHANNEL_CREATE        401  /* Argument is void*[2] (channel, nick) */
@@ -49,6 +50,10 @@
 #define HOOK_CHANNEL_LOSTNICK      416  /* Argument is void*[2] (channel, nick) */
 
 #define HOOK_CHANSERV_DBLOADED     500  /* No arg */
+
+#define HOOK_CONTROL_REGISTERED    600 /* Argument is nick* */
+#define HOOK_CONTROL_WHOISREQUEST  601 /* Argument is nick* */
+#define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
 
 typedef void (*HookCallback)(int, void *);
 

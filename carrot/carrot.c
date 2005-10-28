@@ -7,10 +7,8 @@ int ca_carrot(void *source, int cargc, char **cargv) {
   nick *victim;
   channel *cp;
   
-  if (cargc<1) {
-    controlreply(sender,"Usage: carrot channel and/or user");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   if ((victim=getnickbynick(cargv[0]))!=NULL) {
     controlreply(victim,"%cACTION ger %s en morot%c",1,victim->nick,1);
@@ -25,14 +23,13 @@ int ca_carrot(void *source, int cargc, char **cargv) {
     controlreply(sender,"Used carrot in %s.",cp->index->name->content);
   } else {
     controlreply(sender,"Couldn't find %s.",cargv[0]);
-    return;
   }
   
   return CMD_OK;
 }
 
 void _init() {
-  registercontrolcmd("carrot",10,2,ca_carrot);
+  registercontrolhelpcmd("carrot",NO_OPERED,2,ca_carrot,"Usage: carrot <#channel|user> ?user?");
 }
 
 void _fini() {

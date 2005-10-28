@@ -239,6 +239,12 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
       return CMD_OK;
     }
     oldflags=np->umodes;
+    if (strchr(cargv[1],'o')) {
+      void *harg[2];
+        harg[0]=np;
+        harg[1]=cargv[1];
+        triggerhook(HOOK_NICK_MODEOPER,harg);
+    }
     setflags(&(np->umodes),UMODE_ALL,cargv[1],umodeflags,REJECT_NONE);
     if (strchr(cargv[1],'h')) { /* Have to allow +h twice.. */
       /* +-h: just the freesstring() calls for the -h case */

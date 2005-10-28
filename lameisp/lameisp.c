@@ -36,7 +36,7 @@ void _init() {
               li_killyoungest(hp->nicks);
             } while (hp->clonecount > LI_CLONEMAX);
             
-  registercontrolcmd("victims", 10, 0, li_stats);
+  registercontrolhelpcmd("victims", NO_OPER, 0, li_stats, "Usage: victims\nShows the amount of clients victimised by lameisp.");
   registerhook(HOOK_NICK_NEWNICK, &li_nick);
 }
 
