@@ -25,11 +25,13 @@
 #include <string.h>
 #include <stdarg.h>
 
+nick *hooknick;
+
 nick *mynick;
 
-nick *statsnick;
-
-CommandTree *controlcmds; 
+CommandTree *controlcmds;
+ControlMsg controlreply;
+ControlWall controlwall;
 
 void handlemessages(nick *target, int messagetype, void **args);
 int controlstatus(void *sender, int cargc, char **cargv);
@@ -39,32 +41,35 @@ int controlchannel(void *sender, int cargc, char **cargv);
 int relink(void *sender, int cargc, char **cargv);
 int die(void *sender, int cargc, char **cargv);
 int controlinsmod(void *sender, int cargc, char **cargv);
-int controlrmmod(void *sender, int cargc, char **cargv);
 int controllsmod(void *sender, int cargc, char **cargv);
 int controlrehash(void *sender, int cargc, char **cargv);
-int controlshowcommands(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
+int controlhelpcmd(void *sender, int cargc, char **cargv);
+void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
 
 void _init() {
   controlcmds=newcommandtree();
-    
-  addcommandtotree(controlcmds,"status",10,1,&controlstatus);
-  addcommandtotree(controlcmds,"whois",10,1,&controlwhois);
-  addcommandtotree(controlcmds,"channel",10,1,&controlchannel);
-  addcommandtotree(controlcmds,"relink",10,1,&relink);
-  addcommandtotree(controlcmds,"die",10,1,&die);
-  addcommandtotree(controlcmds,"insmod",10,1,&controlinsmod);
-  addcommandtotree(controlcmds,"rmmod",10,1,&controlrmmod);
-  addcommandtotree(controlcmds,"lsmod",10,1,&controllsmod);
-  addcommandtotree(controlcmds,"rehash",10,1,&controlrehash);
-  addcommandtotree(controlcmds,"showcommands",10,0,&controlshowcommands);
-  addcommandtotree(controlcmds,"reload",10,1,&controlreload);
+  controlreply=&controlmessage;
+  controlwall=&controlnoticeopers;
+
+  registercontrolhelpcmd("status",NO_DEVELOPER,1,&controlstatus,"Usage: status ?level?\nDisplays status information, increasing level gives more verbose information.");
+  registercontrolhelpcmd("whois",NO_OPERED,1,&controlwhois,"Usage: whois <nickname|#numeric>\nDisplays lots of information about the specified nickname or numeric.");
+  registercontrolhelpcmd("channel",NO_OPER,1,&controlchannel,"Usage: channel <#channel>\nDisplays channel information.");
+  registercontrolhelpcmd("relink",NO_DEVELOPER,1,&relink,"Usage: relink\nRelinks service to the network.");
+  registercontrolhelpcmd("die",NO_DEVELOPER,1,&die,"Usage: die <reason>\nTerminates the service.");
+  registercontrolhelpcmd("insmod",NO_DEVELOPER,1,&controlinsmod,"Usage: insmod <module>\nAdds a module to the running instance.");
+  registercontrolhelpcmd("rmmod",NO_DEVELOPER,1,&controlrmmod,"Usage: rmmod <module>\nRemoves a module from the running instance.");
+  registercontrolhelpcmd("lsmod",NO_DEVELOPER,0,&controllsmod,"Usage: lsmod\nLists currently running modules.");
+  registercontrolhelpcmd("rehash",NO_DEVELOPER,1,&controlrehash,"Usage: rehash\nReloads configuration file.");
+  registercontrolhelpcmd("showcommands",NO_ACCOUNT,0,&controlshowcommands,"Usage: showcommands\nShows all registered commands.");
+  registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
+  registercontrolhelpcmd("help",NO_ANYONE,1,&controlhelpcmd,"Usage: help <command>\nShows help for specified command.");
   
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
-void registercontrolcmd(const char *name, int level, int maxparams, CommandHandler handler) {
-  addcommandtotree(controlcmds,name,level,maxparams,handler);
+void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
+  addcommandhelptotree(controlcmds,name,level,maxparams,handler,help);
 }
 
 int deregistercontrolcmd(const char *name, CommandHandler handler) {
@@ -82,6 +87,7 @@ void controlconnect(void *arg) {
   myauthname=getcopyconfigitem("control","authname","C",ACCOUNTLEN);
 
   mynick=registerlocaluser(cnick->content,myident->content,myhost->content,myrealname->content,myauthname->content,UMODE_SERVICE|UMODE_DEAF|UMODE_OPER|UMODE_ACCOUNT,&handlemessages);
+  triggerhook(HOOK_CONTROL_REGISTERED, mynick);
   cp=findchannel("#twilightzone");
   if (!cp) {
     localcreatechannel(mynick,"#twilightzone");
@@ -98,13 +104,13 @@ void controlconnect(void *arg) {
 }
 
 void handlestats(int hooknum, void *arg) {
-  sendmessagetouser(mynick,statsnick,"%s",(char *)arg);
+  controlreply(hooknick,"%s",(char *)arg);
 }
 
 int controlstatus(void *sender, int cargc, char **cargv) {
   unsigned int level=5;
 
-  statsnick=(nick *)sender;
+  hooknick=(nick *)sender;
   
   if (cargc>0) {
     level=strtoul(cargv[0],NULL,10);
@@ -125,55 +131,63 @@ int controlrehash(void *sender, int cargc, char **cargv) {
   triggerhook(HOOK_CORE_REHASH,(void *)0);
   return CMD_OK;
 }
-  
+
+void handlewhois(int hooknum, void *arg) {
+  controlreply(hooknick,"%s",(char *)arg);
+}
+
 int controlwhois(void *sender, int cargc, char **cargv) {
   nick *target;
   channel **channels;
   char buf[BUFSIZE];
   int i;
   
-  if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: whois <user>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   if (cargv[0][0]=='#') {
     if (!(target=getnickbynumericstr(cargv[0]+1))) {
-      sendmessagetouser(mynick,sender,"Sorry, couldn't find numeric %s",cargv[0]+1);
+      controlreply(sender,"Sorry, couldn't find numeric %s",cargv[0]+1);
       return CMD_ERROR;
     }
   } else {
     if ((target=getnickbynick(cargv[0]))==NULL) {
-      sendmessagetouser(mynick,(nick *)sender,"Sorry, couldn't find that user");
+      controlreply((nick *)sender,"Sorry, couldn't find that user");
       return CMD_ERROR;
     }
   }
   
-  sendmessagetouser(mynick,(nick *)sender,"Nick      : %s",target->nick);
-  sendmessagetouser(mynick,(nick *)sender,"Numeric   : %s",longtonumeric(target->numeric,5));
-  sendmessagetouser(mynick,(nick *)sender,"User@Host : %s@%s (%d user(s) on this host)",target->ident,target->host->name->content,target->host->clonecount);
+  controlreply((nick *)sender,"Nick      : %s",target->nick);
+  controlreply((nick *)sender,"Numeric   : %s",longtonumeric(target->numeric,5));
+  controlreply((nick *)sender,"User@Host : %s@%s (%d user(s) on this host)",target->ident,target->host->name->content,target->host->clonecount);
   if (IsSetHost(target)) {
     if (target->shident) {
-      sendmessagetouser(mynick,(nick *)sender,"Fakehost  : %s@%s",target->shident->content, target->sethost->content);
+      controlreply((nick *)sender,"Fakehost  : %s@%s",target->shident->content, target->sethost->content);
     } else {
-      sendmessagetouser(mynick,(nick *)sender,"Fakehost  : %s",target->sethost->content);
+      controlreply((nick *)sender,"Fakehost  : %s",target->sethost->content);
     }
   }
-  sendmessagetouser(mynick,(nick *)sender,"Timestamp : %lu",target->timestamp);
-  sendmessagetouser(mynick,(nick *)sender,"IP address: %d.%d.%d.%d",(target->ipaddress)>>24,(target->ipaddress>>16)&255, (target->ipaddress>>8)&255,target->ipaddress&255);
-  sendmessagetouser(mynick,(nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
+  controlreply((nick *)sender,"Timestamp : %lu",target->timestamp);
+  controlreply((nick *)sender,"IP address: %d.%d.%d.%d",(target->ipaddress)>>24,(target->ipaddress>>16)&255, (target->ipaddress>>8)&255,target->ipaddress&255);
+  controlreply((nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
   if (target->umodes) {
-    sendmessagetouser(mynick,(nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));
+    controlreply((nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));
   }
   if (IsAccount(target)) {
-    sendmessagetouser(mynick,(nick *)sender,"Account   : %s",target->authname);
+    controlreply((nick *)sender,"Account   : %s",target->authname);
     if (target->accountts) 
-      sendmessagetouser(mynick,(nick *)sender,"AccountTS : %ld",target->accountts);
+      controlreply((nick *)sender,"AccountTS : %ld",target->accountts);
   }
+
+  hooknick=(nick *)sender;
+  registerhook(HOOK_CONTROL_WHOISREPLY,&handlewhois);
+  triggerhook(HOOK_CONTROL_WHOISREQUEST,target);
+  deregisterhook(HOOK_CONTROL_WHOISREPLY,&handlewhois);
+
   if (target->channels->cursi==0) {
-    sendmessagetouser(mynick,(nick *)sender,"Channels  : none");
+    controlreply((nick *)sender,"Channels  : none");
   } else if (target->channels->cursi>50) {
-    sendmessagetouser(mynick,(nick *)sender,"Channels  : - (total: %d)",target->channels->cursi);
+    controlreply((nick *)sender,"Channels  : - (total: %d)",target->channels->cursi);
   } else {
     buf[0]='\0';
     channels=(channel **)target->channels->content;
@@ -185,7 +199,7 @@ int controlwhois(void *sender, int cargc, char **cargv) {
         if (strlen(buf)==0) {
           break;
         } else {
-          sendmessagetouser(mynick,(nick *)sender,"Channels  : %s",buf);
+          controlreply((nick *)sender,"Channels  : %s",buf);
           buf[0]='\0';
           i--;
         }
@@ -197,47 +211,43 @@ int controlwhois(void *sender, int cargc, char **cargv) {
 }
 
 int controlinsmod(void *sender, int cargc, char **cargv) {
-  if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: insmod <modulename>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   switch(insmod(cargv[0])) {
     case -1:
-      sendmessagetouser(mynick,(nick *)sender,"Unable to load module %s",cargv[0]);
+      controlreply((nick *)sender,"Unable to load module %s",cargv[0]);
       return CMD_ERROR;
       
     case 1:
-      sendmessagetouser(mynick,(nick *)sender,"Module %s already loaded, or name not valid",cargv[0]);
+      controlreply((nick *)sender,"Module %s already loaded, or name not valid",cargv[0]);
       return CMD_ERROR;
       
     case 0:
-      sendmessagetouser(mynick,(nick *)sender,"Module %s loaded.",cargv[0]);
+      controlreply((nick *)sender,"Module %s loaded.",cargv[0]);
       return CMD_OK;
     
     default:
-      sendmessagetouser(mynick,(nick *)sender,"An unknown error occured.");
+      controlreply((nick *)sender,"An unknown error occured.");
       return CMD_ERROR;
   }
 }
 
 int controlrmmod(void *sender, int cargc, char **cargv) {
-  if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: rmmod <modulename>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   switch(rmmod(cargv[0])) {
     case 1:
-      sendmessagetouser(mynick,(nick *)sender,"Module %s is not loaded.",cargv[0]);
+      controlreply((nick *)sender,"Module %s is not loaded.",cargv[0]);
       return CMD_ERROR;
       
     case 0:
-      sendmessagetouser(mynick,(nick *)sender,"Module %s unloaded.",cargv[0]);
+      controlreply((nick *)sender,"Module %s unloaded.",cargv[0]);
       return CMD_OK;
     
     default:
-      sendmessagetouser(mynick,(nick *)sender,"An unknown error occured.");
+      controlreply((nick *)sender,"An unknown error occured.");
       return CMD_ERROR;
   }
 }
@@ -248,23 +258,21 @@ int controllsmod(void *sender, int cargc, char **cargv) {
 
   if (cargc < 1) { /* list all loaded modules */
     ptr = lsmod(i);
-    sendmessagetouser(mynick,(nick *)sender,"Module");
+    controlreply((nick *)sender,"Module");
     while (ptr != NULL) {
-      sendmessagetouser(mynick,(nick *)sender,"%s", ptr);
+      controlreply((nick *)sender,"%s", ptr);
       ptr = lsmod(++i);
     }
   } else {
     ptr = lsmod(getindex(cargv[0]));
-    sendmessagetouser(mynick,(nick *)sender,"Module \"%s\" %s", cargv[0], (ptr ? "is loaded." : "is NOT loaded."));
+    controlreply((nick *)sender,"Module \"%s\" %s", cargv[0], (ptr ? "is loaded." : "is NOT loaded."));
   }
   return CMD_OK;
 }
 
 int controlreload(void *sender, int cargc, char **cargv) {
-  if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: reload <modulename>");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
     
   controlrmmod(sender, cargc, cargv);
   return controlinsmod(sender, cargc, cargv);
@@ -272,8 +280,8 @@ int controlreload(void *sender, int cargc, char **cargv) {
 
 int relink(void *sender, int cargc, char **cargv) {
   if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"You must give a reason.");
-    return CMD_ERROR;
+    controlreply((nick *)sender,"You must give a reason.");
+    return CMD_USAGE;
   }
   
   irc_send("%s SQ %s 0 :%s",mynumeric->content,myserver->content,cargv[0]);
@@ -284,8 +292,8 @@ int relink(void *sender, int cargc, char **cargv) {
 
 int die(void *sender, int cargc, char **cargv) {
   if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"You must give a reason.");
-    return CMD_ERROR;
+    controlreply((nick *)sender,"You must give a reason.");
+    return CMD_USAGE;
   }
   
   irc_send("%s SQ %s 0 :%s",mynumeric->content,myserver->content,cargv[0]);
@@ -302,13 +310,11 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   char buf2[12];
   int i,j;
   
-  if (cargc<1) {
-    sendmessagetouser(mynick,(nick *)sender,"Usage: channel #chan");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   if ((cp=findchannel(cargv[0]))==NULL) {
-    sendmessagetouser(mynick,(nick *)sender,"Couldn't find channel: %s",cargv[0]);
+    controlreply((nick *)sender,"Couldn't find channel: %s",cargv[0]);
     return CMD_ERROR;
   }
   
@@ -316,14 +322,14 @@ int controlchannel(void *sender, int cargc, char **cargv) {
     sprintf(buf2,"%d",cp->limit);
   }
   
-  sendmessagetouser(mynick,(nick *)sender,"Channel : %s",cp->index->name->content);
+  controlreply((nick *)sender,"Channel : %s",cp->index->name->content);
   if (cp->topic) {
-    sendmessagetouser(mynick,(nick *)sender,"Topic   : %s",cp->topic->content);
-    sendmessagetouser(mynick,(nick *)sender,"T-time  : %ld [%s]",cp->topictime,ctime(&(cp->topictime)));
+    controlreply((nick *)sender,"Topic   : %s",cp->topic->content);
+    controlreply((nick *)sender,"T-time  : %ld [%s]",cp->topictime,ctime(&(cp->topictime)));
   }
-  sendmessagetouser(mynick,(nick *)sender,"Mode(s) : %s %s%s%s",printflags(cp->flags,cmodeflags),IsLimit(cp)?buf2:"",
+  controlreply((nick *)sender,"Mode(s) : %s %s%s%s",printflags(cp->flags,cmodeflags),IsLimit(cp)?buf2:"",
     IsLimit(cp)?" ":"",IsKey(cp)?cp->key->content:"");
-  sendmessagetouser(mynick,(nick *)sender,"Users   : %d (hash size %d, utilisation %.1f%%); %d unique hosts",
+  controlreply((nick *)sender,"Users   : %d (hash size %d, utilisation %.1f%%); %d unique hosts",
     cp->users->totalusers,cp->users->hashsize,((float)(100*cp->users->totalusers)/cp->users->hashsize),
     countuniquehosts(cp));
   i=0;
@@ -332,7 +338,7 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   for (j=0;j<=cp->users->hashsize;j++) {
     if (i==4 || j==cp->users->hashsize) {
       if(i>0) {
-        sendmessagetouser(mynick,(nick *)sender,"Users   : %s",buf);
+        controlreply((nick *)sender,"Users   : %s",buf);
       }
       i=0;
       memset(buf,' ',72);
@@ -350,7 +356,7 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   }
     
   for (cbp=cp->bans;cbp;cbp=cbp->next) {
-    sendmessagetouser(mynick,(nick *)sender,"Ban     : %s",bantostringdebug(cbp));
+    controlreply((nick *)sender,"Ban     : %s",bantostringdebug(cbp));
   }
   return CMD_OK;
 }
@@ -365,7 +371,7 @@ int controlshowcommands(void *sender, int cargc, char **cargv) {
   controlreply(np,"The following commands are registered at present:");
   
   for(i=0;i<n;i++) {
-    controlreply(np,"%s (level %d)",cmdlist[i]->command->content,cmdlist[i]->level);
+    controlreply(np,"%s",cmdlist[i]->command->content);
   }
 
   controlreply(np,"End of list.");
@@ -396,12 +402,12 @@ void handlemessages(nick *target, int messagetype, void **args) {
        	
       cmd=findcommandintree(controlcmds,cargv[0],1);
       if (cmd==NULL) {
-        sendmessagetouser(mynick,sender,"Unknown command.");
+        controlreply(sender,"Unknown command.");
         return;
       }
       
-      if (cmd->level>=10 && !IsOper(sender)) {
-        sendmessagetouser(mynick,sender,"You need to be opered to use this command.");
+      if (cmd->level>0 && !IsOper(sender)) {
+        controlreply(sender,"You need to be opered to use this command.");
         return;
       }
       
@@ -414,7 +420,8 @@ void handlemessages(nick *target, int messagetype, void **args) {
         cargc=(cmd->maxparams)+1;
       }
       
-      (cmd->handler)((void *)sender,cargc-1,&(cargv[1]));
+      if((cmd->handler)((void *)sender,cargc-1,&(cargv[1])) == CMD_USAGE)
+        controlhelp(sender, cmd);
       break;
       
     case LU_KILLED:
@@ -428,7 +435,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
   }
 }
 
-void controlreply(nick *target, char *message, ... ) {
+void controlmessage(nick *target, char *message, ... ) {
   char buf[512];
   va_list va;
     
@@ -473,19 +480,68 @@ void controlnotice(nick *target, char *message, ... ) {
   sendnoticetouser(mynick,target,"%s",buf);
 }
 
-/* Send a notice to all opers, O(n) and a notice otherwise we'll get infinite loops with services */
-void controlnoticeopers(char *format, ...) {
-  int i;
-  nick *np;
-  char broadcast[BUFSIZE];
-  va_list va;
+void controlspecialrmmod(void *arg) {
+  struct specialsched *a = (struct specialsched *)arg;
   
-  va_start(va, format);
-  vsnprintf(broadcast, sizeof(broadcast), format, va);
-  va_end(va);
+  a->schedule = NULL;
+  sstring *froo = a->modulename;
 
-  for(i=0;i<NICKHASHSIZE;i++)
-    for(np=nicktable[i];np;np=np->next)
-      if (IsOper(np))
-        controlnotice(np, "%s", broadcast);
+  rmmod(froo->content);
+  freesstring(froo);
+}
+
+void controlspecialreloadmod(void *arg) {
+  struct specialsched *a = (struct specialsched *)arg;
+
+  a->schedule = NULL;
+  sstring *froo = a->modulename;
+
+  rmmod(froo->content);
+  insmod(froo->content);
+  freesstring(froo);
+}
+
+void controlhelp(nick *np, Command *cmd) {
+  char *cp = cmd->help, *sp = cp;
+  if(!cp || !*cp) {
+    controlreply(np, "Sorry, no help for this command.");
+  } else {
+    int finished = 0;
+    for(;;cp++) {
+      if(*cp == '\0' || *cp == '\n') {
+        if(*cp == '\0') {
+          finished = 1;
+        } else {
+          *cp = '\0';
+        }
+
+        if(sp != cp)
+          controlreply(np, "%s", sp);
+
+        if(finished)
+          break;
+
+        *cp = '\n';
+
+        sp = cp + 1;
+      }
+    }
+  }
+}
+
+int controlhelpcmd(void *sender, int cargc, char **cargv) {
+  Command *cmd;
+  nick *np = (nick *)sender;
+
+  if (cargc<1)
+    return CMD_USAGE;
+
+  cmd=findcommandintree(controlcmds,cargv[0],1);
+  if (cmd==NULL) {
+    controlreply(np,"Unknown command.");
+    return CMD_ERROR;
+  }
+
+  controlhelp(np, cmd);
+  return CMD_OK;
 }

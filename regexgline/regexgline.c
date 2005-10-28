@@ -293,7 +293,7 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   rg_logevent(np, "regexgline", "%s %d %d %s", cargv[0], expiry, count, cargv[3]);
   controlreply(np, "Added regexgline: %s (expires in: %s, hit %d user%s): %s", cargv[0], expirybuf, count, (count!=1)?"s":"", cargv[3]);
-  controlnoticeopers("%s added regexgline: %s (expires in: %s, hit %d user%s): %s", np->nick, cargv[0], expirybuf, count, (count!=1)?"s":"", cargv[3]);
+  controlwall(NO_OPER, NL_GLINES, "%s added regexgline: %s (expires in: %s, hit %d user%s): %s", np->nick, cargv[0], expirybuf, count, (count!=1)?"s":"", cargv[3]);
 
   return CMD_OK;
 }
@@ -372,7 +372,7 @@ int rg_delgline(void *source, int cargc, char **cargv) {
   }
   if (count > 0) {
     controlreply(np, "Deleted (matched: %d).", count);
-    controlnoticeopers("%s removed regexgline: %s (matches: %d)", np->nick, cargv[0], count);
+    controlwall(NO_OPER, NL_GLINES, "%s removed regexgline: %s (matches: %d)", np->nick, cargv[0], count);
   } else {
     controlreply(np, "No glines matched: %s", cargv[0]);
   }

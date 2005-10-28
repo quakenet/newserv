@@ -21,6 +21,7 @@
 #define CMD_OK              0
 #define CMD_ERROR           1
 #define CMD_LAST            2
+#define CMD_USAGE           3
 
 /* Generic CommandHandler type
  * void * = pointer to some relevant object to identify where the message came from
@@ -32,6 +33,7 @@ typedef int (*CommandHandler)(void *, int, char**);
  
 typedef struct Command {
   sstring        *command;       /* Name of the command/token/thing */
+  char           *help;          /* Help information, sorry splidge! */
   int             level;         /* "level" required to use the command/token/thing */
   int             maxparams;     /* Maximum number of parameters for the command/token/thing */
   CommandHandler  handler;       /* Function to deal with the message */
@@ -47,9 +49,11 @@ typedef struct CommandTree {
 
 CommandTree *newcommandtree();
 void destroycommandtree(CommandTree *ct);
-Command *addcommandtotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler);
+Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help);
 int deletecommandfromtree(CommandTree *ct, const char *cmdname, CommandHandler handler);
 Command *findcommandintree(CommandTree *ct, const char *cmdname, int strictcheck);
 int getcommandlist(CommandTree *ct, Command **commandlist, int maxcommands);
+
+#define addcommandtotree(a, b, c, d, e) addcommandhelptotree(a, b, c, d, e, NULL)
 
 #endif

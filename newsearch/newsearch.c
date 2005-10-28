@@ -47,7 +47,7 @@ void _init() {
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
 
-  registercontrolcmd("nicksearch",10,4,do_nicksearch);
+  registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
 }
 
 void _fini() {
@@ -78,10 +78,8 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
   char *ch;
   int arg=0;
   
-  if (cargc<1) {
-    controlreply(sender,"Usage: nicksearch (criteria)");
-    return CMD_ERROR;
-  }
+  if (cargc<1)
+    return CMD_USAGE;
   
   if (*cargv[0] == '-') {
     /* options */
@@ -92,7 +90,7 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
       case 'l':
 	if (cargc<arg) {
 	  controlreply(sender,"Error: -l switch requires an argument");
-	  return CMD_ERROR;
+	  return CMD_USAGE;
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
 	break;

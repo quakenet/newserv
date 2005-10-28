@@ -74,15 +74,15 @@ int countcommandtree(CommandTree *ct) {
 }
 
 /* 
- * addcommandtotree:
+ * addcommandhelptotree:
  *
- * This installs a specific command in a tree.
+ * This installs a specific command in a tree, with a help paramater.
  *
  * This function builds the Command structure in addition to 
  * installing it in the tree
  */
  
-Command *addcommandtotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler) {
+Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help) {
   Command *nc, *c;
   int i;
   
@@ -94,13 +94,25 @@ Command *addcommandtotree(CommandTree *ct, const char *cmdname, int level, int m
   nc->handler=handler;
   nc->ext=NULL;
   nc->next=NULL;
-  
+  if (help) {
+    int len=strlen(help);
+    nc->help=(char *)malloc(len+1);
+    if(nc->help) {
+      strncpy(nc->help, help, len);
+      nc->help[len] = '\0';
+    }
+  } else {
+    nc->help=NULL;
+  }
+
   /* Sanity check the string */
   for (i=0;i<nc->command->length;i++) {
     nc->command->content[i]=toupper(nc->command->content[i]);
     if (nc->command->content[i]<'A' || nc->command->content[i]>'Z') {
       /* Someone tried to register an invalid command name */
       freesstring(nc->command);
+      if(nc->help)
+        free(nc->help);
       free(nc);
       return NULL;    
     }
@@ -114,6 +126,8 @@ Command *addcommandtotree(CommandTree *ct, const char *cmdname, int level, int m
   } else if (insertcommand(nc,ct,0)) {
     /* Erk, that didn't work.. */
     freesstring(nc->command);
+    if(nc->help)
+      free(nc->help);
     free(nc);
     return NULL;
   }
@@ -207,6 +221,8 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
+        if(c->help)
+          free(c->help);
         free(c);
         return 0;
       }
@@ -224,6 +240,8 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
+        if(c->help)
+          free(c->help);
         free(c);
         return 0;
       }
