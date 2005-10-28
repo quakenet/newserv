@@ -553,9 +553,16 @@ static void helpmod_cmd_censor (huser *sender, channel* returntype, char* ostr, 
 	    }
 
 	    pattern = argv[0];
-            SKIP_WORD;
-            if (argc)
-                reason = ostr;
+
+	    if (strlen(pattern) == 0)
+	    {
+		helpmod_reply(sender, returntype, "Cannot add censor entry: Pattern must be non-empty");
+                return;
+	    }
+
+	    SKIP_WORD;
+	    if (argc && strlen(ostr) > 0)
+		reason = ostr;
             else
                 reason = NULL;
 

@@ -10,4 +10,6 @@
 
 #define HELPMOD_VERSION_2_12 12 /* */
 
+#define HELPMOD_VERSION_2_13 13 /* */
+
 #endif
