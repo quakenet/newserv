@@ -545,3 +545,19 @@ int controlhelpcmd(void *sender, int cargc, char **cargv) {
   controlhelp(np, cmd);
   return CMD_OK;
 }
+
+void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...) {
+  int i;
+  nick *np;
+  char broadcast[512];
+  va_list va;
+
+  va_start(va, format);
+  vsnprintf(broadcast, sizeof(broadcast), format, va);
+  va_end(va);
+
+  for(i=0;i<NICKHASHSIZE;i++)
+    for(np=nicktable[i];np;np=np->next)
+      if (IsOper(np))
+        controlnotice(np, "%s", broadcast);
+}
