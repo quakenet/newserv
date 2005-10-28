@@ -48,6 +48,14 @@ static char rcsid[] = "$OpenBSD: sha1.c,v 1.12 2003/07/21 20:37:08 millert Exp $
 #define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
+#if !defined(u_char)
+typedef u_int8_t u_char;
+#endif
+
+#if !defined(u_int)
+typedef u_int32_t u_int;
+#endif
+
 typedef union {
     u_char c[64];
     u_int l[16];
