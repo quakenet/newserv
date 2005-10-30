@@ -14,11 +14,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <strings.h>
 
-#define TROJANSCAN_VERSION "2.43"
+#define TROJANSCAN_VERSION "2.51"
 
-#define TROJANSCAN_CLONE_MAX        250 /* 80 */
-#define TROJANSCAN_WATCHCLONE_MAX   20
+#define TROJANSCAN_CLONE_MAX        300 /* 80 */
+#define TROJANSCAN_WATCHCLONE_MAX   75
 #define TROJANSCAN_CLONE_TOTAL TROJANSCAN_CLONE_MAX + TROJANSCAN_WATCHCLONE_MAX
 
 #define TROJANSCAN_POOLSIZE 1000
@@ -26,10 +28,10 @@
 
 #define TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL 500
 
-#define TROJANSCAN_DEFAULT_MAXCHANS 200
-#define TROJANSCAN_DEFAULT_CYCLETIME 300
+#define TROJANSCAN_DEFAULT_MAXCHANS 500
+#define TROJANSCAN_DEFAULT_CYCLETIME 600
 
-#define TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE 150
+#define TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE 100
 
 #define TROJANSCAN_NICKCHANGE_ODDS 8
 #define TROJANSCAN_INVISIBLE_ODDS 8
@@ -242,6 +244,7 @@ int trojanscan_database_num_rows(trojanscan_database_res *res);
 trojanscan_database_res *trojanscan_database_store_result();
 trojanscan_database_row trojanscan_database_fetch_row(trojanscan_database_res *res);
 void trojanscan_database_free_result(trojanscan_database_res *res);
+nick *trojanscan_selectuser(void);
 
 int trojanscan_is_not_octet(char *begin, int length);
 void trojanscan_genreal(char *ptc, char size);
@@ -261,6 +264,7 @@ void trojanscan_generaterealname(char *buf, int maxsize);
 
 sstring *trojanscan_getsstring(char *string, int length);
 int trojanscan_strip_codes(char *buf, size_t max, char *original);
+int trojanscan_isip(char *host);
 
 struct trojanscan_clones trojanscan_swarm[TROJANSCAN_CLONE_TOTAL];
 struct trojanscan_db trojanscan_database;
