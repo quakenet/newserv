@@ -1755,8 +1755,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               }
             } 
 
-            trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);
-            
             if (!glining) {
               char matchbuf[513];
               matchbuf[0] = 0;
@@ -1766,11 +1764,16 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
                 if (pcre_copy_substring(text, vector, pre, 1, matchbuf, sizeof(matchbuf) - 1) <= 0)
                   matchbuf[0] = 0;
               
-              trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s f: %d%s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+              trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
             } else {
+              int glinetime = TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1);
+              if(glinetime > 7 * 24)
+                glinetime = 7 * 24; /* can't set glines over 7 days with normal non U:lined glines */
+
+              trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);          
               trojanscan_database.glines++;
               
-              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1));
+              irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, getnettime(), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
               //trojanscan_mainchanmsg("%s GL * +%s %d :You are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency);
 
               trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
@@ -2120,7 +2123,7 @@ void trojanscan_generatehost(char *buf, int maxsize) {
     int loops, j;
     do {
       for (j=trojanscan_minmaxrand(0, NICKHASHSIZE-1);j<NICKHASHSIZE;j++) {
-        if (nicktable[j]) {
+        if (nicktable[j] && !trojanscan_isip(nicktable[j]->host->name->content)) {
           strcpy(buf, nicktable[j]->host->name->content);
           return;
         }
@@ -2258,5 +2261,20 @@ trojanscan_database_row trojanscan_database_fetch_row(trojanscan_database_res *r
 
 void trojanscan_database_free_result(trojanscan_database_res *res) {
   mysql_free_result(res);
+}
+
+int trojanscan_isip(char *host) {
+  char *p = host, components = 0, length = 0;
+
+  for(;*p;p++) {
+    if(*p == '.') {
+      if(((!length) || (length = 0)) || (++components > 3))
+        return 0;
+    } else {
+      if ((++length > 3) || !isdigit(*p))
+        return 0;
+    }
+  }
+  return components == 3;
 }
 
