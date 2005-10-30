@@ -12,8 +12,8 @@
 /* configuration */
 
 /* These should always be equal */
-#define HELPMOD_VERSION_INTERNAL HELPMOD_VERSION_2_12
-#define HELPMOD_VERSION "2.12"
+#define HELPMOD_VERSION_INTERNAL HELPMOD_VERSION_2_13
+#define HELPMOD_VERSION "2.13"
 
 #define HELPMOD_USER_TIMEOUT 1200
 

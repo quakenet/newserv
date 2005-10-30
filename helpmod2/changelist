@@ -346,3 +346,7 @@ Fixed the unknown error suppression bug (again)
 Fixed a bug when adding bans to authed -x users
 Added a rating command
 Added missing command help for ?+ and ?-
+
+2.13
+Fixed the account expiration problem
+Fixed the empty censor pattern bug
