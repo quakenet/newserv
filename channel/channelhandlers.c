@@ -911,7 +911,7 @@ void handlewhoischannels(int hooknum, void *arg) {
   buffer[0] = '\0';
 
   /* Not handling delayed joins. */
-  for(i=target->channels->cursi-1;i>=0;i++) {
+  for(i=target->channels->cursi-1;i>=0;i--) {
     if(IsSecret(chans[i]) || IsPrivate(chans[i])) { /* check common channels */
       int j;
       channel **senderchans = (channel **)(sender->channels->content);
