@@ -471,28 +471,28 @@ void trojanscan_generateclone(void *arg) {
 
   /* PPA: unlikely to be infinite */
   do {
-    if ((loops++ < 10) && trojanscan_hostmode) {
+    c_nick[0] = '\0';
+    if (!loops && trojanscan_hostmode) /* only have one go at this */
       trojanscan_generatenick(c_nick, NICKLEN);
-    } else {
+    if(!c_nick[0])
       trojanscan_gennick(c_nick, trojanscan_minmaxrand(7, TROJANSCAN_MMIN(13, NICKLEN)));
-    }
-  } while (c_nick && (getnickbynick(c_nick) != NULL));
+    loops++;
+  } while ((getnickbynick(c_nick) != NULL));
 
   trojanscan_generateident(c_ident, USERLEN);
-  if(!c_ident)
+  if(!c_ident[0])
     trojanscan_genident(c_ident, trojanscan_minmaxrand(4, TROJANSCAN_MMIN(8, USERLEN)));
   
   if(trojanscan_hostmode) {
     trojanscan_generatehost(c_host, HOSTLEN);
-    if(!c_host) {
-        trojanscan_genhost(c_host, HOSTLEN);
-    }
+    if(!c_host[0])
+      trojanscan_genhost(c_host, HOSTLEN);
   } else {
     trojanscan_genhost(c_host, HOSTLEN);
   }
   
   trojanscan_generaterealname(c_real, REALLEN);
-  if(!c_real)
+  if(!c_real[0])
     trojanscan_genreal(c_real, trojanscan_minmaxrand(15, TROJANSCAN_MMIN(50, REALLEN)));
 
   trojanscan_swarm[i].clone = registerlocaluser(c_nick, c_ident, c_host, c_real, NULL, modes, &trojanscan_clonehandlemessages);
@@ -1771,7 +1771,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               trojanscan_database.glines++;
               
               irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, getnettime(), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
-              //trojanscan_mainchanmsg("%s GL * +%s %d :You are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, 3600 * TROJANSCAN_FIRST_OFFENSE * frequency, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, TROJANSCAN_FIRST_OFFENSE * frequency);
 
               trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
             }
@@ -2116,7 +2115,7 @@ int trojanscan_generatepool(void) {
 }
 
 nick *trojanscan_selectuser(void) {
-  int target = trojanscan_minmaxrand(0, 500), loops = 50, j;
+  int target = trojanscan_minmaxrand(0, 500), loops = 150, j;
   nick *np;
   do {
     for (j=trojanscan_minmaxrand(0, NICKHASHSIZE-1);j<NICKHASHSIZE;j++)
@@ -2178,12 +2177,16 @@ void trojanscan_generatehost(char *buf, int maxsize) {
 }
 
 void trojanscan_generatenick(char *buf, int maxsize) {
-  int bits = trojanscan_minmaxrand(2, 3), loops = 0, wanttocopy, len = 0, i, d = 0;
+  int bits = trojanscan_minmaxrand(2, 3), loops = 0, wanttocopy, len = 0, i, d = 0, newmaxsize = maxsize - trojanscan_minmaxrand(0, 7);
   nick *np;
+
+  if(newmaxsize > 2)
+    maxsize = newmaxsize;
+
   do {
     np = trojanscan_selectuser();
     if(np) {
-      wanttocopy = trojanscan_minmaxrand(1, (strlen(np->nick) / 2) + 2);
+      wanttocopy = trojanscan_minmaxrand(1, (strlen(np->nick) / 2) + 3);
       for(i=0;((i<wanttocopy) && (len<maxsize));i++)
         buf[len++] = np->nick[i];
       if(++d > bits) {
