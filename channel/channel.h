@@ -177,6 +177,7 @@ int handlekickmsg(void *source, int cargc, char **cargv);
 int handletopicmsg(void *source, int cargc, char **cargv);
 int handlemodemsg(void *source, int cargc, char **cargv);
 int handleclearmodemsg(void *source, int cargc, char **cargv);
+void handlewhoischannels(int hooknum, void *arg);
 
 /* functions from chanuserhash.c */
 void rehashchannel(channel *cp);

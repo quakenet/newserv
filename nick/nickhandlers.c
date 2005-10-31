@@ -312,11 +312,11 @@ int handlewhoismsg(void *source, int cargc, char **cargv) {
       irc_send(":%s 313 %s %s :is an IRC Operator",myserver->content,sender->nick,target->nick);
     }
     if (IsAccount(target)) {
-      irc_send(":%s 330 %s %s %s :is logged in as",myserver->content,sender->nick,target->nick,target->authname);
+      irc_send(":%s 330 %s %s %s :is authed as",myserver->content,sender->nick,target->nick,target->authname);
     }
-    if (homeserver(target->numeric)==mylongnum && !IsService(target)) {
+    if (homeserver(target->numeric)==mylongnum && !IsService(target) && !IsHideIdle(target)) {
       irc_send(":%s 317 %s %s %ld %ld :seconds idle, signon time",myserver->content,sender->nick,target->nick,
-         0,target->timestamp);
+         target->timestamp % 3600,target->timestamp);
     }
   }
   

@@ -50,6 +50,7 @@ void _init() {
   registerhook(HOOK_NICK_LOSTNICK,&addordelnick);
   registerhook(HOOK_CORE_STATSREQUEST,&channelstats);
   registerhook(HOOK_IRC_SENDBURSTBURSTS,&sendchanburst);
+  registerhook(HOOK_NICK_WHOISCHANNELS,&handlewhoischannels);
   
   registerserverhandler("B",&handleburstmsg,7);
   registerserverhandler("J",&handlejoinmsg,2);
@@ -81,6 +82,7 @@ void _fini() {
   
   deregisterhook(HOOK_NICK_NEWNICK,&addordelnick);
   deregisterhook(HOOK_NICK_LOSTNICK,&addordelnick);
+  deregisterhook(HOOK_NICK_WHOISCHANNELS,&handlewhoischannels);
 }
 
 int addnicktochannel(channel *cp, long numeric) {
