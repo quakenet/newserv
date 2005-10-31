@@ -1,5 +1,8 @@
 /* channel.c */
 
+#include <stdio.h>
+#include <string.h>
+
 #include "channel.h"
 #include "../server/server.h"
 #include "../nick/nick.h"
@@ -8,6 +11,7 @@
 #include "../parser/parser.h"
 #include "../irc/irc.h"
 #include "../lib/base64.h"
+#include "../lib/strlfunc.h"
 
 int handleburstmsg(void *source, int cargc, char **cargv) {
   channel *cp;
@@ -889,3 +893,55 @@ int handleclearmodemsg(void *source, int cargc, char **cargv) {
   triggerhook(HOOK_CHANNEL_MODECHANGE, harg);
   return CMD_OK;
 }
+
+void handlewhoischannels(int hooknum, void *arg) {
+  channel** chans;
+  char buffer[1024];
+  sstring* name;
+  unsigned long* num;
+  int i;
+  void **args = (void **)arg;
+  nick *sender = (nick *)args[0], *target = (nick *)args[1];
+
+  if(IsService(target) || IsHideChan(target))
+    return;
+
+  chans = (channel **)(target->channels->content);
+
+  buffer[0] = '\0';
+
+  /* Not handling delayed joins. */
+  for(i=0;i<target->channels->cursi;i++) {
+    if(IsSecret(chans[i]) || IsPrivate(chans[i])) { /* check common channels */
+      int j;
+      channel **senderchans = (channel **)(sender->channels->content);
+      for(j=0;j<sender->channels->cursi;j++)
+        if(senderchans[j] == chans[i])
+          break;
+      if(j == sender->channels->cursi)
+        continue;
+    }
+    name = chans[i]->index->name;
+    if (strlen(buffer) + name->length > 508) { /* why 508? */
+      irc_send("%s", buffer);
+      buffer[0] = '\0';
+    }
+
+    if(buffer[0] == '\0')
+      snprintf(buffer, sizeof(buffer), ":%s 319 %s %s :", myserver->content, sender->nick, target->nick);
+    else
+      strlcat(buffer, " ", sizeof(buffer));
+
+    num = getnumerichandlefromchanhash(chans[i]->users, target->numeric);
+    if (*num & CUMODE_OP)
+      strlcat(buffer, "@", sizeof(buffer));
+    else if (*num & CUMODE_VOICE)
+      strlcat(buffer, "+", sizeof(buffer));
+
+    strlcat(buffer, name->content, sizeof(buffer));
+  }
+
+  if (buffer[0] != '\0')
+    irc_send("%s", buffer);
+}
+
