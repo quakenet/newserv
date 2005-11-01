@@ -5,6 +5,7 @@
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
+#include "../lib/strlfunc.h"
 #include "../localuser/localuserchannel.h"
 
 #include <assert.h>
@@ -17,10 +18,10 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.52"
+#define TROJANSCAN_VERSION "2.53"
 
-#define TROJANSCAN_CLONE_MAX        250
-#define TROJANSCAN_WATCHCLONE_MAX   75
+#define TROJANSCAN_CLONE_MAX        150
+#define TROJANSCAN_WATCHCLONE_MAX   100
 #define TROJANSCAN_CLONE_TOTAL TROJANSCAN_CLONE_MAX + TROJANSCAN_WATCHCLONE_MAX
 
 #define TROJANSCAN_POOLSIZE 1000
@@ -28,7 +29,7 @@
 
 #define TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL 5000 /* 500 */
 
-#define TROJANSCAN_DEFAULT_MAXCHANS 500
+#define TROJANSCAN_DEFAULT_MAXCHANS 750
 #define TROJANSCAN_DEFAULT_CYCLETIME 600
 
 #define TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE 100 /* 100 */
@@ -44,7 +45,7 @@
 #define TROJANSCAN_HOST_POOL      0x00
 #define TROJANSCAN_STEAL_HOST     0x01
 
-#define TROJANSCAN_EPIDEMIC_MULTIPLIER 20
+#define TROJANSCAN_EPIDEMIC_MULTIPLIER 40
 
 #define TROJANSCAN_HOST_MODE      TROJANSCAN_STEAL_HOST
 
@@ -64,7 +65,7 @@
 #define TROJANSCAN_QUERY_TEMP_BUF_SIZE 1040
 #define TROJANSCAN_QUERY_BUF_SIZE 5040
 
-#define TROJANSCAN_FIRST_OFFENSE 2
+#define TROJANSCAN_FIRST_OFFENSE 12
 #define TROJANSCAN_IPLEN         20
 
 #define TROJANSCAN_VERSION_DETECT "\001VERSION"
