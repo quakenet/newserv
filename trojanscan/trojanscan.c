@@ -193,16 +193,16 @@ void trojanscan_connect(void *arg) {
   if (!cp) {
     localcreatechannel(trojanscan_nick, TROJANSCAN_OPERCHANNEL);
   } else {
-    localjoinchannel(trojanscan_nick, cp);
-    localgetops(trojanscan_nick, cp);
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
   }
 
   cp = findchannel(TROJANSCAN_CHANNEL);
   if (!cp) {
     localcreatechannel(trojanscan_nick, TROJANSCAN_CHANNEL);
   } else {
-    localjoinchannel(trojanscan_nick, cp);
-    localgetops(trojanscan_nick, cp);
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
   }
   
   freesstring(mnick);
@@ -560,9 +560,23 @@ int trojanscan_status(void *sender, int cargc, char **cargv) {
 int trojanscan_chanlist(void *sender, int cargc, char **cargv) {
   int i;
   nick *np = (nick *)sender;
+  char buf[CHANNELLEN * 2 + 20];
   trojanscan_reply(np, "Channel list (%d total):", trojanscan_activechans);
-  for(i=0;i<trojanscan_activechans;i++)
-    trojanscan_reply(np, "%s", trojanscan_chans[i].channel->content);
+  buf[0] = '\0';
+
+  for(i=0;i<trojanscan_activechans;i++) {
+    if(trojanscan_chans[i].channel->length + 3 > sizeof(buf) - strlen(buf)) {
+      trojanscan_reply(np, "%s", buf);
+      buf[0] = '\0';
+    }
+
+    /* if splidge sees this I'm going to die */
+    strlcat(buf, trojanscan_chans[i].channel->content, sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
+  }
+  if(buf[0])
+    trojanscan_reply(np, "%s", buf);
+
   trojanscan_reply(np, "Done.");
   return CMD_OK;
 }
@@ -589,7 +603,7 @@ int trojanscan_whois(void *sender, int cargc, char **cargv) {
     for(i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
       if(trojanscan_swarm[i].clone->nick && !ircd_strcmp(trojanscan_swarm[i].clone->nick, np2->nick)) { /* PPA: ircd_strncmp ? - order of args? */
         trojanscan_reply(np, "Nickname   : %s", np2->nick);
-        trojanscan_reply(np, "Swarm nick : yes", trojanscan_swarm[i].clone->nick);
+        trojanscan_reply(np, "Swarm      : yes", trojanscan_swarm[i].clone->nick);
         return CMD_OK;
       }
     }
@@ -929,8 +943,6 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
         trojanscan_generateclone((void *)rc->index);
       }
     }
-    rc->remaining--;
-    rc->sitting++;  
   }
   
   return rc;
@@ -1001,6 +1013,8 @@ void trojanscan_join(struct trojanscan_realchannels *rc) {
   
   if (rc->clone && rc->clone->clone) {
     if (!localjoinchannel(rc->clone->clone, rc->chan)) {
+      rc->clone->remaining--;
+      rc->clone->sitting++;  
       if (trojanscan_minmaxrand(1, TROJANSCAN_NICKCHANGE_ODDS)%TROJANSCAN_NICKCHANGE_ODDS == 0)
         trojanscan_donickchange((void *)rc->clone);
 
@@ -1407,13 +1421,9 @@ void trojanscan_dopart(void *arg) {
     return;
   }
   
-  if (rc->clone && rc->clone->clone && (!(rc->donotpart))) {
+  if (rc->clone->clone && (!(rc->donotpart)))
     localpartchannel(rc->clone->clone, rc->chan);
-  } else {
-/*
-    trojanscan_mainchanmsg("d: clone could not part: %s, most likely due to kill, flag: %d.", rc->chan->index->name->content, rc->donotpart);
-*/
-  }
+
   rc->clone->sitting--;
 
   for(rp=trojanscan_realchanlist;rp;rp=rp->next) {
@@ -1870,7 +1880,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
 
 void trojanscan_rejoin_channel(void *arg) {
   struct trojanscan_rejoinlist *rj2, *lrj, *rj = (struct trojanscan_rejoinlist *)arg;
-  /* TODO: there is a pretty major bug here */
   
   channel *cp = findchannel(rj->channel->content);
   freesstring(rj->channel);
