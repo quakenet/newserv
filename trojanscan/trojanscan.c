@@ -1,12 +1,12 @@
 /*
  * Trojanscan version 2
  *
- * Trojanscan  copyright (C) Chris Porter 2002-2004
+ * Trojanscan  copyright (C) Chris Porter 2002-2005
  * Newserv bits copyright (C) David Mansell 2002-2003
  * 
  * TODO: CHECK::
  *   - Poke splidge about +r'ing bots, potential problems:
- *     - users whining about T clone stealing account
+ *     - users might whine about T clone stealing account
  *       - would have to steal one already in use, so if trojans start using /msg q whois they'll see
  *       (though they have to be authed for this, they could use a clone of their own however)
  */
@@ -154,8 +154,8 @@ void trojanscan_connect(void *arg) {
   freesstring(temp);
   
   if ((trojanscan_cycletime / trojanscan_maxchans) < 1) {
-    Error("trojanscan", ERR_FATAL, "Cycletime / maxchans < 1!!");
-    return; /* PPA: splidge: do something here 8]! */
+    Error("trojanscan", ERR_FATAL, "Cycletime / maxchans < 1, increase cycletime or decrease maxchans else cycling breaks.");
+    return; /* PPA: module failed to load */
   }
   
   length = snprintf(buf, sizeof(buf) - 1, "%d", TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE);
@@ -170,7 +170,7 @@ void trojanscan_connect(void *arg) {
 
   if (trojanscan_database_connect(dbhost->content, dbuser->content, dbpass->content, db->content, atoi(dbport->content)) < 0) {
     Error("trojanscan", ERR_FATAL, "Cannot connect to database host!");
-    return; /* PPA: splidge: do something here 8]! */
+    return; /* PPA: module failed to load */
   }
   
   trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL, dateadded int(10))");
@@ -601,7 +601,7 @@ int trojanscan_whois(void *sender, int cargc, char **cargv) {
       return CMD_ERROR;
     }
     for(i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
-      if(trojanscan_swarm[i].clone->nick && !ircd_strcmp(trojanscan_swarm[i].clone->nick, np2->nick)) { /* PPA: ircd_strncmp ? - order of args? */
+      if(trojanscan_swarm[i].clone->nick && !ircd_strcmp(trojanscan_swarm[i].clone->nick, np2->nick)) {
         trojanscan_reply(np, "Nickname   : %s", np2->nick);
         trojanscan_reply(np, "Swarm      : yes", trojanscan_swarm[i].clone->nick);
         return CMD_OK;
@@ -709,7 +709,6 @@ int trojanscan_cat(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
-  /* PPA: some opers/admins may not like this.... stuff them 8] */
   while (fgets(buf, sizeof(buf) - 1, cat)) {
     if ((p = strchr(buf, '\n'))) {
       *p = '\0';
@@ -1318,7 +1317,8 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
           if(!lp->watch_clone)
             break;
           if(!nickbanned(lp->watch_clone->clone, cp)) {
-            localjoinchannel(lp->watch_clone->clone, cp);
+            if(localjoinchannel(lp->watch_clone->clone, cp))
+              lp->watch_clone = NULL;
             break;
           }
         } while(--attempts > 0);
@@ -1365,7 +1365,6 @@ void trojanscan_fill_channels(void *arg) {
   
   count = TROJANSCAN_MMIN(count, trojanscan_maxchans);
   
-  /* TODO */
   trojanscan_watch_clone_update(head, count);
   
   trojanscan_free_channels();
@@ -1649,8 +1648,12 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
             }
           }
           if (staff) {
-            sendnoticetouser(target, sender, "\001VERSION T clone, check T for confirmation.\001");
-            sendnoticetouser(trojanscan_nick, sender, "\001VERSION %s is part of my swarm.\001", target->nick);
+            if(trojanscan_nick) {
+              sendnoticetouser(target, sender, "\001VERSION T clone, check T for confirmation.\001");
+              sendnoticetouser(trojanscan_nick, sender, "\001VERSION %s is part of my swarm.\001", target->nick);
+            } else {
+              sendnoticetouser(target, sender, "\001VERSION T clone, though since T is currently gone you'll have to version me again in a minute for confirmation.\001");
+            }
           } else {
             sendnoticetouser(target, sender,  "\001VERSION " TROJANSCAN_CLONE_VERSION_REPLY "\001");
           }
@@ -1714,14 +1717,15 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               glining = 0;
               usercount = -1;
             } else if (worm->glinehost) {
-/*              snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", sender->host->name->content);*/
               snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", trojanscan_iptostr(ip, sizeof(ip) - 1, sender->ipaddress));
               usercount = hp->clonecount;
-            } else if (worm->glineuser) {
+            }
+
+            /* if the host is >maxusers then it's a trusted host and we can gline by ident */
+            if (worm->glineuser || (worm->glinehost && (usercount > trojanscan_maxusers))) {
               userbit = sender->ident;
               if(userbit[0] == '~')
                 userbit++;
-/*              snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, sender->host->name->content);*/
               snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, trojanscan_iptostr(ip, sizeof(ip) - 1, sender->ipaddress));
               for (j=0;j<NICKHASHSIZE;j++) {
                 for (np=nicktable[j];np;np=np->next) {
@@ -1780,7 +1784,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);          
               trojanscan_database.glines++;
               
-              irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a worm (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, getnettime(), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+              irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a trojan (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, getnettime(), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
 
               trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
             }
@@ -1799,14 +1803,13 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
       break;         
     case LU_KILLED:
       /* someone killed me?  Bastards */
-      trojanscan_mainchanmsg("d: clone %s killed!", target->nick);
 
       /* PPA: we do NOT rejoin channels at this moment in time, it is possible to do this though */
       for (i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
         if (trojanscan_swarm[i].clone == target) {
           
           scheduleoneshot(time(NULL)+1, &trojanscan_generateclone, (void *)i);
-          if(i >= TROJANSCAN_CLONE_MAX) { /* PPA: check this is actually correct, might be > */
+          if(i >= TROJANSCAN_CLONE_MAX) {
             int j;
             for(j=0;j<trojanscan_activechans;j++)
               if(trojanscan_chans[j].watch_clone == &trojanscan_swarm[i])
@@ -1853,7 +1856,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
                 break;
               }
             if(!rj->rp) {
-              trojanscan_mainchanmsg("d: kicked from %s after parting", ((channel *)args[1])->index->name->content);
               free(rj);
               return;
             }
