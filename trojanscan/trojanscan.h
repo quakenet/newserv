@@ -53,6 +53,7 @@
 
 #define TROJANSCAN_CHANNEL "#qnet.sec.trj"
 #define TROJANSCAN_OPERCHANNEL "#twilightzone"
+#define TROJANSCAN_PEONCHANNEL "#qnet.trj"
 
 #define TROJANSCAN_URL_PREFIX "http://trojanscan.quakenet.org/?"
 
@@ -207,6 +208,7 @@ char trojanscan_getmtfrommessagetype(int input);
 void trojanscan_handlemessages(nick *target, int messagetype, void **args);
 void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args);
 void trojanscan_mainchanmsg(char *message, ...);
+void trojanscan_peonchanmsg(char *message, ...);
 void trojanscan_reply(nick *target, char *message, ... );
 void trojanscan_privmsg_chan_or_nick(channel *cp, nick *np, char *text, ...);
 

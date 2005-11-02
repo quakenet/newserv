@@ -204,6 +204,14 @@ void trojanscan_connect(void *arg) {
     if(!localjoinchannel(trojanscan_nick, cp))
       localgetops(trojanscan_nick, cp);
   }
+
+  cp = findchannel(TROJANSCAN_PEONCHANNEL);
+  if (!cp) {
+    localcreatechannel(trojanscan_nick, TROJANSCAN_PEONCHANNEL);
+  } else {
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
+  }
   
   freesstring(mnick);
   freesstring(myident);
@@ -1776,6 +1784,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
                   matchbuf[0] = 0;
               
               trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+              trojanscan_peonchanmsg("m: t: %c u: %s!%s@%s%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, (IsHideHost(sender)&&IsAccount(sender))?sender->authname:sender->host->name->content, (IsHideHost(sender)&&IsAccount(sender))?"."HIS_HIDDENHOST:"", mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
             } else {
               int glinetime = TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1);
               if(glinetime > 7 * 24)
@@ -1942,6 +1951,23 @@ void trojanscan_mainchanmsg(char *message, ...) {
   if (!trojanscan_nick)
     return;
   if (!(cp = findchannel(TROJANSCAN_CHANNEL)))
+    return;
+    
+  va_start(va, message);
+  vsnprintf(buf, sizeof(buf) - 1, message, va);
+  va_end(va);
+  
+  sendmessagetochannel(trojanscan_nick, cp, "%s", buf);
+}
+
+void trojanscan_peonchanmsg(char *message, ...) {
+  char buf[513];
+  va_list va;
+  channel *cp;
+  
+  if (!trojanscan_nick)
+    return;
+  if (!(cp = findchannel(TROJANSCAN_PEONCHANNEL)))
     return;
     
   va_start(va, message);
