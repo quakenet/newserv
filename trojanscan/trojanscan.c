@@ -153,6 +153,11 @@ void trojanscan_connect(void *arg) {
   trojanscan_maxusers = atoi(temp->content);
   freesstring(temp);
   
+  length = snprintf(buf, sizeof(buf) - 1, "%d", TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL);
+  temp = getcopyconfigitem("trojanscan", "minpoolhosts", buf, length);
+  trojanscan_min_hosts = atoi(temp->content);
+  freesstring(temp);
+
   if ((trojanscan_cycletime / trojanscan_maxchans) < 1) {
     Error("trojanscan", ERR_FATAL, "Cycletime / maxchans < 1, increase cycletime or decrease maxchans else cycling breaks.");
     return; /* PPA: module failed to load */
@@ -504,6 +509,11 @@ void trojanscan_generateclone(void *arg) {
     trojanscan_genreal(c_real, trojanscan_minmaxrand(15, TROJANSCAN_MMIN(50, REALLEN)));
 
   trojanscan_swarm[i].clone = registerlocaluser(c_nick, c_ident, c_host, c_real, NULL, modes, &trojanscan_clonehandlemessages);
+  if(trojanscan_swarm[i].clone && !trojanscan_swarm_created) {
+    nick *np = trojanscan_selectuser();
+    if(np) /* select a 'random' sign on time for whois generation */
+      trojanscan_swarm[i].clone->timestamp = np->timestamp;
+  }
   trojanscan_swarm[i].remaining = trojanscan_minmaxrand(5, 100);
 
   trojanscan_swarm[i].sitting = 0;
@@ -2104,7 +2114,7 @@ int trojanscan_generatepool(void) {
     for (np=nicktable[i];np;np=np->next)
       j++;
   
-  if(j < TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL)
+  if(j < trojanscan_min_hosts)
     return 0;
   
   if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST)

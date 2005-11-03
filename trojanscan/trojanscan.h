@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.54"
+#define TROJANSCAN_VERSION "2.55"
 
 #define TROJANSCAN_CLONE_MAX        150
 #define TROJANSCAN_WATCHCLONE_MAX   100
@@ -285,7 +285,7 @@ char trojanscan_hostmode;
 void *trojanscan_schedule, *trojanscan_connect_schedule;
 void *trojanscan_initialschedule, *trojanscan_rehashschedule, *trojanscan_poolschedule, *trojanscan_cloneschedule;
 
-int trojanscan_minchansize;
+int trojanscan_minchansize, trojanscan_min_hosts;
 int trojanscan_swarm_created = 0;
 
 nick *trojanscan_nick;

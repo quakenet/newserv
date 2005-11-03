@@ -316,7 +316,7 @@ int handlewhoismsg(void *source, int cargc, char **cargv) {
     }
     if (homeserver(target->numeric)==mylongnum && !IsService(target) && !IsHideIdle(target)) {
       irc_send(":%s 317 %s %s %ld %ld :seconds idle, signon time",myserver->content,sender->nick,target->nick,
-         target->timestamp % 3600,target->timestamp);
+         (getnettime() - target->timestamp) % ((target->numeric + target->timestamp) % 983),target->timestamp);
     }
   }
   
