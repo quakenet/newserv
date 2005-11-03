@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.55"
+#define TROJANSCAN_VERSION "2.56"
 
 #define TROJANSCAN_CLONE_MAX        150
 #define TROJANSCAN_WATCHCLONE_MAX   100
