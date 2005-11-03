@@ -1368,8 +1368,7 @@ void trojanscan_fill_channels(void *arg) {
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for(chn=chantable[i];chn;chn=chn->next) {
-      /* TODO, add IsInvite */
-      if (chn->channel && !IsKey(chn->channel) && (chn->channel->users->totalusers >= trojanscan_minchansize)) {
+      if (chn->channel && !IsKey(chn->channel) && !IsInviteOnly(chn->channel) && !IsRegOnly(chn->channel) && (chn->channel->users->totalusers >= trojanscan_minchansize)) {
         lp = (trojanscan_prechannels *)malloc(sizeof(trojanscan_prechannels));
         lp->name = chn->name;
         lp->size = chn->channel->users->totalusers;
