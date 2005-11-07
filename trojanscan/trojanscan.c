@@ -179,7 +179,7 @@ void trojanscan_connect(void *arg) {
   }
   
   trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL, dateadded int(10))");
-  trojanscan_database_query("CREATE TABLE worms (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormname TEXT NOT NULL, glinetype INT DEFAULT 0, data text, hitmsgs BOOL DEFAULT 1, hitchans BOOL DEFAULT 0, epidemic BOOL DEFAULT 0)");
+  trojanscan_database_query("CREATE TABLE worms (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormname TEXT NOT NULL, glinetype INT DEFAULT 0, data text, hitmsgs BOOL DEFAULT 1, hitchans BOOL DEFAULT 0, epidemic BOOL DEFAULT 0, privinfo text)");
   trojanscan_database_query("CREATE TABLE logs (id INT(10) PRIMARY KEY AUTO_INCREMENT, userid INT(10) NOT NULL, act TEXT NOT NULL, description TEXT NOT NULL, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE channels (id INT(10) PRIMARY KEY AUTO_INCREMENT, channel VARCHAR(%d) NOT NULL, exempt BOOL DEFAULT 0)", CHANNELLEN);
   trojanscan_database_query("CREATE TABLE users (id INT(10) PRIMARY KEY AUTO_INCREMENT, authname VARCHAR(%d) NOT NULL, authlevel TINYINT(4) NOT NULL)", ACCOUNTLEN);
@@ -188,7 +188,7 @@ void trojanscan_connect(void *arg) {
   trojanscan_database_query("CREATE TABLE wwwlogs (id INT(10) PRIMARY KEY AUTO_INCREMENT, authid INT(10) NOT NULL, ip VARCHAR(15), action TEXT, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE unknownlog (id INT(10) PRIMARY KEY AUTO_INCREMENT, data TEXT, user VARCHAR(%d) NOT NULL, ts TIMESTAMP)", NICKLEN+USERLEN+HOSTLEN+3);
   
-  trojanscan_database_query("DELETE FROM settings WHERE setting = 'rehash'");
+  trojanscan_database_query("DELETE FROM settings");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('rehash','0')");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('changed','0')");
   
