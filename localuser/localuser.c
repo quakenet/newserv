@@ -285,12 +285,20 @@ int handlemessageornotice(void *source, int cargc, char **cargv, int isnotice) {
   } else { /* Did find @, do a lookup by nick */
     if ((target=getnickbynick(targetnick))==NULL) {   
       Error("localuser",ERR_DEBUG,"Couldn't find target for %s",cargv[0]);
+      irc_send(":%s 401 %s %s :No such nick",myserver->content,sender->nick,cargv[0]);
       return CMD_OK;
     }
   }
   
   if (homeserver(target->numeric)!=mylongnum) {
     Error("localuser",ERR_WARNING,"Got message/notice for someone not on my server");
+    irc_send(":%s 401 %s %s :No such nick",myserver->content,sender->nick,cargv[0]);
+    return CMD_OK;
+  }
+  
+  if (foundat && !IsService(target)) {   
+    Error("localuser",ERR_DEBUG,"Received secure message for %s, but user is not a service",cargv[0]);
+    irc_send(":%s 401 %s %s :No such nick",myserver->content,sender->nick,cargv[0]);
     return CMD_OK;
   }
   
