@@ -2,6 +2,8 @@
   nterfacer relay4
   Copyright (C) 2004-2005 Chris Porter.
 
+  v1.14
+    - made it return an error instead of a timeout when sending to local users
   v1.13
     - found a load of stuff on froo's box
   v1.12
@@ -201,6 +203,9 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
   if(!dest)
     return ri_error(ri, RELAY_NICK_NOT_FOUND, "Nickname not found!");
 
+  if(homeserver(dest->numeric) == mylongnum)
+    return ri_error(ri, RELAY_LOCAL_USER, "Cannot relay to local users");
+  
   for(i=3;i<argc;i++)
     if(strchr(argv[i], '\r'))
       return ri_error(ri, RELAY_INVALID_CHARS, "Invalid character in input");

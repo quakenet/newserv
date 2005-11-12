@@ -929,8 +929,6 @@ void handlewhoischannels(int hooknum, void *arg) {
 
     if(buffer[0] == '\0')
       snprintf(buffer, sizeof(buffer), ":%s 319 %s %s :", myserver->content, sender->nick, target->nick);
-    else
-      strlcat(buffer, " ", sizeof(buffer));
 
     num = getnumerichandlefromchanhash(chans[i]->users, target->numeric);
     if (*num & CUMODE_OP)
@@ -939,6 +937,7 @@ void handlewhoischannels(int hooknum, void *arg) {
       strlcat(buffer, "+", sizeof(buffer));
 
     strlcat(buffer, name->content, sizeof(buffer));
+    strlcat(buffer, " ", sizeof(buffer));
   }
 
   if (buffer[0] != '\0')
