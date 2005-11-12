@@ -6,6 +6,7 @@
 #ifndef __nterfacer_H
 #define __nterfacer_H
 
+#include <sys/types.h>
 #include <netinet/in.h>
 
 #include "esockets.h"

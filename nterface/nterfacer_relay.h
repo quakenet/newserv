@@ -31,6 +31,7 @@
 #define RELAY_SERVER_NOT_FOUND 0x0F
 #define RELAY_INVALID_COMMAND  0x10
 #define RELAY_INVALID_CHARS    0x11
+#define RELAY_LOCAL_USER       0x12
 
 #define MODE_TAG     0x01
 #define MODE_LINES   0x02
