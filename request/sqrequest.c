@@ -396,7 +396,7 @@ void qr_handlenotice(nick *sender, char *message) {
                * the list as it goes, so we can just keep picking off the first
                * entry
                */
-              for(rrp2=nextreq;rrp2;rrp2=nextreq) {
+              for(rrp2=nextreq;rrp2;) {
                 if (rrp2==rrp1)
                   break;
 
@@ -406,6 +406,8 @@ void qr_handlenotice(nick *sender, char *message) {
 
                 qr_result(rrp2, QR_FAILED,
                           "Sorry, an error occurred while processing your request.");
+
+                rrp2 = nextreq = (who == QR_Q) ? nextreqq : nextreql;
               }
 
               if (rrp2) {

@@ -17,6 +17,12 @@
 
 #define RQU_ANY 0
 #define RQU_OPER 1
+#define RQU_ACCOUNT 2
+
+/* one week by default */
+#define RQU_HELPER_MAXEXPIRE 604800
+
+#define RQ_USERFILE "rqusers"
 
 #define RQ_OK 0
 #define RQ_ERROR 1
