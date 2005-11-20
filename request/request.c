@@ -293,7 +293,7 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
   nick *lnick, *qnick;
   unsigned long *lhand, *qhand;
-  channel *cp;
+  channel *cp, *logcp;
   int retval;
 
   if (cargc < 1) {
@@ -334,6 +334,12 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
       /* user 'wants' L */
 
       retval = lr_requestl(rqnick, np, cp, lnick);
+
+      logcp = findchannel(RQ_LOGCHANNEL);
+
+      if (logcp) {
+        sendmessagetochannel(rqnick, logcp, "request (%s) for %s from %s: Request was %s.", RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+      }
     } else {
       /* user 'wants' Q */
 

@@ -87,6 +87,7 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
   requestrec **rh;
   char msgbuf[512];
   va_list va;
+  channel *cplog;
   nick *lnp, *qnp, *np, *tnp, *snp;
   
   /* Delete the request from the list first.. */
@@ -128,6 +129,12 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
     return;
   }
 
+  cplog = findchannel(RQ_LOGCHANNEL);
+
+  if (cplog) {
+    sendmessagetochannel(rqnick, cplog, "request (%s) for %s from %s: Request was %s.", (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK, req->cip->name->content, tnp->nick, (outcome == QR_OK) ? "accepted" : "denied");
+  }
+  
   if (outcome==QR_OK) {
     if (req->what == QR_CSERVE) {
       /* Delete L, add Q.  Check that they both exist first, though. */

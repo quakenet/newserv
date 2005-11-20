@@ -125,7 +125,7 @@ int ru_persist(void) {
   r_user_t *user = r_userlist;
 
   if (ru_loading)
-    return;
+    return 0;
 
   rudata = fopen(RQ_USERFILE, "w");
 
