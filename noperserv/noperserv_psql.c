@@ -95,7 +95,7 @@ void noperserv_db_handler(int fd, short revents) {
   if(revents & POLLIN) {
     PQconsumeInput(no_dbconn);
     
-    if(!PQisBusy(no_dbconn)) { /* Query is complete */
+    if(!PQisBusy(no_dbconn)) { /* query is complete */
       if(queryhead->handler)
         (queryhead->handler)(no_dbconn, queryhead->tag);
 
