@@ -1,6 +1,6 @@
 
 .PHONY: all
-all: nterfacer.so nterfacer_control.so nterfacer_relay.so nterfacer_chanstats.so nterfacer_country.so
+all: nterfacer.so nterfacer_control.so nterfacer_relay.so nterfacer_chanstats.so nterfacer_country.so nterfacer_spamscan2.so
 
 nterfacer.so: nterfacer.o logging.o esockets.o library.o
 	ld -shared -Bdynamic -o $@ $^
@@ -16,3 +16,6 @@ nterfacer_chanstats.so: nterfacer_chanstats.o
 
 nterfacer_country.so: libGeoIP/GeoIP.o nterfacer_country.o
 	ld -shared -Bdynamic -o $@ $^
+
+nterfacer_spamscan2.so: nterfacer_spamscan2.o
+	ld -shared -Bdynamic ${LIBPCRE} -o $@ $^
