@@ -1,12 +1,16 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
 #include "../channel/channel.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
+#include "../nick/nick.h"
+
 
 #include "hchannel.h"
 #include "haccount.h"
@@ -463,6 +467,50 @@ const char *hchannel_get_state(hchannel* hchan, int mask)
         return "No";
 }
 
+int hchannel_highlight_detection(hchannel *hchan, const char *message)
+{
+    char buffer[512], *buffer_ptr = buffer, *ptr = buffer;
+    int i = 0, matches = 0;
+
+    strcpy(buffer, message);
+
+    do
+    {
+	nick *tmp;
+	huser *tmp_huser;
+	huser_channel *tmp_huserchan;
+
+	if (i++ > 6)
+            break;
+
+	while (*buffer_ptr && isspace(*buffer))
+	    buffer_ptr++;
+
+	if (*buffer_ptr)
+	{
+	    ptr = strchr(buffer_ptr, ' ');
+	    if (ptr)
+	    {
+                *ptr = '\0';
+		ptr++;
+	    }
+	    if ((tmp = getnickbynick(buffer_ptr)))
+		if ((tmp_huser = huser_get(tmp)))
+		    if ((tmp_huserchan = huser_on_channel(tmp_huser, hchan)))
+			if ((tmp_huserchan->flags & HCUMODE_OP) && strlen(huser_get_nick(tmp_huser)) > 1)
+			    matches++;
+	}
+	if (ptr == NULL)
+	    break;
+	else
+	    buffer_ptr = ptr;
+    } while (*ptr);
+
+    if (matches > 2)
+	return 1;
+    else
+	return 0;
+}
 
 const char *hchannel_get_sname(int flag)
 {
@@ -512,7 +560,9 @@ const char *hchannel_get_sname(int flag)
     case 19:
 	return "Require a ticket to join";
     case 20:
-        return "Send a message on ticket issue";
+	return "Send a message on ticket issue";
+    case 21:
+        return "Excessive highlight prevention";
     default:
         return "Error, please contact strutsi";
     }

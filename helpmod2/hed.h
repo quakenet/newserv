@@ -6,6 +6,7 @@
 #define HED_BUFFER_LINES 16
 
 #define HELPMOD_TEXT_DIR "./helpmod2/text"
+#define HED_FILENAME_LENGTH 64
 
 /* Forward declarations */
 struct hchannel_struct;
@@ -48,7 +49,7 @@ typedef struct helpmod_editor_line_struct
 
 typedef struct helpmod_editor_struct
 {
-    char filename[64];
+    char filename[HED_FILENAME_LENGTH];
     hed_line buffers[HED_BUFFER_LINES];
 
     hed_line *start;

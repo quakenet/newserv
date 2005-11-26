@@ -333,7 +333,12 @@ void helpmod_chan_privmsg(void **args)
         {
             helpmod_kick(hchan, sender_huser, "Please only use normal text on %s", hchannel_get_name(hchan));
             return;
-        }
+	}
+	if ((hchan->flags & H_HIGHLIGHT_PREVENTION) && hchannel_highlight_detection(hchan, (char*)message))
+	{
+	    helpmod_kick(hchan, sender_huser, "Please do not abuse the highlight feature of IRC clients");
+            return;
+	}
     }
 
     if (hcommand_is_command((char*)message) && (hchan->flags & H_CHANNEL_COMMANDS))
