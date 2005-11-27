@@ -1580,6 +1580,16 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 		SKIP_WORD;
 	    }
 	    reason = ostr + 1;
+
+	    if (!strncmp(reason, "?? ", 3))
+	    { /* obtain reason from hterms */
+		hchannel *hchan = NULL;
+		if (returntype != NULL)
+		    hchan = hchannel_get_by_channel(returntype);
+		hterm *new_reason = hterm_get_and_find(hchan->channel_hterms, reason + 3);
+		if (new_reason != NULL)
+		    reason = new_reason->description->content;
+	    }
 	    break;
 	}
 
@@ -3122,36 +3132,74 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
     {
 	DIR *dir;
 	struct dirent *dent;
-	char buffer[384];
-        int nwritten, bufpos = 0;
+	char buffer[384], **lines, *start;
+        int nwritten, bufpos = 0, nlines = 0,i;
 
 	dir = opendir(HELPMOD_TEXT_DIR);
 	assert(dir != NULL);
 
-	helpmod_reply(sender, returntype, "Following texts are available:");
-
+        /* First pass, count */
 	for (dent = readdir(dir);dent != NULL;dent = readdir(dir))
 	{
             /* Skip stuff like . and .. */
 	    if (!strncmp(dent->d_name, ".", 1))
 		continue;
+            nlines++;
+	}
 
+	if (nlines == 0)
+	{
+	    helpmod_reply(sender, returntype, "No texts are available.");
+            return;
+	}
+
+	helpmod_reply(sender, returntype, "Following texts are available:");
+
+	{
+	    lines = (char **)malloc(sizeof(char*) * nlines);
+            *lines = (char *)malloc(sizeof(char) * (HED_FILENAME_LENGTH+1) * nlines);
+            /* We need the start to free this array */
+	    start = *lines;
+	    for(i=0;i < nlines;i++)
+		lines[i] = &lines[0][(HED_FILENAME_LENGTH+1) * i];
+	}
+        
+	/* Second pass, create array */
+        rewinddir(dir);
+	for (dent = readdir(dir), i = 0;dent != NULL && i < nlines;dent = readdir(dir))
+	{
+	    /* Skip stuff like . and .. */
+	    if (!strncmp(dent->d_name, ".", 1))
+		continue;
+	    strncpy(lines[i], dent->d_name, 64);
+            i++;
+	}
+	/* Sort */
+	qsort(*lines, nlines, sizeof(char)*(HED_FILENAME_LENGTH+1), (int (*)(const void*, const void*))&strcmp);
+
+	for (i = 0;i < nlines;i++)
+	{
 	    if (bufpos)
 	    {
 		buffer[bufpos] = ' ';
 		bufpos++;
 	    }
-	    sprintf(buffer + bufpos, "%s%n", dent->d_name, &nwritten);
+	    sprintf(buffer + bufpos, "%s%n", lines[i], &nwritten);
 	    bufpos+=nwritten;
 
-	    if (bufpos > 256)
+	    if (bufpos > (384 - (HED_FILENAME_LENGTH+1)))
 	    {
 		helpmod_reply(sender, returntype, buffer);
 		bufpos = 0;
 	    }
 	}
-        if (bufpos)
+
+	if (bufpos)
 	    helpmod_reply(sender, returntype, buffer);
+
+	free(start);
+        free(lines);
+
 	return;
     }
     else if (!ci_strcmp(argv[0], "show"))
@@ -3179,9 +3227,9 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	    if (!fgets(buffer, 512, in))
                 break;
 	    if (returntype != NULL && huser_get_level(sender) > H_PEON)
-		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s", buffer);
+		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s: %s", argv[1], buffer);
 	    else
-                helpmod_reply(sender, returntype, "%s", buffer);
+		helpmod_reply(sender, returntype, "%s: %s", argv[1], buffer);
 	}
 	fclose (in);
         return;

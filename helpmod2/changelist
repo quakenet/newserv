@@ -350,3 +350,11 @@ Added missing command help for ?+ and ?-
 2.13
 Fixed the account expiration problem
 Fixed the empty censor pattern bug
+
+2.14
+Text output changed a bit
+Text list is now sorted
+Added ?? term support for out reason
+Added channel option to kick users for highlighting chanops
+
+

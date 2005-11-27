@@ -8,6 +8,7 @@
 
 #include "../lib/helix.h"
 #include <sys/types.h>
+#include <ctype.h>
 
 #define ESOCKET_UNIX_DOMAIN            ESOCKET_LISTENING
 #define ESOCKET_UNIX_DOMAIN_CONNECTED  ESOCKET_INCOMING
@@ -113,6 +114,18 @@ void esocket_clean_by_token(unsigned short token);
 void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce, unsigned char *theirnonce);
 void esocket_disconnect_when_complete(struct esocket *active);
 int esocket_raw_write(struct esocket *sock, char *buffer, int bytes);
+
+#ifndef BYTE_ORDER
+#ifndef _BYTE_ORDER
+#ifndef __BYTE_ORDER
+#error No byte order defined!
+#else
+#define BYTE_ORDER __BYTE_ORDER
+#endif
+#else
+#define BYTE_ORDER _BYTE_ORDER
+#endif
+#endif
 
 #ifndef htonq
 #if BYTE_ORDER == BIG_ENDIAN

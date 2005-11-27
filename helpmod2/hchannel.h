@@ -40,7 +40,9 @@ enum
     H_DISALLOW_LAME_TEXT   = 1 << 17,
     H_QUEUE_TIMEOUT        = 1 << 18,
     H_REQUIRE_TICKET       = 1 << 19,
+
     H_TICKET_MESSAGE       = 1 << 20,
+    H_HIGHLIGHT_PREVENTION = 1 << 21,
 
     /* the following are not real channel flags, they're used only internally */
     H_UNUSED_1             = 1 << 28,
@@ -51,7 +53,7 @@ enum
 
 #define H_CHANFLAGS_DEFAULT (H_CHANNEL_COMMANDS)
 
-#define HCHANNEL_CONF_COUNT 20
+#define HCHANNEL_CONF_COUNT 21
 
 typedef struct hchannel_struct
 {
@@ -131,6 +133,8 @@ int hchannel_is_valid(hchannel *);
 void hchannels_match_accounts(void);
 
 int hchannel_count(void);
+
+int hchannel_highlight_detection(hchannel *, const char *);
 
 void hchannel_activate_join_flood(hchannel*);
 /* goes to schedule */
