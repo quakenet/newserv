@@ -15,6 +15,7 @@
 #define ERR_TARGET_NOT_FOUND            0x01
 #define ERR_CHANNEL_NOT_REGISTERED      0x02
 #define ERR_PROFILE_DOES_NOT_EXIST      0x03
+#define ERR_BAD_FLAGS                   0x04
 
 int handle_getprofile(struct rline *li, int argc, char **argv);
 int handle_setprofile(struct rline *li, int argc, char **argv);
@@ -27,7 +28,7 @@ void _init(void) {
     return;
 
   register_handler(s_node, "getprofile", 1, handle_getprofile);
-  register_handler(s_node, "setprofile", 2, handle_setprofile);
+  register_handler(s_node, "setprofile", 3, handle_setprofile);
 }
 
 void _fini(void) {
@@ -45,7 +46,7 @@ int handle_getprofile(struct rline *li, int argc, char **argv) {
   if(!cs)
     return ri_error(li, ERR_CHANNEL_NOT_REGISTERED, "Channel not registered");
 
-  ri_append(li, cs->cp?cs->cp->profilename:"unknown");
+  ri_append(li, cs->cp?cs->cp->profilename:"unknown", printflags(cs->flags, s_cfflags));
   return ri_final(li);
 }
 
@@ -64,7 +65,11 @@ int handle_setprofile(struct rline *li, int argc, char **argv) {
   if(!cp)
     return ri_error(li, ERR_PROFILE_DOES_NOT_EXIST, "Profile does not exist");
 
+  if(setflags(&cs->flags, SPAMSCAN_CF_ALL, argv[2], s_cfflags, REJECT_UNKNOWN) != REJECT_NONE)
+    return ri_error(li, ERR_BAD_FLAGS, "Bad flags");
+
   /* TODO: beat Cruicky till he refactors this functionality */
+  spamscan_checkchannelpresence(findchannel(cs->channelname)); /* what if findchannel returns NULL? */
   cs->cp = cp;
   cs->modified = time(NULL);
   cs->modifiedby = spamscan_getaccountsettings("nterfacer", 1);
