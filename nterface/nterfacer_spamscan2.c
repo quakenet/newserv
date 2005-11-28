@@ -46,7 +46,8 @@ int handle_getprofile(struct rline *li, int argc, char **argv) {
   if(!cs)
     return ri_error(li, ERR_CHANNEL_NOT_REGISTERED, "Channel not registered");
 
-  ri_append(li, "%s,%s", cs->cp?cs->cp->profilename:"unknown", printflags(cs->flags, s_cfflags));
+  ri_append(li, "%s", cs->cp?cs->cp->profilename:"unknown");
+  ri_append(li, "%s", printflags(cs->flags, s_cfflags));
   return ri_final(li);
 }
 
