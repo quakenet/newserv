@@ -19,16 +19,18 @@
 
 int handle_getprofile(struct rline *li, int argc, char **argv);
 int handle_setprofile(struct rline *li, int argc, char **argv);
+int handle_delchan(struct rline *li, int argc, char **argv);
 
 struct service_node *s_node;
 
 void _init(void) {
-  s_node = register_service("S");
+  s_node = register_service("S2");
   if(!s_node)
     return;
 
   register_handler(s_node, "getprofile", 1, handle_getprofile);
   register_handler(s_node, "setprofile", 3, handle_setprofile);
+  register_handler(s_node, "delchan", 1, handle_delchan);
 }
 
 void _fini(void) {
@@ -73,10 +75,22 @@ int handle_setprofile(struct rline *li, int argc, char **argv) {
   spamscan_checkchannelpresence(findchannel(cs->channelname)); /* what if findchannel returns NULL? */
   cs->cp = cp;
   cs->modified = time(NULL);
-  cs->modifiedby = spamscan_getaccountsettings("nterfacer", 1);
+  cs->modifiedby = spamscan_getaccountsettings("nterfacer", 0); /* ugly hack, should be 1... */
   spamscan_updatechanneldb(cs);
 
   ri_append(li, "Done.");
   return ri_final(li);
 }
+
+int handle_delchan(struct rline *li, int argc, char **argv) {
+  if(argv[0][0] != '#')
+    return ri_error(li, ERR_TARGET_NOT_FOUND, "Channel not found");
+
+  if(!spamscan_deletechannelsettings(argv[0]))
+    return ri_error(li, ERR_CHANNEL_NOT_REGISTERED, "Channel not registered");
+
+  ri_append(li, "Done");
+  return ri_final(li);
+}
+
 
