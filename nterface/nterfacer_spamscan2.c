@@ -86,7 +86,7 @@ int handle_delchan(struct rline *li, int argc, char **argv) {
   if(argv[0][0] != '#')
     return ri_error(li, ERR_TARGET_NOT_FOUND, "Channel not found");
 
-  if(!spamscan_deletechannelsettings(argv[0]))
+  if(spamscan_deletechannelsettings(argv[0]))
     return ri_error(li, ERR_CHANNEL_NOT_REGISTERED, "Channel not registered");
 
   ri_append(li, "Done");
