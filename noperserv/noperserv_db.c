@@ -37,7 +37,10 @@ void noperserv_quit_account(int hooknum, void *arg);
 
 void nopserserv_delete_from_autheduser(nick *np, no_autheduser *au);
 
-void noperserv_load_db(void) {
+int noperserv_load_db(void) {
+  if(!pqconnected())
+    return 0;
+
   if(db_loaded)
     noperserv_cleanup_db();
 
@@ -49,6 +52,8 @@ void noperserv_load_db(void) {
 
   pqasyncquery(noperserv_load_users, NULL,
     "SELECT ID, authname, flags, noticelevel FROM noperserv.users");
+
+  return 1;
 }
 
 void noperserv_load_users(PGconn *dbconn, void *arg) {

@@ -69,10 +69,13 @@ int noperserv_deluser(void *sender, int cargc, char **cargv);
 void noperserv_oper_detection(int hooknum, void *arg);
 void noperserv_reply(nick *np, char *format, ...);
 
-void _init() {
-  noperserv_ext = registernickext("noperserv");
+int init = 0;
 
-  noperserv_load_db();
+void _init() {
+  if(!noperserv_load_db())
+    return;
+
+  noperserv_ext = registernickext("noperserv");
 
   noperserv_setup_hooks();
 
@@ -100,6 +103,8 @@ void _init() {
 
   registercontrolhelpcmd("deluser", NO_OPERED | NO_ACCOUNT, 2, &noperserv_deluser, "Syntax: DELUSER <nickname|#authname>\nDeletes the specified user.");
   registerhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
+
+  init = 1;
 }
 
 #ifdef BROKEN_DLCLOSE
@@ -107,6 +112,9 @@ void __fini() {
 #else
 void _fini() {
 #endif
+  if(!init)
+    return;
+
   deregisterhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
 
   deregistercontrolcmd("noticeflags", &noperserv_noticeflags);

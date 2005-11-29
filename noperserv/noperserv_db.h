@@ -18,7 +18,7 @@ typedef struct no_autheduser {
   no_nicklist *nick;
 } no_autheduser;
 
-void noperserv_load_db(void);
+int noperserv_load_db(void);
 void noperserv_cleanup_db(void);
 
 extern no_autheduser *authedusers;
