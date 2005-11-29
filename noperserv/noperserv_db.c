@@ -11,21 +11,22 @@
 #include "../core/error.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../pqsql/pqsql.h"
 
 #include "noperserv.h"
-#include "noperserv_psql.h"
 #include "noperserv_db.h"
 
 #include <libpq-fe.h>
 #include <stdlib.h>
 
-int dontclose = 0;
-int odb_connected = 0; /* seperate from the db one */
+int db_loaded = 0;
 unsigned long loadedusers = 0;
 
 unsigned long lastuserid;
 
 no_autheduser *authedusers = NULL;
+
+void noperserv_create_tables(void);
 
 void noperserv_free_user(no_autheduser *au);
 void noperserv_load_users(PGconn *dbconn, void *arg);
@@ -35,25 +36,19 @@ void noperserv_nick_account(int hooknum, void *arg);
 void noperserv_quit_account(int hooknum, void *arg);
 
 void nopserserv_delete_from_autheduser(nick *np, no_autheduser *au);
-void noperserv_create_tables(void);
 
 void noperserv_load_db(void) {
-  if(odb_connected) {
-    dontclose = 1;
+  if(db_loaded)
     noperserv_cleanup_db();
-  } else {
-    if(noperserv_connect_db(&noperserv_create_tables)) {
-      Error("noperserv", ERR_ERROR, "Unable to connect to database!");
-      return;
-    }
 
-    odb_connected = 1;
-  }
+  db_loaded = 1;
 
   authedusers = NULL;
 
-  noperserv_async_query(noperserv_load_users, NULL,
-    "SELECT ID, authname, flags, noticelevel FROM users");
+  noperserv_create_tables();
+
+  pqasyncquery(noperserv_load_users, NULL,
+    "SELECT ID, authname, flags, noticelevel FROM noperserv.users");
 }
 
 void noperserv_load_users(PGconn *dbconn, void *arg) {
@@ -96,8 +91,9 @@ void noperserv_load_users(PGconn *dbconn, void *arg) {
 }
 
 void noperserv_create_tables(void) {
-  noperserv_sync_query(
-    "CREATE TABLE users ("
+  pqsyncquery("CREATE SCHEMA noperserv");
+  pqsyncquery(
+    "CREATE TABLE noperserv.users ("
       "ID            INT               NOT NULL,"
       "authname      VARCHAR(%d)       NOT NULL,"
       "flags         INT               NOT NULL,"
@@ -118,12 +114,6 @@ void noperserv_cleanup_db(void) {
     noperserv_free_user(ap);
     ap = np;
   }
-
-  /* other stuff */
-  if(!dontclose && odb_connected)
-    noperserv_disconnect_db();
-
-  dontclose = 0;
 }
 
 no_autheduser *noperserv_new_autheduser(char *authname) {
@@ -151,7 +141,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    noperserv_query("DELETE FROM users WHERE id = %d", au->id);
+    pqquery("DELETE FROM noperserv.users WHERE id = %d", au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {
@@ -170,10 +160,10 @@ void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
     PQescapeString(escapedauthname, au->authname->content, au->authname->length);
-    noperserv_query("INSERT INTO users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%lu,%lu)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    pqquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%lu,%lu)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    noperserv_query("UPDATE users SET flags = %lu, noticelevel = %lu WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    pqquery("UPDATE noperserv.users SET flags = %lu, noticelevel = %lu WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 
