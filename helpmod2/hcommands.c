@@ -354,15 +354,27 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
             {
                 helpmod_reply(sender, returntype, "Cannot change userlevel: Sanity check, you're changing your own userlevel, use #account instead of nick if you really wish to do this");
                 continue;
-            }
-            if (!IsAccount(target_huser->real_user))
-            {
+	    }
+
+	    if (target_level == H_LAMER)
+	    {
+		const char *banmask = hban_ban_string(target_huser->real_user, HBAN_HOST);
+		hban_add(banmask, "Improper user", time(NULL) + HCMD_OUT_DEFAULT, 1);
+		if (!IsAccount(target_huser->real_user))
+		{
+		    helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' is not authed. Banning user instead.", argv[i]);
+		    continue;
+		}
+	    }
+
+	    if (!IsAccount(target_huser->real_user))
+	    {
                 helpmod_reply(sender, returntype, "Cannot change userlevel: User '%s' is not authed", argv[i]);
                 continue;
             }
 
-            if (target_huser->account == NULL)
-            {
+	    if (target_huser->account == NULL)
+	    {
                 if (haccount_get_by_name(huser_get_auth(target_huser)) != NULL)
                 {
                     helpmod_reply(sender, returntype, "Cannot change userlevel: Unable to create an account. Account %s already exists", huser_get_auth(target_huser));
@@ -376,12 +388,7 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
 
 	    helpmod_reply(sender, returntype, "Userlevel changed: User '%s' now has userlevel %s", argv[i], hlevel_name(target_level));
 
-	    if (huser_get_level(target_huser) == H_LAMER)
-	    {
-		const char *banmask = hban_ban_string(target_huser->real_user, HBAN_HOST);
-                hban_add(banmask, "Improper user", time(NULL) + HCMD_OUT_DEFAULT, 1);
-	    }
-	    else
+            if (target_level != H_LAMER)
 		helpmod_reply(target_huser, NULL, "Your userlevel has been changed, your current userlevel is %s", hlevel_name(target_level));
         }
     }
@@ -1584,9 +1591,15 @@ static void helpmod_cmd_out (huser *sender, channel* returntype, char* ostr, int
 	    if (!strncmp(reason, "?? ", 3))
 	    { /* obtain reason from hterms */
 		hchannel *hchan = NULL;
+                hterm *new_reason;
 		if (returntype != NULL)
+		{ /* if hchan is NULL here then everything is broken already */
 		    hchan = hchannel_get_by_channel(returntype);
-		hterm *new_reason = hterm_get_and_find(hchan->channel_hterms, reason + 3);
+		    new_reason = hterm_get_and_find(hchan->channel_hterms, reason + 3);
+		}
+		else
+		    new_reason = hterm_get_and_find(hterms, reason + 3);
+
 		if (new_reason != NULL)
 		    reason = new_reason->description->content;
 	    }
@@ -2041,7 +2054,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
 	else if (!ci_strcmp(argv[0], "all") || !ci_strcmp(argv[0], "a"))
             lvl = H_ANY;
     }
-    if (argc == 3)
+    if (argc == 2)
     {
         int tmp;
         if (sscanf(argv[1], "%d", &tmp) && (tmp >= 10) && (tmp <= 50))
@@ -2477,9 +2490,9 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
     int i;
 
     DEFINE_HCHANNEL;
-
+/*
     HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
-
+*/
     if (argc > H_CMD_MAX_ARGS)
         argc = H_CMD_MAX_ARGS;
 
@@ -3012,19 +3025,19 @@ static void helpmod_cmd_lcedit (huser *sender, channel* returntype, char* ostr, 
 	}
 
 	helpmod_reply(sender, returntype, "Lamer control profile %s:", profile->name->content);
-	helpmod_reply(sender, returntype, "Maximum caps percentage:    %d", profile->caps_max_percentage);
-	helpmod_reply(sender, returntype, "Caps minimum count:         %d", profile->caps_min_count);
-	helpmod_reply(sender, returntype, "Repeat tolerance:           %d", profile->repeats_max_count);
-        helpmod_reply(sender, returntype, "Repeat minimum length:      %d", profile->repeats_min_length);
-        helpmod_reply(sender, returntype, "Symbol repeat tolerance:    %d", profile->symbol_repeat_max_count);
-	helpmod_reply(sender, returntype, "Character repeat tolerance: %d", profile->character_repeat_max_count);
-	helpmod_reply(sender, returntype, "Continous symbol tolerance: %d", profile->symbol_max_count);
-	helpmod_reply(sender, returntype, "Flood tolerance:            %d", profile->tolerance_flood);
-	helpmod_reply(sender, returntype, "Spam tolerance:             %d", profile->tolerance_spam);
-	helpmod_reply(sender, returntype, "Spam multiplier:            %f", profile->constant_spam);
-	helpmod_reply(sender, returntype, "Warning limit:              %d", profile->tolerance_warn);
-	helpmod_reply(sender, returntype, "Kick limit:                 %d", profile->tolerance_kick);
-	helpmod_reply(sender, returntype, "Ban limit:                  %d", profile->tolerance_remove);
+	helpmod_reply(sender, returntype, "Maximum caps percentage:     %d", profile->caps_max_percentage);
+	helpmod_reply(sender, returntype, "Caps minimum count:          %d", profile->caps_min_count);
+	helpmod_reply(sender, returntype, "Repeat tolerance:            %d", profile->repeats_max_count);
+        helpmod_reply(sender, returntype, "Repeat minimum length:       %d", profile->repeats_min_length);
+        helpmod_reply(sender, returntype, "Symbol repeat tolerance:     %d", profile->symbol_repeat_max_count);
+	helpmod_reply(sender, returntype, "Character repeat tolerance:  %d", profile->character_repeat_max_count);
+	helpmod_reply(sender, returntype, "Continuous symbol tolerance: %d", profile->symbol_max_count);
+	helpmod_reply(sender, returntype, "Flood tolerance:             %d", profile->tolerance_flood);
+	helpmod_reply(sender, returntype, "Spam tolerance:              %d", profile->tolerance_spam);
+	helpmod_reply(sender, returntype, "Spam multiplier:             %f", profile->constant_spam);
+	helpmod_reply(sender, returntype, "Warning limit:               %d", profile->tolerance_warn);
+	helpmod_reply(sender, returntype, "Kick limit:                  %d", profile->tolerance_kick);
+	helpmod_reply(sender, returntype, "Ban limit:                   %d", profile->tolerance_remove);
     }
     else if (!ci_strcmp(argv[0], "edit"))
     {
@@ -3229,7 +3242,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	    if (returntype != NULL && huser_get_level(sender) > H_PEON)
 		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s: %s", argv[1], buffer);
 	    else
-		helpmod_reply(sender, returntype, "%s: %s", argv[1], buffer);
+		helpmod_reply(sender, returntype, "%s", buffer);
 	}
 	fclose (in);
         return;
