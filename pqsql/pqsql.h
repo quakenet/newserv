@@ -3,11 +3,16 @@
 
 #include <libpq-fe.h>
 
+#define QH_CREATE 0x01
+
 typedef void (*PQQueryHandler)(PGconn *, void *);
 
-void pqasyncquery(PQQueryHandler handler, void *tag, char *format, ...);
-#define pqquery(format, ...) pqasyncquery(NULL, NULL, format, __VA_ARGS__)
-void pqsyncquery(char *format, ...);
+void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, ...);
+
+#define pqasyncquery(handler, tag, format, ...) pqasyncqueryf(handler, tag, 0, format, ##__VA_ARGS__)
+#define pqcreatequery(format, ...) pqasyncqueryf(NULL, NULL, QH_CREATE, format, ##__VA_ARGS__)
+#define pqquery(format, ...) pqasyncquery(NULL, NULL, format, ##__VA_ARGS__)
+
 int pqconnected(void);
 
 #endif

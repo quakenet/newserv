@@ -96,8 +96,8 @@ void noperserv_load_users(PGconn *dbconn, void *arg) {
 }
 
 void noperserv_create_tables(void) {
-  pqsyncquery("CREATE SCHEMA noperserv");
-  pqsyncquery(
+  pqcreatequery("CREATE SCHEMA noperserv");
+  pqcreatequery(
     "CREATE TABLE noperserv.users ("
       "ID            INT               NOT NULL,"
       "authname      VARCHAR(%d)       NOT NULL,"

@@ -19,6 +19,7 @@ typedef struct pqasyncquery_s {
   sstring *query;
   void *tag;
   PQQueryHandler handler;
+  int flags;
   struct pqasyncquery_s *next;
 } pqasyncquery_s;
 
@@ -108,7 +109,9 @@ void dbhandler(int fd, short revents) {
 
           case PGRES_NONFATAL_ERROR:
           case PGRES_FATAL_ERROR:
-            Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query->content);
+            /* if a create query returns an error assume it went ok, paul will winge about this */
+            if(!(queryhead->flags & QH_CREATE))
+              Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query->content);
             break;
 	  
           default:
@@ -137,7 +140,7 @@ void dbhandler(int fd, short revents) {
 }
 
 /* sorry Q9 */
-void pqasyncquery(PQQueryHandler handler, void *tag, char *format, ...) {
+void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, ...) {
   char querybuf[8192];
   va_list va;
   int len;
@@ -152,10 +155,14 @@ void pqasyncquery(PQQueryHandler handler, void *tag, char *format, ...) {
 
   /* PPA: no check here... */
   qp = (pqasyncquery_s *)malloc(sizeof(pqasyncquery_s));
+  if(!qp)
+    return;
+
   qp->query = getsstring(querybuf, len);
   qp->tag = tag;
   qp->handler = handler;
   qp->next = NULL; /* shove them at the end */
+  qp->flags = flags;
 
   if(querytail) {
     querytail->next = qp;
@@ -165,21 +172,6 @@ void pqasyncquery(PQQueryHandler handler, void *tag, char *format, ...) {
     PQsendQuery(dbconn, qp->query->content);
     PQflush(dbconn);
   }
-}
-
-void pqsyncquery(char *format, ...) {
-  char querybuf[8192];
-  va_list va;
-  int len;
-
-  if(!pqconnected())
-    return;
-
-  va_start(va, format);
-  len = vsnprintf(querybuf, sizeof(querybuf), format, va);
-  va_end(va);
-
-  PQclear(PQexec(dbconn, querybuf));
 }
 
 void disconnectdb(void) {
