@@ -81,6 +81,8 @@ void connectdb(void) {
   if (!dbconn || (PQstatus(dbconn) != CONNECTION_OK))
     return;
 
+  Error("pqsql", ERR_INFO, "Connected!");
+
   dbconnected = 1;
 
   PQsetnonblocking(dbconn, 1);
