@@ -236,9 +236,10 @@ void hchannel_remove_inactive_users(void)
                         huser_on_channel((*hchanuser)->husr, hchan)->flags |= H_IDLE_WARNING;
 		    }
 		}
-                hcommit_modes();
+                /*hcommit_modes();*/
                 hchanuser = &(*hchanuser)->next;
-            }
+	    }
+	    hcommit_modes();
         }
         /* Additionally, test if the channel has queue but no idle opers / staff */
         if (hchan->flags & H_QUEUE && hchan->flags & H_QUEUE_TIMEOUT)
@@ -483,8 +484,11 @@ int hchannel_highlight_detection(hchannel *hchan, const char *message)
 	if (i++ > 6)
             break;
 
-	while (*buffer_ptr && isspace(*buffer))
+	while (*buffer_ptr && isspace(*buffer_ptr))
 	    buffer_ptr++;
+
+	if (*buffer_ptr == '@')
+            buffer_ptr++;
 
 	if (*buffer_ptr)
 	{

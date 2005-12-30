@@ -357,4 +357,12 @@ Text list is now sorted
 Added ?? term support for out reason
 Added channel option to kick users for highlighting chanops
 
-
+2.15
+Showticket no longer has level restrictions
+Text output returned to 2.13 type
+Fixed top10 bug
+Fixed the likely cause of missing idle kick bans
+Fixed a bug with highlight detection
+Highlight detection no detects @nick highlight
+Fixed a crash bug in ?? use for out command
+One continous changed to continuous
