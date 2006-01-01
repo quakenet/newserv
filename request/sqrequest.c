@@ -4,6 +4,7 @@
  * Depends on "chanstats" and "chanfix"
  */
 
+#include <stdio.h>
 #include "request.h"
 #include "sqrequest.h"
 #include "request_block.h"
@@ -89,6 +90,8 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
   va_list va;
   channel *cplog;
   nick *lnp, *qnp, *np, *tnp, *snp;
+  char now[50];
+  time_t now_ts;
   
   /* Delete the request from the list first.. */
   for (rh=&nextreql;*rh;rh=&((*rh)->next)) {
@@ -129,10 +132,13 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
     return;
   }
 
-  cplog = findchannel(RQ_LOGCHANNEL);
+  if (rq_logfd != NULL) {
+    now[0] = '\0';
+    now_ts = time(NULL);
 
-  if (cplog) {
-    sendmessagetochannel(rqnick, cplog, "request (%s) for %s from %s: Request was %s.", (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK, req->cip->name->content, tnp->nick, (outcome == QR_OK) ? "accepted" : "denied");
+    strftime(now, sizeof(now), "%c", localtime(&now_ts));
+    fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK, req->cip->name->content, tnp->nick, (outcome == QR_OK) ? "accepted" : "denied");
+    fflush(rq_logfd);
   }
   
   if (outcome==QR_OK) {
@@ -171,14 +177,14 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
                         RQ_SNICK);
 
       /* auth */
-      user = getcopyconfigitem("request", "user", "R", 30);
-      password = getcopyconfigitem("request", "password", "bla", 30);
+      user = (sstring *)getcopyconfigitem("request", "user", "R", 30);
+      password = (sstring *)getcopyconfigitem("request", "password", "bla", 30);
       sendmessagetouser(rqnick, snp, "AUTH %s %s", user->content, password->content);
       freesstring(user);
       freesstring(password);
 
       /* /msg S addchan <channel> default */
-      sendmessagetouser(rqnick, snp, "ADDCHAN %s default", req->cip->name->content);
+      sendmessagetouser(rqnick, snp, "ADDCHAN %s default +op", req->cip->name->content);
 
       /* we do not put the request into another queue, so free it here */
       free(req);
@@ -243,7 +249,7 @@ int qr_checksize(chanindex *cip, int what) {
     }
   }
 
-  if (authedcount * 100 / count < QR_AUTHEDPCT)
+  if (authedcount * 100 / count < ((what == QR_CSERVE) ? QR_AUTHEDPCT_CSERVE : QR_AUTHEDPCT_SPAMSCAN)) 
     return 0; /* too few authed users */
 
   if (!(csp=cip->exts[csext]))

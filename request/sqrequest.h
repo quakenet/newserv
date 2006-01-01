@@ -4,7 +4,8 @@
 #define QR_REQUIREDSIZE_CSERVE   50
 #define QR_REQUIREDSIZE_SPAMSCAN 120
 #define QR_TOPX                  5
-#define QR_AUTHEDPCT             65
+#define QR_AUTHEDPCT_CSERVE      65
+#define QR_AUTHEDPCT_SPAMSCAN    50
 
 /* should we use 'debug' requirements for Q/S? */
 #define QR_DEBUG                 0 

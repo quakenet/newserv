@@ -1,6 +1,6 @@
  /* shroud's service request */
 
-#include <string.h>
+#include <stdio.h>
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
@@ -41,6 +41,9 @@ int rq_failed = 0;
 int rq_success = 0;
 int rq_blocked = 0;
 
+/* log fd */
+FILE *rq_logfd;
+
 void _init(void) {
   rqcommands = newcommandtree();
 
@@ -64,6 +67,8 @@ void _init(void) {
   qr_initrequest();
   ru_load();
 
+  rq_logfd = fopen(RQ_LOGFILE, "a");
+  
   scheduleoneshot(time(NULL) + 1, (ScheduleCallback)&rq_registeruser, NULL);
 }
 
@@ -83,7 +88,6 @@ void _fini(void) {
   deletecommandfromtree(rqcommands, "changelev", &rqcmd_changelev);
   deletecommandfromtree(rqcommands, "userlist", &rqcmd_userlist);
 
-  
   /* old legacy stuff */
   deletecommandfromtree(rqcommands, "requestq", &rqcmd_legacyrequest);
 
@@ -92,6 +96,9 @@ void _fini(void) {
   rq_finiblocks();
   qr_finirequest();
   ru_persist();
+
+  if (rq_logfd != NULL)
+    fclose(rq_logfd);
 
   deleteallschedules((ScheduleCallback)&rq_registeruser);
 }
@@ -295,6 +302,8 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   unsigned long *lhand, *qhand;
   channel *cp, *logcp;
   int retval;
+  time_t now_ts;
+  char now[50];
 
   if (cargc < 1) {
     sendnoticetouser(rqnick, np, "Syntax: requestbot <#channel>");
@@ -335,10 +344,13 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
 
       retval = lr_requestl(rqnick, np, cp, lnick);
 
-      logcp = findchannel(RQ_LOGCHANNEL);
+      if (rq_logfd != NULL) {
+        now[0] = '\0';
+        now_ts = time(NULL);
+        strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
-      if (logcp) {
-        sendmessagetochannel(rqnick, logcp, "request (%s) for %s from %s: Request was %s.", RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+        fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+        fflush(rq_logfd);
       }
     } else {
       /* user 'wants' Q */
