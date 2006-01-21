@@ -33,6 +33,7 @@ typedef enum
 {
     H_LAMER,
     H_PEON,
+    H_FRIEND,
     H_TRIAL,
     H_STAFF,
     H_OPER,

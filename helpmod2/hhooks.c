@@ -33,7 +33,7 @@ void helpmod_hook_part(int unused, void *args)
 
 }
 */
-void helpmod_hook_join(int unused, void *args)
+static void helpmod_hook_join(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -97,7 +97,7 @@ void helpmod_hook_join(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_newnick(int unused, void *args)
+static void helpmod_hook_channel_newnick(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -138,7 +138,7 @@ void helpmod_hook_channel_newnick(int unused, void *args)
         hqueue_handle_queue(hchan, NULL);
 }
 
-void helpmod_hook_channel_lostnick(int unused, void *args)
+static void helpmod_hook_channel_lostnick(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -191,7 +191,7 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
         hqueue_handle_queue(hchan, oper);
 }
 
-void helpmod_hook_nick_lostnick(int unused, void *args)
+static void helpmod_hook_nick_lostnick(int unused, void *args)
 {
     nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
@@ -203,7 +203,7 @@ void helpmod_hook_nick_lostnick(int unused, void *args)
     huser_del(husr);
 }
 
-void helpmod_hook_channel_opped(int unused, void *args)
+static void helpmod_hook_channel_opped(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -234,7 +234,7 @@ void helpmod_hook_channel_opped(int unused, void *args)
         helpmod_channick_modes(husr, hchan, MC_DEOP ,HNOW);
 }
 
-void helpmod_hook_channel_deopped(int unused, void *args)
+static void helpmod_hook_channel_deopped(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -255,7 +255,7 @@ void helpmod_hook_channel_deopped(int unused, void *args)
 
 }
 
-void helpmod_hook_channel_voiced(int unused, void *args)
+static void helpmod_hook_channel_voiced(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -280,7 +280,7 @@ void helpmod_hook_channel_voiced(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_devoiced(int unused, void *args)
+static void helpmod_hook_channel_devoiced(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -311,7 +311,7 @@ void helpmod_hook_channel_devoiced(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_topic(int unused, void *args)
+static void helpmod_hook_channel_topic(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser *husr;
@@ -335,7 +335,7 @@ void helpmod_hook_channel_topic(int unused, void *args)
     }
 }
 
-void helpmod_hook_nick_account(int unused, void *args)
+static void helpmod_hook_nick_account(int unused, void *args)
 {
     nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
@@ -345,7 +345,7 @@ void helpmod_hook_nick_account(int unused, void *args)
         husr->account = haccount_get_by_name(nck->authname);
 }
 
-void helpmod_hook_server_newserver(int unused, void *args)
+static void helpmod_hook_server_newserver(int unused, void *args)
 {
     hchannel *hchan;
     int numeric = (int)args;

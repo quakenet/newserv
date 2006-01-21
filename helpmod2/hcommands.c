@@ -397,6 +397,7 @@ static void helpmod_cmd_change_userlevel(huser *sender, hlevel target_level, cha
 /* pseudo commands for the above */
 static void helpmod_cmd_improper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_LAMER, returntype, ostr, argc, argv); }
 static void helpmod_cmd_peon (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_PEON, returntype, ostr, argc, argv); }
+static void helpmod_cmd_friend (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_FRIEND, returntype, ostr, argc, argv); }
 static void helpmod_cmd_trial (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_TRIAL, returntype, ostr, argc, argv); }
 static void helpmod_cmd_staff (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_STAFF, returntype, ostr, argc, argv); }
 static void helpmod_cmd_oper (huser *sender, channel* returntype, char* ostr, int argc, char *argv[]) { helpmod_cmd_change_userlevel(sender, H_OPER, returntype, ostr, argc, argv); }
@@ -1637,6 +1638,11 @@ static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* o
     hchannel_user **hchanuser;
     char *reason = "clearing channel";
     int autoqueue_tmp = -1;
+    enum
+    {
+	HELPMOD_KICKMODE_ALL,
+        HELPMOD_KICKMODE_UNAUTHED
+    } kickmode = HELPMOD_KICKMODE_ALL;
 
     DEFINE_HCHANNEL;
 
@@ -1649,7 +1655,21 @@ static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* o
     }
 
     if (argc)
-        reason = ostr;
+    {
+	if (!ci_strcmp(argv[0], "all"))
+	{
+	    kickmode = HELPMOD_KICKMODE_ALL;
+	    SKIP_WORD;
+	}
+	else if (!ci_strcmp(argv[0], "unauthed"))
+	{
+            kickmode = HELPMOD_KICKMODE_UNAUTHED;
+            SKIP_WORD;
+	}
+	if (ostr[0] == ':')
+	    ostr++;
+	reason = ostr;
+    }
 
     hchan->flags |= H_MAINTAIN_I;
     hchannel_mode_check(hchan);
@@ -1664,10 +1684,13 @@ static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* o
 
     while (*hchanuser)
     {
-        if (huser_get_level((*hchanuser)->husr) < H_TRIAL)
-            helpmod_kick(hchan, (*hchanuser)->husr, reason);
-        else
-            hchanuser = &(*hchanuser)->next;
+	if (huser_get_level((*hchanuser)->husr) < H_TRIAL)
+	    if (kickmode == HELPMOD_KICKMODE_ALL || (kickmode == HELPMOD_KICKMODE_UNAUTHED && !IsAccount((*hchanuser)->husr->real_user)))
+	    {
+		helpmod_kick(hchan, (*hchanuser)->husr, reason);
+		continue;
+	    }
+	hchanuser = &(*hchanuser)->next;
     }
 
     if (autoqueue_tmp > 0)
@@ -2299,15 +2322,19 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
             helpmod_reply(sender, returntype, "Cannot invite: Unknown channel %s", argv[i]);
             continue;
         }
-        if (!(hchannel_authority(hchan, sender) || hticket_get(huser_get_auth(sender), hchan)))
-        {
-            helpmod_reply(sender, returntype, "Sorry, channel %s is oper only", hchannel_get_name(hchan));
-            continue;
-        }
-        if (huser_on_channel(sender, hchan) != NULL)
+	if (huser_on_channel(sender, hchan) != NULL)
         {
             helpmod_reply(sender, returntype, "Cannot invite: You are already on channel %s", hchannel_get_name(hchan));
             continue;
+        }
+	if (!hchannel_authority(hchan, sender))
+	{
+	    if (huser_get_level(sender) >= H_STAFF && (hchan->flags & H_REQUIRE_TICKET));
+	    else
+	    {
+		helpmod_reply(sender, returntype, "Sorry, channel %s is oper only", hchannel_get_name(hchan));
+		continue;
+	    }
         }
         helpmod_invite(hchan, sender);
         helpmod_reply(sender, returntype, "Invited you to channel %s", hchannel_get_name(hchan));
@@ -2384,8 +2411,8 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
     helpmod_reply(husr, NULL, "You have been issued an invite ticket for channel %s. This ticket is valid for a period of %s. You can use my invite command to get to the channel now. Type /msg %s invite %s",hchannel_get_name(hchan), helpmod_strtime(HTICKET_EXPIRATION_TIME), helpmodnick->nick, hchannel_get_name(hchan));
     if (hchan->flags & H_TICKET_MESSAGE && hchan->ticket_message != NULL)
 	helpmod_reply(husr, NULL, "Ticket information for %s: %s", hchannel_get_name(hchan), hchan->ticket_message->content);
-
 }
+
 static void helpmod_cmd_resolve (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     int i;
@@ -3240,7 +3267,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	    if (!fgets(buffer, 512, in))
                 break;
 	    if (returntype != NULL && huser_get_level(sender) > H_PEON)
-		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s: %s", argv[1], buffer);
+		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s", buffer);
 	    else
 		helpmod_reply(sender, returntype, "%s", buffer);
 	}
@@ -3594,10 +3621,11 @@ void hcommands_add(void)
 
     hcommand_add("improper", H_STAFF, helpmod_cmd_improper, "Sets the userlevel of the target to banned (lvl 0). Long term ban.");
     hcommand_add("peon", H_STAFF, helpmod_cmd_peon, "Sets the userlevel of the target to peon (lvl 1)");
-    hcommand_add("trial", H_OPER, helpmod_cmd_trial, "Sets the userlevel of the target to trial staff (lvl 2)");
-    hcommand_add("staff", H_OPER, helpmod_cmd_staff, "Sets the userlevel of the target to staff (lvl 3)");
-    hcommand_add("oper", H_OPER, helpmod_cmd_oper, "Sets the userlevel of the target to oper (lvl 4)");
-    hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 5)");
+    hcommand_add("friend", H_STAFF, helpmod_cmd_friend, "Sets the userlevel of the target to friend (lvl 2)");
+    hcommand_add("trial", H_OPER, helpmod_cmd_trial, "Sets the userlevel of the target to trial staff (lvl 3)");
+    hcommand_add("staff", H_OPER, helpmod_cmd_staff, "Sets the userlevel of the target to staff (lvl 4)");
+    hcommand_add("oper", H_OPER, helpmod_cmd_oper, "Sets the userlevel of the target to oper (lvl 5)");
+    hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 6)");
     hcommand_add("deluser", H_OPER, helpmod_cmd_deluser, "Removes an account from " HELPMOD_NICK);
     hcommand_add("listuser", H_STAFF, helpmod_cmd_listuser, "Lists user accounts of " HELPMOD_NICK);
 

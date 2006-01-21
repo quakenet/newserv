@@ -36,6 +36,7 @@ int HELPMOD_ACCOUNT_EXPIRATION[] =
 {
     14 * HDEF_d, /* H_LAMER */
     7  * HDEF_d, /* H_PEON */
+    1  * HDEF_M, /* H_FRIEND */
     2  * HDEF_M, /* H_TRIAL */
     6  * HDEF_M, /* H_STAFF */
     1  * HDEF_y, /* H_OPER */

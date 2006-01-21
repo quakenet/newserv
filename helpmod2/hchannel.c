@@ -471,10 +471,17 @@ const char *hchannel_get_state(hchannel* hchan, int mask)
 int hchannel_highlight_detection(hchannel *hchan, const char *message)
 {
     char buffer[512], *buffer_ptr = buffer, *ptr = buffer;
-    int i = 0, matches = 0;
+    int i, matches = 0;
 
     strcpy(buffer, message);
 
+    /* remove commas */
+    for (i=0;i<512 && buffer[i] != '\0';i++)
+	if (buffer[i] == ',')
+	    buffer[i] = ' ';
+
+    /* reset i for loop */
+    i = 0;
     do
     {
 	nick *tmp;

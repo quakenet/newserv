@@ -444,6 +444,12 @@ int helpmod_config_read_account(FILE *in)
 	if (sscanf(ptr, "%x %x %x", (unsigned int*)&level, (unsigned int*)&flags, (unsigned int *)&last_activity) != 3)
 	    return -1;
 
+    if (hconf_version < HELPMOD_VERSION_2_16)
+    { /* For the new friend userlevel */
+	if (level >= H_FRIEND)
+	    level++;
+    }
+
     hack->level = level;
     hack->flags = flags;
     hack->last_activity = last_activity;

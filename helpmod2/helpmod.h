@@ -12,8 +12,8 @@
 /* configuration */
 
 /* These should always be equal */
-#define HELPMOD_VERSION_INTERNAL HELPMOD_VERSION_2_15
-#define HELPMOD_VERSION "2.15"
+#define HELPMOD_VERSION_INTERNAL HELPMOD_VERSION_2_16
+#define HELPMOD_VERSION "2.16"
 
 #define HELPMOD_USER_TIMEOUT 1200
 
@@ -29,7 +29,7 @@
 
 #define HELPMOD_BAN_DURATION (2 * HDEF_h)
 
-extern int HELPMOD_ACCOUNT_EXPIRATION[6];
+extern int HELPMOD_ACCOUNT_EXPIRATION[];
 
 extern nick *helpmodnick;
 
