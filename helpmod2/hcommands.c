@@ -2277,7 +2277,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
         return;
     }
 
-    if (huser_get_level(sender) == H_PEON)
+    if (huser_get_level(sender) == H_PEON || huser_get_level(sender) == H_FRIEND)
     {
         hticket *htick;
         hchan = hchannel_get_by_name(argv[0]);
