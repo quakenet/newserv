@@ -830,7 +830,22 @@ int helpmod_config_read_ticket(FILE *in)
         return -1;
 
     if (tmp > time(NULL))
-        hticket_add(buf3, tmp, hchannel_get_by_name(buf2));
+    {
+	if (hconf_version < HELPMOD_VERSION_2_17)
+	    hticket_add(buf3, tmp, hchannel_get_by_name(buf2), NULL);
+	else
+	{
+	    fgets(ptr = buf, 256, in);
+	    if (feof(in))
+		return -1;
+	    helpmod_line_fix(&ptr);
+
+	    if (*ptr == '\0')
+		hticket_add(buf3, tmp, hchannel_get_by_name(buf2), NULL);
+	    else
+                hticket_add(buf3, tmp, hchannel_get_by_name(buf2), ptr);
+	}
+    }
 
     return 0;
 }
@@ -840,6 +855,10 @@ int helpmod_config_write_ticket(FILE *out, hticket *htick, hchannel *hchan)
     fprintf(out, "\t%s\n", hchannel_get_name(hchan));
     fprintf(out, "\t%s\n", htick->authname);
     fprintf(out, "\t%u\n", (unsigned int)htick->time_expiration);
+    if (htick->message)
+	fprintf(out, "\t%s\n", htick->message->content);
+    else
+        fprintf(out, "\n");
 
     return 0;
 }

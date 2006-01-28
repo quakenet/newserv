@@ -897,7 +897,7 @@ static void helpmod_cmd_term_find_general (huser *sender, channel* returntype, i
         helpmod_reply(sender, returntype, "No term found matching '%s'", argv[0]);
         return;
     }
-    if (returntype != NULL && huser_get_level(sender) > H_PEON)
+    if (returntype != NULL && huser_get_level(sender) >= H_TRIAL)
     {
         HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
 
@@ -1123,7 +1123,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
             helpmod_reply(sender, returntype, "No term found matching '%s'", argv[1]);
             return;
         }
-        if (returntype != NULL && huser_get_level(sender) > H_PEON)
+        if (returntype != NULL && huser_get_level(sender) >= H_TRIAL)
             helpmod_message_channel(hchannel_get_by_channel(returntype), "(%s): %s", htrm->name->content, htrm->description->content);
         else
             helpmod_reply(sender, returntype, "(%s): %s", htrm->name->content, htrm->description->content);
@@ -2277,7 +2277,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
         return;
     }
 
-    if (huser_get_level(sender) == H_PEON || huser_get_level(sender) == H_FRIEND)
+    if (huser_get_level(sender) < H_STAFF)
     {
         hticket *htick;
         hchan = hchannel_get_by_name(argv[0]);
@@ -2347,6 +2347,7 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
     hchannel *hchan;
     huser *husr;
     hticket *htick;
+    const char *message = NULL;
 
     if (argc < 1)
     {
@@ -2392,12 +2393,17 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
         helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s does not require a ticket", argv[1]);
         return;
     }
-    if (argc >= 3)
+    if (argc > 3)
     {
-        int tmp;
+	int tmp;
         tmp = helpmod_read_strtime(argv[2]);
         if (tmp > HDEF_m && tmp < 2 * HDEF_M)
-            expiration = tmp;
+	    expiration = tmp;
+    }
+    if (argc >= 4 && strlen(argv[3]) < 128)
+    {
+	if (argv[3][0] != '\0')
+            message = argv[3];
     }
 
     htick = hticket_get(huser_get_auth(husr), hchan);
@@ -2405,7 +2411,7 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
     if (htick != NULL)
         htick->time_expiration = time(NULL) + expiration;
     else
-        hticket_add(huser_get_auth(husr), time(NULL) + expiration, hchan);
+        hticket_add(huser_get_auth(husr), time(NULL) + expiration, hchan, message);
 
     helpmod_reply(sender, returntype, "Issued an invite ticket to user %s for channel %s expiring in %s", huser_get_nick(husr), hchannel_get_name(hchan), helpmod_strtime(expiration));
     helpmod_reply(husr, NULL, "You have been issued an invite ticket for channel %s. This ticket is valid for a period of %s. You can use my invite command to get to the channel now. Type /msg %s invite %s",hchannel_get_name(hchan), helpmod_strtime(HTICKET_EXPIRATION_TIME), helpmodnick->nick, hchannel_get_name(hchan));
@@ -2517,9 +2523,7 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
     int i;
 
     DEFINE_HCHANNEL;
-/*
-    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
-*/
+
     if (argc > H_CMD_MAX_ARGS)
         argc = H_CMD_MAX_ARGS;
 
@@ -2546,8 +2550,11 @@ static void helpmod_cmd_showticket (huser *sender, channel* returntype, char* os
         {
             helpmod_reply(sender, returntype, "Cannot show the ticket: User %s does not have a valid ticket for channel %s", argv[i], hchannel_get_name(hchan));
             continue;
-        }
-        helpmod_reply(sender, returntype, "User %s has a ticket for channel %s expiring in %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
+	}
+	if (htick->message == NULL)
+	    helpmod_reply(sender, returntype, "User %s has a ticket for channel %s expiring in %s. No message is attached.", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)));
+	else
+	    helpmod_reply(sender, returntype, "User %s has a ticket for channel %s expiring in %s. With message: %s", argv[i], hchannel_get_name(hchan), helpmod_strtime(htick->time_expiration - time(NULL)), htick->message->content);
     }
 }
 
@@ -3266,7 +3273,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	{
 	    if (!fgets(buffer, 512, in))
                 break;
-	    if (returntype != NULL && huser_get_level(sender) > H_PEON)
+	    if (returntype != NULL && huser_get_level(sender) >= H_TRIAL)
 		helpmod_message_channel(hchannel_get_by_channel(returntype), "%s", buffer);
 	    else
 		helpmod_reply(sender, returntype, "%s", buffer);
@@ -3450,6 +3457,30 @@ static void helpmod_cmd_evilhack2 (huser *sender, channel* returntype, char* ost
     helpmod_reply(sender, returntype, "Evilhack2 done: Swapped %d and %d", first, second);
 }
 
+static void helpmod_cmd_channel (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+    hchannel_user *hchanuser;
+
+    DEFINE_HCHANNEL;
+
+    if (hchan == NULL)
+    {
+	helpmod_reply(sender, returntype, "Can not show channel: Channel not specified");
+        return;
+    }
+
+    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
+
+    helpmod_reply(sender, returntype, "Users for channel %s", hchannel_get_name(hchan));
+    helpmod_reply(sender, returntype, "Nick             Account          User level               Idle time");
+
+    for (hchanuser = hchan->channel_users;hchanuser;hchanuser=hchanuser->next)
+	helpmod_reply(sender, returntype, "%-16s %-16s %-24s %s",hchanuser->husr->real_user->nick,hchanuser->husr->account?hchanuser->husr->account->name->content:"-",hlevel_name(huser_get_level(hchanuser->husr)), helpmod_strtime(time(NULL)-huser_on_channel(hchanuser->husr, hchan)->last_activity));
+
+    helpmod_reply(sender, returntype, "Listed %d users for channel %s", hchannel_count_users(hchan, H_ANY), hchannel_get_name(hchan));
+}
+
 /* old H stuff */
 void helpmod_cmd_load (huser *sender, channel *returntype, char* arg, int argc, char *argv[])
 {
@@ -3624,6 +3655,7 @@ void hcommands_add(void)
     hcommand_add("friend", H_STAFF, helpmod_cmd_friend, "Sets the userlevel of the target to friend (lvl 2)");
     hcommand_add("trial", H_OPER, helpmod_cmd_trial, "Sets the userlevel of the target to trial staff (lvl 3)");
     hcommand_add("staff", H_OPER, helpmod_cmd_staff, "Sets the userlevel of the target to staff (lvl 4)");
+
     hcommand_add("oper", H_OPER, helpmod_cmd_oper, "Sets the userlevel of the target to oper (lvl 5)");
     hcommand_add("admin", H_ADMIN, helpmod_cmd_admin, "Sets the userlevel of the target to admin (lvl 6)");
     hcommand_add("deluser", H_OPER, helpmod_cmd_deluser, "Removes an account from " HELPMOD_NICK);
@@ -3699,6 +3731,7 @@ void hcommands_add(void)
     hcommand_add("rating", H_TRIAL, helpmod_cmd_rating, "Simple rating for the current week");
     hcommand_add("writedb", H_OPER, helpmod_cmd_writedb, "Writes the " HELPMOD_NICK " database to disk");
 
+    hcommand_add("channel", H_TRIAL, helpmod_cmd_channel, "Gives a list of all channel users");
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
 }

@@ -75,10 +75,10 @@ static void helpmod_hook_join(int unused, void *args)
         return;
     }
 
-    if (huser_get_level(husr) > H_PEON && (huser_get_account_flags(husr) & H_AUTO_OP) && hchannel_authority(hchan, husr))
+    if (huser_get_level(husr) >= H_STAFF && (huser_get_account_flags(husr) & H_AUTO_OP) && hchannel_authority(hchan, husr))
         helpmod_channick_modes(husr, hchan ,MC_OP,HNOW);
 
-    if (huser_get_level(husr) > H_PEON && (huser_get_account_flags(husr) & H_AUTO_VOICE) && hchannel_authority(hchan, husr))
+    if (huser_get_level(husr) >= H_TRIAL && (huser_get_account_flags(husr) & H_AUTO_VOICE) && hchannel_authority(hchan, husr))
         helpmod_channick_modes(husr, hchan, MC_VOICE,HNOW);
 
     if (hchan->flags & H_WELCOME && *hchan->real_channel->index->name->content)
@@ -120,7 +120,9 @@ static void helpmod_hook_channel_newnick(int unused, void *args)
     if (hchan->flags & H_PASSIVE)
         return;
 
-    if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) == H_PEON && hban_check(nck)))
+    huser_activity(husr, NULL);
+
+    if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) <= H_TRIAL && hban_check(nck)))
     {
         hban *hb = hban_check(nck);
 
@@ -252,7 +254,6 @@ static void helpmod_hook_channel_deopped(int unused, void *args)
     assert(huserchan != NULL);
 
     huserchan->flags &= ~HCUMODE_OP;
-
 }
 
 static void helpmod_hook_channel_voiced(int unused, void *args)
@@ -342,7 +343,11 @@ static void helpmod_hook_nick_account(int unused, void *args)
     if (husr == NULL)
         return;
     else
-        husr->account = haccount_get_by_name(nck->authname);
+	husr->account = haccount_get_by_name(nck->authname);
+
+    if (huser_get_level(husr) == H_LAMER)
+	while (husr->hchannels)
+	    helpmod_kick(husr->hchannels->hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(husr->hchannels->hchan));
 }
 
 static void helpmod_hook_server_newserver(int unused, void *args)

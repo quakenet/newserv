@@ -246,7 +246,7 @@ void hchannel_remove_inactive_users(void)
         {
             hchannel_user *tmp;
             for (tmp = hchan->channel_users;tmp;tmp = tmp->next)
-                if (huser_get_level(tmp->husr) > H_PEON)
+                if (huser_get_level(tmp->husr) >= H_TRIAL)
                 {
                     huser_channel *huserchan = huser_on_channel(tmp->husr, hchan);
                     if ((time(NULL) - huserchan->last_activity < HELPMOD_QUEUE_TIMEOUT) && (huserchan->last_activity != tmp->time_joined))

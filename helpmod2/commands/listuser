@@ -1,4 +1,5 @@
-Syntax:  listuser [pattern]
+Syntax:  listuser [level] [pattern]
 Example: listuser *
 Lists H accounts based on the pattern.
 If no pattern is specified, all accounts are listed.
+If level is specified then the search is performed only on the users of the given level. Level is an integer from 0 (lamer) to 6 (administrator)

@@ -18,5 +18,7 @@
 
 #define HELPMOD_VERSION_2_16 16 /* January 2006*/
 
+#define HELPMOD_VERSION_2_17 17 /* Late January 2006*/
+
 
 #endif

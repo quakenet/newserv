@@ -210,7 +210,6 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
 		    if (huser_get_level(hchanuser->husr) == H_PEON && huserchan->flags & HCUMODE_VOICE)
 			helpmod_channick_modes(hchanuser->husr, hchan, MC_DEVOICE, HLAZY);
 		}
-
 	    }
 
 	}
