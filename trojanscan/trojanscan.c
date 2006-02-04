@@ -1733,13 +1733,11 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
             if (worm->monitor) {
               glining = 0;
               usercount = -1;
-            } else if (worm->glinehost) {
+            } else if (worm->glinehost && (hp->clonecount <= TROJANSCAN_MAX_HOST_GLINE)) {
               snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", trojanscan_iptostr(ip, sizeof(ip) - 1, sender->ipaddress));
               usercount = hp->clonecount;
             }
-
-            /* if the host is >maxusers then it's a trusted host and we can gline by ident */
-            if (worm->glineuser || (worm->glinehost && (usercount > trojanscan_maxusers))) {
+            else if (worm->glineuser || (worm->glinehost && hp->clonecount > TROJANSCAN_MAX_HOST_GLINE)) {
               userbit = sender->ident;
               if(userbit[0] == '~')
                 userbit++;
