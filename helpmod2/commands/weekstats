@@ -1,0 +1,4 @@
+Syntax:  weekstats [channel] [type]
+Example: weekstats #feds opers
+Lists weekly stats for a channel.
+Type can be either any, staff or opers. By default all users are listed.

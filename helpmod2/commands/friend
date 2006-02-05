@@ -1,0 +1,5 @@
+Syntax:  friend [target1 ... targetn]
+Example: friend #luser
+Sets the userlevel of the target to friend (higher than normal user).
+Target can be specified as either nick or #account.
+Up to 6 targets can be specified.
