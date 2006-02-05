@@ -105,10 +105,26 @@ static int hlc_check_caps(hlc_profile *hlc_prof, huser *husr, const char *line)
     int caps = 0;
     int noncaps = 0;
     int i;
+    int firstword;
+
+    if (strchr(line, ' '))
+	firstword = strchr(line, ' ') - line;
+    else
+        firstword = 0;
 
     /* Handle the thing sent with /me */
-    if (!strncmp(line, "\0x01ACTION", 6 + 1))
-        line+=(6 + 1);
+    if (!strncmp(line, "\1ACTION", 6 + 1))
+	line+=(6 + 1);
+    else if (firstword && firstword < NICKLEN + 3)
+    {
+	char buffer[NICKLEN + 3];
+	strncpy(buffer, line, firstword);
+	buffer[firstword] = '\0';
+	if (buffer[firstword - 1] == ':')
+	    buffer[firstword - 1] = '\0';
+	if (getnickbynick(buffer))
+            line+=firstword + 1;
+    }
 
     for (i = 0;line[i];i++)
     {
@@ -256,4 +272,3 @@ const char *hlc_get_violation_name(hlc_violation violation)
         return "Error, please contact strutsi";
     }
 }
-

@@ -55,7 +55,7 @@ static void helpmod_hook_join(int unused, void *args)
 	else
 	    hchan->jf_control++;
 
-	if (hchan->jf_control - time(NULL) > 20 && !IsRegOnly(hchan))
+	if (hchan->jf_control - time(NULL) > 12 && !IsRegOnly(hchan))
 	{
 	    if (hchan->flags & H_REPORT && hchannel_is_valid(hchan->report_to))
 		helpmod_message_channel(hchan->report_to, "Warning: Possible join flood on %s, setting +r", hchannel_get_name(hchan));

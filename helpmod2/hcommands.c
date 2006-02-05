@@ -2033,7 +2033,7 @@ static void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* o
         }
     }
 
-    arr = create_hstat_account_array(hchan, lvl);
+    arr = create_hstat_account_array(hchan, lvl, HSTAT_ACCOUNT_ARRAY_TOP10);
 
     helpmod_reply(sender, returntype, "%s %ss for channel %s", listtype?"Inactive":"Active", hlevel_name(lvl), hchannel_get_name(hchan));
     switch (listtype)
@@ -2084,7 +2084,7 @@ static void helpmod_cmd_top10 (huser *sender, channel* returntype, char* ostr, i
             top_n = tmp;
     }
 
-    arr = create_hstat_account_array(hchan, lvl);
+    arr = create_hstat_account_array(hchan, lvl, HSTAT_ACCOUNT_ARRAY_TOP10);
 
     helpmod_reply(sender, returntype, "Top%d most active %ss of channel %s", top_n, hlevel_name(lvl), hchannel_get_name(hchan));
     for (i=0;i < arr.arrlen && i < top_n;i++)
@@ -3481,6 +3481,43 @@ static void helpmod_cmd_channel (huser *sender, channel* returntype, char* ostr,
     helpmod_reply(sender, returntype, "Listed %d users for channel %s", hchannel_count_users(hchan, H_ANY), hchannel_get_name(hchan));
 }
 
+static void helpmod_cmd_weekstats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
+{
+    hchannel *hchan;
+    hstat_accounts_array arr;
+    int i;
+    hlevel lvl = H_ANY;
+
+    DEFINE_HCHANNEL;
+
+    if (hchan == NULL)
+    {
+	helpmod_reply(sender, returntype, "Can not list weekly stats: Channel not specified");
+        return;
+    }
+
+    HCHANNEL_VERIFY_AUTHORITY(hchan, sender);
+
+    if (argc >= 1)
+    {
+        if (!ci_strcmp(argv[0], "opers") || !ci_strcmp(argv[0], "o"))
+            lvl = H_OPER;
+	else if (!ci_strcmp(argv[0], "staff") || !ci_strcmp(argv[0], "s"))
+	    lvl = H_STAFF;
+	else if (!ci_strcmp(argv[0], "all") || !ci_strcmp(argv[0], "a"))
+            lvl = H_ANY;
+    }
+
+    arr = create_hstat_account_array(hchan, lvl, HSTAT_ACCOUNT_ARRAY_WEEKSTATS);
+
+    helpmod_reply(sender, returntype, "Weekly statistics for %ss on channel %s", hlevel_name(lvl), hchannel_get_name(hchan));
+
+    for (i=0;i < arr.arrlen && arr.array[i].time_spent > HDEF_m;i++)
+	helpmod_reply(sender, returntype, "%-20s %-20s %-20s",((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
+
+    free(arr.array);
+}
+
 /* old H stuff */
 void helpmod_cmd_load (huser *sender, channel *returntype, char* arg, int argc, char *argv[])
 {
@@ -3732,6 +3769,7 @@ void hcommands_add(void)
     hcommand_add("writedb", H_OPER, helpmod_cmd_writedb, "Writes the " HELPMOD_NICK " database to disk");
 
     hcommand_add("channel", H_TRIAL, helpmod_cmd_channel, "Gives a list of all channel users");
+    hcommand_add("weekstats", H_ADMIN, helpmod_cmd_weekstats, "Gives weekly stats for a channel");
     /*hcommand_add("megod", H_PEON, helpmod_cmd_megod, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
     /*hcommand_add("test", H_PEON, helpmod_cmd_test, "Gives you userlevel 4, if you see this in the final version, please kill strutsi");*/
 }

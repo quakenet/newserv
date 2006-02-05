@@ -387,3 +387,8 @@ Caps kick now understands /me and excludes it from the test
 Some cleancups
 Several fixes related to userlevels, mostly to the new H_FRIEND
 Added new command channel to print all channel users
+
+2.18
+Fixed the /me handling of lamer control caps check
+Added a command weekstats
+Join flood detection made stricter

@@ -338,7 +338,7 @@ static int hstat_account_compare(hstat_account_entry_sum *e1, hstat_account_entr
     return e2->prime_time_spent - e1->prime_time_spent;
 }
 
-hstat_accounts_array create_hstat_account_array(hchannel *hchan, hlevel lvl)
+hstat_accounts_array create_hstat_account_array(hchannel *hchan, hlevel lvl, hstat_account_array_type type)
 {
     hstat_accounts_array arr = {NULL, 0};
     hstat_account *ptr;
@@ -365,7 +365,14 @@ hstat_accounts_array create_hstat_account_array(hchannel *hchan, hlevel lvl)
 		if (ptr->hchan == hchan)
 		{
 		    assert(arr.arrlen < initial_arrlen);
-		    tmp1 = hstat_account_last_month(ptr);
+
+		    if (type == HSTAT_ACCOUNT_ARRAY_TOP10)
+			tmp1 = hstat_account_last_month(ptr);
+		    else
+		    {
+			HSTAT_ACCOUNT_ZERO(tmp1);
+		    }
+		    
 		    tmp2 = hstat_account_last_week(ptr);
 		    HSTAT_ACCOUNT_SUM(arr.array[arr.arrlen], tmp1, tmp2);
 		    arr.array[arr.arrlen].owner = hacc;

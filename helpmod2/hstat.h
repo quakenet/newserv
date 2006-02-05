@@ -115,8 +115,14 @@ typedef struct hstat_accounts_array_struct
     int arrlen;
 } hstat_accounts_array;
 
+typedef enum
+{
+    HSTAT_ACCOUNT_ARRAY_TOP10,
+    HSTAT_ACCOUNT_ARRAY_WEEKSTATS
+} hstat_account_array_type;
+
 /* free() this.entries, arguments: channel, level to list */
-hstat_accounts_array create_hstat_account_array(struct hchannel_struct*, hlevel);
+hstat_accounts_array create_hstat_account_array(struct hchannel_struct*, hlevel, hstat_account_array_type);
 
 hstat_channel *get_hstat_channel(void);
 hstat_account *get_hstat_account(void);
