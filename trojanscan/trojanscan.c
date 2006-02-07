@@ -479,6 +479,7 @@ void trojanscan_log(nick *np, char *event, char *details, ...) {
 void trojanscan_generateclone(void *arg) {
   int i, loops = 0, modes = UMODE_XOPER | UMODE_INV;
   char c_nick[NICKLEN+1], c_ident[USERLEN+1], c_host[HOSTLEN+1], c_real[REALLEN+1];
+  long fakeip;
 
   i = (int)arg;
 
@@ -497,11 +498,11 @@ void trojanscan_generateclone(void *arg) {
     trojanscan_genident(c_ident, trojanscan_minmaxrand(4, TROJANSCAN_MMIN(8, USERLEN)));
   
   if(trojanscan_hostmode) {
-    trojanscan_generatehost(c_host, HOSTLEN);
+    trojanscan_generatehost(c_host, HOSTLEN, &fakeip);
     if(!c_host[0])
-      trojanscan_genhost(c_host, HOSTLEN);
+      trojanscan_genhost(c_host, HOSTLEN, &fakeip);
   } else {
-    trojanscan_genhost(c_host, HOSTLEN);
+    trojanscan_genhost(c_host, HOSTLEN, &fakeip);
   }
   
   trojanscan_generaterealname(c_real, REALLEN);
@@ -509,6 +510,8 @@ void trojanscan_generateclone(void *arg) {
     trojanscan_genreal(c_real, trojanscan_minmaxrand(15, TROJANSCAN_MMIN(50, REALLEN)));
 
   trojanscan_swarm[i].clone = registerlocaluser(c_nick, c_ident, c_host, c_real, NULL, modes, &trojanscan_clonehandlemessages);
+  trojanscan_swarm[i].fakeip = fakeip;
+
   if(trojanscan_swarm[i].clone && !trojanscan_swarm_created) {
     nick *np = trojanscan_selectuser();
     if(np) /* select a 'random' sign on time for whois generation */
@@ -966,6 +969,20 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
 
 }
 
+/* hack hack hack */
+int trojanscan_nickbanned(trojanscan_clones *np, channel *cp) {
+  int ret;
+  long realip = np->clone->ipaddress;
+
+  np->clone->ipaddress = np->fakeip;
+
+  ret = nickbanned(np->clone, cp);
+
+  np->clone->ipaddress = realip;
+
+  return ret;
+}
+
 struct trojanscan_realchannels *trojanscan_allocaterc(char *chan) {
   struct trojanscan_realchannels *rc;
   struct trojanscan_clones *clonep;
@@ -1006,7 +1023,7 @@ struct trojanscan_realchannels *trojanscan_allocaterc(char *chan) {
       trojanscan_errorcode = 6;
       return NULL;
     }
-    if(!nickbanned(clonep->clone, cp))
+    if(!trojanscan_nickbanned(clonep, cp))
       break;
   } while (--attempts_left > 0);
 
@@ -1334,7 +1351,7 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
           lp->watch_clone = trojanscan_selectclone(TROJANSCAN_WATCH_CLONES);      
           if(!lp->watch_clone)
             break;
-          if(!nickbanned(lp->watch_clone->clone, cp)) {
+          if(!trojanscan_nickbanned(lp->watch_clone, cp)) {
             if(localjoinchannel(lp->watch_clone->clone, cp))
               lp->watch_clone = NULL;
             break;
@@ -1885,7 +1902,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               return;
             }
 
-            rj->clone = target;
+            rj->clone = rp->clone;
             rj->next = trojanscan_schedulerejoins;
             trojanscan_schedulerejoins = rj;
 
@@ -1910,10 +1927,10 @@ void trojanscan_rejoin_channel(void *arg) {
       rj->rp->donotpart = 1; /* we were the last user on the channel, so we need to be VERY careful freeing it */
     } else {
       if(!rj->rp->donotpart && !rj->rp->kickedout) { /* check we're allowed to join channels (not killed), and we're the last one to join */
-        if (nickbanned(rj->clone, cp)) {
+        if (trojanscan_nickbanned(rj->clone, cp)) {
           rj->rp->donotpart = 1;
         } else {
-          localjoinchannel(rj->clone, cp);
+          localjoinchannel(rj->clone->clone, cp);
         }
       }
     }
@@ -2055,7 +2072,7 @@ void trojanscan_genident(char *ptc, char size) {
   ptc[i] = '\0';
 }
 
-void trojanscan_genhost(char *ptc, char size) {
+void trojanscan_genhost(char *ptc, char size, long *fakeip) {
   int dots = trojanscan_minmaxrand(2, 5), i, dotexist = 0, cur;
   
   while (!dotexist) {
@@ -2077,6 +2094,8 @@ void trojanscan_genhost(char *ptc, char size) {
     }
   }
   ptc[i] = '\0';
+
+  *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
 }
 
 void trojanscan_genreal(char *ptc, char size) {
@@ -2172,15 +2191,18 @@ nick *trojanscan_selectuser(void) {
   return NULL;
 }
 
-void trojanscan_generatehost(char *buf, int maxsize) {
+void trojanscan_generatehost(char *buf, int maxsize, long *fakeip) {
   if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST) {
     nick *np;
     int loops = 20;
+
     buf[0] = '\0';
+
     do {
       np = trojanscan_selectuser();
       if(np && !trojanscan_isip(np->host->name->content)) {
         strncpy(buf, np->host->name->content, maxsize);
+        *fakeip = np->ipaddress;
         break;
       }
     } while(--loops > 0);
@@ -2219,6 +2241,8 @@ void trojanscan_generatehost(char *buf, int maxsize) {
     buf[a] = '\0';
     free(choices);
     free(lengths);
+
+    *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
   }
 }
 

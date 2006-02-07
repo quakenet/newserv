@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.57"
+#define TROJANSCAN_VERSION "2.58"
 
 #define TROJANSCAN_CLONE_MAX        150
 #define TROJANSCAN_WATCHCLONE_MAX   100
@@ -75,6 +75,7 @@
 typedef struct trojanscan_clones {
   int              remaining, sitting, index;
   nick             *clone;
+  long             fakeip;
 } trojanscan_clones;
 
 typedef struct trojanscan_channels {
@@ -146,7 +147,7 @@ typedef struct trojanscan_flagmodification {
 
 typedef struct trojanscan_rejoinlist {
   sstring *channel;
-  nick *clone;
+  trojanscan_clones *clone;
   void *schedule;
   struct trojanscan_realchannels *rp;
   struct trojanscan_rejoinlist *next;
@@ -254,13 +255,13 @@ void trojanscan_genreal(char *ptc, char size);
 char trojanscan_genchar(int ty);
 void trojanscan_gennick(char *ptc, char size);
 void trojanscan_genident(char *ptc, char size);
-void trojanscan_genhost(char *ptc, char size);
+void trojanscan_genhost(char *ptc, char size, long *fakeip);
 
 int trojanscan_generatepool(void);
 void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count);
 void trojanscan_repool(void *arg);
 
-void trojanscan_generatehost(char *buf, int maxsize);
+void trojanscan_generatehost(char *buf, int maxsize, long *fakeip);
 void trojanscan_generatenick(char *buf, int maxsize);
 void trojanscan_generateident(char *buf, int maxsize);
 void trojanscan_generaterealname(char *buf, int maxsize);
