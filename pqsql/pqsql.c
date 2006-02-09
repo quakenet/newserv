@@ -78,9 +78,10 @@ void connectdb(void) {
   /* Blocking connect for now.. */
   dbconn = PQconnectdb(connectstr);
   
-  if (!dbconn || (PQstatus(dbconn) != CONNECTION_OK))
+  if (!dbconn || (PQstatus(dbconn) != CONNECTION_OK)) {
+    Error("pqsql", ERR_ERROR, "Unable to connect to db.");
     return;
-
+  }
   Error("pqsql", ERR_INFO, "Connected!");
 
   dbconnected = 1;
