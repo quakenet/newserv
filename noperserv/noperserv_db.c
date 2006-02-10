@@ -165,10 +165,10 @@ void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
     PQescapeString(escapedauthname, au->authname->content, au->authname->length);
-    pqquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%lu,%lu)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    pqquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    pqquery("UPDATE noperserv.users SET flags = %lu, noticelevel = %lu WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    pqquery("UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 
