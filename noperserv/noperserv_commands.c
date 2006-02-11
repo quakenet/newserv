@@ -298,8 +298,10 @@ int controlcbroadcast(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
 
   ext = findnickext("geoip");
-  if(ext == -1)
+  if(ext == -1) {
     controlreply(np, "Geoip module not loaded.");
+    return CMD_ERROR;
+  }
 
   target = COUNTRY_MIN - 1;
   for(i=COUNTRY_MIN;i<COUNTRY_MAX;i++) {

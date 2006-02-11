@@ -9,6 +9,7 @@
 #include "../core/hooks.h"
 #include "../control/control.h"
 
+#include "libGeoIP/GeoIP.h"
 #include "geoip.h"
 
 int geoip_totals[COUNTRY_MAX + 1];
