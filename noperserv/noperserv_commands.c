@@ -38,7 +38,7 @@ void _init() {
   registercontrolhelpcmd("obroadcast", NO_OPER, 1, &controlobroadcast, "Usage: obroadcast <text>\nSends a message to all IRC operators.");
   registercontrolhelpcmd("mbroadcast", NO_OPER, 2, &controlmbroadcast, "Usage: mbroadcast <mask> <text>\nSends a message to all users matching the mask");
   registercontrolhelpcmd("sbroadcast", NO_OPER, 2, &controlsbroadcast, "Usage: sbroadcast <mask> <text>\nSends a message to all users on specific server(s).");
-  registercontrolhelpcmd("cbroadcast", NO_OPER, 2, &controlcbroadcast, "Usage: sbroadcast <2 letter country> <text>\nSends a message to all users in the specified country (GeoIP must be loaded) .");
+  registercontrolhelpcmd("cbroadcast", NO_OPER, 2, &controlcbroadcast, "Usage: sbroadcast <2 letter country> <text>\nSends a message to all users in the specified country (GeoIP must be loaded).");
 }
 
 void _fini() {
