@@ -14,7 +14,7 @@ nterfacer_relay.so: nterfacer_relay.o
 nterfacer_chanstats.so: nterfacer_chanstats.o
 	ld -shared -Bdynamic -o $@ $^
 
-nterfacer_country.so: libGeoIP/GeoIP.o nterfacer_country.o
+nterfacer_country.so: nterfacer_country.o
 	ld -shared -Bdynamic -o $@ $^
 
 nterfacer_spamscan2.so: nterfacer_spamscan2.o

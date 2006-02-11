@@ -60,6 +60,7 @@ const flag no_noticeflags[] = {
     { 'O', NL_OPERING },      /* when someone opers */
     { 'n', NL_NOTICES },      /* turn off to receive notices instead of privmsgs */
     { 'A', NL_ALL_COMMANDS }, /* all commands sent */
+    { 'I', NL_MISC },         /* misc stuff                                      */
     { '\0', 0 }
   };
 
@@ -81,7 +82,22 @@ void _init() {
   noperserv_setup_hooks();
 
   registercontrolhelpcmd("hello", NO_OPERED | NO_AUTHED, 1, &noperserv_hello, "Syntax: HELLO ?nickname|#authname?\nCreates an account on the service for the specified nick, or if one isn't supplied, your nickname.");
-  registercontrolhelpcmd("userflags", NO_ACCOUNT, 2, &noperserv_userflags, "Syntax: USERFLAGS <nickname|#authname> ?modifications?\nViews and modifies user permissions.\nIf no nickname or authname is supplied, you are substituted for it.\nIf no flags are supplied, flags are just displayed instead of modified.");
+  registercontrolhelpcmd("userflags", NO_ACCOUNT, 2, &noperserv_userflags,
+    "Syntax: USERFLAGS <nickname|#authname> ?modifications?\n"
+    " Views and modifies user permissions.\n"
+    " If no nickname or authname is supplied, you are substituted for it.\n"
+    " If no flags are supplied, flags are just displayed instead of modified."
+    " Flags:\n"
+    "  +o: Operator\n"
+    "  +s: Staff member\n"
+    "  +S: Security team member\n"
+    "  +d: NOperserv developer\n"
+    "  +t: Trust queue worker\n"
+    " Additional flags may show up in SHOWCOMMANDS but are not userflags as such:\n"
+    "  +r: Authed user\n"
+    "  +d: Registered NOperserv user\n"
+    "  +L: Legacy command\n"
+  );
   registercontrolhelpcmd("noticeflags", NO_ACCOUNT, 1, &noperserv_noticeflags,
     "Syntax: NOTICEFLAGS ?(nickname|#authname)|flags?\n"
     " This command can view and modify your own notice flags, and view that of other users.\n"
@@ -94,12 +110,13 @@ void _init() {
     "  +h: Shows when glines are played automatically (hits)\n"
     "  +c: Clone information\n"
     "  +C: CLEARCHAN command\n"
-    "  +f: FAKEUSER command\n"
+    "  +f: FAKEUSER commands\n"
     "  +b: BROADCAST commands\n"
     "  +o: Operation commands, such as insmod, rmmod, die, etc\n"
     "  +O: /OPER\n"
+    "  +I: Misc commands (resync)\n"
     "  +n: Sends notices instead of privmsgs\n"
-    "  +A: Every single command sent to the service\n"
+    "  +A: Every single command sent to the service (spammy)\n"
   );
 
   registercontrolhelpcmd("deluser", NO_OPERED | NO_ACCOUNT, 2, &noperserv_deluser, "Syntax: DELUSER <nickname|#authname>\nDeletes the specified user.");

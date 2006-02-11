@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 
 #include "../control/control.h"
@@ -9,6 +10,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../localuser/localuserchannel.h"
+#include "../geoip/geoip.h"
 
 int controlkill(void *sender, int cargc, char **cargv);
 int controlopchan(void *sender, int cargc, char **cargv);
@@ -20,6 +22,7 @@ int controlbroadcast(void *sender, int cargc, char **cargv);
 int controlobroadcast(void *sender, int cargc, char **cargv);
 int controlmbroadcast(void *sender, int cargc, char **cargv);
 int controlsbroadcast(void *sender, int cargc, char **cargv);
+int controlcbroadcast(void *sender, int cargc, char **cargv);
 
 void _init() {
   registercontrolhelpcmd("kill", NO_OPER, 2, &controlkill, "Usage: kill <nick> ?reason?\nKill specified user with given reason (or 'Killed').");
@@ -33,8 +36,9 @@ void _init() {
 
   registercontrolhelpcmd("broadcast", NO_OPER, 1, &controlbroadcast, "Usage: broadcast <text>\nSends a message to all users.");
   registercontrolhelpcmd("obroadcast", NO_OPER, 1, &controlobroadcast, "Usage: obroadcast <text>\nSends a message to all IRC operators.");
-  registercontrolhelpcmd("mbroadcast", NO_OPER, 2, &controlmbroadcast, "Usage: mbroadcast <mask> <text>\nSends a message to all users matching the mask.");
+  registercontrolhelpcmd("mbroadcast", NO_OPER, 2, &controlmbroadcast, "Usage: mbroadcast <mask> <text>\nSends a message to all users matching the mask");
   registercontrolhelpcmd("sbroadcast", NO_OPER, 2, &controlsbroadcast, "Usage: sbroadcast <mask> <text>\nSends a message to all users on specific server(s).");
+  registercontrolhelpcmd("cbroadcast", NO_OPER, 2, &controlcbroadcast, "Usage: sbroadcast <2 letter country> <text>\nSends a message to all users in the specified country (GeoIP must be loaded) .");
 }
 
 void _fini() {
@@ -112,6 +116,8 @@ int controlresync(void *sender, int cargc, char **cargv) {
 
     return CMD_ERROR;
   }
+
+  controlwall(NO_OPER, NL_KICKS, "%s/%s RESYNC'ed %s", np->nick, np->authname, cp->index->name->content);
 
   irc_send("%s CM %s o", mynumeric->content, cp->index->name->content);
 
@@ -254,7 +260,7 @@ int controlsbroadcast(void *sender, int cargc, char **cargv) {
   if(cargc<2)
     return CMD_USAGE;
 
-  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent a sbroadcast to %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
+  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent an sbroadcast to %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
 
   irc_send("%s O $%s :(sBroadcast) %s", longtonumeric(mynick->numeric,5), cargv[0], cargv[1]);
 
@@ -278,6 +284,44 @@ int controlobroadcast(void *sender, int cargc, char **cargv) {
         controlnotice(nip, "(oBroadcast) %s", cargv[0]);
 
   controlreply(np, "Message obroadcasted.");
+
+  return CMD_OK;
+}
+
+const char GeoIP_country_code[247][3] = { "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN","AO","AQ","AR","AS","AT","AU","AW","AZ","BA","BB","BD","BE","BF","BG","BH","BI","BJ","BM","BN","BO","BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CX","CY","CZ","DE","DJ","DK","DM","DO","DZ","EC","EE","EG","EH","ER","ES","ET","FI","FJ","FK","FM","FO","FR","FX","GA","GB","GD","GE","GF","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY","HK","HM","HN","HR","HT","HU","ID","IE","IL","IN","IO","IQ","IR","IS","IT","JM","JO","JP","KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ","LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY","MA","MC","MD","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ","NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ","OM","PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY","QA","RE","RO","RU","RW","SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","ST","SV","SY","SZ","TC","TD","TF","TG","TH","TJ","TK","TM","TN","TO","TP","TR","TT","TV","TW","TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE","VG","VI","VN","VU","WF","WS","YE","YT","YU","ZA","ZM","ZR","ZW","A1","A2","O1"};
+
+int controlcbroadcast(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender, *nip;
+  int i, ext, target;
+
+  if(cargc < 2)
+    return CMD_USAGE;
+
+  ext = findnickext("geoip");
+  if(ext == -1)
+    controlreply(np, "Geoip module not loaded.");
+
+  target = COUNTRY_MIN - 1;
+  for(i=COUNTRY_MIN;i<COUNTRY_MAX;i++) {
+    if(!strcasecmp(cargv[0], GeoIP_country_code[i])) {
+      target = i;
+      break;
+    }
+  }
+
+  if(target == -1) {
+    controlreply(np, "Invalid country.");
+    return CMD_ERROR;
+  }
+
+  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent a cbroadcast %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
+
+  for(i=0;i<NICKHASHSIZE;i++)
+    for(nip=nicktable[i];nip;nip=nip->next)
+      if(nip && ((int)((long)nip->exts[ext]) == target))
+        controlnotice(nip, "(cBroadcast) %s", cargv[1]);
+
+  controlreply(np, "Message cbroadcasted.");
 
   return CMD_OK;
 }
