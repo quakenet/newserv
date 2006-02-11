@@ -16,6 +16,7 @@ struct handler *hl = NULL, *hl2 = NULL;
 
 int handle_countrytotals(struct rline *li, int argc, char **argv);
 int handle_countrywhois(struct rline *li, int argc, char **argv);
+int GeoIP_country_info_by_id(int id, char **two, char **three, char **full);
 
 void _init(void) {
   if(!n_node) {
