@@ -6,8 +6,7 @@
 
 int ch_clonehistogram(void *source, int cargc, char **cargv);
 
-#define MAX_CLONES 0
-
+#define MAX_CLONES 5
 
 void _init() {
   registercontrolhelpcmd("clonehistogram", NO_OPER, 1, ch_clonehistogram, "Usage: clonehistogram <hostmask>\nShows the distribution of user clone counts of a given mask.");
