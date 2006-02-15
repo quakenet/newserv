@@ -48,8 +48,8 @@ const flag no_userflags[] = {
 const flag no_noticeflags[] = {
     { 'm', NL_MANAGEMENT },   /* hello, password, userflags, noticeflags */
     { 't', NL_TRUSTS },       /* trust stuff... */
-    { 'k', NL_KICKS },        /* KICK command */
-    { 'K', NL_KILLS },        /* KILL command */
+    { 'k', NL_KICKKILLS },    /* KICK/KILL commands */
+    { 'I', NL_MISC },         /* misc commands */
     { 'g', NL_GLINES },       /* GLINE commands */
     { 'h', NL_HITS },         /* Where a gline or kill is set automatically by the bot */
     { 'c', NL_CLONING },      /* Clone detection */
@@ -60,7 +60,6 @@ const flag no_noticeflags[] = {
     { 'O', NL_OPERING },      /* when someone opers */
     { 'n', NL_NOTICES },      /* turn off to receive notices instead of privmsgs */
     { 'A', NL_ALL_COMMANDS }, /* all commands sent */
-    { 'I', NL_MISC },         /* misc stuff                                      */
     { '\0', 0 }
   };
 
@@ -95,7 +94,8 @@ void _init() {
     "  +t: Trust queue worker\n"
     " Additional flags may show up in SHOWCOMMANDS but are not userflags as such:\n"
     "  +r: Authed user\n"
-    "  +d: Registered NOperserv user\n"
+    "  +R: Registered NOperserv user\n"
+    "  +O: Must be /OPER'ed\n"
     "  +L: Legacy command\n"
   );
   registercontrolhelpcmd("noticeflags", NO_ACCOUNT, 1, &noperserv_noticeflags,
@@ -104,8 +104,7 @@ void _init() {
     " Flags:\n"
     "  +m: Management (hello, password, userflags, noticeflags)\n"
     "  +t: Trusts\n"
-    "  +k: KICK command\n"
-    "  +K: KILL command\n"
+    "  +k: KICK/KILL commands\n"
     "  +g: GLINE commands\n"
     "  +h: Shows when glines are played automatically (hits)\n"
     "  +c: Clone information\n"

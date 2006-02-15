@@ -38,7 +38,7 @@ void _init() {
   registercontrolhelpcmd("obroadcast", NO_OPER, 1, &controlobroadcast, "Usage: obroadcast <text>\nSends a message to all IRC operators.");
   registercontrolhelpcmd("mbroadcast", NO_OPER, 2, &controlmbroadcast, "Usage: mbroadcast <mask> <text>\nSends a message to all users matching the mask");
   registercontrolhelpcmd("sbroadcast", NO_OPER, 2, &controlsbroadcast, "Usage: sbroadcast <mask> <text>\nSends a message to all users on specific server(s).");
-  registercontrolhelpcmd("cbroadcast", NO_OPER, 2, &controlcbroadcast, "Usage: sbroadcast <2 letter country> <text>\nSends a message to all users in the specified country (GeoIP must be loaded).");
+  registercontrolhelpcmd("cbroadcast", NO_OPER, 2, &controlcbroadcast, "Usage: cbroadcast <2 letter country> <text>\nSends a message to all users in the specified country (GeoIP must be loaded).");
 }
 
 void _fini() {
@@ -73,7 +73,7 @@ int controlkick(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  controlwall(NO_OPER, NL_KICKS, "%s/%s sent KICK for %s!%s@%s on %s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content,cp->index->name->content, (cargc>2)?cargv[2]:"Kicked");
+  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s sent KICK for %s!%s@%s on %s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content,cp->index->name->content, (cargc>2)?cargv[2]:"Kicked");
   localkickuser(NULL, cp, target, (cargc>2)?cargv[2]:"Kicked");
   controlreply(sender, "KICK sent.");
 
@@ -93,7 +93,7 @@ int controlkill(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  controlwall(NO_OPER, NL_KILLS, "%s/%s sent KILL for %s!%s@%s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content, (cargc>1)?cargv[1]:"Killed");
+  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s sent KILL for %s!%s@%s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content, (cargc>1)?cargv[1]:"Killed");
   killuser(NULL, target, (cargc>1)?cargv[1]:"Killed");
   controlreply(np, "KILL sent.");
 
@@ -117,7 +117,7 @@ int controlresync(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  controlwall(NO_OPER, NL_KICKS, "%s/%s RESYNC'ed %s", np->nick, np->authname, cp->index->name->content);
+  controlwall(NO_OPER, NL_MISC, "%s/%s RESYNC'ed %s", np->nick, np->authname, cp->index->name->content);
 
   irc_send("%s CM %s o", mynumeric->content, cp->index->name->content);
 
@@ -125,16 +125,16 @@ int controlresync(void *sender, int cargc, char **cargv) {
 
   for(a=0;a<cp->users->hashsize;a++) {
     if (cp->users->content[a] != nouser) {
-      np = getnickbynumeric(cp->users->content[a]);
+      nick *np2 = getnickbynumeric(cp->users->content[a]);
 
       /* make newserv believe that this user is not opped */
       if (cp->users->content[a] & CUMODE_OP)
         cp->users->content[a] &= ~CUMODE_OP;
-      else if (!IsService(np)) /* if the user wasn't opped before and is not a service we don't care about him */
+      else if (!IsService(np2)) /* if the user wasn't opped before and is not a service we don't care about him */
         continue;
 
       /* now reop him */
-      localdosetmode_nick(&changes, np, MC_OP);
+      localdosetmode_nick(&changes, np2, MC_OP);
     }
   }
 
