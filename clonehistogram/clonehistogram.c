@@ -18,18 +18,18 @@ void _fini () {
 
 void histoutput(nick *np, int clonecount, int amount, int total) {
   char max[51];
-  float percentage = (amount / total) * 100;
+  float percentage = ((float)amount / (float)total) * 100;
 
   if(percentage > 1)
     memset(max, '#', (int)(percentage / 2));
   max[(int)(percentage / 2)] = '\0';
 
-  controlreply(np, "%s%d %02.2f %s", (clonecount<1)?">":"=", abs(clonecount), percentage, max);
+  controlreply(np, "%s%d %06.2f%% %s", (clonecount<1)?">":"=", abs(clonecount), percentage, max);
 }
 
 int ch_clonehistogram(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
-  int count[MAX_CLONES + 1], j, total = 0;
+  int count[MAX_CLONES + 1], j, total = 0, totalusers = 0;
   host *hp;
   char *pattern;
 
@@ -39,28 +39,29 @@ int ch_clonehistogram(void *source, int cargc, char **cargv) {
   pattern = cargv[0];
 
   memset(count, 0, sizeof(count));
-  controlreply(np, "Applying pattern, please wait. . .");
 
   for (j=0;j<HOSTHASHSIZE;j++)
     for(hp=hosttable[j];hp;hp=hp->next)
       if (match2strings(pattern, hp->name->content)) {
-        total+=hp->clonecount;
+        total++;
+        totalusers+=hp->clonecount;
+
         if(hp->clonecount && (hp->clonecount > MAX_CLONES)) {
           count[0]++;
         } else {
-          count[hp->clonecount++]++;
+          count[hp->clonecount]++;
         }
       }
 
   if(total == 0) {
-    controlreply(np, "No users matched.");
+    controlreply(np, "No hosts matched.");
   } else {
     for(j=1;j<=MAX_CLONES;j++)
       histoutput(np, j, count[j], total);
 
     histoutput(np, -MAX_CLONES, count[0], total);
 
-    controlreply(np, "%d users matched.", total);
+    controlreply(np, "%d hosts/%d users matched.", total, totalusers);
   }
 
   controlreply(np, "Done.");
