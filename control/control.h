@@ -73,8 +73,8 @@ struct specialsched {
 
 #define NL_MANAGEMENT      0x0001  /* hello, password, userflags, noticeflags */
 #define NL_TRUSTS          0x0002  /* trust stuff... */
-#define NL_KICKS           0x0004  /* KICK command */
-#define NL_KILLS           0x0008  /* KILL command */
+#define NL_KICKKILLS       0x0004  /* KICK/KILL command */
+#define NL_MISC            0x0008  /* misc commands (resync, etc) */
 #define NL_GLINES          0x0010  /* GLINE commands */
 #define NL_HITS            0x0020  /* Where a gline or kill is set automatically by the bot */
 #define NL_CLONING         0x0040  /* Clone detection */
@@ -85,6 +85,5 @@ struct specialsched {
 #define NL_OPERING         0x0800  /* when someone opers */
 #define NL_NOTICES         0x1000  /* turn off to receive privmsgs instead of notices */
 #define NL_ALL_COMMANDS    0x2000  /* every single command sent */
-#define NL_MISC            0x4000  /* misc commands */
 
 #endif  

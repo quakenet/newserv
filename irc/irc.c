@@ -192,6 +192,7 @@ void irc_disconnected() {
     deleteschedule(NULL,&irc_connect,NULL);
     deleteschedule(NULL,&sendping,NULL);
     scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
+    triggerhook(HOOK_IRC_PRE_DISCON,NULL);
     triggerhook(HOOK_IRC_DISCON,NULL);
   }
 }

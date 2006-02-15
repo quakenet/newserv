@@ -16,9 +16,12 @@
 #define HOOK_IRC_SENDBURSTSERVERS  102
 #define HOOK_IRC_SENDBURSTNICKS    103
 #define HOOK_IRC_SENDBURSTBURSTS   104
+#define HOOK_IRC_PRE_DISCON        105
 
 #define HOOK_SERVER_NEWSERVER      200  /* Argument is number of new server */
 #define HOOK_SERVER_LOSTSERVER     201  /* Argument is number of lost server */
+#define HOOK_SERVER_END_OF_BURST   202
+#define HOOK_SERVER_PRE_LOSTSERVER 203  /* Argument is number of lost server */
 
 #define HOOK_NICK_NEWNICK          300  /* Argument is nick* */
 #define HOOK_NICK_RENAME           301  /* Argument is nick* */

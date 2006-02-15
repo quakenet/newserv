@@ -105,6 +105,7 @@ int handleeobmsg(void *source, int cargc, char **argv) {
     /* Send EA */
     irc_send("%s EA",mynumeric->content);  
     Error("server",ERR_INFO,"Acknowledging end of burst");
+    triggerhook(HOOK_SERVER_END_OF_BURST, NULL);
   }
   
   return CMD_OK;
@@ -171,6 +172,9 @@ void deleteserver(int servernum) {
   /* Set state to SQUITting, then trigger hook */
   Error("server",ERR_DEBUG,"Setting link state on %s to LS_SQUIT",serverlist[servernum].name->content);
   serverlist[servernum].linkstate=LS_SQUIT;
+
+  /* Until hooks have priorities we need something like this */
+  triggerhook(HOOK_SERVER_PRE_LOSTSERVER,(void *)servernum);
   triggerhook(HOOK_SERVER_LOSTSERVER,(void *)servernum);
   
   /* Now delete the actual server */
