@@ -113,7 +113,7 @@ void _init() {
     "  +b: BROADCAST commands\n"
     "  +o: Operation commands, such as insmod, rmmod, die, etc\n"
     "  +O: /OPER\n"
-    "  +I: Misc commands (resync)\n"
+    "  +I: Misc commands (resync, etc)\n"
     "  +n: Sends notices instead of privmsgs\n"
     "  +A: Every single command sent to the service (spammy)\n"
   );
