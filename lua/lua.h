@@ -12,6 +12,11 @@
 
 #include "../lib/sstring.h"
 
+#define LUA_BOTVERSION "1.16"
+#define LUA_CHANFIXBOT "Z"
+#define LUA_OPERCHAN "#twilightzone"
+#define LUA_PUKECHAN "#qnet.trj"
+
 typedef struct lua_list {
   lua_State *l;
   sstring *name;
@@ -39,11 +44,6 @@ lua_list *lua_scriptloaded(char *name);
 #define lua_tolong(l, n) (long)lua_tonumber(l, n)
 #define lua_islong(l, n) lua_isnumber(l, n)
 #define lua_pushlong(l, n) lua_pushnumber(l, n)
-
-#define LUA_OPERCHAN "#twilightzone"
-#define LUA_PUKECHAN "#qnet.trj"
-
-#define LUA_BOTVERSION "1.15"
 
 #endif
 

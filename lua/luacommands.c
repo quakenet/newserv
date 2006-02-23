@@ -345,6 +345,60 @@ static int lua_iteratenickhash(lua_State *l) {
 }
 */
 
+static int lua_chanfix(lua_State *ps) {
+  channel *cp;
+  nick *np;
+
+  if(!lua_isstring(ps, 1))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynick(LUA_CHANFIXBOT);
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  lua_message(np, "chanfix %s", cp->index->name->content);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_clearmode(lua_State *ps) {
+  channel *cp;
+  int i;
+  nick *np;
+  unsigned long *lp;
+  modechanges changes;
+
+  if(!lua_isstring(ps, 1))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodeinit(&changes, cp, lua_nick);
+
+  localdosetmode_key(&changes, NULL, MCB_DEL);
+  localdosetmode_simple(&changes, 0, CHANMODE_INVITEONLY | CHANMODE_LIMIT);
+
+  while(cp->bans)
+    localdosetmode_ban(&changes, bantostring(cp->bans), MCB_DEL);
+
+  for(i=0,lp=cp->users->content;i<cp->users->hashsize;i++,lp++)
+    if((*lp != nouser) && (*lp & CUMODE_OP)) {
+      np = getnickbynumeric(*lp);
+      if(np && !IsService(np))
+        localdosetmode_nick(&changes, np, MC_DEOP);
+    }
+
+  localsetmodeflush(&changes, 1);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -363,6 +417,8 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_notice", lua_noticecmd);
   lua_register(l, "irc_opchan", lua_opchan);
   lua_register(l, "irc_voicechan", lua_voicechan);
+  lua_register(l, "irc_chanfix", lua_chanfix);
+  lua_register(l, "irc_clearmode", lua_clearmode);
 
   lua_register(l, "irc_getnickchans", lua_getnickchans);
   lua_register(l, "irc_gethostusers", lua_gethostusers);
