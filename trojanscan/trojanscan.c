@@ -1819,7 +1819,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);          
               trojanscan_database.glines++;
               
-              irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a trojan (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, getnettime(), sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a trojan (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
 
               trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
             }
