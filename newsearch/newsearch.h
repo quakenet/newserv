@@ -26,6 +26,7 @@ struct searchNode *hostmask_parse(int type, int argc, char **argv);
 struct searchNode *modes_parse(int type, int argc, char **argv);
 struct searchNode *realname_parse(int type, int argc, char **argv);
 struct searchNode *nick_parse(int type, int argc, char **argv);
+struct searchNode *authname_parse(int type, int argc, char **argv);
 struct searchNode *ident_parse(int type, int argc, char **argv);
 struct searchNode *host_parse(int type, int argc, char **argv);
 struct searchNode *channel_parse(int type, int argc, char **argv);
