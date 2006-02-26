@@ -188,6 +188,7 @@ void delreguserfromchannel(regchan *rcp, reguser *rup) {
     if ((*rcuh)->user==rup) {
       /* Found the user */
       freesstring((*rcuh)->info);
+      (*rcuh)->info=NULL;
       *rcuh=(*rcuh)->nextbychan;
       found=1;
       break;
