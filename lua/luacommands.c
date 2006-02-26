@@ -121,6 +121,54 @@ static int lua_kill(lua_State *ps) {
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-KILL: %s (%s)", np->nick, msg));
 }
 
+static int lua_kick(lua_State *ps) {
+  const char *n, *msg, *chan;
+  nick *np;
+  channel *cp;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  chan = lua_tostring(ps, 1);
+  n = lua_tostring(ps, 2);
+  msg = lua_tostring(ps, 3);
+
+  np = getnickbynick(n);
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)chan);
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(!lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localkickuser(lua_nick, cp, np, msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_invite(lua_State *ps) {
+  nick *np;
+  channel *cp;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynick((char *)lua_tostring(ps, 1));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 2));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localinvite(lua_nick, cp, np);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_gline(lua_State *ps) {
   const char *reason;
   nick *target;
@@ -410,6 +458,8 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_report", lua_chanmsg);
   lua_register(l, "irc_ctcp", lua_ctcp);
   lua_register(l, "irc_kill", lua_kill);
+  lua_register(l, "irc_kick", lua_kick);
+  lua_register(l, "irc_invite", lua_invite);
   lua_register(l, "irc_gline", lua_gline);
   lua_register(l, "irc_getchaninfo", lua_getchaninfo);
   lua_register(l, "irc_counthost", lua_counthost);
