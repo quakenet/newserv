@@ -1,6 +1,7 @@
 #include "../control/control.h"
 #include "../localuser/localuser.h"
 #include "../core/schedule.h"
+#include "../core/modules.h"
 #include "../lib/splitline.h"
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
@@ -166,6 +167,17 @@ CommandHandler noperserv_find_hook(char *command) {
   return NULL;
 }
 
+int noperserv_modules_loaded(char *mask) {
+  int i;
+  char *ptr;
+
+  for(i=0,ptr=lsmod(i);ptr;ptr=lsmod(++i))
+    if(match2strings(mask, ptr))
+      return 1;
+
+  return 0;
+}
+
 int noperserv_specialmod(nick *np, char *command, ScheduleCallback reloadhandler, int cargc, char **cargv) {
   CommandHandler oldcommand = noperserv_find_hook(command);
   if(cargc < 1) {
@@ -175,6 +187,10 @@ int noperserv_specialmod(nick *np, char *command, ScheduleCallback reloadhandler
   }
 
   if(!strcmp(cargv[0], "noperserv")) {
+    if(noperserv_modules_loaded("noperserv_*")) {
+      controlreply(np, "NOT UNLOADING. Unload all dependencies first.");
+      return CMD_ERROR;
+    }
     if(special.schedule) {
       controlreply(np, "Previous attempt at un/reload still in progress.");
       return CMD_OK;
