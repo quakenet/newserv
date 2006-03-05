@@ -125,6 +125,7 @@ static int lua_kick(lua_State *ps) {
   const char *n, *msg, *chan;
   nick *np;
   channel *cp;
+  int dochecks = 1;
 
   if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
     LUA_RETURN(ps, LUA_FAIL);
@@ -133,8 +134,14 @@ static int lua_kick(lua_State *ps) {
   n = lua_tostring(ps, 2);
   msg = lua_tostring(ps, 3);
 
+  if(lua_isboolean(ps, 4) && !lua_toboolean(ps, 4))
+    dochecks = 0;
+
   np = getnickbynick(n);
   if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(dochecks && (IsOper(np) || IsXOper(np) || IsService(np)))
     LUA_RETURN(ps, LUA_FAIL);
 
   cp = findchannel((char *)chan);
@@ -360,6 +367,25 @@ static int lua_gethostusers(lua_State *l) {
   return count;
 }
 
+static int lua_getnickcountry(lua_State *l) {
+  nick *np;
+  int ext;
+
+  ext = findnickext("geoip");
+  if(ext == -1)
+    return 0;
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_pushint(l, (int)np->exts[ext]);
+  return 1;
+}
+
 /*
 static int lua_iteratenickhash(lua_State *l) {
   nick *np;
@@ -447,6 +473,33 @@ static int lua_clearmode(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_ban(lua_State *ps) {
+  channel *cp;
+  const char *mask;
+  modechanges changes;
+  int dir = MCB_ADD;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(lua_isboolean(ps, 3) && lua_toboolean(ps, 3))
+    dir = MCB_DEL;
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  mask = lua_tostring(ps, 2);
+  if(!mask || !mask[0] || !lua_lineok(mask))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodeinit(&changes, cp, lua_nick);
+  localdosetmode_ban(&changes, mask, dir);
+  localsetmodeflush(&changes, 1);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -469,9 +522,11 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_voicechan", lua_voicechan);
   lua_register(l, "irc_chanfix", lua_chanfix);
   lua_register(l, "irc_clearmode", lua_clearmode);
+  lua_register(l, "irc_ban", lua_ban);
 
   lua_register(l, "irc_getnickchans", lua_getnickchans);
   lua_register(l, "irc_gethostusers", lua_gethostusers);
+  lua_register(l, "irc_getnickcountry", lua_getnickcountry);
 
 /*  lua_register(l, "irc_iteratenickhash", lua_iteratenickhash); */
 }
