@@ -78,7 +78,7 @@ void _init() {
     registercontrolcmd("chanopstat", 10, 1, &cfcmd_chanopstat);
     registercontrolcmd("chanoplist", 10, 1, &cfcmd_chanoplist);
 
-//    registercontrolcmd("chanfix", 10, 1, &cfcmd_chanfix);
+    registercontrolcmd("chanfix", 10, 1, &cfcmd_chanfix);
     registercontrolcmd("showregs", 10, 1, &cfcmd_showregs);
 #if CFDEBUG
     /* should we disable this in the 'final' build? */
@@ -132,7 +132,7 @@ void _fini() {
 #endif
     deregistercontrolcmd("chanopstat", &cfcmd_chanopstat);
     deregistercontrolcmd("chanoplist", &cfcmd_chanoplist);
-//    deregistercontrolcmd("chanfix", &cfcmd_chanfix);
+    deregistercontrolcmd("chanfix", &cfcmd_chanfix);
     deregistercontrolcmd("showregs", &cfcmd_showregs);
 #if CFDEBUG
 //    deregistercontrolcmd("requestop", &cfcmd_requestop);
@@ -1212,7 +1212,7 @@ int cf_fixchannel(channel *cp) {
   /* don't reop users if we've already opped some services */
 #if !CFDEBUG
   if (count > 0)
-    return count;
+    return CFX_FIXED;
 #endif
 
   /* now get a sorted list of regops */
