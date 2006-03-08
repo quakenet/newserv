@@ -1,7 +1,9 @@
 /*
   nterfacer
-  Copyright (C) 2004-2005 Chris Porter.
+  Copyright (C) 2004-2006 Chris Porter.
   
+  v1.07a
+    - dumb config bug
   v1.07
     - made sure buf[0] = '\0'
   v1.06
@@ -30,6 +32,7 @@
 #include <sys/ioctl.h>
 #include <netdb.h>
 #include <string.h>
+#include <strings.h>
 
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
@@ -159,7 +162,7 @@ int load_permits(void) {
     snprintf(buf, sizeof(buf), "hostname%d", i);
     item->hostname = getcopyconfigitem("nterfacer", buf, "", 100);
     if(!item->hostname) {
-      nterface_log(nrl, NL_ERROR, "No hostname found for item %d.", item->hostname->content, i);
+      nterface_log(nrl, NL_ERROR, "No hostname found for item %d.", i);
       continue;
     }
 
