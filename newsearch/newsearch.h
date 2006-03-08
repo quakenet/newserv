@@ -20,6 +20,8 @@ struct searchNode *and_parse(int type, int argc, char **argv);
 struct searchNode *not_parse(int type, int argc, char **argv);
 struct searchNode *or_parse(int type, int argc, char **argv);
 struct searchNode *eq_parse(int type, int argc, char **argv);
+struct searchNode *lt_parse(int type, int argc, char **argv);
+struct searchNode *gt_parse(int type, int argc, char **argv);
 struct searchNode *match_parse(int type, int argc, char **argv);
 struct searchNode *regex_parse(int type, int argc, char **argv);
 struct searchNode *hostmask_parse(int type, int argc, char **argv);
@@ -29,6 +31,7 @@ struct searchNode *nick_parse(int type, int argc, char **argv);
 struct searchNode *ident_parse(int type, int argc, char **argv);
 struct searchNode *host_parse(int type, int argc, char **argv);
 struct searchNode *channel_parse(int type, int argc, char **argv);
+struct searchNode *timestamp_parse(int type, int argc, char **argv);
 
 
 struct searchNode *search_parse(int type, char *input);

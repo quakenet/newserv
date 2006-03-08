@@ -29,8 +29,11 @@ void _init() {
   registersearchterm("and",and_parse);
   registersearchterm("not",not_parse);
   registersearchterm("or",or_parse);
-  
+
   registersearchterm("eq",eq_parse);
+
+  registersearchterm("lt",lt_parse);
+  registersearchterm("gt",gt_parse);
  
   /* String operations */
   registersearchterm("match",match_parse);
@@ -43,6 +46,7 @@ void _init() {
   registersearchterm("ident",ident_parse);
   registersearchterm("host",host_parse);
   registersearchterm("channel",channel_parse);
+  registersearchterm("timestamp",timestamp_parse);
 
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
