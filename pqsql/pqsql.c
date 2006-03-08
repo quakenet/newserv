@@ -212,7 +212,7 @@ void dbstatus(int hooknum, void *arg) {
       for(qqp=queryhead;qqp;qqp=qqp->next)
         i++;
      
-    snprintf(message, sizeof(message), "PQSQL  : %6d database queries queued.",i);
+    snprintf(message, sizeof(message), "PQSQL   : %6d queries queued.",i);
     
     triggerhook(HOOK_CORE_STATSREPLY, message);
   }  
