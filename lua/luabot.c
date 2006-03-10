@@ -10,12 +10,13 @@
 #include "luabot.h"
 
 nick *lua_nick = NULL;
-void *myureconnect = NULL, *myublip = NULL;
+void *myureconnect = NULL, *myublip = NULL, *myutick = NULL;
 
 void lua_bothandler(nick *target, int type, void **args);
 
 void lua_onnewnick(int hooknum, void *arg);
 void lua_blip(void *arg);
+void lua_tick(void *arg);
 void lua_onkick(int hooknum, void *arg);
 void lua_ontopic(int hooknum, void *arg);
 void lua_onauth(int hooknum, void *arg);
@@ -79,11 +80,15 @@ void lua_startbot(void *arg) {
     localgetops(lua_nick, cp);
 
   myublip = schedulerecurring(time(NULL) + 1, 0, 60, &lua_blip, NULL);
+  myutick = schedulerecurring(time(NULL) + 1, 0, 1, &lua_tick, NULL);
 
   lua_registerevents();
 }
 
 void lua_destroybot(void) {
+  if(myutick)
+    deleteschedule(myutick, &lua_tick, NULL);
+
   if(myublip)
     deleteschedule(myublip, &lua_blip, NULL);
 
@@ -169,6 +174,11 @@ void lua_bothandler(nick *target, int type, void **args) {
         deleteschedule(myublip, &lua_blip, NULL);
       }
 
+      if(myutick) {
+        myutick = NULL;
+        deleteschedule(myutick, &lua_tick, NULL);
+      }
+
       lua_nick = NULL;
       myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
 
@@ -185,6 +195,23 @@ void lua_blip(void *arg) {
 
     lua_getglobal(l, "scripterror");
     lua_getglobal(l, "onblip");
+
+    if(lua_isfunction(l, -1))
+      lua_pcall(l, 0, 0, top + 1);
+
+    lua_settop(l, top);
+  LUA_ENDLOOP();
+}
+
+void lua_tick(void *arg) {
+  lua_State *l;
+  int top;
+
+  LUA_STARTLOOP(l);
+    top = lua_gettop(l);
+
+    lua_getglobal(l, "scripterror");
+    lua_getglobal(l, "ontick");
 
     if(lua_isfunction(l, -1))
       lua_pcall(l, 0, 0, top + 1);
