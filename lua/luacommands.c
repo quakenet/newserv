@@ -345,6 +345,21 @@ static int lua_getnickchans(lua_State *l) {
   return np->channels->cursi;
 }
 
+static int lua_getnickchancount(lua_State *l) {
+  nick *np;
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_pushint(l, np->channels->cursi);
+
+  return 1;
+}
+
 static int lua_gethostusers(lua_State *l) {
   nick *np;
   int count;
@@ -525,6 +540,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_ban", lua_ban);
 
   lua_register(l, "irc_getnickchans", lua_getnickchans);
+  lua_register(l, "irc_getnickchancount", lua_getnickchancount);
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
 
