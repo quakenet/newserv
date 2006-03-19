@@ -32,6 +32,7 @@ struct searchNode *ident_parse(int type, int argc, char **argv);
 struct searchNode *host_parse(int type, int argc, char **argv);
 struct searchNode *channel_parse(int type, int argc, char **argv);
 struct searchNode *timestamp_parse(int type, int argc, char **argv);
+struct searchNode *country_parse(int type, int argc, char **argv);
 
 
 struct searchNode *search_parse(int type, char *input);

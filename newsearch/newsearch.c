@@ -47,6 +47,7 @@ void _init() {
   registersearchterm("host",host_parse);
   registersearchterm("channel",channel_parse);
   registersearchterm("timestamp",timestamp_parse);
+  registersearchterm("country",country_parse);
 
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
