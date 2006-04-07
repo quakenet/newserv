@@ -365,6 +365,38 @@ static int lua_getnickchanindex(lua_State *l) {
   return 1;
 }
 
+int hashindex;
+nick *lasthashnick;
+
+static int lua_getnextnick(lua_State *l) {
+  if(!lasthashnick && (hashindex != -1))
+    return 0;
+
+  do {
+    if(!lasthashnick) {
+      hashindex++;
+      if(hashindex >= NICKHASHSIZE)
+        return 0;
+      lasthashnick = nicktable[hashindex];
+    } else {
+      lasthashnick = lasthashnick->next;
+    }
+  } while(!lasthashnick);
+
+  LUA_PUSHNICK(lasthashnick);
+  return 1;
+}
+
+static int lua_getfirstnick(lua_State *l) {
+  nick *np;
+  int offset;
+
+  hashindex = -1;
+  lasthashnick = NULL;
+
+  return lua_getnextnick(l);
+}
+
 static int lua_getnickchancount(lua_State *l) {
   nick *np;
 
@@ -562,6 +594,10 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_getnickchans", lua_getnickchans);
   lua_register(l, "irc_getnickchanindex", lua_getnickchanindex);
   lua_register(l, "irc_getnickchancount", lua_getnickchancount);
+
+  lua_register(l, "irc_getfirstnick", lua_getfirstnick);
+  lua_register(l, "irc_getnextnick", lua_getnextnick);
+
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
 
