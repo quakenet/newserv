@@ -383,14 +383,11 @@ static int lua_getnextnick(lua_State *l) {
     }
   } while(!lasthashnick);
 
-  LUA_PUSHNICK(lasthashnick);
+  LUA_PUSHNICK(l, lasthashnick);
   return 1;
 }
 
 static int lua_getfirstnick(lua_State *l) {
-  nick *np;
-  int offset;
-
   hashindex = -1;
   lasthashnick = NULL;
 

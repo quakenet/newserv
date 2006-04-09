@@ -5,6 +5,7 @@
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
+#include "../lib/irc_string.h"
 
 #include "lua.h"
 #include "luabot.h"
