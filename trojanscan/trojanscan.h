@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.58"
+#define TROJANSCAN_VERSION "2.59"
 
 #define TROJANSCAN_CLONE_MAX        150
 #define TROJANSCAN_WATCHCLONE_MAX   100
@@ -48,6 +48,8 @@
 #define TROJANSCAN_EPIDEMIC_MULTIPLIER 40
 
 #define TROJANSCAN_HOST_MODE      TROJANSCAN_STEAL_HOST
+
+#define TROJANSCAN_MAX_CLONE_COUNT 5
 
 #define TROJANSCAN_CAT "./trojanscan/cat.txt"
 

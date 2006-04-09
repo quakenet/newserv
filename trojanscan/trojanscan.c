@@ -12,6 +12,7 @@
  */
 
 #include "trojanscan.h"
+#include "../lib/strlfunc.h"
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -905,7 +906,7 @@ int trojanscan_user_level_by_authname(char *authname) {
       if (trojanscan_database_num_rows(res) > 0) {
         trojanscan_database_row sqlrow = trojanscan_database_fetch_row(res);
         result = atoi(sqlrow[0]);
-        strncpy(authname, sqlrow[1], sl);
+        strlcpy(authname, sqlrow[1], sl + 1);
       }
       trojanscan_database_free_result(res);
     }
@@ -2191,18 +2192,35 @@ nick *trojanscan_selectuser(void) {
   return NULL;
 }
 
+host *trojanscan_selecthost(void) {
+  int target = trojanscan_minmaxrand(0, 500), loops = 150, j;
+  host *hp;
+  do {
+    for (j=trojanscan_minmaxrand(0, HOSTHASHSIZE-1);j<HOSTHASHSIZE;j++)
+      for(hp=hosttable[j];hp;hp=hp->next)
+        if (!--target)
+          return hp;
+  } while(--loops > 0);
+
+  return NULL;
+}
+
 void trojanscan_generatehost(char *buf, int maxsize, long *fakeip) {
   if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST) {
-    nick *np;
+    host *hp;
     int loops = 20;
 
     buf[0] = '\0';
 
     do {
-      np = trojanscan_selectuser();
-      if(np && !trojanscan_isip(np->host->name->content)) {
-        strncpy(buf, np->host->name->content, maxsize);
-        *fakeip = np->ipaddress;
+      hp = trojanscan_selecthost();
+      if(hp && (hp->clonecount <= TROJANSCAN_MAX_CLONE_COUNT) && !trojanscan_isip(hp->name->content)) {
+        strlcpy(buf, hp->name->content, maxsize + 1);
+        if(hp->nicks) {
+          *fakeip = hp->nicks->ipaddress;
+        } else {
+          *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
+        }
         break;
       }
     } while(--loops > 0);
@@ -2272,14 +2290,14 @@ void trojanscan_generateident(char *buf, int maxsize) {
   nick *np = trojanscan_selectuser();
   buf[0] = '\0';
   if(np)
-    strncpy(buf, np->ident, maxsize);
+    strlcpy(buf, np->ident, maxsize + 1);
 }
 
 void trojanscan_generaterealname(char *buf, int maxsize) {
   nick *np = trojanscan_selectuser();
   buf[0] = '\0';
   if(np)
-    strncpy(buf, np->realname->name->content, maxsize);
+    strlcpy(buf, np->realname->name->content, maxsize + 1);
 }
 
 void trojanscan_database_close(void) {
