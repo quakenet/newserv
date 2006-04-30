@@ -43,9 +43,11 @@ void lua_registerevents(void) {
   registerhook(HOOK_IRC_CONNECTED, &lua_onconnect);
   registerhook(HOOK_SERVER_END_OF_BURST, &lua_onconnect);
   registerhook(HOOK_CHANNEL_JOIN, &lua_onjoin);
+  registerhook(HOOK_CHANNEL_CREATE, &lua_onjoin);
 }
 
 void lua_deregisterevents(void) {
+  deregisterhook(HOOK_CHANNEL_CREATE, &lua_onjoin);
   deregisterhook(HOOK_CHANNEL_JOIN, &lua_onjoin);
   deregisterhook(HOOK_SERVER_END_OF_BURST, &lua_onconnect);
   deregisterhook(HOOK_IRC_CONNECTED, &lua_onconnect);

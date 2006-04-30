@@ -12,7 +12,7 @@
 
 #include "../lib/sstring.h"
 
-#define LUA_BOTVERSION "1.19"
+#define LUA_BOTVERSION "1.20"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 #define LUA_PUKECHAN "#qnet.trj"
