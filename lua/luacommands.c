@@ -260,6 +260,25 @@ static int lua_opchan(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_deopchan(lua_State *ps) {
+  channel *cp;
+  nick *np;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynick((char *)lua_tostring(ps, 2));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodes(lua_nick, cp, np, MC_DEOP);
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_voicechan(lua_State *ps) {
   channel *cp;
   nick *np;
@@ -587,6 +606,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_chanfix", lua_chanfix);
   lua_register(l, "irc_clearmode", lua_clearmode);
   lua_register(l, "irc_ban", lua_ban);
+  lua_register(l, "irc_deopchan", lua_deopchan);
 
   lua_register(l, "irc_getnickchans", lua_getnickchans);
   lua_register(l, "irc_getnickchanindex", lua_getnickchanindex);
