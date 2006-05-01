@@ -30,7 +30,19 @@ static long numerictolong(const char *numeric, int numericlen)
 }
 */
             
-__inline__ long numerictolong(const char *numeric, int numericlen);
+#ifdef __GNUC__
+#define INLINE __attribute((always_inline)) inline
+#endif
+
+#ifdef _MSC_VER
+#define INLINE __forceinline
+#endif
+
+#ifndef INLINE
+#define INLINE inline
+#endif
+
+INLINE long numerictolong(const char *numeric, int numericlen);
 char *longtonumeric(long param, int len);
 char *longtonumeric2(long param, int len, char *mynum);              
 #endif              
