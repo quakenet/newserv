@@ -498,7 +498,7 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
 }
 
 int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
-  char *sp, *p, *parsebuf, *pp, commandbuf[MAX_BUFSIZE], *args[MAX_ARGS], *newp;
+  char *sp, *p, *parsebuf = NULL, *pp, commandbuf[MAX_BUFSIZE], *args[MAX_ARGS], *newp;
   int argcount;
   struct service_node *service;
   struct rline *prequest;
@@ -598,7 +598,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
     *newp = '\0';
   }
   if(argcount < hl->args) {
-    if(argcount)
+    if(argcount && parsebuf)
       free(parsebuf);
     return RE_WRONG_ARG_COUNT;
   }
@@ -606,7 +606,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   prequest = (struct rline *)malloc(sizeof(struct rline));
   if(!prequest) {
     MemError();
-    if(argcount)
+    if(argcount && parsebuf)
       free(parsebuf);
     return RE_MEM_ERROR;
   }
@@ -623,7 +623,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   rlines = prequest;
   re = (hl->function)(prequest, argcount, args);
   
-  if(argcount)
+  if(argcount && parsebuf)
     free(parsebuf);
 
   return re;

@@ -658,10 +658,12 @@ struct rg_struct *rg_newstruct(time_t expires) {
 struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, int iid) {
   struct rg_struct *newrow, *lp, *cp;
   time_t rexpires;
+  int stupidwarning;
   char glineiddata[1024];
   if (iexpires == 0) {
-    if(!protectedatoi(expires, (int *)&rexpires))
+    if(!protectedatoi(expires, &stupidwarning))
       return NULL;
+    rexpires = (time_t)stupidwarning;
   } else {
     rexpires = iexpires;
   }
@@ -746,14 +748,14 @@ struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason,
 
 void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) { /* PPA: if multiple users match the same user@host or *@host it'll send multiple glines?! */
   char hostname[RG_MASKLEN];
-  int usercount;
+  int usercount = 0;
 
   rg_loggline(rp, np);
 
   if (rp->type == 1) {
     nick *tnp;
 
-    for(usercount=0,tnp=np->host->nicks;tnp;tnp=tnp->nextbyhost)
+    for(tnp=np->host->nicks;tnp;tnp=tnp->nextbyhost)
       if(!ircd_strcmp(np->ident, tnp->ident))
         usercount++;
 

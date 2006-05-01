@@ -141,7 +141,7 @@ int csa_doauth(void *source, int cargc, char **cargv) {
   reguser *rup;
   activeuser* aup;
   nick *sender=source;
-  nicklist *nl;
+  nicklist *nl = NULL;
   char userhost[USERLEN+HOSTLEN+2];
   int ucount=0;
 

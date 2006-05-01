@@ -349,6 +349,8 @@ static int lua_getuserbyauth(lua_State *l) {
   if(!lua_isstring(l, 1))
     return 0;
 
+  acc = lua_tostring(l, 1);
+
   for(i=0;i<NICKHASHSIZE;i++) {
     for(np=nicktable[i];np;np=np->next) {
       if(np && np->authname && !ircd_strcmp(np->authname, acc)) {

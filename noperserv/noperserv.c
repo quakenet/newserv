@@ -147,7 +147,7 @@ void _fini() {
 
 /* @test */
 int noperserv_hello(void *sender, int cargc, char **cargv) {
-  char *newaccount;
+  char *newaccount = NULL;
   no_autheduser *au;
   int i;
   nick *np = (nick *)sender, *np2, *target = NULL;

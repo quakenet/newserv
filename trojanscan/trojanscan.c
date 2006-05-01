@@ -1315,7 +1315,7 @@ int trojanscan_add_ll(struct trojanscan_prechannels **head, struct trojanscan_pr
 void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count) {
   int i, j, marked;
   struct trojanscan_prechannels *lp;
-  struct trojanscan_templist *markedlist;
+  struct trojanscan_templist *markedlist = NULL;
 
   if(count > 0) {
     markedlist = (struct trojanscan_templist *)calloc(count, sizeof(struct trojanscan_templist));
@@ -1325,15 +1325,17 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
   
   for(i=0;i<trojanscan_activechans;i++) {
     marked = 0;    
-    for(lp=hp,j=0;j<count&&lp;j++,lp=lp->next) {
-      if(!markedlist[j].active && !lp->exempt && !ircd_strcmp(lp->name->content, trojanscan_chans[i].channel->content)) { /* we're already on the channel */
-        if(trojanscan_chans[i].watch_clone) {
-          markedlist[j].active = 1;
-          markedlist[j].watch_clone = trojanscan_chans[i].watch_clone;
-          lp->watch_clone = trojanscan_chans[i].watch_clone;
+    if(markedlist) {
+      for(lp=hp,j=0;j<count&&lp;j++,lp=lp->next) {
+        if(!markedlist[j].active && !lp->exempt && !ircd_strcmp(lp->name->content, trojanscan_chans[i].channel->content)) { /* we're already on the channel */
+          if(trojanscan_chans[i].watch_clone) {
+            markedlist[j].active = 1;
+            markedlist[j].watch_clone = trojanscan_chans[i].watch_clone;
+            lp->watch_clone = trojanscan_chans[i].watch_clone;
+          }
+          marked = 1;
+          break;
         }
-        marked = 1;
-        break;
       }
     }
     if(!marked && trojanscan_chans[i].watch_clone) {
@@ -1343,6 +1345,9 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
     }
   }
   
+  if(!markedlist)
+    return;
+
   for(j=0,lp=hp;j<count&&lp;j++,lp=lp->next) {
     if((!markedlist[j].active || !markedlist[j].watch_clone) && !lp->exempt) {
       channel *cp = findchannel(lp->name->content);
