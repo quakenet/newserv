@@ -73,11 +73,11 @@ void lua_startbot(void *arg) {
   myureconnect = NULL;
 
   lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections",
-"Lua engine v" LUA_BOTVERSION " (" LUA_VERSION ")"
+"Lua engine v" LUA_BOTVERSION " (" LUA_VERSION
 #ifdef LUAJIT_VERSION
 " + " LUAJIT_VERSION
 #endif
-, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+")", "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;
