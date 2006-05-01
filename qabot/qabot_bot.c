@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 #include "../nick/nick.h"
@@ -52,6 +51,8 @@ qab_bot* qabot_getbot() {
   
   bot->next = 0;
   bot->prev = 0;
+
+  return bot;
 }
 
 int qabot_addbot(char* nickname, char* user, char* host, char* pub_chan, char* qu_chan, char* stff_chan, flag_t flags, int spam_interval, 

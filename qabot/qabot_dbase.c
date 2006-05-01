@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 #include "../nick/nick.h"
@@ -21,10 +20,6 @@ void qabot_loaddb() {
   char* args[100];
   time_t created;
   flag_t flags;
-  int spam_interval;
-  int ask_wait;
-  int queued_question_interval;
-  qab_bot* b;
   
   if (!(f = fopen("qab_users", "r")))
     return;

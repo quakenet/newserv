@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 #include "../nick/nick.h"
@@ -16,7 +15,6 @@
 int qabot_dochananswer(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   int id;
   char* ch;
   qab_question* q;
@@ -91,7 +89,6 @@ int qabot_dochananswer(void* np, int cargc, char** cargv) {
 int qabot_dochanblock(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   qab_block* b;
   
   if (cargc < 1) {
@@ -220,7 +217,7 @@ int qabot_dochanblock(void* np, int cargc, char** cargv) {
     
     if (!strchr(mask, '@') || !strchr(mask, '!')) {
       sendnoticetouser(bot->np, sender, "%s is not a valid hostmask.", mask);
-      return;
+      return CMD_ERROR;
     }
     
     b = (qab_block*)malloc(sizeof(qab_block));
@@ -270,13 +267,10 @@ int qabot_dochanblock(void* np, int cargc, char** cargv) {
 }
 
 int qabot_dochanclear(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
   channel* cp = qabot_getcurrentchannel();
   qab_spam* s;
   qab_spam* ns;
-  qab_answer* a;
-  qab_answer* na;
   
   for (s = bot->nextspam; s; s = ns) {
     ns = s->next;
@@ -298,7 +292,6 @@ int qabot_dochanclear(void* np, int cargc, char** cargv) {
 int qabot_dochanclosechan(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   modechanges changes;
   
   localsetmodeinit(&changes, bot->public_chan->channel, bot->np);
@@ -312,7 +305,6 @@ int qabot_dochanclosechan(void* np, int cargc, char** cargv) {
 int qabot_dochanconfig(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   char* opt;
   char* value;
   
@@ -524,7 +516,6 @@ int qabot_dochanconfig(void* np, int cargc, char** cargv) {
 int qabot_dochanhelp(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   char* ch;
   
   if (cargc < 1)
@@ -626,12 +617,11 @@ int qabot_dochanhelp(void* np, int cargc, char** cargv) {
 int qabot_dochanlistblocks(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   qab_block* b;
   
   if (!(b = bot->blocks)) {
     sendnoticetouser(bot->np, sender, "There are no blocks currently added.");
-    return;
+    return CMD_ERROR;
   }
   
   sendnoticetouser(bot->np, sender, "Type: Hostmask/Account/Textmask:");
@@ -682,11 +672,10 @@ int qabot_dochanmic(void* np, int cargc, char** cargv) {
 }
 
 int qabot_dochanmoo(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   char moostr[50];
   int i, moocount = 5 + (rand() % 40);
+  channel* cp = qabot_getcurrentchannel();
   
   moostr[0] = 'm';
   for (i = 1; i < moocount; i++)
@@ -701,7 +690,6 @@ int qabot_dochanmoo(void* np, int cargc, char** cargv) {
 int qabot_dochanofftopic(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   int id;
   int i;
   qab_question* q;
@@ -755,7 +743,6 @@ int qabot_dochanofftopic(void* np, int cargc, char** cargv) {
 int qabot_dochanopenchan(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   modechanges changes;
   
   localsetmodeinit(&changes, bot->public_chan->channel, bot->np);
@@ -767,7 +754,6 @@ int qabot_dochanopenchan(void* np, int cargc, char** cargv) {
 }
 
 int qabot_dochanping(void* np, int cargc, char** cargv) {
-  nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
   channel* cp = qabot_getcurrentchannel();
   
@@ -779,7 +765,6 @@ int qabot_dochanping(void* np, int cargc, char** cargv) {
 int qabot_dochanreset(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   int r = 0;
   
   if (cargc < 1) {
@@ -797,7 +782,7 @@ int qabot_dochanreset(void* np, int cargc, char** cargv) {
     r = 3;
   else {
     sendnoticetouser(bot->np, sender, "Unknown parameter: %s.", cargv[0]);
-    return;
+    return CMD_ERROR;
   }
   
   if (r & 1) {
@@ -850,7 +835,6 @@ int qabot_dochanreset(void* np, int cargc, char** cargv) {
 int qabot_dochanspam(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   int id;
   int i;
   qab_question* q;
@@ -904,7 +888,6 @@ int qabot_dochanspam(void* np, int cargc, char** cargv) {
 int qabot_dochanstatus(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   
   sendnoticetouser(bot->np, sender, "Lines spammed:            %d", bot->spammed);
   sendnoticetouser(bot->np, sender, "Questions asked:          %d", bot->lastquestionID);
@@ -937,7 +920,6 @@ int qabot_dochanstatus(void* np, int cargc, char** cargv) {
 int qabot_dochanunblock(void* np, int cargc, char** cargv) {
   nick* sender = (nick*)np;
   qab_bot* bot = qabot_getcurrentbot();
-  channel* cp = qabot_getcurrentchannel();
   char* ch;
   qab_block* b;
   char type = -1;

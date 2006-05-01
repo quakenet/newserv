@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 #include "../nick/nick.h"
@@ -84,6 +83,8 @@ int qabot_dolistbots(void* sender, int cargc, char** cargv) {
   for (b = qab_bots; b; b = b->next)
     sendnoticetouser(qabot_nick, np, "%s (%s@%s)", b->nick, b->user, b->host);
   sendnoticetouser(qabot_nick, np, "End of list.");
+
+  return CMD_OK;
 }
 
 int qabot_dolistusers(void* sender, int cargc, char** cargv) {
@@ -99,6 +100,8 @@ int qabot_dolistusers(void* sender, int cargc, char** cargv) {
   for (u = qabot_users; u; u = u->next)
     sendnoticetouser(qabot_nick, np, "%-15s (%s)", u->authname, qabot_uflagtostr(u->flags));
   sendnoticetouser(qabot_nick, np, "End of list.");
+
+  return CMD_OK;
 }
 
 int qabot_doshowbot(void* sender, int cargc, char** cargv) {
@@ -157,8 +160,6 @@ int qabot_doshowbot(void* sender, int cargc, char** cargv) {
 
 int qabot_doaddbot(void* sender, int cargc, char** cargv) {
   nick* np = (nick*)sender;
-  qab_bot* bot;
-  channel* cp;
   
   if (cargc < 3) {
     sendnoticetouser(qabot_nick, np, "Syntax: addbot <nick> <user> <host> <public channel> <question channel> <staff channel>");
@@ -212,7 +213,7 @@ int qabot_dodelbot(void* sender, int cargc, char** cargv) {
 
 int qabot_doadduser(void* sender, int cargc, char** cargv) {
   nick* np = (nick*)sender;
-  nick* target;
+  nick* target = NULL;
   char* ch;
   flag_t flags = 0;
   char* victim;
@@ -248,7 +249,7 @@ int qabot_doadduser(void* sender, int cargc, char** cargv) {
       
     default:
       sendnoticetouser(qabot_nick, np, "Unknown flag '%c'.", *ch);
-      return;
+      return CMD_ERROR;
     }
   }
   

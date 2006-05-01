@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <string.h>
 #include <time.h>
 
 #include "../nick/nick.h"
@@ -371,7 +370,7 @@ void qabot_child_handler(nick* me, int type, void** args) {
       char hostbuf[NICKLEN + USERLEN + HOSTLEN + 3];
       qab_block* b;
       qab_question* q;
-      unsigned long crc;
+      unsigned long crc = 0;
       int len;
       
       sendnoticetouser(me, sender, "Your question has been relayed to the %s staff.", bot->public_chan->name->content);

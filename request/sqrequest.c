@@ -13,6 +13,7 @@
 #include "../localuser/localuser.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../core/config.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -101,7 +102,6 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
   requestrec **rh;
   char msgbuf[512];
   va_list va;
-  channel *cplog;
   nick *lnp, *qnp, *np, *tnp, *snp;
   char now[50];
   time_t now_ts;
@@ -332,7 +332,6 @@ void qr_handlenotice(nick *sender, char *message) {
   nick *np;
   int delrequest = 0, state, who;
   requestrec *nextreq;
-  channel *logcp;
 
 /*  logcp = findchannel("#qnet.request");
   
@@ -728,7 +727,7 @@ int qr_instantrequestq(nick *sender, channel *cp) {
 
 int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnick) {
   chanindex *cip = cp->index;
-  int who;
+  int who = 0;
   requestrec *nextreq, *lastreq;
 
   if (rq_isspam(sender)) {

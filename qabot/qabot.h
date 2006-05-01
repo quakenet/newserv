@@ -2,6 +2,12 @@
 #ifndef _QABOT_H
 #define _QABOT_H
 
+#include <string.h>
+
+#if !defined(strdup)
+char *strdup(const char *);
+#endif
+
 #define QABOT_NICK        "QABot"
 #define QABOT_USER        "qabot"
 #define QABOT_HOST        "quakenet.org"

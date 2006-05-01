@@ -169,7 +169,7 @@ static int hlc_check_character_repeats(hlc_profile *hlc_prof, huser *husr, const
 {
     char chr = '\0';
     int i;
-    int repeats;
+    int repeats = 0;
 
     for (i = 0;line[i];i++)
         if (line[i] == chr)

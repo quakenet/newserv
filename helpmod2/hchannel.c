@@ -329,7 +329,7 @@ void hchannels_dnmo(struct huser_struct *husr)
         /*if (on_queue(husr, huserchan) || on_desk(husr, huserchan))*/
         if (huserchan != NULL)
         {
-            hchannel_user *tmp, **hchanuser = &hchan->channel_users;
+            hchannel_user *tmp = NULL, **hchanuser = &hchan->channel_users;
             for (;*hchanuser;hchanuser = &(*hchanuser)->next)
                 if ((*hchanuser)->husr == husr)
                 {

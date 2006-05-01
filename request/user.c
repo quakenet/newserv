@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
+#include "../lib/strlfunc.h"
 #include "../nick/nick.h"
 #include "request.h"
 #include "user.h"
@@ -78,7 +80,7 @@ int ru_parseline(char *line) {
   unsigned int level;
   int result;
 
-  if (sscanf(line, "%s %lu", name, &level) < 2)
+  if (sscanf(line, "%s %u", name, &level) < 2)
     return 0;
 
   ru_loading = 1;
@@ -123,7 +125,7 @@ int ru_load(void) {
 
 int ru_persist(void) {
   FILE *rudata;
-  int i, count = 0;
+  int count = 0;
   r_user_t *user = r_userlist;
 
   if (ru_loading)
@@ -135,7 +137,7 @@ int ru_persist(void) {
     return 0;
 
   while (user) {
-    fprintf(rudata, "%s %lu\n", user->name, user->level);
+    fprintf(rudata, "%s %u\n", user->name, user->level);
 
     user = user->next;
   }

@@ -1,12 +1,14 @@
  /* shroud's service request */
 
 #include <stdio.h>
+#include <string.h>
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
 #include "../control/control.h"
+#include "../splitlist/splitlist.h"
 #include "request.h"
 #include "request_block.h"
 #include "lrequest.h"
@@ -196,8 +198,8 @@ int rqcmd_showcommands(void *user, int cargc, char **cargv) {
   sendnoticetouser(rqnick, (nick*)user, "-------------------");
 
   for (i = 0; i < n; i++) {
-    if (((cmdlist[i]->level & RQU_OPER) == 0 || IsOper((nick*)user)) &&
-        (((cmdlist[i]->level & RQU_ACCOUNT) == 0 || (IsOper((nick*)user) || (IsAccount((nick*)user)) && ru_getlevel((nick*)user) > 0))))
+    if ((((cmdlist[i]->level & RQU_OPER) == 0) || IsOper((nick*)user)) &&
+        ((((cmdlist[i]->level & RQU_ACCOUNT) == 0) || (IsOper((nick*)user) || (IsAccount((nick*)user)) && (ru_getlevel((nick*)user) > 0)))))
       sendnoticetouser(rqnick, (nick*)user, "%s", cmdlist[i]->command->content);
   }
 
@@ -298,7 +300,7 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
   nick *lnick, *qnick;
   unsigned long *lhand, *qhand;
-  channel *cp, *logcp;
+  channel *cp;
   int retval;
   time_t now_ts;
   char now[50];

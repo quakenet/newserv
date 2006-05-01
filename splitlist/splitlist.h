@@ -16,5 +16,6 @@ int sp_countsplitservers(void);
 int sp_issplitserver(const char *name);
 void sp_deletesplit(const char *name);
 void sp_addsplit(const char *name, time_t ts);
+int sp_countsplitservers(void);
 
 #endif /* __SPLITLIST_H */
