@@ -21,6 +21,7 @@ void lua_loadscripts(void);
 void lua_rehash(int hooknum, void *arg);
 void lua_registercommands(lua_State *l);
 void lua_loadlibs(lua_State *l);
+void lua_require(lua_State *l, char *module);
 
 void lua_startbot(void *arg);
 void lua_destroybot(void);
@@ -46,6 +47,9 @@ static const luaL_Reg ourlibs[] = {
   {LUA_OSLIBNAME, luaopen_os},
   {LUA_STRLIBNAME, luaopen_string},
   {LUA_MATHLIBNAME, luaopen_math},
+#ifdef LUA_JITLIBNAME
+  {LUA_JITLIBNAME, luaopen_jit},
+#endif
   {NULL, NULL}
 };
   
@@ -144,8 +148,13 @@ lua_State *lua_loadscript(char *file) {
   }
 
   lua_loadlibs(l);
-
   lua_registercommands(l);
+
+#ifdef LUA_JITLIBNAME
+  lua_require(l, "lib/jit");
+#endif
+
+  lua_require(l, "lib/bootstrap");
 
   snprintf(fullpath, sizeof(fullpath), "%s/%s%s", cpath->content, file, suffix->content);
   if(luaL_loadfile(l, fullpath)) {
@@ -224,9 +233,9 @@ int lua_setpath(void) {
   freesstring(cpath);
   freesstring(suffix);
 
-  cpath = getcopyconfigitem("lua", "scriptdir", ".", 100);
+  cpath = getcopyconfigitem("lua", "scriptdir", "", 500);
 
-  if(!cpath) {
+  if(!cpath || !cpath->content || !cpath->content[0]) {
     Error("lua", ERR_ERROR, "Error loading path.");
     return 0;
   }
@@ -270,3 +279,17 @@ void lua_loadlibs(lua_State *l) {
     lua_call(l, 1, 0);
   }
 }
+
+void lua_require(lua_State *l, char *module) {
+  int top = lua_gettop(l);
+
+  lua_getglobal(l, "require");
+  lua_pushstring(l, module);
+
+  if(lua_pcall(l, 1, 1, 0))
+    Error("lua", ERR_ERROR, "Error requiring %s: %s", module, lua_tostring(l, -1));
+
+  lua_settop(l, top);
+}
+
+

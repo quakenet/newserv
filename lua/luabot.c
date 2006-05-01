@@ -10,6 +10,10 @@
 #include "lua.h"
 #include "luabot.h"
 
+#ifdef LUA_JITLIBNAME
+#include <luajit.h>
+#endif
+
 nick *lua_nick = NULL;
 void *myureconnect = NULL, *myublip = NULL, *myutick = NULL;
 
@@ -68,7 +72,12 @@ void lua_startbot(void *arg) {
 
   myureconnect = NULL;
 
-  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections", "Lua engine v" LUA_BOTVERSION " (" LUA_VERSION ")", "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections",
+"Lua engine v" LUA_BOTVERSION " (" LUA_VERSION ")"
+#ifdef LUAJIT_VERSION
+" + " LUAJIT_VERSION
+#endif
+, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;

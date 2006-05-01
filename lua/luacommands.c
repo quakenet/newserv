@@ -14,6 +14,10 @@
 
 #include <stdarg.h>
 
+#ifdef LUA_JITLIBNAME
+#include <luajit.h>
+#endif
+
 static int lua_smsg(lua_State *ps);
 static int lua_skill(lua_State *ps);
 
@@ -321,7 +325,19 @@ static int lua_versioninfo(lua_State *ps) {
   lua_pushstring(ps, __DATE__);
   lua_pushstring(ps, __TIME__);
 
-  return 4;
+#ifdef LUAJIT_VERSION
+  lua_pushstring(ps, " + " LUAJIT_VERSION);
+#else
+  lua_pushstring(ps, "");
+#endif
+
+  return 5;
+}
+
+static int lua_basepath(lua_State *ps) {
+  lua_pushfstring(ps, "%s/", cpath->content);
+
+  return 1;
 }
 
 /* O(n) */
@@ -590,6 +606,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "chanmsg", lua_chanmsg);
   lua_register(l, "scripterror", lua_scripterror);
   lua_register(l, "versioninfo", lua_versioninfo);
+  lua_register(l, "basepath", lua_basepath);
 
   lua_register(l, "irc_report", lua_chanmsg);
   lua_register(l, "irc_ctcp", lua_ctcp);

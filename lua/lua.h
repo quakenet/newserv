@@ -32,6 +32,7 @@ typedef struct lua_list {
 #define LUA_PATHLEN 1024
 
 extern lua_list *lua_head;
+extern sstring *cpath;
 
 lua_State *lua_loadscript(char *file);
 void lua_unloadscript(lua_list *l);
