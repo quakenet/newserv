@@ -33,7 +33,7 @@ void helpmod_hook_part(int unused, void *args)
 
 }
 */
-void helpmod_hook_join(int unused, void *args)
+static void helpmod_hook_join(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -55,7 +55,7 @@ void helpmod_hook_join(int unused, void *args)
 	else
 	    hchan->jf_control++;
 
-	if (hchan->jf_control - time(NULL) > 20 && !IsRegOnly(hchan))
+	if (hchan->jf_control - time(NULL) > 12 && !IsRegOnly(hchan))
 	{
 	    if (hchan->flags & H_REPORT && hchannel_is_valid(hchan->report_to))
 		helpmod_message_channel(hchan->report_to, "Warning: Possible join flood on %s, setting +r", hchannel_get_name(hchan));
@@ -75,10 +75,10 @@ void helpmod_hook_join(int unused, void *args)
         return;
     }
 
-    if (huser_get_level(husr) > H_PEON && (huser_get_account_flags(husr) & H_AUTO_OP) && hchannel_authority(hchan, husr))
+    if (huser_get_level(husr) >= H_STAFF && (huser_get_account_flags(husr) & H_AUTO_OP) && hchannel_authority(hchan, husr))
         helpmod_channick_modes(husr, hchan ,MC_OP,HNOW);
 
-    if (huser_get_level(husr) > H_PEON && (huser_get_account_flags(husr) & H_AUTO_VOICE) && hchannel_authority(hchan, husr))
+    if (huser_get_level(husr) >= H_TRIAL && (huser_get_account_flags(husr) & H_AUTO_VOICE) && hchannel_authority(hchan, husr))
         helpmod_channick_modes(husr, hchan, MC_VOICE,HNOW);
 
     if (hchan->flags & H_WELCOME && *hchan->real_channel->index->name->content)
@@ -97,7 +97,7 @@ void helpmod_hook_join(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_newnick(int unused, void *args)
+static void helpmod_hook_channel_newnick(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -120,7 +120,9 @@ void helpmod_hook_channel_newnick(int unused, void *args)
     if (hchan->flags & H_PASSIVE)
         return;
 
-    if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) == H_PEON && hban_check(nck)))
+    huser_activity(husr, NULL);
+
+    if (huser_get_level(husr) == H_LAMER || (huser_get_level(husr) <= H_TRIAL && hban_check(nck)))
     {
         hban *hb = hban_check(nck);
 
@@ -138,7 +140,7 @@ void helpmod_hook_channel_newnick(int unused, void *args)
         hqueue_handle_queue(hchan, NULL);
 }
 
-void helpmod_hook_channel_lostnick(int unused, void *args)
+static void helpmod_hook_channel_lostnick(int unused, void *args)
 {
     channel *chan = ((channel**)args)[0];
     hchannel *hchan = hchannel_get_by_channel(chan);
@@ -191,7 +193,7 @@ void helpmod_hook_channel_lostnick(int unused, void *args)
         hqueue_handle_queue(hchan, oper);
 }
 
-void helpmod_hook_nick_lostnick(int unused, void *args)
+static void helpmod_hook_nick_lostnick(int unused, void *args)
 {
     nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
@@ -203,7 +205,7 @@ void helpmod_hook_nick_lostnick(int unused, void *args)
     huser_del(husr);
 }
 
-void helpmod_hook_channel_opped(int unused, void *args)
+static void helpmod_hook_channel_opped(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -234,7 +236,7 @@ void helpmod_hook_channel_opped(int unused, void *args)
         helpmod_channick_modes(husr, hchan, MC_DEOP ,HNOW);
 }
 
-void helpmod_hook_channel_deopped(int unused, void *args)
+static void helpmod_hook_channel_deopped(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -252,10 +254,9 @@ void helpmod_hook_channel_deopped(int unused, void *args)
     assert(huserchan != NULL);
 
     huserchan->flags &= ~HCUMODE_OP;
-
 }
 
-void helpmod_hook_channel_voiced(int unused, void *args)
+static void helpmod_hook_channel_voiced(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -280,7 +281,7 @@ void helpmod_hook_channel_voiced(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_devoiced(int unused, void *args)
+static void helpmod_hook_channel_devoiced(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser_channel *huserchan;
@@ -311,7 +312,7 @@ void helpmod_hook_channel_devoiced(int unused, void *args)
     }
 }
 
-void helpmod_hook_channel_topic(int unused, void *args)
+static void helpmod_hook_channel_topic(int unused, void *args)
 {
     hchannel *hchan = hchannel_get_by_channel(((channel**)args)[0]);
     huser *husr;
@@ -335,17 +336,21 @@ void helpmod_hook_channel_topic(int unused, void *args)
     }
 }
 
-void helpmod_hook_nick_account(int unused, void *args)
+static void helpmod_hook_nick_account(int unused, void *args)
 {
     nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
     if (husr == NULL)
         return;
     else
-        husr->account = haccount_get_by_name(nck->authname);
+	husr->account = haccount_get_by_name(nck->authname);
+
+    if (huser_get_level(husr) == H_LAMER)
+	while (husr->hchannels)
+	    helpmod_kick(husr->hchannels->hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(husr->hchannels->hchan));
 }
 
-void helpmod_hook_server_newserver(int unused, void *args)
+static void helpmod_hook_server_newserver(int unused, void *args)
 {
     hchannel *hchan;
     int numeric = (int)args;

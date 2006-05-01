@@ -1,6 +1,6 @@
 /* required modules: splitlist, chanfix(3) */
 
-#include <string.h>
+#include <stdio.h>
 #include "request.h"
 #include "lrequest.h"
 #include "request_block.h"

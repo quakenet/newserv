@@ -1,4 +1,5 @@
-Syntax:  everyoneout [channel] [reason]
+Syntax:  everyoneout [channel] [targets] [:][reason]
 Example: everyoneout #feds enough laming
 Removes all normal users from the channel and sets H to enforce +i on the channel.
+Targets parameter can be either 'all' or 'unauthed', default is all.
 If reason is omitted the default reason is 'clearing channel'.

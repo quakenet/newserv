@@ -7,7 +7,9 @@ const char *hlevel_name(hlevel lvl)
     case H_LAMER:
         return "waste of space";
     case H_PEON:
-        return "normal user";
+	return "normal user";
+    case H_FRIEND:
+        return "friendly user";
     case H_TRIAL:
         return "trial staff member";
     case H_STAFF:
@@ -31,7 +33,8 @@ const char *hlevel_title(hlevel lvl)
     {
     case H_LAMER:
     case H_PEON:
-        return "user";
+    case H_FRIEND:
+	return "user";
     case H_TRIAL:
         return "trial staff member";
     case H_STAFF:

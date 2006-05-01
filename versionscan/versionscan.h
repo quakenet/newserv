@@ -10,17 +10,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 
 #define VS_NICK "V"
-#define VS_IDENT "version"
+#define VS_IDENT "TheVBot"
 #define VS_HOST "versionscan.quakenet.org"
-#define VS_RNDESC "versionscan"
+#define VS_RNDESC "VersionScan"
 #define VS_AUTHNAME "V"
 
-#define VS_VERSION "1.12"
+#define VS_VERSION "1.13"
 
-#define OPER_CHAN "#twilightzone"
+#define OPER_CHAN "#qnet.support"
 
 #define VSPATTERNLEN 200
 #define VSDATALEN 200

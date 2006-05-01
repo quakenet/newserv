@@ -572,7 +572,6 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	  csdb_deletechanuser(rcuplist);
 	  delreguserfromchannel(rcp, target);
 	}
-        freesstring(rcuplist->info); 
 	freeregchanuser(rcuplist);
 	rcuplist=NULL;
         for (i=0;i<REGCHANUSERHASHSIZE;i++)

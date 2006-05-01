@@ -43,6 +43,7 @@ int ru_create(char *name, unsigned int level) {
 }
 
 void ru_destroy(char *name) {
+	r_user_t *puser;
 	r_user_t *user = r_userlist;
 
 	if (user && ircd_strcmp(user->name, name) == 0) {
@@ -58,11 +59,12 @@ void ru_destroy(char *name) {
 	if (user == NULL)
 		return;
 	
-	while (user->next) {
+	while (user && user->next) {	
 		if (ircd_strcmp(user->next->name, name) == 0) {
+			puser = user->next;
 			user->next = user->next->next;
 
-			free(user->next);
+			free(puser);
 		}
 
 		user = user->next;

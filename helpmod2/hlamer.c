@@ -79,27 +79,7 @@ static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
     {
 	const char *banmask = hban_ban_string(husr->real_user, HBAN_HOST);
 	char reason_buffer[128];
-        /*
-	switch (violation)
-	{
-	case HLC_CAPS:
-	    hban_add(banmask, "Excessive use of capital letters", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-	    break;
-	case HLC_REPEAT:
-	    hban_add(banmask, "Excessive repeating", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-	    break;
-	case HLC_CHARACTER_REPEAT:
-	    hban_add(banmask, "Excessive improper use of language", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-	    break;
-	case HLC_FLOOD:
-	    hban_add(banmask, "Excessive flooding", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-	    break;
-	case HLC_SPAM:
-	    hban_add(banmask, "Excessive spamming", time(NULL) + HLC_DEFAULT_BANTIME, 0);
-	    break;
-	}
-	*/
-	sprintf(reason_buffer, "Excessive violations: %s", hlc_get_violation_name(violation));
+        sprintf(reason_buffer, "Excessive violations: %s", hlc_get_violation_name(violation));
 	hban_add(banmask, reason_buffer, time(NULL) + HLC_DEFAULT_BANTIME, 0);
 
 	if (IsAccount(husr->real_user))
@@ -109,50 +89,12 @@ static int hlc_violation_handle(hchannel *hchan, huser* husr, int violation)
     }
     if (husr->lc[violation] >= hchan->lc_profile->tolerance_kick) /* get rid of the thing */
     {
-   /*     switch (violation)
-	{
-	case HLC_CAPS:
-	    helpmod_kick(hchan, husr, "Channel rule violation: Excessive use of capital letters");
-	    break;
-	case HLC_REPEAT:
-	    helpmod_kick(hchan, husr, "Channel rule violation: Repeating");
-	    break;
-	case HLC_CHARACTER_REPEAT:
-	    helpmod_kick(hchan, husr, "Channel rule violation: Improper use of language");
-	    break;
-	case HLC_FLOOD:
-	    helpmod_kick(hchan, husr, "Channel rule violation: Flooding");
-	    break;
-	case HLC_SPAM:
-	    helpmod_kick(hchan, husr, "Channel rule violation: Spamming");
-	    break;
-	    }
-	    */
 	helpmod_kick(hchan, husr, "Channel rule violation: %s", hlc_get_violation_name(violation));
 	return !0;
     }
     if (husr->lc[violation] >= hchan->lc_profile->tolerance_warn) /* get rid of the thing */
     {
-/*	switch (violation)
-	{
-	case HLC_CAPS:
-	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Excessive use of capital letters", hchannel_get_name(hchan));
-	    break;
-	case HLC_REPEAT:
-	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Repeating", hchannel_get_name(hchan));
-	    break;
-	case HLC_CHARACTER_REPEAT:
-	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Improper use of language", hchannel_get_name(hchan));
-	    break;
-	case HLC_FLOOD:
-	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Flooding", hchannel_get_name(hchan));
-	    break;
-	case HLC_SPAM:
-	    helpmod_reply(husr, NULL, "You are violating the channel rule of %s : Spamming", hchannel_get_name(hchan));
-	    break;
-	    }
-	    */
-	helpmod_reply(husr, NULL, "You are violating the channel rule of %s : %s. Continuos violation of this rule will result in you being removed from %s", hchannel_get_name(hchan), hlc_get_violation_name(violation), hchannel_get_name(hchan));
+	helpmod_reply(husr, NULL, "You are violating the channel rule of %s : %s. Continuous violation of this rule will result in you being removed from %s", hchannel_get_name(hchan), hlc_get_violation_name(violation), hchannel_get_name(hchan));
     }
     return 0;
 
@@ -163,6 +105,26 @@ static int hlc_check_caps(hlc_profile *hlc_prof, huser *husr, const char *line)
     int caps = 0;
     int noncaps = 0;
     int i;
+    int firstword;
+
+    if (strchr(line, ' '))
+	firstword = strchr(line, ' ') - line;
+    else
+        firstword = 0;
+
+    /* Handle the thing sent with /me */
+    if (!strncmp(line, "\1ACTION", 6 + 1))
+	line+=(6 + 1);
+    else if (firstword && firstword < NICKLEN + 3)
+    {
+	char buffer[NICKLEN + 3];
+	strncpy(buffer, line, firstword);
+	buffer[firstword] = '\0';
+	if (buffer[firstword - 1] == ':')
+	    buffer[firstword - 1] = '\0';
+	if (getnickbynick(buffer))
+            line+=firstword + 1;
+    }
 
     for (i = 0;line[i];i++)
     {
@@ -310,4 +272,3 @@ const char *hlc_get_violation_name(hlc_violation violation)
         return "Error, please contact strutsi";
     }
 }
-

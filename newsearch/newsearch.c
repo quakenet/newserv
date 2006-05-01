@@ -43,6 +43,7 @@ void _init() {
   registersearchterm("hostmask",hostmask_parse);
   registersearchterm("realname",realname_parse);
   registersearchterm("nick",nick_parse);
+  registersearchterm("authname",authname_parse);
   registersearchterm("ident",ident_parse);
   registersearchterm("host",host_parse);
   registersearchterm("channel",channel_parse);

@@ -11,8 +11,7 @@ unsigned long hcount=0;
 unsigned long wcount=0;
 unsigned long kcount=0;
 unsigned long gcount=0;
-
-//sendnoticetouser(versionscan_nick, np, "");
+schedule *vsconnect;
 
 void versionscan_addstat(char* reply) {
   vsstatistic* v, *pv;
@@ -194,7 +193,6 @@ int versionscan_whois(void* sender, int cargc, char** cargv) {
     return CMD_ERROR;
   }
   sendnoticetouser(versionscan_nick, np, "%s is authed as %s, with flags: %s", target->nick, target->authname, versionscan_flagstochar(v->flags));
-
   return CMD_OK;
 }
 
@@ -396,9 +394,7 @@ int versionscan_hello(void* sender, int cargc, char** cargv) {
   vsauths=(vsauthdata*)malloc(sizeof(vsauthdata));
   strncpy(vsauths->account, np->authname, ACCOUNTLEN);
   vsauths->flags=VS_STAFF | VS_GLINE | VS_ADMIN;
-
-/* ?! */
-/*  vsauths->next; */
+  vsauths->next=NULL;
   
   sendnoticetouser(versionscan_nick, np, "An account has been created for you with the following flags: %s.", versionscan_flagstochar(vsauths->flags));
   return CMD_OK;
@@ -608,7 +604,7 @@ int versionscan_statistics(void* sender, int cargc, char** cargv) {
   
   if (versionscan_mode != VS_STAT) {
     sendnoticetouser(versionscan_nick, np, "No statistics are available unless STATISTICS mode of operation is enabled.");
-    return CMD_OK;
+    return CMD_ERROR;
   }
   if (cargc) {
     limit=atoi(cargv[0]);
@@ -623,6 +619,29 @@ int versionscan_statistics(void* sender, int cargc, char** cargv) {
     rlimit++;
   }
   sendnoticetouser(versionscan_nick, np, "End of list - %lu results returned.", rlimit);
+  return CMD_OK;
+}
+
+int versionscan_statsdump(void* sender, int cargc, char** cargv) {
+  nick* np=(nick*)sender;
+  vsstatistic* v;
+  long rlimit=0;
+  FILE *fout;
+  
+  if (versionscan_mode != VS_STAT) {
+    sendnoticetouser(versionscan_nick, np, "No statistics are available unless STATISTICS mode of operation is enabled.");
+    return CMD_ERROR;
+  }
+  if (!(fout=fopen("versionscanstats","w"))) {
+    sendnoticetouser(versionscan_nick, np, "Unable to open save file.");
+    return CMD_ERROR;
+  }
+  for (v=vsstats; v; v=v->next) {
+    fprintf(fout, "%s [%lu]\n", v->reply, v->count);
+    rlimit++;
+  }
+  fclose(fout);
+  sendnoticetouser(versionscan_nick, np, "%lu results saved.", rlimit);
   return CMD_OK;
 }
 
@@ -669,7 +688,6 @@ void versionscan_handler(nick* me, int type, void** args) {
   int cargc;
   vspattern* v;
   char* p;
-  char **chargs = (char **)args;
 
   switch (type) {
   case LU_PRIVMSG:
@@ -690,32 +708,22 @@ void versionscan_handler(nick* me, int type, void** args) {
       return;
     }
     
-/*    if ((cmd->level & VS_AUTHED) && !IsAccount(sender)) {
+    if ((cmd->level & VS_AUTHED) && !IsAccount(sender)) {
       sendnoticetouser(versionscan_nick, sender, "Sorry, you need to be authed to use this command.");
       return;
     }
-*/    
+    
     if ((cmd->level & VS_OPER) && !IsOper(sender)) {
       sendnoticetouser(versionscan_nick, sender, "Sorry, you need to be opered to use this command.");
       return;
     }
-/*    
+    
     if (((cmd->level & VS_STAFF) && !IsVersionscanStaff(sender)) || 
         ((cmd->level & VS_GLINE) && !IsVersionscanGlineAccess(sender)) || 
         ((cmd->level & VS_ADMIN) && !IsVersionscanAdmin(sender))) {
       sendnoticetouser(versionscan_nick, sender, "Sorry, you do not have access to this command.");
       return;
     }
-*/  /*  
-    if ((cmd->level & VS_GLINE) && !IsVersionscanGlineAccess(sender)) {
-      sendnoticetouser(versionscan_nick, sender, "Sorry, you do not have access to this command.");
-      return;
-    }
-    
-    if ((cmd->level & VS_ADMIN) && !IsVersionscanAdmin(sender)) {
-      sendnoticetouser(versionscan_nick, sender, "Sorry, you do not have access to this command.");
-      return;
-    }*/
     
     if (cmd->maxparams < (cargc-1)) {
       /* We need to do some rejoining */
@@ -728,10 +736,10 @@ void versionscan_handler(nick* me, int type, void** args) {
   case LU_PRIVNOTICE:
     sender=args[0];
     
-    if (strncmp("\001VERSION", args[1], 8)) {
+    if (strncmp("\001VERSION ", args[1], 9)) {
       break;
     }
-    if ((p=strchr(&chargs[1][8], '\001'))) {
+    if ((p=strchr((char *)args[1] + 9, '\001'))) {
       *p++='\0';
     }
     if (versionscan_mode == VS_SCAN) {
@@ -739,7 +747,7 @@ void versionscan_handler(nick* me, int type, void** args) {
         break;
       }
       for (v=vspatterns; v; v=v->next) {
-        if (match2strings(v->pattern, &chargs[1][8])) {
+        if (match2strings(v->pattern, (char *)args[1] + 9)) {
           v->hitcount++;
           hcount++;
           switch (v->action) {
@@ -768,7 +776,7 @@ void versionscan_handler(nick* me, int type, void** args) {
       }
     }
     else if (versionscan_mode == VS_STAT) {
-      versionscan_addstat(&chargs[1][8]);
+      versionscan_addstat((char *)args[1] + 9);
     }
     break;
   case LU_KILLED:
@@ -782,6 +790,7 @@ void versionscan_createfakeuser(void* arg) {
   channel* cp;
   char buf[200];
   
+  vsconnect=NULL;
   sprintf(buf, "%s v%s", VS_RNDESC, VS_VERSION);
   versionscan_nick=registerlocaluser(VS_NICK, VS_IDENT, VS_HOST, buf, VS_AUTHNAME, UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, versionscan_handler);
   if ((cp=findchannel(OPER_CHAN))) {
@@ -793,14 +802,14 @@ void versionscan_createfakeuser(void* arg) {
 }
 
 void _init() {
-  vspatterns=0;
-  vsauths=0;
-  vsstats=0;
+  vspatterns=NULL;
+  vsauths=NULL;
+  vsstats=NULL;
   versionscan_mode=VS_IDLE;
   
   versionscan_commands=newcommandtree();
   
-  addcommandtotree(versionscan_commands, "showcommands", 0, 0, versionscan_showcommands);
+  addcommandtotree(versionscan_commands, "showcommands", VS_AUTHED | VS_STAFF, 0, versionscan_showcommands);
   addcommandtotree(versionscan_commands, "help", VS_AUTHED | VS_STAFF, 1, versionscan_help);
   addcommandtotree(versionscan_commands, "hello", VS_AUTHED | VS_OPER, 0, versionscan_hello);
   addcommandtotree(versionscan_commands, "scan", VS_AUTHED | VS_STAFF, 1, versionscan_scan);
@@ -811,22 +820,31 @@ void _init() {
   addcommandtotree(versionscan_commands, "status", VS_AUTHED | VS_OPER | VS_ADMIN, 0, versionscan_status);
   addcommandtotree(versionscan_commands, "mode", VS_AUTHED | VS_OPER | VS_ADMIN, 1, versionscan_modecmd);
   addcommandtotree(versionscan_commands, "statistics", VS_AUTHED | VS_OPER | VS_STAFF, 1, versionscan_statistics);
+  addcommandtotree(versionscan_commands, "statsdump", VS_AUTHED | VS_OPER | VS_STAFF, 1, versionscan_statsdump);
   addcommandtotree(versionscan_commands, "broadcast", VS_AUTHED | VS_OPER | VS_ADMIN, 1, versionscan_broadcast);
   addcommandtotree(versionscan_commands, "whois", VS_AUTHED | VS_STAFF, 1, versionscan_whois);
   
   registerhook(HOOK_NICK_NEWNICK, &versionscan_newnick);
   
-  scheduleoneshot(time(NULL)+1, &versionscan_createfakeuser, NULL);
+  vsconnect=scheduleoneshot(time(NULL)+1, &versionscan_createfakeuser, NULL);
 }
 
 void _fini() {
   void* p, *np;
   
   deregisterhook(HOOK_NICK_NEWNICK, &versionscan_newnick);
+  
+  if (vsconnect) {
+    deleteschedule(vsconnect, &versionscan_createfakeuser, NULL);
+    vsconnect=NULL;
+  }
+  
   if (versionscan_nick) {
     deregisterlocaluser(versionscan_nick, "Module unloaded.");
     versionscan_nick=NULL;
   }
+  
+  destroycommandtree(versionscan_commands);
   
   for (p=vspatterns; p;) {
     np=((vspattern*)p)->next;

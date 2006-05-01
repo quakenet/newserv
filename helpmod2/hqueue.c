@@ -151,7 +151,7 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
 
         if ((hchan->flags & H_QUEUE_SPAMMY) && (oper != NULL))
         {
-	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s", hlevel_title(huser_get_level(oper)), hchannel_get_name(hchan), huser_get_nick(oper));
+	    helpmod_reply(hchanuser->husr, hchan->real_channel, "It is now your time to state your problem. Please do so on channel %s and direct your questions to %s %s",  hchannel_get_name(hchan), hlevel_title(huser_get_level(oper)), huser_get_nick(oper));
             if (!(huser_get_account_flags(oper) & H_NOSPAM))
                 helpmod_reply(oper, hchan->real_channel, "User %s (%s@%s) is yours, he has been in queue for %s", huser_get_nick(hchanuser->husr), huser_get_ident(hchanuser->husr), huser_get_host(hchanuser->husr), helpmod_strtime(time(NULL) - hchanuser->time_joined));
         }
@@ -210,7 +210,6 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
 		    if (huser_get_level(hchanuser->husr) == H_PEON && huserchan->flags & HCUMODE_VOICE)
 			helpmod_channick_modes(hchanuser->husr, hchan, MC_DEVOICE, HLAZY);
 		}
-
 	    }
 
 	}

@@ -160,6 +160,7 @@ void cs_handlejoin(int hooknum, void *arg) {
   regchan *rcp;
   reguser *rup;
   regchanuser *rcup=NULL;
+  chanindex *cip;
   int iscreate;
   int dowelcome=0;
 
@@ -168,6 +169,8 @@ void cs_handlejoin(int hooknum, void *arg) {
   /* If not registered or suspended, ignore */
   if (!(rcp=cp->index->exts[chanservext]) || CIsSuspended(rcp))
     return;
+
+  cip=cp->index;
 
   rcp->tripjoins++;
   rcp->totaljoins++;
@@ -209,8 +212,8 @@ void cs_handlejoin(int hooknum, void *arg) {
 
   /* Check for +b chanlev flag */
   if (!IsService(np) && rcup && CUIsBanned(rcup)) {
-    cs_banuser(NULL, cp->index, np, NULL);
-    cs_timerfunc(cp->index);
+    cs_banuser(NULL, cip, np, NULL);
+    cs_timerfunc(cip);
     return;
   } 
 
@@ -219,8 +222,8 @@ void cs_handlejoin(int hooknum, void *arg) {
     if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
       localkickuser(chanservnick,cp,np,"Authorised users only.");
     } else {      
-      cs_banuser(NULL, cp->index, np, "Authorised users only.");
-      cs_timerfunc(cp->index);
+      cs_banuser(NULL, cip, np, "Authorised users only.");
+      cs_timerfunc(cip);
     }
     return;
   }
@@ -280,12 +283,12 @@ void cs_handlejoin(int hooknum, void *arg) {
   switch(dowelcome) {
 
   case 1: if (rcp->welcome)
-            chanservsendmessage(np,"[%s] %s",cp->index->name->content, rcp->welcome->content);
+            chanservsendmessage(np,"[%s] %s",cip->name->content, rcp->welcome->content);
           break;
     
   case 2: if (chanservnick) {
             /* Channel x is protected by y */
-            chanservstdmessage(np,QM_PROTECTED,cp->index->name->content,chanservnick->nick);
+            chanservstdmessage(np,QM_PROTECTED,cip->name->content,chanservnick->nick);
           }
           break;
   }        

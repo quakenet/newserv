@@ -1,6 +1,6 @@
  /* shroud's service request */
 
-#include <string.h>
+#include <stdio.h>
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
@@ -26,7 +26,7 @@ int rqcmd_addblock(void *user, int cargc, char **cargv);
 int rqcmd_delblock(void *user, int cargc, char **cargv);
 int rqcmd_listblocks(void *user, int cargc, char **cargv);
 int rqcmd_stats(void *user, int cargc, char **cargv);
-int rqcmd_legacyrequest(void *user, int cargc, char **cargv);
+int rqcmd_requestop(void *user, int cargc, char **cargv);
 
 int rqcmd_adduser(void *user, int cargc, char **cargv);
 int rqcmd_deluser(void *user, int cargc, char **cargv);
@@ -41,12 +41,17 @@ int rq_failed = 0;
 int rq_success = 0;
 int rq_blocked = 0;
 
+/* log fd */
+FILE *rq_logfd;
+
 void _init(void) {
   rqcommands = newcommandtree();
 
   addcommandtotree(rqcommands, "showcommands", RQU_ANY, 1, &rqcmd_showcommands);
   addcommandtotree(rqcommands, "requestbot", RQU_ANY, 1, &rqcmd_request);
   addcommandtotree(rqcommands, "requestspamscan", RQU_ANY, 1, &rqcmd_requestspamscan);
+  addcommandtotree(rqcommands, "requestop", RQU_ANY, 2, &rqcmd_requestop);
+
   addcommandtotree(rqcommands, "addblock", RQU_ACCOUNT, 3, &rqcmd_addblock);
   addcommandtotree(rqcommands, "delblock", RQU_ACCOUNT, 1, &rqcmd_delblock);
   addcommandtotree(rqcommands, "listblocks", RQU_ACCOUNT, 1, &rqcmd_listblocks);
@@ -57,13 +62,12 @@ void _init(void) {
   addcommandtotree(rqcommands, "changelev", RQU_OPER, 2, &rqcmd_changelev);
   addcommandtotree(rqcommands, "userlist", RQU_OPER, 1, &rqcmd_userlist);
   
-  /* old legacy stuff */
-  addcommandtotree(rqcommands, "requestq", RQU_ANY, 1, &rqcmd_legacyrequest);
-
   rq_initblocks();
   qr_initrequest();
   ru_load();
 
+  rq_logfd = fopen(RQ_LOGFILE, "a");
+  
   scheduleoneshot(time(NULL) + 1, (ScheduleCallback)&rq_registeruser, NULL);
 }
 
@@ -73,6 +77,8 @@ void _fini(void) {
   deletecommandfromtree(rqcommands, "showcommands", &rqcmd_showcommands);
   deletecommandfromtree(rqcommands, "requestbot", &rqcmd_request);
   deletecommandfromtree(rqcommands, "requestspamscan", &rqcmd_requestspamscan);
+  deletecommandfromtree(rqcommands, "requestop", &rqcmd_requestop);
+
   deletecommandfromtree(rqcommands, "addblock", &rqcmd_addblock);
   deletecommandfromtree(rqcommands, "delblock", &rqcmd_delblock);
   deletecommandfromtree(rqcommands, "listblocks", &rqcmd_listblocks);
@@ -83,15 +89,14 @@ void _fini(void) {
   deletecommandfromtree(rqcommands, "changelev", &rqcmd_changelev);
   deletecommandfromtree(rqcommands, "userlist", &rqcmd_userlist);
 
-  
-  /* old legacy stuff */
-  deletecommandfromtree(rqcommands, "requestq", &rqcmd_legacyrequest);
-
   destroycommandtree(rqcommands);
 
   rq_finiblocks();
   qr_finirequest();
   ru_persist();
+
+  if (rq_logfd != NULL)
+    fclose(rq_logfd);
 
   deleteallschedules((ScheduleCallback)&rq_registeruser);
 }
@@ -295,6 +300,8 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   unsigned long *lhand, *qhand;
   channel *cp, *logcp;
   int retval;
+  time_t now_ts;
+  char now[50];
 
   if (cargc < 1) {
     sendnoticetouser(rqnick, np, "Syntax: requestbot <#channel>");
@@ -335,10 +342,13 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
 
       retval = lr_requestl(rqnick, np, cp, lnick);
 
-      logcp = findchannel(RQ_LOGCHANNEL);
+      if (rq_logfd != NULL) {
+        now[0] = '\0';
+        now_ts = time(NULL);
+        strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
-      if (logcp) {
-        sendmessagetochannel(rqnick, logcp, "request (%s) for %s from %s: Request was %s.", RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+        fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+        fflush(rq_logfd);
       }
     } else {
       /* user 'wants' Q */
@@ -422,6 +432,128 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
 
    return RQ_ERROR; 
   }
+}
+
+int rqcmd_requestop(void *source, int cargc, char **cargv) {
+  nick *np2, *np = (nick *)source;
+  nick *user = np;
+  channel *cp;
+  int ret, a, count;
+  unsigned long *hand;
+  modechanges changes;
+
+  if (cargc < 1) {
+    sendnoticetouser(rqnick, np, "Syntax: requestop <#channel> [nick]");
+
+    return CMD_ERROR;
+  }
+
+  cp = findchannel(cargv[0]);
+
+  if (cp == NULL) {
+    sendnoticetouser(rqnick, np, "Error: No such channel.");
+
+    return CMD_ERROR;
+  }
+
+  if (cargc > 1) {
+    user = getnickbynick(cargv[1]);
+
+    if (!user) {
+      sendnoticetouser(rqnick, np, "Error: No such user.");
+
+      return CMD_ERROR;
+    }
+  }
+
+  if (getnettime() - np->timestamp < 300) {
+    sendnoticetouser(rqnick, np, "Error: You connected %s ago. To"
+    			" request ops you must have been on the network for"
+			" at least 5 minutes.",
+			rq_longtoduration(getnettime() - np->timestamp));
+
+    return CMD_ERROR;
+  }
+
+  if (getnettime() - user->timestamp < 300) {
+    sendnoticetouser(rqnick, np, "Error: The nick you requested op for"
+		    	" connected %s ago. To request op, it must have"
+			"been on the network for at least 5 minutes.",
+			rq_longtoduration(getnettime() - user->timestamp));
+
+    return CMD_ERROR;
+  }
+
+  hand = getnumerichandlefromchanhash(cp->users, user->numeric);
+
+  if (!hand) {
+    sendnoticetouser(rqnick, np, "Error: User %s is not on channel %s.", user->nick, cargv[0]);
+
+    return CMD_ERROR;
+  }
+
+
+  count = 0;
+
+  localsetmodeinit(&changes, cp, rqnick);
+
+  /* reop any services first */
+  for(a=0;a<cp->users->hashsize;a++) {
+    if(cp->users->content[a] != nouser) {
+      np2 = getnickbynumeric(cp->users->content[a]);
+
+      if (IsService(np2) && !(cp->users->content[a] & CUMODE_OP)) {
+        localdosetmode_nick(&changes, np2, MC_OP);
+        count++;
+      }
+    }
+  }
+
+  localsetmodeflush(&changes, 1);
+
+  if (count > 0) {
+    if (count == 1)
+      sendnoticetouser(rqnick, np, "1 service was reopped.");
+    else
+      sendnoticetouser(rqnick, np, "%d services were reopped.", count);
+
+    return CMD_ERROR;
+  }
+
+  for (a=0;a<cp->users->hashsize;a++) {
+    if ((cp->users->content[a] != nouser) && (cp->users->content[a] & CUMODE_OP)) {
+      sendnoticetouser(rqnick, np, "There are ops on channel %s. This command can only be"
+		      " used if there are no ops.", cargv[0]);
+
+      return CMD_ERROR;
+    }
+  }
+
+  if (sp_countsplitservers() > 0) {
+    sendnoticetouser(rqnick, np, "One or more servers are currently split. Wait until the"
+		    " netsplit is over and try again.");
+
+    return CMD_ERROR;
+  }
+
+  if (cf_wouldreop(user, cp)) {
+    localsetmodeinit(&changes, cp, rqnick);
+    localdosetmode_nick(&changes, user, MC_OP);
+    localsetmodeflush(&changes, 1);
+
+    sendnoticetouser(rqnick, np, "Chanfix opped you on the specified channel.");
+  } else {
+    ret = cf_fixchannel(cp);
+
+    if (ret == CFX_NOUSERSAVAILABLE)
+      sendnoticetouser(rqnick, np, "Chanfix knows regular ops for that channel. They will"
+                   " be opped when they return.");
+    else
+      sendnoticetouser(rqnick, np, "Chanfix has opped known ops for that channel.");
+  }
+
+  return CMD_OK;
+
 }
 
 int rqcmd_addblock(void *user, int cargc, char **cargv) {
@@ -568,15 +700,6 @@ int rqcmd_stats(void *user, int cargc, char **cargv) {
   lr_requeststats(rqnick, np);
   qr_requeststats(rqnick, np);
 
-  return RQ_OK;
-}
-
-int rqcmd_legacyrequest(void *user, int cargc, char **cargv) {
-  nick *np = (nick*)user;
-
-  sendnoticetouser(rqnick, np, "This command is no longer valid. Please use "
-  "/msg %s REQUESTBOT #channel instead.", RQ_REQUEST_NICK);
-  
   return RQ_OK;
 }
 
