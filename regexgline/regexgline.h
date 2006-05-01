@@ -27,6 +27,8 @@
 #define RG_PCREFLAGS              PCRE_CASELESS
 #define RG_MIN_MASK_LEN           5
 #define RG_MAX_PER_GLINE_DEFAULT  5
+#define RG_MINIMUM_DELAY_TIME     5
+#define RG_MAXIMUM_RAND_TIME      15
 #define RG_EXPIRY_TIME_DEFAULT    1800
 
 #define RGStringise(x)            #x
@@ -58,6 +60,7 @@ int rg_sqlconnected = 0;
 void *rg_schedule = NULL;
 
 void rg_nick(int hooknum, void *arg);
+void rg_lostnick(int hooknum, void *arg);
 void rg_startup(void);
 
 int rg_gline(void *source, int cargc, char **cargv);
@@ -83,8 +86,6 @@ struct rg_struct *rg_newstruct(time_t expires);
 struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, int iid);
 
 void rg_displaygline(nick *np, struct rg_struct *rp);
-
-void rg_sendtoallopers(char *format, ...);
 
 void rg_checkexpiry(void *arg);
 
