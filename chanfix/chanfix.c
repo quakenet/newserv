@@ -1211,8 +1211,10 @@ int cf_fixchannel(channel *cp) {
 
   /* don't reop users if we've already opped some services */
 #if !CFDEBUG
-  if (count > 0)
+  if (count > 0) {
+    localsetmodeflush(&changes, 1);
     return CFX_FIXED;
+  }
 #endif
 
   /* now get a sorted list of regops */
@@ -1237,9 +1239,6 @@ int cf_fixchannel(channel *cp) {
   }
 
   localsetmodeflush(&changes, 1);
-
-  irc_send("%s WA :cf_fixchannel(%s) done: %d client(s) opped.",
-           longtonumeric(mynick->numeric,5), cp->index->name->content, count);
 
   if (count == CFMAXOPS)
     return CFX_FIXED;
