@@ -15,7 +15,6 @@
 
 void lua_startup(void *arg);
 void lua_loadscripts(void);
-void lua_rehash(int hooknum, void *arg);
 void lua_registercommands(lua_State *l);
 void lua_loadlibs(lua_State *l);
 void lua_require(lua_State *l, char *module);
@@ -74,8 +73,6 @@ void _init() {
 void lua_startup(void *arg) {
   startsched = NULL;
 
-  registerhook(HOOK_CORE_REHASH, &lua_rehash);
-
   lua_startcontrol();
   lua_startbot(NULL);
 
@@ -97,8 +94,6 @@ void _fini() {
 
     lua_destroybot();
     lua_destroycontrol();
-
-    deregisterhook(HOOK_CORE_REHASH, &lua_rehash);
   }
 
   freesstring(cpath);
@@ -254,7 +249,15 @@ void lua_setpath(lua_State *l) {
     snprintf(fullpath, sizeof(fullpath), "%s/?%s", cpath->content, suffix->content);
   }
 
-  lua_pop(l, -1);
+  /* pop broke! */
+
+  lua_getglobal(l, "package");
+  if(!lua_istable(l, 1)) {
+    Error("lua", ERR_ERROR, "Unable to set package.path (package is not a table).");
+    return;
+  }
+
+  lua_pushstring(l, "path");
 
   lua_pushstring(l, fullpath);
   lua_settable(l, -3);
