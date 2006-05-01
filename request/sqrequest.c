@@ -78,6 +78,19 @@ int qr_blockcheck(requestrec *req) {
     return 0;
 }
 
+unsigned int rq_countchanusers(channel *cp) {
+  int i, count=0;
+
+  for (i=0;i<cp->users->hashsize;i++) {
+    if (cp->users->content[i]==nouser)
+      continue;
+
+    count++;
+  }
+
+  return count;
+}
+
 /*
  * Deal with outcome of a queued request.  The request should be freed
  * as part of the process.
@@ -92,7 +105,8 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
   nick *lnp, *qnp, *np, *tnp, *snp;
   char now[50];
   time_t now_ts;
-  
+  unsigned int unique, total;
+
   /* Delete the request from the list first.. */
   for (rh=&nextreql;*rh;rh=&((*rh)->next)) {
     if (*rh==req) {
@@ -136,8 +150,20 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
     now[0] = '\0';
     now_ts = time(NULL);
 
+    if (req->cip->channel) {
+      unique = countuniquehosts(req->cip->channel);
+      total = rq_countchanusers(req->cip->channel);
+    } else {
+      unique = 0;
+      total = 0;
+    }
+
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
-    fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK, req->cip->name->content, tnp->nick, (outcome == QR_OK) ? "accepted" : "denied");
+    fprintf(rq_logfd, "%s: request (%s) for %s (%d unique users, "
+            "%d total users) from %s: Request was %s.\n", now,
+            (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK,
+            req->cip->name->content, unique, total, tnp->nick,
+            (outcome == QR_OK) ? "accepted" : "denied");
     fflush(rq_logfd);
   }
   
@@ -225,8 +251,8 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
 int qr_checksize(chanindex *cip, int what) {
   chanstats *csp;
   channel *cp;
-  nick *np;
-  int i , avg, tot=0, authedcount=0, count=0;
+  nick *np, *qbot;
+  int i , avg, tot=0, authedcount=0, count=0, uniquecount, avgcount;
 
   cp = cip->channel;
   
@@ -236,6 +262,17 @@ int qr_checksize(chanindex *cip, int what) {
 #if QR_DEBUG
   return 1;
 #endif
+
+  /* make sure we can actually add Q */
+  if (what == QR_CSERVE) {
+    qbot = getnickbynick(RQ_QNICK);
+
+    if (!qbot)
+      return 0;
+
+    if (QR_MAXQCHANS != 0 && qbot->channels->cursi > QR_MAXQCHANS)
+      return 0; /* no Q for you :p */
+  }
 
   /* make sure that there are enough authed users */
   for (i=0;i<cp->users->hashsize;i++) {
@@ -259,12 +296,21 @@ int qr_checksize(chanindex *cip, int what) {
     tot += csp->lastdays[i];
   }
 
+  uniquecount = countuniquehosts(cp);
+  avgcount = tot / HISTORYDAYS / 10;
+
+  /* chan needs at least QR_MINUSERPCT% of the avg usercount, and can't have
+   * more than QR_MAXUSERPCT% */
+  if ((avgcount * QR_MINUSERSPCT / 100 > uniquecount) || 
+         (avgcount * QR_MAXUSERSPCT / 100 < uniquecount))
+    return 0;
+  
   avg = (what == QR_CSERVE) ? QR_REQUIREDSIZE_CSERVE : QR_REQUIREDSIZE_SPAMSCAN;
 
   if (tot > (avg * 140))
     return 1;
-
-  return 0;
+  else
+    return 0;
 }
 
 /* This function deals with notices from L: basically we track the

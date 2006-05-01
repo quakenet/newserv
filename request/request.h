@@ -1,4 +1,4 @@
-#define RQ_TLZ "#minimoo"
+#define RQ_TLZ "#twilightzone"
 
 #define RQ_LSERVER "lightweight.quakenet.org"
 #define RQ_LNICK "L"
