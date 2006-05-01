@@ -260,10 +260,10 @@ void trojanscan_free_database(void) {
     freesstring(trojanscan_database.channels[i].name);
   free(trojanscan_database.channels);
   for(i=0;i<trojanscan_database.total_phrases;i++)
-    if (trojanscan_database.phrases[i].phrase) {
-      free(trojanscan_database.phrases[i].phrase);
-      free(trojanscan_database.phrases[i].hint);
-    }
+    if (trojanscan_database.phrases[i].phrase)
+      pcre_free(trojanscan_database.phrases[i].phrase);
+    if (trojanscan_database.phrases[i].hint)
+      pcre_free(trojanscan_database.phrases[i].hint);
   free(trojanscan_database.phrases);
   for(i=0;i<trojanscan_database.total_worms;i++)
     freesstring(trojanscan_database.worms[i].name);
@@ -441,9 +441,10 @@ void trojanscan_read_database(int first_time) {
             if (!(trojanscan_database.phrases[i].phrase = pcre_compile(sqlrow[1], PCRE_CASELESS, &error, &erroroffset, NULL))) {
               Error("trojanscan", ERR_WARNING, "Error compiling expression %s at offset %d: %s", sqlrow[1], erroroffset, error);
             } else {
-              if ((trojanscan_database.phrases[i].hint = pcre_study(trojanscan_database.phrases[i].phrase, 0, &error))) {
+              trojanscan_database.phrases[i].hint = pcre_study(trojanscan_database.phrases[i].phrase, 0, &error);
+              if (error) {
                 Error("trojanscan", ERR_WARNING, "Error studying expression %s: %s", sqlrow[1], error);
-                free(trojanscan_database.phrases[i].phrase);
+                pcre_free(trojanscan_database.phrases[i].phrase);
                 trojanscan_database.phrases[i].phrase = NULL;
               }
             }
