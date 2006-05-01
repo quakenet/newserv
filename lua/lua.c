@@ -13,9 +13,6 @@
 
 #include "lua.h"
 
-#include <string.h>
-#include <stdlib.h>
-
 void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_rehash(int hooknum, void *arg);
@@ -31,13 +28,15 @@ void lua_destroycontrol(void);
 void lua_onunload(lua_State *l);
 void lua_onload(lua_State *l);
 
-int lua_setpath(void);
+void lua_setpath(lua_State *l);
 
 lua_list *lua_head = NULL, *lua_tail = NULL;
 
-sstring *enviro = NULL, *cpath = NULL, *suffix = NULL;
+sstring *cpath = NULL, *suffix = NULL;
 
 void *startsched = NULL;
+
+int loaded = 0;
 
 static const luaL_Reg ourlibs[] = {
   {"", luaopen_base},
@@ -54,25 +53,33 @@ static const luaL_Reg ourlibs[] = {
 };
   
 void _init() {
+  cpath = getcopyconfigitem("lua", "scriptdir", "", 500);
+
+  if(!cpath || !cpath->content || !cpath->content[0]) {
+    Error("lua", ERR_ERROR, "Error loading path.");
+    return;
+  }
+
+  suffix = getcopyconfigitem("lua", "scriptsuffix", ".lua", 10);
+  if(!suffix) {
+    Error("lua", ERR_ERROR, "Error loading suffix.");
+    return;
+  }
+
+  loaded = 1;
+
   startsched = scheduleoneshot(time(NULL) + 1, &lua_startup, NULL);
 }
 
 void lua_startup(void *arg) {
-  char *env;
-
   startsched = NULL;
-
-  env = getenv("LUA_PATH");
-  if(env)
-    enviro = getsstring(env, LUA_PATHLEN);
 
   registerhook(HOOK_CORE_REHASH, &lua_rehash);
 
   lua_startcontrol();
   lua_startbot(NULL);
 
-  if(lua_setpath())
-    lua_loadscripts();
+  lua_loadscripts();
 }
 
 #ifdef BROKEN_DLCLOSE
@@ -80,26 +87,22 @@ void __fini() {
 #else
 void _fini() {
 #endif
-  if(startsched)
-    deleteschedule(startsched, &lua_startup, NULL);
 
-  while(lua_head)
-    lua_unloadscript(lua_head);
+  if(loaded) {
+    if(startsched)
+      deleteschedule(startsched, &lua_startup, NULL);
 
-  lua_destroybot();
-  lua_destroycontrol();
+    while(lua_head)
+      lua_unloadscript(lua_head);
 
-  deregisterhook(HOOK_CORE_REHASH, &lua_rehash);
+    lua_destroybot();
+    lua_destroycontrol();
 
-  freesstring(cpath);
-
-  if(enviro) {
-    setenv("LUA_PATH", enviro->content);
-  } else {
-    unsetenv("LUA_PATH");
+    deregisterhook(HOOK_CORE_REHASH, &lua_rehash);
   }
 
-  freesstring(enviro);
+  freesstring(cpath);
+  freesstring(suffix);
 }
 
 void lua_loadscripts(void) {
@@ -149,6 +152,7 @@ lua_State *lua_loadscript(char *file) {
 
   lua_loadlibs(l);
   lua_registercommands(l);
+  lua_setpath(l);
 
 #ifdef LUA_JITLIBNAME
   lua_require(l, "lib/jit");
@@ -227,37 +231,35 @@ void lua_unloadscript(lua_list *l) {
   free(l);
 }
 
-int lua_setpath(void) {
-  char fullpath[LUA_PATHLEN];
+void lua_setpath(lua_State *l) {
+  char fullpath[LUA_PATHLEN], *prev = NULL;
 
-  freesstring(cpath);
-  freesstring(suffix);
+  int top = lua_gettop(l);
 
-  cpath = getcopyconfigitem("lua", "scriptdir", "", 500);
-
-  if(!cpath || !cpath->content || !cpath->content[0]) {
-    Error("lua", ERR_ERROR, "Error loading path.");
-    return 0;
+  lua_getglobal(l, "package");
+  if(!lua_istable(l, 1)) {
+    Error("lua", ERR_ERROR, "Unable to set package.path (package is not a table).");
+    return;
   }
 
-  suffix = getcopyconfigitem("lua", "scriptsuffix", ".lua", 10);
-  if(!suffix) {
-    Error("lua", ERR_ERROR, "Error loading suffix.");
-    return 0;
-  }
+  lua_pushstring(l, "path");
+  lua_gettable(l, -2);
 
-  if(enviro) {
-    snprintf(fullpath, sizeof(fullpath), "%s;%s/?%s", enviro->content, cpath->content, suffix->content);
+  if(lua_isstring(l, -1))
+    prev = (char *)lua_tostring(l, -1);
+
+  if(prev) {
+    snprintf(fullpath, sizeof(fullpath), "%s;%s/?%s", prev, cpath->content, suffix->content);
   } else {
     snprintf(fullpath, sizeof(fullpath), "%s/?%s", cpath->content, suffix->content);
   }
-  setenv("LUA_PATH", fullpath);
 
-  return 1;
-}
+  lua_pop(l, -1);
 
-void lua_rehash(int hooknum, void *arg) {
-  lua_setpath();
+  lua_pushstring(l, fullpath);
+  lua_settable(l, -3);
+
+  lua_settop(l, top);
 }
 
 lua_list *lua_scriptloaded(char *name) {
