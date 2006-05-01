@@ -10,6 +10,7 @@
 #include "../lib/base64.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 

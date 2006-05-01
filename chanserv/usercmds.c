@@ -484,7 +484,6 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender);
   reguser *vrup;
-  nicklist *nl;
   char* flag;
   char* victim;
   char* dur_p;
@@ -893,7 +892,6 @@ int csu_dolistflags(void *source, int cargc, char **cargv) {
   char *ch;
   int i, j;
   unsigned int count=0;
-  int level=0;
   
   if (!rup)
     return CMD_ERROR;

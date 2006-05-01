@@ -121,7 +121,7 @@ int dochansearch(void *source, int cargc, char **cargv) {
 
   if (i>=cargc) {
     Command *cmdlist[100];
-    int i,n,bufpos,j,k;
+    int i,n,bufpos,j;
     char buf[200];
     
     controlreply(sender,"Usage: chansearch [options] (search terms)");

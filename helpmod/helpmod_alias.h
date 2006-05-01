@@ -23,3 +23,4 @@ helpmod_entry helpmod_get_alias(char*);
 void helpmod_add_alias(char*, helpmod_entry);
 
 #endif
+

@@ -3,6 +3,7 @@
  */
 
 #include "newsearch.h"
+#include "../lib/irc_string.h"
 
 #include <stdio.h>
 #include <stdlib.h>

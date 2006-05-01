@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include "../core/hooks.h"
 #include "../irc/irc.h"
 #include "../localuser/localuser.h"

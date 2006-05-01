@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <pcre.h>
 #include <string.h>
+#include <strings.h>
 
 #include "../core/config.h"
 #include "../control/control.h"

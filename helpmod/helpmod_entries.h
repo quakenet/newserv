@@ -44,3 +44,4 @@ void helpmod_clear_entries(helpmod_entry);
 long helpmod_entry_count(helpmod_entry);
 
 #endif
+

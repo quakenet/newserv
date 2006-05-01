@@ -142,6 +142,8 @@ int cs_dohelp(void *source, int cargc, char **cargv) {
   }
 
   csdb_dohelp(sender, cmd);
+
+  return CMD_OK;
 }
 
 

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define CSG_BUFSIZE    512
 
@@ -23,6 +24,10 @@ int             csg_bytesleft;     /* How much valid data there is in the buffer
 
 void csg_handleevents(int fd, short revents);
 int csg_dogrep(void *source, int cargc, char **cargv);
+
+#if !defined(pread)
+extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+#endif
 
 void _init() {
   chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.");

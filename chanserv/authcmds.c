@@ -318,7 +318,6 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 int csa_doreqmasterpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
-  int i;
 
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
@@ -437,7 +436,6 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
 int csa_dosetmasterpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
-  int i;
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setmasterpassword");

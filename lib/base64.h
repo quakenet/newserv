@@ -14,6 +14,9 @@ extern int numerictab[];
 */
 
 /* Function defined here for speed.. */
+/* slug -- these warnings were getting irritating, since we're on C99 we can now use __inline__ */
+
+/*
 static long numerictolong(const char *numeric, int numericlen)
 {
   long mynumeric=0;
@@ -25,8 +28,9 @@ static long numerictolong(const char *numeric, int numericlen)
 
   return mynumeric;
 }
-              
-/* long numerictolong(const char *numeric, int numericlen); */
+*/
+            
+__inline__ long numerictolong(const char *numeric, int numericlen);
 char *longtonumeric(long param, int len);
 char *longtonumeric2(long param, int len, char *mynum);              
 #endif              

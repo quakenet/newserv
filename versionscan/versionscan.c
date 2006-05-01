@@ -194,6 +194,8 @@ int versionscan_whois(void* sender, int cargc, char** cargv) {
     return CMD_ERROR;
   }
   sendnoticetouser(versionscan_nick, np, "%s is authed as %s, with flags: %s", target->nick, target->authname, versionscan_flagstochar(v->flags));
+
+  return CMD_OK;
 }
 
 int versionscan_showcommands(void* sender, int cargc, char** cargv) {
@@ -227,22 +229,22 @@ int versionscan_help(void* sender, int cargc, char** cargv) {
   if (!strcasecmp(cargv[0], "help")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: help <command>");
     sendnoticetouser(versionscan_nick, np, "Gives help on commands.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "hello")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: hello");
     sendnoticetouser(versionscan_nick, np, "Creates the first account on the bot.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "scan")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: scan <target>");
     sendnoticetouser(versionscan_nick, np, "Sends a version request to the specified target, which may be a nick or a channel.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "broadcast")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: broadcast [-f]");
     sendnoticetouser(versionscan_nick, np, "Send a network-wide CTCP version.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "changelev")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: changelev <nick> <level>");
@@ -250,7 +252,7 @@ int versionscan_help(void* sender, int cargc, char** cargv) {
     sendnoticetouser(versionscan_nick, np, "+a -> admin access");
     sendnoticetouser(versionscan_nick, np, "+g -> g-line access");
     sendnoticetouser(versionscan_nick, np, "+s -> staff access");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "mode")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: mode [<mode of operation>]");
@@ -258,27 +260,27 @@ int versionscan_help(void* sender, int cargc, char** cargv) {
     sendnoticetouser(versionscan_nick, np, "idle: do nothing");
     sendnoticetouser(versionscan_nick, np, "scan: scan newly connecting users and those targeted by the 'scan' command");
     sendnoticetouser(versionscan_nick, np, "stat: collect statistics after a network-wide CTCP version request");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "showcommands")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: showcommands");
     sendnoticetouser(versionscan_nick, np, "Displays registered commands.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "whois")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: whois <nickname>");
     sendnoticetouser(versionscan_nick, np, "Display information about the specified user.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "statistics")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: statistics [<limit>]");
     sendnoticetouser(versionscan_nick, np, "Display statistics of collected CTCP version replies.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "listpatterns")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: listpatterns");
     sendnoticetouser(versionscan_nick, np, "Lists CTCP version reply patterns.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "addpattern")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: addpattern <pattern> <action> <data>");
@@ -287,17 +289,17 @@ int versionscan_help(void* sender, int cargc, char** cargv) {
     sendnoticetouser(versionscan_nick, np, "%d - kill", VS_KILL);
     sendnoticetouser(versionscan_nick, np, "%d - g-line user@host", VS_GLUSER);
     sendnoticetouser(versionscan_nick, np, "%d - g-line *@host", VS_GLHOST);
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "delpattern")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: delpattern <pattern>");
     sendnoticetouser(versionscan_nick, np, "Deletes a CTCP version reply pattern.");
-    return;
+    return CMD_OK;
   }
   if (!strcasecmp(cargv[0], "status")) {
     sendnoticetouser(versionscan_nick, np, "Syntax: status");
     sendnoticetouser(versionscan_nick, np, "Gives various bits of information about the bot.");
-    return;
+    return CMD_OK;
   }
   
   return CMD_OK;
@@ -394,7 +396,9 @@ int versionscan_hello(void* sender, int cargc, char** cargv) {
   vsauths=(vsauthdata*)malloc(sizeof(vsauthdata));
   strncpy(vsauths->account, np->authname, ACCOUNTLEN);
   vsauths->flags=VS_STAFF | VS_GLINE | VS_ADMIN;
-  vsauths->next;
+
+/* ?! */
+/*  vsauths->next; */
   
   sendnoticetouser(versionscan_nick, np, "An account has been created for you with the following flags: %s.", versionscan_flagstochar(vsauths->flags));
   return CMD_OK;
@@ -604,14 +608,14 @@ int versionscan_statistics(void* sender, int cargc, char** cargv) {
   
   if (versionscan_mode != VS_STAT) {
     sendnoticetouser(versionscan_nick, np, "No statistics are available unless STATISTICS mode of operation is enabled.");
-    return;
+    return CMD_OK;
   }
   if (cargc) {
     limit=atoi(cargv[0]);
   }
   if ((limit < 1) || (limit > 500)) {
     sendnoticetouser(versionscan_nick, np, "Invalid results limit. Valid values are 1-500.");
-    return;
+    return CMD_ERROR;
   }
   sendnoticetouser(versionscan_nick, np, "Reply: [Count]:");
   for (v=vsstats; (v && (rlimit < limit)); v=v->next) {
@@ -619,6 +623,7 @@ int versionscan_statistics(void* sender, int cargc, char** cargv) {
     rlimit++;
   }
   sendnoticetouser(versionscan_nick, np, "End of list - %lu results returned.", rlimit);
+  return CMD_OK;
 }
 
 int versionscan_broadcast(void* sender, int cargc, char** cargv) {
@@ -664,6 +669,7 @@ void versionscan_handler(nick* me, int type, void** args) {
   int cargc;
   vspattern* v;
   char* p;
+  char **chargs = (char **)args;
 
   switch (type) {
   case LU_PRIVMSG:
@@ -725,7 +731,7 @@ void versionscan_handler(nick* me, int type, void** args) {
     if (strncmp("\001VERSION", args[1], 8)) {
       break;
     }
-    if ((p=strchr(&args[1][8], '\001'))) {
+    if ((p=strchr(&chargs[1][8], '\001'))) {
       *p++='\0';
     }
     if (versionscan_mode == VS_SCAN) {
@@ -733,7 +739,7 @@ void versionscan_handler(nick* me, int type, void** args) {
         break;
       }
       for (v=vspatterns; v; v=v->next) {
-        if (match2strings(v->pattern, &args[1][8])) {
+        if (match2strings(v->pattern, &chargs[1][8])) {
           v->hitcount++;
           hcount++;
           switch (v->action) {
@@ -762,7 +768,7 @@ void versionscan_handler(nick* me, int type, void** args) {
       }
     }
     else if (versionscan_mode == VS_STAT) {
-      versionscan_addstat(&args[1][8]);
+      versionscan_addstat(&chargs[1][8]);
     }
     break;
   case LU_KILLED:

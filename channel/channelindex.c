@@ -4,6 +4,7 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 #include <stdio.h>
+#include <string.h>
 
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 

@@ -7,6 +7,8 @@
 #include "../core/error.h"
 #include "../lib/sstring.h"
 
+#include <string.h>
+
 #define hosthash(x)       ((crc32i(x))%HOSTHASHSIZE)
 #define realnamehash(x)   ((crc32(x))%REALNAMEHASHSIZE)
 

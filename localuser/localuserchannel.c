@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 int handlechannelmsgcmd(void *source, int cargc, char **cargv);
 int handlechannelnoticecmd(void *source, int cargc, char **cargv);

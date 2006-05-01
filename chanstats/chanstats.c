@@ -501,6 +501,8 @@ int douserhistogram(void *source, int cargc, char **cargv) {
   if (theserver>=0) {
     controlreply(sender,"Average channel count (%s): %.2f",serverlist[theserver].name->content,(float)serversig/servertot);
   }
+
+  return CMD_OK;
 }
 
 #define HISTITEMS  30

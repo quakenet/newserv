@@ -9,6 +9,7 @@
 
 #include <time.h>
 #include "../lib/sstring.h"
+#include "../core/schedule.h"
 #include "../lib/flags.h"
 #include "../nick/nick.h"
 #include "../channel/channel.h"
@@ -731,6 +732,7 @@ void csdb_createban(regchan *rcp, regban *rbp);
 void csdb_deleteban(regban *rbp);
 char *csdb_gethelpstr(char *command, int language);
 void csdb_createmail(reguser *rup, int type);
+void csdb_dohelp(nick *np, Command *cmd);
 
 /* chanservuser.c */
 void chanservreguser(void *arg);
@@ -764,6 +766,7 @@ void cs_checknickbans(nick *np);
 void cs_setregban(chanindex *cip, regban *rbp);
 int cs_bancheck(nick *np, channel *cp);
 void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reason);
+void cs_removeuser(reguser *rup);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);
@@ -807,5 +810,9 @@ int readlastjoindata(const char *filename);
 
 /* chanservschedule.c */
 void chanservdgline(void *arg);
+
+/* authlib.c */
+int csa_checkeboy(nick *sender, char *eboy);
+void csa_createrandompw(char *pw, int n);
 
 #endif

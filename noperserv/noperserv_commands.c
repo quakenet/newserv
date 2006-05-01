@@ -146,7 +146,7 @@ int controlresync(void *sender, int cargc, char **cargv) {
 }
 
 int controlspew(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender;
+/*  nick *np = (nick *)sender; */
 
   return CMD_OK;
 }

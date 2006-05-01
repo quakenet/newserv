@@ -264,7 +264,7 @@ const char *longtoduration(unsigned long interval, int format) {
 int durationtolong(const char *string) {
   int total=0;
   int current=0;
-  char *ch=string,*och;
+  char *ch=(char *)string,*och;
 
   while (*ch) {
     och=ch;

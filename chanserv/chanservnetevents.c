@@ -64,10 +64,6 @@ void cs_handlelostnick(int hooknum, void *arg) {
 void cs_handlenewchannel(int hooknum, void *arg) {
   channel *cp=(channel *)arg;
   regchan *rcp;
-  reguser *rup;
-  regchanuser *rcup;
-  nick *np;
-  int i;
 
   /* Get the registered channel */
   if ((rcp=(regchan *)cp->index->exts[chanservext])==NULL || CIsSuspended(rcp))

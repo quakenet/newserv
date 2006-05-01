@@ -660,7 +660,7 @@ struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason,
   time_t rexpires;
   char glineiddata[1024];
   if (iexpires == 0) {
-    if(!protectedatoi(expires, &rexpires))
+    if(!protectedatoi(expires, (int *)&rexpires))
       return NULL;
   } else {
     rexpires = iexpires;
@@ -712,7 +712,7 @@ struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason,
     if(!protectedatoi(type, &newrow->type))
       newrow->type = 0; /* just in case */
 
-    snprintf(glineiddata, sizeof(glineiddata), "%s regexgline %s %s %s %d %d", mynumeric->content, mask, setby, reason, iexpires, newrow->type);
+    snprintf(glineiddata, sizeof(glineiddata), "%s regexgline %s %s %s %lld %d", mynumeric->content, mask, setby, reason, (long long int)iexpires, newrow->type);
     newrow->glineid = crc32(glineiddata);
   }
   

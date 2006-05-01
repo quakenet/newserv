@@ -1,6 +1,7 @@
 
 #include "../nick/nick.h"
 #include "../localuser/localuserchannel.h"
+#include "../lib/irc_string.h"
 
 nick *rannouncenick;
 

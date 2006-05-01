@@ -3,6 +3,7 @@
  */
 
 #include "newsearch.h"
+#include "../lib/irc_string.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +62,6 @@ void *lt_exe(struct searchNode *thenode, int type, void *theinput) {
   int i;
   char *strval;
   int intval;
-  int rval;
   struct lt_localdata *localdata;
   
   localdata=thenode->localdata;
