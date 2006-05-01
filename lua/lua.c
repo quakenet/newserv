@@ -20,6 +20,7 @@ void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_rehash(int hooknum, void *arg);
 void lua_registercommands(lua_State *l);
+void lua_loadlibs(lua_State *l);
 
 void lua_startbot(void *arg);
 void lua_destroybot(void);
@@ -37,6 +38,17 @@ sstring *enviro = NULL, *cpath = NULL, *suffix = NULL;
 
 void *startsched = NULL;
 
+static const luaL_Reg ourlibs[] = {
+  {"", luaopen_base},
+  {LUA_LOADLIBNAME, luaopen_package},
+  {LUA_TABLIBNAME, luaopen_table},
+  {LUA_IOLIBNAME, luaopen_io},
+  {LUA_OSLIBNAME, luaopen_os},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_MATHLIBNAME, luaopen_math},
+  {NULL, NULL}
+};
+  
 void _init() {
   startsched = scheduleoneshot(time(NULL) + 1, &lua_startup, NULL);
 }
@@ -131,11 +143,7 @@ lua_State *lua_loadscript(char *file) {
     return NULL;
   }
 
-  lua_baselibopen(l);
-  lua_strlibopen(l);
-  lua_tablibopen(l);
-  lua_mathlibopen(l);
-  lua_iolibopen(l);
+  lua_loadlibs(l);
 
   lua_registercommands(l);
 
@@ -230,9 +238,9 @@ int lua_setpath(void) {
   }
 
   if(enviro) {
-    snprintf(fullpath, sizeof(fullpath), "%s;%s/?", enviro->content, cpath->content);
+    snprintf(fullpath, sizeof(fullpath), "%s;%s/?%s", enviro->content, cpath->content, suffix->content);
   } else {
-    snprintf(fullpath, sizeof(fullpath), "%s/?", cpath->content);
+    snprintf(fullpath, sizeof(fullpath), "%s/?%s", cpath->content, suffix->content);
   }
   setenv("LUA_PATH", fullpath);
 
@@ -253,3 +261,12 @@ lua_list *lua_scriptloaded(char *name) {
   return NULL;
 }
 
+void lua_loadlibs(lua_State *l) {
+  const luaL_Reg *lib = ourlibs;
+
+  for (;lib->func;lib++) {
+    lua_pushcfunction(l, lib->func);
+    lua_pushstring(l, lib->name);
+    lua_call(l, 1, 0);
+  }
+}
