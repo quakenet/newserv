@@ -122,8 +122,8 @@ int handle_addchan(struct rline *li, int argc, char **argv) {
 
   cs->cp = cp;
   cs->flags = flags;
-  cs->modified = time(NULL);
-  cs->modifiedby = spamscan_getaccountsettings("nterfacer", 0); /* ugly hack, should be 1... */
+  cs->modified = cs->added = time(NULL);
+  cs->modifiedby = cs->addedby = spamscan_getaccountsettings("nterfacer", 0); /* ugly hack, should be 1... */
 
   sc_index = findorcreatechanindex(argv[0]);
   if(sc_index) {
