@@ -12,10 +12,10 @@
 
 #include "../lib/sstring.h"
 
-#define LUA_BOTVERSION "1.31"
+#define LUA_BOTVERSION "1.32"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
-#define LUA_PUKECHAN "#qnet.trj"
+#define LUA_PUKECHAN "#qnet.keepout"
 
 typedef struct lua_list {
   lua_State *l;
