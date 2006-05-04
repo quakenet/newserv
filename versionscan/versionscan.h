@@ -10,7 +10,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 
 #define VS_NICK "V"
 #define VS_IDENT "TheVBot"
