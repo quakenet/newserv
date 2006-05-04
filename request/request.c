@@ -189,21 +189,26 @@ void rq_handler(nick *target, int type, void **params) {
 }
 
 int rqcmd_showcommands(void *user, int cargc, char **cargv) {
+  nick* np = (nick*)user;
   int n, i;
   Command* cmdlist[50];
 
   n = getcommandlist(rqcommands, cmdlist, 50);
 
-  sendnoticetouser(rqnick, (nick*)user, "Available commands:");
-  sendnoticetouser(rqnick, (nick*)user, "-------------------");
+  sendnoticetouser(rqnick, np, "Available commands:");
+  sendnoticetouser(rqnick, np, "-------------------");
 
   for (i = 0; i < n; i++) {
-    if ((((cmdlist[i]->level & RQU_OPER) == 0) || IsOper((nick*)user)) &&
-        ((((cmdlist[i]->level & RQU_ACCOUNT) == 0) || (IsOper((nick*)user) || (IsAccount((nick*)user)) && (ru_getlevel((nick*)user) > 0)))))
-      sendnoticetouser(rqnick, (nick*)user, "%s", cmdlist[i]->command->content);
+    if ((cmdlist[i]->level & RQU_OPER) && !IsOper(np))
+      continue;
+ 
+    if ((cmdlist[i]->level & RQU_ACCOUNT) && !(IsOper(np) || (IsAccount(np) && ru_getlevel(np) > 0)))
+      continue;
+
+    sendnoticetouser(rqnick, np, "%s", cmdlist[i]->command->content);
   }
 
-  sendnoticetouser(rqnick, (nick*)user, "End of SHOWCOMMANDS");
+  sendnoticetouser(rqnick, np, "End of SHOWCOMMANDS");
 
   return 0;
 }
