@@ -17,9 +17,9 @@
 #define VS_RNDESC "VersionScan"
 #define VS_AUTHNAME "V"
 
-#define VS_VERSION "1.13"
+#define VS_VERSION "1.14"
 
-#define OPER_CHAN "#qnet.support"
+#define OPER_CHAN "#twilightzone"
 
 #define VSPATTERNLEN 200
 #define VSDATALEN 200
@@ -45,7 +45,8 @@
 typedef struct vsstatistic vsstatistic;
 struct vsstatistic {
   char* reply;
-  unsigned long count;
+  unsigned int replylen;
+  unsigned long replycrc, count;
   vsstatistic* next;
 };
 
@@ -67,7 +68,6 @@ struct vsauthdata {
 
 unsigned char versionscan_getlevelbyauth(char* auth);
 vsauthdata* versionscan_getauthbyauth(char* auth);
-int IsVersionscanBird(nick* np);
 int IsVersionscanStaff(nick* np);
 int IsVersionscanGlineAccess(nick* np);
 int IsVersionscanAdmin(nick* np);

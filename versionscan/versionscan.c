@@ -14,11 +14,16 @@ unsigned long gcount=0;
 schedule *vsconnect;
 
 void versionscan_addstat(char* reply) {
+  unsigned int replylen;
+  unsigned long replycrc;
   vsstatistic* v, *pv;
-
-  pv=0;
+  
+  replylen = strlen(reply);
+  replycrc = crc32i(reply);
+  
+  pv=NULL;
   for (v=vsstats; v; v=v->next) {
-    if (!ircd_strcmp(v->reply, reply)) {
+    if (v->replylen==replylen && v->replycrc==replycrc) {
       v->count++;
       return;
     }
@@ -26,17 +31,21 @@ void versionscan_addstat(char* reply) {
   }
   if (!pv) {
     vsstats=(vsstatistic*)malloc(sizeof(vsstatistic));
-    vsstats->reply=(char*)malloc(strlen(reply)+1);
+    vsstats->reply=(char*)malloc(replylen + 1);
     strcpy(vsstats->reply, reply);
+    vsstats->replylen = replylen;
+    vsstats->replycrc = replycrc;
     vsstats->count=1;
-    vsstats->next=0;
+    vsstats->next=NULL;
   }
   else {
     pv->next=(vsstatistic*)malloc(sizeof(vsstatistic));
-    pv->next->reply=(char*)malloc(strlen(reply)+1);
+    pv->next->reply=(char*)malloc(replylen + 1);
     strcpy(pv->next->reply, reply);
+    pv->next->replylen = replylen;
+    pv->next->replycrc = replycrc;
     pv->next->count=1;
-    pv->next->next=0;
+    pv->next->next=NULL;
   }
 }
 
@@ -637,7 +646,7 @@ int versionscan_statsdump(void* sender, int cargc, char** cargv) {
     return CMD_ERROR;
   }
   for (v=vsstats; v; v=v->next) {
-    fprintf(fout, "%s [%lu]\n", v->reply, v->count);
+    fprintf(fout, "%lu:%s\n", v->count, v->reply);
     rlimit++;
   }
   fclose(fout);
