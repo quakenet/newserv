@@ -10,7 +10,7 @@
 #include "lua.h"
 #include "luabot.h"
 
-#ifdef LUA_JITLIBNAME
+#ifdef LUA_USEJIT
 #include <luajit.h>
 #endif
 
@@ -74,7 +74,7 @@ void lua_startbot(void *arg) {
 
   lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections",
 "Lua engine v" LUA_BOTVERSION " (" LUA_VERSION
-#ifdef LUAJIT_VERSION
+#ifdef LUA_USEJIT
 " + " LUAJIT_VERSION
 #endif
 ")", "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
@@ -138,7 +138,7 @@ void lua_bothandler(nick *target, int type, void **args) {
           LUA_PUSHNICK(l, np);
           lua_pushstring(l, p);
 
-          lua_pcall(l, 2, 0, top + 1);
+          lua_debugpcall(l, "irc_onmsg", 2, 0, top + 1);
         }
 
         lua_settop(l, top);
@@ -169,7 +169,7 @@ void lua_bothandler(nick *target, int type, void **args) {
             LUA_PUSHNICK(l, np);
             lua_pushstring(l, p + 1);
 
-            lua_pcall(l, 2, 0, top + 1);
+            lua_debugpcall(l, "irc_onctcp", 2, 0, top + 1);
           }
 
           lua_settop(l, top);
@@ -209,7 +209,7 @@ void lua_blip(void *arg) {
     lua_getglobal(l, "onblip");
 
     if(lua_isfunction(l, -1))
-      lua_pcall(l, 0, 0, top + 1);
+      lua_debugpcall(l, "onblip", 0, 0, top + 1);
 
     lua_settop(l, top);
   LUA_ENDLOOP();
@@ -226,7 +226,7 @@ void lua_tick(void *arg) {
     lua_getglobal(l, "ontick");
 
     if(lua_isfunction(l, -1))
-      lua_pcall(l, 0, 0, top + 1);
+      lua_debugpcall(l, "ontick", 0, 0, top + 1);
 
     lua_settop(l, top);
   LUA_ENDLOOP();
@@ -249,7 +249,7 @@ void lua_onnewnick(int hooknum, void *arg) {
     if(lua_isfunction(l, -1)) {
       LUA_PUSHNICK(l, np);
 
-      lua_pcall(l, 1, 0, top + 1);
+      lua_debugpcall(l, "irc_onnewnick", 1, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -280,7 +280,7 @@ void lua_onkick(int hooknum, void *arg) {
       LUA_PUSHNICK(l, kicker);
       lua_pushstring(l, message);
 
-      lua_pcall(l, 4, 0, top + 1);
+      lua_debugpcall(l, "irc_onkick", 4, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -310,7 +310,7 @@ void lua_ontopic(int hooknum, void *arg) {
       LUA_PUSHNICK(l, np);
       lua_pushstring(l, cp->topic->content);
 
-      lua_pcall(l, 3, 0, top + 1);
+      lua_debugpcall(l, "irc_ontopic", 3, 0, top + 1);
     }
     lua_settop(l, top);
   LUA_ENDLOOP();
@@ -347,7 +347,7 @@ void lua_onop(int hooknum, void *arg) {
       }
       LUA_PUSHNICK(l, target);
 
-      lua_pcall(l, 3, 0, top + 1);
+      lua_debugpcall(l, HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", 3, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -375,7 +375,7 @@ void lua_onjoin(int hooknum, void *arg) {
 
       LUA_PUSHNICK(l, np);
 
-      lua_pcall(l, 2, 0, top + 1);
+      lua_debugpcall(l, "irc_onjoin", 2, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -399,7 +399,7 @@ void lua_onrename(int hooknum, void *arg) {
     if(lua_isfunction(l, -1)) {
       LUA_PUSHNICK(l, np);
 
-      lua_pcall(l, 1, 0, top + 1);
+      lua_debugpcall(l, "irc_onrename", 1, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -423,7 +423,7 @@ void lua_onquit(int hooknum, void *arg) {
     if(lua_isfunction(l, -1)) {
       LUA_PUSHNICK(l, np);
 
-      lua_pcall(l, 1, 0, top + 1);
+      lua_debugpcall(l, "irc_onquit", 1, 0, top + 1);
     }
 
     lua_settop(l, top);
@@ -447,7 +447,7 @@ void lua_onauth(int hooknum, void *arg) {
     if(lua_isfunction(l, -1)) {
       LUA_PUSHNICK(l, np);
 
-      lua_pcall(l, 1, 0, top + 1);
+      lua_debugpcall(l, "irc_onauth", 1, 0, top + 1);
     }
     lua_settop(l, top);
   LUA_ENDLOOP();
@@ -467,7 +467,7 @@ void lua_ondisconnect(int hooknum, void *arg) {
       lua_getglobal(l, "irc_onpredisconnect");
     }
     if(lua_isfunction(l, -1))
-      lua_pcall(l, 0, 0, top + 1);
+      lua_debugpcall(l, hooknum == HOOK_IRC_DISCON?"irc_ondisconnect":"irc_onpredisconnect", 0, 0, top + 1);
     lua_settop(l, top);
   LUA_ENDLOOP();
 }
@@ -486,7 +486,7 @@ void lua_onconnect(int hooknum, void *arg) {
       lua_getglobal(l, "irc_onendofburst");
     }
     if(lua_isfunction(l, -1))
-      lua_pcall(l, 0, 0, top + 1);
+      lua_debugpcall(l, hooknum == HOOK_IRC_CONNECTED?"irc_onconnect":"irc_onendofburst", 0, 0, top + 1);
     lua_settop(l, top);
   LUA_ENDLOOP();
 }
@@ -500,7 +500,7 @@ void lua_onload(lua_State *l) {
   lua_getglobal(l, "onload");
 
   if(lua_isfunction(l, -1))
-    lua_pcall(l, 0, 0, top + 1);
+    lua_debugpcall(l, "onload", 0, 0, top + 1);
   lua_settop(l, top);
 }
 
@@ -513,7 +513,7 @@ void lua_onunload(lua_State *l) {
   lua_getglobal(l, "onunload");
 
   if(lua_isfunction(l, -1))
-    lua_pcall(l, 0, 0, top + 1);
+    lua_debugpcall(l, "onunload", 0, 0, top + 1);
   lua_settop(l, top);
 }
 

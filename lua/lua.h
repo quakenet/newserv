@@ -12,10 +12,21 @@
 
 #include "../lib/sstring.h"
 
-#define LUA_BOTVERSION "1.32"
+#define LUA_BOTVERSION "1.33"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 #define LUA_PUKECHAN "#qnet.keepout"
+
+#define LUA_DEBUGSOCKET
+
+#ifdef LUA_JITLIBNAME
+
+#define LUA_USEJIT
+
+#endif
+
+#define LUA_DEBUGSOCKET_ADDRESS "127.0.0.1"
+#define LUA_DEBUGSOCKET_PORT 7733
 
 typedef struct lua_list {
   lua_State *l;
@@ -37,6 +48,7 @@ extern sstring *cpath;
 lua_State *lua_loadscript(char *file);
 void lua_unloadscript(lua_list *l);
 lua_list *lua_scriptloaded(char *name);
+char *lua_namefromstate(lua_State *l);
 
 #define lua_toint(l, n) (int)lua_tonumber(l, n)
 #define lua_isint(l, n) lua_isnumber(l, n)
@@ -46,5 +58,17 @@ lua_list *lua_scriptloaded(char *name);
 #define lua_islong(l, n) lua_isnumber(l, n)
 #define lua_pushlong(l, n) lua_pushnumber(l, n)
 
+#ifdef LUA_DEBUGSOCKET
+
+void lua_debugoutput(char *p, ...);
+#define DEBUGOUT(p, ...) lua_debugoutput(p , ##__VA_ARGS__)
+#define lua_debugpcall(l, message, ...) { DEBUGOUT("%s: %s\n", lua_namefromstate(l), message); lua_pcall(l , ##__VA_ARGS__); }
+
+#else
+
+#define DEBUGOUT(p, ...)
+#define lua_debugpcall(l, message, ...) lua_pcall(l , ##__VA_ARGS__)
+
 #endif
 
+#endif

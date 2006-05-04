@@ -13,6 +13,18 @@
 
 #include "lua.h"
 
+#ifdef LUA_DEBUGSOCKET
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <stdarg.h>
+
+#endif
+
 void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_registercommands(lua_State *l);
@@ -28,6 +40,16 @@ void lua_onunload(lua_State *l);
 void lua_onload(lua_State *l);
 
 void lua_setpath(lua_State *l);
+
+void lua_setupdebugsocket(void);
+void lua_freedebugsocket(void);
+
+#ifdef LUA_DEBUGSOCKET
+
+struct sockaddr_in debugsocketdest;
+int debugsocket = -1;
+
+#endif
 
 lua_list *lua_head = NULL, *lua_tail = NULL;
 
@@ -45,13 +67,15 @@ static const luaL_Reg ourlibs[] = {
   {LUA_OSLIBNAME, luaopen_os},
   {LUA_STRLIBNAME, luaopen_string},
   {LUA_MATHLIBNAME, luaopen_math},
-#ifdef LUA_JITLIBNAME
+#ifdef LUA_USEJIT
   {LUA_JITLIBNAME, luaopen_jit},
 #endif
   {NULL, NULL}
 };
   
 void _init() {
+  lua_setupdebugsocket();
+
   cpath = getcopyconfigitem("lua", "scriptdir", "", 500);
 
   if(!cpath || !cpath->content || !cpath->content[0]) {
@@ -98,6 +122,8 @@ void _fini() {
 
   freesstring(cpath);
   freesstring(suffix);
+
+  lua_freedebugsocket();
 }
 
 void lua_loadscripts(void) {
@@ -149,7 +175,7 @@ lua_State *lua_loadscript(char *file) {
   lua_registercommands(l);
   lua_setpath(l);
 
-#ifdef LUA_JITLIBNAME
+#ifdef LUA_USEJIT
   lua_require(l, "lib/jit");
 #endif
 
@@ -297,4 +323,67 @@ void lua_require(lua_State *l, char *module) {
   lua_settop(l, top);
 }
 
+void lua_setupdebugsocket(void) {
+#ifdef LUA_DEBUGSOCKET
+
+  debugsocket = socket(AF_INET, SOCK_DGRAM, 0);
+  if(debugsocket < 0) {
+    debugsocket = -1;
+    Error("lua", ERR_ERROR, "Cannot create debug socket.");
+
+    return;
+  }
+
+  memset(&debugsocketdest, 0, sizeof(debugsocketdest));
+
+  debugsocketdest.sin_family = AF_INET;
+  debugsocketdest.sin_port = htons(LUA_DEBUGSOCKET_PORT);
+  debugsocketdest.sin_addr.s_addr = inet_addr(LUA_DEBUGSOCKET_ADDRESS);
+
+#endif
+}
+
+void lua_freedebugsocket(void) {
+#ifdef LUA_DEBUGSOCKET
+
+  if(debugsocket == -1)
+    return;
+
+  close(debugsocket);
+
+
+  debugsocket = -1;
+
+#endif
+}
+
+#ifdef LUA_DEBUGSOCKET
+void lua_debugoutput(char *format, ...) {
+  char buf[1024];
+  va_list va;
+  int size;
+
+  if(debugsocket == -1)
+    return;
+
+  va_start(va, format);
+  size = vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  if(size >= sizeof(buf))
+    size = sizeof(buf) - 1;
+
+  if(size > 0)
+    sendto(debugsocket, buf, size, 0, (struct sockaddr *)&debugsocketdest, sizeof(debugsocketdest));
+}
+#endif
+
+char *lua_namefromstate(lua_State *l) {
+  lua_list *i = lua_head;
+  for(;i;i=i->next)
+    if(i->l == l)
+      return i->name->content;
+
+  return "???";
+}
 

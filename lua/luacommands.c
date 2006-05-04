@@ -14,7 +14,7 @@
 
 #include <stdarg.h>
 
-#ifdef LUA_JITLIBNAME
+#ifdef LUA_USEJIT
 #include <luajit.h>
 #endif
 
@@ -325,7 +325,7 @@ static int lua_versioninfo(lua_State *ps) {
   lua_pushstring(ps, __DATE__);
   lua_pushstring(ps, __TIME__);
 
-#ifdef LUAJIT_VERSION
+#ifdef LUA_USEJIT
   lua_pushstring(ps, " + " LUAJIT_VERSION);
 #else
   lua_pushstring(ps, "");
@@ -487,39 +487,6 @@ static int lua_getnickcountry(lua_State *l) {
   return 1;
 }
 
-/*
-static int lua_iteratenickhash(lua_State *l) {
-  nick *np;
-  int i, top;
-  void *fp;
-
-  if(!lua_isfunction(l, 1))
-    LUA_RETURN(LUA_FAIL);
-
-  fp = lua_touserdata(l, 1);
-  if(!fp)
-    LUA_RETURN(LUA_FAIL);
- 
-  for(i=0;i<NICKHASHSIZE;i++) {
-    for(np=nicktable[i];np;np=np->next) {
-      if(np) {
-        top = lua_gettop(l);
-
-        lua_getglobal(l, "scripterror");
-        lua_insert
-
-        LUA_PUSHNICK(l, np);
-        lua_pcall(l, 1, 0, top + 1);
-
-        lua_settop(l, top);
-      }
-    }
-  }
-
-  LUA_RETURN(LUA_OK);
-}
-*/
-
 static int lua_chanfix(lua_State *ps) {
   channel *cp;
   nick *np;
@@ -636,8 +603,6 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
-
-/*  lua_register(l, "irc_iteratenickhash", lua_iteratenickhash); */
 }
 
 /* --- */
