@@ -203,10 +203,10 @@ int rqcmd_showcommands(void *user, int cargc, char **cargv) {
     if ((cmdlist[i]->level & RQU_ACCOUNT) && !(IsOper(np) || (IsAccount(np) && ru_getlevel(np) > 0)))
       continue;
 
-    sendnoticetouser(rqnick, (nick*)user, "%s", cmdlist[i]->command->content);
+    sendnoticetouser(rqnick, np, "%s", cmdlist[i]->command->content);
   }
 
-  sendnoticetouser(rqnick, (nick*)user, "End of SHOWCOMMANDS");
+  sendnoticetouser(rqnick, np, "End of SHOWCOMMANDS");
 
   return 0;
 }
