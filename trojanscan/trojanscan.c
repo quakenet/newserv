@@ -259,11 +259,12 @@ void trojanscan_free_database(void) {
   for(i=0;i<trojanscan_database.total_channels;i++)
     freesstring(trojanscan_database.channels[i].name);
   free(trojanscan_database.channels);
-  for(i=0;i<trojanscan_database.total_phrases;i++)
+  for(i=0;i<trojanscan_database.total_phrases;i++) {
     if (trojanscan_database.phrases[i].phrase)
       pcre_free(trojanscan_database.phrases[i].phrase);
     if (trojanscan_database.phrases[i].hint)
       pcre_free(trojanscan_database.phrases[i].hint);
+  }
   free(trojanscan_database.phrases);
   for(i=0;i<trojanscan_database.total_worms;i++)
     freesstring(trojanscan_database.worms[i].name);
