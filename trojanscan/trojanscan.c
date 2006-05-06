@@ -33,7 +33,7 @@ void _init() {
 
   addcommandtotree(trojanscan_cmds, "rehash", TROJANSCAN_ACL_WEBSITE, 0, &trojanscan_rehash);
 
-  addcommandtotree(trojanscan_cmds, "cat", TROJANSCAN_ACL_CAT | TROJANSCAN_ACL_OPER, 1, &trojanscan_cat);
+  addcommandtotree(trojanscan_cmds, "cat", TROJANSCAN_ACL_OPER, 1, &trojanscan_cat);
 
   addcommandtotree(trojanscan_cmds, "reschedule", TROJANSCAN_ACL_DEVELOPER | TROJANSCAN_ACL_OPER, 0, &trojanscan_reschedule);
   
