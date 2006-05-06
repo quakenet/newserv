@@ -17,7 +17,7 @@ void lua_startcontrol(void) {
   registercontrolhelpcmd("inslua", NO_DEVELOPER, 1, &lua_inslua, "Usage: inslua <script>\nLoads the supplied Lua script..");
   registercontrolhelpcmd("rmlua", NO_DEVELOPER, 1, &lua_rmlua, "Usage: rmlua <script>\nUnloads the supplied Lua script.");
   registercontrolhelpcmd("reloadlua", NO_DEVELOPER, 1, &lua_reloadlua, "Usage: reloadlua <script>\nReloads the supplied Lua script.");
-  registercontrolhelpcmd("lslua", NO_DEVELOPER, 0, &lua_lslua, "Usage: lslua\nLists all currently loaded Lua scripts.");
+  registercontrolhelpcmd("lslua", NO_DEVELOPER, 0, &lua_lslua, "Usage: lslua\nLists all currently loaded Lua scripts and shows their memory usage.");
 }
 
 void lua_destroycontrol(void) {
@@ -91,7 +91,7 @@ int lua_lslua(void *sender, int cargc, char **cargv) {
   controlreply(np, "Loaded scripts:");
 
   for(l=lua_head;l;l=l->next)
-    controlreply(np, "%s", l->name->content);
+    controlreply(np, "%s (mem: %dKb calls: %lu)", l->name->content, lua_gc(l->l, LUA_GCCOUNT, 0), l->calls);
 
   controlreply(np, "Done.");
 

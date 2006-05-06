@@ -72,9 +72,17 @@ static const luaL_Reg ourlibs[] = {
 #endif
   {NULL, NULL}
 };
+
+lua_list dummy;
   
 void _init() {
   lua_setupdebugsocket();
+
+  dummy.name = getsstring("???", 10);
+  if(!dummy.name) {
+    Error("lua", ERR_ERROR, "Cannot set dummy name.");
+    return;
+  }
 
   cpath = getcopyconfigitem("lua", "scriptdir", "", 500);
 
@@ -122,6 +130,7 @@ void _fini() {
 
   freesstring(cpath);
   freesstring(suffix);
+  freesstring(dummy.name);
 
   lua_freedebugsocket();
 }
@@ -170,6 +179,7 @@ lua_State *lua_loadscript(char *file) {
     free(n);
     return NULL;
   }
+  n->calls = 0;
 
   lua_loadlibs(l);
   lua_registercommands(l);
@@ -378,12 +388,12 @@ void lua_debugoutput(char *format, ...) {
 }
 #endif
 
-char *lua_namefromstate(lua_State *l) {
+lua_list *lua_listfromstate(lua_State *l) {
   lua_list *i = lua_head;
   for(;i;i=i->next)
     if(i->l == l)
-      return i->name->content;
+      return i;
 
-  return "???";
+  return &dummy;
 }
 

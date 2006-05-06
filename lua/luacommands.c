@@ -1,6 +1,13 @@
-/* Copyright (C) Chris Porter 2005 */
+/* Copyright (C) Chris Porter 2005-2006 */
 /* ALL RIGHTS RESERVED. */
 /* Don't put this into the SVN repo. */
+
+/*
+  @todo
+    - Write a nick printf type thing for pcalled functions.
+    - Make commands register as apposed to blinding calling.
+    - Use numerics instead of huge structures, and add lookup functions.
+*/
 
 #include "../channel/channel.h"
 #include "../control/control.h"
@@ -568,6 +575,64 @@ static int lua_ban(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_topic(lua_State *ps) {
+  channel *cp;
+  char *topic;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  topic = (char *)lua_tostring(ps, 2);
+  if(!topic || !lua_lineok(topic))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsettopic(lua_nick, cp, topic);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_getuserchanmodes(lua_State *l) {
+  nick *np;
+  channel *cp;
+  unsigned long *lp;
+
+  if(!lua_islong(l, 1) || !lua_isstring(l, 2))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  cp = findchannel((char *)lua_tostring(l, 2));
+  if(!cp)
+    return 0;
+
+  lp = getnumerichandlefromchanhash(cp->users, np->numeric);
+  if(!lp)
+    return 0;
+
+  LUA_PUSHNICKCHANMODES(l, lp);
+  return 1;
+}
+
+static int lua_getnickbynick(lua_State *l) {
+  nick *np;
+
+  if(!lua_isstring(l, 1))
+    return 0;
+
+  np = getnickbynick(lua_tostring(l, 1));
+  if(!np)
+    return 0;
+
+  LUA_PUSHNICK(l, np);
+  return 1;
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -593,13 +658,18 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_clearmode", lua_clearmode);
   lua_register(l, "irc_ban", lua_ban);
   lua_register(l, "irc_deopchan", lua_deopchan);
+  lua_register(l, "irc_topic", lua_topic);
+
+  lua_register(l, "irc_getnickbynick", lua_getnickbynick);
+  lua_register(l, "irc_getfirstnick", lua_getfirstnick);
+  lua_register(l, "irc_getnextnick", lua_getnextnick);
 
   lua_register(l, "irc_getnickchans", lua_getnickchans);
   lua_register(l, "irc_getnickchanindex", lua_getnickchanindex);
   lua_register(l, "irc_getnickchancount", lua_getnickchancount);
 
-  lua_register(l, "irc_getfirstnick", lua_getfirstnick);
-  lua_register(l, "irc_getnextnick", lua_getnextnick);
+  lua_register(l, "irc_getuserchanmodes", lua_getuserchanmodes);
+
 
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
