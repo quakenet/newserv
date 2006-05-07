@@ -633,6 +633,20 @@ static int lua_getnickbynick(lua_State *l) {
   return 1;
 }
 
+static int lua_getnickbynumeric(lua_State *l) {
+  nick *np;
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  LUA_PUSHNICK(l, np);
+  return 1;
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -661,6 +675,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_topic", lua_topic);
 
   lua_register(l, "irc_getnickbynick", lua_getnickbynick);
+  lua_register(l, "irc_getnickbynumeric", lua_getnickbynumeric);
   lua_register(l, "irc_getfirstnick", lua_getfirstnick);
   lua_register(l, "irc_getnextnick", lua_getnextnick);
 
