@@ -20,6 +20,7 @@
 #include "luabot.h"
 
 #include <stdarg.h>
+#include <stddef.h>
 
 #ifdef LUA_USEJIT
 #include <luajit.h>
@@ -27,6 +28,16 @@
 
 static int lua_smsg(lua_State *ps);
 static int lua_skill(lua_State *ps);
+
+typedef struct lua_nickpusher {
+  short argtype;
+  short offset;
+  const char *structname;
+} lua_nickpusher;
+
+void lua_initnickpusher(void);
+void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max);
+void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
 
 int lua_lineok(const char *data) {
   if(strchr(data, '\r') || strchr(data, '\n'))
@@ -412,6 +423,10 @@ static int lua_getnickchanindex(lua_State *l) {
 int hashindex;
 nick *lasthashnick;
 
+#define MAX_NICKPUSHER 50
+
+struct lua_nickpusher *nickhashpusher[MAX_NICKPUSHER];
+
 static int lua_getnextnick(lua_State *l) {
   if(!lasthashnick && (hashindex != -1))
     return 0;
@@ -427,13 +442,15 @@ static int lua_getnextnick(lua_State *l) {
     }
   } while(!lasthashnick);
 
-  LUA_PUSHNICK(l, lasthashnick);
+  lua_usenickpusher(l, nickhashpusher, lasthashnick);
   return 1;
 }
 
 static int lua_getfirstnick(lua_State *l) {
   hashindex = -1;
   lasthashnick = NULL;
+
+  lua_setupnickpusher(l, 1, nickhashpusher, MAX_NICKPUSHER);
 
   return lua_getnextnick(l);
 }
@@ -724,3 +741,88 @@ static int lua_skill(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+struct lua_nickpusher nickpusher[MAX_NICKPUSHER];
+
+#define PUSHER_STRING 1
+#define PUSHER_SSTRING 2
+#define PUSHER_IP 3
+#define PUSHER_LONG 4
+
+void lua_initnickpusher(void) {
+  int i = 0;
+
+#define PUSH_NICKPUSHER(F2, O2) nickpusher[i].argtype = F2; nickpusher[i].structname = #O2; nickpusher[i].offset = offsetof(nick, O2); i++;
+
+  PUSH_NICKPUSHER(PUSHER_STRING, nick);
+  PUSH_NICKPUSHER(PUSHER_STRING, ident);
+  PUSH_NICKPUSHER(PUSHER_SSTRING, host);
+  PUSH_NICKPUSHER(PUSHER_SSTRING, realname);
+  PUSH_NICKPUSHER(PUSHER_STRING, authname);
+  PUSH_NICKPUSHER(PUSHER_IP, ipaddress);
+  PUSH_NICKPUSHER(PUSHER_LONG, numeric);
+
+  nickpusher[i].argtype = 0;
+}
+
+void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max) {
+  int current = 0;
+  struct lua_nickpusher *f;
+
+  if(max > 0)
+    lp[0] = NULL;
+
+  if(!lua_istable(l, -1) || (max < 2))
+    return;
+    
+  lua_pushnil(l);
+
+  max--;
+
+  while (lua_next(l, index)) {
+    if(lua_isstring(l, -1)) {
+        char *name = (char *)lua_tostring(l, -1);
+
+      for(f=&nickpusher[0];f->argtype;f++)
+        if(!strcmp(f->structname, name))
+          break;
+
+      if(f->argtype)
+        lp[current++] = f;
+    }
+
+    lua_pop(l, 1);
+
+    if(current == max)
+      break;
+  }
+
+  lp[current] = NULL;
+}
+
+void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
+  lua_newtable(l);
+
+  while(*lp) {
+    void *offset = (void *)np + (*lp)->offset;
+
+    lua_pushstring(l, (*lp)->structname);
+
+    switch((*lp)->argtype) {
+      case PUSHER_STRING:
+        lua_pushstring(l, (char *)offset);
+        break;
+      case PUSHER_SSTRING:
+        lua_pushstring(l, ((sstring *)offset)->content);
+        break;
+      case PUSHER_LONG:
+        lua_pushlong(l, *((long *)offset));
+        break;
+      case PUSHER_IP:
+        lua_pushstring(l, IPtostr(*((long *)offset)));
+        break;
+    }
+
+    lua_rawset(l, -3);
+    lp++;
+  }
+}
