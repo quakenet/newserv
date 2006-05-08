@@ -743,9 +743,11 @@ static int lua_skill(lua_State *ps) {
 struct lua_nickpusher nickpusher[MAX_NICKPUSHER];
 
 #define PUSHER_STRING 1
-#define PUSHER_SSTRING 2
+#define PUSHER_REALNAME 2
 #define PUSHER_IP 3
 #define PUSHER_LONG 4
+#define PUSHER_HOSTNAME 5
+#define PUSHER_SSTRING 6
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -754,8 +756,8 @@ void lua_initnickpusher(void) {
 
   PUSH_NICKPUSHER(PUSHER_STRING, nick);
   PUSH_NICKPUSHER(PUSHER_STRING, ident);
-  PUSH_NICKPUSHER(PUSHER_SSTRING, host);
-  PUSH_NICKPUSHER(PUSHER_SSTRING, realname);
+  PUSH_NICKPUSHER(PUSHER_HOSTNAME, host);
+  PUSH_NICKPUSHER(PUSHER_REALNAME, realname);
   PUSH_NICKPUSHER(PUSHER_STRING, authname);
   PUSH_NICKPUSHER(PUSHER_IP, ipaddress);
   PUSH_NICKPUSHER(PUSHER_LONG, numeric);
@@ -807,6 +809,12 @@ INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np)
     switch((*lp)->argtype) {
       case PUSHER_STRING:
         lua_pushstring(l, (char *)offset);
+        break;
+      case PUSHER_HOSTNAME:
+        lua_pushstring(l, (*(host **)offset)->name->content);
+        break;
+      case PUSHER_REALNAME:
+        lua_pushstring(l, (*(realname **)offset)->name->content);
         break;
       case PUSHER_SSTRING:
         lua_pushstring(l, ((sstring *)offset)->content);
