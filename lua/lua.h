@@ -5,19 +5,28 @@
 #ifndef _LUA_H
 #define _LUA_H
 
+#define __USE_BSD
+
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 #include <string.h>
+#include <sys/times.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 #include "../lib/sstring.h"
 
-#define LUA_BOTVERSION "1.37"
+/*** defines ************************************/
+
+#define LUA_BOTVERSION "1.38"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 #define LUA_PUKECHAN "#qnet.keepout"
 
-#define LUA_DEBUGSOCKET
+#undef LUA_DEBUGSOCKET
+#define LUA_PROFILE
 
 #ifdef LUA_JITLIBNAME
 
@@ -28,10 +37,13 @@
 #define LUA_DEBUGSOCKET_ADDRESS "127.0.0.1"
 #define LUA_DEBUGSOCKET_PORT 7733
 
+/*** end defines ************************************/
+
 typedef struct lua_list {
   lua_State *l;
   sstring *name;
   unsigned long calls;
+  struct timeval ru_utime, ru_stime;
   struct lua_list *next;
   struct lua_list *prev;
 } lua_list;
@@ -58,16 +70,44 @@ lua_list *lua_listfromstate(lua_State *l);
 #define lua_islong(l, n) lua_isnumber(l, n)
 #define lua_pushlong(l, n) lua_pushnumber(l, n)
 
+extern struct rusage r_usages;
+extern struct rusage r_usagee;
+
+#define USEC_DIFFERENTIAL 1000000
+ 
+#ifdef LUA_PROFILE
+
+#define ACCOUNTING_START(l) { l->calls++; getrusage(RUSAGE_SELF, &r_usages);
+
+#define twrap(A2, B2, C2, D2) A2(&(B2), &(C2), &(D2))
+
+#define _SET_2TIMEDIFF(L4, S2, E2, I2) twrap(timersub, E2.I2, S2.I2, E2.I2); twrap(timeradd, L4->I2, E2.I2, L4->I2);
+#define SET_TIMEDIFF(L3, S2, E2) _SET_2TIMEDIFF(L3, S2, E2, ru_utime); _SET_2TIMEDIFF(L3, S2, E2, ru_stime);
+
+#define ACCOUNTING_STOP(l) getrusage(RUSAGE_SELF, &r_usagee); SET_TIMEDIFF(l, r_usages, r_usagee); }
+
+#else
+
+#define ACCOUNTING_START(l) ;
+#define ACCOUNTING_STOP(l) ;
+
+#endif
+
 #ifdef LUA_DEBUGSOCKET
 
 void lua_debugoutput(char *p, ...);
 #define DEBUGOUT(p, ...) lua_debugoutput(p , ##__VA_ARGS__)
-#define lua_debugpcall(l, message, ...) { lua_list *l2 = lua_listfromstate(l); DEBUGOUT("%s: %s\n", l2->name->content, message); l2->calls++; lua_pcall(l , ##__VA_ARGS__); }
+#define lua_debugpcall(l, message, ...) { lua_list *l2 = lua_listfromstate(l); DEBUGOUT("%s: %s\n", l2->name->content, message); ACCOUNTING_START(l2); lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2); }
 
 #else
 
 #define DEBUGOUT(p, ...)
-#define lua_debugpcall(l, message, ...) { lua_listfromstate(l)->calls++; lua_pcall(l , ##__VA_ARGS__); }
+
+#ifdef LUA_PROFILE
+#define lua_debugpcall(l, message, ...) { lua_list *l2 = lua_listfromstate(l); ACCOUNTING_START(l2); lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2); }
+#else
+#define lua_debugpcall(l, message, ...) lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2);
+#endif
 
 #endif
 

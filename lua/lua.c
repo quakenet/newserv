@@ -60,6 +60,9 @@ void *startsched = NULL;
 
 int loaded = 0;
 
+struct rusage r_usages;
+struct rusage r_usagee;
+
 static const luaL_Reg ourlibs[] = {
   {"", luaopen_base},
   {LUA_LOADLIBNAME, luaopen_package},
@@ -182,6 +185,9 @@ lua_State *lua_loadscript(char *file) {
     return NULL;
   }
   n->calls = 0;
+
+  timerclear(&n->ru_utime);
+  timerclear(&n->ru_stime);
 
   lua_loadlibs(l);
   lua_registercommands(l);

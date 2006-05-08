@@ -91,7 +91,7 @@ int lua_lslua(void *sender, int cargc, char **cargv) {
   controlreply(np, "Loaded scripts:");
 
   for(l=lua_head;l;l=l->next)
-    controlreply(np, "%s (mem: %dKb calls: %lu)", l->name->content, lua_gc(l->l, LUA_GCCOUNT, 0), l->calls);
+    controlreply(np, "%s (mem: %dKb calls: %lu user: %0.2fs sys: %0.2fs)", l->name->content, lua_gc(l->l, LUA_GCCOUNT, 0), l->calls, (double)((double)l->ru_utime.tv_sec + (double)l->ru_utime.tv_usec / USEC_DIFFERENTIAL), (double)((double)l->ru_stime.tv_sec + (double)l->ru_stime.tv_usec / USEC_DIFFERENTIAL));
 
   controlreply(np, "Done.");
 
