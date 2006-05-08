@@ -37,7 +37,7 @@ typedef struct lua_nickpusher {
 
 void lua_initnickpusher(void);
 void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max);
-void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
+INLINE void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
 
 int lua_lineok(const char *data) {
   if(strchr(data, '\r') || strchr(data, '\n'))
@@ -799,13 +799,9 @@ void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, in
   lp[current] = NULL;
 }
 
-void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
-  lua_newtable(l);
-
+INLINE void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
   while(*lp) {
     void *offset = (void *)np + (*lp)->offset;
-
-    lua_pushstring(l, (*lp)->structname);
 
     switch((*lp)->argtype) {
       case PUSHER_STRING:
@@ -822,7 +818,7 @@ void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
         break;
     }
 
-    lua_rawset(l, -3);
     lp++;
   }
 }
+

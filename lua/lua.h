@@ -12,7 +12,7 @@
 
 #include "../lib/sstring.h"
 
-#define LUA_BOTVERSION "1.36"
+#define LUA_BOTVERSION "1.37"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 #define LUA_PUKECHAN "#qnet.keepout"
@@ -70,5 +70,21 @@ void lua_debugoutput(char *p, ...);
 #define lua_debugpcall(l, message, ...) { lua_listfromstate(l)->calls++; lua_pcall(l , ##__VA_ARGS__); }
 
 #endif
+
+#ifndef INLINE
+
+#ifdef __GNUC__
+#define INLINE __attribute((always_inline)) inline
+#endif
+
+#ifdef _MSC_VER
+#define INLINE __forceinline
+#endif
+
+#ifndef INLINE
+#define INLINE inline
+#endif
+
+#endif /* INLINE */
 
 #endif
