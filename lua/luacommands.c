@@ -37,7 +37,7 @@ typedef struct lua_nickpusher {
 
 void lua_initnickpusher(void);
 void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max);
-INLINE void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
+INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
 
 int lua_lineok(const char *data) {
   if(strchr(data, '\r') || strchr(data, '\n'))
@@ -442,8 +442,7 @@ static int lua_getnextnick(lua_State *l) {
     }
   } while(!lasthashnick);
 
-  lua_usenickpusher(l, nickhashpusher, lasthashnick);
-  return 1;
+  return lua_usenickpusher(l, nickhashpusher, lasthashnick);
 }
 
 static int lua_getfirstnick(lua_State *l) {
@@ -799,7 +798,9 @@ void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, in
   lp[current] = NULL;
 }
 
-INLINE void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
+INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
+  int i = 0;
+
   while(*lp) {
     void *offset = (void *)np + (*lp)->offset;
 
@@ -818,7 +819,10 @@ INLINE void lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np
         break;
     }
 
+    i++;
     lp++;
   }
+
+  return i;
 }
 
