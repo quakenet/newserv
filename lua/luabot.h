@@ -29,4 +29,6 @@ nick *lua_nick;
 
 #define LUA_RETURN(l, n) { lua_pushnumber(l, n); return 1; }
 
+#define lua_avpcall(F2, S2, ...) { lua_State *l; LUA_STARTLOOP(l); lua_vpcall(l, F2, S2 , ##__VA_ARGS__); LUA_ENDLOOP(); }
+
 #endif

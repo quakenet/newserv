@@ -14,6 +14,8 @@
 #include <luajit.h>
 #endif
 
+#include <stdarg.h>
+
 nick *lua_nick = NULL;
 void *myureconnect = NULL, *myublip = NULL, *myutick = NULL;
 
@@ -113,11 +115,81 @@ void lua_destroybot(void) {
     deregisterlocaluser(lua_nick, NULL);
 }
 
+int lua_vpcall(lua_State *l, const char *function, const char *sig, ...) {
+  va_list va;
+  int narg = 0, nres, top = lua_gettop(l);
+
+  lua_getglobal(l, "scripterror");
+  lua_getglobal(l, function);
+  if(!lua_isfunction(l, -1)) {
+    lua_settop(l, top);
+    return 1;
+  }
+
+  va_start(va, sig);
+
+  while(*sig) {
+    switch(*sig++) {
+      case 'i':
+        lua_pushint(l, va_arg(va, int));
+        break;
+      case 'l':
+        lua_pushlong(l, va_arg(va, long));
+        break;
+      case 's':
+        lua_pushstring(l, va_arg(va, char *));
+        break;
+      case 'S':
+        lua_pushstring(l, ((sstring *)(va_arg(va, sstring *)))->content);
+        break;
+      case 'N':
+        {
+          nick *np = va_arg(va, nick *);
+          LUA_PUSHNICK(l, np);
+          break;
+        }
+      case 'C':
+        {
+          channel *cp = va_arg(va, channel *);
+          LUA_PUSHCHAN(l, cp);
+          break;
+        }
+      case '0':
+        lua_pushnil(l);
+        break;
+      case '>':
+        goto endwhile;
+
+      default:
+        Error("lua", ERR_ERROR, "Unable to parse vpcall signature (%c)", *(sig - 1));
+    }
+    narg++;
+  }
+
+endwhile:
+
+  nres = strlen(sig);
+
+  lua_debugpcall(l, function, narg, nres, 0);
+
+  nres = -nres;
+  while(*sig) {
+    switch(*sig++) {
+      default:
+        Error("lua", ERR_ERROR, "Unable to parse vpcall return structure (%c)", *(sig - 1));
+    }
+    nres++;
+  }
+
+  lua_settop(l, top);
+  va_end(va);
+  return 0;
+}
+
 void lua_bothandler(nick *target, int type, void **args) {
   nick *np;
   char *p;
-  lua_State *l;
-  int le, top;
+  int le;
 
   switch(type) {
     case LU_PRIVMSG:
@@ -127,23 +199,7 @@ void lua_bothandler(nick *target, int type, void **args) {
       if(!np || !p)
         return;
 
-      LUA_STARTLOOP(l);
-
-        top = lua_gettop(l);
-
-        lua_getglobal(l, "scripterror");
-        lua_getglobal(l, "irc_onmsg");
-
-        if(lua_isfunction(l, -1)) {
-          LUA_PUSHNICK(l, np);
-          lua_pushstring(l, p);
-
-          lua_debugpcall(l, "irc_onmsg", 2, 0, top + 1);
-        }
-
-        lua_settop(l, top);
-
-      LUA_ENDLOOP();
+      lua_avpcall("irc_onmsg", "Ns", np, p);
 
       break;
     case LU_PRIVNOTICE:
@@ -158,23 +214,7 @@ void lua_bothandler(nick *target, int type, void **args) {
         if(p[le - 1] == '\001')
           p[le - 1] = '\000';
 
-        LUA_STARTLOOP(l);
-
-          top = lua_gettop(l);
-
-          lua_getglobal(l, "scripterror");
-          lua_getglobal(l, "irc_onctcp");
-
-          if(lua_isfunction(l, -1)) {
-            LUA_PUSHNICK(l, np);
-            lua_pushstring(l, p + 1);
-
-            lua_debugpcall(l, "irc_onctcp", 2, 0, top + 1);
-          }
-
-          lua_settop(l, top);
-
-        LUA_ENDLOOP();
+        lua_avpcall("irc_onctcp", "Ns", np, p + 1);
 
       }
 
@@ -199,61 +239,20 @@ void lua_bothandler(nick *target, int type, void **args) {
 }
 
 void lua_blip(void *arg) {
-  lua_State *l;
-  int top;
-
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "onblip");
-
-    if(lua_isfunction(l, -1))
-      lua_debugpcall(l, "onblip", 0, 0, top + 1);
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("onblip", "");
 }
 
 void lua_tick(void *arg) {
-  lua_State *l;
-  int top;
-
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "ontick");
-
-    if(lua_isfunction(l, -1))
-      lua_debugpcall(l, "ontick", 0, 0, top + 1);
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("ontick", "");
 }
 
 void lua_onnewnick(int hooknum, void *arg) {
   nick *np = (nick *)arg;
-  int top;
-  lua_State *l;
 
   if(!np)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onnewnick");
-
-    if(lua_isfunction(l, -1)) {
-      LUA_PUSHNICK(l, np);
-
-      lua_debugpcall(l, "irc_onnewnick", 1, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onnewnick", "N", np);
 }
 
 void lua_onkick(int hooknum, void *arg) {
@@ -262,58 +261,24 @@ void lua_onkick(int hooknum, void *arg) {
   nick *kicked = arglist[1];
   nick *kicker = arglist[2];
   char *message = (char *)arglist[3];
-  lua_State *l;
-  int top;
 
   if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onkick");
-
-    if(lua_isfunction(l, -1)) {
-      lua_pushstring(l, ci->name->content);
-      LUA_PUSHNICK(l, kicked);
-      LUA_PUSHNICK(l, kicker);
-      lua_pushstring(l, message);
-
-      lua_debugpcall(l, "irc_onkick", 4, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onkick", "SNNs", ci->name, kicked, kicker, message);
 }
 
 void lua_ontopic(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   channel *cp=(channel*)arglist[0];
   nick *np = (nick *)arglist[1];
-  lua_State *l;
-  int top;
 
   if(!np || IsOper(np) || IsService(np) || IsXOper(np))
     return;
   if(!cp || !cp->topic) 
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_ontopic");
-
-    if(lua_isfunction(l, -1)) {
-      lua_pushstring(l, cp->index->name->content);
-      LUA_PUSHNICK(l, np);
-      lua_pushstring(l, cp->topic->content);
-
-      lua_debugpcall(l, "irc_ontopic", 3, 0, top + 1);
-    }
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_ontopic", "SNS", cp->index->name, np, cp->topic);
 }
 
 void lua_onop(int hooknum, void *arg) {
@@ -321,200 +286,76 @@ void lua_onop(int hooknum, void *arg) {
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
   nick *target = arglist[2];
-  lua_State *l;
-  int top;
+  const char *chook;
 
   if(!target)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
+  if(hooknum == HOOK_CHANNEL_OPPED) { 
+    chook = "irc_onop";
+  } else {
+    chook = "irc_ondeop";
+  }
 
-    lua_getglobal(l, "scripterror");
-    if(hooknum == HOOK_CHANNEL_OPPED) {
-      lua_getglobal(l, "irc_onop");
-    } else {
-      lua_getglobal(l, "irc_ondeop");
-    }
-
-    if(lua_isfunction(l, -1)) {
-      lua_pushstring(l, ci->name->content);
-
-      if(np) {
-        LUA_PUSHNICK(l, np);
-      } else {
-        lua_pushnil(l);
-      }
-      LUA_PUSHNICK(l, target);
-
-      lua_debugpcall(l, HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", 3, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  if(np) {
+    lua_avpcall(chook, "SNN", ci->name, np, target);
+  } else {
+    lua_avpcall(chook, "S0N", ci->name, target);
+  }
 }
 
 void lua_onjoin(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
-  lua_State *l;
-  int top;
 
   if(!ci || !np)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onjoin");
-
-    if(lua_isfunction(l, -1)) {
-      lua_pushstring(l, ci->name->content);
-
-      LUA_PUSHNICK(l, np);
-
-      lua_debugpcall(l, "irc_onjoin", 2, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onjoin", "SN", ci->name, np);
 }
 
 void lua_onrename(int hooknum, void *arg) {
   nick *np = (void *)arg;
-  lua_State *l;
-  int top;
 
   if(!np)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onrename");
-
-    if(lua_isfunction(l, -1)) {
-      LUA_PUSHNICK(l, np);
-
-      lua_debugpcall(l, "irc_onrename", 1, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onrename", "N", np);
 }
 
 void lua_onquit(int hooknum, void *arg) {
   nick *np = (nick *)arg;
-  lua_State *l;
-  int top;
 
   if(!np)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onquit");
-
-    if(lua_isfunction(l, -1)) {
-      LUA_PUSHNICK(l, np);
-
-      lua_debugpcall(l, "irc_onquit", 1, 0, top + 1);
-    }
-
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onquit", "N", np);
 }
 
 void lua_onauth(int hooknum, void *arg) {
   nick *np = (nick *)arg;
-  lua_State *l;
-  int top;
 
   if(!np)
     return;
 
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    lua_getglobal(l, "irc_onauth");
-
-    if(lua_isfunction(l, -1)) {
-      LUA_PUSHNICK(l, np);
-
-      lua_debugpcall(l, "irc_onauth", 1, 0, top + 1);
-    }
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall("irc_onauth", "N", np);
 }
 
 void lua_ondisconnect(int hooknum, void *arg) {
-  lua_State *l;
-  int top;
-
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    if(hooknum == HOOK_IRC_DISCON) {
-      lua_getglobal(l, "irc_ondisconnect");
-    } else {
-      lua_getglobal(l, "irc_onpredisconnect");
-    }
-    if(lua_isfunction(l, -1))
-      lua_debugpcall(l, hooknum == HOOK_IRC_DISCON?"irc_ondisconnect":"irc_onpredisconnect", 0, 0, top + 1);
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall(hooknum == HOOK_IRC_DISCON?"irc_ondisconnect":"irc_onpredisconnect", "");
 }
 
 void lua_onconnect(int hooknum, void *arg) {
-  lua_State *l;
-  int top;
-
-  LUA_STARTLOOP(l);
-    top = lua_gettop(l);
-
-    lua_getglobal(l, "scripterror");
-    if(hooknum == HOOK_IRC_CONNECTED) {
-      lua_getglobal(l, "irc_onconnect");
-    } else {
-      lua_getglobal(l, "irc_onendofburst");
-    }
-    if(lua_isfunction(l, -1))
-      lua_debugpcall(l, hooknum == HOOK_IRC_CONNECTED?"irc_onconnect":"irc_onendofburst", 0, 0, top + 1);
-    lua_settop(l, top);
-  LUA_ENDLOOP();
+  lua_avpcall(hooknum == HOOK_IRC_CONNECTED?"irc_onconnect":"irc_onendofburst", "");
 }
 
 void lua_onload(lua_State *l) {
-  int top;
-
-  top = lua_gettop(l);
-
-  lua_getglobal(l, "scripterror");
-  lua_getglobal(l, "onload");
-
-  if(lua_isfunction(l, -1))
-    lua_debugpcall(l, "onload", 0, 0, top + 1);
-  lua_settop(l, top);
+  lua_vpcall(l, "onload", "");
 }
 
 void lua_onunload(lua_State *l) {
-  int top;
-
-  top = lua_gettop(l);
-
-  lua_getglobal(l, "scripterror");
-  lua_getglobal(l, "onunload");
-
-  if(lua_isfunction(l, -1))
-    lua_debugpcall(l, "onunload", 0, 0, top + 1);
-  lua_settop(l, top);
+  lua_vpcall(l, "onunload", "");
 }
 
 int lua_channelmessage(channel *cp, char *message, ...) {
