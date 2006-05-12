@@ -286,21 +286,14 @@ void lua_onop(int hooknum, void *arg) {
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
   nick *target = arglist[2];
-  const char *chook;
 
   if(!target)
     return;
 
-  if(hooknum == HOOK_CHANNEL_OPPED) { 
-    chook = "irc_onop";
-  } else {
-    chook = "irc_ondeop";
-  }
-
   if(np) {
-    lua_avpcall(chook, "SNN", ci->name, np, target);
+    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "SNN", ci->name, np, target);
   } else {
-    lua_avpcall(chook, "S0N", ci->name, target);
+    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "S0N", ci->name, target);
   }
 }
 
