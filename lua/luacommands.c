@@ -26,18 +26,30 @@
 #include <luajit.h>
 #endif
 
+#define MAX_PUSHER 50
+
 static int lua_smsg(lua_State *ps);
 static int lua_skill(lua_State *ps);
 
-typedef struct lua_nickpusher {
+typedef struct lua_pusher {
   short argtype;
   short offset;
   const char *structname;
-} lua_nickpusher;
+} lua_pusher;
+
+struct lua_pusher nickpusher[MAX_PUSHER];
+struct lua_pusher chanpusher[MAX_PUSHER];
+
+void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max);
 
 void lua_initnickpusher(void);
-void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max);
-INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np);
+INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np);
+
+void lua_initchanpusher(void);
+INLINE int lua_usechanpusher(lua_State *l, struct lua_pusher **lp, nick *np);
+
+#define lua_setupnickpusher(L2, I2, P2, M2) lua_setuppusher(&nickpusher[0], L2, I2, P2, M2)
+#define lua_setupchanpusher(L2, I2, P2, M2) lua_setuppusher(&chanpusher[0], L2, I2, P2, M2)
 
 int lua_lineok(const char *data) {
   if(strchr(data, '\r') || strchr(data, '\n'))
@@ -209,7 +221,7 @@ static int lua_gline(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   duration = lua_toint(ps, 2);
-  if((duration < 1) || (duration > 86400))
+  if((duration < 1) || (duration >  7 * 86400))
     LUA_RETURN(ps, LUA_FAIL);
 
   reason = lua_tostring(ps, 3);
@@ -423,9 +435,7 @@ static int lua_getnickchanindex(lua_State *l) {
 int hashindex;
 nick *lasthashnick;
 
-#define MAX_NICKPUSHER 50
-
-struct lua_nickpusher *nickhashpusher[MAX_NICKPUSHER];
+struct lua_pusher *nickhashpusher[MAX_PUSHER];
 
 static int lua_getnextnick(lua_State *l) {
   if(!lasthashnick && (hashindex != -1))
@@ -442,16 +452,48 @@ static int lua_getnextnick(lua_State *l) {
     }
   } while(!lasthashnick);
 
-  return lua_usenickpusher(l, nickhashpusher, lasthashnick);
+  return lua_usepusher(l, nickhashpusher, lasthashnick);
 }
 
 static int lua_getfirstnick(lua_State *l) {
   hashindex = -1;
   lasthashnick = NULL;
 
-  lua_setupnickpusher(l, 1, nickhashpusher, MAX_NICKPUSHER);
+  lua_setupnickpusher(l, 1, nickhashpusher, MAX_PUSHER);
 
   return lua_getnextnick(l);
+}
+
+int chanhashindex;
+chanindex *lasthashchan;
+
+struct lua_pusher *chanhashpusher[MAX_PUSHER];
+
+static int lua_getnextchan(lua_State *l) {
+  if(!lasthashchan && (chanhashindex != -1))
+    return 0;
+
+  do {
+    if(!lasthashchan) {
+      chanhashindex++;
+      if(chanhashindex >= CHANNELHASHSIZE)
+        return 0;
+      lasthashchan = chantable[chanhashindex];
+    } else {
+      lasthashchan = lasthashchan->next;
+    }
+  } while(!lasthashchan || !lasthashchan->channel);
+
+  return lua_usepusher(l, chanhashpusher, lasthashchan);
+}
+
+static int lua_getfirstchan(lua_State *l) {
+  chanhashindex = -1;
+  lasthashchan = NULL;
+
+  lua_setupchanpusher(l, 1, chanhashpusher, MAX_PUSHER);
+
+  return lua_getnextchan(l);
 }
 
 static int lua_getnickchancount(lua_State *l) {
@@ -704,6 +746,9 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
+
+  lua_register(l, "irc_getfirstchan", lua_getfirstchan);
+  lua_register(l, "irc_getnextchan", lua_getnextchan);
 }
 
 /* --- */
@@ -740,14 +785,14 @@ static int lua_skill(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
-struct lua_nickpusher nickpusher[MAX_NICKPUSHER];
-
 #define PUSHER_STRING 1
 #define PUSHER_REALNAME 2
 #define PUSHER_IP 3
 #define PUSHER_LONG 4
 #define PUSHER_HOSTNAME 5
 #define PUSHER_SSTRING 6
+#define PUSHER_TOTALUSERS 7
+#define PUSHER_TOPIC 8
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -765,9 +810,9 @@ void lua_initnickpusher(void) {
   nickpusher[i].argtype = 0;
 }
 
-void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, int max) {
+void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max) {
   int current = 0;
-  struct lua_nickpusher *f;
+  struct lua_pusher *f;
 
   if(max > 0)
     lp[0] = NULL;
@@ -783,7 +828,7 @@ void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, in
     if(lua_isstring(l, -1)) {
         char *name = (char *)lua_tostring(l, -1);
 
-      for(f=&nickpusher[0];f->argtype;f++)
+      for(f=pusherlist;f->argtype;f++)
         if(!strcmp(f->structname, name))
           break;
 
@@ -800,7 +845,7 @@ void lua_setupnickpusher(lua_State *l, int index, struct lua_nickpusher **lp, in
   lp[current] = NULL;
 }
 
-INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np) {
+INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
   int i = 0;
 
   while(*lp) {
@@ -817,13 +862,23 @@ INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np)
         lua_pushstring(l, (*(realname **)offset)->name->content);
         break;
       case PUSHER_SSTRING:
-        lua_pushstring(l, ((sstring *)offset)->content);
+        lua_pushstring(l, (*((sstring **)offset))->content);
         break;
       case PUSHER_LONG:
         lua_pushlong(l, *((long *)offset));
         break;
       case PUSHER_IP:
         lua_pushstring(l, IPtostr(*((long *)offset)));
+        break;
+      case PUSHER_TOTALUSERS:
+        lua_pushint(l, (*((channel **)offset))->users->totalusers);
+        break;
+      case PUSHER_TOPIC:
+        if((*((channel **)offset))->topic) {
+          lua_pushstring(l, (*((channel **)offset))->topic->content);
+        } else {
+          lua_pushnil(l);
+        }
         break;
     }
 
@@ -834,3 +889,14 @@ INLINE int lua_usenickpusher(lua_State *l, struct lua_nickpusher **lp, nick *np)
   return i;
 }
 
+void lua_initchanpusher(void) {
+  int i = 0;
+
+#define PUSH_CHANPUSHER(F2, O2, N2) chanpusher[i].argtype = F2; chanpusher[i].structname = N2; chanpusher[i].offset = offsetof(chanindex, O2); i++;
+
+  PUSH_CHANPUSHER(PUSHER_SSTRING, name, "name");
+  PUSH_CHANPUSHER(PUSHER_TOTALUSERS, channel, "totalusers");
+  PUSH_CHANPUSHER(PUSHER_TOPIC, channel, "topic");
+
+  chanpusher[i].argtype = 0;
+}

@@ -29,6 +29,7 @@ void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_registercommands(lua_State *l);
 void lua_initnickpusher(void);
+void lua_initchanpusher(void);
 void lua_loadlibs(lua_State *l);
 void lua_require(lua_State *l, char *module);
 
@@ -82,6 +83,7 @@ lua_list dummy;
 void _init() {
   lua_setupdebugsocket();
   lua_initnickpusher();
+  lua_initchanpusher();
 
   dummy.name = getsstring("???", 10);
   if(!dummy.name) {
