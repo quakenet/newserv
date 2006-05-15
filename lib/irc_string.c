@@ -61,54 +61,6 @@ static unsigned long crc32_tab[] = {
       0x2d02ef8dL
 };
 
-#if 0
-/* OLD MATCH FUNCTIONS */
-
-/* Next proc is stolen from some library
-   http://avrc.city.ac.uk/nethack/nethack-cxref-3.3.1/src/hacklib.c.src.html */
-int match2strings(const char *patrn, const char *strng) {
-  char s, p;
-  /*
-   :  Simple pattern matcher:  '*' matches 0 or more characters, '?' matches
-   :  any single character.  Returns TRUE if 'strng' matches 'patrn'.
-   :  Case insensitive.
-   */
- pmatch_top:
-     s = ToLower(*strng++);  p = ToLower(*patrn++); /* get next chars and pre-advance */
-     if (!p)                      /* end of pattern */
-  return((s == '\0'));           /* matches iff end of string too */
-     else if (p == '*')           /* wildcard reached */
-  return(((!*patrn || match2strings(patrn, strng-1)) ? 1 : s ? match2strings(patrn-1, strng) : 0));
-     else if (p != s && (p != '?' || !s))  /* check single character */
-  return 0;           /* doesn't match */
-     else                         /* return pmatch(patrn, strng); */
-  goto pmatch_top;        /* optimize tail recursion */
-}
-
-/* Adapted version of the above, to check if a new ban encloses another.
- * We want to know if one ban completely encloses another.  We do exactly the
- * same thing as before, but we don't allow a '?' in the pattern to match a '*'
- * in the string.  Also made case insensitive.
- **/
-int match2patterns(const char *patrn, const char *strng) {
-  char s, p;
-  /*
-   :  Simple pattern matcher:  '*' matches 0 or more characters, '?' matches
-   :  any single character.  Returns TRUE if 'strng' matches 'patrn'.
-   */
- pmatch_top:
-     s = ToLower(*strng++);  p = ToLower(*patrn++); /* get next chars and pre-advance */
-     if (!p)                      /* end of pattern */
-  return((s == '\0'));           /* matches iff end of string too */
-     else if (p == '*')           /* wildcard reached */
-  return(((!*patrn || match2strings(patrn, strng-1)) ? 1 : s ? match2strings(patrn-1, strng) : 0));
-     else if (p != s && (s == '*' || p != '?' || !s))  /* check single character */
-  return 0;           /* doesn't match */
-     else                         /* return pmatch(patrn, strng); */
-  goto pmatch_top;        /* optimize tail recursion */
-}
-#else /* 0 */
-
 int match2strings(const char *patrn, const char *string) {
   return !match(patrn,string);
 }
@@ -116,7 +68,6 @@ int match2strings(const char *patrn, const char *string) {
 int match2patterns(const char *patrn, const char *string) {
   return !mmatch(patrn,string);
 }
-#endif
 
 /* This computes a 32 bit CRC of the data in the buffer, and returns the */
 /* CRC.  The polynomial used is 0xedb88320.                              */
@@ -147,7 +98,7 @@ unsigned long crc32i(const char *s) {
   return crc32val;
 }
 
-/*
+/* @GPL
  * ircd_strcmp - case insensitive comparison of 2 strings
  */
 int ircd_strcmp(const char *a, const char *b) {
@@ -162,7 +113,7 @@ int ircd_strcmp(const char *a, const char *b) {
   return (*ra - *rb);
 }
 
-/*
+/* @GPL
  * ircd_strncmp - counted case insensitive comparison of 2 strings
  */
 int ircd_strncmp(const char *a, const char *b, size_t n) {
@@ -307,7 +258,7 @@ int durationtolong(const char *string) {
   }
   return total;
 }
-/*
+/* @GPL
  * mmatch()
  *
  * Written by Run (carlo@runaway.xs4all.nl), 25-10-96
@@ -438,7 +389,7 @@ int mmatch(const char *old_mask, const char *new_mask)
  *         1, if no match
  */
 
-/*
+/* @GPL
  * match
  *
  * Rewritten by Andrea Cocito (Nemesi), November 1998.
@@ -531,7 +482,7 @@ break_while:
   return 0;
 }
 
-/*
+/* @GPL
  * collapse()
  * Collapse a pattern string into minimal components.
  * This particular version is "in place", so that it changes the pattern

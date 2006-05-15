@@ -1,4 +1,7 @@
 /*
+
+@GPL
+
 Operservice 2 - array.c
 Arrays are used all over in O2. This .c supplies some functions for handling
 them.
