@@ -1,7 +1,6 @@
 /* Functions for retrieving stats from the network to local users */
 
 #include "localuser.h"
-#include "../irc/numeric.h"
 #include "../nick/nick.h"
 #include "../irc/irc.h"
 #include "../core/error.h"
@@ -13,6 +12,24 @@
 
 int handleserverstats(void *source, int cargc, char **cargv);
 int handleserverstatsend(void *source, int cargc, char **cargv);
+
+#define RPL_STATSCLINE     213
+#define RPL_STATSCOMMANDS  212
+#define RPL_STATSCONN      250
+#define RPL_STATSDLINE     275
+#define RPL_STATSENGINE    237
+#define RPL_STATSHLINE     244
+#define RPL_STATSILINE     215
+#define RPL_STATSKLINE     216
+#define RPL_STATSLINKINFO  211
+#define RPL_STATSLLINE     241
+#define RPL_STATSOLINE     243
+#define RPL_STATSQLINE     228
+#define RPL_STATSSLINE     398
+#define RPL_STATSULINE     248
+#define RPL_STATSUPTIME    242
+#define RPL_STATSVERBOSE   236
+#define RPL_TEXT           304
 
 const int numerics[] = { RPL_STATSCLINE, RPL_STATSCOMMANDS, RPL_STATSCONN, RPL_STATSDLINE,
                      RPL_STATSENGINE, RPL_STATSHLINE, RPL_STATSILINE, RPL_STATSKLINE,

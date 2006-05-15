@@ -6,6 +6,46 @@
 #include <stdio.h>
 #include <errno.h>
 
+/*-
+ * For some sections, the BSD license applies, specifically:
+ * ircd_strcmp ircd_strncmp:
+ *
+ * Copyright (c) 1987
+ *      The Regents of the University of California.  All rights reserved.
+ *
+ * match/collapse
+ *
+ * Copyright (c) 1998
+ *      Andrea Cocito (Nemesi).
+ *
+ * License follows:
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 4. Neither the name of the University/owner? nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+
 static unsigned long crc32_tab[] = {
       0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
       0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
@@ -61,54 +101,6 @@ static unsigned long crc32_tab[] = {
       0x2d02ef8dL
 };
 
-#if 0
-/* OLD MATCH FUNCTIONS */
-
-/* Next proc is stolen from some library
-   http://avrc.city.ac.uk/nethack/nethack-cxref-3.3.1/src/hacklib.c.src.html */
-int match2strings(const char *patrn, const char *strng) {
-  char s, p;
-  /*
-   :  Simple pattern matcher:  '*' matches 0 or more characters, '?' matches
-   :  any single character.  Returns TRUE if 'strng' matches 'patrn'.
-   :  Case insensitive.
-   */
- pmatch_top:
-     s = ToLower(*strng++);  p = ToLower(*patrn++); /* get next chars and pre-advance */
-     if (!p)                      /* end of pattern */
-  return((s == '\0'));           /* matches iff end of string too */
-     else if (p == '*')           /* wildcard reached */
-  return(((!*patrn || match2strings(patrn, strng-1)) ? 1 : s ? match2strings(patrn-1, strng) : 0));
-     else if (p != s && (p != '?' || !s))  /* check single character */
-  return 0;           /* doesn't match */
-     else                         /* return pmatch(patrn, strng); */
-  goto pmatch_top;        /* optimize tail recursion */
-}
-
-/* Adapted version of the above, to check if a new ban encloses another.
- * We want to know if one ban completely encloses another.  We do exactly the
- * same thing as before, but we don't allow a '?' in the pattern to match a '*'
- * in the string.  Also made case insensitive.
- **/
-int match2patterns(const char *patrn, const char *strng) {
-  char s, p;
-  /*
-   :  Simple pattern matcher:  '*' matches 0 or more characters, '?' matches
-   :  any single character.  Returns TRUE if 'strng' matches 'patrn'.
-   */
- pmatch_top:
-     s = ToLower(*strng++);  p = ToLower(*patrn++); /* get next chars and pre-advance */
-     if (!p)                      /* end of pattern */
-  return((s == '\0'));           /* matches iff end of string too */
-     else if (p == '*')           /* wildcard reached */
-  return(((!*patrn || match2strings(patrn, strng-1)) ? 1 : s ? match2strings(patrn-1, strng) : 0));
-     else if (p != s && (s == '*' || p != '?' || !s))  /* check single character */
-  return 0;           /* doesn't match */
-     else                         /* return pmatch(patrn, strng); */
-  goto pmatch_top;        /* optimize tail recursion */
-}
-#else /* 0 */
-
 int match2strings(const char *patrn, const char *string) {
   return !match(patrn,string);
 }
@@ -116,7 +108,6 @@ int match2strings(const char *patrn, const char *string) {
 int match2patterns(const char *patrn, const char *string) {
   return !mmatch(patrn,string);
 }
-#endif
 
 /* This computes a 32 bit CRC of the data in the buffer, and returns the */
 /* CRC.  The polynomial used is 0xedb88320.                              */
@@ -147,37 +138,46 @@ unsigned long crc32i(const char *s) {
   return crc32val;
 }
 
-/*
- * ircd_strcmp - case insensitive comparison of 2 strings
+/* ircd_strcmp/ircd_strncmp
+ *
+ * Copyright (c) 1987
+ *      The Regents of the University of California.  All rights reserved.
+ *
+ * BSD license.
+ *
+ * Modified from this version for ircd usage.
  */
-int ircd_strcmp(const char *a, const char *b) {
-  const char* ra = a;
-  const char* rb = b;
-  while (ToLower(*ra) == ToLower(*rb)) {
-    if (!*ra++)
+
+int ircd_strcmp(const char *s1, const char *s2) {
+  register const char* u1 = s1;
+  register const char* u2 = s2;
+
+  while(ToLower(*u1) == ToLower(*u2)) {
+    if(*u1++)
       return 0;
-    else
-      ++rb;
+
+    u2++;
   }
-  return (*ra - *rb);
+  return ToLower(*u1) - ToLower(*u2);
 }
 
-/*
- * ircd_strncmp - counted case insensitive comparison of 2 strings
- */
-int ircd_strncmp(const char *a, const char *b, size_t n) {
-  const char* ra = a;
-  const char* rb = b;
-  int left = n;
-  if (!left--)
+
+int ircd_strncmp(const char *s1, const char *s2, size_t len) {
+  register const char* u1 = s1;
+  register const char* u2 = s2;
+  size_t remaining = len - 1;
+
+  if(!remaining)
     return 0;
-  while (ToLower(*ra) == ToLower(*rb)) {
-    if (!*ra++ || !left--)
+
+  while(ToLower(*u1) == ToLower(*u2)) {
+    if(*u1++ || !remaining--)
       return 0;
-    else
-      ++rb;
+
+    u2++;
   }
-  return (*ra - *rb);
+
+  return ToLower(*u1) - ToLower(*u2);
 }
 
 /* 
@@ -307,7 +307,8 @@ int durationtolong(const char *string) {
   }
   return total;
 }
-/*
+
+/* @GPL
  * mmatch()
  *
  * Written by Run (carlo@runaway.xs4all.nl), 25-10-96
@@ -443,6 +444,8 @@ int mmatch(const char *old_mask, const char *new_mask)
  *
  * Rewritten by Andrea Cocito (Nemesi), November 1998.
  *
+ * Permission kindly granted by Andrea to be used under the BSD license.
+ *
  */
 
 /****************** Nemesi's match() ***************/
@@ -540,6 +543,9 @@ break_while:
  * (C) Carlo Wood - 6 Oct 1998
  * Speedup rewrite by Andrea Cocito, December 1998.
  * Note that this new optimized alghoritm can *only* work in place.
+ *
+ * Permission kindly granted by Andrea to be used under the BSD license.
+ *
  */
 
 char *collapse(char *mask)
