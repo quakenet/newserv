@@ -102,7 +102,7 @@ void lp_schedpart(channel *cp) {
    * Otherwise, use the shorter one 
    */
      
-  if ((cp->flags & ~(CHANMODE_NOEXTMSG | CHANMODE_TOPICLIMIT)) || cp->topic || cp->bans) {
+  if ((cp->flags & ~(CHANMODE_NOEXTMSG | CHANMODE_TOPICLIMIT | CHANMODE_NOCTCP | CHANMODE_NONOTICE)) || cp->topic || cp->bans) {
     thetimeout=timeout;
   } else {
     thetimeout=shorttimeout;
