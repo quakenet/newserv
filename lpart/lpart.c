@@ -140,5 +140,5 @@ void lp_dopart(void *arg) {
      Use controlreply() for this */
   
 /*   Error("lpart",ERR_DEBUG,"Telling L to part %s",cip->name->content); */
-  controlreply(np,"part %s",cip->name->content);
+  controlmessage(np,"part %s",cip->name->content);
 }
