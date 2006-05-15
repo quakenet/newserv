@@ -25,7 +25,7 @@ int controlsbroadcast(void *sender, int cargc, char **cargv);
 int controlcbroadcast(void *sender, int cargc, char **cargv);
 
 void _init() {
-  registercontrolhelpcmd("kill", NO_OPER, 2, &controlkill, "Usage: kill <nick> ?reason?\nKill specified user with given reason (or 'Killed').");
+/*  registercontrolhelpcmd("kill", NO_OPER, 2, &controlkill, "Usage: kill <nick> ?reason?\nKill specified user with given reason (or 'Killed').");*/
   registercontrolhelpcmd("kick", NO_OPER, 3, &controlkick, "Usage: kick <channel> <user> ?reason?\nKick a user from the given channel, with given reason (or 'Kicked').");
 
   registercontrolhelpcmd("spewchan", NO_OPER, 1, &controlspewchan, "Usage: spewchan <pattern>\nShows all channels which are matched by the given pattern");
@@ -51,7 +51,7 @@ void _fini() {
 /*   deregistercontrolcmd("spew", controlspew); */
   deregistercontrolcmd("spewchan", controlspewchan);
 
-  deregistercontrolcmd("kill", controlkill); 
+/*  deregistercontrolcmd("kill", controlkill); */
   deregistercontrolcmd("kick", controlkick);
 }
 
