@@ -17,6 +17,13 @@
  *
  * Copyright (c) 1998
  *      Andrea Cocito (Nemesi).
+ * Copyright (c)
+ *      Run (carlo@runaway.xs4all.nl) 1996
+ *
+ * mmatch/match/collapse
+ *
+ * Copyright (c)
+ *      Run (carlo@runaway.xs4all.nl) 1996
  *
  * License follows:
  *
@@ -153,7 +160,7 @@ int ircd_strcmp(const char *s1, const char *s2) {
   register const char* u2 = s2;
 
   while(ToLower(*u1) == ToLower(*u2)) {
-    if(*u1++)
+    if(!*u1++)
       return 0;
 
     u2++;
@@ -171,7 +178,7 @@ int ircd_strncmp(const char *s1, const char *s2, size_t len) {
     return 0;
 
   while(ToLower(*u1) == ToLower(*u2)) {
-    if(*u1++ || !remaining--)
+    if(!*u1++ || !remaining--)
       return 0;
 
     u2++;
@@ -264,7 +271,7 @@ const char *longtoduration(unsigned long interval, int format) {
 int durationtolong(const char *string) {
   int total=0;
   int current=0;
-  char *ch=string,*och;
+  char *ch=(char *)string,*och;
 
   while (*ch) {
     och=ch;
@@ -308,7 +315,7 @@ int durationtolong(const char *string) {
   return total;
 }
 
-/* @GPL
+/*
  * mmatch()
  *
  * Written by Run (carlo@runaway.xs4all.nl), 25-10-96
@@ -327,6 +334,8 @@ int durationtolong(const char *string) {
  * a '?' in `new_mask' does not match a '\?' in `old_mask'.
  * And ofcourse... a '*' in `new_mask' does not match a '\*' in `old_mask'...
  * And last but not least, '\?' and '\*' in `new_mask' now become one character.
+ *
+ * Kindly BSD licensed by Run for Newserv.
  */
 
 int mmatch(const char *old_mask, const char *new_mask)
