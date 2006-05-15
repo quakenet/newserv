@@ -258,6 +258,7 @@ int durationtolong(const char *string) {
   }
   return total;
 }
+
 /* @GPL
  * mmatch()
  *
@@ -389,10 +390,12 @@ int mmatch(const char *old_mask, const char *new_mask)
  *         1, if no match
  */
 
-/* @GPL
+/*
  * match
  *
  * Rewritten by Andrea Cocito (Nemesi), November 1998.
+ *
+ * Permission kindly granted by Andrea to be used under the BSD license.
  *
  */
 
@@ -482,7 +485,7 @@ break_while:
   return 0;
 }
 
-/* @GPL
+/*
  * collapse()
  * Collapse a pattern string into minimal components.
  * This particular version is "in place", so that it changes the pattern
@@ -491,6 +494,9 @@ break_while:
  * (C) Carlo Wood - 6 Oct 1998
  * Speedup rewrite by Andrea Cocito, December 1998.
  * Note that this new optimized alghoritm can *only* work in place.
+ *
+ * Permission kindly granted by Andrea to be used under the BSD license.
+ *
  */
 
 char *collapse(char *mask)
