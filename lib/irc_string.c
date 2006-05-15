@@ -6,6 +6,46 @@
 #include <stdio.h>
 #include <errno.h>
 
+/*-
+ * For some sections, the BSD license applies, specifically:
+ * ircd_strcmp ircd_strncmp:
+ *
+ * Copyright (c) 1987
+ *      The Regents of the University of California.  All rights reserved.
+ *
+ * match/collapse
+ *
+ * Copyright (c) 1998
+ *      Andrea Cocito (Nemesi).
+ *
+ * License follows:
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 4. Neither the name of the University/owner? nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+
 static unsigned long crc32_tab[] = {
       0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
       0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
@@ -98,37 +138,46 @@ unsigned long crc32i(const char *s) {
   return crc32val;
 }
 
-/* @GPL
- * ircd_strcmp - case insensitive comparison of 2 strings
+/* ircd_strcmp/ircd_strncmp
+ *
+ * Copyright (c) 1987
+ *      The Regents of the University of California.  All rights reserved.
+ *
+ * BSD license.
+ *
+ * Modified from this version for ircd usage.
  */
-int ircd_strcmp(const char *a, const char *b) {
-  const char* ra = a;
-  const char* rb = b;
-  while (ToLower(*ra) == ToLower(*rb)) {
-    if (!*ra++)
+
+int ircd_strcmp(const char *s1, const char *s2) {
+  register const char* u1 = s1;
+  register const char* u2 = s2;
+
+  while(ToLower(*u1) == ToLower(*u2)) {
+    if(*u1++)
       return 0;
-    else
-      ++rb;
+
+    u2++;
   }
-  return (*ra - *rb);
+  return ToLower(*u1) - ToLower(*u2);
 }
 
-/* @GPL
- * ircd_strncmp - counted case insensitive comparison of 2 strings
- */
-int ircd_strncmp(const char *a, const char *b, size_t n) {
-  const char* ra = a;
-  const char* rb = b;
-  int left = n;
-  if (!left--)
+
+int ircd_strncmp(const char *s1, const char *s2, size_t len) {
+  register const char* u1 = s1;
+  register const char* u2 = s2;
+  size_t remaining = len - 1;
+
+  if(!remaining)
     return 0;
-  while (ToLower(*ra) == ToLower(*rb)) {
-    if (!*ra++ || !left--)
+
+  while(ToLower(*u1) == ToLower(*u2)) {
+    if(*u1++ || !remaining--)
       return 0;
-    else
-      ++rb;
+
+    u2++;
   }
-  return (*ra - *rb);
+
+  return ToLower(*u1) - ToLower(*u2);
 }
 
 /* 
