@@ -9,7 +9,7 @@ void dodump(void *arg) {
   chanindex *c;
   int i;
 
-  FILE *fp = fopen("chandump.txt.1", "w");
+  FILE *fp = fopen("chandump/chandump.txt.1", "w");
   if(!fp)
     return;
 
@@ -20,7 +20,7 @@ void dodump(void *arg) {
 
   fclose(fp);
 
-  rename("chandump.txt.1", "chandump.txt");
+  rename("chandump/chandump.txt.1", "chandump/chandump.txt");
 } 
 
 void _init() {
