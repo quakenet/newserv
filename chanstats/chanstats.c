@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: chanstats.c 663 2006-05-16 17:27:36Z newserv $")
 
 int csext;
 int sampleindex;

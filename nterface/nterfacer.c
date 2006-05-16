@@ -43,7 +43,7 @@
 #include "nterfacer.h"
 #include "logging.h"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: nterfacer.c 663 2006-05-16 17:27:36Z newserv $")
 
 struct service_node *tree = NULL;
 struct esocket_events nterfacer_events;

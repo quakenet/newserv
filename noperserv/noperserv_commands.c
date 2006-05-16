@@ -13,7 +13,7 @@
 #include "../geoip/geoip.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: noperserv_commands.c 663 2006-05-16 17:27:36Z newserv $")
 
 int controlkill(void *sender, int cargc, char **cargv);
 int controlopchan(void *sender, int cargc, char **cargv);

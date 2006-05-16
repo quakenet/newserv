@@ -38,7 +38,7 @@
 #include "library.h"
 #include "nterfacer_control.h"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: nterfacer_control.c 663 2006-05-16 17:27:36Z newserv $")
 
 int handle_ison(struct rline *li, int argc, char **argv);
 int handle_whois(struct rline *li, int argc, char **argv);

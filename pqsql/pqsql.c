@@ -16,7 +16,7 @@
 #include <sys/poll.h>
 #include <stdarg.h>
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: pqsql.c 663 2006-05-16 17:27:36Z newserv $")
 
 typedef struct pqasyncquery_s {
   sstring *query;

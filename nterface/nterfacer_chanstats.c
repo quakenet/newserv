@@ -10,7 +10,7 @@
 #include "library.h"
 #include "nterfacer_control.h"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: nterfacer_chanstats.c 663 2006-05-16 17:27:36Z newserv $")
 
 int handle_chanstats(struct rline *li, int argc, char **argv);
 struct handler *hl = NULL;

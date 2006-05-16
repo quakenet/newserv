@@ -41,7 +41,7 @@
 #include "library.h"
 #include "nterfacer_relay.h"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: nterfacer_relay.c 663 2006-05-16 17:27:36Z newserv $")
 
 struct service_node *node;
 sstring *ousername, *opassword;

@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <string.h>
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("$Id: localuserchannel.c 663 2006-05-16 17:27:36Z newserv $")
 
 int handlechannelmsgcmd(void *source, int cargc, char **cargv);
 int handlechannelnoticecmd(void *source, int cargc, char **cargv);
