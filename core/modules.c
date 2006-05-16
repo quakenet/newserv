@@ -58,6 +58,7 @@ int insmod(char *modulename) {
   int i;
   module *mods;
   char buf[512];
+  const char *(*verinfo)(void);
 
   delchars(modulename,"./\\;");
   
@@ -85,6 +86,13 @@ int insmod(char *modulename) {
   
   mods[i].name=getsstring(modulename,MODULENAMELEN);
 
+  verinfo=dlsym(mods[i].handle,"_version");
+  if(verinfo) {
+    mods[i].version=verinfo();
+  }  else {
+    mods[i].version=NULL;
+  }
+
   Error("core",ERR_INFO,"Loaded module %s OK.",modulename);
   
   return 0;
@@ -110,6 +118,16 @@ char *lsmod(int index) {
 
   mods=(module *)(modules.content);
   return mods[index].name->content;
+}
+
+const char *lsmodver(int index) {
+  module *mods;
+
+  if (index < 0 || index >= modules.cursi)
+    return NULL;
+
+  mods=(module *)(modules.content);
+  return mods[index].version;
 }
 
 int isloaded(char *modulename) {

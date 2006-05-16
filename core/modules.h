@@ -11,6 +11,7 @@
 typedef struct {
   sstring *name;
   void    *handle;
+  const char *version;
 } module;
 
 void initmodules();
@@ -19,4 +20,6 @@ int getindex(char *modulename);
 int isloaded(char *modulename);
 int rmmod(char *modulename);
 char *lsmod(int index);
+const char *lsmodver(int index);
+
 #endif

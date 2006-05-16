@@ -8,9 +8,12 @@
 #include "../parser/parser.h"
 #include "../irc/irc.h"
 #include "../lib/base64.h"
+#include "../lib/version.h"
 
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION("$Id")
 
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 

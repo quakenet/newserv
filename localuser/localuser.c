@@ -6,11 +6,14 @@
 #include "../irc/irc_config.h"
 #include "../core/hooks.h"
 #include "../core/error.h"
+#include "../lib/version.h"
 #include "localuser.h"
 
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+
+MODULE_VERSION("$Id")
 
 int currentlocalunum;
 UserMessageHandler umhandlers[MAXLOCALUSER+1];

@@ -9,11 +9,14 @@
 #include "../irc/irc_config.h"
 #include "../core/events.h"
 #include "../core/hooks.h"
+#include "../lib/version.h"
 #include "pqsql.h"
 
 #include <stdlib.h>
 #include <sys/poll.h>
 #include <stdarg.h>
+
+MODULE_VERSION("$Id")
 
 typedef struct pqasyncquery_s {
   sstring *query;

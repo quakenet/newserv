@@ -10,8 +10,11 @@
 #include "../lib/array.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../lib/version.h"
 
 #include "lua.h"
+
+MODULE_VERSION("$Id")
 
 #ifdef LUA_DEBUGSOCKET
 

@@ -37,8 +37,11 @@
 #include "../core/schedule.h"
 #include "../irc/irc.h"
 #include "../core/config.h"
+#include "../lib/version.h"
 #include "library.h"
 #include "nterfacer_relay.h"
+
+MODULE_VERSION("$Id")
 
 struct service_node *node;
 sstring *ousername, *opassword;

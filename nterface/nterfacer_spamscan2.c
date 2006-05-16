@@ -6,11 +6,14 @@
 
 #include "../localuser/localuserchannel.h"
 #include "../channel/channel.h"
+#include "../lib/version.h"
 
 #include "../spamscan2/spamscan2.h"
 
 #include "library.h"
 #include "nterfacer.h"
+
+MODULE_VERSION("$Id")
 
 #define ERR_TARGET_NOT_FOUND            0x01
 #define ERR_CHANNEL_NOT_REGISTERED      0x02

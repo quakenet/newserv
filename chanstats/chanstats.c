@@ -9,9 +9,12 @@
 #include "../control/control.h"
 #include "../nick/nick.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION("$Id")
 
 int csext;
 int sampleindex;

@@ -9,6 +9,7 @@
 #include "../localuser/localuser.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
+#include "../lib/version.h"
 #include "noperserv.h"
 #include "noperserv_db.h"
 #include "noperserv_hooks.h"
@@ -17,6 +18,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+
+MODULE_VERSION("$Id")
 
 #define FLAGBUFLEN 100
 

@@ -15,9 +15,12 @@
 #include "../channel/channel.h"
 #include "../pqsql/pqsql.h"
 #include "../lib/strlfunc.h"
+#include "../lib/version.h"
 #include <string.h>
 #include <stdlib.h>
 #include <libpq-fe.h>
+
+MODULE_VERSION("$Id")
 
 /* #define SIT_CHANNEL "#qnet.fakeusers" */
 #define KILL_WAIT 10

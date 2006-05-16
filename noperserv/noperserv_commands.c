@@ -11,6 +11,9 @@
 #include "../lib/strlfunc.h"
 #include "../localuser/localuserchannel.h"
 #include "../geoip/geoip.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("$Id")
 
 int controlkill(void *sender, int cargc, char **cargv);
 int controlopchan(void *sender, int cargc, char **cargv);

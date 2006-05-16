@@ -9,6 +9,9 @@
 */
 
 #include "regexgline.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("$Id")
 
 typedef struct rg_glinenode {
   nick *np;

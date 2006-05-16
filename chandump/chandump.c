@@ -2,6 +2,9 @@
 
 #include "../core/schedule.h"
 #include "../channel/channel.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("$Id")
 
 void *dumpsched;
 

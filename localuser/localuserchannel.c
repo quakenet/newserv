@@ -5,11 +5,14 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 #include "../irc/irc.h"
+#include "../lib/version.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+
+MODULE_VERSION("$Id")
 
 int handlechannelmsgcmd(void *source, int cargc, char **cargv);
 int handlechannelnoticecmd(void *source, int cargc, char **cargv);

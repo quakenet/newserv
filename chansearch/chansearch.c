@@ -5,8 +5,11 @@
 #include "../control/control.h"
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 
 #include <stdio.h>
+
+MODULE_VERSION("$Id")
 
 #define  MAXTERMS    10
 #define  MAXMATCHES  500

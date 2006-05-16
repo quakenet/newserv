@@ -33,9 +33,12 @@
 #include "../nick/nick.h"
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 
 #include "library.h"
 #include "nterfacer_control.h"
+
+MODULE_VERSION("$Id")
 
 int handle_ison(struct rline *li, int argc, char **argv);
 int handle_whois(struct rline *li, int argc, char **argv);

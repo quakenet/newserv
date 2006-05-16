@@ -38,9 +38,12 @@
 #include "../lib/irc_string.h"
 #include "../core/config.h"
 #include "../core/events.h"
+#include "../lib/version.h"
 
 #include "nterfacer.h"
 #include "logging.h"
+
+MODULE_VERSION("$Id")
 
 struct service_node *tree = NULL;
 struct esocket_events nterfacer_events;

@@ -10,6 +10,7 @@
 #include "../core/hooks.h"
 #include "../lib/base64.h"
 #include "../lib/splitline.h"
+#include "../lib/version.h"
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -21,6 +22,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+
+MODULE_VERSION("$Id")
 
 #define READBUFSIZE          32768
 #define MAX_SERVERARGS       20

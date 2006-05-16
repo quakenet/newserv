@@ -8,9 +8,12 @@
 #include "../core/config.h"
 #include "../core/hooks.h"
 #include "../control/control.h"
+#include "../lib/version.h"
 
 #include "libGeoIP/GeoIP.h"
 #include "geoip.h"
+
+MODULE_VERSION("$Id")
 
 int geoip_totals[COUNTRY_MAX + 1];
 int geoip_nickext = -1;

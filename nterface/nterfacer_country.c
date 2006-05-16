@@ -6,9 +6,12 @@
 #include "../nick/nick.h"
 #include "../core/error.h"
 #include "../geoip/geoip.h"
+#include "../lib/version.h"
 
 #include "library.h"
 #include "nterfacer_control.h"
+
+MODULE_VERSION("$Id")
 
 int country_nickext = -1;
 

@@ -19,11 +19,14 @@
 #include "../core/schedule.h"
 #include "../lib/base64.h"
 #include "../core/modules.h"
+#include "../lib/version.h"
 #include "control.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+
+MODULE_VERSION("$Id");
 
 nick *hooknick;
 
@@ -260,7 +263,8 @@ int controllsmod(void *sender, int cargc, char **cargv) {
     ptr = lsmod(i);
     controlreply((nick *)sender,"Module");
     while (ptr != NULL) {
-      controlreply((nick *)sender,"%s", ptr);
+      const char *ver = lsmodver(i);
+      controlreply((nick *)sender,"%s%s%s%s", ptr, ver?" (":"", ver?ver:"", ver?")":"");
       ptr = lsmod(++i);
     }
   } else {

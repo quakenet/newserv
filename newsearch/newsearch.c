@@ -8,6 +8,9 @@
 #include "../parser/parser.h"
 #include "../control/control.h"
 #include "../lib/splitline.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("$Id")
 
 CommandTree *searchTree;
 

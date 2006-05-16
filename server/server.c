@@ -11,10 +11,13 @@
 #include "../core/error.h"
 #include "../core/hooks.h"
 #include "../core/config.h"
+#include "../lib/version.h"
 #include "server.h"
 
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION("$Id")
 
 int findserver(const char *name);
 void completelink(int servernum);

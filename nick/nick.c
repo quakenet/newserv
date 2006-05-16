@@ -11,9 +11,12 @@
 #include "../lib/sstring.h"
 #include "../server/server.h"
 #include "../parser/parser.h"
+#include "../lib/version.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+MODULE_VERSION("$Id")
 
 const flag umodeflags[] = {
    { 'i', UMODE_INV },
