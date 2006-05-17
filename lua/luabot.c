@@ -10,10 +10,6 @@
 #include "lua.h"
 #include "luabot.h"
 
-#ifdef LUA_USEJIT
-#include <luajit.h>
-#endif
-
 #include <stdarg.h>
 
 nick *lua_nick = NULL;
@@ -74,24 +70,25 @@ void lua_startbot(void *arg) {
 
   myureconnect = NULL;
 
-  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections",
-"Lua engine v" LUA_BOTVERSION " (" LUA_VERSION
-#ifdef LUA_USEJIT
-" + " LUAJIT_VERSION
-#endif
-")", "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;
   }
 
   cp = findchannel(LUA_OPERCHAN);
-  if(cp && localjoinchannel(lua_nick, cp))
+  if(cp && localjoinchannel(lua_nick, cp)) {
     localgetops(lua_nick, cp);
+  } else {
+    localcreatechannel(lua_nick, LUA_OPERCHAN);
+  }
 
   cp = findchannel(LUA_PUKECHAN);
-  if(cp && localjoinchannel(lua_nick, cp))
+  if(cp && localjoinchannel(lua_nick, cp)) {
     localgetops(lua_nick, cp);
+  } else {
+    localcreatechannel(lua_nick, LUA_PUKECHAN);
+  }
 
   myublip = schedulerecurring(time(NULL) + 1, 0, 60, &lua_blip, NULL);
   myutick = schedulerecurring(time(NULL) + 1, 0, 1, &lua_tick, NULL);
@@ -115,12 +112,17 @@ void lua_destroybot(void) {
     deregisterlocaluser(lua_nick, NULL);
 }
 
-int lua_vpcall(lua_State *l, const char *function, const char *sig, ...) {
+int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
   va_list va;
   int narg = 0, nres, top = lua_gettop(l);
 
   lua_getglobal(l, "scripterror");
-  lua_getglobal(l, function);
+  if(mode == LUA_CHARMODE) {
+    lua_getglobal(l, (const char *)function);
+  } else {
+    lua_rawgeti(l, LUA_REGISTRYINDEX, (int)function);
+  }
+
   if(!lua_isfunction(l, -1)) {
     lua_settop(l, top);
     return 1;
@@ -389,5 +391,3 @@ int lua_notice(nick *np, char *message, ...) {
 
   return 0;
 }
-
-

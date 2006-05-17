@@ -11,11 +11,15 @@
 int lua_channelmessage(channel *cp, char *message, ...);
 int lua_message(nick *np, char *message, ...);
 int lua_notice(nick *np, char *message, ...);
+int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...);
 
 nick *lua_nick;
 
 #define LUA_OK 0
 #define LUA_FAIL 1
+
+#define LUA_CHARMODE 0
+#define LUA_POINTERMODE 1
 
 #define LUA_TPUSHSTRING(l, param, value) { lua_pushstring(l, param); lua_pushstring(l, value); lua_rawset(l, -3); }
 #define LUA_TPUSHNUMBER(l, param, value) { lua_pushstring(l, param); lua_pushnumber(l, value); lua_rawset(l, -3); }
@@ -28,6 +32,9 @@ nick *lua_nick;
 #define LUA_PUSHNICKCHANMODES(l, lp) { lua_newtable(l); LUA_TPUSHBOOLEAN(l, "opped", (*lp & CUMODE_OP) != 0); LUA_TPUSHBOOLEAN(l, "voiced", (*lp & CUMODE_VOICE) != 0); }
 
 #define LUA_RETURN(l, n) { lua_pushnumber(l, n); return 1; }
+
+#define lua_vpcall(L2, F2, S2, ...) _lua_vpcall(L2, F2, LUA_CHARMODE, S2 , ##__VA_ARGS__)
+#define lua_vlpcall(L2, F2, N2, S2, ...) _lua_vpcall(L2->l, (void *)F2->handler, LUA_POINTERMODE, "Ns" S2 , F2->nick, N2, ##__VA_ARGS__)
 
 #define lua_avpcall(F2, S2, ...) { lua_State *l; LUA_STARTLOOP(l); lua_vpcall(l, F2, S2 , ##__VA_ARGS__); LUA_ENDLOOP(); }
 

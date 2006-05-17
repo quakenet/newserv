@@ -14,7 +14,7 @@
 
 #include "lua.h"
 
-MODULE_VERSION("$Id: lua.c 662 2006-05-16 17:23:46Z newserv $")
+MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 666 2006-05-18 00:37:43Z newserv $")
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -48,6 +48,9 @@ void lua_setpath(lua_State *l);
 
 void lua_setupdebugsocket(void);
 void lua_freedebugsocket(void);
+
+void lua_deregisternicks(lua_list *l);
+void lua_registerlocalcommands(lua_State *ps);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -196,6 +199,8 @@ lua_State *lua_loadscript(char *file) {
 
   lua_loadlibs(l);
   lua_registercommands(l);
+  lua_registerlocalcommands(l);
+
   lua_setpath(l);
 
 #ifdef LUA_USEJIT
@@ -230,6 +235,7 @@ lua_State *lua_loadscript(char *file) {
 
   n->next = NULL;
   n->prev = lua_tail;
+  n->nicks = NULL;
 
   if(!lua_head) { 
     lua_head = n;
@@ -246,6 +252,7 @@ lua_State *lua_loadscript(char *file) {
 
 void lua_unloadscript(lua_list *l) {
   lua_onunload(l->l);
+  lua_deregisternicks(l);
   lua_close(l->l);
   freesstring(l->name);
 
@@ -409,4 +416,11 @@ lua_list *lua_listfromstate(lua_State *l) {
 
   return &dummy;
 }
+
+int lua_lineok(const char *data) {
+  if(strchr(data, '\r') || strchr(data, '\n'))
+    return 0;
+  return 1;
+}
+
 

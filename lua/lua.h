@@ -18,9 +18,11 @@
 
 #include "../lib/sstring.h"
 
+#include "lualocal.h"
+
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.41"
+#define LUA_BOTVERSION "1.50"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 #define LUA_PUKECHAN "#qnet.keepout"
@@ -37,6 +39,15 @@
 #define LUA_DEBUGSOCKET_ADDRESS "127.0.0.1"
 #define LUA_DEBUGSOCKET_PORT 7733
 
+#ifdef LUA_USEJIT
+#include <luajit.h>
+#define LUA_AUXVERSION " + " LUAJIT_VERSION
+#else
+#define LUA_AUXVERSION
+#endif
+
+#define LUA_FULLVERSION "Lua engine v" LUA_BOTVERSION " (" LUA_VERSION LUA_AUXVERSION ")"
+
 /*** end defines ************************************/
 
 typedef struct lua_list {
@@ -46,6 +57,7 @@ typedef struct lua_list {
   struct timeval ru_utime, ru_stime;
   struct lua_list *next;
   struct lua_list *prev;
+  lua_localnick *nicks;
 } lua_list;
 
 #define LUA_STARTLOOP(l) { lua_list *ll; for(ll=lua_head;ll;ll=ll->next) {  l = ll->l
@@ -61,6 +73,7 @@ lua_State *lua_loadscript(char *file);
 void lua_unloadscript(lua_list *l);
 lua_list *lua_scriptloaded(char *name);
 lua_list *lua_listfromstate(lua_State *l);
+int lua_lineok(const char *data);
 
 #define lua_toint(l, n) (int)lua_tonumber(l, n)
 #define lua_isint(l, n) lua_isnumber(l, n)

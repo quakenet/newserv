@@ -22,10 +22,6 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-#ifdef LUA_USEJIT
-#include <luajit.h>
-#endif
-
 #define MAX_PUSHER 50
 
 static int lua_smsg(lua_State *ps);
@@ -50,12 +46,6 @@ INLINE int lua_usechanpusher(lua_State *l, struct lua_pusher **lp, nick *np);
 
 #define lua_setupnickpusher(L2, I2, P2, M2) lua_setuppusher(&nickpusher[0], L2, I2, P2, M2)
 #define lua_setupchanpusher(L2, I2, P2, M2) lua_setuppusher(&chanpusher[0], L2, I2, P2, M2)
-
-int lua_lineok(const char *data) {
-  if(strchr(data, '\r') || strchr(data, '\n'))
-    return 0;
-  return 1;
-}
 
 int lua_cmsg(char *channell, char *message, ...) {
   char buf[512];
@@ -355,11 +345,7 @@ static int lua_versioninfo(lua_State *ps) {
   lua_pushstring(ps, __DATE__);
   lua_pushstring(ps, __TIME__);
 
-#ifdef LUA_USEJIT
-  lua_pushstring(ps, " + " LUAJIT_VERSION);
-#else
-  lua_pushstring(ps, "");
-#endif
+  lua_pushstring(ps, LUA_AUXVERSION);
 
   return 5;
 }
