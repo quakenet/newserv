@@ -128,6 +128,7 @@ void lua_localnickhandler(nick *target, int type, void **args) {
   char *p;
   lua_localnick *ln;
   lua_list *l;
+  channel *c;
 
   if(!lua_getlocalnickbynick(target, &l, &ln))
     return;
@@ -142,6 +143,17 @@ void lua_localnickhandler(nick *target, int type, void **args) {
 
       lua_vlpcall(l, ln, "irc_onmsg", "Ns", np, p);
 
+      break;
+
+    case LU_CHANMSG:
+      np = (nick *)args[0];
+      c = (channel *)args[1];
+      p = (char *)args[2];
+
+      if(!np || !p || !c || !c->index || !c->index->name || !c->index->name->content)
+        return;
+
+      lua_vlpcall(l, ln, "irc_onchanmsg", "Nss", np, c->index->name->content, p);
       break;
 
     case LU_KILLED:
@@ -199,7 +211,7 @@ static int lua_localjoin(lua_State *ps) {
   if(target) {
     localjoinchannel(source, target);
   } else {
-    localcreatechannel(lua_nick, chan);
+    localcreatechannel(source, chan);
   }
 
   LUA_RETURN(ps, LUA_OK);

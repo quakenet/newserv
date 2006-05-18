@@ -30,6 +30,7 @@ void lua_onquit(int hooknum, void *arg);
 void lua_onrename(int hooknum, void *arg);
 void lua_onconnect(int hooknum, void *arg);
 void lua_onjoin(int hooknum, void *arg);
+void lua_onpart(int hooknum, void *arg);
 
 void lua_registerevents(void) {
   registerhook(HOOK_NICK_NEWNICK, &lua_onnewnick);
@@ -45,10 +46,12 @@ void lua_registerevents(void) {
   registerhook(HOOK_IRC_CONNECTED, &lua_onconnect);
   registerhook(HOOK_SERVER_END_OF_BURST, &lua_onconnect);
   registerhook(HOOK_CHANNEL_JOIN, &lua_onjoin);
+  registerhook(HOOK_CHANNEL_PART, &lua_onpart);
   registerhook(HOOK_CHANNEL_CREATE, &lua_onjoin);
 }
 
 void lua_deregisterevents(void) {
+  deregisterhook(HOOK_CHANNEL_PART, &lua_onpart);
   deregisterhook(HOOK_CHANNEL_CREATE, &lua_onjoin);
   deregisterhook(HOOK_CHANNEL_JOIN, &lua_onjoin);
   deregisterhook(HOOK_SERVER_END_OF_BURST, &lua_onconnect);
@@ -308,6 +311,17 @@ void lua_onjoin(int hooknum, void *arg) {
     return;
 
   lua_avpcall("irc_onjoin", "SN", ci->name, np);
+}
+
+void lua_onpart(int hooknum, void *arg) {
+  void **arglist = (void **)arg;
+  chanindex *ci = ((channel *)arglist[0])->index;
+  nick *np = arglist[1];
+
+  if(!ci || !np)
+    return;
+
+  lua_avpcall("irc_onpart", "SN", ci->name, np);
 }
 
 void lua_onrename(int hooknum, void *arg) {
