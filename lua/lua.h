@@ -30,11 +30,7 @@
 #undef LUA_DEBUGSOCKET
 #define LUA_PROFILE
 
-#ifdef LUA_JITLIBNAME
-
 #define LUA_USEJIT
-
-#endif
 
 #define LUA_DEBUGSOCKET_ADDRESS "127.0.0.1"
 #define LUA_DEBUGSOCKET_PORT 7733
@@ -43,7 +39,7 @@
 #include <luajit.h>
 #define LUA_AUXVERSION " + " LUAJIT_VERSION
 #else
-#define LUA_AUXVERSION
+#define LUA_AUXVERSION ""
 #endif
 
 #define LUA_FULLVERSION "Lua engine v" LUA_BOTVERSION " (" LUA_VERSION LUA_AUXVERSION ")"
