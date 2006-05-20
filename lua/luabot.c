@@ -175,7 +175,7 @@ endwhile:
 
   nres = strlen(sig);
 
-  lua_debugpcall(l, function, narg, nres, 0);
+  lua_debugpcall(l, function, narg, nres, top + 1);
 
   nres = -nres;
   while(*sig) {
