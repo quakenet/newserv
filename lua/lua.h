@@ -22,10 +22,13 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.51"
+#define LUA_BOTVERSION "1.52"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
+
+#ifndef LUA_PUKECHAN
 #define LUA_PUKECHAN "#qnet.keepout"
+#endif
 
 #undef LUA_DEBUGSOCKET
 #define LUA_PROFILE

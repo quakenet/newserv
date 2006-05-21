@@ -296,6 +296,47 @@ static int lua_localnotice(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localovmode(lua_State *ps) {
+  char *mode;
+  nick *source, *target;
+  channel *chan;
+  int add, realmode;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isboolean(ps, 3) || !lua_isstring(ps, 4) || !lua_islong(ps, 5))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  chan = findchannel((char *)lua_tostring(ps, 2));
+  if(!chan)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  add = (int)lua_toboolean(ps, 3);
+  mode = (char *)lua_tostring(ps, 4);
+
+  target = getnickbynumeric(lua_tolong(ps, 5));
+  if(!target)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if((*mode == 'o') && add) {
+    realmode = MC_OP;
+  } else if (*mode == 'o') {
+    realmode = MC_DEOP;
+  } else if((*mode == 'v') && add) {
+    realmode = MC_VOICE;
+  } else if (*mode == 'o') {
+    realmode = MC_DEVOICE;
+  } else {
+    LUA_RETURN(ps, LUA_FAIL);
+  }
+
+  localsetmodes(source, chan, target, realmode);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localregisteruser", lua_registerlocaluser);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
@@ -303,5 +344,8 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localpart", lua_localpart);
   lua_register(l, "irc_localchanmsg", lua_localchanmsg);
   lua_register(l, "irc_localnotice", lua_localnotice);
+
+  lua_register(l, "irc_localovmode", lua_localovmode);
+
 }
 
