@@ -14,7 +14,6 @@ void lua_localnickhandler(nick *target, int type, void **args);
 void lua_reconnectlocal(void *arg);
 
 static int lua_registerlocaluser(lua_State *ps) {
-  nick *np;
   lua_list *l;
   lua_localnick *ln;
   char *nickname, *ident, *hostname, *realname, *account;
@@ -55,7 +54,7 @@ static int lua_registerlocaluser(lua_State *ps) {
   ln->next = l->nicks;
   l->nicks = ln;
 
-  lua_pushlong(ps, np->numeric);
+  lua_pushlong(ps, ln->nick->numeric);
   return 1;
 }
 
