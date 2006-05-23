@@ -14,7 +14,7 @@
 
 #include "lua.h"
 
-MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 666 2006-05-18 00:37:43Z newserv $")
+MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 677 2006-05-24 00:25:04Z newserv $")
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -51,6 +51,7 @@ void lua_freedebugsocket(void);
 
 void lua_deregisternicks(lua_list *l);
 void lua_registerlocalcommands(lua_State *ps);
+void lua_registerdebug(lua_State *ps);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -198,6 +199,7 @@ lua_State *lua_loadscript(char *file) {
   timerclear(&n->ru_stime);
 
   lua_loadlibs(l);
+  lua_registerdebug(l);
   lua_registercommands(l);
   lua_registerlocalcommands(l);
 

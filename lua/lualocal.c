@@ -325,13 +325,38 @@ static int lua_localovmode(lua_State *ps) {
     realmode = MC_DEOP;
   } else if((*mode == 'v') && add) {
     realmode = MC_VOICE;
-  } else if (*mode == 'o') {
+  } else if (*mode == 'v') {
     realmode = MC_DEVOICE;
   } else {
     LUA_RETURN(ps, LUA_FAIL);
   }
 
   localsetmodes(source, chan, target, realmode);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_localtopic(lua_State *ps) {
+  nick *np;
+  channel *cp;
+  char *topic;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynumeric(lua_tolong(ps, 1));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 2));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  topic = (char *)lua_tostring(ps, 3);
+  if(!topic || !lua_lineok(topic))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsettopic(np, cp, topic);
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -345,6 +370,7 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localnotice", lua_localnotice);
 
   lua_register(l, "irc_localovmode", lua_localovmode);
+  lua_register(l, "irc_localtopic", lua_localtopic);
 
 }
 
