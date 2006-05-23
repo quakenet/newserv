@@ -75,13 +75,6 @@ static int lua_chanmsg(lua_State *ps) {
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua: %s", lua_tostring(ps, 1)));
 }
 
-static int lua_scripterror(lua_State *ps) {
-  if(!lua_isstring(ps, 1))
-    LUA_RETURN(ps, LUA_FAIL);
-
-  LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-error: %s", lua_tostring(ps, 1)));
-}
-
 static int lua_ctcp(lua_State *ps) {
   const char *n, *msg;
   nick *np;
@@ -696,7 +689,6 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_skill", lua_skill);
 
   lua_register(l, "chanmsg", lua_chanmsg);
-  lua_register(l, "scripterror", lua_scripterror);
   lua_register(l, "versioninfo", lua_versioninfo);
   lua_register(l, "basepath", lua_basepath);
 
