@@ -30,7 +30,6 @@
 #define LUA_PUKECHAN "#qnet.keepout"
 #endif
 
-#undef LUA_DEBUGSOCKET
 #define LUA_PROFILE
 
 #ifndef LUA_NOJIT
