@@ -223,7 +223,7 @@ static int lua_gline(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   duration = lua_toint(ps, 2);
-  if((duration < 1) || (duration >  7 * 86400))
+  if((duration < 1) || (duration >  31 * 86400))
     LUA_RETURN(ps, LUA_FAIL);
 
   reason = lua_tostring(ps, 3);
