@@ -113,6 +113,25 @@ static int lua_noticecmd(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_privmsgcmd(lua_State *ps) {
+  const char *n, *msg;
+  nick *np;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  n = lua_tostring(ps, 1);
+  msg = lua_tostring(ps, 2);
+
+  np = getnickbynick(n);
+  if(!np || !lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  lua_message(np, "%s", msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_kill(lua_State *ps) {
   const char *n, *msg;
   nick *np;
@@ -736,6 +755,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_counthost", lua_counthost);
   lua_register(l, "irc_getuserbyauth", lua_getuserbyauth);
   lua_register(l, "irc_notice", lua_noticecmd);
+  lua_register(l, "irc_privmsg", lua_privmsgcmd);
   lua_register(l, "irc_opchan", lua_opchan);
   lua_register(l, "irc_voicechan", lua_voicechan);
   lua_register(l, "irc_chanfix", lua_chanfix);

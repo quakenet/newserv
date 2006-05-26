@@ -22,7 +22,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.55"
+#define LUA_BOTVERSION "1.56"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 
