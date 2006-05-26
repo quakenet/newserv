@@ -684,6 +684,40 @@ static int lua_getnickbynumeric(lua_State *l) {
   return 1;
 }
 
+int channelnicklistindex, channelnicklistcount = -1;
+channel *channelnicklist;
+
+struct lua_pusher *channelnickpusher[MAX_PUSHER];
+
+static int lua_getnextchannick(lua_State *l) {
+  nick *np;
+
+  do {
+    channelnicklistindex++;
+
+    if(channelnicklistindex >= channelnicklistcount)
+      return 0;
+  } while((channelnicklist->users->content[channelnicklistindex] == nouser) || !(np = getnickbynumeric(channelnicklist->users->content[channelnicklistindex])));
+
+  return lua_usepusher(l, channelnickpusher, np);
+}
+
+static int lua_getfirstchannick(lua_State *l) {
+  if(!lua_isstring(l, 1))
+    return 0;
+
+  channelnicklist = findchannel((char *)lua_tostring(l, 1));
+  if(!channelnicklist|| !channelnicklist->users)
+    return 0;
+
+  channelnicklistindex = -1;
+  channelnicklistcount = channelnicklist->users->hashsize;
+
+  lua_setupnickpusher(l, 2, channelnickpusher, MAX_PUSHER);
+
+  return lua_getnextchannick(l);
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -721,6 +755,8 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_getuserchanmodes", lua_getuserchanmodes);
 
+  lua_register(l, "irc_getfirstchannick", lua_getfirstchannick);
+  lua_register(l, "irc_getnextchannick", lua_getnextchannick);
 
   lua_register(l, "irc_gethostusers", lua_gethostusers);
   lua_register(l, "irc_getnickcountry", lua_getnickcountry);
