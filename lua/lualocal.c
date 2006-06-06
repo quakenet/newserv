@@ -295,45 +295,69 @@ static int lua_localnotice(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
-static int lua_localovmode(lua_State *ps) {
-  char *mode;
-  nick *source, *target;
+static int lua_localovmode(lua_State *l) {
+  nick *source;
   channel *chan;
-  int add, realmode;
+  int state = 0, add, realmode, ignoring = 0;
+  modechanges changes;
 
-  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isboolean(ps, 3) || !lua_isstring(ps, 4) || !lua_islong(ps, 5))
-    LUA_RETURN(ps, LUA_FAIL);
+  if(!lua_islong(l, 1) || !lua_isstring(l, 2) || !lua_istable(l, 3))
+    LUA_RETURN(l, LUA_FAIL);
 
-  source = getnickbynumeric(lua_tolong(ps, 1));
+  source = getnickbynumeric(lua_tolong(l, 1));
   if(!source)
-    LUA_RETURN(ps, LUA_FAIL);
+    LUA_RETURN(l, LUA_FAIL);
 
-  chan = findchannel((char *)lua_tostring(ps, 2));
+  chan = findchannel((char *)lua_tostring(l, 2));
   if(!chan)
-    LUA_RETURN(ps, LUA_FAIL);
+    LUA_RETURN(l, LUA_FAIL);
 
-  add = (int)lua_toboolean(ps, 3);
-  mode = (char *)lua_tostring(ps, 4);
+  localsetmodeinit(&changes, chan, source);
 
-  target = getnickbynumeric(lua_tolong(ps, 5));
-  if(!target)
-    LUA_RETURN(ps, LUA_FAIL);
+  lua_pushnil(l);
 
-  if((*mode == 'o') && add) {
-    realmode = MC_OP;
-  } else if (*mode == 'o') {
-    realmode = MC_DEOP;
-  } else if((*mode == 'v') && add) {
-    realmode = MC_VOICE;
-  } else if (*mode == 'v') {
-    realmode = MC_DEVOICE;
-  } else {
-    LUA_RETURN(ps, LUA_FAIL);
+  while(lua_next(l, 3)) {
+    if(state == 0) {
+      ignoring = 0;
+
+      if(!lua_isboolean(l, -1)) {
+        ignoring = 1;
+      } else {
+        add = (int)lua_toboolean(l, -1);
+      }
+    } else if((state == 1) && !ignoring) {
+      if(!lua_isstring(l, -1)) { 
+        ignoring = 1;
+      } else {
+        char *mode = (char *)lua_tostring(l, -1);
+        if((*mode == 'o') && add) {
+          realmode = MC_OP;
+        } else if (*mode == 'o') {
+          realmode = MC_DEOP;
+        } else if((*mode == 'v') && add) {
+          realmode = MC_VOICE;
+        } else if (*mode == 'v') {
+          realmode = MC_DEVOICE;      
+        } else {
+          ignoring = 1;
+        }
+      }
+    } else if((state == 2) && !ignoring) {
+      if(lua_islong(l, -1)) {
+        nick *target = getnickbynumeric(lua_tolong(l, -1));
+        if(target)
+          localdosetmode_nick(&changes, target, realmode);
+      }
+    }
+
+    lua_pop(l, 1);
+
+    state = (state + 1) % 3;
   }
 
-  localsetmodes(source, chan, target, realmode);
+  localsetmodeflush(&changes, 1);
 
-  LUA_RETURN(ps, LUA_OK);
+  LUA_RETURN(l, LUA_OK);
 }
 
 static int lua_localtopic(lua_State *ps) {

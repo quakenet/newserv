@@ -866,14 +866,14 @@ void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, str
   if(max > 0)
     lp[0] = NULL;
 
-  if(!lua_istable(l, -1) || (max < 2))
+  if(!lua_istable(l, index) || (max < 2))
     return;
     
   lua_pushnil(l);
 
   max--;
 
-  while (lua_next(l, index)) {
+  while(lua_next(l, index)) {
     if(lua_isstring(l, -1)) {
         char *name = (char *)lua_tostring(l, -1);
 
