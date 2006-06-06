@@ -15,7 +15,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 
-MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 694 2006-06-06 19:55:40Z newserv $")
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -30,7 +30,7 @@ void _init() {
 
   addcommandtotree(trojanscan_cmds, "changelev", TROJANSCAN_ACL_STAFF | TROJANSCAN_ACL_OPER, 2, &trojanscan_changelev);
   addcommandtotree(trojanscan_cmds, "deluser", TROJANSCAN_ACL_TEAMLEADER | TROJANSCAN_ACL_OPER, 2, &trojanscan_deluser);
-  addcommandtotree(trojanscan_cmds, "mew", TROJANSCAN_ACL_STAFF | TROJANSCAN_ACL_OPER, 2, &trojanscan_mew);
+  addcommandtotree(trojanscan_cmds, "mew", TROJANSCAN_ACL_STAFF, 2, &trojanscan_mew);
   addcommandtotree(trojanscan_cmds, "status", TROJANSCAN_ACL_STAFF | TROJANSCAN_ACL_OPER, 0, &trojanscan_status);
   addcommandtotree(trojanscan_cmds, "listusers", TROJANSCAN_ACL_TEAMLEADER, 0, &trojanscan_listusers);
 
@@ -182,7 +182,7 @@ void trojanscan_connect(void *arg) {
     return; /* PPA: module failed to load */
   }
   
-  trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL, dateadded int(10))");
+  trojanscan_database_query("CREATE TABLE phrases (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormid INT(10) NOT NULL, phrase TEXT NOT NULL, priority INT(10) DEFAULT 0 NOT NULL, dateadded int(10), disabled BOOL DEFAULT 0 NOT NULL)");
   trojanscan_database_query("CREATE TABLE worms (id INT(10) PRIMARY KEY AUTO_INCREMENT, wormname TEXT NOT NULL, glinetype INT DEFAULT 0, data text, hitmsgs BOOL DEFAULT 1, hitchans BOOL DEFAULT 0, epidemic BOOL DEFAULT 0, privinfo text)");
   trojanscan_database_query("CREATE TABLE logs (id INT(10) PRIMARY KEY AUTO_INCREMENT, userid INT(10) NOT NULL, act TEXT NOT NULL, description TEXT NOT NULL, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE channels (id INT(10) PRIMARY KEY AUTO_INCREMENT, channel VARCHAR(%d) NOT NULL, exempt BOOL DEFAULT 0)", CHANNELLEN);
@@ -432,7 +432,7 @@ void trojanscan_read_database(int first_time) {
     }
   } 
   
-  if (!(trojanscan_database_query("SELECT id, phrase, wormid FROM phrases ORDER BY priority DESC"))) {
+  if (!(trojanscan_database_query("SELECT id, phrase, wormid FROM phrases WHERE disabled = 0 ORDER BY priority DESC"))) {
     if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
       trojanscan_database.total_phrases = trojanscan_database_num_rows(res);
       if (trojanscan_database.total_phrases > 0) {
@@ -704,6 +704,10 @@ int trojanscan_mew(void *sender, int cargc, char **cargv) {
   } else {
     trojanscan_reply(np, "Mewed at %s at %s.", cargv[1], np2->nick);
   }
+
+  if(!IsOper(np))
+    trojanscan_mainchanmsg("n: mew: %s %s (%s/%s)", cargv[1], cp?cp->index->name->content:np2->nick, np->nick, np->authname);
+
   return CMD_OK;
 }
 
@@ -1819,7 +1823,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
                 if (pcre_copy_substring(text, vector, pre, 1, matchbuf, sizeof(matchbuf) - 1) <= 0)
                   matchbuf[0] = 0;
               
-              trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+              trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s p: %d %s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, trojanscan_database.phrases[i].id, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
 /*              trojanscan_peonchanmsg("m: t: %c u: %s!%s@%s%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, (IsHideHost(sender)&&IsAccount(sender))?sender->authname:sender->host->name->content, (IsHideHost(sender)&&IsAccount(sender))?"."HIS_HIDDENHOST:"", mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:""); */
             } else {
               int glinetime = TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1);
@@ -1829,9 +1833,9 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);          
               trojanscan_database.glines++;
               
-              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a trojan (%s), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, sender->nick, sender->ident, sender->host->name->content, worm->name->content, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, sender->nick, sender->ident, sender->host->name->content, worm->name->content, trojanscan_database.phrases[i].id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
 
-              trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", frequency);
+              trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", trojanscan_database.phrases[i].id, frequency);
             }
             
             break;
