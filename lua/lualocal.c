@@ -361,6 +361,75 @@ static int lua_localtopic(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localban(lua_State *ps) {
+  channel *cp;
+  const char *mask;
+  modechanges changes;
+  nick *source;
+
+  int dir = MCB_ADD;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(lua_isboolean(ps, 4) && lua_toboolean(ps, 4))
+    dir = MCB_DEL;
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+
+  cp = findchannel((char *)lua_tostring(ps, 2));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  mask = lua_tostring(ps, 3);
+  if(!mask || !mask[0] || !lua_lineok(mask))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodeinit(&changes, cp, source);
+  localdosetmode_ban(&changes, mask, dir);
+  localsetmodeflush(&changes, 1);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_localkick(lua_State *ps) {
+  const char *n, *msg, *chan;
+  nick *source, *np;
+  channel *cp;
+  int dochecks = 1;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3) || !lua_isstring(ps, 4))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  chan = lua_tostring(ps, 2);
+  n = lua_tostring(ps, 3);
+  msg = lua_tostring(ps, 4);
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(lua_isboolean(ps, 4) && !lua_toboolean(ps, 4))
+    dochecks = 0;
+
+  np = getnickbynick(n);
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(dochecks && (IsOper(np) || IsXOper(np) || IsService(np)))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)chan);
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(!lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localkickuser(source, cp, np, msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localregisteruser", lua_registerlocaluser);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
@@ -372,5 +441,7 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localovmode", lua_localovmode);
   lua_register(l, "irc_localtopic", lua_localtopic);
 
+  lua_register(l, "irc_localban", lua_localban);
+  lua_register(l, "irc_localkick", lua_localkick);
 }
 

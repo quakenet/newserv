@@ -675,6 +675,20 @@ static int lua_getuserchanmodes(lua_State *l) {
   return 1;
 }
 
+static int lua_getusermodes(lua_State *l) {
+  nick *np;
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_pushstring(l, printflags(np->umodes, umodeflags));
+  return 1;
+}
+
 static int lua_getnickbynick(lua_State *l) {
   nick *np;
 
@@ -783,6 +797,7 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_getfirstchan", lua_getfirstchan);
   lua_register(l, "irc_getnextchan", lua_getnextchan);
+  lua_register(l, "irc_getusermodes", lua_getusermodes);
 }
 
 /* --- */
