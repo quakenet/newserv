@@ -22,7 +22,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.60"
+#define LUA_BOTVERSION "1.62"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -99,28 +99,12 @@ extern struct rusage r_usagee;
 
 #define ACCOUNTING_STOP(l) getrusage(RUSAGE_SELF, &r_usagee); SET_TIMEDIFF(l, r_usages, r_usagee); }
 
-#else
-
-#define ACCOUNTING_START(l) ;
-#define ACCOUNTING_STOP(l) ;
-
 #endif
 
 #ifdef LUA_DEBUGSOCKET
 
 void lua_debugoutput(char *p, ...);
 #define DEBUGOUT(p, ...) lua_debugoutput(p , ##__VA_ARGS__)
-#define lua_debugpcall(l, message, ...) { lua_list *l2 = lua_listfromstate(l); DEBUGOUT("%s: %s\n", l2->name->content, message); ACCOUNTING_START(l2); lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2); }
-
-#else
-
-#define DEBUGOUT(p, ...)
-
-#ifdef LUA_PROFILE
-#define lua_debugpcall(l, message, ...) { lua_list *l2 = lua_listfromstate(l); ACCOUNTING_START(l2); lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2); }
-#else
-#define lua_debugpcall(l, message, ...) lua_pcall(l , ##__VA_ARGS__); ACCOUNTING_STOP(l2);
-#endif
 
 #endif
 
@@ -139,5 +123,7 @@ void lua_debugoutput(char *p, ...);
 #endif
 
 #endif /* INLINE */
+
+INLINE int lua_debugpcall(lua_State *l, char *message, int a, int b, int c);
 
 #endif

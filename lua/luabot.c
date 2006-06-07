@@ -175,15 +175,17 @@ endwhile:
 
   nres = strlen(sig);
 
-  lua_debugpcall(l, function, narg, nres, top + 1);
-
-  nres = -nres;
-  while(*sig) {
-    switch(*sig++) {
-      default:
-        Error("lua", ERR_ERROR, "Unable to parse vpcall return structure (%c)", *(sig - 1));
+  if(lua_debugpcall(l, (mode==LUA_CHARMODE)?function:"some_handler", narg, nres, top + 1)) {
+    Error("lua", ERR_ERROR, "Error pcalling %s: %s.", (mode==LUA_CHARMODE)?function:"some_handler", lua_tostring(l, -1));
+  } else {
+    nres = -nres;
+    while(*sig) {
+      switch(*sig++) {
+        default:
+          Error("lua", ERR_ERROR, "Unable to parse vpcall return structure (%c)", *(sig - 1));
+      }
+      nres++;
     }
-    nres++;
   }
 
   lua_settop(l, top);

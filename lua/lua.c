@@ -14,7 +14,7 @@
 
 #include "lua.h"
 
-MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 677 2006-05-24 00:25:04Z newserv $")
+MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 699 2006-06-07 14:17:26Z newserv $")
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -223,7 +223,7 @@ lua_State *lua_loadscript(char *file) {
   top = lua_gettop(l);
 
   if(lua_pcall(l, 0, 0, 0)) {
-    Error("lua", ERR_ERROR, "Error setting pcall on %s.", file);
+    Error("lua", ERR_ERROR, "Error pcalling: %s.", file);
     lua_close(l);
     freesstring(n->name);
     free(n);
@@ -425,4 +425,24 @@ int lua_lineok(const char *data) {
   return 1;
 }
 
+INLINE int lua_debugpcall(lua_State *l, char *message, int a, int b, int c) {
+  lua_list *l2 = lua_listfromstate(l);
+  int ret;
+
+#ifdef LUA_DEBUGSOCKET
+  DEBUGOUT("%s: %s\n", l2->name->content, message);
+#endif
+
+#ifdef LUA_PROFILE
+  ACCOUNTING_START(l2);
+#endif
+
+  ret = lua_pcall(l, a, b, c);
+
+#ifdef LUA_PROFILE
+  ACCOUNTING_STOP(l2);
+#endif
+
+  return ret;
+}
 
