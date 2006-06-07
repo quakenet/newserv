@@ -14,6 +14,8 @@
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 
 array modules;
 
@@ -55,9 +57,9 @@ void initmodules() {
 }
 
 int insmod(char *modulename) {
-  int i;
+  int i, n;
   module *mods;
-  char buf[512];
+  char buf[1024], buf2[1024]; /* must be the same! */
   const char *(*verinfo)(void);
 
   delchars(modulename,"./\\;");
@@ -76,6 +78,23 @@ int insmod(char *modulename) {
   mods=(module *)(modules.content);
   
   sprintf(buf,"%s/%s%s",moddir->content,modulename,modsuffix->content);
+
+  for(;;) {
+    n = readlink(buf, buf2, sizeof(buf2));
+    if(n == -1) {
+      if(errno == EINVAL) {
+        break;
+      } else {
+        Error("core",ERR_ERROR,"Loading symlink module %s failed: %s",modulename, strerror(errno));
+        array_delslot(&modules,i);
+        return -1;
+      }
+    }
+
+    buf2[n] = '\0';
+    memcpy(buf, buf2, sizeof(buf));
+  }
+
   mods[i].handle=dlopen(buf,RTLD_NOW|RTLD_GLOBAL);
   
   if(mods[i].handle==NULL) {

@@ -94,6 +94,8 @@ static int lua_deregisterlocaluser(lua_State *ps) {
   if(!lua_islong(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
+  numeric = lua_tolong(ps, 1);
+
   quitm = lua_isstring(ps, 2)?(char *)lua_tostring(ps, 2):"localuser unregistered.";
 
   l = lua_listfromstate(ps);
