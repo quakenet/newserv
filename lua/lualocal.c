@@ -102,7 +102,12 @@ static int lua_deregisterlocaluser(lua_State *ps) {
 
   for(l2=l->nicks;l2;lp=l2,l2=l2->next) {
     if(l2->nick->numeric == numeric) {
-      lp->next = l2->next;
+      if(lp) {
+        lp->next = l2->next;
+      } else {
+        l->nicks = l2->next;
+      }
+
       lua_freelocalnick(ps, l2, quitm);
       LUA_RETURN(ps, LUA_OK);
     }
