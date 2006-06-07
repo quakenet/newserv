@@ -22,7 +22,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.62"
+#define LUA_BOTVERSION "1.65"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -31,10 +31,6 @@
 #endif
 
 #define LUA_PROFILE
-
-#ifndef LUA_NOJIT
-#define LUA_USEJIT
-#endif
 
 #define LUA_DEBUGSOCKET_ADDRESS "127.0.0.1"
 #define LUA_DEBUGSOCKET_PORT 7733

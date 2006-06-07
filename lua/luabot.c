@@ -206,7 +206,7 @@ void lua_bothandler(nick *target, int type, void **args) {
       if(!np || !p)
         return;
 
-      lua_avpcall("irc_onmsg", "Ns", np, p);
+      lua_avpcall("irc_onmsg", "ls", np->numeric, p);
 
       break;
     case LU_PRIVNOTICE:
@@ -221,7 +221,7 @@ void lua_bothandler(nick *target, int type, void **args) {
         if(p[le - 1] == '\001')
           p[le - 1] = '\000';
 
-        lua_avpcall("irc_onctcp", "Ns", np, p + 1);
+        lua_avpcall("irc_onctcp", "ls", np->numeric, p + 1);
 
       }
 
@@ -259,7 +259,7 @@ void lua_onnewnick(int hooknum, void *arg) {
   if(!np)
     return;
 
-  lua_avpcall("irc_onnewnick", "N", np);
+  lua_avpcall("irc_onnewnick", "l", np->numeric);
 }
 
 void lua_onkick(int hooknum, void *arg) {
@@ -272,7 +272,11 @@ void lua_onkick(int hooknum, void *arg) {
   if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
     return;
 
-  lua_avpcall("irc_onkick", "SNNs", ci->name, kicked, kicker, message);
+  if(kicker) {
+    lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker, message);
+  } else {
+    lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
+  }
 }
 
 void lua_ontopic(int hooknum, void *arg) {
@@ -285,7 +289,7 @@ void lua_ontopic(int hooknum, void *arg) {
   if(!cp || !cp->topic) 
     return;
 
-  lua_avpcall("irc_ontopic", "SNS", cp->index->name, np, cp->topic);
+  lua_avpcall("irc_ontopic", "SlS", cp->index->name, np->numeric, cp->topic);
 }
 
 void lua_onop(int hooknum, void *arg) {
@@ -298,9 +302,9 @@ void lua_onop(int hooknum, void *arg) {
     return;
 
   if(np) {
-    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "SNN", ci->name, np, target);
+    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "Sll", ci->name, np->numeric, target->numeric);
   } else {
-    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "S0N", ci->name, target);
+    lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "S0l", ci->name, target->numeric);
   }
 }
 
@@ -312,7 +316,7 @@ void lua_onjoin(int hooknum, void *arg) {
   if(!ci || !np)
     return;
 
-  lua_avpcall("irc_onjoin", "SN", ci->name, np);
+  lua_avpcall("irc_onjoin", "Sl", ci->name, np->numeric);
 }
 
 void lua_onpart(int hooknum, void *arg) {
@@ -323,7 +327,7 @@ void lua_onpart(int hooknum, void *arg) {
   if(!ci || !np)
     return;
 
-  lua_avpcall("irc_onpart", "SN", ci->name, np);
+  lua_avpcall("irc_onpart", "Sl", ci->name, np->numeric);
 }
 
 void lua_onrename(int hooknum, void *arg) {
@@ -332,7 +336,7 @@ void lua_onrename(int hooknum, void *arg) {
   if(!np)
     return;
 
-  lua_avpcall("irc_onrename", "N", np);
+  lua_avpcall("irc_onrename", "l", np->numeric);
 }
 
 void lua_onquit(int hooknum, void *arg) {
@@ -341,7 +345,7 @@ void lua_onquit(int hooknum, void *arg) {
   if(!np)
     return;
 
-  lua_avpcall("irc_onquit", "N", np);
+  lua_avpcall("irc_onquit", "l", np->numeric);
 }
 
 void lua_onauth(int hooknum, void *arg) {
@@ -350,7 +354,7 @@ void lua_onauth(int hooknum, void *arg) {
   if(!np)
     return;
 
-  lua_avpcall("irc_onauth", "N", np);
+  lua_avpcall("irc_onauth", "l", np->numeric);
 }
 
 void lua_ondisconnect(int hooknum, void *arg) {

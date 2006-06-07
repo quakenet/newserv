@@ -558,7 +558,7 @@ static int lua_chanfix(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   cp = findchannel((char *)lua_tostring(ps, 1));
-  if(!cp)
+  if(!cp || !cp->index)
     LUA_RETURN(ps, LUA_FAIL);
 
   np = getnickbynick(LUA_CHANFIXBOT);
@@ -581,7 +581,7 @@ static int lua_clearmode(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   cp = findchannel((char *)lua_tostring(ps, 1));
-  if(!cp)
+  if(!cp || !cp->users)
     LUA_RETURN(ps, LUA_FAIL);
 
   localsetmodeinit(&changes, cp, lua_nick);
@@ -664,7 +664,7 @@ static int lua_getuserchanmodes(lua_State *l) {
     return 0;
 
   cp = findchannel((char *)lua_tostring(l, 2));
-  if(!cp)
+  if(!cp || !cp->users)
     return 0;
 
   lp = getnumerichandlefromchanhash(cp->users, np->numeric);
@@ -717,6 +717,21 @@ static int lua_getnickbynumeric(lua_State *l) {
   return 1;
 }
 
+static int lua_fastgetnickbynumeric(lua_State *l) {
+  static struct lua_pusher *ourpusher[MAX_PUSHER];
+  nick *np;
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_setupnickpusher(l, 2, ourpusher, MAX_PUSHER);
+  return lua_usepusher(l, ourpusher, np);
+}
+
 int channelnicklistindex, channelnicklistcount = -1;
 channel *channelnicklist;
 
@@ -749,6 +764,21 @@ static int lua_getfirstchannick(lua_State *l) {
   lua_setupnickpusher(l, 2, channelnickpusher, MAX_PUSHER);
 
   return lua_getnextchannick(l);
+}
+
+static int lua_nickonchan(lua_State *l) {
+  int success = 0;
+  if(lua_islong(l, 1) && lua_isstring(l, 2)) {
+    channel *cp = findchannel((char *)lua_tostring(l, 2));
+    if(cp && cp->users) {
+      unsigned long *lp = getnumerichandlefromchanhash(cp->users, lua_tolong(l, 1));
+      if(lp)
+        success = 1;
+    }    
+  }
+
+  lua_pushboolean(l, success);
+  return 1;
 }
 
 void lua_registercommands(lua_State *l) {
@@ -798,6 +828,9 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_getfirstchan", lua_getfirstchan);
   lua_register(l, "irc_getnextchan", lua_getnextchan);
   lua_register(l, "irc_getusermodes", lua_getusermodes);
+  lua_register(l, "irc_nickonchan", lua_nickonchan);
+
+  lua_register(l, "irc_fastgetnickbynumeric", lua_fastgetnickbynumeric);
 }
 
 /* --- */
