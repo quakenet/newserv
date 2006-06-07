@@ -66,7 +66,7 @@ int handle_scriptcommand(struct rline *li, int argc, char **argv) {
     return ret;
   }
 
-  if(!lua_isint(l, -1) || !lua_isstring(l, -2)) {
+  if(!lua_isint(l, -2) || !lua_isstring(l, -1)) {
     lua_settop(l, top);
     return ri_error(li, ERR_SCRIPT_RETURN_ERROR, "Script didn't return expected values.");
   }
