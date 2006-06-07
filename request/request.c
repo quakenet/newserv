@@ -509,7 +509,7 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
     if(cp->users->content[a] != nouser) {
       np2 = getnickbynumeric(cp->users->content[a]);
 
-      if (IsService(np2) && !(cp->users->content[a] & CUMODE_OP)) {
+      if (IsService(np2) && (np2->nick[1] == '\0') && !(cp->users->content[a] & CUMODE_OP)) {
         localdosetmode_nick(&changes, np2, MC_OP);
         count++;
       }
