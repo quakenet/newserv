@@ -35,17 +35,16 @@ typedef struct lua_pusher {
 
 struct lua_pusher nickpusher[MAX_PUSHER];
 struct lua_pusher chanpusher[MAX_PUSHER];
+int nickpushercount, chanpushercount;
 
-void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max);
-
-void lua_initnickpusher(void);
+INLINE void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount);
 INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np);
 
+void lua_initnickpusher(void);
 void lua_initchanpusher(void);
-INLINE int lua_usechanpusher(lua_State *l, struct lua_pusher **lp, nick *np);
 
-#define lua_setupnickpusher(L2, I2, P2, M2) lua_setuppusher(&nickpusher[0], L2, I2, P2, M2)
-#define lua_setupchanpusher(L2, I2, P2, M2) lua_setuppusher(&chanpusher[0], L2, I2, P2, M2)
+#define lua_setupnickpusher(L2, I2, P2, M2) lua_setuppusher(&nickpusher[0], L2, I2, P2, M2, nickpushercount)
+#define lua_setupchanpusher(L2, I2, P2, M2) lua_setuppusher(&chanpusher[0], L2, I2, P2, M2, chanpushercount)
 
 int lua_cmsg(char *channell, char *message, ...) {
   char buf[512];
@@ -889,12 +888,12 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_IP, ipaddress);
   PUSH_NICKPUSHER(PUSHER_LONG, numeric);
 
+  nickpushercount = i;
   nickpusher[i].argtype = 0;
 }
 
-void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max) {
+INLINE void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount) {
   int current = 0;
-  struct lua_pusher *f;
 
   if(max > 0)
     lp[0] = NULL;
@@ -907,15 +906,10 @@ void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, str
   max--;
 
   while(lua_next(l, index)) {
-    if(lua_isstring(l, -1)) {
-        char *name = (char *)lua_tostring(l, -1);
-
-      for(f=pusherlist;f->argtype;f++)
-        if(!strcmp(f->structname, name))
-          break;
-
-      if(f->argtype)
-        lp[current++] = f;
+    if(lua_isint(l, -1)) {
+      int index = lua_toint(l, -1);
+      if((index >= 0) && (index < pcount))
+        lp[current++] = &pusherlist[index];
     }
 
     lua_pop(l, 1);
@@ -980,5 +974,6 @@ void lua_initchanpusher(void) {
   PUSH_CHANPUSHER(PUSHER_TOTALUSERS, channel, "totalusers");
   PUSH_CHANPUSHER(PUSHER_TOPIC, channel, "topic");
 
+  chanpushercount = i;
   chanpusher[i].argtype = 0;
 }

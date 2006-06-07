@@ -273,7 +273,7 @@ void lua_onkick(int hooknum, void *arg) {
     return;
 
   if(kicker) {
-    lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker, message);
+    lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
   } else {
     lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
   }
