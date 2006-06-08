@@ -10,7 +10,7 @@
 #include "../nterface/library.h"
 #include "../nterface/nterfacer.h"
 
-MODULE_VERSION("$Id: nterfacer_lua.c 725 2006-06-08 19:17:35Z newserv $")
+MODULE_VERSION("$Id: nterfacer_lua.c 726 2006-06-08 19:25:55Z newserv $")
 
 #define ERR_SCRIPT_NOT_FOUND            0x01
 #define ERR_SCRIPT_ERROR                0x02
@@ -97,7 +97,7 @@ int handle_scriptcommand(struct rline *li, int argc, char **argv) {
   } else {
     lua_pushnil(l);
 
-    while(lua_next(l, -1)) {
+    while(lua_next(l, -2)) {
       if(!lua_isstring(l, -1)) {
         lua_pop(l, 1);
         lua_settop(l, top);
