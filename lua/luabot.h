@@ -12,6 +12,7 @@ int lua_channelmessage(channel *cp, char *message, ...);
 int lua_message(nick *np, char *message, ...);
 int lua_notice(nick *np, char *message, ...);
 int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...);
+char *printallmodes(channel *cp);
 
 nick *lua_nick;
 
@@ -27,7 +28,7 @@ nick *lua_nick;
 
 #define LUA_PUSHNICK(l, np) { lua_newtable(l); LUA_TPUSHSTRING(l, "nick", np->nick); LUA_TPUSHSTRING(l, "ident", np->ident); LUA_TPUSHSTRING(l, "hostname", np->host->name->content); LUA_TPUSHSTRING(l, "realname", np->realname->name->content); LUA_TPUSHSTRING(l, "account", np->authname); LUA_TPUSHNUMBER(l, "numeric", np->numeric); LUA_TPUSHSTRING(l, "ip", IPtostr(np->ipaddress)); }
 
-#define LUA_PUSHCHAN(l, cp) { lua_newtable(l); LUA_TPUSHNUMBER(l, "timestamp", cp->timestamp); LUA_TPUSHNUMBER(l, "totalusers", cp->users->totalusers); if(cp->topic) { LUA_TPUSHSTRING(l, "topic", cp->topic->content); } }
+#define LUA_PUSHCHAN(l, cp) { lua_newtable(l); LUA_TPUSHNUMBER(l, "timestamp", cp->timestamp); LUA_TPUSHNUMBER(l, "totalusers", cp->users->totalusers); if(cp->topic) { LUA_TPUSHSTRING(l, "topic", cp->topic->content); }; LUA_TPUSHSTRING(l, "modes", printallmodes(cp)); }
 
 #define LUA_PUSHNICKCHANMODES(l, lp) { lua_newtable(l); LUA_TPUSHBOOLEAN(l, "opped", (*lp & CUMODE_OP) != 0); LUA_TPUSHBOOLEAN(l, "voiced", (*lp & CUMODE_VOICE) != 0); }
 

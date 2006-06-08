@@ -411,3 +411,16 @@ int lua_notice(nick *np, char *message, ...) {
 
   return 0;
 }
+
+char *printallmodes(channel *cp) {
+  static char buf[1024];
+  char buf2[12];
+
+  if(IsLimit(cp))
+    snprintf(buf2, sizeof(buf2), "%d", cp->limit);
+
+  snprintf(buf, sizeof(buf), "%s %s%s%s", printflags(cp->flags, cmodeflags), IsLimit(cp)?buf2:"", IsLimit(cp)?" ":"", IsKey(cp)?cp->key->content:"");
+
+  return buf;
+}
+
