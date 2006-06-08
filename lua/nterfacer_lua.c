@@ -16,6 +16,7 @@ MODULE_VERSION("$Id")
 #define ERR_SCRIPT_ERROR                0x02
 #define ERR_NO_NTERFACER                0x03
 #define ERR_SCRIPT_RETURN_ERROR         0x04
+#define ERR_DATA_INVALID                0x05
 #define ERROR_SCRIPT_ERROR_OFFSET       1000
 
 int handle_scriptcommand(struct rline *li, int argc, char **argv);
@@ -40,8 +41,8 @@ int handle_scriptcommand(struct rline *li, int argc, char **argv) {
   lua_State *l;
   int top;
   int iresult = 0;
-  char *cresult;
   int ret, i;
+  char *cresult = NULL;
 
   if(!l2)
     return ri_error(li, ERR_SCRIPT_NOT_FOUND, "Script not found.");
@@ -66,20 +67,59 @@ int handle_scriptcommand(struct rline *li, int argc, char **argv) {
     return ret;
   }
 
-  if(!lua_isint(l, -2) || !lua_isstring(l, -1)) {
+  if(!lua_isint(l, -2) || (!lua_isstring(l, -1) && !lua_istable(l, -1))) {
     lua_settop(l, top);
     return ri_error(li, ERR_SCRIPT_RETURN_ERROR, "Script didn't return expected values.");
   }
 
-  iresult = lua_toint(l, -2);
-  cresult = (char *)lua_tostring(l, -1);
-  if(iresult) {
-    ret = ri_error(li, iresult + ERROR_SCRIPT_ERROR_OFFSET, "Script error: %s", cresult);
-    lua_settop(l, top);
-    return ret;
+  if(lua_isstring(l, -1)) {
+    cresult = (char *)lua_tostring(l, -1);
+    if(!lua_lineok(cresult)) {
+      lua_settop(l, top);
+      return ri_error(li, ERR_DATA_INVALID, "Script returned bad data.");
+    }
   }
 
-  ret = ri_append(li, "%s", cresult);
+  iresult = lua_toint(l, -2);
+  if(iresult) {
+    if(!lua_isstring(l, -1)) {
+      lua_settop(l, top);
+      return ri_error(li, ERR_SCRIPT_RETURN_ERROR, "Script didn't return expected values.");
+    } else {
+      ret = ri_error(li, iresult + ERROR_SCRIPT_ERROR_OFFSET, "Script error: %s", cresult);
+      lua_settop(l, top);
+      return ret;
+    }
+  }
+
+  if(lua_isstring(l, -1)) {
+    ret = ri_append(li, "%s", cresult);
+  } else {
+    lua_pushnil(l);
+
+    while(lua_next(l, -1)) {
+      if(!lua_isstring(l, -1)) {
+        lua_pop(l, 1);
+        lua_settop(l, top);
+        return ri_error(li, ERR_SCRIPT_RETURN_ERROR, "Script didn't return expected values.");
+      } else {
+        cresult = (char *)lua_tostring(l, -1);
+        if(!lua_lineok(cresult)) {
+          lua_pop(l, 1);
+          lua_settop(l, top);
+          return ri_error(li, ERR_DATA_INVALID, "Script returned bad data.");
+        } else {
+          ret = ri_append(li, "%s", cresult);
+        }
+      }
+
+      lua_pop(l, 1);
+
+      if(ret == BF_OVER)
+        break;
+    }
+  }
+
   lua_settop(l, top);
 
   if(ret == BF_OVER)
