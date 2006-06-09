@@ -1201,7 +1201,7 @@ int cf_fixchannel(channel *cp) {
     if(cp->users->content[a] != nouser) {
       np = getnickbynumeric(cp->users->content[a]);
 
-      if (IsService(np)) {
+      if (IsService(np) && (np->nick[1] == '\0')) {
         localdosetmode_nick(&changes, np, MC_OP);
         count++;
       } else
@@ -1231,7 +1231,7 @@ int cf_fixchannel(channel *cp) {
     np = cf_findnick(rolist[i], cp->index);
 
     /* only if it's not a service, so we don't screw up 'count' */
-    if (np && !IsService(np)) {
+    if (np && !(IsService(np) && np->nick[1] == '\0')) {
       localdosetmode_nick(&changes, np, MC_OP);
 
       count++;
