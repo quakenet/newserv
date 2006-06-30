@@ -10,7 +10,7 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("$Id: newsearch.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("$Id: newsearch.c 735 2006-06-30 23:49:33Z newserv $")
 
 CommandTree *searchTree;
 
@@ -52,6 +52,7 @@ void _init() {
   registersearchterm("channel",channel_parse);
   registersearchterm("timestamp",timestamp_parse);
   registersearchterm("country",country_parse);
+  registersearchterm("ip",ip_parse);
 
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
