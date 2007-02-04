@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.63"
+#define TROJANSCAN_VERSION "2.64"
 
 #define TROJANSCAN_MAX_HOST_GLINE   5
 
@@ -55,9 +55,8 @@
 
 #define TROJANSCAN_CAT "./trojanscan/cat.txt"
 
-#define TROJANSCAN_CHANNEL "#qnet.sec.trj"
+#define TROJANSCAN_CHANNEL "#qnet.trj"
 #define TROJANSCAN_OPERCHANNEL "#twilightzone"
-#define TROJANSCAN_PEONCHANNEL "#qnet.trj"
 
 #define TROJANSCAN_URL_PREFIX "http://trojanscan.quakenet.org/?"
 
