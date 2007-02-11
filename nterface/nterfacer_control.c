@@ -1,26 +1,6 @@
 /*
   nterfacer newserv control module
-  Copyright (C) 2004-2005 Chris Porter.
-
-  v1.08
-    - added counthost, removed isaccounton (as it didn't do anything!)
-  v1.07
-    - added modes
-  v1.06
-    - seperated chanstats
-  v1.05
-    - modified whois to take into account channels with ','
-    - made ison take multiple arguments
-    - added isaccounton
-  v1.04
-    - added status/onchan/servicesonchan
-  v1.03
-    - added multiple targets for channel/nick notice/message commands
-  v1.02
-    - added channel message, nick message/notice commands
-    - generalised error messages
-  v1.01
-    - whois fixed to notice BUF_OVER
+  Copyright (C) 2004-2007 Chris Porter.
 */
 
 #include <string.h>
@@ -34,13 +14,15 @@
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
+#include "../authhash/authhash.h"
 
 #include "library.h"
 #include "nterfacer_control.h"
 
-MODULE_VERSION("$Id: nterfacer_control.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("$Id: nterfacer_control.c 745 2007-02-11 17:37:27Z newserv $")
 
 int handle_ison(struct rline *li, int argc, char **argv);
+int handle_isaccounton(struct rline *li, int argc, char **argv);
 int handle_whois(struct rline *li, int argc, char **argv);
 int handle_message(struct rline *li, int argc, char **argv);
 int handle_notice(struct rline *li, int argc, char **argv);
@@ -58,6 +40,7 @@ void _init(void) {
     return;
 
   register_handler(n_node, "ison", 1, handle_ison);
+  register_handler(n_node, "isaccounton", 1, handle_isaccounton);
   register_handler(n_node, "whois", 1, handle_whois);
   register_handler(n_node, "msg", 2, handle_message);
   register_handler(n_node, "notice", 2, handle_notice);
@@ -77,6 +60,15 @@ int handle_ison(struct rline *li, int argc, char **argv) {
   int i;
   for(i=0;i<argc;i++)
     if(ri_append(li, "%d", getnickbynick(argv[i])?1:0) == BF_OVER)
+      return ri_error(li, BF_OVER, "Buffer overflow");
+
+  return ri_final(li);
+}
+
+int handle_isaccounton(struct rline *li, int argc, char **argv) {
+  int i;
+  for(i=0;i<argc;i++)
+    if(ri_append(li, "%d", getnickbyauth(argv[i])?1:0) == BF_OVER)
       return ri_error(li, BF_OVER, "Buffer overflow");
 
   return ri_final(li);
