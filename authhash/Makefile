@@ -3,4 +3,4 @@
 all: authhash.so
 
 authhash.so: authhash.o
-	ld -shared -Bdynamic ${LIBMYSQL} -o $@ $^
+	ld -shared -Bdynamic -o $@ $^
