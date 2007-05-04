@@ -15,7 +15,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 
-MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 741 2007-02-04 16:35:22Z newserv $")
+MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 746 2007-05-04 15:21:20Z newserv $")
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -1572,6 +1572,8 @@ void trojanscan_handlemessages(nick *target, int messagetype, void **args) {
 
       /* Split the line into params */
       cargc = splitline((char *)args[1], cargv, 50, 0);
+      if(cargc == 0 || !cargv || !cargv[0])
+        return;
 
       cmd=findcommandintree(trojanscan_cmds, cargv[0], 1);
       if (!cmd) {
