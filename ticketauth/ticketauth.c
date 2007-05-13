@@ -57,6 +57,8 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
   acc = cargv[1];
   acclen = strlen(acc);
   expiry = atoi(cargv[2]);
+  junk = cargv[3];
+
   if((acclen <= 1) || (acclen > ACCOUNTLEN)) {
     controlreply(np, "Bad account.");
     return CMD_ERROR;
@@ -68,9 +70,10 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
-  snprintf(buffer, sizeof(buffer), "%s %d", acc, expiry);
+  snprintf(buffer, sizeof(buffer), " %s %d %s", acc, expiry, junk);
 
   SHA1Init(&context);
+  SHA1Update(&context, (unsigned char *)buffer, strlen(buffer));
   SHA1Update(&context, (unsigned char *)buffer, strlen(buffer));
   SHA1Final(shabuf, &context);
   
