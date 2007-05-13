@@ -10,7 +10,7 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("$Id: newsearch.c 735 2006-06-30 23:49:33Z newserv $")
+MODULE_VERSION("$Id: newsearch.c 786 2007-05-13 20:22:35Z newserv $")
 
 CommandTree *searchTree;
 

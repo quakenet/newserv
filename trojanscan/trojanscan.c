@@ -15,7 +15,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 
-MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 746 2007-05-04 15:21:20Z newserv $")
+MODULE_VERSION(TROJANSCAN_VERSION " / $Id: trojanscan.c 786 2007-05-13 20:22:35Z newserv $")
 
 void _init() {
   trojanscan_cmds = newcommandtree();
