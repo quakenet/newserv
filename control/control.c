@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-MODULE_VERSION("$Id: control.c 663 2006-05-16 17:27:36Z newserv $");
+MODULE_VERSION("");
 
 nick *hooknick;
 

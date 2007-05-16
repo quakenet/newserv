@@ -10,7 +10,7 @@
 #include "../nterface/library.h"
 #include "../nterface/nterfacer.h"
 
-MODULE_VERSION("$Id: nterfacer_lua.c 726 2006-06-08 19:25:55Z newserv $")
+MODULE_VERSION("");
 
 #define ERR_SCRIPT_NOT_FOUND            0x01
 #define ERR_SCRIPT_ERROR                0x02

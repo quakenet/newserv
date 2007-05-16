@@ -16,7 +16,7 @@
 
 #define WARN_CHANNEL "#fishcowcow"
 
-MODULE_VERSION("$Id")
+MODULE_VERSION("");
 
 sstring *sharedsecret = NULL;
 

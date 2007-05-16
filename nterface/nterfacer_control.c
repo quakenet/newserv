@@ -19,7 +19,7 @@
 #include "library.h"
 #include "nterfacer_control.h"
 
-MODULE_VERSION("$Id: nterfacer_control.c 745 2007-02-11 17:37:27Z newserv $")
+MODULE_VERSION("");
 
 int handle_ison(struct rline *li, int argc, char **argv);
 int handle_isaccounton(struct rline *li, int argc, char **argv);

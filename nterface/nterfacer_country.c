@@ -11,7 +11,7 @@
 #include "library.h"
 #include "nterfacer_control.h"
 
-MODULE_VERSION("$Id: nterfacer_country.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 int country_nickext = -1;
 

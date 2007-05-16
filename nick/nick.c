@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdio.h>
 
-MODULE_VERSION("$Id: nick.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 const flag umodeflags[] = {
    { 'i', UMODE_INV },

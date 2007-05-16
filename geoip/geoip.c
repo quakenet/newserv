@@ -13,7 +13,7 @@
 #include "libGeoIP/GeoIP.h"
 #include "geoip.h"
 
-MODULE_VERSION("$Id: geoip.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 int geoip_totals[COUNTRY_MAX + 1];
 int geoip_nickext = -1;

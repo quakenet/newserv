@@ -19,7 +19,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-MODULE_VERSION("$Id: noperserv.c 786 2007-05-13 20:22:35Z newserv $")
+MODULE_VERSION("");
 
 #define FLAGBUFLEN 100
 

@@ -14,7 +14,7 @@
 
 #include "lua.h"
 
-MODULE_VERSION(LUA_FULLVERSION " / $Id: lua.c 699 2006-06-07 14:17:26Z newserv $")
+MODULE_VERSION("");
 
 #ifdef LUA_DEBUGSOCKET
 

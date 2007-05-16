@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 
-MODULE_VERSION("$Id: irc.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 #define READBUFSIZE          32768
 #define MAX_SERVERARGS       20

@@ -11,7 +11,7 @@
 #include "regexgline.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("$Id: regexgline.c 665 2006-05-16 17:39:26Z newserv $")
+MODULE_VERSION("");
 
 typedef struct rg_glinenode {
   nick *np;

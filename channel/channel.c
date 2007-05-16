@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-MODULE_VERSION("$Id: channel.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 

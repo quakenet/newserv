@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <libpq-fe.h>
 
-MODULE_VERSION("$Id: noperserv_fakeuser.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 /* #define SIT_CHANNEL "#qnet.fakeusers" */
 #define KILL_WAIT 10

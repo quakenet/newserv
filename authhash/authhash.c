@@ -7,7 +7,7 @@
 #include "../lib/version.h"
 #include "authhash.h"
 
-MODULE_VERSION("$Id: authhash.c 743 2007-02-04 22:05:25Z newserv $")
+MODULE_VERSION("");
 
 #define AUTHHASHSIZE	40000
 #define authhash(x)	((crc32i(x))%AUTHHASHSIZE)

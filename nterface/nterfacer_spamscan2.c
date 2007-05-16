@@ -13,7 +13,7 @@
 #include "library.h"
 #include "nterfacer.h"
 
-MODULE_VERSION("$Id: nterfacer_spamscan2.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 #define ERR_TARGET_NOT_FOUND            0x01
 #define ERR_CHANNEL_NOT_REGISTERED      0x02

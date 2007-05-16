@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-MODULE_VERSION("$Id: localuser.c 663 2006-05-16 17:27:36Z newserv $")
+MODULE_VERSION("");
 
 int currentlocalunum;
 UserMessageHandler umhandlers[MAXLOCALUSER+1];
