@@ -14,7 +14,7 @@
 
 #include "lua.h"
 
-MODULE_VERSION("");
+MODULE_VERSION(LUA_FULLVERSION);
 
 #ifdef LUA_DEBUGSOCKET
 
