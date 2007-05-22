@@ -1,4 +1,4 @@
-/* Copyright (C) Chris Porter 2005-2006 */
+/* Copyright (C) Chris Porter 2005-2007 */
 /* ALL RIGHTS RESERVED. */
 /* Don't put this into the SVN repo. */
 
@@ -15,6 +15,7 @@
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
 #include "../lib/irc_string.h"
+#include "../lib/flags.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -780,6 +781,37 @@ static int lua_nickonchan(lua_State *l) {
   return 1;
 }
 
+static int lua_simplechanmode(lua_State *ps) {
+  channel *cp;
+  char *modes;
+  flag_t add = 0, del = ~add;
+  flag_t permitted = CHANMODE_NOEXTMSG | CHANMODE_TOPICLIMIT | CHANMODE_SECRET | CHANMODE_PRIVATE | CHANMODE_INVITEONLY | CHANMODE_MODERATE | CHANMODE_NOCOLOUR | CHANMODE_NOCTCP | CHANMODE_REGONLY | CHANMODE_DELJOINS | CHANMODE_NOQUITMSG | CHANMODE_NONOTICE;
+  modechanges changes;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 1));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  modes = (char *)lua_tostring(ps, 2);
+  if(!modes)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(setflags(&add, permitted, modes, cmodeflags, REJECT_DISALLOWED|REJECT_UNKNOWN) != REJECT_NONE)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(setflags(&del, permitted, modes, cmodeflags, REJECT_DISALLOWED|REJECT_UNKNOWN) != REJECT_NONE)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodeinit(&changes, cp, lua_nick);
+  localdosetmode_simple(&changes, add, ~del);
+  localsetmodeflush(&changes, 1);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -830,6 +862,8 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_nickonchan", lua_nickonchan);
 
   lua_register(l, "irc_fastgetnickbynumeric", lua_fastgetnickbynumeric);
+
+  lua_register(l, "irc_simplechanmode", lua_simplechanmode);
 }
 
 /* --- */

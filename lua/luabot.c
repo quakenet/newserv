@@ -33,6 +33,7 @@ void lua_onjoin(int hooknum, void *arg);
 void lua_onpart(int hooknum, void *arg);
 
 void lua_registerevents(void) {
+  registerhook(HOOK_CHANNEL_MODECHANGE, &lua_onmode);
   registerhook(HOOK_NICK_NEWNICK, &lua_onnewnick);
   registerhook(HOOK_IRC_DISCON, &lua_ondisconnect);
   registerhook(HOOK_IRC_PRE_DISCON, &lua_ondisconnect);
@@ -66,6 +67,7 @@ void lua_deregisterevents(void) {
   deregisterhook(HOOK_IRC_PRE_DISCON, &lua_ondisconnect);
   deregisterhook(HOOK_IRC_DISCON, &lua_ondisconnect);
   deregisterhook(HOOK_NICK_NEWNICK, &lua_onnewnick);
+  deregisterhook(HOOK_CHANNEL_MODECHANGE, &lua_onmode);
 }
 
 void lua_startbot(void *arg) {
@@ -423,4 +425,18 @@ char *printallmodes(channel *cp) {
 
   return buf;
 }
+
+void lua_onmode(int hooknum, void *arg) {
+  void **arglist = (void **)arg;
+  channel *cp = (channel *)arglist[0];
+  chanindex *ci = cp->index;
+  nick *np = arglist[1];
+
+  if(np) {
+    lua_avpcall("irc_onmode", "Sls", ci->name, np->numeric, printallmodes(cp));
+  } else {
+    lua_avpcall("irc_onmode", "S0s", ci->name, printallmodes(cp));
+  }
+}
+
 
