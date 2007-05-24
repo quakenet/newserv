@@ -5,6 +5,8 @@
 #include "splitlist.h"
 #include "../core/hooks.h"
 
+MODULE_VERSION("");
+
 array splitlist;
 
 void sphook_newserver(int hook, void *arg);
