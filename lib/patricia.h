@@ -1,0 +1,138 @@
+/*
+ * $Id: patricia.h,v 1.6 2005/12/07 20:53:01 dplonka Exp $
+ * Dave Plonka <plonka@doit.wisc.edu>
+ *
+ * This product includes software developed by the University of Michigan,
+ * Merit Network, Inc., and their contributors. 
+ *
+ * This file had been called "radix.h" in the MRT sources.
+ *
+ * I renamed it to "patricia.h" since it's not an implementation of a general
+ * radix trie.  Also, pulled in various requirements from "mrt.h" and added
+ * some other things it could be used as a standalone API.
+ */
+
+#ifndef _PATRICIA_H
+#define _PATRICIA_H
+
+#include "irc_ipv6.h"
+
+typedef unsigned short u_short;
+typedef unsigned int u_int;
+typedef unsigned char u_char;
+
+/* typedef unsigned int u_int; */
+typedef void (*void_fn_t)();
+/* { from defs.h */
+#define prefix_touchar(prefix) ((u_char *)&(prefix)->sin)
+#define MAXLINE 1024
+#define BIT_TEST(f, b)  ((f) & (b))
+/* } */
+
+#include <sys/types.h> /* for u_* definitions (on FreeBSD 5) */
+
+#include <errno.h> /* for EAFNOSUPPORT */
+#ifndef EAFNOSUPPORT
+#  defined EAFNOSUPPORT WSAEAFNOSUPPORT
+#  include <winsock.h>
+#else
+#  include <netinet/in.h> /* for struct in_addr */
+#endif
+
+#include <sys/socket.h> /* for AF_INET */
+
+/* { from mrt.h */
+
+#define PATRICIA_MAXSLOTS 5
+
+typedef struct _prefix_t {
+    u_short bitlen;		/* same as mask? */
+    int ref_count;		/* reference count */
+    struct irc_in_addr sin;
+} prefix_t;
+
+/* } */
+
+typedef struct _patricia_node_t {
+   unsigned char bit;		/* flag if this node used */
+   prefix_t *prefix;		/* who we are in patricia tree */
+   struct _patricia_node_t *l, *r;	/* left and right children */
+   struct _patricia_node_t *parent;/* may be used */
+    void **slots;
+} patricia_node_t;
+
+typedef struct _patricia_tree_t {
+   patricia_node_t 	*head;
+   u_int		maxbits;	/* for IPv6, 128 bit addresses */
+   int num_active_node;		/* for debug purpose */
+} patricia_tree_t;
+
+
+prefix_t *patricia_new_prefix (struct irc_in_addr *dest, int bitlen);
+prefix_t * patricia_ref_prefix (prefix_t * prefix);
+void patricia_deref_prefix (prefix_t * prefix);
+
+patricia_node_t *patricia_search_exact (patricia_tree_t *patricia, struct irc_in_addr *sin, unsigned char bitlen);
+patricia_node_t *patricia_search_best (patricia_tree_t *patricia, struct irc_in_addr *sin, unsigned char bitlen);
+patricia_node_t * patricia_search_best2 (patricia_tree_t *patricia, struct irc_in_addr *sin, unsigned char bitlen, 
+				   int inclusive);
+patricia_node_t *patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix);
+void patricia_remove (patricia_tree_t *patricia, patricia_node_t *node);
+patricia_tree_t *patricia_new_tree (int maxbits);
+void patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func);
+void patricia_destroy_tree (patricia_tree_t *patricia, void_fn_t func);
+void patricia_process (patricia_tree_t *patricia, void_fn_t func);
+
+/* } */
+
+patricia_node_t *refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen);
+void derefnode(patricia_tree_t *tree, patricia_node_t *node);
+
+#define PATRICIA_MAXBITS 128
+#define PATRICIA_NBIT(x)        (0x80 >> ((x) & 0x7f))
+#define PATRICIA_NBYTE(x)       ((x) >> 3)
+
+/*#define PATRICIA_DATA_GET(node, type) (type *)((node)->data)
+#define PATRICIA_DATA_SET(node, value) ((node)->data = (void *)(value))*/
+
+#define PATRICIA_WALK(Xhead, Xnode) \
+    do { \
+        patricia_node_t *Xstack[PATRICIA_MAXBITS+1]; \
+        patricia_node_t **Xsp = Xstack; \
+        patricia_node_t *Xrn = (Xhead); \
+        while ((Xnode = Xrn)) { \
+            if (Xnode->prefix)
+
+#define PATRICIA_WALK_ALL(Xhead, Xnode) \
+do { \
+        patricia_node_t *Xstack[PATRICIA_MAXBITS+1]; \
+        patricia_node_t **Xsp = Xstack; \
+        patricia_node_t *Xrn = (Xhead); \
+        while ((Xnode = Xrn)) { \
+	    if (1)
+
+#define PATRICIA_WALK_BREAK { \
+	    if (Xsp != Xstack) { \
+		Xrn = *(--Xsp); \
+	     } else { \
+		Xrn = (patricia_node_t *) 0; \
+	    } \
+	    continue; }
+
+#define PATRICIA_WALK_END \
+            if (Xrn->l) { \
+                if (Xrn->r) { \
+                    *Xsp++ = Xrn->r; \
+                } \
+                Xrn = Xrn->l; \
+            } else if (Xrn->r) { \
+                Xrn = Xrn->r; \
+            } else if (Xsp != Xstack) { \
+                Xrn = *(--Xsp); \
+            } else { \
+                Xrn = (patricia_node_t *) 0; \
+            } \
+        } \
+    } while (0)
+
+#endif /* _PATRICIA_H */

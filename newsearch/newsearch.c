@@ -77,7 +77,7 @@ void printnick(nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
 
   controlreply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
-	       IPtostr(np->ipaddress), printflags(np->umodes, umodeflags), np->realname->name->content);
+	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
 int do_nicksearch(void *source, int cargc, char **cargv) {

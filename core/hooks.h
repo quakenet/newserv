@@ -10,6 +10,7 @@
 #define HOOK_CORE_REHASH             0
 #define HOOK_CORE_STATSREQUEST       1
 #define HOOK_CORE_STATSREPLY         2
+#define HOOK_CORE_ENDOFHOOKSQUEUE    3
 
 #define HOOK_IRC_CONNECTED         100
 #define HOOK_IRC_DISCON            101
@@ -59,6 +60,8 @@
 #define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
 
 typedef void (*HookCallback)(int, void *);
+
+unsigned int hookqueuelength;
 
 void inithooks();
 int registerhook(int hooknum, HookCallback callback);

@@ -171,7 +171,7 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     }
   }
   controlreply((nick *)sender,"Timestamp : %lu",target->timestamp);
-  controlreply((nick *)sender,"IP address: %d.%d.%d.%d",(target->ipaddress)>>24,(target->ipaddress>>16)&255, (target->ipaddress>>8)&255,target->ipaddress&255);
+  controlreply((nick *)sender,"IP address: %s",IPtostr(target->p_ipaddr));
   controlreply((nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
   if (target->umodes) {
     controlreply((nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));

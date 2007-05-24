@@ -9,9 +9,11 @@
 #include "../lib/array.h"
 #include "../server/server.h"
 #include "../lib/base64.h"
+#include "../lib/irc_ipv6.h"
+#include "../lib/patricia.h"
 #include <time.h>
 
-#define MAXNICKEXTS       5
+#define MAXNICKEXTS       6 
 
 #define UMODE_INV       0x0001
 #define UMODE_WALLOPS   0x0002
@@ -99,7 +101,7 @@ typedef struct nick {
   char authname[ACCOUNTLEN+1];
   time_t timestamp;
   time_t accountts;
-  unsigned long ipaddress;  
+  patricia_node_t *ipnode;
   unsigned int marker;
   struct nick *next;
   struct nick *nextbyhost;
@@ -108,6 +110,8 @@ typedef struct nick {
   array *channels;
   void *exts[MAXNICKEXTS];
 } nick;
+
+#define p_ipaddr ipnode->prefix->sin
 
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000
@@ -118,6 +122,7 @@ extern nick **servernicks[MAXSERVERS];
 extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
 extern const flag umodeflags[];
+extern patricia_tree_t *iptree;
 
 #define MAXNUMERIC 0x3FFFFFFF
 
@@ -150,6 +155,9 @@ int registernickext(const char *name);
 int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
+int registernodeext(const char *name);
+int findnodeext(const char *name);
+void releasenodeext(int index);
 
 /* nickhandlers.c functions */
 int handlenickmsg(void *source, int cargc, char **cargv);

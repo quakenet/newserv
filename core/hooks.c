@@ -9,6 +9,7 @@ array hooks[HOOKMAX];
 void inithooks() {
   int i;
   
+  hookqueuelength=0;
   for (i=0;i<HOOKMAX;i++) {
     array_init(&(hooks[i]),sizeof(HookCallback));
     array_setlim1(&(hooks[i]),2);
@@ -60,9 +61,14 @@ void triggerhook(int hooknum, void *arg) {
   if (hooknum>HOOKMAX)
     return;
     
+  hookqueuelength++;
   hcbs=(HookCallback *)(hooks[hooknum].content);
   for (i=0;i<hooks[hooknum].cursi;i++) {
     (hcbs[i])(hooknum, arg);
   }
+  hookqueuelength--;
+  
+  if (!hookqueuelength && hooknum!=HOOK_CORE_ENDOFHOOKSQUEUE)
+    triggerhook(HOOK_CORE_ENDOFHOOKSQUEUE, 0);
 }
   

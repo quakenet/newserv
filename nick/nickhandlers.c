@@ -27,6 +27,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   nick **nh;
   char *fakehost;
   char *accountts;
+  struct irc_in_addr ipaddress;
   
   if (cargc==2) { /* rename */
     /* Nyklon 1017697578 */
@@ -127,7 +128,11 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->nextbyrealname=np->realname->nicks;
     np->realname->nicks=np;
     np->timestamp=timestamp;
-    np->ipaddress=numerictolong(cargv[cargc-3],6);
+
+    base64toip(cargv[cargc-3], &ipaddress);
+    /* todo: use a single node for /64 prefixes */
+    np->ipnode = refnode(iptree, &ipaddress, irc_in_addr_is_ipv4(&ipaddress) ? PATRICIA_MAXBITS : 64);
+
     np->shident=NULL;
     np->sethost=NULL;
     np->umodes=0;
@@ -344,7 +349,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   target->authname[ACCOUNTLEN]='\0';
 
   triggerhook(HOOK_NICK_ACCOUNT, (void *)target);
-  
+
   return CMD_OK;
 }
 

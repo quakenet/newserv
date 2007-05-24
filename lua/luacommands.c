@@ -253,9 +253,9 @@ static int lua_gline(lua_State *ps) {
     if(usercount > 50)
       LUA_RETURN(ps, LUA_FAIL);
 
-    snprintf(mask, sizeof(mask), "*%s@%s", target->ident, IPtostr(target->ipaddress));
+    snprintf(mask, sizeof(mask), "*%s@%s", target->ident, IPtostr(target->p_ipaddr));
   } else {
-    snprintf(mask, sizeof(mask), "*@%s", IPtostr(target->ipaddress));
+    snprintf(mask, sizeof(mask), "*@%s", IPtostr(target->p_ipaddr));
   }
 
   irc_send("%s GL * +%s %d :%s", mynumeric->content, mask, duration, reason);
@@ -919,7 +919,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_HOSTNAME, host);
   PUSH_NICKPUSHER(PUSHER_REALNAME, realname);
   PUSH_NICKPUSHER(PUSHER_STRING, authname);
-  PUSH_NICKPUSHER(PUSHER_IP, ipaddress);
+  PUSH_NICKPUSHER(PUSHER_IP, ipnode);
   PUSH_NICKPUSHER(PUSHER_LONG, numeric);
 
   nickpushercount = i;
@@ -978,7 +978,7 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         lua_pushlong(l, *((long *)offset));
         break;
       case PUSHER_IP:
-        lua_pushstring(l, IPtostr(*((long *)offset)));
+        lua_pushstring(l, IPtostr((((patricia_node_t *)offset)->prefix->sin)));
         break;
       case PUSHER_TOTALUSERS:
         lua_pushint(l, (*((channel **)offset))->users->totalusers);

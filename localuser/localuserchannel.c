@@ -6,6 +6,7 @@
 #include "../channel/channel.h"
 #include "../irc/irc.h"
 #include "../lib/version.h"
+#include "../lib/sstring.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -14,23 +15,52 @@
 
 MODULE_VERSION("");
 
+typedef struct pendingkick {
+  nick *source, *target;
+  channel *chan;
+  sstring *reason;
+  struct pendingkick *next;
+} pendingkick;
+
+pendingkick *pendingkicklist;
+
 int handlechannelmsgcmd(void *source, int cargc, char **cargv);
 int handlechannelnoticecmd(void *source, int cargc, char **cargv);
 int handleinvitecmd(void *source, int cargc, char **cargv);
+void clearpendingkicks(int hooknum, void *arg);
+void checkpendingkicknicks(int hooknum, void *arg);
+void checkpendingkickchannels(int hooknum, void *arg);
+void _localkickuser(nick *np, channel *cp, nick *target, const char *message);
 void luc_handlekick(int hooknum, void *arg);
 
 void _init() {
+  pendingkicklist=NULL;
   registerserverhandler("P",&handlechannelmsgcmd,2);
   registerserverhandler("O",&handlechannelnoticecmd,2);
   registerserverhandler("I",&handleinvitecmd,2);
   registerhook(HOOK_CHANNEL_KICK, luc_handlekick);
+  registerhook(HOOK_NICK_LOSTNICK, checkpendingkicknicks);
+  registerhook(HOOK_CHANNEL_LOSTCHANNEL, checkpendingkickchannels);
+  registerhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkicks);
 }
 
 void _fini() {
+  pendingkick *pk;
+
   deregisterserverhandler("P",&handlechannelmsgcmd);
   deregisterserverhandler("O",&handlechannelnoticecmd);
   deregisterserverhandler("I",&handleinvitecmd);
   deregisterhook(HOOK_CHANNEL_KICK, luc_handlekick);
+  deregisterhook(HOOK_NICK_LOSTNICK, checkpendingkicknicks);
+  deregisterhook(HOOK_CHANNEL_LOSTCHANNEL, checkpendingkickchannels);
+  deregisterhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkicks);
+
+  while (pk) {
+    pendingkicklist = pk->next;
+    freesstring(pk->reason);
+    free(pk);
+    pk = pendingkicklist;
+  }
 }
 
 void luc_handlekick(int hooknum, void *arg) {
@@ -140,6 +170,10 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
     numeric=target->users->content[i];
     if (numeric!=nouser && homeserver(numeric&CU_NUMERICMASK)==mylongnum) {
       /* OK, it's one of our users.. we need to deal with it */
+      if (found && ((getnickbynumericstr((char *)source)==NULL) || ((findchannel(cargv[0]))==NULL) || !(getnumerichandlefromchanhash(target->users, sender->numeric)))) {
+        Error("localuserchannel", ERR_INFO, "Nick or channel lost, or user no longer on channel in LU_CHANMSG");
+        break;
+      }
       found++;
       if (umhandlers[numeric&MAXLOCALUSER]) {
 	if ((np=getnickbynumeric(numeric))==NULL) {
@@ -206,6 +240,10 @@ int handlechannelnoticecmd(void *source, int cargc, char **cargv) {
     numeric=target->users->content[i];
     if (numeric!=nouser && homeserver(numeric&CU_NUMERICMASK)==mylongnum) {
       /* OK, it's one of our users.. we need to deal with it */
+      if (found && ((getnickbynumericstr((char *)source)==NULL) || ((findchannel(cargv[0]))==NULL) || !(getnumerichandlefromchanhash(target->users, sender->numeric)))) {
+        Error("localuserchannel", ERR_INFO, "Nick or channel lost, or user no longer on channel in LU_CHANNOTICE");
+        break;
+      }
       found++;
       if (umhandlers[numeric&MAXLOCALUSER]) {
 	if ((np=getnickbynumeric(numeric))==NULL) {
@@ -814,6 +852,27 @@ void localsettopic(nick *np, channel *cp, char *topic) {
 }
 
 void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
+  pendingkick *pk;
+
+  if (hookqueuelength) {
+    for (pk = pendingkicklist; pk; pk = pk->next)
+      if (pk->target == target && pk->chan == cp)
+        return;
+
+    Error("localuserchannel", ERR_INFO, "Adding pending kick for %s on %s", target->nick, cp->index->name->content);
+    pk = (pendingkick *)malloc(sizeof(pendingkick));
+    pk->source = np;
+    pk->chan = cp;
+    pk->target = target;
+    pk->reason = getsstring(message, BUFSIZE);
+    pk->next = pendingkicklist;
+    pendingkicklist = pk;
+  } else {
+    _localkickuser(np, cp, target, message);
+  }
+}
+
+void _localkickuser(nick *np, channel *cp, nick *target, const char *message) {
   unsigned long *lp;
   char source[10];
 
@@ -825,7 +884,7 @@ void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
     if (homeserver(np->numeric)!=mylongnum) {
       return;
     }
-    if ((*lp&CUMODE_OP)==0 && IsTopicLimit(cp)) {
+    if ((*lp&CUMODE_OP)==0) {
       localgetops(np,cp);
     }
     strcpy(source,longtonumeric(np->numeric,5));
@@ -842,6 +901,52 @@ void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
   }
 
   delnickfromchannel(cp, target->numeric, 1);
+}
+
+void clearpendingkicks(int hooknum, void *arg) {
+  pendingkick *pk;
+
+  pk = pendingkicklist;
+  while (pk) {
+    pendingkicklist = pk->next;
+
+    if (pk->target && pk->chan) {
+      Error("localuserchannel", ERR_INFO, "Processing pending kick for %s on %s", pk->target->nick, pk->chan->index->name->content);
+      _localkickuser(pk->source, pk->chan, pk->target, pk->reason->content);
+    }
+
+    freesstring(pk->reason);
+    free(pk);
+    pk = pendingkicklist;
+  }
+}
+
+void checkpendingkicknicks(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  pendingkick *pk;
+
+  for (pk=pendingkicklist; pk; pk = pk->next) {
+    if (pk->source == np) {
+      Error("localuserchannel", ERR_INFO, "Pending kick source %s got deleted, NULL'ing source for pending kick", np->nick);
+      pk->source = NULL;
+    }
+    if (pk->target == np) {
+      Error("localuserchannel", ERR_INFO, "Pending kick target %s got deleted, NULL'ing target for pending kick", np->nick);
+      pk->target = NULL;
+    }
+  }
+}
+
+void checkpendingkickchannels(int hooknum, void *arg) {
+  channel *cp = (channel *)arg;
+  pendingkick *pk;
+
+  for (pk=pendingkicklist; pk; pk = pk->next) {
+    if (pk->chan == cp) {
+      Error("localuserchannel", ERR_INFO, "Pending kick channel %s got deleted, NULL'ing channel for pending kick", cp->index->name->content);
+      pk->chan = NULL;
+    }
+  }
 }
 
 void sendmessagetochannel(nick *source, channel *cp, char *format, ... ) {
