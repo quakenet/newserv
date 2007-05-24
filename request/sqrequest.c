@@ -14,6 +14,7 @@
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
 #include "../core/config.h"
+#include "../spamscan2/spamscan2.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -60,6 +61,12 @@ int qr_toosmall = 0;
 int qr_nochanlev = 0;
 int qr_notowner = 0;
 
+int qr_a = 0;
+int qr_b = 0;
+int qr_c = 0;
+int qr_d = 0;
+int qr_e = 0;
+
 /* Check whether the user is blocked */
 int qr_blockcheck(requestrec *req) {
   nick *np;
@@ -97,7 +104,7 @@ unsigned int rq_countchanusers(channel *cp) {
  * as part of the process.
  */
 
-void qr_result(requestrec *req, int outcome, char *message, ...) {
+void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) {
   sstring *user, *password;
   requestrec **rh;
   char msgbuf[512];
@@ -160,10 +167,10 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
 
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
     fprintf(rq_logfd, "%s: request (%s) for %s (%d unique users, "
-            "%d total users) from %s: Request was %s.\n", now,
+            "%d total users) from %s: Request was %s (%c).\n", now,
             (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK,
             req->cip->name->content, unique, total, tnp->nick,
-            (outcome == QR_OK) ? "accepted" : "denied");
+            (outcome == QR_OK) ? "accepted" : "denied", failcode);
     fflush(rq_logfd);
   }
   
@@ -178,7 +185,13 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
         free(req);
         return;
       }
-  
+
+      if ( !IsAccount(lnp) ) {
+        sendnoticetouser(rqnick, tnp, "Internal Error Occured: L is not authed. Contact #help");
+        free(req);
+        return;
+      } 
+ 
       /* /msg Q ADDCHAN <channel> <flags> <owners nick> <channeltype> */
       sendmessagetouser(rqnick, qnp, "ADDCHAN %s +ap #%s upgrade",
                         req->cip->name->content,
@@ -210,7 +223,45 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
       freesstring(password);
 
       /* /msg S addchan <channel> default */
-      sendmessagetouser(rqnick, snp, "ADDCHAN %s default +op", req->cip->name->content);
+      //sendmessagetouser(rqnick, snp, "ADDCHAN %s default +op", req->cip->name->content);
+
+{
+    spamscan_channelprofile *cp;
+    spamscan_channelsettings *cs;
+    spamscan_channelext *ce;
+    chanindex *sc_index;
+    
+    cs = spamscan_getchannelsettings(req->cip->name->content, 0);
+    
+    if ( !cs ) {
+        cp = spamscan_getchannelprofile("Default", 0);
+        
+        if ( cp ) {
+            cs = spamscan_getchannelsettings(req->cip->name->content, 1);
+            
+            if ( cs ) {
+                cs->cp = cp;
+                cs->addedby = spamscan_getaccountsettings("R", 0);
+                cs->flags = SPAMSCAN_CF_IGNOREOPS;
+                
+                sc_index = findorcreatechanindex(req->cip->name->content);
+                
+                if ( sc_index ) {
+                    ce = spamscan_getchanext(sc_index, 1);
+                    ce->cs = cs;
+                    
+                    if ( s_nickname && !CFIsSuspended(cs) && sc_index->channel ) {
+                        ce->joinedchan = 1;
+                        localjoinchannel(s_nickname, sc_index->channel);
+                        localgetops(s_nickname, sc_index->channel);
+                    }
+                }
+                
+                spamscan_insertchanneldb(cs);
+            }
+        }
+    }
+}
 
       /* we do not put the request into another queue, so free it here */
       free(req);
@@ -248,7 +299,7 @@ void qr_result(requestrec *req, int outcome, char *message, ...) {
  *  Checks that a channel is beeeeg enough for teh Q
  */
 
-int qr_checksize(chanindex *cip, int what) {
+int qr_checksize(chanindex *cip, int what, char *failcode) {
   chanstats *csp;
   channel *cp;
   nick *np, *qbot;
@@ -270,8 +321,11 @@ int qr_checksize(chanindex *cip, int what) {
     if (!qbot)
       return 0;
 
-    if (QR_MAXQCHANS != 0 && qbot->channels->cursi > QR_MAXQCHANS)
+    if (QR_MAXQCHANS != 0 && qbot->channels->cursi > QR_MAXQCHANS) {
+      qr_a++;
+      *failcode = 'A';
       return 0; /* no Q for you :p */
+    }
   }
 
   /* make sure that there are enough authed users */
@@ -286,8 +340,32 @@ int qr_checksize(chanindex *cip, int what) {
     }
   }
 
-  if (authedcount * 100 / count < ((what == QR_CSERVE) ? QR_AUTHEDPCT_CSERVE : QR_AUTHEDPCT_SPAMSCAN)) 
+  int authedpct;
+  
+  if (what == QR_CSERVE) {
+    if ( count <= QR_AUTHEDPCT_SCALE ) {
+      authedpct = QR_AUTHEDPCT_CSERVE;
+    } else if ( count >= QR_AUTHEDPCT_SCALEMAX ) {
+      authedpct = QR_AUTHEDPCT_CSERVEMIN;
+    } else {
+      authedpct = (QR_AUTHEDPCT_CSERVEMIN + (((QR_AUTHEDPCT_CSERVE - QR_AUTHEDPCT_CSERVEMIN) * (100 - (((count - QR_AUTHEDPCT_SCALE) * 100) / (QR_AUTHEDPCT_SCALEMAX - QR_AUTHEDPCT_SCALE)))) / 100));
+    }
+  }
+  else {
+    if ( count <= QR_AUTHEDPCT_SCALE ) {
+      authedpct = QR_AUTHEDPCT_SPAMSCAN;
+    } else if ( count >= QR_AUTHEDPCT_SCALEMAX ) {
+      authedpct = QR_AUTHEDPCT_SPAMSCANMIN;
+    } else {
+      authedpct = (QR_AUTHEDPCT_SPAMSCANMIN + (((QR_AUTHEDPCT_SPAMSCAN - QR_AUTHEDPCT_SPAMSCANMIN) * (100 - (((count - QR_AUTHEDPCT_SCALE) * 100) / (QR_AUTHEDPCT_SCALEMAX - QR_AUTHEDPCT_SCALE)))) / 100));
+    }
+  }
+  
+  if (authedcount * 100 / count < authedpct) {
+    qr_b++;
+    *failcode = 'B';
     return 0; /* too few authed users */
+  }
 
   if (!(csp=cip->exts[csext]))
     return 0;
@@ -301,16 +379,28 @@ int qr_checksize(chanindex *cip, int what) {
 
   /* chan needs at least QR_MINUSERPCT% of the avg usercount, and can't have
    * more than QR_MAXUSERPCT% */
-  if ((avgcount * QR_MINUSERSPCT / 100 > uniquecount) || 
-         (avgcount * QR_MAXUSERSPCT / 100 < uniquecount))
-    return 0;
-  
+  if ( what == QR_CSERVE ) {
+    if ((avgcount * QR_MINUSERSPCT / 100 > uniquecount)) {
+      qr_c++;
+      *failcode = 'C';
+      return 0;
+    }
+    if ((avgcount * QR_MAXUSERSPCT / 100 < uniquecount)) {
+      qr_e++; 
+      *failcode = 'E';
+      return 0;
+    }
+  }
+
   avg = (what == QR_CSERVE) ? QR_REQUIREDSIZE_CSERVE : QR_REQUIREDSIZE_SPAMSCAN;
 
   if (tot > (avg * 140))
     return 1;
-  else
+  else {
+    qr_d++;
+    *failcode = 'D';
     return 0;
+  }
 }
 
 /* This function deals with notices from L: basically we track the
@@ -361,8 +451,8 @@ void qr_handlenotice(nick *sender, char *message) {
     } else if (!ircd_strcmp(message,"That channel already exists.")) {
       if ((np=getnickbynumeric(nextqreq->reqnumeric))) {
         sendnoticetouser(rqnick, np,
-                         "Your channel appears to have %s already "
-                         "(it may be suspended).", RQ_QNICK);
+                         "Your channel '%s' appears to have %s already "
+                         "(it may be suspended).", nextqreq->cip->name->content, RQ_QNICK);
 
         qr_suspended++;
         
@@ -462,7 +552,7 @@ void qr_handlenotice(nick *sender, char *message) {
                       "Lost response for channel %s; skipping.",
                       rrp2->cip->name->content);
 
-                qr_result(rrp2, QR_FAILED,
+                qr_result(rrp2, QR_FAILED, 'X',
                           "Sorry, an error occurred while processing your request.");
 
                 rrp2 = nextreq = (who == QR_Q) ? nextreqq : nextreql;
@@ -498,7 +588,7 @@ void qr_handlenotice(nick *sender, char *message) {
            * This means that we didn't find the user.
            */
 
-          qr_result(nextreq, QR_FAILED,
+          qr_result(nextreq, QR_FAILED, 'X', 
                     "Error: You are not known on %s.",
                     nextreq->cip->name->content);
 
@@ -546,29 +636,29 @@ void qr_handlenotice(nick *sender, char *message) {
           /* Check for owner flag.  Both branches of this if will
            * take the request off the list, one way or the other. */
           if (strchr(ch, 'n')) {
+            char failcode;
             /* They iz teh +n! */
             
             /* Note: We're checking for blocks kind of late, so the request
                system gets a chance to send other error messages first (like
               'no chanstats', 'not known on channel', etc.). This is required
               so that the user doesn't notice that he's being blocked. */
-            if (qr_checksize(nextreq->cip, nextreq->what) && !qr_blockcheck(nextreq)) {
-              qr_result(nextreq, QR_OK, "OK");
+            if (qr_checksize(nextreq->cip, nextreq->what, &failcode) && !qr_blockcheck(nextreq)) {
+              qr_result(nextreq, QR_OK, '-', "OK");
             } else {
               if (nextreq->what == QR_CSERVE) {
-                qr_result(nextreq, QR_FAILED,
-                          "Error: You do not meet the requirements "
-                          "for %s. Please continue to use %s.", RQ_QNICK, RQ_LNICK);                          
+                qr_result(nextreq, QR_FAILED, failcode,
+                          "Error: Sorry, Your channel '%s' does not meet the requirements "
+                          "for %s. Please continue to use %s.", nextreq->cip->name->content, RQ_QNICK, RQ_LNICK);                          
               } else {
-                qr_result(nextreq, QR_FAILED,
-                          "Error: Your channel does not require %s. "
-                          "Try again later.", RQ_SNICK);
+                qr_result(nextreq, QR_FAILED, failcode,
+                          "Error: Sorry, Your channel '%s' does not require %s. Please try again in a few days.", nextreq->cip->name->content, RQ_SNICK);
               }
 
               qr_toosmall++;
             }
           } else {
-            qr_result(nextreq, QR_FAILED,
+            qr_result(nextreq, QR_FAILED, 'X', 
                       "Error: You don't hold the +n flag on %s.",
                       nextreq->cip->name->content);
 
@@ -675,9 +765,10 @@ int qr_instantrequestq(nick *sender, channel *cp) {
   chanfix *cf;
   regop *ro;
   int rocount, i;
+  char failcode;
   regop *rolist[QR_TOPX];
 
-  if (!qr_checksize(cp->index, QR_CSERVE))
+  if (!qr_checksize(cp->index, QR_CSERVE, &failcode))
     return RQ_ERROR;
 
   cf = cf_findchanfix(cp->index);
@@ -720,7 +811,7 @@ int qr_instantrequestq(nick *sender, channel *cp) {
     nextreql = fakerequest;
   }
   
-  qr_result(fakerequest, QR_OK, "OK");
+  qr_result(fakerequest, QR_OK, '-', "OK");
   
   return RQ_OK;
 }
@@ -824,4 +915,10 @@ void qr_requeststats(nick *rqnick, nick *np) {
   sendnoticetouser(rqnick, np, "- Too small (Q/S):                %d", qr_toosmall);
   sendnoticetouser(rqnick, np, "- User was not on chanlev (Q/S):  %d", qr_nochanlev);
   sendnoticetouser(rqnick, np, "- User was not the owner (Q/S):   %d", qr_notowner);
+  sendnoticetouser(rqnick, np, "- A:                              %d", qr_a);
+  sendnoticetouser(rqnick, np, "- B:                              %d", qr_b);
+  sendnoticetouser(rqnick, np, "- C:                              %d", qr_c);
+  sendnoticetouser(rqnick, np, "- D:                              %d", qr_d);
+  sendnoticetouser(rqnick, np, "- E:                              %d", qr_e);
+
 }
