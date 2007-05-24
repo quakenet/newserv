@@ -1,6 +1,7 @@
 /* ticketauth.c */
 
 #error INSECURE/BROKEN -- DO NOT USE UNTIL READY
+#error Fish Fish Fish
 
 #include <stdio.h>
 #include <string.h>
