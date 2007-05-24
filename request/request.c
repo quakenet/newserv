@@ -15,6 +15,8 @@
 #include "sqrequest.h"
 #include "user.h"
 
+MODULE_VERSION("");
+
 nick *rqnick;
 CommandTree *rqcommands;
 
