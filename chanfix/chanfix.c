@@ -1225,7 +1225,7 @@ int cf_fixchannel(channel *cp) {
     if (count >= CFMAXOPS || rolist[i]->score < rolist[0]->score / 2)
       break;
 
-    if (rolist[i]->score < CFMINSCORE)
+    if (rolist[i]->score < CFMINSCORE && i != 0 )
       continue;
 
     np = cf_findnick(rolist[i], cp->index);
