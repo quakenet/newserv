@@ -1,5 +1,7 @@
 /* ticketauth.c */
 
+#error BROKEN -- DO NOT USE
+
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
