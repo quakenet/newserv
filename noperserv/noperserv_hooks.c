@@ -278,7 +278,8 @@ int noperserv_showcommands(void *sender, int cargc, char **cargv) {
   controlreply(np, "The following commands are registered at present:");
   
   for(i=0;i<n;i++)
-    controlreply(np, "%s (%s)", cmdlist[i]->command->content, printflags(cmdlist[i]->level, no_commandflags));
+    if(noperserv_policy_command_permitted(cmdlist[i]->level, np))
+      controlreply(np, "%s (%s)", cmdlist[i]->command->content, printflags(cmdlist[i]->level, no_commandflags));
 
   controlreply(np, "End of list.");
   return CMD_OK;
