@@ -48,6 +48,9 @@ qab_bot* qabot_getbot() {
   bot->answers = 0;
   
   bot->micnumeric = 0;
+  bot->recnumeric = 0;
+  bot->recfile = NULL;
+  bot->playfile = NULL;
   
   bot->next = 0;
   bot->prev = 0;
@@ -186,7 +189,17 @@ void qabot_delbot(qab_bot* bot) {
   deleteschedule(0, qabot_spamstored, (void*)bot);
   deleteschedule(0, qabot_createbotfakeuser, (void*)bot);
   deleteschedule(0, qabot_timer, (void*)bot);
-          
+  
+  if (bot->recfile) {
+    fclose(bot->recfile);
+    bot->recfile = NULL;
+  }
+  
+  if (bot->playfile) {
+    fclose(bot->playfile);
+    bot->playfile = NULL;
+  }
+  
   while (bot->blocks) {
     b = bot->blocks;
     bot->blocks = bot->blocks->next;
@@ -230,6 +243,67 @@ void qabot_delbot(qab_bot* bot) {
     qab_bots = bot->next;
   
   free(bot);
+}
+
+void qabot_playback(qab_bot *bot) {
+  char buf[1024];
+  unsigned long lines;
+  
+  if (!(bot->playfile)) {
+    return;
+  }
+  
+  lines = 0;
+  
+  while (!feof(bot->playfile)) {
+    fscanf(bot->playfile, "%[^\n]\n", buf);
+    
+    if (!ircd_strcmp("--PAUSE--", buf)) {
+      if (bot->staff_chan && bot->staff_chan->channel) { 
+        sendmessagetochannel(bot->np, bot->staff_chan->channel, "Pause found in playback, use !continue when ready to continue playback.");
+        sendmessagetochannel(bot->np, bot->staff_chan->channel, "%lu lines ready to send to channel. This will take approx. %sto send.", lines, longtoduration((lines * SPAMINTERVAL), 1));
+      }
+      
+      return;
+    }
+    
+    lines++;
+    
+    /* Copied from microphone code */
+    if (bot->lastspam) {
+      qab_spam* s;
+      
+      s = (qab_spam*)malloc(sizeof(qab_spam));
+      s->message = strdup(buf);
+      s->next = 0;
+      bot->lastspam->next = s;
+      bot->lastspam = s;
+    }
+    else {
+      if ((bot->spamtime + bot->spam_interval) < time(0)) {
+        sendmessagetochannel(bot->np, bot->public_chan->channel, "%s", buf);
+        bot->spammed++;
+        bot->spamtime = time(0);
+      }
+      else {
+        qab_spam* s;
+        
+        s = (qab_spam*)malloc(sizeof(qab_spam));
+        s->message = strdup(buf);
+        s->next = 0;
+        bot->nextspam = bot->lastspam = s;
+        scheduleoneshot(bot->spamtime + bot->spam_interval, qabot_spam, (void*)bot);
+      }
+    }
+  }
+  
+  fclose(bot->playfile);
+  bot->playfile = NULL;
+  
+  if (bot->staff_chan && bot->staff_chan->channel) { 
+    sendmessagetochannel(bot->np, bot->staff_chan->channel, "End of playback.");
+    sendmessagetochannel(bot->np, bot->staff_chan->channel, "%lu lines ready to send to channel. This will take approx. %sto send.", lines, longtoduration((lines * SPAMINTERVAL), 1));
+  }
 }
 
 void qabot_spam(void* arg) {

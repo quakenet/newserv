@@ -66,6 +66,12 @@ void _init() {
   addcommandtotree(qabot_chancommands, "spam", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 30, qabot_dochanspam);
   addcommandtotree(qabot_chancommands, "status", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 0, qabot_dochanstatus);
   addcommandtotree(qabot_chancommands, "unblock", QAC_QUESTIONCHAN|QAC_STAFFCHAN, 2, qabot_dochanunblock);
+  addcommandtotree(qabot_chancommands, "record", QAC_STAFFCHAN, 1, qabot_dochanrecord);
+  addcommandtotree(qabot_chancommands, "play", QAC_STAFFCHAN, 1, qabot_dochanplay);
+  addcommandtotree(qabot_chancommands, "continue", QAC_STAFFCHAN, 0, qabot_dochancontinue);
+  addcommandtotree(qabot_chancommands, "stop", QAC_STAFFCHAN, 0, qabot_dochanstop);
+  addcommandtotree(qabot_chancommands, "delete", QAC_STAFFCHAN, 1, qabot_dochandelete);
+  addcommandtotree(qabot_chancommands, "list", QAC_STAFFCHAN, 0, qabot_dochanlist);
 
   if ((qabot_nickext = registernickext("QABOT")) == -1) {
     return;
@@ -138,6 +144,12 @@ void _fini() {
   deletecommandfromtree(qabot_chancommands, "spam", qabot_dochanspam);
   deletecommandfromtree(qabot_chancommands, "status", qabot_dochanstatus);
   deletecommandfromtree(qabot_chancommands, "unblock", qabot_dochanunblock);
+  deletecommandfromtree(qabot_chancommands, "record", qabot_dochanrecord);
+  deletecommandfromtree(qabot_chancommands, "play", qabot_dochanplay);
+  deletecommandfromtree(qabot_chancommands, "continue", qabot_dochancontinue);
+  deletecommandfromtree(qabot_chancommands, "stop", qabot_dochanstop);
+  deletecommandfromtree(qabot_chancommands, "delete", qabot_dochandelete);
+  deletecommandfromtree(qabot_chancommands, "list", qabot_dochanlist);
   destroycommandtree(qabot_chancommands);
 }
 
@@ -157,6 +169,17 @@ void qabot_lostnick(int hooknum, void* arg) {
       sendmessagetochannel(b->np, b->staff_chan->channel, "Mic deactivated.");
       if (!b->lastspam)
         qabot_spamstored((void*)b);
+    }
+    
+    if (b->recnumeric == np->numeric) {
+      b->recnumeric = 0;
+      
+      if (b->recfile) {
+        fclose(b->recfile);
+        b->recfile = NULL;
+      }
+      
+      sendmessagetochannel(b->np, b->staff_chan->channel, "Recorder deactivated.");
     }
   }
 }
@@ -178,6 +201,17 @@ void qabot_channel_part(int hooknum, void* arg) {
       sendmessagetochannel(b->np, b->staff_chan->channel, "Mic deactivated.");
       if (!b->lastspam)
         qabot_spamstored((void*)b);
+    }
+    
+    if (b->recnumeric == np->numeric) {
+      b->recnumeric = 0;
+      
+      if (b->recfile) {
+        fclose(b->recfile);
+        b->recfile = NULL;
+      }
+      
+      sendmessagetochannel(b->np, b->staff_chan->channel, "Recorder deactivated.");
     }
   }
 }
@@ -350,6 +384,11 @@ void qabot_child_handler(nick* me, int type, void** args) {
           bot->nextspam = bot->lastspam = s;
           scheduleoneshot(bot->spamtime + bot->spam_interval, qabot_spam, (void*)bot);
         }
+      }
+    }
+    else if ((*text != '!') && (bot->recnumeric == sender->numeric) && (cp->index == bot->staff_chan)) {
+      if (bot->recfile) {
+        fprintf(bot->recfile, "%s\n", text);
       }
     }
     break;
