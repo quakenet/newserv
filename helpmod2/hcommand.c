@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../lib/sstring.h"
-
 #include "helpmod.h"
 #include "hcommand.h"
 #include "hgen.h"

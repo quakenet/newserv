@@ -4,14 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "../lib/sstring.h"
-#include "../lib/irc_string.h"
-#include "../channel/channel.h"
-#include "../localuser/localuserchannel.h"
-#include "../core/schedule.h"
-#include "../nick/nick.h"
-
-
 #include "hchannel.h"
 #include "haccount.h"
 #include "helpmod.h"

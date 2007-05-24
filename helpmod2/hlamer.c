@@ -2,8 +2,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "../nick/nick.h"
-
 #include "huser.h"
 #include "hban.h"
 #include "hchannel.h"

@@ -1,9 +1,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../core/hooks.h"
-#include "../localuser/localuser.h"
-
 #include "helpmod.h"
 #include "hchannel.h"
 #include "haccount.h"
@@ -340,14 +337,18 @@ static void helpmod_hook_nick_account(int unused, void *args)
 {
     nick *nck = (nick*)args;
     huser *husr = huser_get(nck);
+    huser_channel *huserchan, *huserchannext;
     if (husr == NULL)
         return;
     else
 	husr->account = haccount_get_by_name(nck->authname);
 
-    if (huser_get_level(husr) == H_LAMER)
-	while (husr->hchannels)
-	    helpmod_kick(husr->hchannels->hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(husr->hchannels->hchan));
+    if (huser_get_level(husr) == H_LAMER) {
+        for (huserchan = husr->hchannels; huserchan; huserchan = huserchannext) {
+            huserchannext = huserchan->next;
+            helpmod_kick(huserchan->hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(huserchan->hchan));
+        }
+    }
 }
 
 static void helpmod_hook_server_newserver(int unused, void *args)
