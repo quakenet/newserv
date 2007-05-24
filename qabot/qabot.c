@@ -14,6 +14,8 @@
 
 #include "qabot.h"
 
+MODULE_VERSION("");
+
 time_t qab_startime;
 int qabot_nickext;
 int qabot_spam_nickext;
