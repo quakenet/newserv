@@ -1,6 +1,6 @@
 /* ticketauth.c */
 
-#error BROKEN -- DO NOT USE
+#error INSECURE/BROKEN -- DO NOT USE UNTIL READY
 
 #include <stdio.h>
 #include <string.h>
