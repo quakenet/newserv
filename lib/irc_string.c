@@ -220,7 +220,8 @@ char *delchars(char *string, const char *badchars) {
  * IPtostr:
  *  Converts a long into a "p.q.r.s" IP address
  */
-
+/* deprecated due to patricia tree stuff */
+/*
 const char *IPtostr(unsigned long IP) {
   static char buf[16];
 
@@ -228,6 +229,7 @@ const char *IPtostr(unsigned long IP) {
  
   return buf;
 }
+*/
 
 /*
  * longtoduration: 
