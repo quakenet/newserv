@@ -11,6 +11,7 @@
 #include "../lib/base64.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
+#include "../lib/version.h"
 
 #include "qabot.h"
 

@@ -48,6 +48,16 @@ void _init() {
   registerserverhandler("O",&handleprivatenoticecmd, 2);
 }
 
+void _fini() {
+  pendingkill *pk;
+
+  for (pk=pendingkilllist;pk;pk=pendingkilllist) {
+    pendingkilllist = pk->next;
+    freesstring(pk->reason);
+    free(pk);
+  }
+}
+
 /*
  * registerlocaluser:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).

@@ -13,6 +13,8 @@
 #include "libGeoIP/GeoIP.h"
 #include "geoip.h"
 
+#warning This module is GPL'ed. Load/link at your peril.
+
 MODULE_VERSION("");
 
 int geoip_totals[COUNTRY_MAX + 1];

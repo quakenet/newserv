@@ -55,11 +55,10 @@ void _fini() {
   deregisterhook(HOOK_CHANNEL_LOSTCHANNEL, checkpendingkickchannels);
   deregisterhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkicks);
 
-  while (pk) {
+  for (pk=pendingkicklist;pk;pk=pendingkicklist) {
     pendingkicklist = pk->next;
     freesstring(pk->reason);
     free(pk);
-    pk = pendingkicklist;
   }
 }
 
