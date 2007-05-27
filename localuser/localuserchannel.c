@@ -197,7 +197,7 @@ static int handlechannelmsgornotice(void *source, int cargc, char **cargv, int i
 }
 
 /* Wrapper functions to call the above code */
-int handlechannelmessagecmd(void *source, int cargc, char **cargv) {
+int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
   return handlechannelmsgornotice(source, cargc, cargv, 0);
 }
 
