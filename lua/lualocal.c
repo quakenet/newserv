@@ -177,6 +177,16 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       ln->reconnect = scheduleoneshot(time(NULL) + 1, &lua_reconnectlocal, ln);
 
       break;
+    case LU_INVITE:
+    /* we were invited, check if someone invited us to PUBLICCHAN */
+      np = (nick *)args[0];
+      c = (channel *)args[1];
+
+      if(!c || !np || !c->index || !c->index->name || !c->index->name->content)
+        return;
+
+      lua_vlpcall(l, ln, "irc_oninvite", "Ns", np, c->index->name->content);
+      break;
   }
 }
 
