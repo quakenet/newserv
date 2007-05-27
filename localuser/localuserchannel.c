@@ -100,7 +100,8 @@ int handleinvitecmd(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
+/* PRIVMSG/NOTICE to channel handling is identical up to the point where the hook is called. */
+static int handlechannelmsgornotice(void *source, int cargc, char **cargv, int isnotice) {
   void *nargs[3];
   nick *sender;
   channel *target;
@@ -119,12 +120,12 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
   }
   
   if ((sender=getnickbynumericstr((char *)source))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"PRIVMSG from non existant user %s",(char *)source);
+    Error("localuserchannel",ERR_DEBUG,"PRIVMSG/NOTICE from non existant user %s",(char *)source);
     return CMD_OK;
   }
 
   if ((target=findchannel(cargv[0]))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"PRIVMSG to non existant channel %s",cargv[0]);
+    Error("localuserchannel",ERR_DEBUG,"PRIVMSG/NOTICE to non existant channel %s",cargv[0]);
     return CMD_OK;
   }
 
@@ -143,11 +144,11 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
       found++;
       if (umhandlers[numeric&MAXLOCALUSER]) {
 	if ((np=getnickbynumeric(numeric))==NULL) {
-          Error("localuserchannel",ERR_ERROR,"PRIVMSG to channel user who doesn't exist (?) on %s",cargv[0]);
+          Error("localuserchannel",ERR_ERROR,"PRIVMSG/NOTICE to channel user who doesn't exist (?) on %s",cargv[0]);
           continue;
         }
 	if (!IsDeaf(np)) {
-          (umhandlers[numeric&MAXLOCALUSER])(np,LU_CHANMSG,nargs);
+          (umhandlers[numeric&MAXLOCALUSER])(np,(isnotice?LU_CHANNOTICE:LU_CHANMSG),nargs);
         } else {
           found--;
         }
@@ -156,76 +157,19 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
   }
 
   if (!found) {
-    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for PRIVMSG to %s",cargv[0]);
+    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for PRIVMSG/NOTICE to %s",cargv[0]);
   }
 
   return CMD_OK;
 }
 
-/*
- * Added by Cruicky so S2 can receive channel notices
- * Shameless rip of the above with s/privmsg/notice
- */
+/* Wrapper functions to call the above code */
+int handlechannelmessagecmd(void *source, int cargc, char **cargv) {
+  return handlechannelmsgornotice(source, cargc, cargv, 0);
+}
+
 int handlechannelnoticecmd(void *source, int cargc, char **cargv) {
-  void *nargs[3];
-  nick *sender;
-  channel *target;
-  nick *np;
-  unsigned long numeric;
-  int i;
-  int found=0;
-
-  if (cargc<2) {
-    return CMD_OK;
-  }
-  
-  if (cargv[0][0]!='#' && cargv[0][0]!='+') {
-    /* Not a channel notice */
-    return CMD_OK;
-  }
-  
-  if ((sender=getnickbynumericstr((char *)source))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"NOTICE from non existant user %s",(char *)source);
-    return CMD_OK;
-  }
-
-  if ((target=findchannel(cargv[0]))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"NOTICE to non existant channel %s",cargv[0]);
-    return CMD_OK;
-  }
-
-  /* OK, we have a valid channel the notice was sent to.  Let's look to see
-   * if we have any local users on there.  Set up the arguments first as they are
-   * always going to be the same. */
-
-  nargs[0]=(void *)sender;
-  nargs[1]=(void *)target;
-  nargs[2]=(void *)cargv[1];
-
-  for (found=0,i=0;i<target->users->hashsize;i++) {
-    numeric=target->users->content[i];
-    if (numeric!=nouser && homeserver(numeric&CU_NUMERICMASK)==mylongnum) {
-      /* OK, it's one of our users.. we need to deal with it */
-      found++;
-      if (umhandlers[numeric&MAXLOCALUSER]) {
-	if ((np=getnickbynumeric(numeric))==NULL) {
-          Error("localuserchannel",ERR_ERROR,"NOTICE to channel user who doesn't exist (?) on %s",cargv[0]);
-          continue;
-        }
-	if (!IsDeaf(np)) {
-          (umhandlers[numeric&MAXLOCALUSER])(np,LU_CHANNOTICE,nargs);
-        } else {
-          found--;
-        }
-      }
-    }
-  }
-
-  if (!found) {
-    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for NOTICE to %s",cargv[0]);
-  }
-
-  return CMD_OK;
+  return handlechannelmsgornotice(source, cargc, cargv, 1);
 }
 
 int localjoinchannel(nick *np, channel *cp) {
