@@ -113,7 +113,13 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
       Error("nick",ERR_WARNING,"Received NICK with invalid numeric %s from %s.",cargv[cargc-2],sender);
       return CMD_ERROR;
     }
-          
+
+    base64toip(cargv[cargc-3], &ipaddress);
+    if (!irc_in_addr_valid(&ipaddress)) {
+      Error("nick",ERR_ERROR,"Received NICK with invalid ipaddress for %s from %s.",cargv[0],sender);
+      return CMD_ERROR;
+    }
+
     /* At this stage the nick is cleared to proceed */
     np=newnick();
     strncpy(np->nick,cargv[0],NICKLEN);
