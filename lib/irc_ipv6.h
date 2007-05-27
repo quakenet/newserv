@@ -60,6 +60,7 @@ extern const char* ircd_ntoa_r(char* buf, const struct irc_in_addr* addr);
 extern int ipmask_parse(const char *in, struct irc_in_addr *mask, unsigned char *bits_ptr);
 
 #define IPtostr(ipaddr) ircd_ntoa(&(ipaddr))
+#define irc_in_addr_v4_to_int(ADDR) ((ntohs((ADDR)->in6_16[6]) << 16) | ntohs((ADDR)->in6_16[7]))
 
 /* from numnicks.h */
 

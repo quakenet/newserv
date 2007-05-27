@@ -221,7 +221,7 @@ char *delchars(char *string, const char *badchars) {
  *  Converts a long into a "p.q.r.s" IP address
  */
 
-const char *IPtostr(unsigned long IP) {
+const char *IPlongtostr(unsigned long IP) {
   static char buf[16];
 
   sprintf(buf,"%lu.%lu.%lu.%lu",(IP>>24),(IP>>16)&255,(IP>>8)&255,IP&255);

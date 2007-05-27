@@ -17,7 +17,7 @@ unsigned long crc32i(const char *s);
 int ircd_strcmp(const char *s1, const char *s2);
 int ircd_strncmp(const char *s1, const char *s2, size_t len);
 char *delchars(char *string, const char *badchars);
-const char *IPtostr(unsigned long IP);
+const char *IPlongtostr(unsigned long IP);
 const char *longtoduration(unsigned long interval, int format);
 int durationtolong(const char *string);
 
