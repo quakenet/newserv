@@ -9,8 +9,10 @@ void proxyscan_newnick(int hooknum, void *arg) {
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if ((np->ipaddress>>24==0) || (np->ipaddress>>24==127))
+  if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
     return;
+
+  unsigned int ip = irc_in_addr_v4_to_int(&np->p_ipaddr);
 
   /*
    * Logic for connecting hosts:
@@ -26,7 +28,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
    * If they're not in the cache, we queue up their scans
    */
 
-  if ((chp=findcachehost(np->ipaddress))) {
+  if ((chp=findcachehost(ip))) {
     if (!chp->proxies)
       return;
 
@@ -41,30 +43,30 @@ void proxyscan_newnick(int hooknum, void *arg) {
           break;
       
       if (!fpp)
-        queuescan(np->ipaddress, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
+        queuescan(ip, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
       }
     }
 
     /* We want these scans to start around now, so we put them at the front of the priority queue */
     for (fpp=chp->proxies;fpp;fpp=nfpp) {
       nfpp=fpp->next;
-      queuescan(np->ipaddress, fpp->type, fpp->port, SCLASS_CHECK, time(NULL));
+      queuescan(ip, fpp->type, fpp->port, SCLASS_CHECK, time(NULL));
       freefoundproxy(fpp);
     }
 
     /* set a SHORT gline - if they really have an open proxy the gline will be re-set, with a new ID */
     irc_send("%s GL * +*@%s 600 :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	     mynumeric->content,IPtostr(np->ipaddress),chp->glineid);
+	     mynumeric->content,IPtostr(np->p_ipaddr),chp->glineid);
 
     chp->lastscan=time(NULL);
     chp->proxies=NULL;
     chp->glineid=0;
   } else {
-    chp=addcleanhost(np->ipaddress, time(NULL));
+    chp=addcleanhost(ip, time(NULL));
 
     /* Queue up all the normal scans - on the normal queue */
     for (i=0;i<numscans;i++)
-      queuescan(np->ipaddress, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
+      queuescan(ip, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
   }
 }
 

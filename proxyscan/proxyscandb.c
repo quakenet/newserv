@@ -163,7 +163,7 @@ void loggline(cachehost *chp) {
 
     mysql_escape_string(reasonesc,reasonlist,strlen(reasonlist));
     sprintf(sqlquery,"INSERT INTO openproxies VALUES(%u,'%s',%d,NOW(),'%s')",chp->glineid,
-	    IPtostr(chp->IP),reasonmask,reasonesc);
+	    IPlongtostr(chp->IP),reasonmask,reasonesc);
     mysql_query(&proxyscansql,sqlquery);
   } else {
     mysql_escape_string(reasonesc,reasonlist,strlen(reasonlist));
