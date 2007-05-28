@@ -15,17 +15,17 @@ void chanservdgline(void* arg) {
   for (nl=rup->nicks; nl; nl=nl->next) {
     for (i=0, ucount=0; i<NICKHASHSIZE; i++)
       for (np=nicktable[i];np;np=np->next)
-        if (!ircd_strcmp(np->ident, nl->np->ident) && np->ipaddress==nl->np->ipaddress)
+        if (!ircd_strcmp(np->ident, nl->np->ident) && np->ipnode==nl->np->ipnode)
           ucount++;
     
     if (ucount >= MAXGLINEUSERS)
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (account %s) would hit %d users, aborting.", 
-        nl->np->ident, IPtostr(nl->np->ipaddress), rup->username, ucount);
+        nl->np->ident, IPtostr(nl->np->p_ipaddr), rup->username, ucount);
     else {
       irc_send("%s GL * +*!%s@%s 3600 :%s\r\n", mynumeric->content, nl->np->ident, 
-        IPtostr(nl->np->ipaddress), rup->suspendreason->content);
+        IPtostr(nl->np->p_ipaddr), rup->suspendreason->content);
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (authed as %s) expires in 60 minute/s (hit %d user%s) (reason: %s)", 
-        nl->np->ident, IPtostr(nl->np->ipaddress), rup->username, ucount, ucount==1?"":"s", rup->suspendreason->content);
+        nl->np->ident, IPtostr(nl->np->p_ipaddr), rup->username, ucount, ucount==1?"":"s", rup->suspendreason->content);
     }
   }
 }
