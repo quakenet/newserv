@@ -61,6 +61,8 @@ unsigned long scanspermin;
 unsigned long tempscanspermin=0;
 unsigned long lastscants=0;
 
+unsigned int ps_start_ts=0;
+
 nick *proxyscannick;
 
 FILE *ps_logfile;
@@ -116,6 +118,8 @@ int proxyscan_delscantype(int type, int port) {
 void _init(void) {
   sstring *cfgstr;
   int ipbits[4];
+
+  ps_start_ts = time(NULL);
 
   memset(scantable,0,sizeof(scantable));
   maxscans=200;

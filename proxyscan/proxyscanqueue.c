@@ -17,10 +17,37 @@ unsigned long countpendingscan=0;
 
 void queuescan(unsigned int IP, short scantype, unsigned short port, char class, time_t when) {
   pendingscan *psp, *psp2;
+
+  /* check if the IP/port combo is already queued - don't queue up
+   * multiple identical scans
+   */
+  psp = ps_prioqueue;
+  while (psp != NULL)
+  {
+    if (psp->IP == IP && psp->type == scantype &&
+      psp->port == port && psp->class == class)
+    {
+      /* found it, ignore */
+      return;
+    }
+    psp = psp->next;
+  }
+
+  psp = ps_normalqueue;
+  while (psp != NULL)
+  {
+    if (psp->IP == IP && psp->type == scantype &&
+      psp->port == port && psp->class == class)
+    {
+      /* found it, ignore */
+      return;
+    }
+    psp = psp->next;
+  }
   
   /* If there are scans spare, just start it immediately.. 
    * provided we're not supposed to wait */
-  if (activescans < maxscans && when<=time(NULL)) {
+  if (activescans < maxscans && when<=time(NULL) && (ps_start_ts+120 <= time(NULL))) {
     startscan(IP, scantype, port, class);
     return;
   }
@@ -72,8 +99,11 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
 void startqueuedscans() {
   pendingscan *psp=NULL;
 
+  if (ps_start_ts+120 > time(NULL))
+	return;
+
   while (activescans < maxscans) {
-    if (ps_prioqueue && ps_prioqueue->when <= time(NULL)) {
+    if (ps_prioqueue && (ps_prioqueue->when <= time(NULL))) {
       psp=ps_prioqueue;
       ps_prioqueue=psp->next;
       prioqueuedscans--;
