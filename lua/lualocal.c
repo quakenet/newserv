@@ -404,6 +404,26 @@ static int lua_localovmode(lua_State *l) {
   LUA_RETURN(l, LUA_OK);
 }
 
+static int lua_localumodes(lua_State *ps) {
+  nick *np;
+  char *modes;
+  flag_t newmodes = 0;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynumeric(lua_tolong(ps, 1));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  modes = (char *)lua_tostring(ps, 2);
+
+  setflags(&newmodes, UMODE_ALL, modes, umodeflags, REJECT_NONE);
+
+  localusersetumodes(np, newmodes);
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_localtopic(lua_State *ps) {
   nick *np;
   channel *cp;
@@ -512,5 +532,6 @@ void lua_registerlocalcommands(lua_State *l) {
 
   lua_register(l, "irc_localban", lua_localban);
   lua_register(l, "irc_localkick", lua_localkick);
+  lua_register(l, "irc_localumodes", lua_localumodes);
 }
 

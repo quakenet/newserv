@@ -424,3 +424,10 @@ void localusersetaccount(nick *np, char *accname) {
   triggerhook(HOOK_NICK_ACCOUNT, np);
 }
 
+void localusersetumodes(nick *np, flag_t newmodes) {
+  if (connected) {
+    irc_send("%s M %s %s", longtonumeric(np->numeric,5), np->nick, printflagdiff(np->umodes, newmodes, umodeflags));
+  }
+
+  np->umodes = newmodes;
+}
