@@ -220,6 +220,8 @@ static int lua_localjoin(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   chan = (char *)lua_tostring(ps, 2);
+  if(chan[0] != '#')
+    LUA_RETURN(ps, LUA_FAIL);
 
   if(!lua_lineok(chan)) 
     LUA_RETURN(ps, LUA_FAIL);
