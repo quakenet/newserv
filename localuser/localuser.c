@@ -382,7 +382,7 @@ void sendnoticetouser(nick *source, nick *target, char *format, ... ) {
 void killuser(nick *source, nick *target, char *format, ... ) {
   char buf[BUFSIZE];
   char senderstr[6];
-  char sourcestring[NICKLEN+USERLEN+3];
+  char sourcestring[HOSTLEN+NICKLEN+3];
   va_list va;
 
   if (!source) {
