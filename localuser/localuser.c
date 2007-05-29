@@ -28,7 +28,7 @@ void _init() {
   }
   currentlocalunum=1;
   registerhook(HOOK_IRC_SENDBURSTNICKS,&sendnickburst);
-  registerhook(HOOK_NICK_LOSTNICK,&checklocalkill);
+  registerhook(HOOK_NICK_KILL,&checklocalkill);
   registerserverhandler("P",&handleprivatemsgcmd,2);
   registerserverhandler("O",&handleprivatenoticecmd, 2);
 }
@@ -220,17 +220,21 @@ void sendnickburst(int hooknum, void *arg) {
 }
 
 /* Check for a kill of a local user */
-void checklocalkill(int hooknum, void *target) {
+void checklocalkill(int hooknum, void *arg) {
+  void **args=arg;
+  nick *target=args[0];
+  char *reason=args[1];
   long numeric;
-  void *args[1];
-  
-  args[0]=NULL;
+
+  void *myargs[1];
+  myargs[0]=reason;
+
   
   numeric=((nick *)target)->numeric;
   
   if (homeserver(numeric)==mylongnum) {
     if (umhandlers[(numeric)&MAXLOCALUSER]!=NULL) {
-      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,args);
+      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,myargs);
     }
   }
 } 

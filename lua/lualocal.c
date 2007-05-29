@@ -163,7 +163,8 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       break;
 
     case LU_KILLED:
-      lua_vlpcall(l, ln, "irc_onkilled", "");
+      p = (char *)args[2];
+      lua_vlpcall(l, ln, "irc_onkilled", "s", p);
 
       strlcpy(ln->nickname, target->nick, sizeof(ln->nickname));
       strlcpy(ln->ident, target->ident, sizeof(ln->ident));
