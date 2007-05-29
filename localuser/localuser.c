@@ -93,14 +93,13 @@ nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname,
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
   
-  /* XXX shroud: need to port original code */
   memset(&ipaddress, 0, sizeof(ipaddress));
-  ((char *)ipaddress.in6_16)[15] = 1;
+  ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+  ((unsigned short *)(ipaddress.in6_16))[6] = 127;
+  ((unsigned char *)(ipaddress.in6_16))[14] = 1;
+  ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
 
   newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
-#if 0
-  newuser->ipaddress=(127<<24)+(1<<8)+((currentlocalunum%253)+1); /* Make it look like a valid addr on 127.0.1.0/24 */
-#endif
   newuser->timestamp=getnettime();
   newuser->shident=NULL;
   newuser->sethost=NULL;
