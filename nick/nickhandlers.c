@@ -202,7 +202,8 @@ int handlequitmsg(void *source, int cargc, char **cargv) {
 int handlekillmsg(void *source, int cargc, char **cargv) {
   nick *np;
   void *harg[2];
-  
+#warning Fix me to use source
+
   if (cargc<1) {
     Error("nick",ERR_WARNING,"Kill message with too few parameters");
     return CMD_ERROR;  
