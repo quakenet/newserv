@@ -88,6 +88,7 @@ void _fini(void) {
   for (i=0;i<TROJANSCAN_CLONE_TOTAL;i++)
     if(trojanscan_swarm[i].clone) {
       deregisterlocaluser(trojanscan_swarm[i].clone, NULL);
+      derefnode(iptree, trojanscan_swarm[i].fakeipnode);
       trojanscan_swarm[i].clone = NULL;
     }
   trojanscan_free_database();
@@ -486,7 +487,7 @@ void trojanscan_log(nick *np, char *event, char *details, ...) {
 void trojanscan_generateclone(void *arg) {
   int i, loops = 0, modes = UMODE_XOPER | UMODE_INV;
   char c_nick[NICKLEN+1], c_ident[USERLEN+1], c_host[HOSTLEN+1], c_real[REALLEN+1];
-  long fakeip;
+  patricia_node_t *fakeip;
 
   i = (int)arg;
 
@@ -517,7 +518,7 @@ void trojanscan_generateclone(void *arg) {
     trojanscan_genreal(c_real, trojanscan_minmaxrand(15, TROJANSCAN_MMIN(50, REALLEN)));
 
   trojanscan_swarm[i].clone = registerlocaluser(c_nick, c_ident, c_host, c_real, NULL, modes, &trojanscan_clonehandlemessages);
-  trojanscan_swarm[i].fakeip = fakeip;
+  trojanscan_swarm[i].fakeipnode = fakeip;
 
   if(trojanscan_swarm[i].clone && !trojanscan_swarm_created) {
     nick *np = trojanscan_selectuser();
@@ -971,6 +972,7 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
       if ((!rc->remaining) && (!rc->sitting)) {
         if (rc->clone) {
           deregisterlocaluser(rc->clone, NULL);
+          derefnode(iptree, rc->fakeipnode);
           rc->clone = NULL;
         }
         trojanscan_generateclone((void *)rc->index);
@@ -985,13 +987,13 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
 /* hack hack hack */
 int trojanscan_nickbanned(trojanscan_clones *np, channel *cp) {
   int ret;
-  long realip = np->clone->ipaddress;
+  patricia_node_t *realipnode = np->clone->ipnode;
 
-  np->clone->ipaddress = np->fakeip;
+  np->clone->ipnode = np->fakeipnode;
 
   ret = nickbanned(np->clone, cp);
 
-  np->clone->ipaddress = realip;
+  np->clone->ipnode = realipnode;
 
   return ret;
 }
@@ -1771,14 +1773,14 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               glining = 0;
               usercount = -1;
             } else if (worm->glinehost && (hp->clonecount <= TROJANSCAN_MAX_HOST_GLINE)) {
-              snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", trojanscan_iptostr(ip, sizeof(ip) - 1, sender->ipaddress));
+              snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
               usercount = hp->clonecount;
             }
             else if (worm->glineuser || (worm->glinehost && hp->clonecount > TROJANSCAN_MAX_HOST_GLINE)) {
               userbit = sender->ident;
               if(userbit[0] == '~')
                 userbit++;
-              snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, trojanscan_iptostr(ip, sizeof(ip) - 1, sender->ipaddress));
+              snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, IPtostr(sender->p_ipaddr));
               for (j=0;j<NICKHASHSIZE;j++) {
                 for (np=nicktable[j];np;np=np->next) {
                   if ((np->host==hp) && (!ircd_strcmp(np->ident,sender->ident)))
@@ -2094,9 +2096,10 @@ void trojanscan_genident(char *ptc, char size) {
   ptc[i] = '\0';
 }
 
-void trojanscan_genhost(char *ptc, char size, long *fakeip) {
+void trojanscan_genhost(char *ptc, char size, patricia_node_t **fakeipnode) {
   int dots = trojanscan_minmaxrand(2, 5), i, dotexist = 0, cur;
-  
+  struct irc_in_addr ipaddress;
+
   while (!dotexist) {
     for (i=0;i<size;i++) {
       ptc[i] = trojanscan_genchar(0);
@@ -2117,7 +2120,12 @@ void trojanscan_genhost(char *ptc, char size, long *fakeip) {
   }
   ptc[i] = '\0';
 
-  *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
+  memset(&ipaddress, 0, sizeof(ipaddress));
+  ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+  ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
+  ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
+
+  *fakeipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
 }
 
 void trojanscan_genreal(char *ptc, char size) {
@@ -2226,7 +2234,9 @@ host *trojanscan_selecthost(void) {
   return NULL;
 }
 
-void trojanscan_generatehost(char *buf, int maxsize, long *fakeip) {
+void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeip) {
+  struct irc_in_addr ipaddress;
+
   if(TROJANSCAN_HOST_MODE == TROJANSCAN_STEAL_HOST) {
     host *hp;
     int loops = 20;
@@ -2238,9 +2248,15 @@ void trojanscan_generatehost(char *buf, int maxsize, long *fakeip) {
       if(hp && (hp->clonecount <= TROJANSCAN_MAX_CLONE_COUNT) && !trojanscan_isip(hp->name->content)) {
         strlcpy(buf, hp->name->content, maxsize + 1);
         if(hp->nicks) {
-          *fakeip = hp->nicks->ipaddress;
+          *fakeip = hp->nicks->ipnode;
+	  patricia_ref_prefix(hp->nicks->ipnode->prefix);
         } else {
-          *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
+          memset(&ipaddress, 0, sizeof(ipaddress));
+	  ((unsigned short *)(ipaddress.in6_16))[5] = 0; 
+          ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
+          ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
+
+          *fakeip = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
         }
         break;
       }
@@ -2281,7 +2297,12 @@ void trojanscan_generatehost(char *buf, int maxsize, long *fakeip) {
     free(choices);
     free(lengths);
 
-    *fakeip = (trojanscan_minmaxrand(0, 65535) << 16) | trojanscan_minmaxrand(0, 65535);
+    memset(&ipaddress, 0, sizeof(ipaddress));
+    ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+    ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
+    ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
+
+    *fakeip = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
   }
 }
 

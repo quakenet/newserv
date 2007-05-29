@@ -29,7 +29,7 @@
 #define TROJANSCAN_POOLSIZE 1000
 #define TROJANSCAN_MINPOOLSIZE 500 /* 500 */
 
-#define TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL 5000 /* 500 */
+#define TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL 500 /* 500 */
 
 #define TROJANSCAN_DEFAULT_MAXCHANS 750
 #define TROJANSCAN_DEFAULT_CYCLETIME 800
@@ -78,7 +78,7 @@
 typedef struct trojanscan_clones {
   int              remaining, sitting, index;
   nick             *clone;
-  long             fakeip;
+  patricia_node_t *fakeipnode;
 } trojanscan_clones;
 
 typedef struct trojanscan_channels {
@@ -258,13 +258,13 @@ void trojanscan_genreal(char *ptc, char size);
 char trojanscan_genchar(int ty);
 void trojanscan_gennick(char *ptc, char size);
 void trojanscan_genident(char *ptc, char size);
-void trojanscan_genhost(char *ptc, char size, long *fakeip);
+void trojanscan_genhost(char *ptc, char size, patricia_node_t **fakeipnode);
 
 int trojanscan_generatepool(void);
 void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count);
 void trojanscan_repool(void *arg);
 
-void trojanscan_generatehost(char *buf, int maxsize, long *fakeip);
+void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeipnode);
 void trojanscan_generatenick(char *buf, int maxsize);
 void trojanscan_generateident(char *buf, int maxsize);
 void trojanscan_generaterealname(char *buf, int maxsize);
