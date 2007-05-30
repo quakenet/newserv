@@ -18,7 +18,7 @@ MODULE_VERSION("");
 
 int csext;
 int sampleindex;
-time_t lastsample;
+time_t chanstats_lastsample;
 time_t lastday;
 int uponehour;
 int failedinit;
@@ -62,14 +62,14 @@ void _init() {
   
     /* Work out when to take the next sample */
     now=getnettime();
-    if (now < lastsample) {
-      Error("chanstats",ERR_WARNING,"Last sample time in future (%d > %d)",lastsample,now);
+    if (now < chanstats_lastsample) {
+      Error("chanstats",ERR_WARNING,"Last sample time in future (%d > %d)",chanstats_lastsample,now);
       when=now;
-    } else if (now<(lastsample+SAMPLEINTERVAL)) {
-      lastday=lastsample/(24*3600);
-      when=lastsample+SAMPLEINTERVAL;
+    } else if (now<(chanstats_lastsample+SAMPLEINTERVAL)) {
+      lastday=chanstats_lastsample/(24*3600);
+      when=chanstats_lastsample+SAMPLEINTERVAL;
     } else {
-      if ((lastsample/(24*3600))<lastday) {
+      if ((chanstats_lastsample/(24*3600))<lastday) {
         rotatechanstats();
       }
       when=now;
@@ -136,7 +136,7 @@ void doupdate(void *arg) {
     }
   }
   
-  lastsample=now;
+  chanstats_lastsample=now;
   if (now-lastsave > SAVEINTERVAL) {
     savechanstats();
     lastsave=now;
@@ -232,13 +232,13 @@ void savechanstats() {
   
   /* header: samples for today + last HISTORYDAYS days */
   
-  fprintf(fp,"%lu %u",lastsample,todaysamples);
+  fprintf(fp,"%lu %u",chanstats_lastsample,todaysamples);
   for(i=0;i<HISTORYDAYS;i++) {
     fprintf(fp," %u",lastdaysamples[i]);
   }  
   fprintf(fp,"\n");
   
-  /* body: channel, lastsample, samplestoday, sizetoday, <last sizes, last samples> */
+  /* body: channel, chanstats_lastsample, samplestoday, sizetoday, <last sizes, last samples> */
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=cip->next) {
       if ((chp=cip->exts[csext])==NULL) { 
@@ -283,7 +283,7 @@ void loadchanstats() {
     return;
   }
   
-  lastsample=strtol(args[0],NULL,10);
+  chanstats_lastsample=strtol(args[0],NULL,10);
   todaysamples=strtol(args[1],NULL,10);
   for(i=0;i<HISTORYDAYS;i++) {
     lastdaysamples[i]=strtol(args[i+2],NULL,10);
