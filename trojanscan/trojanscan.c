@@ -1876,6 +1876,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               if ((rp->clone == &(trojanscan_swarm[i])))
                 rp->donotpart = 1;
           }
+          derefnode(iptree, trojanscan_swarm[i].fakeipnode);
           trojanscan_swarm[i].clone = NULL;
           trojanscan_swarm[i].remaining = 0; /* bah */
           break;
