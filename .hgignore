@@ -3,3 +3,4 @@ syntax: glob
 *.so
 local.in
 newserv
+modules/
