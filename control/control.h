@@ -32,7 +32,7 @@ extern CommandTree *controlcmds;
 struct specialsched {
   sstring *modulename;
   void *schedule;
-} specialsched;
+};
 
 /* NEVER USE THE FOLLOWING IN COMMANDS, you'll end up missing bits off and users'll end up being able to gline people */
 #define __NO_ANYONE      0x000
