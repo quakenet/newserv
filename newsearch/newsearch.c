@@ -25,7 +25,7 @@ void *falseval(int type);
 const char *parseError;
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) */
-const struct nick *senderNSExtern;
+nick *senderNSExtern;
 
 void _init() {
   searchTree=newcommandtree();

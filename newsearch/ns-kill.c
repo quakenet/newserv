@@ -13,7 +13,7 @@
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
-extern const struct nick *senderNSExtern;
+extern nick *senderNSExtern;
 
 void *kill_exe(struct searchNode *thenode, int type, void *theinput);
 void kill_free(struct searchNode *thenode);
