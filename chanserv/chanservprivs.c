@@ -62,6 +62,9 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags,
     if (!quiet) chanservstdmessage(np, QM_UNKNOWNCHAN, cip->name->content);
     return NULL;
   }
+
+  if (rcp && rup)
+    rcup=findreguseronchannel(rcp, rup);
   
   if (!priv || !cs_privcheck(priv,np)) {
     if ((flags & CA_VOICEPRIV) &&
@@ -77,8 +80,7 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags,
       return NULL;
     }
   
-    if ((flags & CA_NEEDKNOWN) && (!(rcup=findreguseronchannel(rcp, rup)) ||
-        !CUKnown(rcup))) {
+    if ((flags & CA_NEEDKNOWN) && (!rcup || !CUKnown(rcup))) {
       if (!quiet) chanservstdmessage(np, QM_NOACCESSONCHAN, cip->name->content, cmdname);
       return NULL;
     }

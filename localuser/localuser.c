@@ -41,8 +41,8 @@ void _init() {
   currentlocalunum=1;
   pendingkilllist=NULL;
   registerhook(HOOK_IRC_SENDBURSTNICKS,&sendnickburst);
-  registerhook(HOOK_NICK_LOSTNICK,&checklocalkill);
-  registerhook(HOOK_NICK_LOSTNICK,&checkpendingkills);
+  registerhook(HOOK_NICK_KILL,&checklocalkill);
+  registerhook(HOOK_NICK_LOSTNICK,&checkpendingkills); /* CHECK ME -> should this hook KILL or LOSTNICK or BOTH */
   registerhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkills);
   registerserverhandler("P",&handleprivatemsgcmd,2);
   registerserverhandler("O",&handleprivatenoticecmd, 2);
@@ -255,17 +255,21 @@ void sendnickburst(int hooknum, void *arg) {
 }
 
 /* Check for a kill of a local user */
-void checklocalkill(int hooknum, void *target) {
+void checklocalkill(int hooknum, void *arg) {
+  void **args=arg;
+  nick *target=args[0];
+  char *reason=args[1];
   long numeric;
-  void *args[1];
-  
-  args[0]=NULL;
+
+  void *myargs[1];
+  myargs[0]=reason;
+
   
   numeric=((nick *)target)->numeric;
   
   if (homeserver(numeric)==mylongnum) {
     if (umhandlers[(numeric)&MAXLOCALUSER]!=NULL) {
-      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,args);
+      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,myargs);
     }
   }
 } 
@@ -442,7 +446,7 @@ void killuser(nick *source, nick *target, char *format, ... ) {
 
 void _killuser(nick *source, nick *target, char *reason) {
   char senderstr[6];
-  char sourcestring[NICKLEN+USERLEN+3];
+  char sourcestring[HOSTLEN+NICKLEN+3];
 
   if (!source) {
     /* If we have a null nick, use the server.. */
@@ -509,3 +513,10 @@ void localusersetaccount(nick *np, char *accname) {
   triggerhook(HOOK_NICK_ACCOUNT, np);
 }
 
+void localusersetumodes(nick *np, flag_t newmodes) {
+  if (connected) {
+    irc_send("%s M %s %s", longtonumeric(np->numeric,5), np->nick, printflagdiff(np->umodes, newmodes, umodeflags));
+  }
+
+  np->umodes = newmodes;
+}

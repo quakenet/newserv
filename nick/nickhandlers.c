@@ -212,13 +212,24 @@ int handlequitmsg(void *source, int cargc, char **cargv) {
 
 int handlekillmsg(void *source, int cargc, char **cargv) {
   nick *np;
-  
+  void *harg[2];
+#warning Fix me to use source
+
   if (cargc<1) {
     Error("nick",ERR_WARNING,"Kill message with too few parameters");
     return CMD_ERROR;  
   }
+
+  if (cargc>1) {
+    harg[1]=(void *)cargv[1];
+  } else {
+    harg[1]="";
+  } 
+  
   np=getnickbynumericstr(cargv[0]);
   if (np) {
+    harg[0]=(void *)np;
+    triggerhook(HOOK_NICK_KILL, harg);
     deletenick(np);
   } else {
     Error("nick",ERR_WARNING,"Kill for non-existant numeric %s",cargv[0]);
