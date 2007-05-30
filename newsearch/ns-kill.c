@@ -93,6 +93,9 @@ void kill_free(struct searchNode *thenode) {
   }
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
+  /* notify opers of the action */
+  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via nicksearch [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
+    localdata->count != 1 ? "users" : "user", safe);
   free(localdata->nodes);
   free(localdata);
   free(thenode);

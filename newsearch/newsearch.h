@@ -4,7 +4,7 @@
 #define    SEARCHTYPE_NICK        2
 
 
-#define    NSMAX_KILL_LIMIT       5
+#define    NSMAX_KILL_LIMIT       500
 #define    NSMAX_GLINE_LIMIT      500
 
 

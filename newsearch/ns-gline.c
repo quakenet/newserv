@@ -9,7 +9,7 @@
 
 #include "../control/control.h" /* controlreply() */
 #include "../irc/irc.h" /* irc_send() */
-#include "../lib/irc_string.h" /* IPtostr() */
+#include "../lib/irc_string.h" /* IPtostr(), longtoduration(), durationtolong() */
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
@@ -20,6 +20,7 @@ void gline_free(struct searchNode *thenode);
 
 struct gline_localdata {
   unsigned int marker;
+  unsigned int duration;
   int count;
   searchNode **nodes;
 };
@@ -32,6 +33,16 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   localdata->nodes = (struct searchNode **) malloc(sizeof(struct searchNode *) * argc);
   localdata->count = 0;
   localdata->marker = nextnickmarker();
+
+  /* gline durations */
+  if (argc<1)
+    localdata->duration = NSGLINE_DURATION;
+  else {
+    localdata->duration = durationtolong(argv[0]);
+    /* error checking on gline duration */
+    if (localdata->duration == 0)
+      localdata->duration = NSGLINE_DURATION;
+  }
 
   thenode=(struct searchNode *)malloc(sizeof (struct searchNode));
 
@@ -84,11 +95,11 @@ void gline_free(struct searchNode *thenode) {
       if (np->marker == localdata->marker) {
         if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
           if (np->ident[0] == '~')
-            irc_send("%s GL * +*@%s %u 1 :You (%s!%s@%s) have been glined for violating our terms of service.", 
-              mynumeric->content, IPtostr(np->ipaddress), NSGLINE_DURATION, np->nick, np->ident, IPtostr(np->ipaddress));
+            irc_send("%s GL * +*@%s %u :You (%s!%s@%s) have been glined for violating our terms of service.", 
+              mynumeric->content, IPtostr(np->ipaddress), localdata->duration, np->nick, np->ident, IPtostr(np->ipaddress));
           else
-            irc_send("%s GL * +%s@%s %u 1 :You (%s!%s@%s) have been glined for violating our terms of service.", 
-              mynumeric->content, np->ident, IPtostr(np->ipaddress), NSGLINE_DURATION, np->nick, np->ident, IPtostr(np->ipaddress));
+            irc_send("%s GL * +%s@%s %u :You (%s!%s@%s) have been glined for violating our terms of service.", 
+              mynumeric->content, np->ident, IPtostr(np->ipaddress), localdata->duration, np->nick, np->ident, IPtostr(np->ipaddress));
         }
         else
             safe++;
@@ -97,6 +108,9 @@ void gline_free(struct searchNode *thenode) {
   }
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
+  /* notify opers of the action */
+  controlwall(NO_OPER, NL_GLINES, "%s/%s glined %d %s via nicksearch for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
+    localdata->count != 1 ? "users" : "user", longtoduration(localdata->duration, 1), safe);
   free(localdata->nodes);
   free(localdata);
   free(thenode);
