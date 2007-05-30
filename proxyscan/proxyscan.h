@@ -97,6 +97,8 @@ extern int brokendb;
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;
 
+extern unsigned int ps_start_ts;
+
 extern unsigned long countpendingscan;
 
 extern unsigned long scanspermin;

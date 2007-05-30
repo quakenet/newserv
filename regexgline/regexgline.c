@@ -204,7 +204,7 @@ void rg_dodelay(void *arg) {
   
   if (delay->reason->type == 5) {
     usercount = delay->np->host->clonecount;
-    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(delay->np->ipaddress));
+    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(delay->np->p_ipaddr));
   }
   
   if((delay->reason->type == 4) || (usercount > rg_max_per_gline)) {
@@ -214,7 +214,7 @@ void rg_dodelay(void *arg) {
       if(!ircd_strcmp(delay->np->ident, tnp->ident))
         usercount++;
 
-    snprintf(hostname, sizeof(hostname), "%s@%s", delay->np->ident, IPtostr(delay->np->ipaddress));
+    snprintf(hostname, sizeof(hostname), "%s@%s", delay->np->ident, IPtostr(delay->np->p_ipaddr));
   }
   
   if ((delay->reason->type == 6) || (usercount > rg_max_per_gline)) {
@@ -244,7 +244,7 @@ void rg_dodelay(void *arg) {
     }
   }
   
-  irc_send("%s GL * +%s %d :%s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -907,7 +907,7 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
 
   if (rp->type == 2) {
     usercount = np->host->clonecount;
-    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(np->ipaddress));
+    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(np->p_ipaddr));
   }
   
   if ((rp->type == 1) || (usercount > rg_max_per_gline)) {
@@ -917,7 +917,7 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
       if(!ircd_strcmp(np->ident, tnp->ident))
         usercount++;
 
-    snprintf(hostname, sizeof(hostname), "%s@%s", np->ident, IPtostr(np->ipaddress));
+    snprintf(hostname, sizeof(hostname), "%s@%s", np->ident, IPtostr(np->p_ipaddr));
   }
 
   if ((rp->type >= 3) || (usercount > rg_max_per_gline)) {
@@ -960,14 +960,15 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
     }
   }
   
-  irc_send("%s GL * +%s %d :%s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
 }
 
 void rg_logevent(nick *np, char *event, char *details, ...) {
   char eeevent[RG_QUERY_BUF_SIZE], eedetails[RG_QUERY_BUF_SIZE], eemask[RG_QUERY_BUF_SIZE], eeaccount[RG_QUERY_BUF_SIZE];
   char buf[513], account[ACCOUNTLEN + 1], mask[RG_MASKLEN];
   int masklen;
-  
+
+  return;
   va_list va;
     
   va_start(va, details);
@@ -998,6 +999,7 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
 void rg_loggline(struct rg_struct *rg, nick *np) {
   char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
 
+  return;
   rg_sqlescape_string(eenick, np->nick, strlen(np->nick));
   rg_sqlescape_string(eeuser, np->ident, strlen(np->ident));
   rg_sqlescape_string(eehost, np->host->name->content, strlen(np->host->name->content));

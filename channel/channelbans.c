@@ -458,8 +458,8 @@ int nickmatchban(nick *np, chanban *bp) {
 
   if (bp->flags & CHANBAN_IP) {
     /* IP bans are checked against IP address only */
-    ipstring=IPtostr(np->ipaddress);
-    
+    ipstring=IPtostr(np->p_ipaddr);
+ 
     if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(ipstring,bp->host->content))
       return 1;
     

@@ -4,10 +4,6 @@
 
 #include <time.h>
 
-#include "../lib/sstring.h"
-#include "../nick/nick.h"
-#include "../channel/channel.h"
-
 #include "hchannel.h"
 #include "haccount.h"
 

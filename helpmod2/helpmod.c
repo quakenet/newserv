@@ -3,15 +3,6 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "../localuser/localuser.h"
-#include "../localuser/localuserchannel.h"
-#include "../control/control.h"
-#include "../channel/channel.h"
-#include "../nick/nick.h"
-#include "../core/config.h"
-#include "../core/schedule.h"
-#include "../core/hooks.h"
-
 #include "helpmod_entries.h"
 #include "helpmod_alias.h"
 

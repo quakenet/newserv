@@ -2,6 +2,7 @@
 
 #include "../nick/nick.h"
 #include "../lib/base64.h"
+#include "../lib/sstring.h"
 #include "../irc/irc.h"
 #include "../irc/irc_config.h"
 #include "../core/hooks.h"
@@ -18,7 +19,18 @@ MODULE_VERSION("");
 int currentlocalunum;
 UserMessageHandler umhandlers[MAXLOCALUSER+1];
 
+typedef struct pendingkill {
+  nick *source, *target;
+  sstring *reason;
+  struct pendingkill *next;
+} pendingkill;
+
+pendingkill *pendingkilllist;
+
 void checklocalkill(int hooknum, void *nick);
+void clearpendingkills(int hooknum, void *arg);
+void checkpendingkills(int hooknum, void *arg);
+void _killuser(nick *source, nick *target, char *reason);
 
 void _init() {
   int i;
@@ -27,10 +39,23 @@ void _init() {
     umhandlers[i]=NULL;
   }
   currentlocalunum=1;
+  pendingkilllist=NULL;
   registerhook(HOOK_IRC_SENDBURSTNICKS,&sendnickburst);
-  registerhook(HOOK_NICK_LOSTNICK,&checklocalkill);
+  registerhook(HOOK_NICK_KILL,&checklocalkill);
+  registerhook(HOOK_NICK_LOSTNICK,&checkpendingkills); /* CHECK ME -> should this hook KILL or LOSTNICK or BOTH */
+  registerhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkills);
   registerserverhandler("P",&handleprivatemsgcmd,2);
   registerserverhandler("O",&handleprivatenoticecmd, 2);
+}
+
+void _fini() {
+  pendingkill *pk;
+
+  for (pk=pendingkilllist;pk;pk=pendingkilllist) {
+    pendingkilllist = pk->next;
+    freesstring(pk->reason);
+    free(pk);
+  }
 }
 
 /*
@@ -41,7 +66,8 @@ void _init() {
 nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname, char *authname, flag_t umodes, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
-  
+  struct irc_in_addr ipaddress;
+ 
   i=0;
   currentlocalunum=(currentlocalunum+1)%262142;
   while (servernicks[numerictolong(mynumeric->content,2)][currentlocalunum&MAXLOCALUSER]!=NULL) {
@@ -66,7 +92,14 @@ nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname,
   newuser->nextbyrealname=newuser->realname->nicks;
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
-  newuser->ipaddress=(127<<24)+(1<<8)+((currentlocalunum%253)+1); /* Make it look like a valid addr on 127.0.1.0/24 */
+  
+  memset(&ipaddress, 0, sizeof(ipaddress));
+  ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+  ((unsigned short *)(ipaddress.in6_16))[6] = 127;
+  ((unsigned char *)(ipaddress.in6_16))[14] = 1;
+  ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
+
+  newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
   newuser->timestamp=getnettime();
   newuser->shident=NULL;
   newuser->sethost=NULL;
@@ -107,6 +140,7 @@ nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname,
 
 int renamelocaluser(nick *np, char *newnick) {
   nick *np2;
+  char ipbuf[25];
   time_t timestamp=getnettime();
   
   if (!np)
@@ -123,8 +157,8 @@ int renamelocaluser(nick *np, char *newnick) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
-      irc_send("%s N %s %d",longtonumeric(np->numeric,5),np->nick,np->timestamp);
-      triggerhook(HOOK_NICK_RENAME,np);        
+      irc_send("%s N %s %d",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,np->timestamp);
+      triggerhook(HOOK_NICK_RENAME,np);     
       return 0;
     } else {
       /* Kill other user and drop through */
@@ -195,6 +229,7 @@ UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler)
 
 void sendnickmsg(nick *np) {
   char numericbuf[6];
+  char ipbuf[25];
 
   strncpy(numericbuf,longtonumeric(np->numeric,5),5);
   numericbuf[5]='\0';
@@ -202,7 +237,7 @@ void sendnickmsg(nick *np) {
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
     mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
     printflags(np->umodes,umodeflags),IsAccount(np)?" ":"",
-    np->authname,longtonumeric(np->ipaddress,6),numericbuf,
+    np->authname,iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,
     np->realname->name->content);
 }
 
@@ -220,17 +255,21 @@ void sendnickburst(int hooknum, void *arg) {
 }
 
 /* Check for a kill of a local user */
-void checklocalkill(int hooknum, void *target) {
+void checklocalkill(int hooknum, void *arg) {
+  void **args=arg;
+  nick *target=args[0];
+  char *reason=args[1];
   long numeric;
-  void *args[1];
-  
-  args[0]=NULL;
+
+  void *myargs[1];
+  myargs[0]=reason;
+
   
   numeric=((nick *)target)->numeric;
   
   if (homeserver(numeric)==mylongnum) {
     if (umhandlers[(numeric)&MAXLOCALUSER]!=NULL) {
-      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,args);
+      (umhandlers[(numeric)&MAXLOCALUSER])((nick *)target,LU_KILLED,myargs);
     }
   }
 } 
@@ -381,9 +420,33 @@ void sendnoticetouser(nick *source, nick *target, char *format, ... ) {
 /* Kill user */
 void killuser(nick *source, nick *target, char *format, ... ) {
   char buf[BUFSIZE];
-  char senderstr[6];
-  char sourcestring[NICKLEN+USERLEN+3];
   va_list va;
+  pendingkill *pk;
+
+  va_start(va, format);
+  vsnprintf(buf, BUFSIZE-17, format, va);
+  va_end (va);
+
+  if (hookqueuelength) {
+    for (pk = pendingkilllist; pk; pk = pk->next)
+      if (pk->target == target)
+        return;
+
+    Error("localuser", ERR_INFO, "Adding pending kill for %s", target->nick);
+    pk = (pendingkill *)malloc(sizeof(pendingkill));
+    pk->source = source;
+    pk->target = target;
+    pk->reason = getsstring(buf, BUFSIZE);
+    pk->next = pendingkilllist;
+    pendingkilllist = pk;
+  } else {
+    _killuser(source, target, buf);
+  }
+}
+
+void _killuser(nick *source, nick *target, char *reason) {
+  char senderstr[6];
+  char sourcestring[HOSTLEN+NICKLEN+3];
 
   if (!source) {
     /* If we have a null nick, use the server.. */
@@ -394,12 +457,42 @@ void killuser(nick *source, nick *target, char *format, ... ) {
     sprintf(sourcestring,"%s!%s",source->host->name->content, source->nick);
   }
 
-  va_start(va, format);
-  vsnprintf(buf, BUFSIZE-17, format, va);
-  va_end (va);
-
-  irc_send("%s D %s :%s (%s)",senderstr,longtonumeric(target->numeric,5),sourcestring,buf);
+  irc_send("%s D %s :%s (%s)",senderstr,longtonumeric(target->numeric,5),sourcestring,reason);
   deletenick(target);
+}
+
+void clearpendingkills(int hooknum, void *arg) {
+  pendingkill *pk;
+
+  pk = pendingkilllist;
+  while (pk) {
+    pendingkilllist = pk->next;
+
+    if (pk->target) {
+      Error("localuser", ERR_INFO, "Processing pending kill for %s", pk->target->nick);
+      _killuser(pk->source, pk->target, pk->reason->content);
+    }
+
+    freesstring(pk->reason);
+    free(pk);
+    pk = pendingkilllist;
+  }
+}
+
+void checkpendingkills(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  pendingkill *pk;
+
+  for (pk=pendingkilllist; pk; pk = pk->next) {
+    if (pk->source == np) {
+      Error("localuser", ERR_INFO, "Pending kill source %s got deleted, NULL'ing source for pending kill", np->nick);
+      pk->source = NULL;
+    }
+    if (pk->target == np) {
+      Error("localuser", ERR_INFO, "Pending kill target %s got deleted, NULL'ing target for pending kill", np->nick);
+      pk->target = NULL;
+    }
+  }
 }
 
 /* Auth user */
@@ -420,3 +513,10 @@ void localusersetaccount(nick *np, char *accname) {
   triggerhook(HOOK_NICK_ACCOUNT, np);
 }
 
+void localusersetumodes(nick *np, flag_t newmodes) {
+  if (connected) {
+    irc_send("%s M %s %s", longtonumeric(np->numeric,5), np->nick, printflagdiff(np->umodes, newmodes, umodeflags));
+  }
+
+  np->umodes = newmodes;
+}

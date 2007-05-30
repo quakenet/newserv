@@ -163,7 +163,8 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       break;
 
     case LU_KILLED:
-      lua_vlpcall(l, ln, "irc_onkilled", "");
+      p = (char *)args[2];
+      lua_vlpcall(l, ln, "irc_onkilled", "s", p);
 
       strlcpy(ln->nickname, target->nick, sizeof(ln->nickname));
       strlcpy(ln->ident, target->ident, sizeof(ln->ident));
@@ -176,6 +177,16 @@ void lua_localnickhandler(nick *target, int type, void **args) {
 
       ln->reconnect = scheduleoneshot(time(NULL) + 1, &lua_reconnectlocal, ln);
 
+      break;
+    case LU_INVITE:
+    /* we were invited, check if someone invited us to PUBLICCHAN */
+      np = (nick *)args[0];
+      c = (channel *)args[1];
+
+      if(!c || !np || !c->index || !c->index->name || !c->index->name->content)
+        return;
+
+      lua_vlpcall(l, ln, "irc_oninvite", "Ns", np, c->index->name->content);
       break;
   }
 }
@@ -209,6 +220,8 @@ static int lua_localjoin(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   chan = (char *)lua_tostring(ps, 2);
+  if(chan[0] != '#')
+    LUA_RETURN(ps, LUA_FAIL);
 
   if(!lua_lineok(chan)) 
     LUA_RETURN(ps, LUA_FAIL);
@@ -393,6 +406,26 @@ static int lua_localovmode(lua_State *l) {
   LUA_RETURN(l, LUA_OK);
 }
 
+static int lua_localumodes(lua_State *ps) {
+  nick *np;
+  char *modes;
+  flag_t newmodes = 0;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynumeric(lua_tolong(ps, 1));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  modes = (char *)lua_tostring(ps, 2);
+
+  setflags(&newmodes, UMODE_ALL, modes, umodeflags, REJECT_NONE);
+
+  localusersetumodes(np, newmodes);
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_localtopic(lua_State *ps) {
   nick *np;
   channel *cp;
@@ -501,5 +534,6 @@ void lua_registerlocalcommands(lua_State *l) {
 
   lua_register(l, "irc_localban", lua_localban);
   lua_register(l, "irc_localkick", lua_localkick);
+  lua_register(l, "irc_localumodes", lua_localumodes);
 }
 

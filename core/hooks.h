@@ -10,6 +10,7 @@
 #define HOOK_CORE_REHASH             0
 #define HOOK_CORE_STATSREQUEST       1
 #define HOOK_CORE_STATSREPLY         2
+#define HOOK_CORE_ENDOFHOOKSQUEUE    3
 
 #define HOOK_IRC_CONNECTED         100
 #define HOOK_IRC_DISCON            101
@@ -31,6 +32,7 @@
 #define HOOK_NICK_QUIT             305  /* Argument is void*[2] (nick, reason) */
 #define HOOK_NICK_SETHOST          306  /* Argument is nick* */
 #define HOOK_NICK_MODEOPER         307  /* Argument is void*[2] (nick, modes) */
+#define HOOK_NICK_KILL             308  /* Argument is void*[2] (nick, reason) */
 
 #define HOOK_CHANNEL_BURST         400  /* Argument is channel pointer */
 #define HOOK_CHANNEL_CREATE        401  /* Argument is void*[2] (channel, nick) */
@@ -59,6 +61,8 @@
 #define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
 
 typedef void (*HookCallback)(int, void *);
+
+unsigned int hookqueuelength;
 
 void inithooks();
 int registerhook(int hooknum, HookCallback callback);

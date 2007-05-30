@@ -93,7 +93,7 @@ int controlwhois(void *sender, int cargc, char **cargv) {
   sendmessagetouser(mynick,(nick *)sender,"Nick      : %s",target->nick);
   sendmessagetouser(mynick,(nick *)sender,"Numeric   : %s",longtonumeric(target->numeric,5));
   sendmessagetouser(mynick,(nick *)sender,"User@Host : %s@%s (%d user(s) on this host)",target->ident,target->host->name->content,target->host->clonecount);
-  sendmessagetouser(mynick,(nick *)sender,"IP address: %d.%d.%d.%d",(target->ipaddress)>>24,(target->ipaddress>>16)&255, (target->ipaddress>>8)&255,target->ipaddress&255);
+  sendmessagetouser(mynick,(nick *)sender,"IP address: %s",IPtostr(target->p_ipaddr));
   sendmessagetouser(mynick,(nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
   if (target->umodes) {
     sendmessagetouser(mynick,(nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));

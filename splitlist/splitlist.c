@@ -4,6 +4,9 @@
 #include "../irc/irc.h"
 #include "splitlist.h"
 #include "../core/hooks.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 array splitlist;
 

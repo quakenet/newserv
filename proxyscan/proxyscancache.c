@@ -232,10 +232,15 @@ void scanall(int type, int port) {
 
       np->host->marker=hostmarker;
 
-      if ((chp=findcachehost(np->ipaddress)))
+      if (!irc_in_addr_is_ipv4(&np->p_ipaddr))
+        continue;
+
+      unsigned int ip2 = irc_in_addr_v4_to_int(&np->p_ipaddr);
+
+      if ((chp=findcachehost(ip2)))
 	chp->marker=1;
 
-      queuescan(np->ipaddress, type, port, SCLASS_NORMAL, 0);
+      queuescan(ip2, type, port, SCLASS_NORMAL, 0);
     }
   }
 

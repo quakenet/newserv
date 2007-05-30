@@ -1,14 +1,18 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
-#define QR_REQUIREDSIZE_CSERVE   25
+#define QR_REQUIREDSIZE_CSERVE   15 
 #define QR_REQUIREDSIZE_SPAMSCAN 120
 #define QR_TOPX                  5
-#define QR_AUTHEDPCT_CSERVE      65
+#define QR_AUTHEDPCT_SPAMSCANMIN 25
+#define QR_AUTHEDPCT_SCALE       35 
+#define QR_AUTHEDPCT_SCALEMAX    300
+#define QR_AUTHEDPCT_CSERVE      60 
 #define QR_AUTHEDPCT_SPAMSCAN    50
-#define QR_MAXQCHANS             23000
-#define QR_MINUSERSPCT           80
-#define QR_MAXUSERSPCT           120
+#define QR_AUTHEDPCT_CSERVEMIN   25
+#define QR_MAXQCHANS             29500
+#define QR_MINUSERSPCT           60
+#define QR_MAXUSERSPCT           500 
 
 /* should we use 'debug' requirements for Q/S? */
 #define QR_DEBUG                 0 

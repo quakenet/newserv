@@ -42,7 +42,7 @@ PGconn *dbconn;
 regchan **allchans;
 reguser **allusers;
 
-int sqlconnected;
+int cs_sqlconnected;
 unsigned int lastchannelID;
 unsigned int lastuserID;
 unsigned int lastbanID;
@@ -82,7 +82,7 @@ int chanservdbinit() {
   sstring *dbhost,*dbusername,*dbpassword,*dbdatabase,*dbport;
   char connectstr[1000];
  
-  sqlconnected=0;
+  cs_sqlconnected=0;
   
   registerhook(HOOK_CORE_STATSREQUEST, csdb_handlestats);
 
@@ -111,7 +111,7 @@ int chanservdbinit() {
   freesstring(dbdatabase);
   freesstring(dbport);
  
-  sqlconnected=1;
+  cs_sqlconnected=1;
 
   /* Set up the tables */
   /* User table */
@@ -327,7 +327,7 @@ void csdb_handlestats(int hooknum, void *arg) {
 void chanservdbclose() {
   qquery *qqp, *nqqp;
 
-  if (sqlconnected) {
+  if (cs_sqlconnected) {
     deregisterhandler(PQsocket(dbconn), 0);
   }
 

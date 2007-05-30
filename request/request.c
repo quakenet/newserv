@@ -7,6 +7,7 @@
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
+#include "../lib/version.h"
 #include "../control/control.h"
 #include "../splitlist/splitlist.h"
 #include "request.h"
@@ -14,6 +15,8 @@
 #include "lrequest.h"
 #include "sqrequest.h"
 #include "user.h"
+
+MODULE_VERSION("");
 
 nick *rqnick;
 CommandTree *rqcommands;

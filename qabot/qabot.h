@@ -144,6 +144,9 @@ typedef struct qab_bot {
   qab_answer*     answers;
   
   unsigned long   micnumeric;
+  unsigned long   recnumeric;
+  FILE            *recfile;
+  FILE            *playfile;
 
   struct qab_bot* next;
   struct qab_bot* prev;
@@ -174,6 +177,7 @@ const char* qabot_formattime(time_t tme);
 qab_bot* qabot_getbot();
 int qabot_addbot(char* nickname, char* user, char* host, char* pub_chan, char* qu_chan, char* stff_chan, flag_t flags, int spam_interval, int ask_wait, int queued_question_interval, nick* sender);
 void qabot_delbot(qab_bot* bot);
+void qabot_playback(qab_bot *bot);
 channel* qabot_getchannel(char* channel_name);
 void qabot_spam(void* arg);
 void qabot_spamstored(void* arg);
@@ -191,6 +195,12 @@ int qabot_dochanconfig(void* np, int cargc, char** cargv);
 int qabot_dochanhelp(void* np, int cargc, char** cargv);
 int qabot_dochanlistblocks(void* np, int cargc, char** cargv);
 int qabot_dochanmic(void* np, int cargc, char** cargv);
+int qabot_dochanrecord(void *np, int cargc, char** cargv);
+int qabot_dochanplay(void *np, int cargc, char** cargv);
+int qabot_dochancontinue(void *np, int cargc, char** cargv);
+int qabot_dochanstop(void *np, int cargc, char** cargv);
+int qabot_dochanlist(void *np, int cargc, char** cargv);
+int qabot_dochandelete(void *np, int cargc, char** cargv);
 int qabot_dochanmoo(void* np, int cargc, char** cargv);
 int qabot_dochanofftopic(void* np, int cargc, char** cargv);
 int qabot_dochanopenchan(void* np, int cargc, char** cargv);

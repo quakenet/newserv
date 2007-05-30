@@ -5,10 +5,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "../nick/nick.h"
-#include "../channel/channel.h"
-#include "../lib/irc_string.h"
-
 #include "hcommands.h"
 #include "hcommand.h"
 
@@ -3854,6 +3850,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 	}
         else
         {
+            controlwall(NO_DEVELOPER, NL_ALL_COMMANDS, "(G) From: %s!%s@%s%s%s: %s", sender->real_user->nick, sender->real_user->ident, sender->real_user->host->name->content, IsAccount(sender->real_user)?"/":"", IsAccount(sender->real_user)?sender->real_user->authname:"", args);
             SKIP_WORD;
             hcom->function(sender, returntype, ostr, argc, argv);
         }

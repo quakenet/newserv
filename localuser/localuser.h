@@ -37,5 +37,6 @@ void sendsecuremessagetouser(nick *source, nick *target, char *servername, char 
 void sendnoticetouser(nick *source, nick *target, char *format, ... );
 void killuser(nick *source, nick *target, char *format, ... );
 void localusersetaccount(nick *np, char *accname);
+void localusersetumodes(nick *np, flag_t newmodes);
 
 #endif

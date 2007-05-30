@@ -4,8 +4,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "../nick/nick.h"
-
 #include "huser.h"
 #include "hchannel.h"
 #include "haccount.h"

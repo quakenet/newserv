@@ -6,7 +6,7 @@
 #define RQ_QSERVER "CServe.quakenet.org"
 #define RQ_QNICK "Q"
 
-#define RQ_SSERVER "services4.uk.quakenet.org"
+#define RQ_SSERVER "services.no.quakenet.org"
 #define RQ_SNICK "S"
 
 #define RQ_REQUEST_NICK "R"

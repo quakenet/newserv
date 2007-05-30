@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <dirent.h>
 
 #include "../nick/nick.h"
 #include "../localuser/localuserchannel.h"
@@ -285,6 +286,18 @@ int qabot_dochanclear(void* np, int cargc, char** cargv) {
     bot->micnumeric = 0;
     sendmessagetochannel(bot->np, cp, "Mic deactivated.");
   }
+  if (bot->recnumeric) {
+    bot->recnumeric = 0;
+    sendmessagetochannel(bot->np, cp, "Recorder deactivated.");
+  }
+  if (bot->recfile) {
+    fclose(bot->recfile);
+    bot->recfile = NULL;
+  }
+  if (bot->playfile) {
+    fclose(bot->playfile);
+    bot->playfile = NULL;
+  }
   
   return CMD_OK;
 }
@@ -524,7 +537,32 @@ int qabot_dochanhelp(void* np, int cargc, char** cargv) {
     ch = cargv[0];
   
   if (*ch) {
-    if (!ircd_strcmp(ch, "mic")) {
+    if (!ircd_strcmp(ch, "record")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !record [filename]");
+      sendnoticetouser(bot->np, sender, "Turn the recorder on or off. When turned on, anything said is recorded.");
+      sendnoticetouser(bot->np, sender, "File name is required when starting the recorder.");
+    }
+    else if (!ircd_strcmp(ch, "play")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !play <filename>");
+      sendnoticetouser(bot->np, sender, "Begin playback from the file specified.");
+    }
+    else if (!ircd_strcmp(ch, "continue")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !continue");
+      sendnoticetouser(bot->np, sender, "Continue playback from a file.");
+    }
+    else if (!ircd_strcmp(ch, "stop")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !stop");
+      sendnoticetouser(bot->np, sender, "Stop playback of a file before it reaches the end.");
+    }
+    else if (!ircd_strcmp(ch, "list")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !list");
+      sendnoticetouser(bot->np, sender, "Lists recording files.");
+    }
+    else if (!ircd_strcmp(ch, "delete")) {
+      sendnoticetouser(bot->np, sender, "Syntax: !delete <filename>");
+      sendnoticetouser(bot->np, sender, "Deletes a recording file.");
+    }
+    else if (!ircd_strcmp(ch, "mic")) {
       sendnoticetouser(bot->np, sender, "Syntax: !mic");
       sendnoticetouser(bot->np, sender, "Turn the microphone on or off. When turned on, anything said by the microphone holder is relayed to %s.", bot->public_chan->name->content);
     }
@@ -608,6 +646,12 @@ int qabot_dochanhelp(void* np, int cargc, char** cargv) {
     sendnoticetouser(bot->np, sender, "!spam       - Mark a question or questions as spam.");
     sendnoticetouser(bot->np, sender, "!status     - Display some status statistics.");
     sendnoticetouser(bot->np, sender, "!unblock    - Remove a block.");
+    sendnoticetouser(bot->np, sender, "!record     - Turn the recorder on or off.");
+    sendnoticetouser(bot->np, sender, "!play       - Start playback of a recording.");
+    sendnoticetouser(bot->np, sender, "!continue   - Continue playback of a recording.");
+    sendnoticetouser(bot->np, sender, "!stop       - Stop playback of a recording.");
+    sendnoticetouser(bot->np, sender, "!list       - Lists recordings.");
+    sendnoticetouser(bot->np, sender, "!delete     - Deletes a previous recording.");
     sendnoticetouser(bot->np, sender, "End of list.");
   }
   
@@ -666,6 +710,216 @@ int qabot_dochanmic(void* np, int cargc, char** cargv) {
     sendmessagetochannel(bot->np, cp, "Mic activated. Anything said by %s will be relayed in %s.", 
       sender->nick, bot->public_chan->name->content);
     deleteschedule(0, qabot_spamstored, (void*)bot);
+  }
+  
+  return CMD_OK;
+}
+
+int qabot_dochanrecord(void *np, int cargc, char** cargv) {
+  char buf[200];
+  unsigned int i, filenamelen;
+  nick* sender = (nick*)np;
+  qab_bot* bot = qabot_getcurrentbot();
+  channel* cp = qabot_getcurrentchannel();
+  
+  if (bot->recnumeric) {
+    if (bot->recnumeric == sender->numeric) {
+      bot->recnumeric = 0;
+      fclose(bot->recfile);
+      bot->recfile = NULL;
+      sendmessagetochannel(bot->np, cp, "Recorder deactivated.");
+    } else {
+      sendmessagetochannel(bot->np, cp, "Someone else is recording at the moment.");
+      return CMD_ERROR;
+    }
+  }
+  else {
+    if (bot->playfile) {
+      sendmessagetochannel(bot->np, cp, "You cannot record whilst a playback is in progress.");
+      return CMD_ERROR;
+    }
+    
+    if (cargc < 1) {
+      sendmessagetochannel(bot->np, cp, "You did not specify a file name.");
+      return CMD_ERROR;
+    }
+    
+    filenamelen = strlen(cargv[0]);
+    
+    if (filenamelen > 50) {
+      sendmessagetochannel(bot->np, cp, "File name too long.");
+      return CMD_ERROR;
+    }
+    
+    for (i = 0; i < filenamelen; i++) {
+      if (cargv[0][i] < '0' || (cargv[0][i] > '9' && cargv[0][i] < 'A') || (cargv[0][i] > 'Z' && cargv[0][i] < 'a') || cargv[0][i] > 'z') {
+        sendmessagetochannel(bot->np, cp, "Invalid characters in file name.");
+        return CMD_ERROR;
+      }
+    }
+    
+    snprintf(buf, 150, "./qabotrecords/%s_%s", bot->nick, cargv[0]);
+    bot->recfile = fopen(buf, "w");
+    
+    if (!(bot->recfile)) {
+      sendmessagetochannel(bot->np, cp, "Could not open record file.");
+      return CMD_ERROR;
+    }
+    
+    bot->recnumeric = sender->numeric;
+    
+    sendmessagetochannel(bot->np, cp, "Recorder activated. Anything said by %s will be recorded.", 
+      sender->nick);
+  }
+  return CMD_OK;
+}
+
+int qabot_dochanplay(void *np, int cargc, char** cargv) {
+  char buf[200];
+  unsigned int i, filenamelen;
+  qab_bot* bot = qabot_getcurrentbot();
+  channel* cp = qabot_getcurrentchannel();
+  
+  if (bot->playfile) {
+    sendmessagetochannel(bot->np, cp, "A playback is already in progress, use !stop to abort current playback.");
+    return CMD_ERROR;
+  }
+  
+  if (bot->recfile) {
+    sendmessagetochannel(bot->np, cp, "You cannot playback whilst recording is in progress.");
+    return CMD_ERROR;
+  }
+  
+  if (cargc < 1) {
+    sendmessagetochannel(bot->np, cp, "You did not specify a file name.");
+    return CMD_ERROR;
+  }
+  
+  filenamelen = strlen(cargv[0]);
+  
+  if (filenamelen > 50) {
+    sendmessagetochannel(bot->np, cp, "File name too long.");
+    return CMD_ERROR;
+  }
+  
+  for (i = 0; i < filenamelen; i++) {
+    if (cargv[0][i] < '0' || (cargv[0][i] > '9' && cargv[0][i] < 'A') || (cargv[0][i] > 'Z' && cargv[0][i] < 'a') || cargv[0][i] > 'z') {
+      sendmessagetochannel(bot->np, cp, "Invalid characters in file name.");
+      return CMD_ERROR;
+    }
+  }
+  
+  snprintf(buf, 150, "./qabotrecords/%s_%s", bot->nick, cargv[0]);
+  bot->playfile = fopen(buf, "r");
+  
+  if (!(bot->playfile)) {
+    sendmessagetochannel(bot->np, cp, "Could not open playback file.");
+    return CMD_ERROR;
+  }
+  
+  sendmessagetochannel(bot->np, cp, "Starting playback...");
+  qabot_playback(bot);
+  return CMD_OK;
+}
+
+int qabot_dochancontinue(void *np, int cargc, char** cargv) {
+  qab_bot* bot = qabot_getcurrentbot();
+  channel* cp = qabot_getcurrentchannel();
+  
+  if (!(bot->playfile)) {
+    sendmessagetochannel(bot->np, cp, "No playback in progress.");
+    return CMD_ERROR;
+  }
+  
+  sendmessagetochannel(bot->np, cp, "Continuing playback...");
+  qabot_playback(bot);
+  return CMD_OK;
+}
+
+int qabot_dochanstop(void *np, int cargc, char** cargv) {
+  qab_bot* bot = qabot_getcurrentbot();
+  channel* cp = qabot_getcurrentchannel();
+  
+  if (!(bot->playfile)) {
+    sendmessagetochannel(bot->np, cp, "No playback in progress.");
+    return CMD_ERROR;
+  }
+  
+  fclose(bot->playfile);
+  bot->playfile = NULL;
+  sendmessagetochannel(bot->np, cp, "Stopped playback.");
+  return CMD_OK;
+}
+
+int qabot_dochanlist(void *np, int cargc, char** cargv) {
+  DIR *recordlist;
+  struct dirent *direntry;
+  nick* sender = (nick*)np;
+  qab_bot* bot = qabot_getcurrentbot();
+  
+  recordlist = opendir("./qabotrecords");
+  
+  if (!recordlist) {
+    sendnoticetouser(bot->np, sender, "Unable to retreive directory list.");
+    return CMD_ERROR;
+  }
+  
+  sendnoticetouser(bot->np, sender, "Recording list:");
+  
+  for (direntry = readdir(recordlist); direntry; direntry = readdir(recordlist)) {
+    if (direntry->d_name[0] == '.')
+      continue;
+    
+    sendnoticetouser(bot->np, sender, "  %s", direntry->d_name);
+  }
+  
+  sendnoticetouser(bot->np, sender, "End of list.");
+  closedir(recordlist);
+  
+  return CMD_OK;
+}
+
+int qabot_dochandelete(void *np, int cargc, char** cargv) {
+  char buf[200];
+  unsigned int i, filenamelen;
+  qab_bot* bot = qabot_getcurrentbot();
+  channel* cp = qabot_getcurrentchannel();
+  
+  if (bot->playfile) {
+    sendmessagetochannel(bot->np, cp, "You cannot delete recordings whilst playback is in progress.");
+    return CMD_ERROR;
+  }
+  
+  if (bot->recfile) {
+    sendmessagetochannel(bot->np, cp, "You cannot delete recordings whilst recording is in progress.");
+    return CMD_ERROR;
+  }
+  
+  if (cargc < 1) {
+    sendmessagetochannel(bot->np, cp, "You did not specify a file name.");
+    return CMD_ERROR;
+  }
+  
+  filenamelen = strlen(cargv[0]);
+  
+  if (filenamelen > 50) {
+    sendmessagetochannel(bot->np, cp, "File name too long.");
+    return CMD_ERROR;
+  }
+  
+  for (i = 0; i < filenamelen; i++) {
+    if (cargv[0][i] < '0' || (cargv[0][i] > '9' && cargv[0][i] < 'A') || (cargv[0][i] > 'Z' && cargv[0][i] < 'a') || cargv[0][i] > 'z') {
+      sendmessagetochannel(bot->np, cp, "Invalid characters in file name.");
+      return CMD_ERROR;
+    }
+  }
+  
+  snprintf(buf, 150, "./qabotrecords/%s_%s", bot->nick, cargv[0]);
+  
+  if (!remove(buf)) {
+    sendmessagetochannel(bot->np, cp, "Recording deleted.");
+  } else {
+    sendmessagetochannel(bot->np, cp, "Unable to delete recording.");
   }
   
   return CMD_OK;

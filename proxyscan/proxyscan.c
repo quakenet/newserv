@@ -40,7 +40,7 @@ int scansdone;
 int rescaninterval;
 int warningsent;
 int glinedhosts;
-time_t starttime;
+time_t ps_starttime;
 
 int numscans; /* number of scan types currently valid */
 scantype thescans[PSCAN_MAXSCANS];
@@ -60,6 +60,8 @@ sstring *ps_mailname;
 unsigned long scanspermin;
 unsigned long tempscanspermin=0;
 unsigned long lastscants=0;
+
+unsigned int ps_start_ts=0;
 
 nick *proxyscannick;
 
@@ -117,13 +119,15 @@ void _init(void) {
   sstring *cfgstr;
   int ipbits[4];
 
+  ps_start_ts = time(NULL);
+
   memset(scantable,0,sizeof(scantable));
   maxscans=200;
   activescans=0;
   queuedhosts=0;
   scansdone=0;
   warningsent=0;
-  starttime=time(NULL);
+  ps_starttime=time(NULL);
   glinedhosts=0;
 
   scanspermin=0;
@@ -166,7 +170,7 @@ void _init(void) {
     freesstring(cfgstr);
     
     ps_mailname=getcopyconfigitem("proxyscan","mailname","some.mail.server",HOSTLEN);
-    Error("proxyscan",ERR_INFO,"Proxyscan mailer enabled; mailing to %s as %s.",IPtostr(ps_mailip),ps_mailname->content);
+    Error("proxyscan",ERR_INFO,"Proxyscan mailer enabled; mailing to %s as %s.",IPlongtostr(ps_mailip),ps_mailname->content);
   } else {
     ps_mailport=0;
     ps_mailname=NULL;
@@ -529,8 +533,8 @@ void killsock(scan *sp, int outcome) {
       glinedhosts++;
       loggline(chp);
       irc_send("%s GL * +*@%s 1800 :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	       mynumeric->content,IPtostr(sp->IP),chp->glineid);
-      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(sp->IP));
+	       mynumeric->content,IPlongtostr(sp->IP),chp->glineid);
+      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPlongtostr(sp->IP));
     } else {
       loggline(chp);  /* Update log only */
     }
@@ -789,7 +793,7 @@ void proxyscandostatus(nick *np) {
   int totaldetects=0;
   int ord[PSCAN_MAXSCANS];
   
-  sendnoticetouser(proxyscannick,np,"Service uptime: %s",longtoduration(time(NULL)-starttime, 1));
+  sendnoticetouser(proxyscannick,np,"Service uptime: %s",longtoduration(time(NULL)-ps_starttime, 1));
   sendnoticetouser(proxyscannick,np,"Total scans completed:  %d",scansdone);
   sendnoticetouser(proxyscannick,np,"Total hosts glined:     %d",glinedhosts);
 
@@ -838,7 +842,7 @@ void proxyscandebug(nick *np) {
       }
       totalscansfound++;
       sendnoticetouser(proxyscannick,np,"fd: %d type: %d port: %d state: %d outcome: %d IP: %s",
-		       sp->fd,sp->type,sp->port,sp->state,sp->outcome,IPtostr(sp->IP));
+		       sp->fd,sp->type,sp->port,sp->state,sp->outcome,IPlongtostr(sp->IP));
     }
   }
 

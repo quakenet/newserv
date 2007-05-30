@@ -27,6 +27,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   nick **nh;
   char *fakehost;
   char *accountts;
+  struct irc_in_addr ipaddress;
   
   if (cargc==2) { /* rename */
     /* Nyklon 1017697578 */
@@ -112,7 +113,13 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
       Error("nick",ERR_WARNING,"Received NICK with invalid numeric %s from %s.",cargv[cargc-2],sender);
       return CMD_ERROR;
     }
-          
+
+    base64toip(cargv[cargc-3], &ipaddress);
+    if (!irc_in_addr_valid(&ipaddress)) {
+      Error("nick",ERR_ERROR,"Received NICK with invalid ipaddress for %s from %s.",cargv[0],sender);
+      return CMD_ERROR;
+    }
+
     /* At this stage the nick is cleared to proceed */
     np=newnick();
     strncpy(np->nick,cargv[0],NICKLEN);
@@ -127,7 +134,11 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->nextbyrealname=np->realname->nicks;
     np->realname->nicks=np;
     np->timestamp=timestamp;
-    np->ipaddress=numerictolong(cargv[cargc-3],6);
+
+    base64toip(cargv[cargc-3], &ipaddress);
+    /* todo: use a single node for /64 prefixes */
+    np->ipnode = refnode(iptree, &ipaddress, irc_in_addr_is_ipv4(&ipaddress) ? PATRICIA_MAXBITS : 64);
+
     np->shident=NULL;
     np->sethost=NULL;
     np->umodes=0;
@@ -201,13 +212,24 @@ int handlequitmsg(void *source, int cargc, char **cargv) {
 
 int handlekillmsg(void *source, int cargc, char **cargv) {
   nick *np;
-  
+  void *harg[2];
+#warning Fix me to use source
+
   if (cargc<1) {
     Error("nick",ERR_WARNING,"Kill message with too few parameters");
     return CMD_ERROR;  
   }
+
+  if (cargc>1) {
+    harg[1]=(void *)cargv[1];
+  } else {
+    harg[1]="";
+  } 
+  
   np=getnickbynumericstr(cargv[0]);
   if (np) {
+    harg[0]=(void *)np;
+    triggerhook(HOOK_NICK_KILL, harg);
     deletenick(np);
   } else {
     Error("nick",ERR_WARNING,"Kill for non-existant numeric %s",cargv[0]);
@@ -344,7 +366,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   target->authname[ACCOUNTLEN]='\0';
 
   triggerhook(HOOK_NICK_ACCOUNT, (void *)target);
-  
+
   return CMD_OK;
 }
 

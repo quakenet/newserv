@@ -13,6 +13,8 @@
 #include "libGeoIP/GeoIP.h"
 #include "geoip.h"
 
+#warning This module is GPL'ed. Load/link at your peril.
+
 MODULE_VERSION("");
 
 int geoip_totals[COUNTRY_MAX + 1];
@@ -67,7 +69,11 @@ void _fini(void) {
 }
 
 void geoip_setupuser(nick *np) {
-  int country = GeoIP_id_by_ipnum(gi, np->ipaddress);
+  if (!irc_in_addr_is_ipv4(&np->p_ipaddr)) 
+    return; /* geoip only supports ipv4 */
+
+  unsigned int ip = irc_in_addr_v4_to_int(&np->p_ipaddr);
+  int country = GeoIP_id_by_ipnum(gi, ip);
   if((country < COUNTRY_MIN) || (country > COUNTRY_MAX))
     return;
 

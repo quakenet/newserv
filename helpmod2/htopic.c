@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../lib/sstring.h"
-
+#include "helpmod.h"
 #include "htopic.h"
 
 htopic *htopic_add(htopic** htop, const char* entry, int pos)

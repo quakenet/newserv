@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../lib/sstring.h"
 
 #include "hterm.h"
 

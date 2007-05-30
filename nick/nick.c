@@ -40,6 +40,8 @@ nick *nicktable[NICKHASHSIZE];
 nick **servernicks[MAXSERVERS];
 
 sstring *nickextnames[MAXNICKEXTS];
+sstring *nodeextnames[PATRICIA_MAXSLOTS];
+patricia_tree_t *iptree;
 
 void nickstats(int hooknum, void *arg);
 
@@ -65,6 +67,8 @@ void _init() {
   
   /* Fake the addition of our own server */
   handleserverchange(HOOK_SERVER_NEWSERVER,(void *)numerictolong(mynumeric->content,2));
+
+  iptree = patricia_new_tree(PATRICIA_MAXBITS);
 }
 
 /*
@@ -129,6 +133,10 @@ void deletenick(nick *np) {
   
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
+
+  derefnode(iptree, np->ipnode);
+  
+  /* TODO: figure out how to cleanly remove nodes without affecting other modules */
 
   /* Delete the nick from the servernick table */  
   *(gethandlebynumericunsafe(np->numeric))=NULL;
@@ -326,3 +334,48 @@ nick *getnickbynumericstr(char *numericstr) {
 }
 
 #endif
+
+int registernodeext(const char *name) {
+  int i;
+
+  if (findnodeext(name)!=-1) {
+    Error("nick",ERR_WARNING,"Tried to register duplicate node extension %s",name);
+    return -1;
+  }
+
+  for (i=0;i<PATRICIA_MAXSLOTS;i++) {
+    if (nodeextnames[i]==NULL) {
+      nodeextnames[i]=getsstring(name,100);
+      return i;
+    }
+  }
+
+  Error("nick",ERR_WARNING,"Tried to register too many extensions: %s",name);
+  return -1;
+}
+
+int findnodeext(const char *name) {
+  int i;
+
+  for (i=0;i<PATRICIA_MAXSLOTS;i++) {
+    if (nodeextnames[i]!=NULL && !ircd_strcmp(name,nodeextnames[i]->content)) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+void releasenodeext(int index) {
+  patricia_node_t *head, *node;
+
+  freesstring(nodeextnames[index]);
+  nodeextnames[index]=NULL;
+
+  head = iptree->head;
+
+  PATRICIA_WALK_ALL(head, node)
+  {
+      node->slots[index]=NULL;
+  } PATRICIA_WALK_END;
+}

@@ -31,7 +31,7 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *lnick) {
   cf = cf_findchanfix(cp->index);
 
   if (cf == NULL) {
-    sendnoticetouser(svc, np, "Error: Your channel is too new. Try again later.");
+    sendnoticetouser(svc, np, "Error: Sorry, Your channel '%s' was created recently. Please Try again in an hour.", cp->index->name->content);
 
     lr_noregops++;
 
@@ -50,8 +50,8 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *lnick) {
   }
 
   if (ro == NULL) {
-    sendnoticetouser(svc, np, "Error: You must be one of the top %d ops "
-          "for that channel.", LR_TOPX);
+    sendnoticetouser(svc, np, "Error: Sorry, You must be one of the top %d ops "
+          "for the channel %s.", LR_TOPX, cp->index->name->content);
 
     lr_top5++;
 
@@ -69,8 +69,8 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *lnick) {
       return RQ_ERROR;
     }
 
-    sendnoticetouser(svc, np, "Try again later. You do not meet the "
-          "requirements to request L. You may need to wait longer "
+    sendnoticetouser(svc, np, "Sorry You do not meet the "
+          "requirements to request L. Please Try again in an hour. "
           "(see http://www.quakenet.org/faq/faq.php?c=3&f=112 )");
 
     lr_scoretoolow++;

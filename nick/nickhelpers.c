@@ -12,10 +12,6 @@
 #define hosthash(x)       ((crc32i(x))%HOSTHASHSIZE)
 #define realnamehash(x)   ((crc32(x))%REALNAMEHASHSIZE)
 
-unsigned int hostmarker;
-unsigned int realnamemarker;
-unsigned int nickmarker;
-
 host *hosttable[HOSTHASHSIZE];
 realname *realnametable[REALNAMEHASHSIZE];
 
@@ -118,6 +114,7 @@ void releaserealname(realname *rnp) {
 unsigned int nexthostmarker() {	
   int i;
   host *hp;
+  static unsigned int hostmarker=0;
   
   hostmarker++;
   if (!hostmarker) {
@@ -134,6 +131,7 @@ unsigned int nexthostmarker() {
 unsigned int nextrealnamemarker() {
   int i;
   realname *rnp;
+  static unsigned int realnamemarker=0;
   
   realnamemarker++;
   if (!realnamemarker) {
@@ -150,6 +148,7 @@ unsigned int nextrealnamemarker() {
 unsigned int nextnickmarker() {
   int i;
   nick *np;
+  static unsigned int nickmarker=0;
   
   nickmarker++;
   

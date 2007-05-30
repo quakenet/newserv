@@ -6,6 +6,7 @@
 #include "../channel/channel.h"
 #include "../irc/irc.h"
 #include "../lib/version.h"
+#include "../lib/sstring.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -14,23 +15,51 @@
 
 MODULE_VERSION("");
 
+typedef struct pendingkick {
+  nick *source, *target;
+  channel *chan;
+  sstring *reason;
+  struct pendingkick *next;
+} pendingkick;
+
+pendingkick *pendingkicklist;
+
 int handlechannelmsgcmd(void *source, int cargc, char **cargv);
 int handlechannelnoticecmd(void *source, int cargc, char **cargv);
 int handleinvitecmd(void *source, int cargc, char **cargv);
+void clearpendingkicks(int hooknum, void *arg);
+void checkpendingkicknicks(int hooknum, void *arg);
+void checkpendingkickchannels(int hooknum, void *arg);
+void _localkickuser(nick *np, channel *cp, nick *target, const char *message);
 void luc_handlekick(int hooknum, void *arg);
 
 void _init() {
+  pendingkicklist=NULL;
   registerserverhandler("P",&handlechannelmsgcmd,2);
   registerserverhandler("O",&handlechannelnoticecmd,2);
   registerserverhandler("I",&handleinvitecmd,2);
   registerhook(HOOK_CHANNEL_KICK, luc_handlekick);
+  registerhook(HOOK_NICK_LOSTNICK, checkpendingkicknicks);
+  registerhook(HOOK_CHANNEL_LOSTCHANNEL, checkpendingkickchannels);
+  registerhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkicks);
 }
 
 void _fini() {
+  pendingkick *pk;
+
   deregisterserverhandler("P",&handlechannelmsgcmd);
   deregisterserverhandler("O",&handlechannelnoticecmd);
   deregisterserverhandler("I",&handleinvitecmd);
   deregisterhook(HOOK_CHANNEL_KICK, luc_handlekick);
+  deregisterhook(HOOK_NICK_LOSTNICK, checkpendingkicknicks);
+  deregisterhook(HOOK_CHANNEL_LOSTCHANNEL, checkpendingkickchannels);
+  deregisterhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkicks);
+
+  for (pk=pendingkicklist;pk;pk=pendingkicklist) {
+    pendingkicklist = pk->next;
+    freesstring(pk->reason);
+    free(pk);
+  }
 }
 
 void luc_handlekick(int hooknum, void *arg) {
@@ -100,7 +129,8 @@ int handleinvitecmd(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
+/* PRIVMSG/NOTICE to channel handling is identical up to the point where the hook is called. */
+static int handlechannelmsgornotice(void *source, int cargc, char **cargv, int isnotice) {
   void *nargs[3];
   nick *sender;
   channel *target;
@@ -119,12 +149,12 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
   }
   
   if ((sender=getnickbynumericstr((char *)source))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"PRIVMSG from non existant user %s",(char *)source);
+    Error("localuserchannel",ERR_DEBUG,"PRIVMSG/NOTICE from non existant user %s",(char *)source);
     return CMD_OK;
   }
 
   if ((target=findchannel(cargv[0]))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"PRIVMSG to non existant channel %s",cargv[0]);
+    Error("localuserchannel",ERR_DEBUG,"PRIVMSG/NOTICE to non existant channel %s",cargv[0]);
     return CMD_OK;
   }
 
@@ -140,14 +170,18 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
     numeric=target->users->content[i];
     if (numeric!=nouser && homeserver(numeric&CU_NUMERICMASK)==mylongnum) {
       /* OK, it's one of our users.. we need to deal with it */
+      if (found && ((getnickbynumericstr((char *)source)==NULL) || ((findchannel(cargv[0]))==NULL) || !(getnumerichandlefromchanhash(target->users, sender->numeric)))) {
+        Error("localuserchannel", ERR_INFO, "Nick or channel lost, or user no longer on channel in LU_CHANMSG");
+        break;
+      }
       found++;
       if (umhandlers[numeric&MAXLOCALUSER]) {
 	if ((np=getnickbynumeric(numeric))==NULL) {
-          Error("localuserchannel",ERR_ERROR,"PRIVMSG to channel user who doesn't exist (?) on %s",cargv[0]);
+          Error("localuserchannel",ERR_ERROR,"PRIVMSG/NOTICE to channel user who doesn't exist (?) on %s",cargv[0]);
           continue;
         }
 	if (!IsDeaf(np)) {
-          (umhandlers[numeric&MAXLOCALUSER])(np,LU_CHANMSG,nargs);
+          (umhandlers[numeric&MAXLOCALUSER])(np,(isnotice?LU_CHANNOTICE:LU_CHANMSG),nargs);
         } else {
           found--;
         }
@@ -156,76 +190,19 @@ int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
   }
 
   if (!found) {
-    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for PRIVMSG to %s",cargv[0]);
+    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for PRIVMSG/NOTICE to %s",cargv[0]);
   }
 
   return CMD_OK;
 }
 
-/*
- * Added by Cruicky so S2 can receive channel notices
- * Shameless rip of the above with s/privmsg/notice
- */
+/* Wrapper functions to call the above code */
+int handlechannelmsgcmd(void *source, int cargc, char **cargv) {
+  return handlechannelmsgornotice(source, cargc, cargv, 0);
+}
+
 int handlechannelnoticecmd(void *source, int cargc, char **cargv) {
-  void *nargs[3];
-  nick *sender;
-  channel *target;
-  nick *np;
-  unsigned long numeric;
-  int i;
-  int found=0;
-
-  if (cargc<2) {
-    return CMD_OK;
-  }
-  
-  if (cargv[0][0]!='#' && cargv[0][0]!='+') {
-    /* Not a channel notice */
-    return CMD_OK;
-  }
-  
-  if ((sender=getnickbynumericstr((char *)source))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"NOTICE from non existant user %s",(char *)source);
-    return CMD_OK;
-  }
-
-  if ((target=findchannel(cargv[0]))==NULL) {
-    Error("localuserchannel",ERR_DEBUG,"NOTICE to non existant channel %s",cargv[0]);
-    return CMD_OK;
-  }
-
-  /* OK, we have a valid channel the notice was sent to.  Let's look to see
-   * if we have any local users on there.  Set up the arguments first as they are
-   * always going to be the same. */
-
-  nargs[0]=(void *)sender;
-  nargs[1]=(void *)target;
-  nargs[2]=(void *)cargv[1];
-
-  for (found=0,i=0;i<target->users->hashsize;i++) {
-    numeric=target->users->content[i];
-    if (numeric!=nouser && homeserver(numeric&CU_NUMERICMASK)==mylongnum) {
-      /* OK, it's one of our users.. we need to deal with it */
-      found++;
-      if (umhandlers[numeric&MAXLOCALUSER]) {
-	if ((np=getnickbynumeric(numeric))==NULL) {
-          Error("localuserchannel",ERR_ERROR,"NOTICE to channel user who doesn't exist (?) on %s",cargv[0]);
-          continue;
-        }
-	if (!IsDeaf(np)) {
-          (umhandlers[numeric&MAXLOCALUSER])(np,LU_CHANNOTICE,nargs);
-        } else {
-          found--;
-        }
-      }
-    }
-  }
-
-  if (!found) {
-    Error("localuserchannel",ERR_DEBUG,"Couldn't find any local targets for NOTICE to %s",cargv[0]);
-  }
-
-  return CMD_OK;
+  return handlechannelmsgornotice(source, cargc, cargv, 1);
 }
 
 int localjoinchannel(nick *np, channel *cp) {
@@ -814,6 +791,27 @@ void localsettopic(nick *np, channel *cp, char *topic) {
 }
 
 void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
+  pendingkick *pk;
+
+  if (hookqueuelength) {
+    for (pk = pendingkicklist; pk; pk = pk->next)
+      if (pk->target == target && pk->chan == cp)
+        return;
+
+    Error("localuserchannel", ERR_INFO, "Adding pending kick for %s on %s", target->nick, cp->index->name->content);
+    pk = (pendingkick *)malloc(sizeof(pendingkick));
+    pk->source = np;
+    pk->chan = cp;
+    pk->target = target;
+    pk->reason = getsstring(message, BUFSIZE);
+    pk->next = pendingkicklist;
+    pendingkicklist = pk;
+  } else {
+    _localkickuser(np, cp, target, message);
+  }
+}
+
+void _localkickuser(nick *np, channel *cp, nick *target, const char *message) {
   unsigned long *lp;
   char source[10];
 
@@ -825,7 +823,7 @@ void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
     if (homeserver(np->numeric)!=mylongnum) {
       return;
     }
-    if ((*lp&CUMODE_OP)==0 && IsTopicLimit(cp)) {
+    if ((*lp&CUMODE_OP)==0) {
       localgetops(np,cp);
     }
     strcpy(source,longtonumeric(np->numeric,5));
@@ -842,6 +840,52 @@ void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
   }
 
   delnickfromchannel(cp, target->numeric, 1);
+}
+
+void clearpendingkicks(int hooknum, void *arg) {
+  pendingkick *pk;
+
+  pk = pendingkicklist;
+  while (pk) {
+    pendingkicklist = pk->next;
+
+    if (pk->target && pk->chan) {
+      Error("localuserchannel", ERR_INFO, "Processing pending kick for %s on %s", pk->target->nick, pk->chan->index->name->content);
+      _localkickuser(pk->source, pk->chan, pk->target, pk->reason->content);
+    }
+
+    freesstring(pk->reason);
+    free(pk);
+    pk = pendingkicklist;
+  }
+}
+
+void checkpendingkicknicks(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  pendingkick *pk;
+
+  for (pk=pendingkicklist; pk; pk = pk->next) {
+    if (pk->source == np) {
+      Error("localuserchannel", ERR_INFO, "Pending kick source %s got deleted, NULL'ing source for pending kick", np->nick);
+      pk->source = NULL;
+    }
+    if (pk->target == np) {
+      Error("localuserchannel", ERR_INFO, "Pending kick target %s got deleted, NULL'ing target for pending kick", np->nick);
+      pk->target = NULL;
+    }
+  }
+}
+
+void checkpendingkickchannels(int hooknum, void *arg) {
+  channel *cp = (channel *)arg;
+  pendingkick *pk;
+
+  for (pk=pendingkicklist; pk; pk = pk->next) {
+    if (pk->chan == cp) {
+      Error("localuserchannel", ERR_INFO, "Pending kick channel %s got deleted, NULL'ing channel for pending kick", cp->index->name->content);
+      pk->chan = NULL;
+    }
+  }
 }
 
 void sendmessagetochannel(nick *source, channel *cp, char *format, ... ) {

@@ -37,7 +37,7 @@ extern int uponehour;
 extern unsigned int lastdaysamples[HISTORYDAYS];
 extern unsigned int todaysamples;
 
-time_t lastsample;
+extern time_t chanstats_lastsample;
 
 /* chanstatshash.c */
 chanstats *findchanstats(const char *channame);

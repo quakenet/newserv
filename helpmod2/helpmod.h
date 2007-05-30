@@ -6,8 +6,20 @@
 
 #include "../nick/nick.h"
 #include "../localuser/localuserchannel.h"
+#include "../control/control.h"
+#include "../lib/sstring.h"
+#include "../lib/irc_string.h"
+#include "../channel/channel.h"
+#include "../core/schedule.h"
+#include "../core/hooks.h"
+#include "../localuser/localuser.h"
+#include "../lib/irc_string.h"
+#include "../core/config.h"
+
+
 #include "huser.h"
 #include "hversions.h"
+
 
 /* configuration */
 

@@ -6,8 +6,6 @@
 #include <time.h>
 
 #include "../irc/irc_config.h"
-#include "../nick/nick.h"
-#include "../lib/sstring.h"
 
 #include "hdef.h"
 

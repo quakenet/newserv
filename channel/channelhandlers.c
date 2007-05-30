@@ -895,10 +895,11 @@ int handleclearmodemsg(void *source, int cargc, char **cargv) {
 }
 
 void handlewhoischannels(int hooknum, void *arg) {
-  channel** chans;
+  channel **chans;
   char buffer[1024];
-  sstring* name;
-  unsigned long* num;
+  unsigned int bufpos;
+  sstring *name;
+  unsigned long *num;
   int i;
   void **args = (void **)arg;
   nick *sender = (nick *)args[0], *target = (nick *)args[1];
@@ -909,35 +910,38 @@ void handlewhoischannels(int hooknum, void *arg) {
   chans = (channel **)(target->channels->content);
 
   buffer[0] = '\0';
-
+  bufpos=0;
+  
   /* Not handling delayed joins. */
   for(i=target->channels->cursi-1;i>=0;i--) {
-    if(IsSecret(chans[i]) || IsPrivate(chans[i])) { /* check common channels */
-      int j;
-      channel **senderchans = (channel **)(sender->channels->content);
-      for(j=0;j<sender->channels->cursi;j++)
-        if(senderchans[j] == chans[i])
-          break;
-      if(j == sender->channels->cursi)
+    /* Secret / Private channels: only show if the sender is on the channel as well */
+    if(IsSecret(chans[i]) || IsPrivate(chans[i])) {
+      if (!getnumerichandlefromchanhash(chans[i]->users, sender->numeric))
         continue;
     }
+
     name = chans[i]->index->name;
-    if (strlen(buffer) + name->length > 508) { /* why 508? */
+    if (bufpos + name->length > 508) { /* why 508? - need room for -@#channame\0 + 1 slack */
       irc_send("%s", buffer);
       buffer[0] = '\0';
+      bufpos=0;
     }
 
     if(buffer[0] == '\0')
-      snprintf(buffer, sizeof(buffer), ":%s 319 %s %s :", myserver->content, sender->nick, target->nick);
+      bufpos=snprintf(buffer, sizeof(buffer), ":%s 319 %s %s :", myserver->content, sender->nick, target->nick);
 
     num = getnumerichandlefromchanhash(chans[i]->users, target->numeric);
-    if (*num & CUMODE_OP)
-      strlcat(buffer, "@", sizeof(buffer));
-    else if (*num & CUMODE_VOICE)
-      strlcat(buffer, "+", sizeof(buffer));
 
-    strlcat(buffer, name->content, sizeof(buffer));
-    strlcat(buffer, " ", sizeof(buffer));
+    /* Adding these flags might make the string "unsafe" (without terminating \0). */
+    /* sprintf'ing the channel name afterwards is guaranteed to fix it though */
+    if (IsDeaf(target))
+      buffer[bufpos++]='-';
+    if (*num & CUMODE_OP)
+      buffer[bufpos++]='@';
+    else if (*num & CUMODE_VOICE)
+      buffer[bufpos++]='+';
+
+    bufpos += sprintf(buffer+bufpos, "%s ",name->content);
   }
 
   if (buffer[0] != '\0')

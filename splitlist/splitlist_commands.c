@@ -9,7 +9,7 @@ int spcmd_splitlist(void *source, int cargc, char **cargv);
 int spcmd_splitdel(void *source, int cargc, char **cargv);
 
 void _init(void) {
-  registercontrolcmd("splitlist", 10, 0, &spcmd_splitlist);
+  registercontrolhelpcmd("splitlist", NO_STAFF, 0, &spcmd_splitlist, "Usage: splitlist\nLists servers currently split from the netowkr");
   registercontrolcmd("splitdel", 10, 1, &spcmd_splitdel);
 }
 
