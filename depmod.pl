@@ -38,7 +38,7 @@ for (@arglist) {
       push @{$reqsyms{$modname}}, $sym;
     } else {
       if (defined $definers{$sym}) {
-        print "Error: Multiple modules are providing $sym, at least $modname and $definers{$sym}\n";
+        print "WARNING: Multiple modules export $sym, at least $modname and $definers{$sym}\n";
       } else {
         $definers{$sym}=$modname;
       }
