@@ -62,7 +62,7 @@
 
 typedef void (*HookCallback)(int, void *);
 
-unsigned int hookqueuelength;
+extern unsigned int hookqueuelength;
 
 void inithooks();
 int registerhook(int hooknum, HookCallback callback);

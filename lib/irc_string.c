@@ -245,9 +245,11 @@ const char *longtoduration(unsigned long interval, int format) {
   hours=(interval%(3600*24))/3600;
   days=interval/(3600*24);
 
-  if (days>0 || format==0) {
+  if (format==0 || (days>0 && (hours||minutes||seconds))) {
     sprintf(outstring,"%d day%s, %02d:%02d:%02d",
             days,(days==1)?"":"s",hours,minutes,seconds);
+  } else if (days>0) {
+    sprintf(outstring, "%d day%s",days,(days==1)?"":"s");
   } else {
     if (hours>0) {
       pos += sprintf(outstring+pos,"%d hour%s ",hours,hours==1?"":"s");

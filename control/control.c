@@ -277,9 +277,13 @@ int controllsmod(void *sender, int cargc, char **cargv) {
 int controlreload(void *sender, int cargc, char **cargv) {
   if (cargc<1)
     return CMD_USAGE;
-    
+  
+  preparereload(cargv[0]);
   controlrmmod(sender, cargc, cargv);
-  return controlinsmod(sender, cargc, cargv);
+  controlinsmod(sender, cargc, cargv);
+  reloadmarked();
+  
+  return CMD_OK;
 }
 
 int relink(void *sender, int cargc, char **cargv) {
@@ -500,8 +504,10 @@ void controlspecialreloadmod(void *arg) {
   a->schedule = NULL;
   sstring *froo = a->modulename;
 
+  preparereload(free->content);
   rmmod(froo->content);
   insmod(froo->content);
+  reloadmarked();
   freesstring(froo);
 }
 

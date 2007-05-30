@@ -1,6 +1,6 @@
 
 .PHONY: all
-all: control.so control-lite.so
+all: control.so
 
 control-lite.so: control-lite.o
 	ld -shared -Bdynamic -o $@ $^

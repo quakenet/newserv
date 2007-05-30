@@ -21,5 +21,7 @@ int isloaded(char *modulename);
 int rmmod(char *modulename);
 char *lsmod(int index);
 const char *lsmodver(int index);
+void preparereload(char *modulename);
+void reloadmarked(void);
 
 #endif

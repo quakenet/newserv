@@ -187,10 +187,6 @@ int noperserv_specialmod(nick *np, char *command, ScheduleCallback reloadhandler
   }
 
   if(!strcmp(cargv[0], "noperserv")) {
-    if(noperserv_modules_loaded("noperserv_*")) {
-      controlreply(np, "NOT UNLOADING. Unload all dependencies first.");
-      return CMD_ERROR;
-    }
     if(special.schedule) {
       controlreply(np, "Previous attempt at un/reload still in progress.");
       return CMD_OK;
