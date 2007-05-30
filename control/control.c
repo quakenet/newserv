@@ -504,7 +504,7 @@ void controlspecialreloadmod(void *arg) {
   a->schedule = NULL;
   sstring *froo = a->modulename;
 
-  preparereload(free->content);
+  preparereload(froo->content);
   rmmod(froo->content);
   insmod(froo->content);
   reloadmarked();
