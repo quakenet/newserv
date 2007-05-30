@@ -259,8 +259,16 @@ struct searchNode *search_parse(int type, char *input) {
     }
   } else {
     /* Literal */
-    thenode=(struct searchNode *)malloc(sizeof(struct searchNode));
-    localdata=(struct literal_localdata *)malloc(sizeof (struct literal_localdata));
+    if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
+      parseError = "malloc: could not allocate memory for this search.";
+      return NULL;
+	}
+    if (!(localdata=(struct literal_localdata *)malloc(sizeof (struct literal_localdata)))) {
+      /* couldn't malloc() memory for localdata, so free thenode to avoid leakage */
+      parseError = "malloc: could not allocate memory for this search.";
+      free(thenode);
+      return NULL;
+    }
 
     localdata->stringval=getsstring(input,512);
     localdata->intval=strtol(input,NULL,10);

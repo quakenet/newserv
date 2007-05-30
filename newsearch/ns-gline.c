@@ -28,7 +28,10 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
 
-  localdata = (struct gline_localdata *) malloc(sizeof(struct gline_localdata));
+  if (!(localdata = (struct gline_localdata *) malloc(sizeof(struct gline_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
   localdata->count = 0;
   localdata->marker = nextnickmarker();
 
@@ -42,7 +45,12 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
       localdata->duration = NSGLINE_DURATION;
   }
 
-  thenode=(struct searchNode *)malloc(sizeof (struct searchNode));
+  if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
+    return NULL;
+  }
 
   thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = localdata;
@@ -106,8 +114,8 @@ void gline_free(struct searchNode *thenode) {
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_GLINES, "%s/%s glined %d %s via nicksearch for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
-    localdata->count != 1 ? "users" : "user", longtoduration(localdata->duration, 1), safe);
+  controlwall(NO_OPER, NL_GLINES, "%s/%s glined %d %s via nicksearch for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+    (localdata->count - safe) != 1 ? "users" : "user", longtoduration(localdata->duration, 1), safe);
   free(localdata);
   free(thenode);
 }

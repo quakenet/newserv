@@ -21,11 +21,25 @@ struct searchNode *lt_parse(int type, int argc, char **argv) {
   struct searchNode *thenode;
   int i;
 
-  localdata = (struct lt_localdata *)malloc(sizeof(struct lt_localdata));
-  localdata->nodes = (struct searchNode **)malloc(sizeof(struct searchNode *) * argc);
+  if (!(localdata = (struct lt_localdata *)malloc(sizeof(struct lt_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
+  if (!(localdata->nodes = (struct searchNode **)malloc(sizeof(struct searchNode *) * argc))) {
+    /* couldn't malloc() memory for localdata->nodes, so free localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
+    return NULL;
+  }
   localdata->count = 0;
   
-  thenode = (struct searchNode *)malloc(sizeof(struct searchNode));
+  if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free localdata->nodes and localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata->nodes);
+    free(localdata);
+    return NULL;
+  }
   
   thenode->localdata  = localdata;
   thenode->returntype = RETURNTYPE_BOOL;

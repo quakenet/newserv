@@ -21,12 +21,26 @@ struct searchNode *or_parse(int type, int argc, char **argv) {
   int i;
 
   /* Set up our local data - a list of nodes to OR together */
-  localdata=(struct or_localdata *)malloc(sizeof(struct or_localdata));
-  localdata->nodes=(searchNode **)malloc(argc * sizeof(searchNode *));
+  if (!(localdata=(struct or_localdata *)malloc(sizeof(struct or_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
+  if (!(localdata->nodes=(searchNode **)malloc(argc * sizeof(searchNode *)))) {
+    /* couldn't malloc() memory for localdata->nodes, so free localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
+    return NULL;
+  }
   localdata->count=0;
 
   /* Allocate our actual node */
-  thenode=(searchNode *)malloc(sizeof(searchNode));
+  if (!(thenode=(searchNode *)malloc(sizeof(searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free localdata->nodes and localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata->nodes);
+    free(localdata);
+    return NULL;
+  }
 
   thenode->returntype   = RETURNTYPE_BOOL;
   thenode->localdata    = localdata;

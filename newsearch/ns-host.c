@@ -22,10 +22,18 @@ struct searchNode *host_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  thenode=(struct searchNode *)malloc(sizeof (struct searchNode));
+  if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
 
   thenode->returntype = RETURNTYPE_STRING;
-  thenode->localdata = (void *)malloc(HOSTLEN+1);
+  if (!(thenode->localdata = (void *)malloc(HOSTLEN+1))) {
+    /* couldn't malloc() memory for thenode->localdata, so free thenode to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(thenode);
+    return NULL;
+  }
   thenode->exe = host_exe;
   thenode->free = host_free;
 

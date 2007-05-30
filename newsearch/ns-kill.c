@@ -27,11 +27,19 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
 
-  localdata = (struct kill_localdata *) malloc(sizeof(struct kill_localdata));
+  if (!(localdata = (struct kill_localdata *) malloc(sizeof(struct kill_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
   localdata->count = 0;
   localdata->marker = nextnickmarker();
 
-  thenode=(struct searchNode *)malloc(sizeof (struct searchNode));
+  if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
+    return NULL;
+  }
 
   thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = localdata;
@@ -91,8 +99,8 @@ void kill_free(struct searchNode *thenode) {
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via nicksearch [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
-    localdata->count != 1 ? "users" : "user", safe);
+  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via nicksearch [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+    (localdata->count - safe) != 1 ? "users" : "user", safe);
   free(localdata);
   free(thenode);
 }

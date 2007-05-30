@@ -19,7 +19,10 @@ struct searchNode *not_parse(int type, int argc, char **argv) {
   }
     
   /* Allocate our actual node */
-  thenode=(searchNode *)malloc(sizeof(searchNode));
+  if (!(thenode=(searchNode *)malloc(sizeof(searchNode)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
 
   thenode->returntype   = RETURNTYPE_BOOL;
   thenode->exe          = not_exe;

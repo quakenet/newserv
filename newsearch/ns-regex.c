@@ -56,14 +56,34 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
 
   pcre_extra=pcre_study(pcre, 0, &err);
 
-  localdata=(struct regex_localdata *)malloc(sizeof (struct regex_localdata));
+  if (!(localdata=(struct regex_localdata *)malloc(sizeof (struct regex_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    /* make sure we pcre_free() if we're not going to use them */
+    if (pcre_extra)
+      pcre_free(pcre_extra);
+
+    if (pcre)
+      pcre_free(pcre);
+    return NULL;
+  }
     
   localdata->targnode=targnode;
   localdata->patnode=patnode;
   localdata->pcre=pcre;
   localdata->pcre_extra=pcre_extra;
 
-  thenode = (struct searchNode *)malloc(sizeof (struct searchNode));
+  if (!(thenode = (struct searchNode *)malloc(sizeof (struct searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free the pcre's and localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    if (localdata->pcre_extra)
+      pcre_free(localdata->pcre_extra);
+
+    if (localdata->pcre)
+      pcre_free(localdata->pcre);
+
+    free(localdata);
+    return NULL;
+  }
 
   thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = localdata;

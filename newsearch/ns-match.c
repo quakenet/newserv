@@ -34,12 +34,20 @@ struct searchNode *match_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  localdata=(struct match_localdata *)malloc(sizeof (struct match_localdata));
+  if (!(localdata=(struct match_localdata *)malloc(sizeof (struct match_localdata)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
     
   localdata->targnode=targnode;
   localdata->patnode=patnode;
 
-  thenode = (struct searchNode *)malloc(sizeof (struct searchNode));
+  if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
+    /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
+    parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
+    return NULL;
+  }
 
   thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = localdata;
