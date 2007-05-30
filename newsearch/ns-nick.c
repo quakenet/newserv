@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../nick/nick.h"
-
 void *nick_exe(struct searchNode *thenode, int type, void *theinput);
 void nick_free(struct searchNode *thenode);
 

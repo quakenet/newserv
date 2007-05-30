@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../nick/nick.h"
 #include "../channel/channel.h"
 #include "../lib/flags.h"
 

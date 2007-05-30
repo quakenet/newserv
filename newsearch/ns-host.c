@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include "../irc/irc_config.h"
-#include "../nick/nick.h"
 #include "../lib/irc_string.h"
 
 void *host_exe(struct searchNode *thenode, int type, void *theinput);

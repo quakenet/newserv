@@ -1,6 +1,15 @@
+#include "../nick/nick.h"
 
 #define    SEARCHTYPE_CHANNEL     1
 #define    SEARCHTYPE_NICK        2
+
+
+#define    NSMAX_KILL_LIMIT       5
+#define    NSMAX_GLINE_LIMIT      500
+
+
+/* gline duration, in seconds */
+#define    NSGLINE_DURATION       3600
 
 
 #define    RETURNTYPE_BOOL        0x01
@@ -35,6 +44,8 @@ struct searchNode *channel_parse(int type, int argc, char **argv);
 struct searchNode *timestamp_parse(int type, int argc, char **argv);
 struct searchNode *country_parse(int type, int argc, char **argv);
 struct searchNode *ip_parse(int type, int argc, char **argv);
+struct searchNode *kill_parse(int type, int argc, char **argv);
+struct searchNode *gline_parse(int type, int argc, char **argv);
 
 
 struct searchNode *search_parse(int type, char *input);
@@ -45,7 +56,6 @@ void deregistersearchterm(char *term, parseFunc parsefunc);
 
 void *trueval(int type);
 void *falseval(int type);
-
 
 typedef struct searchNode {
   int returntype;

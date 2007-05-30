@@ -3,7 +3,6 @@
 #include "newsearch.h"
 
 #include "../irc/irc_config.h"
-#include "../nick/nick.h"
 #include "../lib/irc_string.h"
 #include "../parser/parser.h"
 #include "../control/control.h"
@@ -24,6 +23,9 @@ void *trueval(int type);
 void *falseval(int type);
 
 const char *parseError;
+/* used for *_free functions that need to warn users of certain things
+   i.e. hitting too many users in a (kill) or (gline) */
+const struct nick *senderNSExtern;
 
 void _init() {
   searchTree=newcommandtree();
@@ -57,6 +59,10 @@ void _init() {
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
 
+  /* Kill / gline parameters */
+  registersearchterm("kill",kill_parse);
+  registersearchterm("gline",gline_parse);
+
   registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
 }
 
@@ -81,13 +87,13 @@ void printnick(nick *sender, nick *np) {
 }
 
 int do_nicksearch(void *source, int cargc, char **cargv) {
-  nick *sender=source, *np;
+  nick *sender = senderNSExtern = source, *np;
   int i;
   struct searchNode *search;
   int limit=500,matches=0;
   char *ch;
   int arg=0;
-  
+
   if (cargc<1)
     return CMD_USAGE;
   
