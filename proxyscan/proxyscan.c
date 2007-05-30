@@ -40,7 +40,7 @@ int scansdone;
 int rescaninterval;
 int warningsent;
 int glinedhosts;
-time_t starttime;
+time_t ps_starttime;
 
 int numscans; /* number of scan types currently valid */
 scantype thescans[PSCAN_MAXSCANS];
@@ -123,7 +123,7 @@ void _init(void) {
   queuedhosts=0;
   scansdone=0;
   warningsent=0;
-  starttime=time(NULL);
+  ps_starttime=time(NULL);
   glinedhosts=0;
 
   scanspermin=0;
@@ -789,7 +789,7 @@ void proxyscandostatus(nick *np) {
   int totaldetects=0;
   int ord[PSCAN_MAXSCANS];
   
-  sendnoticetouser(proxyscannick,np,"Service uptime: %s",longtoduration(time(NULL)-starttime, 1));
+  sendnoticetouser(proxyscannick,np,"Service uptime: %s",longtoduration(time(NULL)-ps_starttime, 1));
   sendnoticetouser(proxyscannick,np,"Total scans completed:  %d",scansdone);
   sendnoticetouser(proxyscannick,np,"Total hosts glined:     %d",glinedhosts);
 
