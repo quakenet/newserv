@@ -5,6 +5,7 @@
 #include "../lib/array.h"
 
 array hooks[HOOKMAX];
+unsigned int hookqueuelength;
 
 void inithooks() {
   int i;
