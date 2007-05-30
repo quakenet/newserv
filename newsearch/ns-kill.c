@@ -21,7 +21,6 @@ void kill_free(struct searchNode *thenode);
 struct kill_localdata {
   unsigned int marker;
   int count;
-  searchNode **nodes;
 };
 
 struct searchNode *kill_parse(int type, int argc, char **argv) {
@@ -29,7 +28,6 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   localdata = (struct kill_localdata *) malloc(sizeof(struct kill_localdata));
-  localdata->nodes = (struct searchNode **) malloc(sizeof(struct searchNode *) * argc);
   localdata->count = 0;
   localdata->marker = nextnickmarker();
 
@@ -72,7 +70,6 @@ void kill_free(struct searchNode *thenode) {
   if (localdata->count > NSMAX_KILL_LIMIT) {
     /* need to warn the user that they have just tried to twat half the network ... */
     controlreply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
-    free(localdata->nodes);
     free(localdata);
     free(thenode);
     return;
@@ -96,7 +93,6 @@ void kill_free(struct searchNode *thenode) {
   /* notify opers of the action */
   controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via nicksearch [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
     localdata->count != 1 ? "users" : "user", safe);
-  free(localdata->nodes);
   free(localdata);
   free(thenode);
 }

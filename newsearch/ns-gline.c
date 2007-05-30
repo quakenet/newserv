@@ -22,7 +22,6 @@ struct gline_localdata {
   unsigned int marker;
   unsigned int duration;
   int count;
-  searchNode **nodes;
 };
 
 struct searchNode *gline_parse(int type, int argc, char **argv) {
@@ -30,7 +29,6 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   localdata = (struct gline_localdata *) malloc(sizeof(struct gline_localdata));
-  localdata->nodes = (struct searchNode **) malloc(sizeof(struct searchNode *) * argc);
   localdata->count = 0;
   localdata->marker = nextnickmarker();
 
@@ -83,7 +81,6 @@ void gline_free(struct searchNode *thenode) {
   if (localdata->count > NSMAX_GLINE_LIMIT) {
     /* need to warn the user that they have just tried to twat half the network ... */
     controlreply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
-    free(localdata->nodes);
     free(localdata);
     free(thenode);
     return;
@@ -111,7 +108,6 @@ void gline_free(struct searchNode *thenode) {
   /* notify opers of the action */
   controlwall(NO_OPER, NL_GLINES, "%s/%s glined %d %s via nicksearch for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, localdata->count, 
     localdata->count != 1 ? "users" : "user", longtoduration(localdata->duration, 1), safe);
-  free(localdata->nodes);
   free(localdata);
   free(thenode);
 }
