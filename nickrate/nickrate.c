@@ -17,7 +17,7 @@
 
 unsigned int nicks;
 unsigned int quits;
-int listenfd;
+int nickrate_listenfd;
 
 void nr_nick(int hooknum, void *arg);
 void nr_handlelistensocket(int fd, short events);
@@ -29,9 +29,9 @@ void _init() {
   registerhook(HOOK_NICK_NEWNICK, &nr_nick);
   registerhook(HOOK_NICK_LOSTNICK, &nr_nick);
 
-  listenfd=nr_openlistensocket(6002);
-  if (listenfd>0) {
-    registerhandler(listenfd,POLLIN,&nr_handlelistensocket);
+  nickrate_listenfd=nr_openlistensocket(6002);
+  if (nickrate_listenfd>0) {
+    registerhandler(nickrate_listenfd,POLLIN,&nr_handlelistensocket);
   }
           
 }
@@ -39,7 +39,7 @@ void _init() {
 void _fini() {
   deregisterhook(HOOK_NICK_NEWNICK, &nr_nick);
   deregisterhook(HOOK_NICK_LOSTNICK, &nr_nick);
-  deregisterhandler(listenfd,1);    
+  deregisterhandler(nickrate_listenfd,1);    
 }
 
 void nr_nick(int hooknum, void *arg) {

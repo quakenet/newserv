@@ -57,7 +57,7 @@ void noperserv_setup_hooks(void) {
   oldwall = controlwall;
   controlwall = &noperserv_wall;
 
-  memset(&special, 0, sizeof(specialsched));
+  memset(&special, 0, sizeof(struct specialsched));
 
   if(!mynick) {
     registerhook(HOOK_CONTROL_REGISTERED, &noperserv_trap_registration);
