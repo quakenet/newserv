@@ -27,6 +27,8 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   nick **nh;
   char *fakehost;
   char *accountts;
+  char *accountid;
+  unsigned long userid;
   
   if (cargc==2) { /* rename */
     /* Nyklon 1017697578 */
@@ -134,14 +136,29 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->marker=0;
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
     np->authname[0]='\0';
+    np->auth=NULL;
     if(cargc>=9) {
       setflags(&(np->umodes),UMODE_ALL,cargv[5],umodeflags,REJECT_NONE);
       if (IsAccount(np)) {
         if ((accountts=strchr(cargv[6],':'))) {
           *accountts++='\0';
-          np->accountts=strtoul(accountts,NULL,10);
+          np->accountts=strtoul(accountts,&accountid,10);
+          if(accountid) {
+            userid=strtoul(accountid + 1,NULL,10);
+            if(!userid) {
+              np->auth=NULL;
+            } else {
+              np->auth=findorcreateauthname(userid);
+              np->auth->usercount++;
+              np->nextbyauthname=np->auth->nicks;
+              np->auth->nicks=np;
+            }
+          } else {
+            np->auth=NULL;
+          }
         } else {
           np->accountts=0;
+          np->auth=NULL;
         }        
         strncpy(np->authname,cargv[6],ACCOUNTLEN);
         np->authname[ACCOUNTLEN]='\0';
@@ -337,6 +354,7 @@ int handlewhoismsg(void *source, int cargc, char **cargv) {
 
 int handleaccountmsg(void *source, int cargc, char **cargv) {
   nick *target;
+  unsigned long userid;
   
   if (cargc<2) {
     return CMD_OK;
@@ -353,7 +371,27 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   SetAccount(target);
   strncpy(target->authname,cargv[1],ACCOUNTLEN);
   target->authname[ACCOUNTLEN]='\0';
-
+  
+  if (cargc>=3) {
+    target->accountts=strtoul(cargv[2],NULL,10);
+    if (cargc>=4) {
+      userid=strtoul(cargv[3],NULL,10);
+      if(!userid) {
+        target->auth=NULL;
+      } else {
+        target->auth=findorcreateauthname(userid);
+        target->auth->usercount++;
+        target->nextbyauthname = target->auth->nicks;
+        target->auth->nicks = target;
+      }
+    } else {
+      target->auth=NULL;
+    }
+  } else {
+    target->accountts=0;
+    target->auth=NULL;
+  }
+  
   triggerhook(HOOK_NICK_ACCOUNT, (void *)target);
   
   return CMD_OK;

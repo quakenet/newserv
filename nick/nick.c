@@ -40,6 +40,7 @@ nick *nicktable[NICKHASHSIZE];
 nick **servernicks[MAXSERVERS];
 
 sstring *nickextnames[MAXNICKEXTS];
+sstring *authnameextnames[MAXAUTHNAMEEXTS];
 
 void nickstats(int hooknum, void *arg);
 
@@ -60,7 +61,7 @@ void _init() {
   registerserverhandler("Q",&handlequitmsg,1);
   registerserverhandler("M",&handleusermodemsg,3);
   registerserverhandler("W",&handlewhoismsg,2);
-  registerserverhandler("AC",&handleaccountmsg,2);
+  registerserverhandler("AC",&handleaccountmsg,4);
   registerserverhandler("R",&handlestatsmsg,2);
   
   /* Fake the addition of our own server */
@@ -126,6 +127,20 @@ void deletenick(nick *np) {
   
   releaserealname(np->realname);
   releasehost(np->host);
+  
+  if(IsAccount(np) && np->auth)
+  {
+    np->auth->usercount--;
+    
+    for (nh=&(np->auth->nicks);*nh;nh=&((*nh)->nextbyauthname)) {
+      if (*nh==np) {
+        *nh=np->nextbyauthname;
+        break;
+      }
+    }
+    
+    releaseauthname(np->auth);
+  }
   
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
@@ -214,7 +229,7 @@ int registernickext(const char *name) {
     }
   }
   
-  Error("channel",ERR_WARNING,"Tried to register too many extensions: %s",name);
+  Error("nick",ERR_WARNING,"Tried to register too many nick extensions: %s",name);
   return -1;
 }
 
@@ -240,6 +255,51 @@ void releasenickext(int index) {
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
       np->exts[index]=NULL;
+    }
+  }
+}
+
+int registerauthnameext(const char *name) {
+  int i;
+  
+  if (findauthnameext(name)!=-1) {
+    Error("nick",ERR_WARNING,"Tried to register duplicate authname extension %s",name);
+    return -1;
+  }
+  
+  for (i=0;i<MAXAUTHNAMEEXTS;i++) {
+    if (authnameextnames[i]==NULL) {
+      authnameextnames[i]=getsstring(name,100);
+      return i;
+    }
+  }
+  
+  Error("nick",ERR_WARNING,"Tried to register too many authname extensions: %s",name);
+  return -1;
+}
+
+int findauthnameext(const char *name) {
+  int i;
+  
+  for (i=0;i<MAXAUTHNAMEEXTS;i++) {
+    if (authnameextnames[i]!=NULL && !ircd_strcmp(name,authnameextnames[i]->content)) {
+      return i;
+    }
+  }
+  
+  return -1;
+}
+
+void releaseauthnameext(int index) {
+  int i;
+  authname *anp;
+  
+  freesstring(authnameextnames[index]);
+  authnameextnames[index]=NULL;
+  
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (anp=authnametable[i];anp;anp=anp->next) {
+      anp->exts[index]=NULL;
     }
   }
 }

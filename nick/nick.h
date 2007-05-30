@@ -12,6 +12,7 @@
 #include <time.h>
 
 #define MAXNICKEXTS       5
+#define MAXAUTHNAMEEXTS   5
 
 #define UMODE_INV       0x0001
 #define UMODE_WALLOPS   0x0002
@@ -87,6 +88,16 @@ typedef struct realname {
   struct realname *next;
 } realname;
 
+typedef struct authname {
+  unsigned long userid;
+  int usercount;
+  unsigned int marker;
+  struct nick *nicks;
+  struct authname *next;
+  /* These are extensions only used by other modules */
+  void *exts[MAXAUTHNAMEEXTS];
+} authname;
+
 typedef struct nick {
   char nick[NICKLEN+1];
   long numeric;
@@ -97,6 +108,7 @@ typedef struct nick {
   sstring *sethost;
   flag_t umodes;
   char authname[ACCOUNTLEN+1];
+  authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
   unsigned long ipaddress;  
@@ -104,6 +116,7 @@ typedef struct nick {
   struct nick *next;
   struct nick *nextbyhost;
   struct nick *nextbyrealname;
+  struct nick *nextbyauthname;
   /* These are extensions only used by other modules */
   array *channels;
   void *exts[MAXNICKEXTS];
@@ -112,11 +125,13 @@ typedef struct nick {
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000
 #define REALNAMEHASHSIZE  40000
+#define AUTHNAMEHASHSIZE  60000
 
 extern nick *nicktable[NICKHASHSIZE];
 extern nick **servernicks[MAXSERVERS];
 extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
+extern authname *authnametable[AUTHNAMEHASHSIZE];
 extern const flag umodeflags[];
 
 #define MAXNUMERIC 0x3FFFFFFF
@@ -139,6 +154,8 @@ nick *newnick();
 void freenick (nick *np);
 host *newhost();
 void freehost (host *hp);
+authname *newauthname();
+void freeauthname (authname *hp);
 
 /* nick.c functions */
 void handleserverchange(int hooknum, void *arg);
@@ -149,6 +166,9 @@ nick *getnickbynick(const char *nick);
 int registernickext(const char *name);
 int findnickext(const char *name);
 void releasenickext(int index);
+int registerauthnameext(const char *name);
+int findauthnameext(const char *name);
+void releaseauthnameext(int index);
 char *visiblehostmask(nick *np, char *buf);
 
 /* nickhandlers.c functions */
@@ -174,9 +194,13 @@ void releasehost(host *hp);
 realname *findrealname(const char *name);
 realname *findorcreaterealname(const char *name);
 void releaserealname(realname *rnp);
+authname *findauthname(unsigned long userid);
+authname *findorcreateauthname(unsigned long userid);
+void releaseauthname(authname *anp);
 
 unsigned int nexthostmarker();
 unsigned int nextrealnamemarker();
+unsigned int nextauthnamemarker();
 unsigned int nextnickmarker();
 
 #endif

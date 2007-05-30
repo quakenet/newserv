@@ -1,4 +1,4 @@
-/* nick/host/realname allocator */
+/* nick/host/realname/authname allocator */
 
 #include "nick.h"
 #include <assert.h>
@@ -11,10 +11,12 @@
 
 nick *freenicks;
 host *freehosts;
+authname *freeauthnames;
 
 void initnickalloc() {
   freenicks=NULL;
   freehosts=NULL;
+  freeauthnames=NULL;
   
   assert(sizeof(host)==sizeof(realname));
 }
@@ -71,4 +73,27 @@ host *newhost() {
 void freehost (host *hp) {
   hp->next=freehosts;
   freehosts=hp;
+}
+
+authname *newauthname() {
+  authname *anp;
+  int i;
+  
+  if (freeauthnames==NULL) {
+    freeauthnames=(authname *)malloc(ALLOCUNIT*sizeof(authname));
+    for (i=0;i<(ALLOCUNIT-1);i++) {
+      freeauthnames[i].next=&(freeauthnames[i+1]);
+    }
+    freeauthnames[ALLOCUNIT-1].next=NULL;
+  }
+  
+  anp=freeauthnames;
+  freeauthnames=anp->next;
+  
+  return anp;
+}
+
+void freeauthname (authname *anp) {
+  anp->next=freeauthnames;
+  freeauthnames=anp;
 }
