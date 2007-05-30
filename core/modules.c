@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include "schedule.h"
 
 #define DEPFILE	"modules.dep"
 
@@ -43,6 +44,9 @@
  * 
  * At the end of the second pass we should have a correctly filled in array!
  */
+
+sstring *safereload_str;
+schedule *safereload_sched;
 
 struct module_dep {
   sstring *name;
@@ -402,4 +406,31 @@ void reloadmarked(void) {
       insmod(moduledeps[i].name->content);
     }
   }
+}
+
+void safereloadcallback(void *arg) {
+  safereload_sched=NULL;
+  
+  if (!safereload_str)
+    return;
+  
+  preparereload(safereload_str->content);
+  rmmod(safereload_str->content);
+  insmod(safereload_str->content);
+  reloadmarked();
+
+  freesstring(safereload_str);
+  safereload_str=NULL;
+}
+
+void safereload(char *themodule) {
+  if (safereload_str)
+    freesstring(safereload_str);
+  
+  safereload_str=getsstring(themodule, 100);
+  
+  if (safereload_sched)
+    deleteschedule(safereload_sched, safereloadcallback, NULL);
+  
+  scheduleoneshot(1, safereloadcallback, NULL);
 }

@@ -56,6 +56,11 @@ void _fini() {
     freesstring(pk->reason);
     free(pk);
   }
+
+  deregisterhook(HOOK_IRC_SENDBURSTNICKS,&sendnickburst);
+  deregisterhook(HOOK_NICK_KILL,&checklocalkill);
+  deregisterhook(HOOK_NICK_LOSTNICK,&checkpendingkills); /* CHECK ME -> should this hook KILL or LOSTNICK or BOTH */
+  deregisterhook(HOOK_CORE_ENDOFHOOKSQUEUE,&clearpendingkills);
 }
 
 /*

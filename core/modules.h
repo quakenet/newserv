@@ -23,5 +23,6 @@ char *lsmod(int index);
 const char *lsmodver(int index);
 void preparereload(char *modulename);
 void reloadmarked(void);
+void safereload(char *themodule);
 
 #endif

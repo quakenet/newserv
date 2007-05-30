@@ -88,6 +88,8 @@ void _fini() {
   
   deregisterhook(HOOK_NICK_NEWNICK,&addordelnick);
   deregisterhook(HOOK_NICK_LOSTNICK,&addordelnick);
+  deregisterhook(HOOK_CORE_STATSREQUEST,&channelstats);
+  deregisterhook(HOOK_IRC_SENDBURSTBURSTS,&sendchanburst);
   deregisterhook(HOOK_NICK_WHOISCHANNELS,&handlewhoischannels);
 }
 

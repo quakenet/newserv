@@ -204,6 +204,7 @@ void _fini() {
   deregisterhook(HOOK_CHANNEL_DEOPPED, cs_handleopchange);
   deregisterhook(HOOK_CHANNEL_DEVOICED, cs_handleopchange);
   deregisterhook(HOOK_CHANNEL_BANSET, cs_handlenewban); */
+  deregisterhook(HOOK_CHANSERV_DBLOADED, chanservfinishinit); /* for safety */
 
   chanservremovecommand("showcommands", cs_doshowcommands);
   chanservremovecommand("quit", cs_doquit);
