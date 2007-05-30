@@ -101,10 +101,10 @@ void gline_free(struct searchNode *thenode) {
         if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
           if (np->host->clonecount <= NSMAX_GLINE_CLONES)
             irc_send("%s GL * +*@%s %u :You (%s!%s@%s) have been glined for violating our terms of service.", 
-              mynumeric->content, IPtostr(np->ipaddress), localdata->duration, np->nick, np->ident, IPtostr(np->ipaddress));
+              mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr));
           else
             irc_send("%s GL * +%s@%s %u :You (%s!%s@%s) have been glined for violating our terms of service.", 
-              mynumeric->content, np->ident, IPtostr(np->ipaddress), localdata->duration, np->nick, np->ident, IPtostr(np->ipaddress));
+              mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr));
         }
         else
             safe++;

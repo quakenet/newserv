@@ -89,7 +89,7 @@ void kill_free(struct searchNode *thenode) {
       if (np->marker == localdata->marker) {
         if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
           killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
-            np->ident, IPtostr(np->ipaddress));
+            np->ident, IPtostr(np->p_ipaddr));
         }
         else
             safe++;
