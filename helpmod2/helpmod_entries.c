@@ -1,6 +1,6 @@
 #include "helpmod_entries.h"
 #include "helpmod_alias.h"
-#include "../core/error.c"
+#include "../core/error.h"
 #include "helpmod.h"
 
 struct helpmod_parsed_line_struct helpmod_parsed_line;
