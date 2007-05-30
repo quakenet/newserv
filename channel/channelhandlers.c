@@ -652,6 +652,16 @@ int handlemodemsg(void *source, int cargc, char **cargv) {
         changes |= MODECHANGE_MODES;
         break;
         
+      case 'M':
+        if (dir) { SetModNoAuth(cp); } else { ClearModNoAuth(cp); }
+        changes |= MODECHANGE_MODES;
+        break;
+      
+      case 'T':
+        if (dir) { SetSingleTarg(cp); } else { ClearSingleTarg(cp); }
+        changes |= MODECHANGE_MODES;
+        break;
+        
       /* Parameter modes: advance parameter and possibly read it in */    
     
       case 'l':
@@ -843,6 +853,16 @@ int handleclearmodemsg(void *source, int cargc, char **cargv) {
 
       case 'N':
         ClearNoNotice(cp);
+        changes |= MODECHANGE_MODES;
+        break;
+        
+      case 'M':
+        ClearModNoAuth(cp);
+        changes |= MODECHANGE_MODES;
+        break;
+      
+      case 'T':
+        ClearSingleTarg(cp);
         changes |= MODECHANGE_MODES;
         break;
 

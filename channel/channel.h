@@ -29,8 +29,10 @@
 #define CHANMODE_DELJOINS   0x0800
 #define CHANMODE_NOQUITMSG  0x1000
 #define CHANMODE_NONOTICE   0x2000
+#define CHANMODE_MODNOAUTH  0x4000
+#define CHANMODE_SINGLETARG 0x8000
 
-#define CHANMODE_ALL        0x3FFF
+#define CHANMODE_ALL        0xFFFF
 
 #define CHANBAN_NICKEXACT   0x0001  /* Ban includes an exact nick (no wildcards) */
 #define CHANBAN_NICKMASK    0x0002  /* Ban includes a nick mask with wildcards */
@@ -63,6 +65,8 @@
 #define IsDelJoins(x)   ((x)->flags & CHANMODE_DELJOINS)
 #define IsNoQuitMsg(x)  ((x)->flags & CHANMODE_NOQUITMSG)
 #define IsNoNotice(x)   ((x)->flags & CHANMODE_NONOTICE)
+#define IsModNoAuth(x)  ((x)->flags & CHANMODE_MODNOAUTH)
+#define IsSingleTarg(x) ((x)->flags & CHANMODE_SINGLETARG)
 
 #define SetNoExtMsg(x)   ((x)->flags |= CHANMODE_NOEXTMSG)
 #define SetTopicLimit(x) ((x)->flags |= CHANMODE_TOPICLIMIT)
@@ -78,6 +82,8 @@
 #define SetDelJoins(x)   ((x)->flags |= CHANMODE_DELJOINS)
 #define SetNoQuitMsg(x)  ((x)->flags |= CHANMODE_NOQUITMSG)
 #define SetNoNotice(x)   ((x)->flags |= CHANMODE_NONOTICE)
+#define SetModNoAuth(x)  ((x)->flags |= CHANMODE_MODNOAUTH)
+#define SetSingleTarg(x) ((x)->flags |= CHANMODE_SINGLETARG)
 
 #define ClearNoExtMsg(x)   ((x)->flags &= ~CHANMODE_NOEXTMSG)
 #define ClearTopicLimit(x) ((x)->flags &= ~CHANMODE_TOPICLIMIT)
@@ -93,6 +99,8 @@
 #define ClearDelJoins(x)   ((x)->flags &= ~CHANMODE_DELJOINS)
 #define ClearNoQuitMsg(x)  ((x)->flags &= ~CHANMODE_NOQUITMSG)
 #define ClearNoNotice(x)   ((x)->flags &= ~CHANMODE_NONOTICE)
+#define ClearModNoAuth(x)  ((x)->flags &= ~CHANMODE_MODNOAUTH)
+#define ClearSingleTarg(x) ((x)->flags &= ~CHANMODE_SINGLETARG)
 
 #define     CUMODE_OP      0x80000000
 #define     CUMODE_VOICE   0x40000000
