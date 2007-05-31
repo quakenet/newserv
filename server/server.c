@@ -23,7 +23,7 @@ int findserver(const char *name);
 void completelink(int servernum);
 
 server serverlist[MAXSERVERS];
-int myhub;
+long myhub;
 
 void _init() {
   /* Initialise the server tree */
@@ -64,12 +64,12 @@ void _fini() {
 }
 
 int handleservermsg(void *source, int cargc, char **cargv) {
-  int servernum;
+  long servernum;
   
   servernum=numerictolong(cargv[5],2);
   
   if (serverlist[servernum].name!=NULL) {
-    Error("server",ERR_ERROR,"New server %d already exists in servertable.",servernum);
+    Error("server",ERR_ERROR,"New server %ld already exists in servertable.",servernum);
     return CMD_ERROR;
   }
  
@@ -99,7 +99,7 @@ int handleservermsg(void *source, int cargc, char **cargv) {
 }
 
 int handleeobmsg(void *source, int cargc, char **argv) {
-  int servernum;
+  long servernum;
   
   servernum=numerictolong(source,2);
   completelink(servernum);
@@ -115,7 +115,7 @@ int handleeobmsg(void *source, int cargc, char **argv) {
 }
 
 int handlesquitmsg(void *source, int cargc, char **cargv) {
-  int servernum=findserver(cargv[0]);
+  long servernum=findserver(cargv[0]);
   if (servernum<0) {
     Error("server",ERR_WARNING,"Received SQUIT for unknown server %s\n",cargv[0]);
     return CMD_ERROR;
@@ -157,11 +157,11 @@ void completelink(int servernum) {
   Error("server",ERR_DEBUG,"Setting link state on %s to LS_LINKED",serverlist[servernum].name->content);
 }  
 
-void deleteserver(int servernum) {
+void deleteserver(long servernum) {
   int i;
   
   if (serverlist[servernum].name==NULL) {
-    Error("server",ERR_WARNING,"Tried to remove server %d which doesn't exist.",servernum);
+    Error("server",ERR_WARNING,"Tried to remove server %ld which doesn't exist.",servernum);
     return;
   }
   

@@ -73,7 +73,7 @@ void *match_exe(struct searchNode *thenode, int type, void *theinput) {
   default:
   case RETURNTYPE_INT:
   case RETURNTYPE_BOOL:
-    return (void *)ret;
+    return (void *)((long)ret);
     
   case RETURNTYPE_STRING:
     return (ret ? "1" : "");

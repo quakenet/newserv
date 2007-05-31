@@ -320,7 +320,7 @@ int parseline() {
   } else {
     if (cargv[1][0]>='0' && cargv[1][0]<='9') {
       /* It's a numeric! */
-      int numeric = strtol(cargv[1], NULL, 0);
+      long numeric = strtol(cargv[1], NULL, 0);
       if((numeric >= MIN_NUMERIC) && (numeric <= MAX_NUMERIC)) {
         for(c=numericcommands[numeric];c;c=c->next) {
           if (((c->handler)((void *)numeric,cargc,cargv))==CMD_LAST)

@@ -307,7 +307,7 @@ void doscheduledevents(time_t when) {
 }
 
 void schedulestats(int hooknum, void *arg) {
-  int level=(int)arg;
+  long level=(long)arg;
   char buf[512];
 
   if (level>5) {

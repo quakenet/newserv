@@ -354,7 +354,7 @@ static void helpmod_hook_nick_account(int unused, void *args)
 static void helpmod_hook_server_newserver(int unused, void *args)
 {
     hchannel *hchan;
-    int numeric = (int)args;
+    long numeric = (long)args;
     server srv = serverlist[numeric];
 
     /* check linkstate to prevent spam */

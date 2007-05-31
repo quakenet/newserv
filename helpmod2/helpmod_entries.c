@@ -8,7 +8,7 @@ struct helpmod_parsed_line_struct helpmod_parsed_line;
 int helpmod_valid_selection(helpmod_entry state, int selection)
 {
     if (selection == -1)
-	return ((int)state->parent);
+	return ((int)((long)state->parent));
     return (selection >= 0 && selection < state->option_count);
 }
 

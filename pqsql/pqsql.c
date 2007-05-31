@@ -206,7 +206,7 @@ void disconnectdb(void) {
 
 /* more stolen code from Q9 */
 void dbstatus(int hooknum, void *arg) {
-  if ((int)arg > 10) {
+  if ((long)arg > 10) {
     int i = 0;
     pqasyncquery_s *qqp;
     char message[100];

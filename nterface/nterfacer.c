@@ -380,7 +380,8 @@ void nterfacer_accept_event(struct esocket *socket) {
   }
 
   if(!item) {
-    nterface_log(nrl, NL_INFO, "Unauthorised connection from: %s", IPtostr(htonl(sin.sin_addr.s_addr)));
+    /* Someone needs to figure out how to print the IP :) */
+    nterface_log(nrl, NL_INFO, "Unauthorised connection closed");
     close(newfd);
     return;
   }

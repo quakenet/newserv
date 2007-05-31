@@ -195,7 +195,7 @@ int handleevents(int timeout) {
 
 void eventstats(int hooknum, void *arg) {
   char buf[512];
-  int level=(int) arg;
+  long level=(long) arg;
   
   if (level>5) {
     sprintf(buf,"Events  :%7d fds registered,   %7d fds deregistered",eventadds,eventdels);

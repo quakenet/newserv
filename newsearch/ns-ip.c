@@ -38,7 +38,7 @@ void *ip_exe(struct searchNode *thenode, int type, void *theinput) {
     return (void *)1;
   }
 
-  return IPtostr(np->p_ipaddr);
+  return (void *)IPtostr(np->p_ipaddr);
 }
 
 void ip_free(struct searchNode *thenode) {

@@ -111,7 +111,7 @@ void handlestats(int hooknum, void *arg) {
 }
 
 int controlstatus(void *sender, int cargc, char **cargv) {
-  unsigned int level=5;
+  unsigned long level=5;
 
   hooknick=(nick *)sender;
   

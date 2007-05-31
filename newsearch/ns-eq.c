@@ -86,18 +86,18 @@ void *eq_exe(struct searchNode *thenode, int type, void *theinput) {
 
   switch (localdata->nodes[0]->returntype & RETURNTYPE_TYPE) {
   case RETURNTYPE_INT:
-    intval = (int)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_INT, theinput);
+    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_INT, theinput));
     for (i=1;i<localdata->count;i++) {
-      if ((int)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_INT, theinput) != intval)
+      if ((int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_INT, theinput) != intval))
 	return falseval(type);
     }
 
     return trueval(type);
     
   case RETURNTYPE_BOOL:
-    intval = (int)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_BOOL, theinput);
+    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_BOOL, theinput));
     for (i=1;i<localdata->count;i++) {
-      rval=(int)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_BOOL, theinput);
+      rval=(int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_BOOL, theinput));
       if ((rval && !intval) || (!rval && intval)) { /* LOGICAL XOR GOES HERE FS */
 	return falseval(type);
       }

@@ -11,11 +11,11 @@
 void spamserverstate(int hook, void *servernum) {
   switch(hook) {
     case HOOK_SERVER_NEWSERVER:
-      Error("testmod",ERR_INFO,"New server: %d (%d maxusers)",(int)servernum,serverlist[(int)servernum].maxusernum+1);
+      Error("testmod",ERR_INFO,"New server: %ld (%d maxusers)",(long)servernum,serverlist[(long)servernum].maxusernum+1);
       break;
 
     case HOOK_SERVER_LOSTSERVER:
-      Error("testmod",ERR_INFO,"Lost server: %d",(int)servernum);
+      Error("testmod",ERR_INFO,"Lost server: %ld",(long)servernum);
       break;
   }
 }

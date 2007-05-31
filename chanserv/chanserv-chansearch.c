@@ -30,7 +30,7 @@ int cs_cschanserv(void *source, int cargc, char **cargv) {
 }
 
 int cs_cschanlevsizeexe(chanindex *cip, void *arg) {
-  int minlength=(int)arg;
+  long minlength=(long)arg;
   regchan *rcp;
   regchanuser *rcup;
   int i,j;

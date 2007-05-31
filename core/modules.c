@@ -97,7 +97,7 @@ void initmoduledeps() {
   char *largv[100];
   char largc;
   char *ch;
-  struct module_dep *mdp, *tmdp, *mdps;
+  struct module_dep *mdp, *tmdp;
   unsigned int i,j;
   
   sprintf(buf,"%s/%s",moddir->content,DEPFILE);
@@ -208,7 +208,7 @@ void initmodules() {
 }
 
 int insmod(char *modulename) {
-  int i, n;
+  int i;
   module *mods;
   char buf[1024];
   const char *(*verinfo)(void);

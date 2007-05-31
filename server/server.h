@@ -26,7 +26,7 @@ int handleservermsg(void *source, int cargc, char **cargv);
 int handleeobmsg(void *source, int cargc, char **argv);
 int handlesquitmsg(void *source, int cargc, char **cargv);
 void handledisconnect(int hooknum, void *arg);
-void deleteserver(int servernum);
+void deleteserver(long servernum);
 int findserver(const char *name);
 
 #endif

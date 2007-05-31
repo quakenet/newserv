@@ -79,10 +79,10 @@ void _init() {
  */
 
 void handleserverchange(int hooknum, void *arg) {
-  int servernum;
+  long servernum;
   int i;
   
-  servernum=(int)arg;
+  servernum=(long)arg;
   
   switch(hooknum) {
     case HOOK_SERVER_NEWSERVER:
@@ -210,14 +210,14 @@ void nickstats(int hooknum, void *arg) {
     }
   }
     
-  if ((int)arg>5) {
+  if ((long)arg>5) {
     /* Full stats */
     sprintf(buf,"Nick    : %6d nicks    (HASH: %6d/%6d, chain %3d)",total,buckets,NICKHASHSIZE,maxchain);
-  } else if ((int)arg>2) {
+  } else if ((long)arg>2) {
     sprintf(buf,"Nick    : %6d users on network.",total);
   }
   
-  if ((int)arg>2) {
+  if ((long)arg>2) {
     triggerhook(HOOK_CORE_STATSREPLY,buf);
   }
 }

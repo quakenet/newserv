@@ -238,7 +238,7 @@ channel *findchannel(char *name) {
 }
 
 void channelstats(int hooknum, void *arg) {
-  int level=(int)arg;
+  long level=(long)arg;
   int i,curchain,maxchain=0,total=0,buckets=0,realchans=0;
   int users=0,slots=0;
   chanindex *cip;

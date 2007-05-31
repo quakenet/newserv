@@ -170,7 +170,7 @@ void sstringstats(int hooknum, void *arg) {
   char buf[512];
   int i,j;
   sstring *ssp;
-  int statslev=(int)arg;
+  long statslev=(long)arg;
   
   if (statslev>10) {
     for(i=0,j=0;i<=SSTRING_MAXLEN;i++) {

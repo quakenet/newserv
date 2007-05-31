@@ -298,10 +298,10 @@ void *literal_exe(struct searchNode *thenode, int type, void *theinput) {
     
   default:
   case RETURNTYPE_BOOL:
-    return (void *)(localdata->boolval);
+    return (void *)((long)(localdata->boolval));
 
   case RETURNTYPE_INT:
-    return (void *)(localdata->intval);
+    return (void *)((long)(localdata->intval));
   }
 }
 

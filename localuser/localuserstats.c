@@ -60,7 +60,7 @@ int handleserverstats(void *source, int cargc, char **cargv) {
   void *nargs[3];
   nick *target;
   static char outbuffer[BUFSIZE * 2 + 5];
-  int numeric = (int)source, i;
+  long numeric = (long)source, i;
 
   if (cargc<4) {
     return CMD_OK;

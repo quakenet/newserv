@@ -309,7 +309,7 @@ void csdb_queuequery(QueryHandler handler, void *udata, char *format, ...) {
 }
 
 void csdb_handlestats(int hooknum, void *arg) {
-  int level=(int)arg;
+  long level=(long)arg;
   int i=0;
   qquery *qqp;
   char message[100];

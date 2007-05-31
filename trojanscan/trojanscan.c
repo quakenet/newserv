@@ -489,7 +489,7 @@ void trojanscan_generateclone(void *arg) {
   char c_nick[NICKLEN+1], c_ident[USERLEN+1], c_host[HOSTLEN+1], c_real[REALLEN+1];
   patricia_node_t *fakeip;
 
-  i = (int)arg;
+  i = (int)((long)arg);
 
   /* PPA: unlikely to be infinite */
   do {
@@ -566,7 +566,7 @@ void trojanscan_registerclones(void *arg) {
   }
   
   for (i=0;i<TROJANSCAN_CLONE_TOTAL;i++)
-    trojanscan_generateclone((void *)i);
+    trojanscan_generateclone((void *)((long)i));
   trojanscan_mainchanmsg("n: swarm (%d clones) created.", TROJANSCAN_CLONE_TOTAL);
   trojanscan_swarm_created = 1;
 
@@ -975,7 +975,7 @@ struct trojanscan_clones *trojanscan_selectclone(char type) {
           derefnode(iptree, rc->fakeipnode);
           rc->clone = NULL;
         }
-        trojanscan_generateclone((void *)rc->index);
+        trojanscan_generateclone((void *)((long)rc->index));
       }
     }
   }
@@ -1753,7 +1753,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
             char *userbit;
             host *hp;
             unsigned int j, usercount, frequency;
-            char ip[TROJANSCAN_IPLEN];
             int glining = 1;
             channel *chp = (channel *)args[1];
             
@@ -1865,7 +1864,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
       for (i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
         if (trojanscan_swarm[i].clone == target) {
           
-          scheduleoneshot(time(NULL)+1, &trojanscan_generateclone, (void *)i);
+          scheduleoneshot(time(NULL)+1, &trojanscan_generateclone, (void *)((long)i));
           if(i >= TROJANSCAN_CLONE_MAX) {
             int j;
             for(j=0;j<trojanscan_activechans;j++)

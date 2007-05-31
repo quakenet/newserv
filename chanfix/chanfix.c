@@ -925,7 +925,7 @@ void cfhook_statsreport(int hook, void *arg) {
   nick *nip;
   chanfix *cf;
 
-  if ((int)arg > 2) {
+  if ((long)arg > 2) {
     memory = rc = mc = 0;
 
     for (i=0; i<CHANNELHASHSIZE; i++) {

@@ -311,7 +311,7 @@ void cs_handlejoin(int hooknum, void *arg) {
 void cs_handlemodechange(int hooknum, void *arg) {
   void **arglist=(void **)arg;
   channel *cp=(channel *)arglist[0];
-  int changeflags=(int)arglist[2];
+  long changeflags=(long)arglist[2];
   regchan *rcp;
 
   if ((rcp=cp->index->exts[chanservext])==NULL || CIsSuspended(rcp))

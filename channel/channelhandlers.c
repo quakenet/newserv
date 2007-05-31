@@ -743,7 +743,7 @@ int handlemodemsg(void *source, int cargc, char **cargv) {
     }
   }
 
-  harg[2]=(void *)changes;
+  harg[2]=(void *)((long)changes);
   triggerhook(HOOK_CHANNEL_MODECHANGE,(void *)harg);  
   return CMD_OK;
 }
@@ -909,7 +909,7 @@ int handleclearmodemsg(void *source, int cargc, char **cargv) {
     }
   }
 
-  harg[2]=(void *)changes;
+  harg[2]=(void *)((long)changes);
   triggerhook(HOOK_CHANNEL_MODECHANGE, harg);
   return CMD_OK;
 }

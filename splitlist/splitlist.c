@@ -38,11 +38,11 @@ void _fini(void) {
 }
 
 void sphook_newserver(int hook, void *arg) {
-  sp_deletesplit(serverlist[(int)arg].name->content);
+  sp_deletesplit(serverlist[(long)arg].name->content);
 }
 
 void sphook_lostserver(int hook, void *arg) {
-  sp_addsplit(serverlist[(int)arg].name->content, getnettime());
+  sp_addsplit(serverlist[(long)arg].name->content, getnettime());
 }
 
 int sp_countsplitservers(void) {

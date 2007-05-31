@@ -293,7 +293,7 @@ int cs_topic(void *source, int cargc, char **cargv) {
 int cs_servicesexe(chanindex *cip, void *arg) {
   nick *np;
   int i;
-  int count=(int)arg;
+  long count=(long)arg;
   
   if (cip->channel==NULL) 
     return 1;
@@ -356,7 +356,7 @@ int cs_nick(void *source, int cargc, char **cargv) {
 }
 
 int cs_sizeexe(chanindex *cip, void *arg) {
-  int lim=(int)arg;
+  long lim=(long)arg;
   
   return ((cip->channel==NULL) ||
           (cip->channel->users->totalusers < lim));
@@ -372,7 +372,7 @@ int cs_size(void *source, int cargc, char **cargv) {
 }
 
 int cs_namelenexe(chanindex *cip, void *arg) {
-  int lim=(int)arg;
+  long lim=(long)arg;
   
   return (cip->name->length < lim);
 }
@@ -387,7 +387,7 @@ int cs_namelen(void *source, int cargc, char **cargv) {
 }
 
 int cs_oppctexe(chanindex *cip, void *arg) {
-  int percent=(int)arg;
+  long percent=(long)arg;
   int nonop;
   int i;
   
@@ -420,7 +420,7 @@ int cs_oppct(void *source, int cargc, char **cargv) {
 }          
 
 int cs_hostpctexe(chanindex *cip, void *arg) {
-  int percent=(int)arg;
+  long percent=(long)arg;
   int hostreq;
   int i;
   unsigned int marker;
@@ -466,7 +466,7 @@ int cs_authedpctexe(chanindex *cip, void *arg) {
   int i;
   int j=0;
   nick *np;
-  int pct=(int)arg;
+  long pct=(long)arg;
   
   if (!cip->channel)
     return 1;
