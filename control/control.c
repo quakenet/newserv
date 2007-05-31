@@ -71,6 +71,12 @@ void _init() {
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
+void _fini() {
+  if (mynick) {
+    deregisterlocaluser(mynick,"Leaving");
+  }
+}
+
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
   addcommandhelptotree(controlcmds,name,level,maxparams,handler,help);
 }
