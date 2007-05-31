@@ -70,8 +70,14 @@ void clearmoduledeps() {
   unsigned int i;
   
   for (i=0;i<knownmodules;i++) {
-    free(moduledeps[i].parents);
-    free(moduledeps[i].children);
+    if (moduledeps[i].parents) {
+      free(moduledeps[i].parents);
+      moduledeps[i].parents=NULL;
+    }
+    if (moduledeps[i].children) {
+      free(moduledeps[i].children);
+      moduledeps[i].children=NULL;
+    }
   }
   
   knownmodules=0;
@@ -97,7 +103,7 @@ void initmoduledeps() {
   char *largv[100];
   char largc;
   char *ch;
-  struct module_dep *mdp, *tmdp, *mdps;
+  struct module_dep *mdp, *tmdp;
   unsigned int i,j;
   
   sprintf(buf,"%s/%s",moddir->content,DEPFILE);
@@ -128,7 +134,9 @@ void initmoduledeps() {
       /* Add us to the array */
       i=knownmodules++;
       if (i>=MAXMODULES) {
-        Error("core",ERR_FATAL,"Too many modules in dependency file; rebuild with higher MAXMODULES.\n");
+        Error("core",ERR_ERROR,
+               "Too many modules in dependency file; rebuild with higher MAXMODULES.  Module dependencies disabled.\n");
+        clearmoduledeps();
         return;
       }
       
@@ -142,8 +150,10 @@ void initmoduledeps() {
       /* Fill in the parents array */
       for (i=0;i<(largc-1);i++) {
         if (!(mdp->parents[i]=getmoduledep(largv[i+1]))) {
-          Error("core",ERR_WARNING,"Couldn't find parent module %s of %s.",largv[i+1],largv[0]);
-          continue;
+          Error("core",ERR_WARNING,"Couldn't find parent module %s of %s.  Module dependencies disabled.",
+                  largv[i+1],largv[0]);
+          clearmoduledeps();
+          return;
         }
         mdp->parents[i]->numchildren++; /* break the bad news */
       }
@@ -208,7 +218,7 @@ void initmodules() {
 }
 
 int insmod(char *modulename) {
-  int i, n;
+  int i;
   module *mods;
   char buf[1024];
   const char *(*verinfo)(void);
