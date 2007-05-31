@@ -163,6 +163,7 @@ int chanservdbinit() {
 		 "chankey       VARCHAR(23),"
 		 "suspendreason VARCHAR(250),"
 		 "comment       VARCHAR(250),"
+		 "lasttimestamp   INT,"
 		 "PRIMARY KEY (ID))"));
 
   /* Chanuser table */
@@ -429,8 +430,6 @@ void loadsomeusers(void *arg) {
 
   num=PQntuples(pgres);
 
-  lastuserID=0;
-
   for(i=0;i<num;i++) {
     rup=getreguser();
     rup->status=0;
@@ -487,7 +486,7 @@ void loadsomechannels(void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=25) {
+  if (PQnfields(pgres)!=26) {
     Error("chanserv",ERR_ERROR,"Channel DB format error");
     return;
   }
@@ -534,6 +533,7 @@ void loadsomechannels(void *arg) {
     rcp->suspendreason=getsstring(PQgetvalue(pgres,i,23),250);
     rcp->comment=getsstring(PQgetvalue(pgres,i,24),250);
     rcp->checksched=NULL;
+    rcp->ltimestamp=strtoul(PQgetvalue(pgres,i,25),NULL,10);
     memset(rcp->regusers,0,REGCHANUSERHASHSIZE*sizeof(reguser *));
 
     if (rcp->ID > lastchannelID)
@@ -903,13 +903,13 @@ void csdb_updatechannel(regchan *rcp) {
 		  "addedby=%u, suspendby=%u, chantype=%d, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u,"
 		  "welcome='%s', topic='%s', chankey='%s', suspendreason='%s',"
-		  "comment='%s' WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
+		  "comment='%s', lasttimestamp=%d WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle,
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
 		  rcp->founder, rcp->addedby, rcp->suspendby,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
-		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ID);
+		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp,rcp->ID);
 }
 
 void csdb_updatechannelcounters(regchan *rcp) {
@@ -921,6 +921,12 @@ void csdb_updatechannelcounters(regchan *rcp) {
 		  rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
 		  rcp->ID);
+}
+
+void csdb_updatechanneltimestamp(regchan *rcp) {
+  csdb_queuequery(NULL, NULL, "UPDATE channels SET "
+		  "lasttimestamp=%u WHERE ID=%u",
+		  rcp->ltimestamp, rcp->ID);
 }
 
 void csdb_createchannel(regchan *rcp) {
@@ -965,15 +971,15 @@ void csdb_createchannel(regchan *rcp) {
 		  "chanlimit, autolimit, banstyle, created, lastactive, statsreset, "
 		  "banduration, founder, addedby, suspendby, chantype, totaljoins, tripjoins,"
 		  "maxusers, tripusers, welcome, topic, chankey, suspendreason, "
-		  "comment) VALUES (%u,'%s',%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%u,"
-		  "%u,%u,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s')",
+		  "comment, lasttimestamp) VALUES (%u,'%s',%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%u,"
+		  "%u,%u,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s',%d)",
 		  rcp->ID, escname, rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle, rcp->created, 
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
 		  rcp->founder, rcp->addedby, rcp->suspendby,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
-		  escwelcome,esctopic,esckey,escreason,esccomment);
+		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp);
 }
 
 void csdb_deletechannel(regchan *rcp) {

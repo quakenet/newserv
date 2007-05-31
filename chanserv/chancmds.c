@@ -830,6 +830,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   memset(rcp->regusers,0,REGCHANUSERHASHSIZE*sizeof(reguser *));   
   
   rcp->checksched=NULL;
+  rcp->ltimestamp=0;
 
   /* Add new channel to db.. */  
   csdb_createchannel(rcp);
@@ -2165,7 +2166,3 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
-  
-
-  
-  

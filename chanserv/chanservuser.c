@@ -230,17 +230,33 @@ void chanservremovecommand(char *command, CommandHandler handler) {
 
 void chanservjoinchan(channel *cp) {
   regchan *rcp;
+  
+  /* Skip unregistered channels */
+  if (!(rcp=cp->index->exts[chanservext]))
+    return;
+    
+  /* Check for a new timestamp */
+  if ((!rcp->ltimestamp) || (cp->timestamp < rcp->ltimestamp)) {
+    rcp->ltimestamp=cp->timestamp;
+    csdb_updatechanneltimestamp(rcp);
+  }
 
-  if (!chanservnick || !(rcp=cp->index->exts[chanservext]))
+  /* We won't be doing any joining or parting if we're not online */
+  if (!chanservnick)
     return;
 
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
     localpartchannel(chanservnick, cp);
   }
 
+  /* OK, we're going to join the channel.  Since our timestamp must be less
+   * than or equal to the one already there it should be OK to burst on. 
+   * 
+   * We will try and burst our view of the world; if the timestamps are
+   * actually equal this will be mostly ignored and we will have to fix it
+   * up later */
   if (!CIsSuspended(rcp) && CIsJoined(rcp) && !getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
-    localjoinchannel(chanservnick, cp);
-    localgetops(chanservnick, cp);
+    localburstontochannel(cp, chanservnick, rcp->ltimestamp, rcp->forcemodes, rcp->limit, (rcp->key)?rcp->key->content:NULL);
   }
 }
 
@@ -521,6 +537,7 @@ void cs_docheckchanmodes(channel *cp, modechanges *changes) {
     if (!rcp->key) {
       Error("chanserv",ERR_WARNING,"Key forced but no key specified for %s: cleared forcemode.",rcp->index->name->content);
       rcp->forcemodes &= ~CHANMODE_KEY;
+      csdb_updatechannel(rcp);
     } else {
       localdosetmode_key(changes, rcp->key->content, MCB_ADD);
     }

@@ -477,6 +477,7 @@ typedef struct regchan {
 #endif
   unsigned int        ID;              /* Unique number from database */
   chanindex          *index;           /* Pointer to the channel index record */
+  time_t              ltimestamp;      /* The last timestamp we saw on this channel */
 
   flag_t              flags;           /* Chanflags */
   flag_t              status;          /* Runtime status codes */
@@ -723,6 +724,7 @@ void csdb_createchannel(regchan *rcp);
 void csdb_deletechannel(regchan *rcp);
 void csdb_deleteuser(reguser *rup);
 void csdb_updatechannelcounters(regchan *rcp);
+void csdb_updatechanneltimestamp(regchan *rcp);
 void csdb_updatechanuser(regchanuser *rcup);
 void csdb_createchanuser(regchanuser *rcup);
 void csdb_deletechanuser(regchanuser *rcup);
