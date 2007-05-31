@@ -64,11 +64,11 @@ void _fini() {
 }
 
 /*
- * registerlocaluser:
+ * registerlocaluserwithuserid:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname, char *authname, flag_t umodes, UserMessageHandler handler) {
+nick *registerlocaluserwithuserid(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
   struct irc_in_addr ipaddress;
@@ -113,8 +113,19 @@ nick *registerlocaluser(char *nickname, char *ident, char *host, char *realname,
 
   if (IsAccount(newuser)) {
     strncpy(newuser->authname,authname,ACCOUNTLEN);
+    newuser->accountts=newuser->timestamp;
+    if (authid) {
+      newuser->auth=findorcreateauthname(authid);
+      newuser->auth->usercount++;
+      newuser->nextbyauthname=newuser->auth->nicks;
+      newuser->auth->nicks=newuser;
+    } else {
+      newuser->auth=NULL;
+    }
   } else {
     newuser->authname[0]='\0';
+    newuser->accountts=0;
+    newuser->auth=NULL;
   }
   
   if (connected) {
@@ -239,11 +250,29 @@ void sendnickmsg(nick *np) {
   strncpy(numericbuf,longtonumeric(np->numeric,5),5);
   numericbuf[5]='\0';
   
-  irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
-    mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-    printflags(np->umodes,umodeflags),IsAccount(np)?" ":"",
-    np->authname,iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,
-    np->realname->name->content);
+  if (IsAccount(np)) {
+    if (np->auth) {
+      irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu %s %s :%s",
+        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+        printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,
+        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+    } else if (np->accountts) {
+      irc_send("%s N %s 1 %ld %s %s %s %s:%ld %s %s :%s",
+        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+        printflags(np->umodes,umodeflags),np->authname,np->accountts,
+        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+    } else {
+      irc_send("%s N %s 1 %ld %s %s %s %s %s %s :%s",
+        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+        printflags(np->umodes,umodeflags),np->authname,
+        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+    }
+  } else {
+    irc_send("%s N %s 1 %ld %s %s %s %s %s :%s",
+      mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+      printflags(np->umodes,umodeflags),iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),
+      numericbuf,np->realname->name->content);
+  }
 }
 
 void sendnickburst(int hooknum, void *arg) {
@@ -501,7 +530,7 @@ void checkpendingkills(int hooknum, void *arg) {
 }
 
 /* Auth user */
-void localusersetaccount(nick *np, char *accname) {
+void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
@@ -510,9 +539,23 @@ void localusersetaccount(nick *np, char *accname) {
   SetAccount(np);
   strncpy(np->authname, accname, ACCOUNTLEN);
   np->authname[ACCOUNTLEN]='\0';
+  np->accountts=getnettime();
+
+  if (accid) {
+    np->auth=findorcreateauthname(accid);
+    np->auth->usercount++;
+    np->nextbyauthname=np->auth->nicks;
+    np->auth->nicks=np;
+  } else {
+    np->auth=NULL;
+  }
 
   if (connected) {
-    irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, getnettime());
+    if (np->auth) {
+      irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
+    } else {
+      irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
+    }
   }
 
   triggerhook(HOOK_NICK_ACCOUNT, np);
