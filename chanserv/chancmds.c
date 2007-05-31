@@ -399,8 +399,10 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       addedby=findreguserbyID(rcp->addedby);
       chanservstdmessage(sender, QM_ADDEDBY, addedby ? addedby->username : "(unknown)");
       founder=findreguserbyID(rcp->founder);
-      chanservstdmessage(sender, QM_FOUNDER, founder ? founder->username : "(unknown)");      
-      chanservstdmessage(sender, QM_CHANTYPE, chantypes[rcp->chantype]->content);
+      chanservstdmessage(sender, QM_FOUNDER, founder ? founder->username : "(unknown)");
+      if (rcp->chantype) {
+        chanservstdmessage(sender, QM_CHANTYPE, chantypes[rcp->chantype]->content);
+      }
     }
 
     /* Count users */

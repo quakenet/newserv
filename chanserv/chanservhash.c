@@ -11,28 +11,24 @@
 #include "../lib/irc_string.h"
 
 reguser *regusernicktable[REGUSERHASHSIZE];
-reguser *reguserIDtable[REGUSERHASHSIZE];
 
 #define regusernickhash(x)  ((crc32i(x))%REGUSERHASHSIZE)
-#define reguserIDhash(x)    ((x)%REGUSERHASHSIZE)
 
 void chanservhashinit() {
   memset(regusernicktable,0,REGUSERHASHSIZE*sizeof(reguser *));
-  memset(reguserIDtable,0,REGUSERHASHSIZE*sizeof(reguser *));
 }
 
 void addregusertohash(reguser *rup) {
   unsigned int hash;
-
+  authname *anp;
+  
   hash=regusernickhash(rup->username);
 
   rup->nextbyname=regusernicktable[hash];
   regusernicktable[hash]=rup;
 
-  hash=reguserIDhash(rup->ID);
-  
-  rup->nextbyID=reguserIDtable[hash];
-  reguserIDtable[hash]=rup;
+  anp=findorcreateauthname(rup->ID);
+  anp->exts[chanservaext]=rup;
 }
 
 reguser *findreguserbynick(const char *nick) {
@@ -51,23 +47,20 @@ reguser *findreguserbynick(const char *nick) {
 }
 
 reguser *findreguserbyID(unsigned int ID) {
-  unsigned int hash;
-  reguser *rup;
+  authname *anp;
 
-  hash=reguserIDhash(ID);
-  for (rup=reguserIDtable[hash];rup;rup=rup->nextbyID)
-    if (rup->ID==ID)
-      return rup;
-
-  /* Not found */
-  return NULL;
+  anp=findauthname(ID);
+  if (anp)
+    return (reguser *)anp->exts[chanservaext];
+  else
+    return NULL;
 }
 
 /*
  * findreguser:
  *  This function does the standard "nick or #user" lookup.
  *  If "sender" is not NULL, a suitable error message will
- *  be sent if the lookup fails 
+ *  be sent if the lookup fails.
  */
 
 reguser *findreguser(nick *sender, const char *str) {
@@ -80,7 +73,7 @@ reguser *findreguser(nick *sender, const char *str) {
   if (*str=='#') {
     if (str[1]=='\0') {
       if (sender)
-	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
       return NULL;
     }
     if (!(rup=findreguserbynick(str+1)) && sender)
@@ -88,7 +81,7 @@ reguser *findreguser(nick *sender, const char *str) {
   } else {
     if (!(np=getnickbynick(str))) {
       if (sender)
-	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
       return NULL;
     }
     if (!(rup=getreguserfromnick(np)) && sender)
@@ -124,6 +117,8 @@ reguser *findreguserbyemail(const char *email) {
 void removereguserfromhash(reguser *rup) {
   unsigned int hash;
   reguser **ruh;
+  authname *anp;
+  
   int found;
 
   hash=regusernickhash(rup->username);
@@ -141,20 +136,14 @@ void removereguserfromhash(reguser *rup) {
     Error("chanserv",ERR_ERROR,"Unable to remove reguser %s from nickhash",
 	  rup->username);
   }
+
+  anp=findauthname(rup->ID);
   
-  hash=reguserIDhash(rup->ID);
-  found=0;
-
-  for (ruh=&(reguserIDtable[hash]);*ruh;ruh=&((*ruh)->nextbyID)) {
-    if (*ruh==rup) {
-      *ruh=(rup->nextbyID);
-      found=1;
-      break;
-    }
-  }
-
-  if (found==0) {
-    Error("chanserv",ERR_ERROR,"Unable to remove reguser %s from ID hash",rup->ID);
+  if (anp) {
+    anp->exts[chanservaext]=NULL;
+    releaseauthname(anp);
+  } else {
+    Error("chanserv",ERR_ERROR,"Unable to remove reguser %s from ID hash",rup->username);
   }  
 }
 
