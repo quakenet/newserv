@@ -29,6 +29,7 @@ typedef struct modechanges {
 } modechanges;
 
 /* These functions are in localuserchannel.c */
+int localburstontochannel(channel *cp, nick *np, time_t timestamp, flag_t modes, unsigned int limit, char *key);
 int localjoinchannel(nick *np, channel *cp);
 int localpartchannel(nick *np, channel *cp);
 int localcreatechannel(nick *np, char *channame);

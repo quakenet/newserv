@@ -205,6 +205,111 @@ int handlechannelnoticecmd(void *source, int cargc, char **cargv) {
   return handlechannelmsgornotice(source, cargc, cargv, 1);
 }
 
+/* Burst onto channel.  This replaces the timestamp and modes
+ * with the provided ones.  Keys and limits use the provided ones 
+ * if needed.  nick * is optional, but joins the channel opped if 
+ * provided. 
+ * 
+ * Due to the way ircu works, this only works if the provided timestamp is
+ * older than the one currently on the channel.  If the timestamps are
+ * equal, the modes are ignored, but the user (if any) is still allowed to
+ * join with op.  If the provided timestamp is newer than the exsting one we
+ * just do a join instead - if you try to replace an old timestamp with a
+ * newer one ircu will just laugh at you (and you will be desynced).
+ */
+int localburstontochannel(channel *cp, nick *np, time_t timestamp, flag_t modes, unsigned int limit, char *key) {
+  unsigned int i;
+  char extramodebuf[512];
+  char nickbuf[512];
+  
+  if (cp==NULL)
+    return 1;
+    
+  if (timestamp > cp->timestamp) {
+    return localjoinchannel(np, cp);
+  }
+  
+  if (timestamp < cp->timestamp) {
+    cp->timestamp=timestamp;
+    cp->flags=modes;
+    
+    /* deal with key - if we need one use the provided one if set, otherwise
+     * the existing one, but if there is no existing one clear +k */
+    if (IsKey(cp)) {
+      if (key) {
+        /* Free old key, if any */
+        if (cp->key)
+          freesstring(cp->key);
+
+        cp->key=getsstring(key,KEYLEN);
+      } else {
+        if (!cp->key)
+          ClearKey(cp);
+      }
+    } else {
+      /* Not +k - free the existing key, if any */
+      freesstring(cp->key);
+      cp->key=NULL;
+    }
+    
+    if (IsLimit(cp)) {
+      if (limit) {
+        cp->limit=limit;
+      } else {
+        if (!cp->limit)
+          ClearLimit(cp);
+      } 
+    } else {
+      if (cp->limit)
+        cp->limit=0;
+    }
+    
+    /* We also need to blow away all other op/voice and bans on the
+     * channel.  This is the same code we use when someone else does 
+     * it to us. */ 
+    clearallbans(cp); 
+    for (i=0;i<cp->users->hashsize;i++) {
+      if (cp->users->content[i]!=nouser) {
+        cp->users->content[i]&=CU_NUMERICMASK;
+      }
+    }
+  }
+
+  /* Actually add the nick to the channel.  Make sure it's a local nick and actually exists first. */
+  if (np && (homeserver(np->numeric) == mylongnum) &&
+      !(getnumerichandlefromchanhash(cp->users,np->numeric))) {
+    addnicktochannel(cp,(np->numeric)|CUMODE_OP);
+  } else {
+    np=NULL; /* If we're not adding it here, don't send it later in the burst msg either */
+  }
+  
+  if (connected) {
+    /* actual burst message */
+    if (np) {
+      sprintf(nickbuf," %s:o", longtonumeric(np->numeric,5));
+    } else {
+      nickbuf[0]='\0';
+    }
+    
+    if (IsLimit(cp)) {
+      sprintf(extramodebuf," %d",cp->limit);
+    } else {
+      extramodebuf[0]='\0';
+    }
+    
+    /* XX B #channel <timestamp> +modes <limit> <key> <user> */
+    irc_send("%s B %s %lu %s %s%s%s%s",
+              mynumeric->content,cp->index->name->content,cp->timestamp,
+              printflags(cp->flags,cmodeflags),extramodebuf,
+              IsKey(cp)?" ":"",IsKey(cp)?cp->key->content:"", nickbuf);
+  }
+
+  /* Tell the world something happened... */
+  triggerhook(HOOK_CHANNEL_BURST,cp);
+
+  return 0;
+}
+
 int localjoinchannel(nick *np, channel *cp) {
   void *harg[2];
   
