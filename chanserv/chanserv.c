@@ -9,6 +9,7 @@
 
 int chanservext;
 int chanservnext;
+int chanservaext;
 
 int chanserv_init_status;
 
@@ -78,8 +79,9 @@ void _init() {
   /* Register the extension */
   chanservext=registerchanext("chanserv");
   chanservnext=registernickext("nickserv");
+  chanservaext=registerauthnameext("chanserv");
 
-  if (chanservext!=-1 && chanservnext!=-1) {
+  if (chanservext!=-1 && chanservnext!=-1 && chanservaext!=-1) {
     /* Set up the chantypes */
     chantypes=(sstring **)malloc(CHANTYPES*sizeof(sstring *));
     chantypes[0]=getsstring("(unspecified)",20);
@@ -158,6 +160,8 @@ void chanserv_finalinit() {
   registerhook(HOOK_CHANNEL_BURST, cs_handleburst);
   registerhook(HOOK_CHANNEL_TOPIC, cs_handletopicchange);
   registerhook(HOOK_CHANNEL_LOSTNICK, cs_handlechanlostuser);
+  
+  Error("chanserv",ERR_INFO,"Ready to roll.");
 }
 
 void _fini() {
@@ -183,6 +187,10 @@ void _fini() {
   
   if (chanservnext!=-1) {
     releasenickext(chanservnext);
+  }
+  
+  if (chanservaext!=-1) {
+    releaseauthnameext(chanservaext);
   }
 
   if (chanservnick)

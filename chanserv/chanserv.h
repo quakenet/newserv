@@ -660,6 +660,7 @@ extern reguser *deadusers;
 extern nick *chanservnick;
 extern int chanservext;
 extern int chanservnext;
+extern int chanservaext;
 
 extern cslang *cslanguages[MAXLANG];
 extern unsigned int cslangcount;

@@ -39,6 +39,8 @@ void chanservreguser(void *arg) {
   cshost=getcopyconfigitem("chanserv","host","some.host",HOSTLEN);
   csrealname=getcopyconfigitem("chanserv","realname","ChannelService",REALLEN);
 
+  Error("chanserv",ERR_INFO,"Connecting %s...",csnick->content);
+
   chanservnick=registerlocaluser(csnick->content,csuser->content,cshost->content,
 				 csrealname->content,NULL,
 				 UMODE_INV|UMODE_SERVICE|UMODE_DEAF,
@@ -53,8 +55,8 @@ void chanservreguser(void *arg) {
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=cip->next) {
       if (cip->channel && (rcp=cip->exts[chanservext]) && !CIsSuspended(rcp)) {
-        if (CIsJoined(rcp))
-          chanservjoinchan(cip->channel);
+        /* This will do timestamp faffing even if it won't actually join */
+        chanservjoinchan(cip->channel);
 	/* Do a check at some future time.. */
 	cs_schedupdate(cip, 1, 5);
 	rcp->status |= (QCSTAT_OPCHECK | QCSTAT_MODECHECK | QCSTAT_BANCHECK);
@@ -63,6 +65,8 @@ void chanservreguser(void *arg) {
       }
     }
   }
+
+  Error("chanserv",ERR_INFO,"Loaded and joined channels.");
 
   if (chanserv_init_status == CS_INIT_NOUSER) {
     /* If this is the first time, perform last init tasks */

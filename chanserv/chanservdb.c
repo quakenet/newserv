@@ -40,7 +40,6 @@ qquery *nextquery, *lastquery;
 PGconn *dbconn;
 
 regchan **allchans;
-reguser **allusers;
 
 int cs_sqlconnected;
 unsigned int lastchannelID;
@@ -455,7 +454,7 @@ void loadsomeusers(void *arg) {
     rup->stealcount=0;
     rup->fakeuser=NULL;
     addregusertohash(rup);
-
+    
     if (rup->ID > lastuserID) {
       lastuserID=rup->ID;
     }
@@ -553,7 +552,6 @@ void loadchannelsdone(void *arg) {
 void loadchanusersinit(void *arg) {
   int i;
   chanindex *cip;
-  reguser *rup;
   regchan *rcp;
 
   allchans=(regchan **)malloc((lastchannelID+1)*sizeof(regchan *));
@@ -566,14 +564,6 @@ void loadchanusersinit(void *arg) {
       }
     }
   }
-  
-  allusers=(reguser **)malloc((lastuserID+1)*sizeof(reguser *));
-  memset(allusers,0,(lastuserID+1)*sizeof(reguser *));
-  for (i=0;i<REGUSERHASHSIZE;i++) {
-    for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      allusers[rup->ID]=rup;
-    }
-  }
 }
 
 void loadsomechanusers(void *arg) {
@@ -582,10 +572,11 @@ void loadsomechanusers(void *arg) {
   int i,num;
   regchan *rcp;
   reguser *rup;
+  authname *anp;
   int uid,cid;
   int total=0;
 
-  /* Set up the allchans and allusers arrays */
+  /* Set up the allchans array */
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -604,7 +595,7 @@ void loadsomechanusers(void *arg) {
     uid=strtol(PQgetvalue(pgres,i,0),NULL,10);
     cid=strtol(PQgetvalue(pgres,i,1),NULL,10);
 
-    if (uid>lastuserID || !(rup=allusers[uid])) {
+    if (!(anp=findauthname(uid)) || !(rup=anp->exts[chanservaext])) {
       Error("chanserv",ERR_WARNING,"Skipping channeluser for unknown user %d",uid);
       continue;
     }
@@ -692,7 +683,6 @@ void loadsomechanbans(void *arg) {
 }
 
 void loadchanbansdone(void *arg) {
-  free(allusers);
   free(allchans);
   
   Error("chanserv",ERR_INFO,"Channel ban load done.");
