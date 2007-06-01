@@ -18,8 +18,21 @@
 
 MODULE_VERSION("");
 
+/* It's possible that we might want to do a very long query, longer than the
+ * IRC-oriented SSTRING_MAX value.  One option would be to increase
+ * SSTRING_MAX, but the whole purpose of sstring's is to efficiently deal
+ * with situations where the malloc() padding overhead is large compared to
+ * string length and strings are frequently recycled.  Since neither of
+ * these are necessarily true for longer strings it makes more sense to use
+ * malloc() for them. 
+ *
+ * So, query always points at the query string.  If it fitted in a sstring,
+ * query_ss will point at the sstring for freeing purposes.  If query_ss is
+ * NULL then it was malloc'd so should be free()'d directly.
+ */
 typedef struct pqasyncquery_s {
-  sstring *query;
+  sstring *query_ss;
+  char *query;
   void *tag;
   PQQueryHandler handler;
   int flags;
@@ -134,7 +147,14 @@ void dbhandler(int fd, short revents) {
 
       queryhead = queryhead->next;
 
-      freesstring(qqp->query);
+      if (qqp->query_ss) {
+        freesstring(qqp->query_ss);
+        qqp->query_ss=NULL;
+        qqp->query=NULL;
+      } else if (qqp->query) {
+        free(qqp->query);
+        qqp->query=NULL;
+      }
       free(qqp);
 
       if(queryhead) { /* Submit the next query */	      
@@ -161,10 +181,19 @@ void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, .
 
   /* PPA: no check here... */
   qp = (pqasyncquery_s *)malloc(sizeof(pqasyncquery_s));
-  if(!qp)
-    return;
 
-  qp->query = getsstring(querybuf, len);
+  if(!qp)
+    Error("pqsql",ERR_STOP,"malloc() failed in pqsql.c");
+
+  /* Use sstring or allocate (see above rant) */
+  if (len > SSTRING_MAX) {
+    qp->query = (char *)malloc(strlen(len)+1);
+    strcpy(qp->query,querybuf);
+    qp->query_ss=NULL;
+  } else {
+    qp->query_ss = getsstring(querybuf, len);
+    qp->query = qp->query_ss->content;
+  }
   qp->tag = tag;
   qp->handler = handler;
   qp->next = NULL; /* shove them at the end */
@@ -192,7 +221,14 @@ void disconnectdb(void) {
   /* Throw all the queued queries away, beware of data malloc()ed inside the query item.. */
   while(qqp) {
     nqqp = qqp->next;
-    freesstring(qqp->query);
+    if (qqp->query_ss) {
+      freesstring(qqp->query);
+      qqp->query_ss=NULL;
+      qqp->query=NULL;
+    } else if (qqp->query) {
+      free(qqp->query);
+      qqp->query=NULL;
+    }
     free(qqp);
     qqp = nqqp;
   }
