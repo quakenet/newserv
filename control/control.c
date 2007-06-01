@@ -72,9 +72,25 @@ void _init() {
 }
 
 void _fini() {
+  deleteallschedules(&controlconnect);
   if (mynick) {
     deregisterlocaluser(mynick,"Leaving");
   }
+  
+  deregistercontrolcmd("status",&controlstatus);
+  deregistercontrolcmd("whois",&controlwhois);
+  deregistercontrolcmd("channel",&controlchannel);
+  deregistercontrolcmd("relink",&relink);
+  deregistercontrolcmd("die",&die);
+  deregistercontrolcmd("insmod",&controlinsmod);
+  deregistercontrolcmd("rmmod",&controlrmmod);
+  deregistercontrolcmd("lsmod",&controllsmod);
+  deregistercontrolcmd("rehash",&controlrehash);
+  deregistercontrolcmd("showcommands",&controlshowcommands);
+  deregistercontrolcmd("reload",&controlreload);
+  deregistercontrolcmd("help",&controlhelpcmd);
+  
+  destroycommandtree(controlcmds);
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
