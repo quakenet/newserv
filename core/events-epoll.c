@@ -46,7 +46,7 @@ void inithandlers() {
 
   /* Get an epoll FD */
   if ((epollfd=epoll_create(STARTFDS))<0) {
-    Error("events",ERR_FATAL,"Unable to initialise epoll.");
+    Error("events",ERR_STOP,"Unable to initialise epoll.");
   }
 
   registerhook(HOOK_CORE_STATSREQUEST, &eventstats);

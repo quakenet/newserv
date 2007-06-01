@@ -44,10 +44,8 @@ int array_getfreeslot(array *a) {
     /* we can be evil and use the same pointer as we're gonna exit if we fail */
     a->content = realloc(a->content, a->capacity * a->itemsize);
 
-    if(!a->content) {
-       Error("array", ERR_FATAL, "Array resize failed.");
-       exit(1);
-    }
+    if(!a->content)
+       Error("array", ERR_STOP, "Array resize failed.");
   }
 
   return a->cursi++;
