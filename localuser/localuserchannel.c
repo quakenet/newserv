@@ -903,7 +903,7 @@ void localkickuser(nick *np, channel *cp, nick *target, const char *message) {
       if (pk->target == target && pk->chan == cp)
         return;
 
-    Error("localuserchannel", ERR_INFO, "Adding pending kick for %s on %s", target->nick, cp->index->name->content);
+    Error("localuserchannel", ERR_DEBUG, "Adding pending kick for %s on %s", target->nick, cp->index->name->content);
     pk = (pendingkick *)malloc(sizeof(pendingkick));
     pk->source = np;
     pk->chan = cp;
@@ -955,7 +955,7 @@ void clearpendingkicks(int hooknum, void *arg) {
     pendingkicklist = pk->next;
 
     if (pk->target && pk->chan) {
-      Error("localuserchannel", ERR_INFO, "Processing pending kick for %s on %s", pk->target->nick, pk->chan->index->name->content);
+      Error("localuserchannel", ERR_DEBUG, "Processing pending kick for %s on %s", pk->target->nick, pk->chan->index->name->content);
       _localkickuser(pk->source, pk->chan, pk->target, pk->reason->content);
     }
 

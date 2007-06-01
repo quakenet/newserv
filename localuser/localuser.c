@@ -469,7 +469,7 @@ void killuser(nick *source, nick *target, char *format, ... ) {
       if (pk->target == target)
         return;
 
-    Error("localuser", ERR_INFO, "Adding pending kill for %s", target->nick);
+    Error("localuser", ERR_DEBUG, "Adding pending kill for %s", target->nick);
     pk = (pendingkill *)malloc(sizeof(pendingkill));
     pk->source = source;
     pk->target = target;
@@ -506,7 +506,7 @@ void clearpendingkills(int hooknum, void *arg) {
     pendingkilllist = pk->next;
 
     if (pk->target) {
-      Error("localuser", ERR_INFO, "Processing pending kill for %s", pk->target->nick);
+      Error("localuser", ERR_DEBUG, "Processing pending kill for %s", pk->target->nick);
       _killuser(pk->source, pk->target, pk->reason->content);
     }
 
