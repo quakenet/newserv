@@ -21,6 +21,9 @@ char *sevtostring(int severity) {
       
     case ERR_FATAL:
       return "fatal error";
+    
+    case ERR_STOP:
+      return "terminal error";
       
     default:
       return "unknown error";
@@ -43,5 +46,10 @@ void Error(char *source, int severity, char *reason, ... ) {
     tm=gmtime(&now);
     strftime(timebuf,100,"%Y-%m-%d %H:%M:%S",tm);
     fprintf(stderr,"[%s] %s(%s): %s\n",timebuf,sevtostring(severity),source,buf);
+  }
+  
+  if (severity>=ERR_STOP) {
+    fprintf(stderr,"Terminal error occured, exiting...\n");
+    exit(0);
   }
 }

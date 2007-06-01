@@ -9,6 +9,6 @@
 #define ERR_WARNING  2
 #define ERR_ERROR    3
 #define ERR_FATAL    4
+#define ERR_STOP     5
 
 void Error(char *source, int severity, char *reason, ... );
-
