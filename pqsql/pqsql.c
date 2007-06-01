@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <sys/poll.h>
 #include <stdarg.h>
+#include <string.h>
 
 MODULE_VERSION("");
 
@@ -123,14 +124,14 @@ void dbhandler(int fd, short revents) {
       while((res = PQgetResult(dbconn))) {
         switch(PQresultStatus(res)) {
           case PGRES_TUPLES_OK:
-            Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query->content);
+            Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
             break;
 
           case PGRES_NONFATAL_ERROR:
           case PGRES_FATAL_ERROR:
             /* if a create query returns an error assume it went ok, paul will winge about this */
             if(!(queryhead->flags & QH_CREATE))
-              Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query->content);
+              Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
             break;
 	  
           default:
@@ -158,7 +159,7 @@ void dbhandler(int fd, short revents) {
       free(qqp);
 
       if(queryhead) { /* Submit the next query */	      
-        PQsendQuery(dbconn, queryhead->query->content);
+        PQsendQuery(dbconn, queryhead->query);
         PQflush(dbconn);
       }
     }
@@ -187,7 +188,7 @@ void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, .
 
   /* Use sstring or allocate (see above rant) */
   if (len > SSTRING_MAX) {
-    qp->query = (char *)malloc(strlen(len)+1);
+    qp->query = (char *)malloc(len+1);
     strcpy(qp->query,querybuf);
     qp->query_ss=NULL;
   } else {
@@ -204,7 +205,7 @@ void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, .
     querytail = qp;
   } else {
     querytail = queryhead = qp;
-    PQsendQuery(dbconn, qp->query->content);
+    PQsendQuery(dbconn, qp->query);
     PQflush(dbconn);
   }
 }
@@ -222,7 +223,7 @@ void disconnectdb(void) {
   while(qqp) {
     nqqp = qqp->next;
     if (qqp->query_ss) {
-      freesstring(qqp->query);
+      freesstring(qqp->query_ss);
       qqp->query_ss=NULL;
       qqp->query=NULL;
     } else if (qqp->query) {
