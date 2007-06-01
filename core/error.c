@@ -3,7 +3,9 @@
 #include <stdarg.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "error.h"
+#include "hooks.h"
 
 char *sevtostring(int severity) {
   switch(severity) {
@@ -50,6 +52,7 @@ void Error(char *source, int severity, char *reason, ... ) {
   
   if (severity>=ERR_STOP) {
     fprintf(stderr,"Terminal error occured, exiting...\n");
+    triggerhook(HOOK_CORE_STOPERROR, NULL);
     exit(0);
   }
 }

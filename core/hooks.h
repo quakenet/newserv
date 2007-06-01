@@ -11,6 +11,7 @@
 #define HOOK_CORE_STATSREQUEST       1
 #define HOOK_CORE_STATSREPLY         2
 #define HOOK_CORE_ENDOFHOOKSQUEUE    3
+#define HOOK_CORE_STOPERROR          4
 
 #define HOOK_IRC_CONNECTED         100
 #define HOOK_IRC_DISCON            101
