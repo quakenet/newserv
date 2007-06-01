@@ -18,7 +18,6 @@ MODULE_VERSION("");
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 
 unsigned long nouser;
-chanindex *chantable[CHANNELHASHSIZE];
 
 const flag cmodeflags[] = {
    { 'n', CHANMODE_NOEXTMSG    },
@@ -45,8 +44,6 @@ void sendchanburst(int hooknum, void *arg);
 void _init() {
   /* Initialise internal structures */
   initchannelalloc();
-  initchannelindex();
-  memset(chantable,0,sizeof(chantable));
 
   /* Set up the nouser marker according to our own numeric */
   nouser=(mylongnum<<18)|CU_NOUSERMASK;

@@ -11,6 +11,7 @@
 #include "../core/hooks.h"
 #include "../core/error.h"
 #include "../nick/nick.h"
+#include "../chanindex/chanindex.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -116,22 +117,9 @@
 
 #define  MAGIC_REMOTE_JOIN_TS 1270080000
 
-#define  CHANNELHASHSIZE      60000
-#define  MAXCHANNELEXTS       7
-
 #define MODECHANGE_MODES   0x00000001
 #define MODECHANGE_USERS   0x00000002
 #define MODECHANGE_BANS    0x00000004
-
-struct channel;
-
-typedef struct chanindex {
-  sstring          *name;
-  struct channel   *channel;
-  struct chanindex *next;
-  unsigned int      marker;
-  void             *exts[MAXCHANNELEXTS];
-} chanindex;
 
 typedef struct chanban {
   flag_t          flags;
@@ -162,7 +150,6 @@ typedef struct channel {
 
 extern unsigned long nouser;
 extern const flag cmodeflags[];
-extern chanindex *chantable[CHANNELHASHSIZE];
 
 /* functions from channel.c */
 int addnicktochannel(channel *cp, long numeric);
@@ -200,8 +187,6 @@ chanuserhash *newchanuserhash(int numbuckets);
 void freechanuserhash(chanuserhash *cuhp);
 chanban *getchanban();
 void freechanban(chanban *cbp);
-chanindex *getchanindex();
-void freechanindex(chanindex *cip);
 
 /* functions from channelbans.c */
 chanban *makeban(const char *mask);

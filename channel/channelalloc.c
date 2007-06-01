@@ -9,13 +9,11 @@
 channel *freechans;
 chanuserhash *freehash;
 chanban *freebans;
-chanindex *freechanindices;
 
 void initchannelalloc() {
   freechans=NULL;
   freehash=NULL;
   freebans=NULL;
-  freechanindices=NULL;
 }
 
 /* channel records don't have next pointers.  
@@ -120,28 +118,5 @@ void freechanban(chanban *cbp) {
     freesstring(cbp->host);
 
   freebans=cbp;
-}
-
-chanindex *getchanindex() {
-  int i;
-  chanindex *cip;
-  
-  if (freechanindices==NULL) {
-    freechanindices=(chanindex *)malloc(ALLOCUNIT*sizeof(chanindex));
-    for(i=0;i<ALLOCUNIT-1;i++) {
-      freechanindices[i].next=&(freechanindices[i+1]);
-    }
-    freechanindices[ALLOCUNIT-1].next=NULL;
-  }
-  
-  cip=freechanindices;
-  freechanindices=cip->next;
-  
-  return cip;
-}
-
-void freechanindex(chanindex *cip) {
-  cip->next=freechanindices;
-  freechanindices=cip;
 }
 

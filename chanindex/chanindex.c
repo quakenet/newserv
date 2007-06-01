@@ -1,22 +1,56 @@
 /* channelindex.c */
 
-#include "channel.h"
+#include "chanindex.h"
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
+#include "../core/error.h"
+#include "../core/nsmalloc.h"
+
 #include <stdio.h>
 #include <string.h>
+
+#define ALLOCUNIT	1000
 
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 
 chanindex *chantable[CHANNELHASHSIZE];
 sstring *extnames[MAXCHANNELEXTS];
+chanindex *freechanindices;
 
 unsigned int channelmarker;
 
-void initchannelindex() {
+void __init() {
   memset(chantable,0,sizeof(chantable));
   memset(extnames,0,sizeof(extnames));
   channelmarker=0;
+  freechanindices=NULL;
+}
+
+void __fini() {
+  nsfreeall(POOL_CHANINDEX);
+}
+
+chanindex *getchanindex() {
+  int i;
+  chanindex *cip;
+
+  if (freechanindices==NULL) {
+    freechanindices=(chanindex *)nsmalloc(POOL_CHANINDEX, ALLOCUNIT*sizeof(chanindex));
+    for(i=0;i<ALLOCUNIT-1;i++) {
+      freechanindices[i].next=&(freechanindices[i+1]);
+    }
+    freechanindices[ALLOCUNIT-1].next=NULL;
+  }
+
+  cip=freechanindices;
+  freechanindices=cip->next;
+
+  return cip;
+}
+
+void freechanindex(chanindex *cip) {
+  cip->next=freechanindices;
+  freechanindices=cip;
 }
 
 chanindex *findchanindex(const char *name) {
