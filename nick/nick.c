@@ -42,7 +42,6 @@ nick **servernicks[MAXSERVERS];
 sstring *nickextnames[MAXNICKEXTS];
 sstring *nodeextnames[PATRICIA_MAXSLOTS];
 patricia_tree_t *iptree;
-sstring *authnameextnames[MAXAUTHNAMEEXTS];
 
 void nickstats(int hooknum, void *arg);
 
@@ -263,51 +262,6 @@ void releasenickext(int index) {
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
       np->exts[index]=NULL;
-    }
-  }
-}
-
-int registerauthnameext(const char *name) {
-  int i;
-  
-  if (findauthnameext(name)!=-1) {
-    Error("nick",ERR_WARNING,"Tried to register duplicate authname extension %s",name);
-    return -1;
-  }
-  
-  for (i=0;i<MAXAUTHNAMEEXTS;i++) {
-    if (authnameextnames[i]==NULL) {
-      authnameextnames[i]=getsstring(name,100);
-      return i;
-    }
-  }
-  
-  Error("nick",ERR_WARNING,"Tried to register too many authname extensions: %s",name);
-  return -1;
-}
-
-int findauthnameext(const char *name) {
-  int i;
-  
-  for (i=0;i<MAXAUTHNAMEEXTS;i++) {
-    if (authnameextnames[i]!=NULL && !ircd_strcmp(name,authnameextnames[i]->content)) {
-      return i;
-    }
-  }
-  
-  return -1;
-}
-
-void releaseauthnameext(int index) {
-  int i;
-  authname *anp;
-  
-  freesstring(authnameextnames[index]);
-  authnameextnames[index]=NULL;
-  
-  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
-    for (anp=authnametable[i];anp;anp=anp->next) {
-      anp->exts[index]=NULL;
     }
   }
 }
