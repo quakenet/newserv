@@ -7,8 +7,8 @@
 
 #include <string.h>
 
-#include "chanserv.h"
-#include "../lib/irc_string.h"
+#include "../chanserv.h"
+#include "../../lib/irc_string.h"
 
 reguser *regusernicktable[REGUSERHASHSIZE];
 
@@ -54,46 +54,6 @@ reguser *findreguserbyID(unsigned int ID) {
     return (reguser *)anp->exts[chanservaext];
   else
     return NULL;
-}
-
-/*
- * findreguser:
- *  This function does the standard "nick or #user" lookup.
- *  If "sender" is not NULL, a suitable error message will
- *  be sent if the lookup fails.
- */
-
-reguser *findreguser(nick *sender, const char *str) {
-  reguser *rup;
-  nick *np;
-
-  if (!str || !*str)
-    return NULL;
-
-  if (*str=='#') {
-    if (str[1]=='\0') {
-      if (sender)
-      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
-      return NULL;
-    }
-    if (!(rup=findreguserbynick(str+1)) && sender)
-      chanservstdmessage(sender, QM_UNKNOWNUSER, str);
-  } else {
-    if (!(np=getnickbynick(str))) {
-      if (sender)
-      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
-      return NULL;
-    }
-    if (!(rup=getreguserfromnick(np)) && sender)
-      chanservstdmessage(sender, QM_USERNOTAUTHED, str);
-  }
-
-  if (rup && (UIsSuspended(rup) || (rup->status & QUSTAT_DEAD))) {
-    chanservstdmessage(sender, QM_USERHASBADAUTH, rup->username);
-    return NULL;
-  }
-
-  return rup;
 }
     
 /*

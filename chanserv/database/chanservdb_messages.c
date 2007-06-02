@@ -1,4 +1,4 @@
-#include "chanserv.h"
+#include "../chanserv.h"
 
 cslang *cslanguages[MAXLANG];
 unsigned int cslangcount;

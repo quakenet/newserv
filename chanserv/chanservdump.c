@@ -113,4 +113,3 @@ int readlastjoindata(const char *filename) {
 
   return 0;
 }
-      

@@ -5,6 +5,7 @@
 #include "chanserv.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
+#include "../pqsql/pqsql.h"
 
 #include <string.h>
 
@@ -169,3 +170,74 @@ int cs_doctcpgender(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void csdb_dohelp_real(PGconn *, void *);
+
+struct helpinfo {
+  unsigned int numeric;
+  sstring *commandname;
+};
+
+/* Help stuff */
+void csdb_dohelp(nick *np, Command *cmd) {
+  struct helpinfo *hip;
+
+  hip=(struct helpinfo *)malloc(sizeof(struct helpinfo));
+
+  hip->numeric=np->numeric;
+  hip->commandname=getsstring(cmd->command->content, cmd->command->length);
+
+  pqasyncquery(csdb_dohelp_real, (void *)hip, 
+		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
+}
+
+void csdb_dohelp_real(PGconn *dbconn, void *arg) {
+  struct helpinfo *hip=arg;
+  nick *np=getnickbynumeric(hip->numeric);
+  reguser *rup;
+  char *result;
+  PGresult *pgres;
+  int i,j,num,lang=0;
+  
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv",ERR_ERROR,"Error loading help text.");
+    return; 
+  }
+
+  if (PQnfields(pgres)!=2) {
+    Error("chanserv",ERR_ERROR,"Help text format error.");
+    return;
+  }
+  
+  num=PQntuples(pgres);
+  
+  if (!np) {
+    PQclear(pgres);
+    freesstring(hip->commandname);
+    free(hip);
+    return;
+  }
+
+  if ((rup=getreguserfromnick(np)))
+    lang=rup->languageid;
+
+  result=NULL;
+  
+  for (i=0;i<num;i++) {
+    j=strtoul(PQgetvalue(pgres,i,0),NULL,10);
+    if ((j==0 && result==NULL) || (j==lang)) {
+      result=PQgetvalue(pgres,i,1);
+      if(strlen(result)==0)
+	result=NULL;
+    }
+  }
+
+  if (!result)
+    chanservstdmessage(np, QM_NOHELP, hip->commandname->content);
+  else
+    chanservsendmessage(np, result);
+  
+  freesstring(hip->commandname);
+  free(hip);
+}

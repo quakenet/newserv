@@ -7,9 +7,7 @@
 #include "../core/hooks.h"
 #include "../core/schedule.h"
 
-int chanservext;
 int chanservnext;
-int chanservaext;
 
 int chanserv_init_status;
 
@@ -76,10 +74,8 @@ void chanservdumpstuff(void *arg) {
 }
 
 void _init() {
-  /* Register the extension */
-  chanservext=registerchanext("chanserv");
+  /* Register the nick extension - the others are registered in the db module */
   chanservnext=registernickext("nickserv");
-  chanservaext=registerauthnameext("chanserv");
 
   if (chanservext!=-1 && chanservnext!=-1 && chanservaext!=-1) {
     /* Set up the chantypes */
@@ -92,19 +88,8 @@ void _init() {
     chantypes[5]=getsstring("gamesite",20);
     chantypes[6]=getsstring("game",20);
     
-    /* Set up the allocators and the hashes */
-    chanservallocinit();
-    chanservhashinit();
-
-    /* And the messages */
-    initmessages();
-    
     /* And the log system */
     cs_initlog();
-
-    /* Now load the database */
-    chanserv_init_status = CS_INIT_DB;
-    chanservdbinit();
 
     /* Set up the command handler, and built in commands */
     chanservcommandinit();
@@ -119,6 +104,10 @@ void _init() {
     chanservaddctcpcommand("gender",cs_doctcpgender);
 
     registerhook(HOOK_CHANSERV_DBLOADED, chanservfinishinit);
+    
+    /* Now that the database is in a separate module it might be loaded already. */
+    if (chanservdb_ready)
+      chanservfinishinit(HOOK_CHANSERV_DBLOADED, NULL);
   }
 }
 
@@ -170,7 +159,7 @@ void _fini() {
   deleteallschedules(chanservdumpstuff);
   deleteallschedules(chanservdgline);
 
-  if (chanservext>-1 && chanservnext>-1) {
+  if (chanservext>-1 && chanservnext>-1 && chanservaext>-1) {
     int i;
     for (i=0;i<CHANTYPES;i++)
       freesstring(chantypes[i]);
@@ -178,19 +167,9 @@ void _fini() {
     free(chantypes);
   }
     
-  chanservfreestuff();
-
   /* Free everything */
-  if (chanservext!=-1) {
-    releasechanext(chanservext);
-  }
-  
   if (chanservnext!=-1) {
     releasenickext(chanservnext);
-  }
-  
-  if (chanservaext!=-1) {
-    releaseauthnameext(chanservaext);
   }
 
   if (chanservnick)
@@ -225,49 +204,4 @@ void _fini() {
   chanservcommandclose();
 
   cs_closelog();
-
-  chanservdbclose();
-  csfreeall();
-}
-
-void chanservfreestuff() {
-  int i;
-  chanindex *cip, *ncip;
-  regchan *rcp;
-  reguser *rup;
-  regchanuser *rcup;
-  regban *rbp;
-  
-  for (i=0;i<REGUSERHASHSIZE;i++) {
-    for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      freesstring(rup->email);
-      freesstring(rup->lastuserhost);
-      freesstring(rup->suspendreason);
-      freesstring(rup->comment);
-      freesstring(rup->info);
-      
-      for (rcup=rup->knownon;rcup;rcup=rcup->nextbyuser)
-	freesstring(rcup->info);
-    }
-  }
-
-  for (i=0;i<CHANNELHASHSIZE;i++) {
-    for (cip=chantable[i];cip;cip=ncip) {
-      ncip=cip->next;
-      if ((rcp=cip->exts[chanservext])) {
-	freesstring(rcp->welcome);
-	freesstring(rcp->topic);
-	freesstring(rcp->key);
-	freesstring(rcp->suspendreason);
-	freesstring(rcp->comment);
-	for (rbp=rcp->bans;rbp;rbp=rbp->next) {
-	  freesstring(rbp->reason);
-	  freechanban(rbp->cbp);
-	}
-	cip->exts[chanservext]=NULL;
-	releasechanindex(cip);
-      }
-    }
-  }
-
 }

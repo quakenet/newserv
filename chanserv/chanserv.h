@@ -647,12 +647,12 @@ typedef struct activeuser {
 #define getreguserfromnick(x)     (getactiveuserfromnick(x)?getactiveuserfromnick(x)->rup:NULL)
    
 /* Global variables for chanserv module */
-
 extern unsigned int lastuserID;
 extern unsigned int lastchannelID;
 extern unsigned int lastbanID;
 
 extern int chanserv_init_status;
+extern int chanservdb_ready;
 
 extern reguser *regusernicktable[REGUSERHASHSIZE];
 extern reguser *deadusers;

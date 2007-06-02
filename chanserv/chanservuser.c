@@ -262,6 +262,18 @@ void chanservjoinchan(channel *cp) {
   if (!CIsSuspended(rcp) && CIsJoined(rcp) && !getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
     localburstontochannel(cp, chanservnick, rcp->ltimestamp, rcp->forcemodes, rcp->limit, (rcp->key)?rcp->key->content:NULL);
   }
+  
+  /* Maybe we're not joining, but the timestamp is wrong.  Fix that too. 
+   * 
+   * XXX: Actually, let's not do this until we've considered the obvious
+   * problem that this will make it impossible to re-establish a +k/+i
+   * enforced channel which has become empty...
+   */ 
+/*
+  if (!CIsSuspended(rcp) && !CIsJoined(rcp) && (cp->timestamp > rcp->ltimestamp)) {
+    localburstontochannel(cp, NULL, rcp->ltimestamp, rcp->forcemodes, rcp->limit, (rcp->key)?rcp->key->content:NULL);
+  }
+ */
 }
 
 void chanservstdmessage(nick *np, int messageid, ... ) {
@@ -1026,7 +1038,7 @@ void cs_setregban(chanindex *cip, regban *rbp) {
 
   if (!cip->channel)
     return;
-
+    
   localsetmodeinit(&changes, cip->channel, chanservnick);
   localdosetmode_ban(&changes, bantostring(rbp->cbp), MCB_ADD);
   localsetmodeflush(&changes, 1);
@@ -1078,4 +1090,42 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
   localkickuser(chanservnick, cip->channel, np, reason?reason:"Banned.");
 }
 	      
-  
+/*
+ * findreguser:
+ *  This function does the standard "nick or #user" lookup.
+ *  If "sender" is not NULL, a suitable error message will
+ *  be sent if the lookup fails.
+ */
+
+reguser *findreguser(nick *sender, const char *str) {
+  reguser *rup;
+  nick *np;
+
+  if (!str || !*str)
+    return NULL;
+
+  if (*str=='#') {
+    if (str[1]=='\0') {
+      if (sender)
+      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+      return NULL;
+    }
+    if (!(rup=findreguserbynick(str+1)) && sender)
+      chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+  } else {
+    if (!(np=getnickbynick(str))) {
+      if (sender)
+      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+      return NULL;
+    }
+    if (!(rup=getreguserfromnick(np)) && sender)
+      chanservstdmessage(sender, QM_USERNOTAUTHED, str);
+  }
+
+  if (rup && (UIsSuspended(rup) || (rup->status & QUSTAT_DEAD))) {
+    chanservstdmessage(sender, QM_USERHASBADAUTH, rup->username);
+    return NULL;
+  }
+
+  return rup;
+}

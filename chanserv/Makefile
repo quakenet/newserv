@@ -1,10 +1,19 @@
 
-.PHONY: all
-all: chanserv.so chanserv_chancmds.so chanserv_usercmds.so chanserv_protect.so chanserv_auth.so chanserv_grep.so \
-	chanserv_chansearch.so
+CSDIRS=database
 
-chanserv.so: chanserv.o chanservalloc.o chanservhash.o chanservdb.o chanservuser.o chanservnetevents.o \
-             chanservmessages.o chanservprivs.o chanservlog.o chanservstdcmds.o chanservdump.o chanservschedule.o
+.PHONY: all dirs clean
+all: chanserv.so chanserv_chancmds.so chanserv_usercmds.so chanserv_protect.so chanserv_auth.so chanserv_grep.so \
+	chanserv_chansearch.so dirs
+
+dirs:
+	for i in $(CSDIRS) ; do $(MAKE) -C $$i all ; done
+	ln -sf */*.so .
+
+clean:
+	rm -f */*.o */*.so
+
+chanserv.so: chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chanservlog.o chanservstdcmds.o \
+		chanservdump.o chanservschedule.o
 	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
 
 chanserv_chancmds.so: chancmds.o

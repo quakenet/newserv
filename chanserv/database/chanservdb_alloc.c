@@ -1,9 +1,9 @@
 /*
- * chanservalloc.c:
+ * chanservdb_alloc.c:
  *  Handles allocation of the various chanserv structures.
  */
 
-#include "chanserv.h"
+#include "../chanserv.h"
 #include <stdlib.h>
 
 #define ALLOCUNIT 100
