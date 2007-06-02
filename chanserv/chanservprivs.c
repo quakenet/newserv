@@ -33,8 +33,8 @@ int cs_privcheck(int privnum, nick *np) {
   case QPRIV_CHANGEUSERFLAGS:
     return (np && rup && IsOper(np) && UHasOperPriv(rup));
     
-  default:
-    return 0;
+  default: /* By default opers can override anything */
+    return (np && rup && IsOper(np) && UHasOperPriv(rup));
   }
 }
 

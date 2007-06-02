@@ -5,6 +5,7 @@
 void *nsmalloc(unsigned int poolid, size_t size);
 void nsfree(unsigned int poolid, void *ptr);
 void nsfreeall(unsigned int poolid);
+void nsexit(void);
 
 #define MAXPOOL		100
 
@@ -13,3 +14,6 @@ void nsfreeall(unsigned int poolid);
 #define POOL_CHANINDEX	1
 #define POOL_BANS	2
 #define POOL_CHANNEL	3
+#define POOL_NICK	4
+#define POOL_CHANSERVDB 5
+#define POOL_SSTRING	6

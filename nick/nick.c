@@ -12,6 +12,8 @@
 #include "../server/server.h"
 #include "../parser/parser.h"
 #include "../lib/version.h"
+#include "../core/nsmalloc.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -71,6 +73,24 @@ void _init() {
   iptree = patricia_new_tree(PATRICIA_MAXBITS);
 }
 
+void _fini() {
+  nsfreeall(POOL_NICK);
+  
+  /* Free the hooks */
+  deregisterhook(HOOK_SERVER_NEWSERVER,&handleserverchange);
+  deregisterhook(HOOK_SERVER_LOSTSERVER,&handleserverchange);
+  deregisterhook(HOOK_CORE_STATSREQUEST,&nickstats);
+  
+  /* And our server handlers */
+  deregisterserverhandler("N",&handlenickmsg);
+  deregisterserverhandler("D",&handlekillmsg);
+  deregisterserverhandler("Q",&handlequitmsg);
+  deregisterserverhandler("M",&handleusermodemsg);
+  deregisterserverhandler("W",&handlewhoismsg);
+  deregisterserverhandler("AC",&handleaccountmsg);
+  deregisterserverhandler("R",&handlestatsmsg);  
+}
+
 /*
  * This function handles servers appearing and disappearing.
  *  For a new server, the client table is allocated.
@@ -85,7 +105,7 @@ void handleserverchange(int hooknum, void *arg) {
   
   switch(hooknum) {
     case HOOK_SERVER_NEWSERVER:
-      servernicks[servernum]=(nick **)malloc((serverlist[servernum].maxusernum+1)*sizeof(nick **));
+      servernicks[servernum]=(nick **)nsmalloc(POOL_NICK,(serverlist[servernum].maxusernum+1)*sizeof(nick **));
       memset(servernicks[servernum],0,(serverlist[servernum].maxusernum+1)*sizeof(nick **));
       break;
       

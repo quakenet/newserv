@@ -1,6 +1,8 @@
 /* nick/host/realname/authname allocator */
 
 #include "nick.h"
+#include "../core/nsmalloc.h"
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -32,7 +34,7 @@ nick *newnick() {
   int i;
   
   if (freenicks==NULL) {
-    freenicks=(nick *)malloc(ALLOCUNIT*sizeof(nick));
+    freenicks=(nick *)nsmalloc(POOL_NICK,ALLOCUNIT*sizeof(nick));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freenicks[i].next=&(freenicks[i+1]);
     }
@@ -55,7 +57,7 @@ host *newhost() {
   int i;
   
   if (freehosts==NULL) {
-    freehosts=(host *)malloc(ALLOCUNIT*sizeof(host));
+    freehosts=(host *)nsmalloc(POOL_NICK,ALLOCUNIT*sizeof(host));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freehosts[i].next=&(freehosts[i+1]);
     }

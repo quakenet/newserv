@@ -66,3 +66,14 @@ void nsfreeall(unsigned int poolid) {
   pools[poolid]=NULL;
 }
 
+void nsexit() {
+  unsigned int i;
+  
+  for (i=0;i<MAXPOOL;i++) {
+    if (pools[i]) {
+      Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d\n",i);
+      nsfreeall(i);
+    }
+  }
+}
+

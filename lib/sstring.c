@@ -4,6 +4,7 @@
 #include "sstring.h"
 
 #include "../core/hooks.h"
+#include "../core/nsmalloc.h"
 
 #include <stdio.h>
 
@@ -97,7 +98,7 @@ getstruct:
      
       /* Allocate more RAM */
       allocstruct++;
-      structmem=(sstring *)malloc(SSTRING_STRUCTALLOC);
+      structmem=(sstring *)nsmalloc(POOL_SSTRING,SSTRING_STRUCTALLOC);
       assert(structmem!=NULL);
       structfree=SSTRING_STRUCTALLOC;
     }
@@ -125,7 +126,7 @@ getstruct:
       } else {
         /* Grab some more string space */
         allocstring++;
-        stringmem=(char *)malloc(SSTRING_DATAALLOC);
+        stringmem=(char *)nsmalloc(POOL_SSTRING,SSTRING_DATAALLOC);
         assert(stringmem!=NULL);
         stringfree=SSTRING_DATAALLOC;
       }

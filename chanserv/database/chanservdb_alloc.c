@@ -4,6 +4,8 @@
  */
 
 #include "../chanserv.h"
+#include "../../core/nsmalloc.h"
+
 #include <stdlib.h>
 
 #define ALLOCUNIT 100
@@ -24,40 +26,6 @@ void chanservallocinit() {
   csfreenicklists=NULL;
   csfreeregbans=NULL;
   csfreeactiveusers=NULL;
-  csmallocs=NULL;
-}
-
-void *csmalloc(size_t size) {
-  void **mem;
-  
-  /* Get the requested memory, with one extra pointer at the beginning */
-  mem=(void **)malloc(size+sizeof(void *));
-
-  /* Set the first word to point at the last thing we got */
-  *mem=csmallocs;
-
-  /* Now set the "last chunk" pointer to the address of this one */
-  csmallocs=(void *)mem;
-  
-  /* return the rest of the memory to the caller */
-  return (void *)(mem+1);
-}
-
-/*
- * csfreeall():
- *  Free all the memory we allocated for chanserv structures.
- */
-
-void csfreeall() {
-  void *vp,**vh;
-
-  vp=csmallocs;
-
-  while (vp!=NULL) {
-    vh=(void **)vp;
-    vp=*vh;
-    free ((void *)vh);
-  }
 }
 
 regchan *getregchan() {
@@ -65,7 +33,7 @@ regchan *getregchan() {
   regchan *rcp;
   
   if (csfreechans==NULL) {
-    csfreechans=(regchan *)csmalloc(ALLOCUNIT*sizeof(regchan));
+    csfreechans=(regchan *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(regchan));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreechans[i].index=(chanindex *)&(csfreechans[i+1]);
     }
@@ -91,7 +59,7 @@ reguser *getreguser() {
   reguser *rup;
 
   if (csfreeusers==NULL) {
-    csfreeusers=(reguser *)csmalloc(ALLOCUNIT*sizeof(reguser));
+    csfreeusers=(reguser *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(reguser));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreeusers[i].nextbyname=&(csfreeusers[i+1]);
     }
@@ -117,7 +85,7 @@ regchanuser *getregchanuser() {
   regchanuser *rcup;
 
   if (csfreechanusers==NULL) {
-    csfreechanusers=(regchanuser *)csmalloc(ALLOCUNIT*sizeof(regchanuser));
+    csfreechanusers=(regchanuser *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(regchanuser));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreechanusers[i].nextbyuser=&(csfreechanusers[i+1]);
     }
@@ -143,7 +111,7 @@ nicklist *getnicklist() {
   nicklist *nlp;
   
   if (csfreenicklists==NULL) {
-    csfreenicklists=(nicklist *)csmalloc(ALLOCUNIT*sizeof(nicklist));
+    csfreenicklists=(nicklist *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(nicklist));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreenicklists[i].next=&(csfreenicklists[i+1]);
     }
@@ -166,7 +134,7 @@ regban *getregban() {
   regban *rbp;
   
   if (csfreeregbans==NULL) {
-    csfreeregbans=(regban *)csmalloc(ALLOCUNIT*sizeof(regban));
+    csfreeregbans=(regban *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(regban));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreeregbans[i].next=&(csfreeregbans[i+1]);
     }
@@ -192,7 +160,7 @@ activeuser *getactiveuser() {
   activeuser *aup;
 
   if (csfreeactiveusers==NULL) {
-    csfreeactiveusers=(activeuser *)csmalloc(ALLOCUNIT*sizeof(activeuser));
+    csfreeactiveusers=(activeuser *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(activeuser));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       csfreeactiveusers[i].next=&(csfreeactiveusers[i+1]);
     }

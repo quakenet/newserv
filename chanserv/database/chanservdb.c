@@ -9,6 +9,7 @@
 #include "../../lib/sstring.h"
 #include "../../parser/parser.h"
 #include "../../core/events.h"
+#include "../../core/nsmalloc.h"
 
 #include <string.h>
 #include <libpq-fe.h>
@@ -204,7 +205,7 @@ void _fini() {
     releaseauthnameext(chanservaext);
     
   csdb_freestuff();
-  csfreeall();
+  nsfreeall(POOL_CHANSERVDB);
 }
 
 void csdb_handlestats(int hooknum, void *arg) {
