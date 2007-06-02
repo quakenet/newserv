@@ -113,11 +113,28 @@ chanban *makeban(const char *mask) {
         cbp->host=getsstring(&mask[i+1],HOSTLEN);
         if ((notip || dotcount!=3) && !foundwild) {
           cbp->flags |= (CHANBAN_INVALID | CHANBAN_HOSTEXACT);
-        } 
-        if (foundwild) {
+        } else if (foundwild) {
           cbp->flags |= (CHANBAN_INVALID | CHANBAN_HOSTMASK);
+        } else {
+          unsigned int a,b,c,d,l;
+          /* CIDR bans have to match this pattern.  */
+          if ((sscanf(&mask[i+1], "%u.%u.%u.%u/%u",&a,&b,&c,&d,&l) != 5) ||
+               (a>255) || (b>255) || (c>255) || (d>255) || (l>32) ) {
+            cbp->flags |= (CHANBAN_HOSTEXACT | CHANBAN_INVALID);
+          } else {
+            /* Save the IP address and mask for later */
+            cbp->ipaddr=(a<<24)|(b<<16)|(c<<8)|d;
+            cbp->mask=0xffffffff;
+            if (l==0) {
+              cbp->mask=0;
+            } else if (l<32) {
+              cbp->mask<<=(32-l);
+            }
+            /* pre-AND the IP with the mask here. */
+            cbp->ipaddr &= cbp->mask;
+            cbp->flags |= (CHANBAN_HOSTEXACT | CHANBAN_CIDR);
+          }
         }
-        cbp->flags |= (CHANBAN_HOSTEXACT | CHANBAN_CIDR);        
       } else {
         /* We have some string with between 1 and HOSTLEN characters.. */
         cbp->host=getsstring(&mask[i+1],HOSTLEN);
@@ -143,10 +160,19 @@ chanban *makeban(const char *mask) {
           /* Exact host: see if it ends with the "hidden host" string */
           cbp->flags |= CHANBAN_HOSTEXACT;
           if ((cbp->host->length > (strlen(HIS_HIDDENHOST)+1)) && 
-              !ircd_strcmp(cbp->host->content+(cbp->host->length-strlen(HIS_HIDDENHOST)), HIS_HIDDENHOST))
+              !ircd_strcmp(cbp->host->content+(cbp->host->length-strlen(HIS_HIDDENHOST)), HIS_HIDDENHOST)) {
             cbp->flags |= CHANBAN_HIDDENHOST;
-          else if (!notip && dotcount==3)
-            cbp->flags |= CHANBAN_IP;
+          } else if (!notip && dotcount==3) {
+            unsigned int a,b,c,d;
+            if ((sscanf(&mask[i+1], "%u.%u.%u.%u",&a,&b,&c,&d) != 4) ||
+                  (a > 255) || (b > 255) || (c > 255) || (d > 255) ) {
+              /* Something with only numbers and exactly 3 dots that isn't an IP address can't match anything. */
+              cbp->flags |= CHANBAN_INVALID; 
+            } else {
+              cbp->ipaddr=(a<<24)|(b<<16)|(c<<8)|d;
+              cbp->flags |= CHANBAN_IP;
+            }
+          }
         }
       }
       foundat=i;
@@ -258,6 +284,8 @@ chanban *makeban(const char *mask) {
   assert(cbp->flags & (CHANBAN_HOSTEXACT | CHANBAN_HOSTMASK | CHANBAN_HOSTANY | CHANBAN_HOSTNULL));
 
   cbp->timeset=time(NULL);
+
+  cbp->next=NULL;
 
   return cbp;
 }      

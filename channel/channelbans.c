@@ -49,15 +49,47 @@ int nickmatchban(nick *np, chanban *bp) {
   if (bp->flags & CHANBAN_HOSTANY)
     return 1;
 
-  if (bp->flags & CHANBAN_IP) {
-    /* IP bans are checked against IP address only */
-    ipstring=IPtostr(np->p_ipaddr);
- 
-    if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(ipstring,bp->host->content))
+  if ((bp->flags & CHANBAN_CIDR) && (bp->flags & CHANBAN_HOSTEXACT)) {
+    unsigned int cip;
+    unsigned char *ch;
+
+    /* CIDR bans don't match IPv6 hosts */
+    if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
+      return 0;
+
+    /* Extract the client's IP address into a usable format */
+    ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
+    cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
+
+    if ((cip & bp->mask) == bp->ipaddr)
       return 1;
     
-    if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,ipstring))
-      return 1;
+    return 0; /* A CIDR ban won't match any other way */
+  }
+  
+  if (bp->flags & CHANBAN_IP) {
+    if (bp->flags & CHANBAN_HOSTEXACT) {
+      /* If it's an exact IP ban we can compare it numerically */
+      unsigned int cip;
+      unsigned char *ch;
+
+      /* Well, it won't match if it's not an IPv4 host */
+      if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
+        return 0;
+
+      /* Extract the client's IP address into a usable format */
+      ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
+      cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
+
+      if (cip==bp->ipaddr) 
+        return 1;
+    } else {
+      /* It's not an exact IP ban so let's generate the string */
+      ipstring=IPtostr(np->p_ipaddr);
+ 
+      if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,ipstring))
+        return 1;
+    }
   } else {
     /* Hostname bans need to be checked against +x host, +h host (if set) 
      * and actual host.  Note that the +x host is only generated (and checked) if it's

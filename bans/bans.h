@@ -29,6 +29,8 @@ typedef struct chanban {
   sstring        *user;
   sstring        *host;
   time_t          timeset;
+  unsigned int    ipaddr;
+  unsigned int	  mask;
   struct chanban *next;
 } chanban;
             
