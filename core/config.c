@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern void modulerehash(void);
+
 char *theconfig;
 
 typedef struct {
@@ -32,6 +34,7 @@ void rehashconfig() {
   Error("config",ERR_INFO,"Rehashing config file.");
   freeconfig();
   initconfig(NULL);
+  modulerehash();
 }
 
 void freeconfig() {
