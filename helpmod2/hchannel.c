@@ -102,7 +102,7 @@ int hchannel_del(hchannel *hchan)
     while (hchan->htickets)
         hticket_del(hchan->htickets, hchan);
 
-    localpartchannel(helpmodnick, hchan->real_channel);
+    localpartchannel(helpmodnick, hchan->real_channel, "Channel Removed");
 
     free(hchan);
 

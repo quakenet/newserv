@@ -250,7 +250,11 @@ void chanservjoinchan(channel *cp) {
     return;
 
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
-    localpartchannel(chanservnick, cp);
+    if(rcp->suspendreason) {
+      localpartchannel(chanservnick, cp, rcp->suspendreason->content);
+    } else {
+      localpartchannel(chanservnick, cp, NULL);
+    }
   }
 
   /* OK, we're going to join the channel.  Since our timestamp must be less
@@ -813,7 +817,7 @@ void cs_timerfunc(void *arg) {
     /* Only chanserv left in this channel */
     if (now >= (rcp->lastpart + LINGERTIME)) {
       /* Time to go */
-      localpartchannel(chanservnick, cip->channel);
+      localpartchannel(chanservnick, cip->channel, "Empty Channel");
       return;
     } else {
       if (!nextsched || nextsched > (rcp->lastpart + LINGERTIME))

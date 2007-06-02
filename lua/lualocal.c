@@ -255,7 +255,7 @@ static int lua_localpart(lua_State *ps) {
     
   target = findchannel(chan);
   if(target) {
-    localpartchannel(source, target);
+    localpartchannel(source, target, NULL);
   } else {
     LUA_RETURN(ps, LUA_FAIL);
   }

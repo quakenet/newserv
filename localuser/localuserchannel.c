@@ -342,7 +342,7 @@ int localjoinchannel(nick *np, channel *cp) {
   return 0;
 }
 
-int localpartchannel(nick *np, channel *cp) {
+int localpartchannel(nick *np, channel *cp, char *reason) {
   void *harg[3];
   
   /* Check pointers are valid.. */
@@ -364,7 +364,10 @@ int localpartchannel(nick *np, channel *cp) {
   }
 
   if (connected) {
-    irc_send("%s L %s",longtonumeric(np->numeric,5),cp->index->name->content);
+    if (reason != NULL)
+      irc_send("%s L %s :%s",longtonumeric(np->numeric,5),cp->index->name->content, reason);
+    else
+      irc_send("%s L %s",longtonumeric(np->numeric,5),cp->index->name->content);
   }
   
   harg[0]=cp;

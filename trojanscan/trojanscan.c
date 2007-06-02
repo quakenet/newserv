@@ -1355,7 +1355,7 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
     if(!marked && trojanscan_chans[i].watch_clone) {
       channel *cp = findchannel(trojanscan_chans[i].channel->content);
       if(cp)
-        localpartchannel(trojanscan_chans[i].watch_clone->clone, cp);
+        localpartchannel(trojanscan_chans[i].watch_clone->clone, cp, NULL);
     }
   }
   
@@ -1475,7 +1475,7 @@ void trojanscan_dopart(void *arg) {
   }
   
   if (rc->clone->clone && (!(rc->donotpart)))
-    localpartchannel(rc->clone->clone, rc->chan);
+    localpartchannel(rc->clone->clone, rc->chan, NULL);
 
   rc->clone->sitting--;
 
