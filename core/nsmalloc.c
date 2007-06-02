@@ -11,7 +11,7 @@ void nsfreeall(unsigned int poolid);
 
 struct nsminfo {
   struct nsminfo *next;
-  char data[1];
+  char data[];
 };
 
 struct nsminfo *pools[MAXPOOL];
@@ -22,9 +22,8 @@ void *nsmalloc(unsigned int poolid, size_t size) {
   if (poolid >= MAXPOOL)
     return NULL;
   
-  /* Allocate enough for the structure and the required data - but subtract
-   * 1 since the first byte lives in the structure */
-  nsmp=(struct nsminfo *)malloc(sizeof(struct nsminfo)+(size-1));
+  /* Allocate enough for the structure and the required data */
+  nsmp=(struct nsminfo *)malloc(sizeof(struct nsminfo)+size);
 
   if (!nsmp)
     return NULL;
