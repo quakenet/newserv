@@ -16,6 +16,7 @@ regchanuser *csfreechanusers;
 nicklist    *csfreenicklists;
 regban      *csfreeregbans;
 activeuser  *csfreeactiveusers;
+maildomain  *csfreemaildomains;
 
 void *csmallocs;
 
