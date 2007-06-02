@@ -158,11 +158,18 @@ int cs_doctcpping(void *source, int cargc, char **cargv) {
 }
   
 int cs_doctcpversion(void *source, int cargc, char **cargv) {
-  sendnoticetouser(chanservnick, source, "\01VERSION Q9 version 0.75.  (C) 2002-3 David Mansell (splidge)\01");
+  sendnoticetouser(chanservnick, source, "\01VERSION Q9 version %s (Compiled on " __DATE__ ")  (C) 2002-3 David Mansell (splidge)\01", QVERSION);
   sendnoticetouser(chanservnick, source, "\01VERSION Built on newserv version 1.00.  (C) 2002-3 David Mansell (splidge)\01");
 
   return CMD_OK;
 }
+
+int cs_doversion(void *source, int cargc, char **cargv) {
+  chanservsendmessage((nick *)source, "Q9 version %s (Compiled on " __DATE__ ") (C) 2002-3 David Mansell (splidge)", QVERSION);
+  chanservsendmessage((nick *)source, "Built on newserv version 1.00.  (C) 2002-3 David Mansell (splidge)");
+  return CMD_OK;
+}
+
 
 int cs_doctcpgender(void *source, int cargc, char **cargv) {
   sendnoticetouser(chanservnick, source, "\1GENDER Anyone who has a bitch mode has to be female ;)\1");

@@ -98,7 +98,8 @@ void _init() {
     chanservaddcommand("rename", QCMD_DEV, 1, cs_dorename, "Changes the bot's name.");
     chanservaddcommand("rehash", QCMD_DEV, 0, cs_dorehash, "Reloads all text from database.");
     chanservaddcommand("help", 0, 1, cs_dohelp, "Displays help on a specific command.");
-    
+    chanservaddcommand("version", 0, 1, cs_doversion, "Show Version.");
+
     chanservaddctcpcommand("ping",cs_doctcpping);
     chanservaddctcpcommand("version",cs_doctcpversion);
     chanservaddctcpcommand("gender",cs_doctcpgender);
@@ -198,6 +199,7 @@ void _fini() {
   chanservremovecommand("rename", cs_dorename);
   chanservremovecommand("rehash", cs_dorehash);
   chanservremovecommand("help", cs_dohelp);
+  chanservremovecommand("version", cs_doversion);
   chanservremovectcpcommand("ping",cs_doctcpping);
   chanservremovectcpcommand("version",cs_doctcpversion);
   chanservremovectcpcommand("gender",cs_doctcpgender);
