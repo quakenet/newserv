@@ -182,6 +182,40 @@ static void setuptables() {
                  "flags         INT              NOT NULL,"
                  "PRIMARY KEY (ID))");
 
+   pqcreatequery("CREATE TABLE authhistory ("
+                  "userID         INT         NOT NULL,"
+                  "nick           VARCHAR(15) NOT NULL,"
+                  "username       VARCHAR(10) NOT NULL,"
+                  "host           VARCHAR(63) NOT NULL,"
+                  "authtime       INT         NOT NULL,"
+                  "disconnecttime INT         NOT NULL,"
+                  "PRIMARY KEY (userID, authtime))");
+
+   pqcreatequery("CREATE INDEX authhistory_userID_index on authhistory(userID)");
+   pqcreatequery("CREATE TABLE chanlevhistory ("
+                  "userID         INT         NOT NULL,"
+                  "channelID      INT         NOT NULL,"
+                  "targetID       INT         NOT NULL,"
+                  "changetime     INT         NOT NULL,"
+                  "authtime       INT         NOT NULL,"
+                  "oldflags       INT         NOT NULL,"
+                  "newflags       INT         NOT NULL)");
+
+   pqcreatequery("CREATE INDEX chanlevhistory_userID_index on chanlevhistory(userID)");
+   pqcreatequery("CREATE INDEX chanlevhistory_channelID_index on chanlevhistory(channelID)");
+   pqcreatequery("CREATE INDEX chanlevhistory_targetID_index on chanlevhistory(targetID)");
+
+   pqcreatequery("CREATE TABLE accounthistory ("
+                  "userID INT NOT NULL,"
+                  "changetime INT NOT NULL,"
+                  "authtime INT NOT NULL,"
+                  "oldpassword VARCHAR(11),"
+                  "newpassword VARCHAR(11),"
+                  "oldemail VARCHAR(100),"
+                  "newemail VARCHAR(100),"
+                  "PRIMARY KEY (userID, changetime))");
+
+   pqcreatequery("CREATE INDEX accounthistory_userID_index on accounthistory(userID)");
 }
 
 void _init() {

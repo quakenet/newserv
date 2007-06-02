@@ -3,12 +3,12 @@
  *  Handle all the update requests for the database.
  */
 
-#include "../chanserv.h"
-#include "../../pqsql/pqsql.h"
-#include "../../core/config.h"
-#include "../../lib/sstring.h"
-#include "../../parser/parser.h"
-#include "../../core/events.h"
+#include "chanserv.h"
+#include "../pqsql/pqsql.h"
+#include "../core/config.h"
+#include "../lib/sstring.h"
+#include "../parser/parser.h"
+#include "../core/events.h"
 
 #include <string.h>
 #include <libpq-fe.h>
@@ -336,4 +336,102 @@ void csdb_createmail(reguser *rup, int type) {
   }
 
   pqquery("%s", sqlquery);
-}  
+}
+
+void csdb_deletemaildomain(maildomain *mdp) {
+  pqquery("DELETE FROM maildomain WHERE ID=%u", mdp->ID);
+}
+
+void csdb_createmaildomain(maildomain *mdp) {
+  char escdomain[210];
+  PQescapeString(escdomain, mdp->name->content, strlen(mdp->name->content));
+
+  pqquery("INSERT INTO maildomain (id, name, domainlimit) VALUES(%u, '%s', %u)", mdp->ID,escdomain,mdp->limit);
+}
+
+void csdb_updatemaildomain(maildomain *mdp) {
+  char escdomain[210];
+  PQescapeString(escdomain, mdp->name->content, strlen(mdp->name->content));
+
+  pqquery("UPDATE maildomain SET domainlimit=%u WHERE ID=%u", mdp->limit,mdp->ID);
+}
+
+
+void csdb_authhistory_auth(nick *np, reguser *rup) {
+  char escnick[40];
+  char escuser[30];
+  char eschost[136];
+
+  PQescapeString(escnick, np->nick, strlen(np->nick));
+  PQescapeString(escuser, np->ident, strlen(np->ident));
+  PQescapeString(eschost, np->host->name->content, strlen(np->host->name->content));
+
+  pqquery("INSERT INTO authhistory (userID, nick, username, host, authtime, disconnecttime) "
+    "VALUES (%u, '%s', '%s', '%s', %lu, %lu)", rup->ID, escnick, escuser, eschost, np->accountts, 0);
+}
+
+void csdb_authhistory_relink(nick *np, reguser *rup) {
+  pqquery("UPDATE authhistory SET disconnecttime=0 WHERE userID=%u AND authtime=%lu",
+    rup->ID, np->accountts);
+}
+
+void csdb_authhistory_disconnect(nick *np, reguser *rup) {
+  pqquery("UPDATE authhistory SET disconnecttime=%lu WHERE userID=%u AND authtime=%lu",
+    getnettime(), rup->ID, np->accountts);
+}
+
+
+void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags) {
+  reguser *rup=getreguserfromnick(np);
+
+  pqquery("INSERT INTO chanlevhistory (userID, channelID, targetID, changetime, authtime, "
+    "oldflags, newflags) VALUES (%u, %u, %u, %lu, %lu, %u, %u)",  rup->ID, rcp->ID, trup->ID, getnettime(), np->accountts,
+    oldflags, newflags);
+}
+
+void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail) {
+  reguser *rup=getreguserfromnick(np);
+  char escoldpass[30];
+  char escnewpass[30];
+  char escoldemail[130];
+  char escnewemail[130];
+
+  if (!rup || UHasOperPriv(rup))
+    return;
+
+  if (oldpass)
+    PQescapeString(escoldpass, oldpass, strlen(oldpass));
+  else
+    escoldpass[0]='\0';
+
+  if (newpass)
+    PQescapeString(escnewpass, newpass, strlen(newpass));
+  else
+    escnewpass[0]='\0';
+
+  if (oldemail)
+    PQescapeString(escoldemail, oldemail->content, strlen(oldemail->content));
+  else
+    escoldemail[0]='\0';
+  if (newemail)
+    PQescapeString(escnewemail, newemail->content, strlen(newemail->content));
+  else
+    escnewemail[0]='\0';
+
+  pqquery("INSERT INTO accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, "
+    "newemail) VALUES (%u, %lu, %lu, '%s', '%s', '%s', '%s')", rup->ID, getnettime(), np->accountts, escoldpass, escnewpass,
+    escoldemail, escnewemail);
+
+  if (newemail)
+    freesstring(newemail);
+}
+
+void csdb_cleanuphistories() {
+  time_t expire_time=getnettime()-604800;
+
+  Error("chanserv", ERR_INFO, "Cleaning histories.");
+  pqquery("DELETE FROM authhistory WHERE authtime < %lu", expire_time);
+  pqquery("DELETE FROM chanlevhistory WHERE changetime < %lu", expire_time);
+  pqquery("DELETE FROM accounthistory WHERE changetime < %lu", expire_time);
+}
+

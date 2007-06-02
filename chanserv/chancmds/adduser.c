@@ -58,6 +58,7 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
     cs_log(sender,"CHANLEV %s #%s +aot (+ -> +aot)",cip->name->content,rup->username);
     addregusertochannel(rcup);
     csdb_createchanuser(rcup);
+    csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);
   }
 
   rcp->status |= QCSTAT_OPCHECK;

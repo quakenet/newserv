@@ -53,6 +53,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   }
 
   csdb_createmail(rup, QMAIL_NEWEMAIL);
+  csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
   delreguserfrommaildomain(rup,rup->domain);
   freesstring(rup->email);
   rup->email=getsstring(cargv[1],EMAILLEN);

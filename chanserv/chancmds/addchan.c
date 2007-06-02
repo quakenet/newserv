@@ -141,6 +141,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   
   addregusertochannel(rcup);
   csdb_createchanuser(rcup);
+  csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);
 
   /* If the channel exists, get the ball rolling */
   if (cip->channel) {

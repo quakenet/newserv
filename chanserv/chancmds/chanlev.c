@@ -241,9 +241,16 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       if ((oldflags ^ rcuplist->flags) & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP))
 	rcuplist->changetime=time(NULL);
 
+      if(rcuplist->flags == oldflags) {
+        chanservstdmessage(sender, QM_DONE);
+        return CMD_OK;
+      }
+
+
       strcpy(flagbuf,printflags(oldflags,rcuflags));
       cs_log(sender,"CHANLEV %s #%s %s (%s -> %s)",cip->name->content,rcuplist->user->username,cargv[2],
 	     flagbuf,printflags(rcuplist->flags,rcuflags));
+      csdb_chanlevhistory_insert(rcp, sender, rcuplist->user, oldflags, rcuplist->flags);
 
       /* Now see what we do next */
       if (rcuplist->flags) {

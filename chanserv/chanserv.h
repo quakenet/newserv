@@ -269,6 +269,7 @@
 #define UIsInfo(x)          ((x)->flags & QUFLAG_INFO)
 #define UIsDelayedGline(x)  ((x)->flags & QUFLAG_DELAYEDGLINE)
 #define UIsNoAuthLimit(x)   ((x)->flags & QUFLAG_NOAUTHLIMIT)
+#define UIsCleanupExempt(x) ((x)->flags & QUFLAG_CLEANUPEXEMPT)
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED|QUFLAG_NEEDAUTH))
 

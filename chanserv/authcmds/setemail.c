@@ -30,6 +30,7 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
 
+  csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
   delreguserfrommaildomain(rup,rup->domain);
   freesstring(rup->email);
   rup->email=getsstring(cargv[1],EMAILLEN);

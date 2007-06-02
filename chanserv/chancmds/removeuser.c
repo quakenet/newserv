@@ -66,6 +66,7 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
 
     csdb_deletechanuser(rcup);
     delreguserfromchannel(rcp, rup);
+    csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
   }
 
   rcp->status |= QCSTAT_OPCHECK;
