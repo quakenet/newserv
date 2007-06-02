@@ -324,11 +324,12 @@ int die(void *sender, int cargc, char **cargv) {
     controlreply((nick *)sender,"You must give a reason.");
     return CMD_USAGE;
   }
+
+  controlwall(0,0,"DIE from %s: %s",((nick *)sender)->nick, cargv[0]);
   
-  irc_send("%s SQ %s 0 :%s",mynumeric->content,myserver->content,cargv[0]);
-  irc_disconnected();
+  newserv_shutdown_pending=1;
   
-  exit(0);
+  return CMD_OK;
 }
 
 int controlchannel(void *sender, int cargc, char **cargv) {

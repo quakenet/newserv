@@ -24,5 +24,8 @@ const char *lsmodver(int index);
 void preparereload(char *modulename);
 void reloadmarked(void);
 void safereload(char *themodule);
+void newserv_shutdown();
+
+extern int newserv_shutdown_pending;
 
 #endif

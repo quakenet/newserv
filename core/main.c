@@ -11,6 +11,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+int newserv_shutdown_pending;
+
 void initseed();
 
 int main(int argc, char **argv) {
@@ -34,6 +36,10 @@ int main(int argc, char **argv) {
   for(;;) {
     handleevents(10);  
     doscheduledevents(time(NULL));
+    if (newserv_shutdown_pending) {
+      newserv_shutdown();
+      break;
+    }
   }  
 }
 

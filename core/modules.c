@@ -444,3 +444,14 @@ void safereload(char *themodule) {
   
   scheduleoneshot(1, safereloadcallback, NULL);
 }
+
+void newserv_shutdown() {
+  module *mods;
+  
+  while (modules.cursi) {
+    mods=(module *)(modules.content);
+    rmmod(mods[0].name->content);
+  }
+  
+  Error("core",ERR_INFO,"All modules removed.  Exiting.");
+}
