@@ -67,6 +67,12 @@ const flag ruflags[] = {
   { 'z',  QUFLAG_SUSPENDED },
   { '\0', 0 } };
 
+const flag mdflags[] = {
+  { 'l', MDFLAG_LIMIT },
+  { 'b', MDFLAG_BANNED },
+  { 'u', MDFLAG_ACTLIMIT },
+  { '\0', 0 } };
+
 void chanservfreestuff();
 void chanservfinishinit(int hooknum, void *arg);
 

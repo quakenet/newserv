@@ -183,3 +183,30 @@ void freeactiveuser(activeuser *aup) {
   aup->next=csfreeactiveusers;
   csfreeactiveusers=aup;
 }
+
+maildomain *getmaildomain() {
+  int i;
+  maildomain *mdp;
+
+  if (csfreemaildomains==NULL) {
+    csfreemaildomains=(maildomain *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(maildomain));
+    for (i=0;i<(ALLOCUNIT-1);i++) {
+      csfreemaildomains[i].nextbyname=&(csfreemaildomains[i+1]);
+    }
+    csfreemaildomains[ALLOCUNIT-1].nextbyname=NULL;
+  }
+
+  mdp=csfreemaildomains;
+  csfreemaildomains=mdp->nextbyname;
+
+  tagmaildomain(mdp);
+
+  return mdp;
+}
+
+void freemaildomain(maildomain *mdp) {
+  verifymaildomain(mdp);
+  mdp->nextbyname=csfreemaildomains;
+  csfreemaildomains=mdp;
+}
+

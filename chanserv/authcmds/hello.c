@@ -19,6 +19,8 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup;
   char userhost[USERLEN+HOSTLEN+2];
+  maildomain *mdp, *smdp;
+  char *local;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -42,6 +44,31 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[0]))
     return CMD_ERROR;
 
+  mdp=findorcreatemaildomain(cargv[0]);
+  for(smdp=mdp; smdp; smdp=smdp->parent) {
+    if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
+      chanservstdmessage(sender, QM_DOMAINLIMIT);
+      return CMD_ERROR;
+    }
+  }
+
+  reguser *ruh;
+  int found=0;
+
+  local=strchr(strdup(cargv[0]), '@');
+  *(local++)='\0';
+  for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
+    if (ruh->localpart)
+      if (!match(local, ruh->localpart->content)) {
+        found++;
+      }
+  }
+
+  if((found > mdp->actlimit) && (mdp->actlimit > 0)) {
+    chanservstdmessage(sender, QM_DOMAINLIMIT);
+    return CMD_ERROR;
+  }
+
   rup=getreguser();
   rup->status=0;
   rup->ID=++lastuserID;
@@ -56,6 +83,9 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->password[0]='\0';
   rup->masterpass[0]='\0';
   rup->email=getsstring(cargv[0],EMAILLEN);
+  rup->localpart=getsstring(local,EMAILLEN);
+  rup->domain=mdp;
+  addregusertomaildomain(rup, rup->domain);
   rup->info=NULL;
   sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
   rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);

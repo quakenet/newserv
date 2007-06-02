@@ -12,10 +12,17 @@
 
 reguser *regusernicktable[REGUSERHASHSIZE];
 
+maildomain *maildomainnametable[MAILDOMAINHASHSIZE];
+maildomain *maildomainIDtable[MAILDOMAINHASHSIZE];
+
 #define regusernickhash(x)  ((crc32i(x))%REGUSERHASHSIZE)
+#define maildomainnamehash(x)   ((crc32i(x))%MAILDOMAINHASHSIZE)
+#define maildomainIDhash(x)     ((x)%MAILDOMAINHASHSIZE)
 
 void chanservhashinit() {
   memset(regusernicktable,0,REGUSERHASHSIZE*sizeof(reguser *));
+  memset(maildomainnametable,0,MAILDOMAINHASHSIZE*sizeof(maildomain *));
+  memset(maildomainIDtable,0,MAILDOMAINHASHSIZE*sizeof(maildomain *));
 }
 
 void addregusertohash(reguser *rup) {
@@ -161,3 +168,176 @@ void delreguserfromchannel(regchan *rcp, reguser *rup) {
   Error("chanserv",ERR_ERROR,"Unable to remove channel %s from user %s",
 	rcp->index->name->content,rup->username);
 }
+
+void addmaildomaintohash(maildomain *mdp) {
+  unsigned int hash;
+
+  hash=maildomainnamehash(mdp->name->content);
+
+  mdp->nextbyname=maildomainnametable[hash];
+  maildomainnametable[hash]=mdp;
+
+  hash=maildomainIDhash(mdp->ID);
+
+  mdp->nextbyID=maildomainIDtable[hash];
+  maildomainIDtable[hash]=mdp;
+}
+
+maildomain *findmaildomainbyID(unsigned int ID) {
+  unsigned int hash;
+  maildomain *mdp;
+
+  hash=maildomainIDhash(ID);
+  for (mdp=maildomainIDtable[hash]; mdp; mdp=mdp->nextbyID)
+    if (mdp->ID==ID)
+      return mdp;
+
+  return NULL;
+}
+
+maildomain *findmaildomainbydomain(char *domain) {
+  unsigned int hash;
+  maildomain *mdp;
+
+  hash=maildomainnamehash(domain);
+  for (mdp=maildomainnametable[hash]; mdp; mdp=mdp->nextbyname)
+    if (!ircd_strcmp(mdp->name->content, domain))
+      return mdp;
+
+  return NULL;
+}
+
+maildomain *findmaildomainbyemail(char *email) {
+  char *domain;
+
+  if (!(domain=strchr(email, '@')))
+    domain=email;
+  else
+    domain++;
+
+  return findmaildomainbydomain(domain);
+}
+
+maildomain *findorcreatemaildomain(char *email) {
+  unsigned int hash;
+  char *domain,*pdomain;
+  maildomain *mdp, *pmdp;
+  char parent=0;
+
+  if (!(domain=strchr(email, '@')))
+    domain=email;
+  else
+    domain++;
+
+  if( domain[0] == '.' )
+    domain++;
+
+  hash=maildomainnamehash(domain);
+  for (mdp=maildomainnametable[hash]; mdp; mdp=mdp->nextbyname)
+    if (!ircd_strcmp(mdp->name->content, domain))
+      return mdp;
+
+  mdp=getmaildomain();
+  mdp->ID=0;
+  mdp->name=getsstring(domain, EMAILLEN);
+  mdp->count=0;
+  mdp->limit=0;
+  mdp->users=NULL;
+  addmaildomaintohash(mdp);
+
+  pdomain=domain;
+  while(pdomain=strchr(pdomain, '.')) {
+    parent = 1;
+    pdomain++;
+    pmdp = findorcreatemaildomain(pdomain);
+    mdp->parent = pmdp;
+  }
+  if(!parent) {
+    mdp->parent = NULL;
+  }
+  return mdp;
+}
+
+void removemaildomainfromhash(maildomain *mdp) {
+  unsigned int hash;
+  maildomain **mdh;
+  int found;
+
+  hash=maildomainnamehash(mdp->name->content);
+
+  found=0;
+  for (mdh=&(maildomainnametable[hash]);*mdh;mdh=&((*mdh)->nextbyname)) {
+    if (*mdh==mdp) {
+      *mdh=(mdp->nextbyname);
+      found=1;
+      break;
+    }
+  }
+
+  if (found==0) {
+    Error("chanserv",ERR_ERROR,"Unable to remove maildomain %s from namehash",
+          mdp->name->content);
+  }
+
+  hash=maildomainIDhash(mdp->ID);
+  found=0;
+
+  for (mdh=&(maildomainIDtable[hash]);*mdh;mdh=&((*mdh)->nextbyID)) {
+    if (*mdh==mdp) {
+      *mdh=(mdp->nextbyID);
+      found=1;
+      break;
+    }
+  }
+
+  if (found==0) {
+    Error("chanserv",ERR_ERROR,"Unable to remove maildomain %s from ID hash",mdp->name->content);
+  }
+}
+
+void addregusertomaildomain(reguser *rup, maildomain *mdp) {
+  maildomain *smdp;
+  rup->nextbydomain=mdp->users;
+  mdp->users=rup;
+  for(smdp=mdp;smdp;smdp=smdp->parent) {
+    smdp->count++;
+  }
+}
+
+void delreguserfrommaildomain(reguser *rup, maildomain *mdp) {
+  maildomain *smdp;
+  reguser *ruh, *pruh=NULL;
+  int found=0;
+
+  for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
+    if (ruh==rup) {
+      /* Found the user */
+      if (pruh)
+        pruh->nextbydomain=ruh->nextbydomain;
+      else
+        mdp->users=ruh->nextbydomain;
+      found=1;
+      break;
+    }
+    pruh=ruh;
+  }
+
+  if (found==0) {
+    Error("chanserv",ERR_ERROR,"Unable to remove user %s from maildomain %s",
+          rup->username, mdp->name->content);
+    return;
+  }
+
+  for(smdp=mdp;smdp;smdp=smdp->parent) {
+    smdp->count--;
+  }
+  rup->domain=NULL;
+  freesstring(rup->localpart);
+  rup->localpart=NULL;
+
+  if (!mdp->count && !MDHasLimit(mdp)) {
+    removemaildomainfromhash(mdp);
+    freemaildomain(mdp);
+  }
+}
+

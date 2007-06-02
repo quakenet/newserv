@@ -30,9 +30,19 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
 
+  delreguserfrommaildomain(rup,rup->domain);
   freesstring(rup->email);
   rup->email=getsstring(cargv[1],EMAILLEN);
   rup->lastemailchange=time(NULL);
+  rup->domain=findorcreatemaildomain(rup->email->content);
+  addregusertomaildomain(rup, rup->domain);
+  if(local=strchr(strdup(rup->email->content), '@')) {
+    *(local++)='\0';
+    rup->localpart=getsstring(local,EMAILLEN);
+  } else {
+    rup->localpart=NULL;
+  }
+
   chanservstdmessage(sender, QM_EMAILCHANGED, cargv[1]);
   cs_log(sender,"SETEMAIL OK username %s <%s>",rup->username,rup->email->content);
   csdb_updateuser(rup);

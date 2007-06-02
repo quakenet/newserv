@@ -507,6 +507,8 @@ void cs_checknick(nick *np) {
       rup->password[0]='\0';
       rup->masterpass[0]='\0';
       rup->email=NULL;
+      rup->localpart=NULL;
+      rup->domain=NULL;
       rup->info=NULL;
       sprintf(userhost,"%s@%s",np->ident,np->host->name->content);
       rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
@@ -979,6 +981,9 @@ void cs_removeuser(reguser *rup) {
     freeregchanuser(rcup);
   }
 
+  if(rup->domain)
+    delreguserfrommaildomain(rup,rup->domain);
+  freesstring(rup->localpart);
   freesstring(rup->email);
   freesstring(rup->lastuserhost);
   freesstring(rup->suspendreason);

@@ -34,6 +34,7 @@ int chanservaext;
 unsigned int lastchannelID;
 unsigned int lastuserID;
 unsigned int lastbanID;
+unsigned int lastdomainID;
 
 /* Local prototypes */
 void csdb_handlestats(int hooknum, void *arg);
@@ -61,6 +62,10 @@ void loadchanusersdone(PGconn *, void *);
 /* Chanban loading functions */
 void loadsomechanbans(PGconn *, void *);
 void loadchanbansdone(PGconn *, void *);
+
+/* Mail Domain loading functions */
+void loadsomemaildomains(PGconn *, void *);
+void loadmaildomainsdone(PGconn *, void *);
 
 /* Free sstrings in the structures */
 void csdb_freestuff();
@@ -168,6 +173,15 @@ static void setuptables() {
                  "emailtype    INT               NOT NULL,"
                  "prevEmail    VARCHAR(100),"
                  "mailID       VARCHAR(128))");
+
+  pqcreatequery("CREATE TABLE maildomain ("
+                 "ID           INT               NOT NULL,"
+                 "name         VARCHAR           NOT NULL,"
+                 "domainlimit  INT               NOT NULL,"
+                 "actlimit     INT               NOT NULL,"
+                 "flags         INT              NOT NULL,"
+                 "PRIMARY KEY (ID))");
+
 }
 
 void _init() {
@@ -186,13 +200,14 @@ void _init() {
 
     setuptables();
 
-    lastuserID=lastchannelID=0;
+    lastuserID=lastchannelID=lastdomainID=0;
 
     loadall("users",NULL,loadsomeusers,loadusersdone);
     loadall("channels",NULL,loadsomechannels,loadchannelsdone);
     loadall("chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
     loadall("bans",NULL,loadsomechanbans,loadchanbansdone);
-
+    loadall("maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
+    
     loadmessages(); 
   }
 }
@@ -289,6 +304,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
   PGresult *pgres;
   reguser *rup;
   unsigned int i,num;
+  char *local;
 
   pgres=PQgetResult(dbconn);
 
@@ -319,6 +335,19 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     strncpy(rup->password,PQgetvalue(pgres,i,9),PASSLEN); rup->password[PASSLEN]='\0';
     strncpy(rup->masterpass,PQgetvalue(pgres,i,10),PASSLEN); rup->masterpass[PASSLEN]='\0';
     rup->email=getsstring(PQgetvalue(pgres,i,11),100);
+    if (rup->email) {
+      rup->domain=findorcreatemaildomain(rup->email->content);
+      addregusertomaildomain(rup, rup->domain);
+      if(local=strchr(strdup(rup->email->content), '@')) {
+        *(local++)='\0';
+        rup->localpart=getsstring(local,EMAILLEN);
+      } else {
+        rup->localpart=NULL;
+      }
+    } else {
+      rup->domain=NULL;
+      rup->localpart=NULL;
+    }
     rup->lastuserhost=getsstring(PQgetvalue(pgres,i,12),75);
     rup->suspendreason=getsstring(PQgetvalue(pgres,i,13),250);
     rup->comment=getsstring(PQgetvalue(pgres,i,14),250);
@@ -708,6 +737,7 @@ void csdb_freestuff() {
   reguser *rup;
   regchanuser *rcup;
   regban *rbp;
+  maildomain *mdp;
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
@@ -740,4 +770,50 @@ void csdb_freestuff() {
       }
     }
   }
+
+  for (i=0; i<MAILDOMAINHASHSIZE; i++) {
+    for (mdp=maildomainnametable[i]; mdp; mdp=mdp->nextbyname)
+      freesstring(mdp->name);
+  }
 }
+
+void loadsomemaildomains(PGconn *dbconn,void *arg) {
+  PGresult *pgres;
+  maildomain *mdp;
+  unsigned int i,num;
+  char *domain;
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv",ERR_ERROR,"Error loading maildomain DB");
+    return;
+ }
+
+  if (PQnfields(pgres)!=4) {
+    Error("chanserv",ERR_ERROR,"Mail Domain DB format error");
+    return;
+  }
+  num=PQntuples(pgres);
+  lastdomainID=0;
+
+  for(i=0;i<num;i++) {
+    domain=strdup(PQgetvalue(pgres,i,1));
+    mdp=findorcreatemaildomain(domain); //@@@ LEN
+
+    mdp->ID=strtoul(PQgetvalue(pgres,i,0),NULL,10);
+    mdp->limit=strtoul(PQgetvalue(pgres,i,2),NULL,10);
+    mdp->actlimit=strtoul(PQgetvalue(pgres,i,3),NULL,10);
+    mdp->flags=strtoul(PQgetvalue(pgres,i,4),NULL,10);
+
+    if (mdp->ID > lastdomainID) {
+      lastdomainID=mdp->ID;
+    }
+  }
+
+  PQclear(pgres);
+}
+
+void loadmaildomainsdone(PGconn *dbconn, void *arg) {
+  Error("chanserv",ERR_INFO,"Load Mail Domains done (highest ID was %d)",lastdomainID);
+}
+

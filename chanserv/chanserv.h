@@ -50,6 +50,7 @@
 
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
+#define   MAILDOMAINHASHSIZE  60000
 
 /* Number of languages and messages */
 #define MAXLANG      50
@@ -187,6 +188,13 @@
 #define QM_LISTFLAGSHEADER         128
 #define QM_SUSPENDUSERLISTHEADER   129
 #define QM_SUSPENDCHANLISTHEADER   130
+#define QM_NOREQUESTOWNER          131
+#define QM_GRANTEDOWNER            132
+#define QM_AUTHHISTORYHEADER       133
+#define QM_CURDOMAINMODES          134
+#define QM_SPEWDOMAINHEADER        135
+#define QM_DOMAINLIMIT             136
+#define QM_PWTOWEAK                137
 
 /* List of privileged operations */
 
@@ -491,6 +499,37 @@
 struct regchanuser;
 struct reguser;
 
+typedef struct maildomain {
+#ifdef CS_PARANOID
+  unsigned int       maildomain_magic;
+#endif
+  unsigned int       ID;
+  sstring           *name;
+  unsigned int       count;
+  unsigned int       limit;
+  unsigned int       actlimit;
+  flag_t             flags;
+  struct reguser    *users;
+  struct maildomain *parent;
+  struct maildomain *nextbyname;
+  struct maildomain *nextbyID;
+} maildomain;
+
+#define   MDFLAG_LIMIT       0x0001 /* +l */
+#define   MDFLAG_BANNED      0x0002 /* +b */
+#define   MDFLAG_ACTLIMIT    0x0004 /* +u */
+#define   MDFLAG_ALL         0x0007
+
+#define MDHasLimit(x)        ((x)->flags & MDFLAG_LIMIT)
+#define MDSetLimit(x)        ((x)->flags |= MDFLAG_LIMIT)
+#define MDClearLimit(x)      ((x)->flags &= ~MDFLAG_LIMIT)
+#define MDIsBanned(x)        ((x)->flags & MDFLAG_BANNED)
+#define MDSetBanned(x)       ((x)->flags |= MDFLAG_BANNED)
+#define MDClearBanned(x)     ((x)->flags &= ~MDFLAG_BANNED)
+#define MDHasActLimit(x)     ((x)->flags & MDFLAG_ACTLIMIT)
+#define MDSetActLimit(x)     ((x)->flags |= MDFLAG_ACTLIMIT)
+#define MDClearActLimit(x)   ((x)->flags &= ~MDFLAG_ACTLIMIT)
+
 /* "Q" ban */
 typedef struct regban {
 #ifdef CS_PARANOID
@@ -588,6 +627,9 @@ typedef struct reguser {
   char                password[PASSLEN+1];
   char                masterpass[PASSLEN+1];
   
+  sstring            *localpart;
+  maildomain         *domain;
+
   sstring            *email;         /* Registered e-mail */
   sstring            *lastuserhost;  /* Last user@host */
   sstring            *suspendreason; /* Why the account is suspended */
@@ -603,6 +645,7 @@ typedef struct reguser {
   int                 stealcount;    /* How many times we've had to free the nick up */
   nick               *fakeuser;      /* If we had to "take" the nick, here's the pointer */
 
+  struct reguser     *nextbydomain;
   struct reguser     *nextbyname;
   struct reguser     *nextbyID;
 } reguser;
@@ -648,18 +691,21 @@ typedef struct activeuser {
 #define REGCHANUSERMAGIC  0x19628b63
 #define REGCHANBANMAGIC   0x5a6f555a
 #define ACTIVEUSERMAGIC   0x897f98a0
+#define MAILDOMAINMAGIC   0x27cde46f
 
 #define verifyreguser(x)      assert((x)->reguser_magic      == REGUSERMAGIC)
 #define verifyregchan(x)      assert((x)->regchan_magic      == REGCHANMAGIC)
 #define verifyregchanuser(x)  assert((x)->regchanuser_magic  == REGCHANUSERMAGIC)
 #define verifyregchanban(x)   assert((x)->regchanban_magic   == REGCHANBANMAGIC)
 #define verifyactiveuser(x)   assert((x)->activeuser_magic   == ACTIVEUSERMAGIC)
+#define verifymaildomain(x)   assert((x)->maildomain_magic   == MAILDOMAINMAGIC)
 
 #define tagreguser(x)         ((x)->reguser_magic = REGUSERMAGIC)
 #define tagregchan(x)         ((x)->regchan_magic = REGCHANMAGIC)
 #define tagregchanuser(x)     ((x)->regchanuser_magic = REGCHANUSERMAGIC)
 #define tagregchanban(x)      ((x)->regchanban_magic = REGCHANBANMAGIC)
 #define tagactiveuser(x)      ((x)->activeuser_magic = ACTIVEUSERMAGIC)
+#define tagmaildomain(x)      ((x)->maildomain_magic = MAILDOMAINMAGIC)
 
 #else
 
@@ -668,12 +714,14 @@ typedef struct activeuser {
 #define verifyregchanuser(x)
 #define verifyregchanban(x)
 #define verifyactiveuser(x)
+#define verifymaildomain(x)
 
 #define tagreguser(x)
 #define tagregchan(x)
 #define tagregchanuser(x)
 #define tagregchanban(x)
 #define tagactiveuser(x)
+#define tagmaildomain(x)
 
 #endif
 
@@ -684,9 +732,13 @@ typedef struct activeuser {
 extern unsigned int lastuserID;
 extern unsigned int lastchannelID;
 extern unsigned int lastbanID;
+extern unsigned int lastdomainID;
 
 extern int chanserv_init_status;
 extern int chanservdb_ready;
+
+extern maildomain *maildomainnametable[MAILDOMAINHASHSIZE];
+extern maildomain *maildomainIDtable[MAILDOMAINHASHSIZE];
 
 extern reguser *regusernicktable[REGUSERHASHSIZE];
 extern reguser *deadusers;
@@ -705,6 +757,7 @@ extern char *defaultmessages[MAXMESSAGES];
 extern const flag rcflags[];
 extern const flag rcuflags[];
 extern const flag ruflags[];
+extern const flag mdflags[];
 
 extern CommandTree *cscommands;
 
@@ -730,6 +783,8 @@ regban *getregban();
 void freeregban(regban *rbp);
 activeuser *getactiveuser();
 void freeactiveuser(activeuser *aup);
+maildomain *getmaildomain();
+void freemaildomain(maildomain *mdp);
 
 /* chanservhash.c */
 void chanservhashinit();
@@ -745,6 +800,14 @@ void removeregchanfromhash(regchan *rcp);
 void addregusertochannel(regchanuser *rcup);
 regchanuser *findreguseronchannel(regchan *rcp, reguser *rup);
 void delreguserfromchannel(regchan *rcp, reguser *rup);
+void addmaildomaintohash(maildomain *mdp);
+maildomain *findmaildomainbyID(unsigned int ID);
+maildomain *findmaildomainbydomain(char *domain);
+maildomain *findmaildomainbyemail(char *email);
+maildomain *findorcreatemaildomain(char *email);
+void removemaildomainfromhash(maildomain *mdp);
+void addregusertomaildomain(reguser *rup, maildomain *mdp);
+void delreguserfrommaildomain(reguser *rup, maildomain *mdp);
 
 /* chanservdb.c */
 int chanservdbinit();

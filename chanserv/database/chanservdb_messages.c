@@ -139,6 +139,13 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 128*/ "Username:       Flags:            Suspended: Email:                         Last user@host:",
   /* 129*/ "Username:       Suspend type: Suspended by:   Expires:        Reason:",
   /* 130*/ "Channel:                       Suspended by:   Reason:",
+  /* 131*/ "You cannot request ownership of %s as there is a channel %s present.",
+  /* 132*/ "You have been granted ownership of %s.",
+  /* 133*/ "Number: Authed:         Disconnected:   Nick:           Userhost:",
+  /* 134*/ "Current modes on %s: %s",
+  /* 135*/ "Domain:             Users:  Limit:",
+  /* 136*/ "Too many accounts exist from this email domain",
+  /* 137*/ "Password too weak - You need to avoid repeating characters, and have different character types (e.g. 1 number and 1 letter)",
 };
 
 void initmessages() {
