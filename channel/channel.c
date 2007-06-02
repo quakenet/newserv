@@ -49,6 +49,13 @@ void _init() {
   /* Set up the nouser marker according to our own numeric */
   nouser=(mylongnum<<18)|CU_NOUSERMASK;
   
+  /* If we're connected to IRC, force a disconnect.  This needs to be done
+   * before we register all our hooks which would otherwise get called
+   * during the disconnect. */
+  if (connected) { 
+    irc_send("%s SQ %s 0 :Resync [adding channel support]",mynumeric->content,myserver->content); irc_disconnected();
+  }
+
   /* Set up our hooks */
   registerhook(HOOK_NICK_NEWNICK,&addordelnick);
   registerhook(HOOK_NICK_LOSTNICK,&addordelnick);
@@ -65,12 +72,6 @@ void _init() {
   registerserverhandler("M",&handlemodemsg,8);
   registerserverhandler("OM",&handlemodemsg,8); /* Treat OPMODE just like MODE */
   registerserverhandler("CM",&handleclearmodemsg,2);
-  
-  /* If we're connected to IRC, force a disconnect */
-  if (connected) {
-    irc_send("%s SQ %s 0 :Resync [adding channel support]",mynumeric->content,myserver->content);
-    irc_disconnected();  
-  }
 }
 
 void _fini() {
@@ -99,10 +100,8 @@ void _fini() {
   for(i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=ncip) {
       ncip=cip->next;
-      if (!(cp=cip->channel))
-        continue;
-
-      delchannel(cp);
+      if (cp=cip->channel)
+        delchannel(cp);
     }
   }
   
