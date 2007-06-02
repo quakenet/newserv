@@ -483,6 +483,11 @@ void localdosetmode_ban (modechanges *changes, const char *ban, short dir) {
   /* If we're told to clear a ban that isn't here, do nothing. */
   if (dir==MCB_DEL && !clearban(changes->cp, bansstr->content, 1))
     return;
+    
+  /* Similarly if someone is trying to add a completely overlapped ban, do
+   * nothing */
+  if (dir==MCB_ADD && !setban(changes->cp, bansstr->content))
+    return;
 
   if (changes->changecount >= MAXMODEARGS)
     localsetmodeflush(changes, 0);
