@@ -9,6 +9,7 @@
 #include "../irc/irc.h"
 #include "../lib/base64.h"
 #include "../lib/version.h"
+#include "../core/nsmalloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -73,6 +74,11 @@ void _init() {
 }
 
 void _fini() {
+  unsigned int i;
+  struct channel *cp;
+  struct chanindex *cip, *ncip;
+  nick *np;
+
   deregisterserverhandler("B",&handleburstmsg);
   deregisterserverhandler("J",&handlejoinmsg);
   deregisterserverhandler("C",&handlecreatemsg);
@@ -88,6 +94,27 @@ void _fini() {
   deregisterhook(HOOK_CORE_STATSREQUEST,&channelstats);
   deregisterhook(HOOK_IRC_SENDBURSTBURSTS,&sendchanburst);
   deregisterhook(HOOK_NICK_WHOISCHANNELS,&handlewhoischannels);
+ 
+  /* Free all the channels */
+  for(i=0;i<CHANNELHASHSIZE;i++) {
+    for (cip=chantable[i];cip;cip=ncip) {
+      ncip=cip->next;
+      if (!(cp=cip->channel))
+        continue;
+
+      delchannel(cp);
+    }
+  }
+  
+  /* We also need to remove the channels array from each user */
+  for (i=0;i<NICKHASHSIZE;i++) {
+    for (np=nicktable[i];np;np=np->next) {
+      array_free(np->channels);
+      free(np->channels);
+    }
+  }
+  
+  nsfreeall(POOL_CHANNEL);
 }
 
 int addnicktochannel(channel *cp, long numeric) {
@@ -405,3 +432,4 @@ unsigned int countuniquehosts(channel *cp) {
   
   return count;
 }
+

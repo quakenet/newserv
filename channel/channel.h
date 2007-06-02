@@ -12,6 +12,7 @@
 #include "../core/error.h"
 #include "../nick/nick.h"
 #include "../chanindex/chanindex.h"
+#include "../bans/bans.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -34,23 +35,6 @@
 #define CHANMODE_SINGLETARG 0x8000
 
 #define CHANMODE_ALL        0xFFFF
-
-#define CHANBAN_NICKEXACT   0x0001  /* Ban includes an exact nick (no wildcards) */
-#define CHANBAN_NICKMASK    0x0002  /* Ban includes a nick mask with wildcards */
-#define CHANBAN_NICKANY     0x0004  /* Ban is *!.. */
-#define CHANBAN_NICKNULL    0x0008  /* Ban has no nick */
-#define CHANBAN_USEREXACT   0x0010  /* Ban includes an exact user (no wildcards) */
-#define CHANBAN_USERMASK    0x0020  /* Ban includes a user mask with wildcards */
-#define CHANBAN_USERANY     0x0040  /* Ban is ..!*@.. */
-#define CHANBAN_USERNULL    0x0080  /* Ban has no user */
-#define CHANBAN_HOSTEXACT   0x0100  /* Ban includes an exact host */
-#define CHANBAN_HOSTMASK    0x0200  /* Ban includes a host mask */
-#define CHANBAN_HOSTANY     0x0400  /* Ban is ..@* */
-#define CHANBAN_HOSTNULL    0x0800  /* Ban has no host */
-#define CHANBAN_IP          0x1000  /* Ban could match against IP address */
-#define CHANBAN_CIDR        0x2000  /* Ban includes a CIDR mask (e.g. 192.168.0.0/16 ) */
-#define CHANBAN_INVALID     0x4000  /* Ban is nonsensical, i.e. has at least one really NULL component*/
-#define CHANBAN_HIDDENHOST  0x8000  /* Ban could possibly match hidden host */
 
 #define IsNoExtMsg(x)   ((x)->flags & CHANMODE_NOEXTMSG)
 #define IsTopicLimit(x) ((x)->flags & CHANMODE_TOPICLIMIT)
@@ -121,15 +105,6 @@
 #define MODECHANGE_USERS   0x00000002
 #define MODECHANGE_BANS    0x00000004
 
-typedef struct chanban {
-  flag_t          flags;
-  sstring        *nick;
-  sstring        *user;
-  sstring        *host;
-  time_t          timeset;
-  struct chanban *next;
-} chanban;
-
 typedef struct chanuserhash {
   unsigned short  hashsize;
   unsigned short  totalusers;
@@ -185,16 +160,9 @@ channel *newchan();
 void freechan(channel *cp);
 chanuserhash *newchanuserhash(int numbuckets);
 void freechanuserhash(chanuserhash *cuhp);
-chanban *getchanban();
-void freechanban(chanban *cbp);
 
 /* functions from channelbans.c */
-chanban *makeban(const char *mask);
-int banoverlap(const chanban *bana, const chanban *banb);
-int banequal(chanban *bana, chanban *banb);
-char *bantostring(chanban *bp);
-char *bantostringdebug(chanban *bp);
-void setban(channel *cp, const char *ban);
+int setban(channel *cp, const char *ban);
 int clearban(channel *cp, const char *ban, int optional);
 void clearallbans(channel *cp);
 int nickmatchban(nick *np, chanban *bp);

@@ -3,17 +3,16 @@
 #include <stdlib.h>
 #include "channel.h"
 #include <assert.h>
+#include "../core/nsmalloc.h"
 
 #define ALLOCUNIT  100
 
 channel *freechans;
 chanuserhash *freehash;
-chanban *freebans;
 
 void initchannelalloc() {
   freechans=NULL;
   freehash=NULL;
-  freebans=NULL;
 }
 
 /* channel records don't have next pointers.  
@@ -24,7 +23,7 @@ channel *newchan() {
   channel *cp;
   
   if (freechans==NULL) {
-    freechans=(channel *)malloc(ALLOCUNIT*sizeof(channel));
+    freechans=(channel *)nsmalloc(POOL_CHANNEL,ALLOCUNIT*sizeof(channel));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freechans[i].index=(struct chanindex *)&(freechans[i+1]);
     }
@@ -57,7 +56,7 @@ chanuserhash *newchanuserhash(int hashsize) {
   chanuserhash *cuhp;
   
   if (freehash==NULL) {
-    freehash=(chanuserhash *)malloc(ALLOCUNIT*sizeof(chanuserhash));
+    freehash=(chanuserhash *)nsmalloc(POOL_CHANNEL,ALLOCUNIT*sizeof(chanuserhash));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freehash[i].content=(unsigned long *)&(freehash[i+1]);
     }    
@@ -67,7 +66,7 @@ chanuserhash *newchanuserhash(int hashsize) {
   cuhp=freehash;
   freehash=(chanuserhash *)cuhp->content;
   
-
+  /* Don't use nsmalloc() here since we will free this in freechanuserhash() */
   cuhp->content=(unsigned long *)malloc(hashsize*sizeof(unsigned long));
   for (i=0;i<hashsize;i++) {
     cuhp->content[i]=nouser;
@@ -84,39 +83,3 @@ void freechanuserhash(chanuserhash *cuhp) {
   cuhp->content=(unsigned long *)freehash; 
   freehash=cuhp;
 }
-
-chanban *getchanban() {
-  int i;
-  chanban *cbp;
-  
-  if (freebans==NULL) {
-    freebans=(chanban *)malloc(ALLOCUNIT*sizeof(chanban));
-    for (i=0;i<ALLOCUNIT-1;i++) {
-      freebans[i].next=(struct chanban *)&(freebans[i+1]);
-    }
-    freebans[ALLOCUNIT-1].next=NULL;
-  }
-  
-  cbp=freebans;
-  freebans=cbp->next;
-  
-  cbp->nick=NULL;
-  cbp->user=NULL;
-  cbp->host=NULL;
-
-  return cbp;
-}
-
-void freechanban(chanban *cbp) {
-  cbp->next=(struct chanban *)freebans;
-
-  if (cbp->nick)
-    freesstring(cbp->nick);
-  if (cbp->user)
-    freesstring(cbp->user);
-  if (cbp->host)
-    freesstring(cbp->host);
-
-  freebans=cbp;
-}
-
