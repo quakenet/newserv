@@ -239,7 +239,7 @@ static int lua_localjoin(lua_State *ps) {
 static int lua_localpart(lua_State *ps) {
   nick *source;
   channel *target;
-  char *chan;
+  char *chan, *reason;
 
   if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
     LUA_RETURN(ps, LUA_FAIL);
@@ -252,10 +252,18 @@ static int lua_localpart(lua_State *ps) {
 
   if(!lua_lineok(chan)) 
     LUA_RETURN(ps, LUA_FAIL);
-    
+  
+  if(lua_isstring(ps, 3)) {
+    reason = (char *)lua_tostring(ps, 3);
+    if(!lua_lineok(reason))
+      LUA_RETURN(ps, LUA_FAIL);
+  } else {
+    reason = NULL;
+  }
+
   target = findchannel(chan);
   if(target) {
-    localpartchannel(source, target, NULL);
+    localpartchannel(source, target, reason);
   } else {
     LUA_RETURN(ps, LUA_FAIL);
   }

@@ -6,3 +6,4 @@ syntax: glob
 local.in
 newserv
 modules/
+newserv.local.conf

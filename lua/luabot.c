@@ -125,7 +125,7 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
   if(mode == LUA_CHARMODE) {
     lua_getglobal(l, (const char *)function);
   } else {
-    lua_rawgeti(l, LUA_REGISTRYINDEX, (int)function);
+    lua_rawgeti(l, LUA_REGISTRYINDEX, (long)function);
   }
 
   if(!lua_isfunction(l, -1)) {
