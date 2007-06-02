@@ -9,6 +9,7 @@
 #include "../irc/irc_config.h"
 #include "../core/events.h"
 #include "../core/hooks.h"
+#include "../lib/irc_string.h"
 #include "../lib/version.h"
 #include "pqsql.h"
 
@@ -40,12 +41,19 @@ typedef struct pqasyncquery_s {
   struct pqasyncquery_s *next;
 } pqasyncquery_s;
 
+typedef struct pqtableloaderinfo_s
+{
+    sstring *tablename;
+    PQQueryHandler init, data, fini;
+} pqtableloaderinfo_s;
+
 pqasyncquery_s *queryhead = NULL, *querytail = NULL;
 
 int dbconnected = 0;
 PGconn *dbconn;
 
 void dbhandler(int fd, short revents);
+void pqstartloadtable(PGconn *dbconn, void *arg);
 void dbstatus(int hooknum, void *arg);
 void disconnectdb(void);
 void connectdb(void);
@@ -208,6 +216,57 @@ void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, .
     PQsendQuery(dbconn, qp->query);
     PQflush(dbconn);
   }
+}
+
+void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini)
+{
+  pqtableloaderinfo_s *tli;
+
+  tli=(pqtableloaderinfo_s *)malloc(sizeof(pqtableloaderinfo_s));
+  tli->tablename=getsstring(tablename, 100);
+  tli->init=init;
+  tli->data=data;
+  tli->fini=fini;
+  pqasyncquery(pqstartloadtable, tli, "SELECT COUNT(*) FROM %s", tli->tablename->content);
+}
+
+void pqstartloadtable(PGconn *dbconn, void *arg)
+{
+  PGresult *res;
+  unsigned long i, count, tablecrc;
+  pqtableloaderinfo_s *tli = arg;
+
+  res = PQgetResult(dbconn);
+
+  if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) {
+    Error("pqsql", ERR_ERROR, "Error getting row count for %s.", tli->tablename->content);
+    return;
+  }
+
+  if (PQnfields(res) != 1) {
+    Error("pqsql", ERR_ERROR, "Count query format error for %s.", tli->tablename->content);
+    return;
+  }
+
+  tablecrc=crc32(tli->tablename->content);
+  count=strtoul(PQgetvalue(res, 0, 0), NULL, 10);
+  PQclear(res);
+
+  Error("pqsql", ERR_INFO, "Found %lu entries in table %s, scheduling load.", count, tli->tablename->content);
+
+  pqasyncquery(tli->init, NULL, "BEGIN");
+  pqasyncquery(NULL, NULL, "DECLARE table%lx%lx CURSOR FOR SELECT * FROM %s", tablecrc, count, tli->tablename->content);
+
+  for (i=0;(count - i) > 1000; i+=1000)
+    pqasyncquery(tli->data, NULL, "FETCH 1000 FROM table%lx%lx", tablecrc, count);
+
+  pqasyncquery(tli->data, NULL, "FETCH ALL FROM table%lx%lx", tablecrc, count);
+
+  pqasyncquery(NULL, NULL, "CLOSE table%lx%lx", tablecrc, count);
+  pqasyncquery(tli->fini, NULL, "COMMIT");
+
+  freesstring(tli->tablename);
+  free(tli);
 }
 
 void disconnectdb(void) {
