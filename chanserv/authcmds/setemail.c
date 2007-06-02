@@ -37,12 +37,14 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   rup->lastemailchange=time(NULL);
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
-  if(local=strchr(strdup(rup->email->content), '@')) {
+  char *dupemail = strdup(rup->email->content);
+  if(local=strchr(strdup(dupemail), '@')) {
     *(local++)='\0';
     rup->localpart=getsstring(local,EMAILLEN);
   } else {
     rup->localpart=NULL;
   }
+  free(dupemail);
 
   chanservstdmessage(sender, QM_EMAILCHANGED, cargv[1]);
   cs_log(sender,"SETEMAIL OK username %s <%s>",rup->username,rup->email->content);

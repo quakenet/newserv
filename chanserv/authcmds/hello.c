@@ -55,7 +55,8 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   reguser *ruh;
   int found=0;
 
-  local=strchr(strdup(cargv[0]), '@');
+  char *dupemail = strdup(cargv[0]);
+  local=strchr(strdup(dupemail), '@');
   *(local++)='\0';
   for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
     if (ruh->localpart)
@@ -63,6 +64,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
         found++;
       }
   }
+  free(dupemail);
 
   if((found > mdp->actlimit) && (mdp->actlimit > 0)) {
     chanservstdmessage(sender, QM_DOMAINLIMIT);

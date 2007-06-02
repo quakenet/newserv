@@ -372,12 +372,15 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     if (rup->email) {
       rup->domain=findorcreatemaildomain(rup->email->content);
       addregusertomaildomain(rup, rup->domain);
-      if(local=strchr(strdup(rup->email->content), '@')) {
+     
+      char *dupemail = strdup(rup->email->content);
+      if(local=strchr(dupemail, '@')) {
         *(local++)='\0';
         rup->localpart=getsstring(local,EMAILLEN);
       } else {
         rup->localpart=NULL;
       }
+      free(dupemail);
     } else {
       rup->domain=NULL;
       rup->localpart=NULL;
