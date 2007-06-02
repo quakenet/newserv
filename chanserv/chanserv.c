@@ -53,6 +53,7 @@ const flag rcuflags[] = {
 const flag ruflags[] = {
   { 'a',  QUFLAG_ADMIN },
   { 'd',  QUFLAG_DEV },
+  { 'D',  QUFLAG_CLEANUPEXEMPT },
   { 'g',  QUFLAG_GLINE },
   { 'G',  QUFLAG_DELAYEDGLINE },
   { 'h',  QUFLAG_HELPER },

@@ -232,19 +232,20 @@
 
 
 /* User flags */
-#define   QUFLAG_NEEDAUTH     0x0001  /* +l */
-#define   QUFLAG_GLINE        0x0002  /* +g */
-#define   QUFLAG_NOTICE       0x0004  /* +n */
-#define   QUFLAG_RESTRICTED   0x0008  /* +r */
-#define   QUFLAG_SUSPENDED    0x0010  /* +z */
-#define   QUFLAG_OPER         0x0020  /* +o */
-#define   QUFLAG_DEV          0x0040  /* +d */
-#define   QUFLAG_PROTECT      0x0080  /* +p */
-#define   QUFLAG_HELPER       0x0100  /* +h */
-#define   QUFLAG_ADMIN        0x0200  /* +a */
-#define   QUFLAG_INFO         0x0400  /* +i */
-#define   QUFLAG_DELAYEDGLINE 0x0800  /* +G */
-#define   QUFLAG_NOAUTHLIMIT  0x1000  /* +L */
+#define   QUFLAG_NEEDAUTH      0x0001  /* +l */
+#define   QUFLAG_GLINE         0x0002  /* +g */
+#define   QUFLAG_NOTICE        0x0004  /* +n */
+#define   QUFLAG_RESTRICTED    0x0008  /* +r */
+#define   QUFLAG_SUSPENDED     0x0010  /* +z */
+#define   QUFLAG_OPER          0x0020  /* +o */
+#define   QUFLAG_DEV           0x0040  /* +d */
+#define   QUFLAG_PROTECT       0x0080  /* +p */
+#define   QUFLAG_HELPER        0x0100  /* +h */
+#define   QUFLAG_ADMIN         0x0200  /* +a */
+#define   QUFLAG_INFO          0x0400  /* +i */
+#define   QUFLAG_DELAYEDGLINE  0x0800  /* +G */
+#define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
+#define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_ALL          0x1fff
 
 #define UIsNeedAuth(x)      ((x)->flags & QUFLAG_NEEDAUTH)
@@ -267,6 +268,38 @@
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
 
+#define USetNeedAuth(x)      ((x)->flags |= QUFLAG_NEEDAUTH)
+#define USetGline(x)         ((x)->flags |= QUFLAG_GLINE)
+#define USetNotice(x)        ((x)->flags |= QUFLAG_NOTICE)
+#define USetRestricted(x)    ((x)->flags |= QUFLAG_RESTRICTED)
+#define USetSuspended(x)     ((x)->flags |= QUFLAG_SUSPENDED)
+#define USetOper(x)          ((x)->flags |= QUFLAG_OPER)
+#define USetDev(x)           ((x)->flags |= QUFLAG_DEV)
+#define USetProtect(x)       ((x)->flags |= QUFLAG_PROTECT)
+#define USetHelper(x)        ((x)->flags |= QUFLAG_HELPER)
+#define USetAdmin(x)         ((x)->flags |= QUFLAG_ADMIN)
+#define USetInfo(x)          ((x)->flags |= QUFLAG_INFO)
+#define USetDelayedGline(x)  ((x)->flags |= QUFLAG_DELAYEDGLINE)
+#define USetNoAuthLimit(x)   ((x)->flags |= QUFLAG_NOAUTHLIMIT)
+#define USetCleanupExempt(x) ((x)->flags |= QUFLAG_CLEANUPEXEMPT)
+#define USetTrust(x)         ((x)->flags |= QUFLAG_TRUST)
+
+#define UClearNeedAuth(x)      ((x)->flags &= ~QUFLAG_NEEDAUTH)
+#define UClearGline(x)         ((x)->flags &= ~QUFLAG_GLINE)
+#define UClearNotice(x)        ((x)->flags &= ~QUFLAG_NOTICE)
+#define UClearRestricted(x)    ((x)->flags &= ~QUFLAG_RESTRICTED)
+#define UClearSuspended(x)     ((x)->flags &= ~QUFLAG_SUSPENDED)
+#define UClearOper(x)          ((x)->flags &= ~QUFLAG_OPER)
+#define UClearDev(x)           ((x)->flags &= ~QUFLAG_DEV)
+#define UClearProtect(x)       ((x)->flags &= ~QUFLAG_PROTECT)
+#define UClearHelper(x)        ((x)->flags &= ~QUFLAG_HELPER)
+#define UClearAdmin(x)         ((x)->flags &= ~QUFLAG_ADMIN)
+#define UClearInfo(x)          ((x)->flags &= ~QUFLAG_INFO)
+#define UClearDelayedGline(x)  ((x)->flags &= ~QUFLAG_DELAYEDGLINE)
+#define UClearNoAuthLimit(x)   ((x)->flags &= ~QUFLAG_NOAUTHLIMIT)
+#define UClearCleanupExempt(x) ((x)->flags &= ~QUFLAG_CLEANUPEXEMPT)
+#define UClearTrust(x)         ((x)->flags &= ~QUFLAG_TRUST)
+
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
 #define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgo]|fo|me|seum|op|ro)?$"
@@ -277,8 +310,6 @@
 #define QMAIL_NEWMASTERPW          4  /* new master password */
 #define QMAIL_NEWEMAIL             5  /* new email address */
 
-/* USet... */
-/* UClear... */
 
 /* Channel flags */
 #define   QCFLAG_AUTOOP       0x0001  /* +a */
