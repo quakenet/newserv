@@ -11,3 +11,5 @@ void nsfreeall(unsigned int poolid);
 /* Pools here in the order they were created */
 #define POOL_AUTHEXT	0
 #define POOL_CHANINDEX	1
+#define POOL_BANS	2
+#define POOL_CHANNEL	3
