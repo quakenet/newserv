@@ -2,6 +2,8 @@
 
 use strict;
 
+my $verbose=0;
+
 my %definers;
 my %reqsyms;
 my %reqmods;
@@ -13,6 +15,12 @@ my @realarglist;
 
 open DEPENDS,">modules.dep";
 open GRAPH,">modgraph.dot";
+
+if (@ARGV) {
+  if ($ARGV[0] eq "--verbose" or $ARGV[0] eq "-v") {
+    $verbose=1;
+  }
+}
 
 for (@arglist) {
   my $modname=$_;
@@ -60,6 +68,9 @@ for (@realarglist) {
     
     if (defined $provider) {
       ${reqmods{$modname}}{$provider}=1;
+      if ($verbose) {
+        print "Module $modname importing $_ from $provider\n";
+      }
     }
   }
 }
@@ -85,6 +96,9 @@ sub printdep {
 
     print DEPENDS "$modname";
     for (keys %{$reqmods{$modname}}) {
+      if (defined ${$reqmods{$_}}{$modname}) {
+        print "ERROR: circular dependency between $modname and $_\n";
+      }
       print DEPENDS " $_";
       print GRAPH "\t\"$modname\" -> \"$_\";\n";
     }
