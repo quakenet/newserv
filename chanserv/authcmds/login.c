@@ -85,7 +85,8 @@ int csa_doauth(void *source, int cargc, char **cargv) {
   else if (UIsSuspended(rup)) {
     /* plain suspend */
     chanservstdmessage(sender, QM_AUTHSUSPENDED);
-    chanservstdmessage(sender, QM_REASON, rup->suspendreason->content);
+    if(rup->suspendreason)
+      chanservstdmessage(sender, QM_REASON, rup->suspendreason->content);
     if (rup->suspendexp) {
       struct tm* tmp;
       char buf[200];
