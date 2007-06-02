@@ -90,3 +90,27 @@ void csa_createrandompw(char *pw, int n)
   }
   pw[n] = '\0';
 }
+
+/*
+ * check if account is "throttled"
+ */
+int csa_checkthrottled(nick *sender, reguser *rup, char *s)
+{
+  time_t now;
+  long d;
+  float t;
+
+  now=time(NULL);
+  d=MAX_RESEND_TIME+rup->lastemailchange-now;
+
+  if (d>MAX_RESEND_TIME)
+    d=MAX_RESEND_TIME;
+
+  if (d>0L) {
+    t = ((float) d) / ((float) 3600);
+    chanservstdmessage(sender, QM_MAILTHROTTLED, t);
+    cs_log(sender,"%s FAIL username %s, new request throttled for %.1f hours",s,rup->username,t);
+    return 1;
+  }
+  return 0;
+}

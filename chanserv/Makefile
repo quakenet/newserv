@@ -1,9 +1,8 @@
 
-CSDIRS=database
+CSDIRS=database chancmds usercmds authcmds
 
 .PHONY: all dirs clean
-all: chanserv.so chanserv_chancmds.so chanserv_usercmds.so chanserv_protect.so chanserv_auth.so chanserv_grep.so \
-	chanserv_chansearch.so dirs
+all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_chansearch.so dirs
 
 dirs:
 	for i in $(CSDIRS) ; do $(MAKE) -C $$i all ; done
@@ -16,16 +15,7 @@ chanserv.so: chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chans
 		chanservdump.o chanservschedule.o
 	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
 
-chanserv_chancmds.so: chancmds.o
-	ld -shared -Bdynamic -o $@ $^
-
-chanserv_usercmds.so: usercmds.o
-	ld -shared -Bdynamic -o $@ $^
-
 chanserv_protect.so: chanserv_protect.o
-	ld -shared -Bdynamic -o $@ $^
-
-chanserv_auth.so: authcmds.o authlib.o
 	ld -shared -Bdynamic -o $@ $^
 
 chanserv_grep.so: chanservgrep.o
