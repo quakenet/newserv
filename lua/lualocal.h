@@ -11,7 +11,7 @@
 typedef struct lua_localnick {
   nick *nick;
   struct lua_localnick *next;
-  int handler;
+  long handler;
   void *reconnect;
 
   char nickname[NICKLEN + 1];

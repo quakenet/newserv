@@ -546,7 +546,7 @@ static int lua_getnickcountry(lua_State *l) {
   if(!np)
     return 0;
 
-  lua_pushint(l, (int)np->exts[ext]);
+  lua_pushint(l, (long)np->exts[ext]);
   return 1;
 }
 
