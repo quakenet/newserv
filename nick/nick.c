@@ -115,7 +115,7 @@ void handleserverchange(int hooknum, void *arg) {
           deletenick(servernicks[servernum][i]);        
         }
       }
-      free(servernicks[servernum]);
+      nsfree(POOL_NICK,servernicks[servernum]);
       break;
   }
 }
