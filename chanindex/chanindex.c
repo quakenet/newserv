@@ -19,14 +19,14 @@ chanindex *freechanindices;
 
 unsigned int channelmarker;
 
-void __init() {
+void _init() {
   memset(chantable,0,sizeof(chantable));
   memset(extnames,0,sizeof(extnames));
   channelmarker=0;
   freechanindices=NULL;
 }
 
-void __fini() {
+void _fini() {
   nsfreeall(POOL_CHANINDEX);
 }
 
