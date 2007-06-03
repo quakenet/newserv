@@ -20,6 +20,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   nick *sender=source;
   maildomain *mdp, *smdp;
   char *local;
+  char *dupemail;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "email");
@@ -60,8 +61,8 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   rup->lastemailchange=time(NULL);
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
-  char *dupemail = strdup(rup->email->content);
-  if(local=strchr(strdup(dupemail), '@')) {
+  dupemail = strdup(rup->email->content);
+  if(local=strchr(dupemail, '@')) {
     *(local++)='\0';
     rup->localpart=getsstring(local,EMAILLEN);
   } else {

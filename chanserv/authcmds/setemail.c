@@ -18,6 +18,7 @@
 int csa_dosetmail(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
+  char *dupemail;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setemail");
@@ -37,8 +38,8 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   rup->lastemailchange=time(NULL);
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
-  char *dupemail = strdup(rup->email->content);
-  if(local=strchr(strdup(dupemail), '@')) {
+  dupemail = strdup(rup->email->content);
+  if(local=strchr(dupemail, '@')) {
     *(local++)='\0';
     rup->localpart=getsstring(local,EMAILLEN);
   } else {

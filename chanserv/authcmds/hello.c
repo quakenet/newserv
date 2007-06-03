@@ -21,6 +21,9 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   char userhost[USERLEN+HOSTLEN+2];
   maildomain *mdp, *smdp;
   char *local;
+  reguser *ruh;
+  int found=0;
+  char *dupemail;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -52,11 +55,8 @@ int csa_dohello(void *source, int cargc, char **cargv) {
     }
   }
 
-  reguser *ruh;
-  int found=0;
-
-  char *dupemail = strdup(cargv[0]);
-  local=strchr(strdup(dupemail), '@');
+  dupemail = strdup(cargv[0]);
+  local=strchr(dupemail, '@');
   *(local++)='\0';
   for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
     if (ruh->localpart)
