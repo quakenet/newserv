@@ -100,7 +100,7 @@ void _fini() {
   for(i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=ncip) {
       ncip=cip->next;
-      if (cp=cip->channel)
+      if ((cp=cip->channel))
         delchannel(cp);
     }
   }
