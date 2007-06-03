@@ -1,4 +1,7 @@
 #include "../nick/nick.h"
+#include "../parser/parser.h"
+#include "../channel/channel.h"
+#include "../lib/flags.h"
 
 #define    SEARCHTYPE_CHANNEL     1
 #define    SEARCHTYPE_NICK        2
@@ -47,8 +50,19 @@ struct searchNode *channel_parse(int type, int argc, char **argv);
 struct searchNode *timestamp_parse(int type, int argc, char **argv);
 struct searchNode *country_parse(int type, int argc, char **argv);
 struct searchNode *ip_parse(int type, int argc, char **argv);
+/* kill/gline for use in nicksearch or chansearch */
 struct searchNode *kill_parse(int type, int argc, char **argv);
 struct searchNode *gline_parse(int type, int argc, char **argv);
+/* chansearch allowed criteria */
+//struct searchNode *exists_parse(int type, int argc, char **argv);
+//struct searchNode *services_parse(int type, int argc, char **argv);
+//struct searchNode *size_parse(int type, int argc, char **argv);
+//struct searchNode *namelen_parse(int type, int argc, char **argv);
+//struct searchNode *name_parse(int type, int argc, char **argv);
+//struct searchNode *topic_parse(int type, int argc, char **argv);
+//struct searchNode *oppct_parse(int type, int argc, char **argv);
+//struct searchNode *hostpct_parse(int type, int argc, char **argv);
+//struct searchNode *authedpct_parse(int type, int argc, char **argv);
 
 
 struct searchNode *search_parse(int type, char *input);

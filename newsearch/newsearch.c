@@ -14,6 +14,7 @@ MODULE_VERSION("");
 CommandTree *searchTree;
 
 int do_nicksearch(void *source, int cargc, char **cargv);
+int do_chansearch(void *source, int cargc, char **cargv);
 struct searchNode *search_parse(int type, char *input);
 
 void registersearchterm(char *term, parseFunc parsefunc);
@@ -47,7 +48,6 @@ void _init() {
   /* Nickname operations */
   registersearchterm("hostmask",hostmask_parse);
   registersearchterm("realname",realname_parse);
-  registersearchterm("nick",nick_parse);
   registersearchterm("authname",authname_parse);
   registersearchterm("ident",ident_parse);
   registersearchterm("host",host_parse);
@@ -56,19 +56,33 @@ void _init() {
   registersearchterm("country",country_parse);
   registersearchterm("ip",ip_parse);
 
+  /* Channel operations */
+  //registersearchterm("exists",exists_parse);
+  //registersearchterm("services",services_parse);
+  //registersearchterm("size",size_parse);
+  //registersearchterm("namelean",namelen_parse);
+  //registersearchterm("name",name_parse);
+  //registersearchterm("topic",topic_parse);
+  //registersearchterm("oppct",oppct_parse);
+  //registersearchterm("hostpst",hostpct_parse);
+  //registersearchterm("authedpct",authedpct_parse);
+
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
+  registersearchterm("nick",nick_parse);
 
   /* Kill / gline parameters */
   registersearchterm("kill",kill_parse);
   registersearchterm("gline",gline_parse);
 
   registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
+  registercontrolhelpcmd("chansearch",NO_OPER,4,do_chansearch, "Usage: chansearch <criteria>\nSearches for channels with the given criteria.");
 }
 
 void _fini() {
   destroycommandtree(searchTree);
   deregistercontrolcmd("nicksearch", do_nicksearch);
+  deregistercontrolcmd("chansearch", do_chansearch);
 }
 
 void registersearchterm(char *term, parseFunc parsefunc) {
@@ -84,6 +98,50 @@ void printnick(nick *sender, nick *np) {
 
   controlreply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
 	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
+}
+
+void printchannel(nick *sender, chanindex *cip) {
+  /* shamelessly stolen from (now defunct) chansearch.c */
+  int i;
+  int op,voice,peon;
+  int oper,service,hosts;
+  nick *np;
+  chanuserhash *cuhp;
+  unsigned int marker;
+  
+  op=voice=peon=oper=service=hosts=0;
+  marker=nexthostmarker();
+  
+  if (cip->channel==NULL) {
+    controlreply(sender,"[         Channel currently empty          ] %s",cip->name->content);
+  } else {
+    cuhp=cip->channel->users;
+    for (i=0;i<cuhp->hashsize;i++) {
+      if (cuhp->content[i]!=nouser) {
+        if (cuhp->content[i]&CUMODE_OP) {
+          op++;
+        } else if (cuhp->content[i]&CUMODE_VOICE) {
+          voice++;
+        } else {
+          peon++;
+        }
+        if ((np=getnickbynumeric(cuhp->content[i]&CU_NUMERICMASK))!=NULL) {
+          if (IsOper(np)) {
+            oper++;
+          }
+          if (IsService(np)) {
+            service++;
+          }
+          if (np->host->marker!=marker) {
+            np->host->marker=marker;
+            hosts++;
+          }            
+        }
+      }
+    }
+    controlreply(sender,"[ %4dU %4d@ %4d+ %4d %4d* %4dk %4dH ] %s (%s)",cuhp->totalusers,op,voice,peon,oper,
+      service,hosts,cip->name->content, printflags(cip->channel->flags, cmodeflags));
+  }
 }
 
 int do_nicksearch(void *source, int cargc, char **cargv) {
@@ -149,6 +207,71 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
   
   return CMD_OK;
 }  
+
+int do_chansearch(void *source, int cargc, char **cargv) {
+  nick *sender = senderNSExtern = source;
+  chanindex *cip;
+  int i;
+  struct searchNode *search;
+  int limit=500,matches=0;
+  char *ch;
+  int arg=0;
+
+  if (cargc<1)
+    return CMD_USAGE;
+  
+  if (*cargv[0] == '-') {
+    /* options */
+    arg++;
+    
+    for (ch=cargv[0]+1;*ch;ch++) {
+      switch(*ch) {
+      case 'l':
+	if (cargc<arg) {
+	  controlreply(sender,"Error: -l switch requires an argument");
+	  return CMD_USAGE;
+	}
+	limit=strtoul(cargv[arg++],NULL,10);
+	break;
+	
+      default:
+	controlreply(sender,"Unrecognised flag -%c.",*ch);
+      }
+    }
+  }
+
+  if (arg>=cargc) {
+    controlreply(sender,"No search terms - aborting.");
+    return CMD_ERROR;
+  }
+
+  if (arg<(cargc-1)) {
+    rejoinline(cargv[arg],cargc-arg);
+  }
+  
+  if (!(search = search_parse(SEARCHTYPE_CHANNEL, cargv[arg]))) {
+    controlreply(sender,"Parse error: %s",parseError);
+    return CMD_ERROR;
+  }
+  
+  for (i=0;i<CHANNELHASHSIZE;i++) {
+    for (cip=chantable[i];cip;cip=cip->next) {
+      if ((search->exe)(search, RETURNTYPE_BOOL, cip)) {
+	if (matches<limit)
+	  printchannel(sender, cip);
+	if (matches==limit)
+	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
+	matches++;
+      }
+    }
+  }
+
+  (search->free)(search);
+
+  controlreply(sender,"--- End of list: %d matches", matches);
+
+  return CMD_OK;
+}
 
 void *trueval(int type) {
   switch(type) {
