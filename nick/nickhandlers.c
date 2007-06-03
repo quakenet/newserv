@@ -211,8 +211,8 @@ int handlequitmsg(void *source, int cargc, char **cargv) {
   nick *np;
   void *harg[2];
   
-  if (cargc>1) {
-    harg[1]=(void *)cargv[1];
+  if (cargc>0) {
+    harg[1]=(void *)cargv[0];
   } else {
     harg[1]="";
   } 
