@@ -17,13 +17,77 @@
 #include "../../parser/parser.h"
 #include "../../irc/irc.h"
 #include "../../localuser/localuserchannel.h"
+#include "../../pqsql/pqsql.h"
+
+#include <libpq-fe.h>
 #include <string.h>
 #include <stdio.h>
+
+void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  reguser *rup, *crup1, *crup2;
+  unsigned int userID, channelID, targetID;
+  time_t changetime, authtime;
+  flag_t oldflags, newflags;
+  PGresult *pgres;
+  int i, num, count=0;
+  struct tm *tmp;
+  char tbuf[15], fbuf[18];
+
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv", ERR_ERROR, "Error loading chanlev history data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 7) {
+    Error("chanserv", ERR_ERROR, "Chanlev history data format error.");
+    return;
+  }
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  if (!(rup=getreguserfromnick(np)) || !UHasHelperPriv(rup)) {
+    PQclear(pgres);
+    return;
+  }
+
+  chanservsendmessage(np, "Number: Time:           Changing user:  Changed user:   Old flags:      New flags:");
+  for (i=0; i<num; i++) {
+    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
+    channelID=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
+    targetID=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
+    changetime=strtoul(PQgetvalue(pgres, i, 3), NULL, 10);
+    authtime=strtoul(PQgetvalue(pgres, i, 4), NULL, 10);
+    oldflags=strtoul(PQgetvalue(pgres, i, 5), NULL, 10);
+    newflags=strtoul(PQgetvalue(pgres, i, 6), NULL, 10);
+    tmp=localtime(&changetime);
+    strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
+    strncpy(fbuf, printflags(oldflags, rcuflags), 17);
+    fbuf[17]='\0';
+    chanservsendmessage(np, "#%-6d %-15s %-15s %-15s %-15s %s", ++count, tbuf,
+      (crup1=findreguserbyID(userID))?crup1->username:"Unknown", (crup2=findreguserbyID(targetID))?crup2->username:"Unknown",
+      fbuf, printflags(newflags, rcuflags));
+  }
+  chanservstdmessage(np, QM_ENDOFLIST);
+
+  PQclear(pgres);
+}
+
+void csdb_retreivechanlevhistory(nick *np, regchan *rcp, time_t starttime) {
+  pqasyncquery(csdb_dochanlevhistory_real, (void *)np->numeric,
+    "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
+    "channelID=%u and changetime>%lu order by changetime desc limit 1000", rcp->ID, starttime);
+}
 
 int csc_dochanlevhistory(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
-  reguser *rup;
   regchan *rcp;
   time_t starttime=getnettime();
   

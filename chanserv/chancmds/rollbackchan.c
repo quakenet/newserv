@@ -17,8 +17,151 @@
 #include "../../parser/parser.h"
 #include "../../irc/irc.h"
 #include "../../localuser/localuserchannel.h"
+#include "../../pqsql/pqsql.h"
+
+#include <libpq-fe.h>
 #include <string.h>
 #include <stdio.h>
+
+void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  reguser *rup, *crup1, *crup2;
+  chanindex *cip;
+  regchan *rcp=NULL;
+  regchanuser *rcup;
+  unsigned int userID, channelID, targetID;
+  time_t changetime, authtime;
+  flag_t oldflags, newflags;
+  PGresult *pgres;
+  int i, j, num, newuser;
+  char fbuf[18];
+
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv", ERR_ERROR, "Error loading chanlev history data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 7) {
+    Error("chanserv", ERR_ERROR, "Chanlev history data format error.");
+    return;
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    Error("chanserv", ERR_ERROR, "No nick pointer in rollback.");
+    PQclear(pgres);
+    return;
+  }
+  if (!(rup=getreguserfromnick(np)) || !UHasOperPriv(rup)) {
+    Error("chanserv", ERR_ERROR, "No reguser pointer or oper privs in rollback.");
+    PQclear(pgres);
+    return;
+  }
+
+  for (i=0; i<num; i++) {
+    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
+    channelID=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
+
+    if (!rcp) {
+      for (j=0; j<CHANNELHASHSIZE && !rcp; j++) {
+        for (cip=chantable[j]; cip && !rcp; cip=cip->next) {
+          if (!cip->exts[chanservext])
+            continue;
+
+          if (((regchan*)cip->exts[chanservext])->ID == channelID)
+            rcp=(regchan*)cip->exts[chanservext];
+        }
+      }
+
+      if (!rcp) {
+        Error("chanserv", ERR_ERROR, "No regchan pointer or oper privs in rollback.");
+        PQclear(pgres);
+        return;
+      }
+
+      cip=rcp->index;
+
+      chanservsendmessage(np, "Attempting to roll back %s:", cip->name->content);
+    }
+    targetID=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
+    changetime=strtoul(PQgetvalue(pgres, i, 3), NULL, 10);
+    authtime=strtoul(PQgetvalue(pgres, i, 4), NULL, 10);
+    oldflags=strtoul(PQgetvalue(pgres, i, 5), NULL, 10);
+    newflags=strtoul(PQgetvalue(pgres, i, 6), NULL, 10);
+    strncpy(fbuf, printflags(newflags, rcuflags), 17);
+    fbuf[17]='\0';
+    crup1=findreguserbyID(userID);
+    crup2=findreguserbyID(targetID);
+
+    if (!crup2) {
+      chanservsendmessage(np, "Affected user (ID: %d) is no longer in database, continuing...", targetID);
+      continue;
+    }
+
+    if (!(rcup=findreguseronchannel(rcp, crup2))) {
+      rcup=getregchanuser();
+      rcup->user=crup2;
+      rcup->chan=rcp;
+      rcup->flags=0;
+      rcup->changetime=time(NULL);
+      rcup->usetime=0;
+      rcup->info=NULL;
+      newuser=1;
+    }
+    else
+      newuser=0;
+    csdb_chanlevhistory_insert(rcp, np, rcup->user, rcup->flags, oldflags);
+    rcup->flags=oldflags;
+    chanservsendmessage(np, "%s user flags for %s (%s -> %s)", newflags?oldflags?"Restoring":"Deleting":"Readding",
+      crup2->username, fbuf, printflags(oldflags, rcuflags));
+
+    if (rcup->flags) {
+      if (newuser) {
+        addregusertochannel(rcup);
+        csdb_createchanuser(rcup);
+      }
+      else
+        csdb_updatechanuser(rcup);
+    }
+    else {
+      if (!newuser) {
+        csdb_deletechanuser(rcup);
+        delreguserfromchannel(rcp, crup2);
+      }
+
+      freesstring(rcup->info);
+      freeregchanuser(rcup);
+      rcup=NULL;
+
+      for (j=0; j<REGCHANUSERHASHSIZE; j++)
+        if (rcp->regusers[j])
+          break;
+
+      if (i==REGCHANUSERHASHSIZE) {
+        cs_log(np, "DELCHAN %s (Cleared chanlev from rollback)", cip->name->content);
+        chanservsendmessage(np, "Rollback cleared chanlev list, channel deleted.");
+        rcp=NULL;
+      }
+    }
+  }
+  chanservstdmessage(np, QM_DONE);
+
+  PQclear(pgres);
+}
+
+void csdb_rollbackchanlevhistory(nick *np, regchan *rcp, reguser* rup, time_t starttime) {
+  if (rup)
+    pqasyncquery(csc_dorollbackchan_real, (void *)np->numeric,
+      "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
+      "userID=%u and channelID=%u and changetime>%lu order by changetime desc limit 1000", rup->ID, rcp->ID, starttime);
+  else
+    pqasyncquery(csc_dorollbackchan_real, (void *)np->numeric,
+      "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
+      "channelID=%u and changetime>%lu order by changetime desc limit 1000", rcp->ID, starttime);
+}
 
 int csc_dorollbackchan(void *source, int cargc, char **cargv) {
   nick *sender=source;

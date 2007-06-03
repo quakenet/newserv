@@ -11,8 +11,71 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
+#include "../../pqsql/pqsql.h"
+
+#include <libpq-fe.h>
 #include <stdio.h>
 #include <string.h>
+
+void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  reguser *rup;
+  unsigned int userID;
+  char *oldpass, *newpass, *oldemail, *newemail;
+  time_t changetime, authtime;
+  PGresult *pgres;
+  int i, num, count=0;
+  struct tm *tmp;
+  char tbuf[15];
+
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv", ERR_ERROR, "Error loading account history data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 7) {
+    Error("chanserv", ERR_ERROR, "Account history data format error.");
+    return;
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  if (!(rup=getreguserfromnick(np)) || !UHasOperPriv(rup)) {
+    Error("chanserv", ERR_ERROR, "No reguser pointer or oper privs in account history.");
+    PQclear(pgres);
+    return;
+  }
+
+  chanservsendmessage(np, "Number: Time:           Old password:  New password:  Old email:                     New email:");
+  for (i=0; i<num; i++) {
+    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
+    changetime=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
+    authtime=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
+    oldpass=PQgetvalue(pgres, i, 3);
+    newpass=PQgetvalue(pgres, i, 4);
+    oldemail=PQgetvalue(pgres, i, 5);
+    newemail=PQgetvalue(pgres, i, 6);
+    tmp=localtime(&changetime);
+    strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
+    chanservsendmessage(np, "#%-6d %-15s %-14s %-14s %-30s %s", ++count, tbuf, oldpass, newpass, oldemail, newemail);
+  }
+  chanservstdmessage(np, QM_ENDOFLIST);
+
+  PQclear(pgres);
+}
+
+void csdb_retreiveaccounthistory(nick *np, reguser *rup, int limit) {
+  pqasyncquery(csdb_doaccounthistory_real, (void *)np->numeric,
+    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
+    "userID=%u order by changetime desc limit %d", rup->ID, limit);
+}
 
 int csa_doaccounthistory(void *source, int cargc, char **cargv) {
   reguser *rup, *trup;

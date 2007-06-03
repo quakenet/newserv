@@ -11,8 +11,77 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
+#include "../../pqsql/pqsql.h"
+
+#include <libpq-fe.h>
 #include <stdio.h>
 #include <string.h>
+
+void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  reguser *rup;
+  unsigned int userID;
+  char *oldpass, *newpass, *oldemail, *newemail;
+  time_t changetime, authtime;
+  PGresult *pgres;
+  int i, num;
+
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv", ERR_ERROR, "Error loading account rollback data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 7) {
+    Error("chanserv", ERR_ERROR, "Account rollback data format error.");
+    return;
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  if (!(rup=getreguserfromnick(np)) || !UHasOperPriv(rup)) {
+    Error("chanserv", ERR_ERROR, "No reguser pointer or oper privs in rollback account.");
+    PQclear(pgres);
+    return;
+  }
+
+  chanservsendmessage(np, "Attempting to rollback account %s:", rup->username);
+  for (i=0; i<num; i++) {
+    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
+    changetime=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
+    authtime=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
+    oldpass=PQgetvalue(pgres, i, 3);
+    newpass=PQgetvalue(pgres, i, 4);
+    oldemail=PQgetvalue(pgres, i, 5);
+    newemail=PQgetvalue(pgres, i, 6);
+    if (strlen(newpass) > 0) {
+      setpassword(rup, oldpass);
+      chanservsendmessage(np, "Restoring old password (%s -> %s)", newpass, oldpass);
+    }
+    else if (strlen(newemail) > 0) {
+      freesstring(rup->email);
+      rup->email=getsstring(oldemail, EMAILLEN);
+      rup->lastemailchange=changetime;
+      chanservsendmessage(np, "Restoring old email (%s -> %s)", newemail, oldemail);
+    }
+  }
+  csdb_updateuser(rup);
+  chanservstdmessage(np, QM_DONE);
+
+  PQclear(pgres);
+}
+
+void csdb_rollbackaccounthistory(nick *np, reguser* rup, time_t starttime) {
+  pqasyncquery(csdb_dorollbackaccount_real, (void *)np->numeric,
+    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
+    "userID=%u and changetime>%lu order by changetime desc limit 10", rup->ID, starttime);
+}
 
 int csa_dorollbackaccount(void *source, int cargc, char **cargv) {
   reguser *rup, *trup;

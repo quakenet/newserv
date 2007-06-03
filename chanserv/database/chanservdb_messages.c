@@ -141,7 +141,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 130*/ "Channel:                       Suspended by:   Reason:",
   /* 131*/ "You cannot request ownership of %s as there is a channel %s present.",
   /* 132*/ "You have been granted ownership of %s.",
-  /* 133*/ "Number: Authed:         Disconnected:   Nick:           Userhost:",
+  /* 133*/ "#:  User:                                              Authed:         Disconnected:   Reason:",
   /* 134*/ "Current modes on %s: %s",
   /* 135*/ "Domain:             Users:  Limit:",
   /* 136*/ "Too many accounts exist from this email domain",
