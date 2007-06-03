@@ -157,7 +157,9 @@ void chanserv_finalinit() {
   registerhook(HOOK_CHANNEL_BURST, cs_handleburst);
   registerhook(HOOK_CHANNEL_TOPIC, cs_handletopicchange);
   registerhook(HOOK_CHANNEL_LOSTNICK, cs_handlechanlostuser);
-  
+
+  chanserv_init_status = CS_INIT_READY;
+  triggerhook(HOOK_CHANSERV_RUNNING, NULL);  
   Error("chanserv",ERR_INFO,"Ready to roll.");
 }
 

@@ -6,6 +6,7 @@
 
 #include "chanserv.h"
 
+#include "../core/hooks.h"
 #include "../core/schedule.h"
 #include "../core/config.h"
 #include "../localuser/localuser.h"
@@ -490,6 +491,7 @@ void cs_checknick(nick *np) {
       nlp->np=np;
       nlp->next=rup->nicks;
       rup->nicks=nlp;
+      triggerhook(HOOK_CHANSERV_SETUSERID, np);
       cs_doallautomodes(np);
     } else {
       aup->rup=NULL;
