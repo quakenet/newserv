@@ -2121,7 +2121,7 @@ void trojanscan_genhost(char *ptc, char size, patricia_node_t **fakeipnode) {
   ptc[i] = '\0';
 
   memset(&ipaddress, 0, sizeof(ipaddress));
-  ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+  ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
   ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
 
@@ -2252,7 +2252,7 @@ void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeip) {
 	  patricia_ref_prefix(hp->nicks->ipnode->prefix);
         } else {
           memset(&ipaddress, 0, sizeof(ipaddress));
-	  ((unsigned short *)(ipaddress.in6_16))[5] = 0; 
+	  ((unsigned short *)(ipaddress.in6_16))[5] = 65535; 
           ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
           ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
 
@@ -2298,7 +2298,7 @@ void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeip) {
     free(lengths);
 
     memset(&ipaddress, 0, sizeof(ipaddress));
-    ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+    ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
     ((unsigned short *)(ipaddress.in6_16))[6] = trojanscan_minmaxrand(0, 65535);
     ((unsigned short *)(ipaddress.in6_16))[7] = trojanscan_minmaxrand(0, 65535);
 

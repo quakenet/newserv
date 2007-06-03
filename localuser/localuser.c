@@ -102,12 +102,14 @@ nick *registerlocaluserwithuserid(char *nickname, char *ident, char *host, char 
   newuser->umodes=umodes;
   
   memset(&ipaddress, 0, sizeof(ipaddress));
-  ((unsigned short *)(ipaddress.in6_16))[5] = 0;
+  ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress.in6_16))[6] = 127;
   ((unsigned char *)(ipaddress.in6_16))[14] = 1;
   ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
 
   newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
+  newuser->ipnode->usercount++;
+
   newuser->timestamp=getnettime();
   newuser->shident=NULL;
   newuser->sethost=NULL;

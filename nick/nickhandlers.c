@@ -140,6 +140,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     base64toip(cargv[cargc-3], &ipaddress);
     /* todo: use a single node for /64 prefixes */
     np->ipnode = refnode(iptree, &ipaddress, irc_in_addr_is_ipv4(&ipaddress) ? PATRICIA_MAXBITS : 64);
+    np->ipnode->usercount++;
 
     np->shident=NULL;
     np->sethost=NULL;

@@ -55,6 +55,7 @@ typedef struct _prefix_t {
 
 typedef struct _patricia_node_t {
    unsigned char bit;		/* flag if this node used */
+   int usercount;               /* number of users on a given node */
    prefix_t *prefix;		/* who we are in patricia tree */
    struct _patricia_node_t *l, *r;	/* left and right children */
    struct _patricia_node_t *parent;/* may be used */
