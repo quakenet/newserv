@@ -111,7 +111,6 @@ int csa_doauth(void *source, int cargc, char **cargv) {
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
   cs_log(sender,"AUTH OK username %s", rup->username);
   localusersetaccount(sender, rup->username);
-  csdb_authhistory_auth(sender, rup);
 
   return CMD_OK;
 }

@@ -356,30 +356,6 @@ void csdb_updatemaildomain(maildomain *mdp) {
   pqquery("UPDATE maildomain SET domainlimit=%u WHERE ID=%u", mdp->limit,mdp->ID);
 }
 
-void csdb_authhistory_auth(nick *np, reguser *rup) {
-  char escnick[NICKLEN*2+1];
-  char escuser[USERLEN*2+1];
-  char eschost[HOSTLEN*2+1];
-
-  PQescapeString(escnick, np->nick, strlen(np->nick));
-  PQescapeString(escuser, np->ident, strlen(np->ident));
-  PQescapeString(eschost, np->host->name->content, np->host->name->length);
-
-  pqquery("INSERT INTO authhistory (userID, nick, username, host, authtime, disconnecttime) "
-    "VALUES (%u, '%s', '%s', '%s', %lu, %lu)", rup->ID, escnick, escuser, eschost, np->accountts, 0);
-}
-
-void csdb_authhistory_relink(nick *np, reguser *rup) {
-  pqquery("UPDATE authhistory SET disconnecttime=0 WHERE userID=%u AND authtime=%lu",
-    rup->ID, np->accountts);
-}
-
-void csdb_authhistory_disconnect(nick *np, reguser *rup) {
-  pqquery("UPDATE authhistory SET disconnecttime=%lu WHERE userID=%u AND authtime=%lu",
-    getnettime(), rup->ID, np->accountts);
-}
-
-
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags) {
   reguser *rup=getreguserfromnick(np);
 
