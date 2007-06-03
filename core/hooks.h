@@ -24,6 +24,7 @@
 #define HOOK_SERVER_LOSTSERVER     201  /* Argument is number of lost server */
 #define HOOK_SERVER_END_OF_BURST   202
 #define HOOK_SERVER_PRE_LOSTSERVER 203  /* Argument is number of lost server */
+#define HOOK_SERVER_LINKED         204  /* Argument is number of server */
 
 #define HOOK_NICK_NEWNICK          300  /* Argument is nick* */
 #define HOOK_NICK_RENAME           301  /* Argument is nick* */
