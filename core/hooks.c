@@ -3,6 +3,7 @@
 #include "hooks.h"
 #include <assert.h>
 #include "../lib/array.h"
+#include <stdlib.h>
 
 array hooks[HOOKMAX];
 unsigned int hookqueuelength;
@@ -30,6 +31,14 @@ int registerhook(int hooknum, HookCallback callback) {
     if(hcbs[i]==callback)
       return 1;
 
+  /* If there is a previously blanked slot, go in there */
+  for(i=0;i<hooks[hooknum].cursi;i++) {
+    if(hcbs[i]==NULL) {
+      hcbs[i]=callback;
+      return 0;
+    }
+  }
+
   i=array_getfreeslot(&hooks[hooknum]);
   hcbs=(HookCallback *)(hooks[hooknum].content);
   hcbs[i]=callback;
@@ -48,7 +57,13 @@ int deregisterhook(int hooknum, HookCallback callback) {
 
   for(i=0;i<hooks[hooknum].cursi;i++)
     if(hcbs[i]==callback) {
-      array_delslot(&(hooks[hooknum]),i);
+      /* If there is an ongoing callback, don't actually delete from the
+       * array in case THIS hook is active */
+      if (hookqueuelength) {
+        hcbs[i]=NULL;
+      } else {
+        array_delslot(&(hooks[hooknum]),i);
+      }
       return 0;
     }
 
@@ -65,11 +80,11 @@ void triggerhook(int hooknum, void *arg) {
   hookqueuelength++;
   hcbs=(HookCallback *)(hooks[hooknum].content);
   for (i=0;i<hooks[hooknum].cursi;i++) {
-    (hcbs[i])(hooknum, arg);
+    if (hcbs[i])
+      (hcbs[i])(hooknum, arg);
   }
   hookqueuelength--;
   
   if (!hookqueuelength && hooknum!=HOOK_CORE_ENDOFHOOKSQUEUE)
     triggerhook(HOOK_CORE_ENDOFHOOKSQUEUE, 0);
 }
-  

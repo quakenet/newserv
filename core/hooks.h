@@ -56,8 +56,9 @@
 #define HOOK_CHANNEL_NEWNICK       415  /* Argument is void*[2] (channel, nick) */
 #define HOOK_CHANNEL_LOSTNICK      416  /* Argument is void*[2] (channel, nick) */
 
-#define HOOK_CHANSERV_DBLOADED     500  /* No arg */
-
+#define HOOK_CHANSERV_DBLOADED     500 /* No arg */
+#define HOOK_CHANSERV_SETUSERID    501 /* Argument is nick * */
+#define HOOK_CHANSERV_RUNNING      502 /* No arg */
 #define HOOK_CONTROL_REGISTERED    600 /* Argument is nick* */
 #define HOOK_CONTROL_WHOISREQUEST  601 /* Argument is nick* */
 #define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
