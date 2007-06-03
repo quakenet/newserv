@@ -66,7 +66,7 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags,
   if (rcp && rup)
     rcup=findreguseronchannel(rcp, rup);
   
-  if (!priv || !cs_privcheck(priv,np)) {
+  if (!cs_privcheck(priv,np)) {
     if ((flags & CA_VOICEPRIV) &&
 	!(rcp && (CIsVoiceAll(rcp)) && 
 	  !(cip->channel && (nickbanned(np, cip->channel) || IsInviteOnly(cip->channel)))) &&
