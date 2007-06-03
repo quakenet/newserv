@@ -1,5 +1,3 @@
-CFLAGS=-g -Wall
-
 .PHONY: all
 all: nodecount.so
 
