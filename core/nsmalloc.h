@@ -10,10 +10,11 @@ void nsexit(void);
 #define MAXPOOL		100
 
 /* Pools here in the order they were created */
-#define POOL_AUTHEXT	0
-#define POOL_CHANINDEX	1
-#define POOL_BANS	2
-#define POOL_CHANNEL	3
-#define POOL_NICK	4
-#define POOL_CHANSERVDB 5
-#define POOL_SSTRING	6
+#define POOL_AUTHEXT		0
+#define POOL_CHANINDEX		1
+#define POOL_BANS		2
+#define POOL_CHANNEL		3
+#define POOL_NICK		4
+#define POOL_CHANSERVDB		5
+#define POOL_SSTRING		6
+#define POOL_AUTHTRACKER	7
