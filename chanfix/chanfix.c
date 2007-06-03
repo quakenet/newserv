@@ -20,7 +20,7 @@ extern nick *mynick;
 
 int cfext;
 int cfnext;
-int failedinit;
+int cffailedinit;
 
 /* user accessible commands */
 int cfcmd_debug(void *source, int cargc, char **cargv);
@@ -63,7 +63,7 @@ void _init() {
 
   if (cfext < 0 || cfnext < 0) {
     Error("chanfix", ERR_ERROR, "Couldn't register channel and/or nick extension");
-    failedinit = 1;
+    cffailedinit = 1;
   } else {
     schedulerecurring(time(NULL), 0, CFSAMPLEINTERVAL, &cfsched_dosample, NULL);
     schedulerecurring(time(NULL), 0, CFEXPIREINTERVAL, &cfsched_doexpire, NULL);
@@ -100,7 +100,7 @@ void _init() {
 
     cf_loadchanfix();
 
-    failedinit = 0;
+    cffailedinit = 0;
   }
 }
 
@@ -108,7 +108,7 @@ void _fini() {
   int i;
   nick *nip;
 
-  if (failedinit == 0) {
+  if (cffailedinit == 0) {
     deleteschedule(NULL, &cfsched_dosample, NULL);
     deleteschedule(NULL, &cfsched_doexpire, NULL);
     deleteschedule(NULL, &cfsched_dosave, NULL);
