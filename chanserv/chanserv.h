@@ -875,6 +875,7 @@ int cs_dohelp(void *source, int cargc, char **cargv);
 int cs_doquit(void *source, int cargc, char **cargv);
 int cs_dorename(void *source, int cargc, char **cargv);
 int cs_dorehash(void *source, int cargc, char **cargv);
+int cs_doversion(void *source, int cargc, char **cargv);
 int cs_doctcpping(void *source, int cargc, char **cargv);
 int cs_doctcpversion(void *source, int cargc, char **cargv);
 int cs_doctcpgender(void *source, int cargc, char **cargv);
@@ -916,5 +917,34 @@ void chanservdgline(void *arg);
 int csa_checkeboy(nick *sender, char *eboy);
 void csa_createrandompw(char *pw, int n);
 int csa_checkthrottled(nick *sender, reguser *rup, char *s);
+
+/* chanservdb_updates.c */
+void csdb_updateauthinfo(reguser *rup);
+void csdb_updatelastjoin(regchanuser *rcup);
+void csdb_updatetopic(regchan *rcp);
+void csdb_updatechannel(regchan *rcp);
+void csdb_updatechannelcounters(regchan *rcp);
+void csdb_updatechanneltimestamp(regchan *rcp);
+void csdb_createchannel(regchan *rcp);
+void csdb_deletechannel(regchan *rcp);
+void csdb_deleteuser(reguser *rup);
+void csdb_updateuser(reguser *rup);
+void csdb_createuser(reguser *rup);
+void csdb_updatechanuser(regchanuser *rcup);
+void csdb_createchanuser(regchanuser *rcup);
+void csdb_deletechanuser(regchanuser *rcup);
+void csdb_createban(regchan *rcp, regban *rbp);
+void csdb_deleteban(regban *rbp);
+void csdb_createmail(reguser *rup, int type);
+void csdb_deletemaildomain(maildomain *mdp);
+void csdb_createmaildomain(maildomain *mdp);
+void csdb_updatemaildomain(maildomain *mdp);
+void csdb_authhistory_auth(nick *np, reguser *rup);
+void csdb_authhistory_relink(nick *np, reguser *rup);
+void csdb_authhistory_disconnect(nick *np, reguser *rup);
+void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
+void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail);
+void csdb_cleanuphistories();
+
 
 #endif

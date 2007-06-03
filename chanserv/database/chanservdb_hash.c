@@ -246,7 +246,7 @@ maildomain *findorcreatemaildomain(char *email) {
   addmaildomaintohash(mdp);
 
   pdomain=domain;
-  while(pdomain=strchr(pdomain, '.')) {
+  while((pdomain=strchr(pdomain, '.'))) {
     parent = 1;
     pdomain++;
     pmdp = findorcreatemaildomain(pdomain);

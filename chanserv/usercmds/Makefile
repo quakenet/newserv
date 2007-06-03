@@ -6,5 +6,5 @@ all: Makefile chanserv_usercmds.so
 Makefile:
 	../mkcommandlist.pl chanserv_usercmds.so
 
-chanserv_usercmds.so: deluser.o info.o language.o listflags.o spewdb.o spewemail.o spewpass.o suspenduser.o suspenduserlist.o unsuspenduser.o usercomment.o userflags.o whois.o commandlist.o 
+chanserv_usercmds.so: accounthistory.o cleanupdb.o deluser.o domainmode.o info.o language.o listflags.o rollbackaccount.o spewdb.o spewdomain.o spewemail.o spewpass.o suspenduser.o suspenduserlist.o unsuspenduser.o usercomment.o userflags.o whoami.o whois.o commandlist.o 
 	 ld -shared -Bdynamic -o $@ $^ 

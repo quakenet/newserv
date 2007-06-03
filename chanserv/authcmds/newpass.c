@@ -14,11 +14,12 @@
 #include "../../lib/irc_string.h"
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 int csa_donewpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
-  int i, cntweak = 0, cntdigits = 0 , cntletters = 0;
+  int i, cntweak = 0, cntdigits = 0, cntletters = 0;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "newpass");

@@ -62,7 +62,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
   dupemail = strdup(rup->email->content);
-  if(local=strchr(dupemail, '@')) {
+  if((local=strchr(dupemail, '@'))) {
     *(local++)='\0';
     rup->localpart=getsstring(local,EMAILLEN);
   } else {

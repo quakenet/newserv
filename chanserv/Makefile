@@ -11,7 +11,7 @@ dirs:
 clean:
 	rm -f */*.o */*.so
 
-chanserv.so: chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chanservlog.o chanservstdcmds.o \
+chanserv.so: chanservdb_updates.o chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chanservlog.o chanservstdcmds.o \
 		chanservdump.o chanservschedule.o
 	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
 

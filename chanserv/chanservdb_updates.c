@@ -17,7 +17,7 @@
 #include <stdarg.h>
 
 void csdb_updateauthinfo(reguser *rup) {
-  char eschost[150];
+  char eschost[2*HOSTLEN+1];
 
   PQescapeString(eschost,rup->lastuserhost->content,rup->lastuserhost->length);
   pqquery("UPDATE users SET lastauth=%lu,lastuserhost='%s' WHERE ID=%u",
@@ -41,8 +41,8 @@ void csdb_updatetopic(regchan *rcp) {
 }
 
 void csdb_updatechannel(regchan *rcp) {
-  char escwelcome[510];
-  char esctopic[510];
+  char escwelcome[WELCOMELEN*2+1];
+  char esctopic[TOPICLEN*2+1];
   char esckey[70];
   char escreason[510];
   char esccomment[510];
@@ -111,8 +111,8 @@ void csdb_updatechanneltimestamp(regchan *rcp) {
 }
 
 void csdb_createchannel(regchan *rcp) {
-  char escwelcome[510];
-  char esctopic[510];
+  char escwelcome[WELCOMELEN*2+1];
+  char esctopic[TOPICLEN*2+1];
   char esckey[70];
   char escreason[510];
   char esccomment[510];
@@ -344,27 +344,26 @@ void csdb_deletemaildomain(maildomain *mdp) {
 
 void csdb_createmaildomain(maildomain *mdp) {
   char escdomain[210];
-  PQescapeString(escdomain, mdp->name->content, strlen(mdp->name->content));
+  PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
   pqquery("INSERT INTO maildomain (id, name, domainlimit) VALUES(%u, '%s', %u)", mdp->ID,escdomain,mdp->limit);
 }
 
 void csdb_updatemaildomain(maildomain *mdp) {
   char escdomain[210];
-  PQescapeString(escdomain, mdp->name->content, strlen(mdp->name->content));
+  PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
   pqquery("UPDATE maildomain SET domainlimit=%u WHERE ID=%u", mdp->limit,mdp->ID);
 }
 
-
 void csdb_authhistory_auth(nick *np, reguser *rup) {
-  char escnick[40];
-  char escuser[30];
-  char eschost[136];
+  char escnick[NICKLEN*2+1];
+  char escuser[USERLEN*2+1];
+  char eschost[HOSTLEN*2+1];
 
   PQescapeString(escnick, np->nick, strlen(np->nick));
   PQescapeString(escuser, np->ident, strlen(np->ident));
-  PQescapeString(eschost, np->host->name->content, strlen(np->host->name->content));
+  PQescapeString(eschost, np->host->name->content, np->host->name->length);
 
   pqquery("INSERT INTO authhistory (userID, nick, username, host, authtime, disconnecttime) "
     "VALUES (%u, '%s', '%s', '%s', %lu, %lu)", rup->ID, escnick, escuser, eschost, np->accountts, 0);
@@ -410,11 +409,11 @@ void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring 
     escnewpass[0]='\0';
 
   if (oldemail)
-    PQescapeString(escoldemail, oldemail->content, strlen(oldemail->content));
+    PQescapeString(escoldemail, oldemail->content, oldemail->length);
   else
     escoldemail[0]='\0';
   if (newemail)
-    PQescapeString(escnewemail, newemail->content, strlen(newemail->content));
+    PQescapeString(escnewemail, newemail->content, newemail->length);
   else
     escnewemail[0]='\0';
 

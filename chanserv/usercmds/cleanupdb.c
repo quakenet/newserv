@@ -38,4 +38,5 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   }
   
   chanservsendmessage(sender, "Removed %d Accounts (not used for 80 days)", j);
+  return CMD_OK;
 }

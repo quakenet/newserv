@@ -17,7 +17,6 @@
 int csu_dospewdomain(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender);
-  reguser *dbrup;
   int i;
   unsigned int count=0;
   maildomain *smdp;
