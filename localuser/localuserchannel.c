@@ -298,7 +298,7 @@ int localburstontochannel(channel *cp, nick *np, time_t timestamp, flag_t modes,
     }
     
     /* XX B #channel <timestamp> +modes <limit> <key> <user> */
-    irc_send("%s B %s %lu %s %s%s%s%s",
+    irc_send("%s B %s %lu %s%s%s%s%s",
               mynumeric->content,cp->index->name->content,cp->timestamp,
               printflags(cp->flags,cmodeflags),extramodebuf,
               IsKey(cp)?" ":"",IsKey(cp)?cp->key->content:"", nickbuf);
