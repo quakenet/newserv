@@ -188,7 +188,9 @@ static void setuptables() {
                   "username       VARCHAR(10) NOT NULL,"
                   "host           VARCHAR(63) NOT NULL,"
                   "authtime       INT         NOT NULL,"
-                  "disconnecttime INT         NOT NULL,"
+                  "disconnecttime INT	      NOT NULL,"
+                  "numeric        INT         NOT NULL,"
+                  "quitreason	  VARCHAR(100) ,"
                   "PRIMARY KEY (userID, authtime))");
 
    pqcreatequery("CREATE INDEX authhistory_userID_index on authhistory(userID)");
