@@ -195,8 +195,9 @@ void *literal_exe(struct searchNode *thenode, int type, void *theinput);
 struct searchNode *search_parse(int type, char *input) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */
   char *argvector[100];
-  int i,j;
-  char *ch;
+  char thestring[500];
+  int i,j,q,e;
+  char *ch,*ch2;
   struct Command *cmd;
   struct searchNode *thenode;
   struct literal_localdata *localdata;
@@ -215,31 +216,51 @@ struct searchNode *search_parse(int type, char *input) {
     /* Split further args */
     i=-1; /* i = -1 BoW, 0 = inword, 1 = bracket nest depth */
     j=0;  /* j = current arg */
+    e=0;
+    q=0;
     argvector[0]="";
     for (ch=input;*ch;ch++) {
       if (i==-1) {
-	argvector[j]=ch;
-	if (*ch=='(') {
-	  i=1;
-	} else if (*ch != ' ') {
-	  i=0;
-	}
+        argvector[j]=ch;
+        if (*ch=='(') {
+          i=1;
+        } else if (*ch != ' ') {
+          i=0;
+          if (*ch=='\\') {
+            e=1;
+          } else if (*ch=='\"') {
+            q=1;
+          }
+        }
+      } else if (e==1) {
+        e=0;
+      } else if (q==1) {
+        if (*ch=='\"')	
+        q=0;
       } else if (i==0) {
-	if (*ch==' ') {
-	  *ch='\0';
-	  j++;
+        if (*ch=='\\') {
+          e=1;
+        } else if (*ch=='\"') {
+          q=1;
+        } else if (*ch==' ') {
+          *ch='\0';
+          j++;
           if(j >= (sizeof(argvector) / sizeof(*argvector))) {
             parseError = "Too many arguments";
             return NULL;
           }
-	  i=-1;
-	}
+          i=-1;
+        }
       } else {
-	if (*ch=='(') {
-	  i++;
-	} else if (*ch==')') {
-	  i--;
-	}
+        if (*ch=='\\') {
+          e=1;
+        } else if (*ch=='\"') {
+          q=1;
+        } else if (*ch=='(') {
+          i++;
+        } else if (*ch==')') {
+          i--;
+        }
       }
     }
     
@@ -259,18 +280,44 @@ struct searchNode *search_parse(int type, char *input) {
     }
   } else {
     /* Literal */
+    if (*input=='\"') {
+      for (ch=input;*ch;ch++);
+      
+      if (*(ch-1) != '\"') {
+        parseError="Quote mismatch";
+        return NULL;
+      }
+
+      *(ch-1)='\0';
+      input++;
+    }
+    
+    ch2=thestring;
+    for (ch=input;*ch;ch++) {
+      if (e) {
+        e=0;
+        *ch2++=*ch;
+      } else if (*ch=='\\') {
+        e=1;
+      } else {
+        *ch2++=*ch;
+      }
+    }
+    *ch2='\0';
+        
     if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
       parseError = "malloc: could not allocate memory for this search.";
       return NULL;
-	}
+    }
+
     if (!(localdata=(struct literal_localdata *)malloc(sizeof (struct literal_localdata)))) {
       /* couldn't malloc() memory for localdata, so free thenode to avoid leakage */
       parseError = "malloc: could not allocate memory for this search.";
       free(thenode);
       return NULL;
     }
-
-    localdata->stringval=getsstring(input,512);
+    
+    localdata->stringval=getsstring(thestring,512);
     localdata->intval=strtol(input,NULL,10);
     if (input==NULL || *input=='\0') {
       localdata->boolval = 0;
