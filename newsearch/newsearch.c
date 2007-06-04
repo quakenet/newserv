@@ -57,7 +57,7 @@ void _init() {
   registersearchterm("ip",ip_parse);
 
   /* Channel operations */
-  //registersearchterm("exists",exists_parse);
+  registersearchterm("exists",exists_parse);
   //registersearchterm("services",services_parse);
   //registersearchterm("size",size_parse);
   //registersearchterm("namelean",namelen_parse);
