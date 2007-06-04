@@ -62,7 +62,7 @@ void _init() {
   registersearchterm("size",size_parse);
   registersearchterm("namelen",namelen_parse);
   registersearchterm("name",name_parse);
-  //registersearchterm("topic",topic_parse);
+  registersearchterm("topic",topic_parse);
   //registersearchterm("oppct",oppct_parse);
   //registersearchterm("hostpst",hostpct_parse);
   //registersearchterm("authedpct",authedpct_parse);

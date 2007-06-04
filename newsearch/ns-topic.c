@@ -1,5 +1,5 @@
 /*
- * name functionality 
+ * topic functionality 
  */
 
 #include "newsearch.h"
@@ -7,28 +7,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct name_localdata {
+struct topic_localdata {
   const char *pattern;
 };
 
-void *name_exe(struct searchNode *thenode, int type, void *theinput);
-void name_free(struct searchNode *thenode);
+void *topic_exe(struct searchNode *thenode, int type, void *theinput);
+void topic_free(struct searchNode *thenode);
 
-struct searchNode *name_parse(int type, int argc, char **argv) {
-  struct name_localdata *localdata;
+struct searchNode *topic_parse(int type, int argc, char **argv) {
+  struct topic_localdata *localdata;
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
-    parseError = "name: this function is only valid for channel searches.";
+    parseError = "topic: this function is only valid for channel searches.";
     return NULL;
   }
 
   if (argc!=1) {
-    parseError="name: usage: (name pattern)";
+    parseError="topic: usage: (topic pattern)";
     return NULL;
   }
 
-  if (!(localdata=(struct name_localdata *)malloc(sizeof(struct name_localdata)))) {
+  if (!(localdata=(struct topic_localdata *)malloc(sizeof(struct topic_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;
   }
@@ -44,24 +44,25 @@ struct searchNode *name_parse(int type, int argc, char **argv) {
 
   thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = localdata;
-  thenode->exe = name_exe;
-  thenode->free = name_free;
+  thenode->exe = topic_exe;
+  thenode->free = topic_free;
 
   return thenode;
 }
 
-void *name_exe(struct searchNode *thenode, int type, void *theinput) {
+void *topic_exe(struct searchNode *thenode, int type, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
-  struct name_localdata *localdata;
+  struct topic_localdata *localdata;
 
   localdata = thenode->localdata;
   
-  if ((cip->channel==NULL) || !match2strings(localdata->pattern, cip->name->content))
+  if ((cip->channel==NULL) || (cip->channel->topic==NULL) || 
+    !match2strings(localdata->pattern, cip->channel->topic->content))
     return falseval(type);
   return trueval(type);
 }
 
-void name_free(struct searchNode *thenode) {
+void topic_free(struct searchNode *thenode) {
   free(thenode->localdata);
   free(thenode);
 }
