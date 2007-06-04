@@ -59,7 +59,7 @@ void _init() {
   /* Channel operations */
   registersearchterm("exists",exists_parse);
   registersearchterm("services",services_parse);
-  //registersearchterm("size",size_parse);
+  registersearchterm("size",size_parse);
   //registersearchterm("namelen",namelen_parse);
   //registersearchterm("name",name_parse);
   //registersearchterm("topic",topic_parse);
