@@ -235,6 +235,11 @@ void chanservremovecommand(char *command, CommandHandler handler) {
 
 void chanservjoinchan(channel *cp) {
   regchan *rcp;
+  unsigned int i;
+  nick *np;
+  reguser *rup;
+  regchanuser *rcup;
+  flag_t themodes;
 
   /* Skip unregistered channels */
   if (!(rcp=cp->index->exts[chanservext]))
@@ -257,62 +262,52 @@ void chanservjoinchan(channel *cp) {
       localpartchannel(chanservnick, cp, NULL);
     }
   }
-
-  /* OK, we're going to join the channel.  Since our timestamp must be less
-   * than or equal to the one already there it will be OK to burst on. 
-   * 
+  
+  /* Right, we are definately going to either join the channel or at least
+   * burst some modes onto it.
+   *
    * We will try and burst our view of the world; if the timestamps are
    * actually equal this will be mostly ignored and we will have to fix it
    * up later.  For modes we use the forced modes, plus the default channel
    * modes (unless any of those are explicitly denied) */
-  if (!CIsSuspended(rcp) && CIsJoined(rcp) && !getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
-    unsigned int i;
-    nick *np;
-    reguser *rup;
-    regchanuser *rcup;
-    flag_t themodes;
     
-    /* By default, we set the forcemodes and the default modes, but never denymodes */
-    themodes = (CHANMODE_DEFAULT | rcp->forcemodes) & ~rcp->denymodes;
-    
-    /* Now, if someone has just created a channel and we are going to set +i
-     * or +k on it, this will kick them off.  This could be construed as a
-     * bit rude if it's their channel, so if there is only one person on the
-     * channel and they have a right to be there, burst with default modes
-     * only to avoid them being netrider kicked.
-     */
-    if (cp->users->totalusers==1) {
-      for (i=0;i<cp->users->hashsize;i++) {
-        if (cp->users->content[i] != nouser) {
-          if ((np=getnickbynumeric(cp->users->content[i]&CU_NUMERICMASK)) &&
-              (rup=getreguserfromnick(np)) &&
-              (rcup=findreguseronchannel(rcp,rup)) &&
-              CUKnown(rcup)) {
-            /* OK, there was one user, and they are known on this channel. 
-             * Don't burst with +i or +k */
-            themodes &= ~(CHANMODE_INVITEONLY | CHANMODE_KEY);
-          }
+  /* By default, we set the forcemodes and the default modes, but never denymodes */
+  themodes = (CHANMODE_DEFAULT | rcp->forcemodes) & ~rcp->denymodes;
+  
+  /* Now, if someone has just created a channel and we are going to set +i
+   * or +k on it, this will kick them off.  This could be construed as a
+   * bit rude if it's their channel, so if there is only one person on the
+   * channel and they have a right to be there, burst with default modes
+   * only to avoid them being netrider kicked.
+   */
+  if (cp->users->totalusers==1) {
+    for (i=0;i<cp->users->hashsize;i++) {
+      if (cp->users->content[i] != nouser) {
+        if ((np=getnickbynumeric(cp->users->content[i]&CU_NUMERICMASK)) &&
+            (rup=getreguserfromnick(np)) &&
+            (rcup=findreguseronchannel(rcp,rup)) &&
+            CUKnown(rcup)) {
+          /* OK, there was one user, and they are known on this channel. 
+           * Don't burst with +i or +k */
+          themodes &= ~(CHANMODE_INVITEONLY | CHANMODE_KEY);
         }
       }
     }
-  
+  }
+
+  /* We should be on the channel - join with our nick */
+  if (!CIsSuspended(rcp) && CIsJoined(rcp) && !getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
     /* If we pass the key parameter here but are not setting +k (see above)
      * then localburstontochannel() will ignore the key */
     localburstontochannel(cp, chanservnick, rcp->ltimestamp, themodes, 
                          rcp->limit, (rcp->key)?rcp->key->content:NULL);
   }
-  
-  /* Maybe we're not joining, but the timestamp is wrong.  Fix that too. 
-   * 
-   * XXX: Actually, let's not do this until we've considered the obvious
-   * problem that this will make it impossible to re-establish a +k/+i
-   * enforced channel which has become empty...
-   */ 
-/*
+
+  /* We're not joining the channel - send the burst with no nick */  
   if (!CIsSuspended(rcp) && !CIsJoined(rcp) && (cp->timestamp > rcp->ltimestamp)) {
-    localburstontochannel(cp, NULL, rcp->ltimestamp, rcp->forcemodes, rcp->limit, (rcp->key)?rcp->key->content:NULL);
+    localburstontochannel(cp, NULL, rcp->ltimestamp, themodes,
+                          rcp->limit, (rcp->key)?rcp->key->content:NULL);
   }
- */
 }
 
 void chanservstdmessage(nick *np, int messageid, ... ) {

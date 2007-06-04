@@ -69,13 +69,8 @@ void cs_handlenewchannel(int hooknum, void *arg) {
   if ((rcp=(regchan *)cp->index->exts[chanservext])==NULL || CIsSuspended(rcp))
     return;
 
-  /*
-   * If we're supposed to be joined, join ourselves..
-   */
-
-  if (CIsJoined(rcp) && (chanservnick!=NULL)) {
-    chanservjoinchan(cp);
-  }
+  /* chanservjoinchan() will deal with joining the channel and/or setting the timestamp */   
+  chanservjoinchan(cp);
 
   /* Make sure the right modes are set/cleared */
   cs_checkchanmodes(cp);
