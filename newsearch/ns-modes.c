@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../channel/channel.h"
-#include "../lib/flags.h"
-
 struct modes_localdata {
   int         type;
   flag_t      setmodes;
