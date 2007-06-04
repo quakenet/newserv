@@ -61,7 +61,7 @@ void _init() {
   registersearchterm("services",services_parse);
   registersearchterm("size",size_parse);
   registersearchterm("namelen",namelen_parse);
-  //registersearchterm("name",name_parse);
+  registersearchterm("name",name_parse);
   //registersearchterm("topic",topic_parse);
   //registersearchterm("oppct",oppct_parse);
   //registersearchterm("hostpst",hostpct_parse);
