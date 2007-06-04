@@ -63,8 +63,8 @@ void _init() {
   registersearchterm("namelen",namelen_parse);
   registersearchterm("name",name_parse);
   registersearchterm("topic",topic_parse);
-  //registersearchterm("oppct",oppct_parse);
-  //registersearchterm("hostpst",hostpct_parse);
+  registersearchterm("oppct",oppct_parse);
+  //registersearchterm("hostpct",hostpct_parse);
   //registersearchterm("authedpct",authedpct_parse);
 
   /* Nickname / channel operations */
