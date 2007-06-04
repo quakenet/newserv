@@ -35,6 +35,7 @@
 #define CHANMODE_SINGLETARG 0x8000
 
 #define CHANMODE_ALL        0xFFFF
+#define CHANMODE_DEFAULT    0x2203	/* +ntCN */
 
 #define IsNoExtMsg(x)   ((x)->flags & CHANMODE_NOEXTMSG)
 #define IsTopicLimit(x) ((x)->flags & CHANMODE_TOPICLIMIT)
