@@ -57,7 +57,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv);
 struct searchNode *exists_parse(int type, int argc, char **argv);
 struct searchNode *services_parse(int type, int argc, char **argv);
 struct searchNode *size_parse(int type, int argc, char **argv);
-//struct searchNode *namelen_parse(int type, int argc, char **argv);
+struct searchNode *namelen_parse(int type, int argc, char **argv);
 //struct searchNode *name_parse(int type, int argc, char **argv);
 //struct searchNode *topic_parse(int type, int argc, char **argv);
 //struct searchNode *oppct_parse(int type, int argc, char **argv);
