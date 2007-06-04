@@ -69,38 +69,8 @@ void cs_handlenewchannel(int hooknum, void *arg) {
   if ((rcp=(regchan *)cp->index->exts[chanservext])==NULL || CIsSuspended(rcp))
     return;
 
-  /*
-   * If we're supposed to be joined, join ourselves..
-   */
-
-  if (CIsJoined(rcp) && (chanservnick!=NULL)) {
-    chanservjoinchan(cp);
-  }
-
-  /* This code interacts badly with bursts.. need to fix */
-  
-#if 0
-  /* We need to watch out for people sneaking into +k/i channels..
-   * This code relies on the fact that that user will already be in 
-   * the channel at this point in time.. */
-  if (rcp->forcemodes & (CHANMODE_KEY | CHANMODE_INVITEONLY)) {
-    /* OK, this channel is keyed.. let's find out if the user is allowed to be here */
-    for (i=0;i<cp->users->hashsize;i++) {
-      if (cp->users->content[i]!=nouser && (np=getnickbynumeric(cp->users->content[i]))) {
-	if (IsService(np))
-	  /* service (might even be us..) */
-	  continue;
-
-	if ((rup=getreguserfromnick(np)) && (rcup=findreguseronchannel(rcp, rup)) &&
-	    CUKnown(rcup) && !CUIsBanned(rcup))
-	  /* legit user */
-	  continue;
-
-	localkickuser(chanservnick, cp, np, "Private channel.");
-      }
-    }
-  }
-#endif
+  /* chanservjoinchan() will deal with joining the channel and/or setting the timestamp */   
+  chanservjoinchan(cp);
 
   /* Make sure the right modes are set/cleared */
   cs_checkchanmodes(cp);
