@@ -21,6 +21,7 @@ void kill_free(struct searchNode *thenode);
 struct kill_localdata {
   unsigned int marker;
   int count;
+  int type;
 };
 
 struct searchNode *kill_parse(int type, int argc, char **argv) {
@@ -32,7 +33,11 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
     return NULL;
   }
   localdata->count = 0;
-  localdata->marker = nextnickmarker();
+  localdata->type = type;
+  if (type == SEARCHTYPE_CHANNEL)
+    localdata->marker = nextchanmarker();
+  else
+    localdata->marker = nextnickmarker();
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
@@ -51,12 +56,21 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
 
 void *kill_exe(struct searchNode *thenode, int type, void *theinput) {
   struct kill_localdata *localdata;
-  nick *np = (nick *)theinput;
+  nick *np;
+  chanindex *cip;
 
   localdata = thenode->localdata;
 
-  np->marker = localdata->marker;
-  localdata->count++;
+  if (localdata->type == SEARCHTYPE_CHANNEL) {
+    cip = (chanindex *)theinput;
+    cip->marker = localdata->marker;
+    localdata->count += (localdata->count + cip->channel->users->totalusers);
+  }
+  else {
+    np = (nick *)theinput;
+    np->marker = localdata->marker;
+    localdata->count++;
+  }
 
   switch (type) {
     case RETURNTYPE_INT:
@@ -71,7 +85,8 @@ void *kill_exe(struct searchNode *thenode, int type, void *theinput) {
 void kill_free(struct searchNode *thenode) {
   struct kill_localdata *localdata;
   nick *np, *nnp;
-  int i, safe=0;
+  chanindex *cip, *ncip;
+  int i, j, safe=0;
 
   localdata = thenode->localdata;
 
@@ -83,24 +98,48 @@ void kill_free(struct searchNode *thenode) {
     return;
   }
 
-  for (i=0;i<NICKHASHSIZE;i++) {
-    for (np=nicktable[i];np;np=nnp) {
-      nnp = np->next;
-      if (np->marker == localdata->marker) {
-        if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-          killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
-            np->ident, IPtostr(np->p_ipaddr));
+  if (localdata->type == SEARCHTYPE_CHANNEL) {
+    for (i=0;i<CHANNELHASHSIZE;i++) {
+      for (cip=chantable[i];cip;cip=ncip) {
+        ncip = cip->next;
+        if (cip != NULL && cip->channel != NULL && cip->marker == localdata->marker) {
+          for (j=0;j<cip->channel->users->hashsize;j++) {
+            if (cip->channel->users->content[j]==nouser)
+              continue;
+    
+            if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
+              if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
+                killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
+                  np->ident, IPtostr(np->p_ipaddr));
+              }
+              else
+                safe++;
+            }
+          }
         }
-        else
-            safe++;
+      }
+    }
+  }
+  else {
+    for (i=0;i<NICKHASHSIZE;i++) {
+      for (np=nicktable[i];np;np=nnp) {
+        nnp = np->next;
+        if (np->marker == localdata->marker) {
+          if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
+            killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
+              np->ident, IPtostr(np->p_ipaddr));
+          }
+          else
+              safe++;
+        }
       }
     }
   }
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via nicksearch [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
-    (localdata->count - safe) != 1 ? "users" : "user", safe);
+  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+    (localdata->count - safe) != 1 ? "users" : "user", (localdata->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", safe);
   free(localdata);
   free(thenode);
 }
