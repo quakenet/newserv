@@ -28,21 +28,37 @@ struct searchNode;
 
 typedef struct searchNode *(*parseFunc)(int, int, char **);
 typedef void (*freeFunc)(struct searchNode *);
-typedef void *(*exeFunc)(struct searchNode *, int, void *);
+typedef void *(*exeFunc)(struct searchNode *, void *);
 
 /* Core functions */
+/* Logical  (BOOL -> BOOL)*/
 struct searchNode *and_parse(int type, int argc, char **argv);
 struct searchNode *not_parse(int type, int argc, char **argv);
 struct searchNode *or_parse(int type, int argc, char **argv);
+
+/* Comparison (INT -> BOOL) */
 struct searchNode *eq_parse(int type, int argc, char **argv);
 struct searchNode *lt_parse(int type, int argc, char **argv);
 struct searchNode *gt_parse(int type, int argc, char **argv);
+
+/* String match (STRING -> BOOL) */
 struct searchNode *match_parse(int type, int argc, char **argv);
 struct searchNode *regex_parse(int type, int argc, char **argv);
-struct searchNode *hostmask_parse(int type, int argc, char **argv);
-struct searchNode *modes_parse(int type, int argc, char **argv);
-struct searchNode *realname_parse(int type, int argc, char **argv);
+
+/* Length (STRING -> INT) */
+struct searchNode *length_parse(int type, int argc, char **argv);
+
+/* kill/gline actions (BOOL) */
+struct searchNode *kill_parse(int type, int argc, char **argv);
+struct searchNode *gline_parse(int type, int argc, char **argv);
+
+/* Nick/Channel functions (various types) */
 struct searchNode *nick_parse(int type, int argc, char **argv);
+struct searchNode *modes_parse(int type, int argc, char **argv);
+
+/* Nick functions (various types) */
+struct searchNode *hostmask_parse(int type, int argc, char **argv);
+struct searchNode *realname_parse(int type, int argc, char **argv);
 struct searchNode *authname_parse(int type, int argc, char **argv);
 struct searchNode *ident_parse(int type, int argc, char **argv);
 struct searchNode *host_parse(int type, int argc, char **argv);
@@ -50,22 +66,22 @@ struct searchNode *channel_parse(int type, int argc, char **argv);
 struct searchNode *timestamp_parse(int type, int argc, char **argv);
 struct searchNode *country_parse(int type, int argc, char **argv);
 struct searchNode *ip_parse(int type, int argc, char **argv);
-/* kill/gline for use in nicksearch or chansearch */
-struct searchNode *kill_parse(int type, int argc, char **argv);
-struct searchNode *gline_parse(int type, int argc, char **argv);
-/* chansearch allowed criteria */
+
+/* Channel functions (various types) */
 struct searchNode *exists_parse(int type, int argc, char **argv);
 struct searchNode *services_parse(int type, int argc, char **argv);
 struct searchNode *size_parse(int type, int argc, char **argv);
-struct searchNode *namelen_parse(int type, int argc, char **argv);
 struct searchNode *name_parse(int type, int argc, char **argv);
 struct searchNode *topic_parse(int type, int argc, char **argv);
 struct searchNode *oppct_parse(int type, int argc, char **argv);
 struct searchNode *hostpct_parse(int type, int argc, char **argv);
 struct searchNode *authedpct_parse(int type, int argc, char **argv);
 
-
+/* Interpret a string to give a node */
 struct searchNode *search_parse(int type, char *input);
+
+/* Force a node to return the thing you want */
+struct searchNode *coerceNode(struct searchNode *thenode, int type);
 
 /* Registration functions */
 void registersearchterm(char *term, parseFunc parsefunc);

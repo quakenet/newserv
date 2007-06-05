@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 void or_free(struct searchNode *thenode);
-void *or_exe(struct searchNode *thenode, int type, void *theinput);
+void *or_exe(struct searchNode *thenode, void *theinput);
 
 struct or_localdata {
   int count;
@@ -49,6 +49,7 @@ struct searchNode *or_parse(int type, int argc, char **argv) {
 
   for (i=0;i<argc;i++) {
     subnode=search_parse(type, argv[i]); /* Propogate the search type */
+    subnode=coerceNode(subnode, RETURNTYPE_BOOL); /* BOOL please */
     if (subnode) {
       localdata->nodes[localdata->count++] = subnode;
     } else {
@@ -74,35 +75,16 @@ void or_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *or_exe(struct searchNode *thenode, int type, void *theinput) {
+void *or_exe(struct searchNode *thenode, void *theinput) {
   int i;
-  void *ret;
   struct or_localdata *localdata;
   
   localdata=thenode->localdata;
 
   for (i=0;i<localdata->count;i++) {
-    ret = (localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_BOOL, theinput);
-    if (ret) {
-      switch (type) {
-      case RETURNTYPE_STRING:
-	return "1";
-     
-      case RETURNTYPE_INT:
-      case RETURNTYPE_BOOL:
-      default:
-	return (void *)1;
-      }
-    }
+    if ((localdata->nodes[i]->exe)(localdata->nodes[i], theinput))
+      return (void *)1;
   }
 
-  switch(type) {
-  case RETURNTYPE_STRING:
-    return "";
-
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-  default:
-    return NULL;
-  }
+  return NULL;
 }

@@ -10,8 +10,8 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *hostmask_exe(struct searchNode *thenode, int type, void *theinput);
-void *hostmask_exe_real(struct searchNode *thenode, int type, void *theinput);
+void *hostmask_exe(struct searchNode *thenode, void *theinput);
+void *hostmask_exe_real(struct searchNode *thenode, void *theinput);
 void hostmask_free(struct searchNode *thenode);
 
 struct searchNode *hostmask_parse(int type, int argc, char **argv) {
@@ -46,24 +46,16 @@ struct searchNode *hostmask_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *hostmask_exe(struct searchNode *thenode, int type, void *theinput) {
+void *hostmask_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   return visiblehostmask(np, buf);
 }
 
-void *hostmask_exe_real(struct searchNode *thenode, int type, void *theinput) {
+void *hostmask_exe_real(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   sprintf(buf,"%s!%s@%s",np->nick,np->ident,np->host->name->content);
 

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 void and_free(struct searchNode *thenode);
-void *and_exe(struct searchNode *thenode, int type, void *theinput);
+void *and_exe(struct searchNode *thenode, void *theinput);
 
 struct and_localdata {
   int count;
@@ -49,6 +49,7 @@ struct searchNode *and_parse(int type, int argc, char **argv) {
 
   for (i=0;i<argc;i++) {
     subnode=search_parse(type, argv[i]); /* Propogate the search type */
+    subnode=coerceNode(subnode, RETURNTYPE_BOOL); /* Needs to return BOOL */
     if (subnode) {
       localdata->nodes[localdata->count++] = subnode;
     } else {
@@ -74,36 +75,15 @@ void and_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *and_exe(struct searchNode *thenode, int type, void *theinput) {
+void *and_exe(struct searchNode *thenode, void *theinput) {
   int i;
-  void *ret;
   struct and_localdata *localdata;
   
   localdata=thenode->localdata;
 
   for (i=0;i<localdata->count;i++) {
-    ret = (localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_BOOL, theinput);
-    if (ret == NULL) {
-      switch (type) {
-	
-      case RETURNTYPE_INT:
-      case RETURNTYPE_BOOL:
-	return NULL;
-
-      case RETURNTYPE_STRING:
-	return "";
-      }
-    }
+    if (!(localdata->nodes[i]->exe)(localdata->nodes[i], theinput))
+      return NULL;
   }
-
-  switch (type) {
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return (void *)1;
- 
-  case RETURNTYPE_STRING:
-    return "1";
-  }
-
-  return NULL;
+  return (void *)1;
 }

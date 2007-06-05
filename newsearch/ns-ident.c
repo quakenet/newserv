@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ident_exe(struct searchNode *thenode, int type, void *theinput);
+void *ident_exe(struct searchNode *thenode, void *theinput);
 void ident_free(struct searchNode *thenode);
 
 struct searchNode *ident_parse(int type, int argc, char **argv) {
@@ -31,12 +31,8 @@ struct searchNode *ident_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *ident_exe(struct searchNode *thenode, int type, void *theinput) {
+void *ident_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   return np->ident;
 }

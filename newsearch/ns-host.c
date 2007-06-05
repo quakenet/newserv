@@ -10,8 +10,8 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *host_exe(struct searchNode *thenode, int type, void *theinput);
-void *host_exe_real(struct searchNode *thenode, int type, void *theinput);
+void *host_exe(struct searchNode *thenode, void *theinput);
+void *host_exe_real(struct searchNode *thenode, void *theinput);
 void host_free(struct searchNode *thenode);
 
 struct searchNode *host_parse(int type, int argc, char **argv) {
@@ -46,13 +46,9 @@ struct searchNode *host_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *host_exe(struct searchNode *thenode, int type, void *theinput) {
+void *host_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   if (IsSetHost(np)) {
     return np->sethost->content;
@@ -64,12 +60,8 @@ void *host_exe(struct searchNode *thenode, int type, void *theinput) {
   }
 }
 
-void *host_exe_real(struct searchNode *thenode, int type, void *theinput) {
+void *host_exe_real(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   return np->host->name->content;
 }

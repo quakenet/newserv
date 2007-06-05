@@ -16,7 +16,7 @@ struct regex_localdata {
   pcre_extra *pcre_extra;
 };
 
-void *regex_exe(struct searchNode *thenode, int type, void *theinput);
+void *regex_exe(struct searchNode *thenode, void *theinput);
 void regex_free(struct searchNode *thenode);
 
 struct searchNode *regex_parse(int type, int argc, char **argv) {
@@ -33,10 +33,12 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  if (!(targnode = search_parse(type, argv[0])))
+  targnode=search_parse(type, argv[0]);
+  if (!(targnode = coerceNode(targnode, RETURNTYPE_STRING)))
     return NULL;
 
-  if (!(patnode = search_parse(type, argv[1]))) {
+  patnode=search_parse(type, argv[1]);
+  if (!(patnode = coerceNode(patnode, RETURNTYPE_STRING))) {
     (targnode->free)(targnode);
     return NULL;
   }
@@ -48,7 +50,7 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  if (!(pcre=pcre_compile((char *)(patnode->exe)(patnode,RETURNTYPE_STRING,NULL),
+  if (!(pcre=pcre_compile((char *)(patnode->exe)(patnode,NULL),
 			  PCRE_CASELESS, &err, &erroffset, NULL))) {
     parseError=err;
     return NULL;
@@ -93,20 +95,20 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *regex_exe(struct searchNode *thenode, int type, void *theinput) {
+void *regex_exe(struct searchNode *thenode, void *theinput) {
   struct regex_localdata *localdata;
   char *target;
 
   localdata = thenode->localdata;
   
-  target  = (char *)((localdata->targnode->exe)(localdata->targnode,RETURNTYPE_STRING, theinput));
+  target  = (char *)((localdata->targnode->exe)(localdata->targnode,theinput));
 
   if (pcre_exec(localdata->pcre, localdata->pcre_extra,target,strlen(target),0,
 		0,NULL,0)) {
     /* didn't match */
-    return falseval(type);
+    return (void *)0;
   } else {
-    return trueval(type);
+    return (void *)1;
   }
 }
 

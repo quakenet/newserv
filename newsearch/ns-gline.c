@@ -15,7 +15,7 @@
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
 extern nick *senderNSExtern;
 
-void *gline_exe(struct searchNode *thenode, int type, void *theinput);
+void *gline_exe(struct searchNode *thenode, void *theinput);
 void gline_free(struct searchNode *thenode);
 
 struct gline_localdata {
@@ -60,7 +60,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *gline_exe(struct searchNode *thenode, int type, void *theinput) {
+void *gline_exe(struct searchNode *thenode, void *theinput) {
   struct gline_localdata *localdata;
   nick *np = (nick *)theinput;
 
@@ -69,14 +69,7 @@ void *gline_exe(struct searchNode *thenode, int type, void *theinput) {
   np->marker = localdata->marker;
   localdata->count++;
 
-  switch (type) {
-    case RETURNTYPE_INT:
-    case RETURNTYPE_BOOL:
-      return (void *)1;
-    case RETURNTYPE_STRING:
-     return "1";
-  }
-  return NULL;
+  return (void *)1;
 }
 
 void gline_free(struct searchNode *thenode) {

@@ -9,7 +9,7 @@
 
 #include "../channel/channel.h"
 
-void *channel_exe(struct searchNode *thenode, int type, void *theinput);
+void *channel_exe(struct searchNode *thenode, void *theinput);
 void channel_free(struct searchNode *thenode);
 
 struct searchNode *channel_parse(int type, int argc, char **argv) {
@@ -36,7 +36,7 @@ struct searchNode *channel_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  thenode->returntype = RETURNTYPE_STRING;
+  thenode->returntype = RETURNTYPE_BOOL;
   thenode->localdata = cp;
   thenode->exe = channel_exe;
   thenode->free = channel_free;
@@ -44,14 +44,14 @@ struct searchNode *channel_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *channel_exe(struct searchNode *thenode, int type, void *theinput) {
+void *channel_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   channel *cp = thenode->localdata;
 
   if (getnumerichandlefromchanhash(cp->users, np->numeric)) {
-    return trueval(type);
+    return (void *)1;
   } else {
-    return falseval(type);
+    return (void *)0;
   }
 }
 

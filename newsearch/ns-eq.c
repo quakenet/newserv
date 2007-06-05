@@ -9,12 +9,13 @@
 #include <stdlib.h>
 
 struct eq_localdata {
+  int type;
   int count;
   struct searchNode **nodes;
 };
 
 void eq_free(struct searchNode *thenode);
-void *eq_exe(struct searchNode *thenode, int type, void *theinput);
+void *eq_exe(struct searchNode *thenode, void *theinput);
 
 struct searchNode *eq_parse(int type, int argc, char **argv) {
   struct eq_localdata *localdata;
@@ -47,10 +48,24 @@ struct searchNode *eq_parse(int type, int argc, char **argv) {
   thenode->free = eq_free;
   
   for (i=0;i<argc;i++) {
-    if (!(localdata->nodes[i] = search_parse(type, argv[i]))) {
+    /* Parse the node.. */
+    localdata->nodes[i] = search_parse(type, argv[i]);
+    
+    /* Subsequent nodes get coerced to match the type of the first node */
+    if (i)
+      localdata->nodes[i]=coerceNode(localdata->nodes[i],localdata->type);
+
+    /* If a node didn't parse, give up */    
+    if (!localdata->nodes[i]) {
       eq_free(thenode);
       return NULL;
     }
+    
+    if (!i) {
+      /* First arg determines the type */
+      localdata->type = localdata->nodes[0]->returntype & RETURNTYPE_TYPE;
+    }
+    
     localdata->count++;
   }
 
@@ -64,7 +79,8 @@ void eq_free(struct searchNode *thenode) {
   localdata=thenode->localdata;
   
   for (i=0;i<localdata->count;i++) {
-    (localdata->nodes[i]->free)(localdata->nodes[i]);
+    if (localdata->nodes[i])
+      (localdata->nodes[i]->free)(localdata->nodes[i]);
   }
   
   free(localdata->nodes);
@@ -72,7 +88,7 @@ void eq_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *eq_exe(struct searchNode *thenode, int type, void *theinput) {
+void *eq_exe(struct searchNode *thenode, void *theinput) {
   int i;
   char *strval;
   int intval;
@@ -82,40 +98,37 @@ void *eq_exe(struct searchNode *thenode, int type, void *theinput) {
   localdata=thenode->localdata;
   
   if (localdata->count==0)
-    return trueval(type);
+    return (void *)1;
 
-  switch (localdata->nodes[0]->returntype & RETURNTYPE_TYPE) {
+  switch (localdata->type) {
   case RETURNTYPE_INT:
-    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_INT, theinput));
+    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], theinput));
     for (i=1;i<localdata->count;i++) {
-      if ((int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_INT, theinput) != intval))
-	return falseval(type);
+      if ((int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], theinput) != intval))
+	return (void *)0;
     }
-
-    return trueval(type);
+    return (void *)1;
     
   case RETURNTYPE_BOOL:
-    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_BOOL, theinput));
+    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], theinput));
     for (i=1;i<localdata->count;i++) {
-      rval=(int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_BOOL, theinput));
+      rval=(int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], theinput));
       if ((rval && !intval) || (!rval && intval)) { /* LOGICAL XOR GOES HERE FS */
-	return falseval(type);
+	return (void *)0;
       }
     }
-
-    return trueval(type);
+    return (void *)1;
 
   case RETURNTYPE_STRING:
-    strval = (char *)(localdata->nodes[0]->exe)(localdata->nodes[0], RETURNTYPE_STRING, theinput);
+    strval = (char *)(localdata->nodes[0]->exe)(localdata->nodes[0], theinput);
     for (i=1;i<localdata->count;i++) {
-      if (ircd_strcmp(strval, (char *)(localdata->nodes[i]->exe)(localdata->nodes[i], RETURNTYPE_STRING, theinput)))
-	return falseval(type);
+      if (ircd_strcmp(strval, (char *)(localdata->nodes[i]->exe)(localdata->nodes[i], theinput)))
+	return (void *)0;
     }
-    
-    return trueval(type);
+    return (void *)1;
 
   default:
-    return falseval(type);
+    return (void *)0;
   }
 }
 

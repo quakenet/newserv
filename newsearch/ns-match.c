@@ -13,7 +13,7 @@ struct match_localdata {
   struct searchNode *patnode;
 };
 
-void *match_exe(struct searchNode *thenode, int type, void *theinput);
+void *match_exe(struct searchNode *thenode, void *theinput);
 void match_free(struct searchNode *thenode);
 
 struct searchNode *match_parse(int type, int argc, char **argv) {
@@ -26,10 +26,12 @@ struct searchNode *match_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  if (!(targnode = search_parse(type, argv[0])))
+  targnode = search_parse(type, argv[0]);
+  if (!(targnode = coerceNode(targnode, RETURNTYPE_STRING)))
     return NULL;
 
-  if (!(patnode = search_parse(type, argv[1]))) {
+  patnode = search_parse(type, argv[1]);
+  if (!(patnode = coerceNode(patnode, RETURNTYPE_STRING))) {
     (targnode->free)(targnode);
     return NULL;
   }
@@ -57,27 +59,16 @@ struct searchNode *match_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *match_exe(struct searchNode *thenode, int type, void *theinput) {
+void *match_exe(struct searchNode *thenode, void *theinput) {
   struct match_localdata *localdata;
   char *pattern, *target;
-  int ret;
 
   localdata = thenode->localdata;
   
-  pattern = (char *)(localdata->patnode->exe) (localdata->patnode, RETURNTYPE_STRING, theinput);
-  target  = (char *)(localdata->targnode->exe)(localdata->targnode,RETURNTYPE_STRING, theinput);
+  pattern = (char *)(localdata->patnode->exe) (localdata->patnode, theinput);
+  target  = (char *)(localdata->targnode->exe)(localdata->targnode,theinput);
 
-  ret = match2strings(pattern, target);
-
-  switch(type) {
-  default:
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return (void *)((long)ret);
-    
-  case RETURNTYPE_STRING:
-    return (ret ? "1" : "");
-  }
+  return (void *)match2strings(pattern, target);
 }
 
 void match_free(struct searchNode *thenode) {

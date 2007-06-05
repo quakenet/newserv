@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *exists_exe(struct searchNode *thenode, int type, void *theinput);
+void *exists_exe(struct searchNode *thenode, void *theinput);
 void exists_free(struct searchNode *thenode);
 
 struct searchNode *exists_parse(int type, int argc, char **argv) {
@@ -31,12 +31,13 @@ struct searchNode *exists_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *exists_exe(struct searchNode *thenode, int type, void *theinput) {
+void *exists_exe(struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
 
   if (cip->channel == NULL)
-    return falseval(type);
-  return trueval(type);
+    return (void *)0;
+  
+  return (void *)1;
 }
 
 void exists_free(struct searchNode *thenode) {

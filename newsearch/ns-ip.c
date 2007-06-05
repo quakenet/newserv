@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ip_exe(struct searchNode *thenode, int type, void *theinput);
+void *ip_exe(struct searchNode *thenode, void *theinput);
 void ip_free(struct searchNode *thenode);
 
 struct searchNode *ip_parse(int type, int argc, char **argv) {
@@ -31,12 +31,8 @@ struct searchNode *ip_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *ip_exe(struct searchNode *thenode, int type, void *theinput) {
+void *ip_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   return (void *)IPtostr(np->p_ipaddr);
 }

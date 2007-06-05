@@ -10,8 +10,7 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *country_exe(struct searchNode *thenode, int type, void *theinput);
-void *country_exe_real(struct searchNode *thenode, int type, void *theinput);
+void *country_exe(struct searchNode *thenode, void *theinput);
 void country_free(struct searchNode *thenode);
 
 int ext;
@@ -44,11 +43,8 @@ struct searchNode *country_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *country_exe(struct searchNode *thenode, int type, void *theinput) {
+void *country_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_INT)
-    return (void *)1;
 
   return (void *)np->exts[ext];
 }

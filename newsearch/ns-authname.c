@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *authname_exe(struct searchNode *thenode, int type, void *theinput);
+void *authname_exe(struct searchNode *thenode, void *theinput);
 void authname_free(struct searchNode *thenode);
 
 struct searchNode *authname_parse(int type, int argc, char **argv) {
@@ -31,17 +31,13 @@ struct searchNode *authname_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *authname_exe(struct searchNode *thenode, int type, void *theinput) {
+void *authname_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   if (IsAccount(np))
     return np->authname;
   else
-    return "[NULL]";
+    return ""; /* will cast to a FALSE */
 
 }
 

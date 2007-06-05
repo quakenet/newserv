@@ -12,7 +12,7 @@ struct nick_localdata {
   int type;
 };
 
-void *nick_exe(struct searchNode *thenode, int type, void *theinput);
+void *nick_exe(struct searchNode *thenode, void *theinput);
 void nick_free(struct searchNode *thenode);
 
 struct searchNode *nick_parse(int type, int argc, char **argv) {
@@ -73,7 +73,7 @@ struct searchNode *nick_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *nick_exe(struct searchNode *thenode, int type, void *theinput) {
+void *nick_exe(struct searchNode *thenode, void *theinput) {
   struct nick_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -85,20 +85,15 @@ void *nick_exe(struct searchNode *thenode, int type, void *theinput) {
     cip = (chanindex *)theinput;
 
     if (cip->channel==NULL || getnumerichandlefromchanhash(cip->channel->users, localdata->np->numeric)==NULL)
-      return falseval(type); /* user/channel not found */
-    return trueval(type); /* found user on channel */
-
+      return (void *)0;
+      
+    return (void *)1;
+  
+  default:
   case SEARCHTYPE_NICK:
     np = (nick *)theinput;
 
-    if (type != RETURNTYPE_STRING)
-      return (void *)1;
     return np->nick;
-
-  default:
-    if (type != RETURNTYPE_STRING)
-      return (void *)1;
-    return "";
   }
 }
 

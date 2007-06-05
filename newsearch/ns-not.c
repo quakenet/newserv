@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 void not_free(struct searchNode *thenode);
-void *not_exe(struct searchNode *thenode, int type, void *theinput);
+void *not_exe(struct searchNode *thenode, void *theinput);
 
 struct searchNode *not_parse(int type, int argc, char **argv) {
   searchNode *thenode, *subnode;
@@ -35,6 +35,9 @@ struct searchNode *not_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
+  /* Our subnode needs to return a BOOL */  
+  subnode=coerceNode(thenode, RETURNTYPE_BOOL);
+
   thenode->localdata=(void *)subnode;
       
   return thenode;
@@ -48,31 +51,14 @@ void not_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *not_exe(struct searchNode *thenode, int type, void *theinput) {
-  void *ret;
+void *not_exe(struct searchNode *thenode, void *theinput) {
   struct searchNode *subnode;
 
   subnode=thenode->localdata;
 
-  ret = (subnode->exe)(subnode, RETURNTYPE_BOOL, theinput);
-
-  switch (type) {
-    
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    if (ret==NULL) {
-      return (void *)1;
-    } else {
-      return NULL;
-    }
-    
-  case RETURNTYPE_STRING:
-    if (ret==NULL) {
-      return "1";
-    } else {
-      return "";
-    }
+  if ((subnode->exe)(subnode, theinput)) {
+    return (void *)0;
+  } else {
+    return (void *)1;
   }
-  
-  return NULL;
 }

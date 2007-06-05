@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *realname_exe(struct searchNode *thenode, int type, void *theinput);
+void *realname_exe(struct searchNode *thenode, void *theinput);
 void realname_free(struct searchNode *thenode);
 
 struct searchNode *realname_parse(int type, int argc, char **argv) {
@@ -31,12 +31,8 @@ struct searchNode *realname_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *realname_exe(struct searchNode *thenode, int type, void *theinput) {
+void *realname_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  if (type != RETURNTYPE_STRING) {
-    return (void *)1;
-  }
 
   return np->realname->name->content;
 }
