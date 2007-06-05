@@ -64,7 +64,7 @@ void *kill_exe(struct searchNode *thenode, void *theinput) {
   if (localdata->type == SEARCHTYPE_CHANNEL) {
     cip = (chanindex *)theinput;
     cip->marker = localdata->marker;
-    localdata->count += (localdata->count + cip->channel->users->totalusers);
+    localdata->count += cip->channel->users->totalusers;
   }
   else {
     np = (nick *)theinput;
