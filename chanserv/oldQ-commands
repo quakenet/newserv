@@ -1,0 +1,112 @@
+Auth related, implemented:
+==========================
+hello*
+requestpassword*
+auth
+newpass
+suspenduserlist
+email
+spewpass
+spewdb
+setemail
+setpass
+suspenduser
+unsuspenduser
+deluser
+spewemail
+
+Auth related, not implemented:
+==============================
+challengeauth
+challenge
+reset
+sendpassword
+listlevel
+getpass
+checkpass
+checkhashpass
+getuser
+checkdomain
+domainlock
+checkemail
+authtrigger
+
+Non-auth related, implemented:
+==============================
+showcommands
+whoami
+help
+banclear
+op
+invite
+removeuser
+banlist
+recover
+authhistory - this has different semantics
+unbanall
+whois
+version
+autolimit
+ban - now tempban, permban
+clearchan
+adduser
+settopic
+chanflags
+deopall
+bandel
+chanlev
+welcome
+unbanme
+voice
+chanstat
+suspendlist
+cleanupdb
+rejoin
+delchan
+spewchan
+unsuspend (now unsuspendchan)
+suspend (now suspendchan)
+renchan
+addchan
+requestowner (needs checking in)
+
+Non-auth related, not implemented:
+==================================
+chanlevstat (newsearch can do this)
+userlevstat (newsearch can do this)
+giveowner (new)
+takeowner (new)
+
+Don't need implementing:
+========================
+lock - legacy command
+unlock - legacy command
+limit - replaced by chanmode
+key - replaced by chanmode
+unload - control handles modules
+die - control handles this
+reload - control handles modules
+setenable - legacy command / not needed
+chantype - chan types are obsolete
+chantypeadd - chan types are obsolete
+chantypedel - chan types are obsolete
+chantypestat - chan types are obsolete
+smack - oper toy
+fish - oper toy
+snail - oper toy
+changeflags - part of userflags
+save - don't need with db
+spew - provided by oper services
+operlist - provided by oper services
+serverlist - provided by oper services
+status - not needed
+changelev - provided by userflags
+users - provided by check/oper services
+listchans - provided by check/oper services
+listemail - provided by WHOIS
+listauth - provided by WHOIS
+compareuser - obsolete
+cleanupstat - obsolete
+debuglog
+debuglevel
+ 
