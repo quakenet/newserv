@@ -22,11 +22,13 @@ struct kill_localdata {
   unsigned int marker;
   int count;
   int type;
+  char reason[NSMAX_REASON_LEN];
 };
 
 struct searchNode *kill_parse(int type, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
+  int len;
 
   if (!(localdata = (struct kill_localdata *) malloc(sizeof(struct kill_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -38,6 +40,15 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
     localdata->marker = nextchanmarker();
   else
     localdata->marker = nextnickmarker();
+
+  if (argc==1) {
+    len = snprintf(localdata->reason, NSMAX_REASON_LEN, ":%s", argv[0]);
+    /* strip leading and trailing '"'s */
+    localdata->reason[1] = ' ';
+    localdata->reason[len-1] = '\0';
+  }
+  else
+    snprintf(localdata->reason, NSMAX_REASON_LEN, ".");
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
@@ -102,8 +113,8 @@ void kill_free(struct searchNode *thenode) {
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
               if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-                killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
-                  np->ident, IPtostr(np->p_ipaddr));
+                killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", np->nick,
+                  np->ident, IPtostr(np->p_ipaddr), localdata->reason);
               }
               else
                 safe++;
@@ -119,8 +130,8 @@ void kill_free(struct searchNode *thenode) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
           if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-            killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service.", np->nick,
-              np->ident, IPtostr(np->p_ipaddr));
+            killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", np->nick,
+              np->ident, IPtostr(np->p_ipaddr), localdata->reason);
           }
           else
               safe++;

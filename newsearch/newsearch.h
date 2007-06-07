@@ -17,6 +17,8 @@
 /* gline duration, in seconds */
 #define    NSGLINE_DURATION       3600
 
+#define    NSMAX_REASON_LEN       120
+
 
 #define    RETURNTYPE_BOOL        0x01
 #define    RETURNTYPE_INT         0x02
