@@ -205,8 +205,9 @@ int renamelocaluser(nick *np, char *newnick) {
  */
  
 int deregisterlocaluser(nick *np, char *reason) {
-  int defaultreason=0;
   long numeric;
+  char reasonstr[512];
+  void *harg[2];
   
   if (np==NULL || (homeserver(np->numeric)!=mylongnum)) {
     /* Non-existent user, or user not on this server */
@@ -214,14 +215,21 @@ int deregisterlocaluser(nick *np, char *reason) {
   }
   
   if (reason==NULL || *reason=='\0') {
-    defaultreason=1;
+    sprintf(reasonstr,"Quit");
+  } else {
+    snprintf(reasonstr,510,"Quit: %s",reason);
   }
+  
+  harg[0]=np;
+  harg[1]=reasonstr;
+  
+  triggerhook(HOOK_NICK_QUIT, harg);
   
   numeric=np->numeric;
   umhandlers[np->numeric&MAXLOCALUSER]=NULL;
   deletenick(np);
   if (connected) {
-    irc_send("%s Q :Quit: %s",longtonumeric(numeric,5),(defaultreason?"Leaving":reason));
+    irc_send("%s Q :%s",longtonumeric(numeric,5),reasonstr);
   }
 
   return 0;
