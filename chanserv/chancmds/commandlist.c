@@ -21,6 +21,7 @@ int csc_doclearchan(void *source, int cargc, char **cargv);
 int csc_dodelchan(void *source, int cargc, char **cargv);
 int csc_dodeopall(void *source, int cargc, char **cargv);
 int csc_dodevoiceall(void *source, int cargc, char **cargv);
+int csc_dogiveowner(void *source, int cargc, char **cargv);
 int csc_doinvite(void *source, int cargc, char **cargv);
 int csc_doop(void *source, int cargc, char **cargv);
 int csc_dopermban(void *source, int cargc, char **cargv);
@@ -60,6 +61,7 @@ void _init() {
   chanservaddcommand("delchan", QCMD_OPER, 2, csc_dodelchan, "Removes a channel from the bot.");
   chanservaddcommand("deopall", QCMD_AUTHED, 1, csc_dodeopall, "Deops all users on channel.");
   chanservaddcommand("devoiceall", QCMD_AUTHED, 1, csc_dodevoiceall, "Devoices all users on a channel.");
+  chanservaddcommand("giveowner", QCMD_AUTHED, 3, csc_dogiveowner, "Gives total control over a channel to another user.");
   chanservaddcommand("invite", QCMD_AUTHED, 1, csc_doinvite, "Invites you to a channel.");
   chanservaddcommand("op", QCMD_AUTHED, 20, csc_doop, "Ops you or other users on channel(s).");
   chanservaddcommand("permban", QCMD_AUTHED, 3, csc_dopermban, "Permanently bans a hostmask on a channel.");
@@ -100,6 +102,7 @@ void _fini() {
   chanservremovecommand("delchan", csc_dodelchan);
   chanservremovecommand("deopall", csc_dodeopall);
   chanservremovecommand("devoiceall", csc_dodevoiceall);
+  chanservremovecommand("giveowner", csc_dogiveowner);
   chanservremovecommand("invite", csc_doinvite);
   chanservremovecommand("op", csc_doop);
   chanservremovecommand("permban", csc_dopermban);

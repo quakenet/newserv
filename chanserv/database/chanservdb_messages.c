@@ -146,6 +146,10 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 135*/ "Domain:             Users:  Limit:",
   /* 136*/ "Too many accounts exist from this email domain",
   /* 137*/ "Password too weak - You need to avoid repeating characters, and have different character types (e.g. 1 number and 1 letter)",
+  /* 138*/ "User %s is not a master on %s - you must promote user to master status first.",
+  /* 139*/ "User %s is already an owner on %s.",
+  /* 140*/ "WARNING: This command will give COMPLETE control over %s to %s, including the ability to remove you as owner.\nIf you are sure you want to do this, type /msg Q GIVEOWNER %s #%s %s",
+  /* 141*/ "Hash value incorrect."
 };
 
 void initmessages() {
