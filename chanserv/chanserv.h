@@ -195,6 +195,10 @@
 #define QM_SPEWDOMAINHEADER        135
 #define QM_DOMAINLIMIT             136
 #define QM_PWTOWEAK                137
+#define QM_GIVEOWNERNOTMASTER      138
+#define QM_GIVEOWNERALREADYOWNER   139
+#define QM_GIVEOWNERNEEDHASH       140
+#define QM_GIVEOWNERWRONGHASH      141
 
 /* List of privileged operations */
 
