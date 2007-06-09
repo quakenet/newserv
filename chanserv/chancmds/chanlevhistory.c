@@ -89,8 +89,8 @@ int csc_dochanlevhistory(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
   regchan *rcp;
-  time_t starttime=getnettime();
-  
+  unsigned long interval;
+
   if (cargc < 1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "chanlevhistory");
     return CMD_ERROR;
@@ -102,11 +102,12 @@ int csc_dochanlevhistory(void *source, int cargc, char **cargv) {
   rcp=(regchan*)cip->exts[chanservext];
   
   if (cargc > 1)
-    starttime-=durationtolong(cargv[1]);
+    interval=durationtolong(cargv[1]);
   else
-    starttime-=3600;
-  
-  csdb_retreivechanlevhistory(sender, rcp, starttime);
+    interval=3600;
+ 
+  chanservstdmessage(sender, QM_SHOWINGDURATION, "chanlevhistory", longtoduration(interval,1));
+  csdb_retreivechanlevhistory(sender, rcp, getnettime()-interval);
   
   return CMD_OK;
 }

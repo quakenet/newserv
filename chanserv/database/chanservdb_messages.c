@@ -149,7 +149,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 138*/ "User %s is not a master on %s - you must promote user to master status first.",
   /* 139*/ "User %s is already an owner on %s.",
   /* 140*/ "WARNING: This command will give COMPLETE control over %s to %s, including the ability to remove you as owner.\nIf you are sure you want to do this, type /msg Q GIVEOWNER %s #%s %s",
-  /* 141*/ "Hash value incorrect."
+  /* 141*/ "Hash value incorrect.",
+  /* 142*/ "Showing %s for last %s."
 };
 
 void initmessages() {

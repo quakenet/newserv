@@ -199,6 +199,7 @@
 #define QM_GIVEOWNERALREADYOWNER   139
 #define QM_GIVEOWNERNEEDHASH       140
 #define QM_GIVEOWNERWRONGHASH      141
+#define QM_SHOWINGDURATION         142
 
 /* List of privileged operations */
 
