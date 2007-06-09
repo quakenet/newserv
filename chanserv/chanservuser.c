@@ -677,8 +677,11 @@ void cs_doallautomodes(nick *np) {
     if (rcup->chan->index->channel) {
       /* Channel exists */
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
-	
-	/* User is on channel.. */
+        /* User is on channel.. */
+
+        /* Update last use time */
+        rcup->usetime=getnettime();
+
 	localsetmodeinit(&changes, rcup->chan->index->channel, chanservnick);
 	if (*lp & CUMODE_OP) {
 	  if (!IsService(np) && (CUIsDeny(rcup) || (CIsBitch(rcup->chan) && !CUHasOpPriv(rcup))))
