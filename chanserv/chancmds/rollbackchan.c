@@ -140,7 +140,7 @@ void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
         if (rcp->regusers[j])
           break;
 
-      if (i==REGCHANUSERHASHSIZE) {
+      if (j==REGCHANUSERHASHSIZE) {
         cs_log(np, "DELCHAN %s (Cleared chanlev from rollback)", cip->name->content);
         chanservsendmessage(np, "Rollback cleared chanlev list, channel deleted.");
         rcp=NULL;
