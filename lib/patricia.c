@@ -559,7 +559,7 @@ refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
   patricia_node_t *node;
   prefix_t *prefix;
 
-  node = patricia_search_exact(tree, sin, PATRICIA_MAXBITS);
+  node = patricia_search_exact(tree, sin, bitlen);
 
   if (node == NULL) {
     prefix = patricia_new_prefix(sin, bitlen);
