@@ -66,6 +66,7 @@ void _init() {
   registersearchterm("oppct",oppct_parse);
   registersearchterm("uniquehostpct",hostpct_parse);
   registersearchterm("authedpct",authedpct_parse);
+  registersearchterm("kick",kick_parse);
 
   /* Nickname / channel operations */
   registersearchterm("modes",modes_parse);
