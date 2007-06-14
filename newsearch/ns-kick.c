@@ -13,8 +13,8 @@ void kick_free(struct searchNode *thenode);
 
 struct searchNode *kick_parse(int type, int argc, char **argv) {
   struct searchNode *thenode;
-  void *localdata;
-
+  nick *np;
+  
   if (type!=SEARCHTYPE_CHANNEL) {
     parseError="kick: only channel searches are supported";
     return NULL;
@@ -25,8 +25,13 @@ struct searchNode *kick_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  if ((localdata=getnickbynick(argv[0]))==NULL) {
+  if ((np=getnickbynick(argv[0]))==NULL) {
     parseError="kick: unknown nickname";
+    return NULL;
+  }
+  
+  if (IsOper(np) || IsService(np)) {
+    parseError="kick: can't kick opers or services";
     return NULL;
   }
 
@@ -36,7 +41,7 @@ struct searchNode *kick_parse(int type, int argc, char **argv) {
   }
 
   thenode->returntype = RETURNTYPE_BOOL;
-  thenode->localdata = localdata;
+  thenode->localdata = np;
   thenode->exe = kick_exe;
   thenode->free = kick_free;
 
@@ -53,7 +58,7 @@ void *kick_exe(struct searchNode *thenode, void *theinput) {
   if (cip->channel==NULL || getnumerichandlefromchanhash(cip->channel->users, np->numeric)==NULL)
     return (void *)0;
   
-  localkickuser(NULL, cip->channel, np, NULL);
+  localkickuser(NULL, cip->channel, np, "");
   return (void *)1;
 }
 
