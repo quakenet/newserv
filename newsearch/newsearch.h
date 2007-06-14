@@ -76,6 +76,7 @@ struct searchNode *topic_parse(int type, int argc, char **argv);
 struct searchNode *oppct_parse(int type, int argc, char **argv);
 struct searchNode *hostpct_parse(int type, int argc, char **argv);
 struct searchNode *authedpct_parse(int type, int argc, char **argv);
+struct searchNode *kick_parse(int type, int argc, char **argv);
 
 /* Interpret a string to give a node */
 struct searchNode *search_parse(int type, char *input);
