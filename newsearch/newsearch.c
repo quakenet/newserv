@@ -20,9 +20,6 @@ struct searchNode *search_parse(int type, char *input);
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
 
-void *trueval(int type);
-void *falseval(int type);
-
 const char *parseError;
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) */
@@ -278,30 +275,6 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   controlreply(sender,"--- End of list: %d matches", matches);
 
   return CMD_OK;
-}
-
-void *trueval(int type) {
-  switch(type) {
-  default:
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return (void *)1;
-    
-  case RETURNTYPE_STRING:
-    return "1";
-  }
-}
-
-void *falseval(int type) {
-  switch (type) {
-  default:
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return NULL;
-    
-  case RETURNTYPE_STRING:
-    return "";
-  }
 }
 
 struct coercedata {

@@ -91,9 +91,6 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type);
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
 
-void *trueval(int type);
-void *falseval(int type);
-
 typedef struct searchNode {
   int returntype;
   exeFunc  exe;
