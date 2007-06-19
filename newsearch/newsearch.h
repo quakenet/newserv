@@ -31,6 +31,8 @@ struct searchNode;
 typedef struct searchNode *(*parseFunc)(int, int, char **);
 typedef void (*freeFunc)(struct searchNode *);
 typedef void *(*exeFunc)(struct searchNode *, void *);
+typedef void (*ChanDisplayFunc)(nick *, chanindex *);
+typedef void (*NickDisplayFunc)(nick *, nick *);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -90,6 +92,10 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type);
 /* Registration functions */
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
+void regchandisp(const char *name, ChanDisplayFunc handler);
+void unregchandisp(const char *name, ChanDisplayFunc handler);
+void regnickdisp(const char *name, NickDisplayFunc handler);
+void unregnickdisp(const char *name, NickDisplayFunc handler);
 
 typedef struct searchNode {
   int returntype;
