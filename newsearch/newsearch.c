@@ -18,7 +18,9 @@ CommandTree *nickOutputTree;
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
 struct searchNode *search_parse(int type, char *input);
+
 void printnick(nick *, nick *);
+void printnick_channels(nick *, nick *);
 void printchannel(nick *, chanindex *);
 void printchannel_topic(nick *, chanindex *);
 void printchannel_services(nick *, chanindex *);
@@ -100,7 +102,8 @@ void _init() {
   
   /* Nick output filters */
   regnickdisp("default",printnick);
-  
+  regnickdisp("channels",printnick_channels);
+    
   /* Channel output filters */
   regchandisp("default",printchannel);
   regchandisp("topic",printchannel_topic);

@@ -16,6 +16,47 @@ void printnick(nick *sender, nick *np) {
 	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
+void printnick_channels(nick *sender, nick *np) {
+  char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
+  char chanlistbuf[512];
+  unsigned int bufpos=0, overflow=0;
+  channel **cs, *cp;
+  unsigned int i;
+  unsigned long *lp;
+  
+  /* Include the default format too */
+  printnick(sender,np);
+  
+  /* Now add the channels.. */
+  cs=(channel **)(np->channels->content);
+  for (i=0;i<np->channels->cursi;i++) {
+    cp=cs[i];
+    
+    if (!(lp=getnumerichandlefromchanhash(cp->users,np->numeric)))
+      /* "Impossible" error case - nick not on this channel */
+      continue;
+    
+    if (bufpos + cp->index->name->length > 400) {
+      overflow=1;
+      break;
+    }
+    
+    if (*lp & CUMODE_OP) {
+      chanlistbuf[bufpos++]='@';
+    } else if (*lp & CUMODE_VOICE) {
+      chanlistbuf[bufpos++]='+';
+    }
+    
+    bufpos+=sprintf(chanlistbuf+bufpos,"%s ",cp->index->name->content);
+  }
+  
+  if (!bufpos) {
+    controlreply(sender,"  Not an any channels.");
+  } else {
+    controlreply(sender,"  On channel%s: %s%s",np->channels->cursi>1?"s":"", chanlistbuf, overflow?"[...]":"");
+  }
+}
+
 void printchannel(nick *sender, chanindex *cip) {
   /* shamelessly stolen from (now defunct) chansearch.c */
   int i;
