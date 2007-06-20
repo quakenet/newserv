@@ -131,14 +131,17 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
 
 int do_nicksearch(void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source, *np;
-  int i;
+  int i,j;
   struct searchNode *search;
   int limit=500,matches=0;
   char *ch;
   int arg=0;
   struct Command *cmd;
   NickDisplayFunc display=printnick;
-
+  unsigned int cmarker;
+  unsigned int tchans=0,uchans=0;
+  struct channel **cs;
+  
   if (cargc<1)
     return CMD_USAGE;
   
@@ -190,14 +193,30 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
+  /* Get a marker value to mark "seen" channels for unique count */
+  cmarker=nextchanmarker();
+  
   /* The top-level node needs to return a BOOL */
   search=coerceNode(search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
       if ((search->exe)(search, np)) {
+        /* Add total channels */
+        tchans += np->channels->cursi;
+        
+        /* Check channels for uniqueness */
+        cs=(channel **)np->channels->content;
+        for (j=0;j<np->channels->cursi;j++) {
+          if (cs[j]->index->marker != cmarker) {
+            cs[j]->index->marker=cmarker;
+            uchans++;
+          }
+        }
+          
 	if (matches<limit)
 	  display(sender, np);
+	  
 	if (matches==limit)
 	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
@@ -207,8 +226,9 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 
   (search->free)(search);
 
-  controlreply(sender,"--- End of list: %d matches", matches);
-  
+  controlreply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
+                matches, tchans, uchans, (float)tchans/uchans);
+
   return CMD_OK;
 }  
 
