@@ -42,7 +42,7 @@ int proxyscandbinit() {
 		"PM int4 not null,"
 		"TS int4 not null," 
 		"RH varchar not null,"
-		"PRIMARY KEY (ID)");
+		"PRIMARY KEY (ID))");
 
   pqcreatequery("CREATE INDEX openproxies_id_index ON openproxies (ID)");
 

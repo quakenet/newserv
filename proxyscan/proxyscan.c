@@ -207,6 +207,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 808);
   proxyscan_addscantype(STYPE_HTTP, 3332);
   proxyscan_addscantype(STYPE_HTTP, 2282);
+  proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 1080);
   proxyscan_addscantype(STYPE_SOCKS5, 1080);
   proxyscan_addscantype(STYPE_SOCKS4, 1075);
@@ -215,6 +216,8 @@ void _init(void) {
   proxyscan_addscantype(STYPE_SOCKS5, 2280);
   proxyscan_addscantype(STYPE_SOCKS4, 1180);
   proxyscan_addscantype(STYPE_SOCKS5, 1180);
+  proxyscan_addscantype(STYPE_SOCKS4, 9999);
+  proxyscan_addscantype(STYPE_SOCKS5, 9999);
   proxyscan_addscantype(STYPE_WINGATE, 23);
   proxyscan_addscantype(STYPE_CISCO, 23);
   proxyscan_addscantype(STYPE_WINGATE, 1181);
