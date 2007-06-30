@@ -6,7 +6,7 @@
 
 #include "proxyscan.h"
 
-#include <mysql/mysql.h>
+#include "../pqsql/pqsql.h"
 #include "../core/config.h"
 #include "../lib/sstring.h"
 #include "../irc/irc_config.h"
@@ -16,10 +16,13 @@
 #include "../localuser/localuser.h"
 #include <string.h>
 #include <stdio.h>
+#include <libpq-fe.h>
 
-MYSQL proxyscansql;
 unsigned int lastid;
-int sqlconnected;
+int sqlconnected = 0;
+extern nick *proxyscannick;
+
+void proxyscan_get_last_id(PGconn *dbconn, void *arg);
 
 /*
  * proxyscandbinit():
@@ -27,64 +30,45 @@ int sqlconnected;
  */
 
 int proxyscandbinit() {
-  sstring *dbhost,*dbusername,*dbpassword,*dbdatabase,*dbport;
-  MYSQL_RES *myres;
-  MYSQL_ROW myrow;
- 
-  sqlconnected=0;
-
-  dbhost=getcopyconfigitem("proxyscan","dbhost","localhost",HOSTLEN);
-  dbusername=getcopyconfigitem("proxyscan","dbusername","proxyscan",20);
-  dbpassword=getcopyconfigitem("proxyscan","dbpassword","moo",20);
-  dbdatabase=getcopyconfigitem("proxyscan","dbdatabase","proxyscan",20);
-  dbport=getcopyconfigitem("proxyscan","dbport","3306",8);
-  
-  mysql_init(&proxyscansql);
-  if (!mysql_real_connect(&proxyscansql,dbhost->content,dbusername->content,
-			  dbpassword->content,dbdatabase->content,
-			  strtol(dbport->content,NULL,10), NULL, 0)) {
-    Error("proxyscan",ERR_ERROR,"Unable to connect to database");
+  if(!pqconnected())
     return 1;
-  }
 
-  freesstring(dbhost);
-  freesstring(dbusername);
-  freesstring(dbpassword);
-  freesstring(dbdatabase);
-  freesstring(dbport);
- 
   sqlconnected=1;
 
   /* Set up the table */
-  mysql_query(&proxyscansql,"CREATE TABLE openproxies (ID BIGINT not null, IP VARCHAR (20) not null, PM INT not null, TS DATETIME not null, RH TEXT not null, PRIMARY KEY (ID), INDEX (ID), UNIQUE (ID))");
+  pqcreatequery("CREATE TABLE openproxies ("
+                "ID int8 not null,"
+		"IP inet not null,"
+		"PM int4 not null,"
+		"TS int4 not null," 
+		"RH varchar not null,"
+		"PRIMARY KEY (ID)");
 
-  /* Get max ID */
-  if ((mysql_query(&proxyscansql,"SELECT max(ID) FROM openproxies"))!=0) {
-    Error("proxyscan",ERR_ERROR,"Unable to retrieve max ID from database");
-    return 1;
-  }
-    
-  myres=mysql_store_result(&proxyscansql);
-  if (mysql_num_fields(myres)!=1) {
-    Error("proxyscan",ERR_ERROR,"Weird format retrieving max ID");
-    mysql_free_result(myres);
-    return 1;
-  }
+  pqcreatequery("CREATE INDEX openproxies_id_index ON openproxies (ID)");
 
-  lastid=0;
-  if ((myrow=mysql_fetch_row(myres))) {
-    if (myrow[0]==NULL) {
-      lastid=0; 
-    } else {
-      lastid=strtol(myrow[0],NULL,10);
-    }
-    Error("proxyscan",ERR_INFO,"Retrieved lastid %d from database.",lastid);
-  }
- 
-  mysql_free_result(myres);
+  pqasyncquery(proxyscan_get_last_id, NULL,
+      "SELECT ID FROM openproxies ORDER BY id DESC LIMIT 1");
+
   return 0;
 }
 
+void proxyscan_get_last_id(PGconn *dbconn, void *arg) {
+  PGresult *pgres = PQgetResult(dbconn);
+  unsigned int numrows;
+
+  if(PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("proxyscan", ERR_ERROR, "Error loading last id.");
+  }
+
+  numrows = PQntuples(pgres);
+  if ( numrows )
+    lastid = atoi(PQgetvalue(pgres, 0, 0));
+  else 
+    lastid = 0;
+
+  PQclear(pgres);
+   Error("proxyscan",ERR_INFO,"Retrieved lastid %d from database.",lastid);
+}
 /*
  * scantostr:
  *  Given a scan number, returns the string associated.
@@ -141,8 +125,7 @@ int scantodm(int scannum) {
 
 void loggline(cachehost *chp) {
   char reasonlist[100];
-  char reasonesc[100];
-  char sqlquery[4000];
+  char reasonesc[200 + 1]; /* reasonlist*2+1 */
   int reasonmask=0;
   int reasonpos=0;
   foundproxy *fpp;
@@ -161,15 +144,13 @@ void loggline(cachehost *chp) {
   if (chp->glineid==0) {
     chp->glineid=++lastid;
 
-    mysql_escape_string(reasonesc,reasonlist,strlen(reasonlist));
-    sprintf(sqlquery,"INSERT INTO openproxies VALUES(%u,'%s',%d,NOW(),'%s')",chp->glineid,
-	    IPlongtostr(chp->IP),reasonmask,reasonesc);
-    mysql_query(&proxyscansql,sqlquery);
+    PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
+    pqquery("INSERT INTO openproxies VALUES(%u,'%s',%d,%ld,'%s')",chp->glineid,
+	    IPlongtostr(chp->IP),reasonmask,getnettime(),reasonesc);
   } else {
-    mysql_escape_string(reasonesc,reasonlist,strlen(reasonlist));
-    sprintf(sqlquery,"UPDATE openproxies SET PM=%d,RH='%s' where ID=%u",
+    PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
+    pqquery("UPDATE openproxies SET PM=%d,RH='%s' where ID=%u",
 	    reasonmask,reasonesc,chp->glineid);
-    mysql_query(&proxyscansql,sqlquery);
   }
 }
 
@@ -179,9 +160,6 @@ void loggline(cachehost *chp) {
  */
 
 void proxyscandbclose() {
-  if (sqlconnected==1) {
-    mysql_close(&proxyscansql);
-  }
 }
 
 /*
@@ -189,34 +167,41 @@ void proxyscandbclose() {
  *  Lists all the open proxies found since <since> to user usernick.
  */
 
+void proxyscandolistopen_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  PGresult *pgres;
+  int i, num;
+
+  pgres=PQgetResult(dbconn);
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("proxyscan", ERR_ERROR, "Error loading data.");
+    return;
+  }
+  
+  if (PQnfields(pgres) != 3) {
+    Error("proxyscan", ERR_ERROR, "data format error.");
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  sendnoticetouser(proxyscannick,np,"%-20s %-22s %s","IP","Found at","What was open");
+  for (i=0; i<num; i++) {
+    sendnoticetouser(proxyscannick,np, "%-20s %-22s %s",PQgetvalue(pgres, i, 0),
+                                                        PQgetvalue(pgres, i, 1),
+							PQgetvalue(pgres, i, 2));
+  }
+  sendnoticetouser(proxyscannick,np,"--- End of list ---");
+}
+
 void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
-  char mysqlquery[2000];
-  char timestmp[30];
-  MYSQL_RES *myres;
-  MYSQL_ROW myrow;
 
-  strftime(timestmp,30,"%Y-%m-%d %H:%M:%S",localtime(&snce));
-  sprintf(mysqlquery,"SELECT IP,TS,RH FROM openproxies WHERE TS>'%s' ORDER BY TS",timestmp);
-
-  if ((mysql_query(&proxyscansql,mysqlquery))!=0) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing listopen query");
-    return;
-  }
-
-  myres=mysql_use_result(&proxyscansql);
-  if (mysql_num_fields(myres)!=3) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing listopen query");
-    return;
-  }
-
-  sendnoticetouser(mynick,usernick,"%-20s %-22s %s","IP","Found at","What was open");
-  while ((myrow=mysql_fetch_row(myres))) {
-    sendnoticetouser(mynick,usernick,"%-20s %-22s %s",myrow[0],myrow[1],myrow[2]);
-  }
-  sendnoticetouser(mynick,usernick,"--- End of list ---");
-  mysql_free_result(myres);
+  pqasyncquery(proxyscandolistopen_real,(void *)usernick->numeric, 
+               "SELECT IP,TS,RH FROM openproxies WHERE TS>'%lu' ORDER BY TS",snce);
 }
 
 /*
@@ -224,32 +209,42 @@ void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
  *  Check db for open proxies matching the given IP, send to user usernick.
  */
 
+void proxyscanspewip_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  PGresult *pgres;
+  int i, num;
+
+  pgres=PQgetResult(dbconn);
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("proxyscan", ERR_ERROR, "Error loading data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 4) {
+    Error("proxyscan", ERR_ERROR, "data format error.");
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  sendnoticetouser(proxyscannick,np,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
+  for (i=0; i<num; i++) {
+    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",PQgetvalue(pgres, i, 0),
+                                                             PQgetvalue(pgres, i, 1),
+                                                             PQgetvalue(pgres, i, 2),
+							     PQgetvalue(pgres, i, 3));
+  }
+  sendnoticetouser(proxyscannick,np,"--- End of list ---");
+}
+
 void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned long b, unsigned long c, unsigned long d) {
-  char mysqlquery[2000];
-  MYSQL_RES *myres;
-  MYSQL_ROW myrow;
+  pqasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
+               "SELECT ID,IP,TS,RH FROM openproxies WHERE IP='%lu.%lu.%lu.%lu' ORDER BY TS DESC LIMIT 10",a,b,c,d);
 
-  sprintf(mysqlquery, "SELECT ID,IP,TS,RH FROM openproxies WHERE IP='%lu.%lu.%lu.%lu' ORDER BY TS DESC LIMIT 10",a,b,c,d);
-
-  if ((mysql_query(&proxyscansql,mysqlquery))!=0) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing spew query");
-    return;
-  }
-
-  myres=mysql_use_result(&proxyscansql);
-  if (mysql_num_fields(myres)!=4) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing spew query");
-    return;
-  }
-
-  sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
-  while ((myrow=mysql_fetch_row(myres))) {
-    sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s",myrow[0],myrow[1],myrow[2],myrow[3]);
-  }
-  sendnoticetouser(mynick,usernick,"--- End of list ---");
-  mysql_free_result(myres);
 }
 
 /*
@@ -257,31 +252,40 @@ void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned lon
  *  Check db for open proxies matching the given kill/gline ID, send to user usernick.
  */
 
+void proxyscanshowkill_real(PGconn *dbconn, void *arg) {
+  nick *np=getnickbynumeric((unsigned int)arg);
+  PGresult *pgres;
+  int i, num;
+
+  pgres=PQgetResult(dbconn);
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("proxyscan", ERR_ERROR, "Error loading data.");
+    return;
+  }
+
+  if (PQnfields(pgres) != 4) {
+    Error("proxyscan", ERR_ERROR, "data format error.");
+  }
+
+  num=PQntuples(pgres);
+
+  if (!np) {
+    PQclear(pgres);
+    return;
+  }
+
+  sendnoticetouser(proxyscannick,np,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
+  for (i=0; i<num; i++) {
+    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",PQgetvalue(pgres, i, 0),
+                                                             PQgetvalue(pgres, i, 1),
+                                                             PQgetvalue(pgres, i, 2),
+							     PQgetvalue(pgres, i, 3));
+  }
+  sendnoticetouser(proxyscannick,np,"--- End of list ---");
+}
+
+
 void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a) {
-  char mysqlquery[2000];
-  MYSQL_RES *myres;
-  MYSQL_ROW myrow;
-
-  sprintf(mysqlquery, "SELECT ID,IP,TS,RH FROM openproxies WHERE ID='%lu'",a);
-
-  if ((mysql_query(&proxyscansql,mysqlquery))!=0) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing showkill query");
-    return;
-  }
-
-  myres=mysql_use_result(&proxyscansql);
-  if (mysql_num_fields(myres)!=4) {
-    sendnoticetouser(mynick,usernick,"Error performing database query!");
-    Error("proxyscan",ERR_ERROR,"Error performing showkill query");
-    return;
-  }
-
-  sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
-  /* even though we should only ever have 1 result, still loop below - who knows eh? */
-  while ((myrow=mysql_fetch_row(myres))) {
-    sendnoticetouser(mynick,usernick,"%-5s %-20s %-22s %s",myrow[0],myrow[1],myrow[2],myrow[3]);
-  }
-  sendnoticetouser(mynick,usernick,"--- End of list ---");
-  mysql_free_result(myres);
+  pqasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
+               "SELECT ID,IP,TS,RH FROM openproxies WHERE ID='%lu'",a);
 }
