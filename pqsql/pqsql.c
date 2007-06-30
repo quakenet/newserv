@@ -104,7 +104,7 @@ void connectdb(void) {
   dbconn = PQconnectdb(connectstr);
   
   if (!dbconn || (PQstatus(dbconn) != CONNECTION_OK)) {
-    Error("pqsql", ERR_ERROR, "Unable to connect to db.");
+    Error("pqsql", ERR_ERROR, "Unable to connect to db: %s", PQerrorMessage(dbconn));
     return;
   }
   Error("pqsql", ERR_INFO, "Connected!");
