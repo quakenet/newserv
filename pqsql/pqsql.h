@@ -14,7 +14,6 @@ void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQu
 #define pqasyncquery(handler, tag, format, ...) pqasyncqueryf(handler, tag, 0, format , ##__VA_ARGS__)
 #define pqcreatequery(format, ...) pqasyncqueryf(NULL, NULL, QH_CREATE, format , ##__VA_ARGS__)
 #define pqquery(format, ...) pqasyncqueryf(NULL, NULL, 0, format , ##__VA_ARGS__)
-#define min(a,b) ((a > b) ? b : a)
 
 int pqconnected(void);
 char* pqlasterror(PGconn * pgconn);
