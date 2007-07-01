@@ -104,7 +104,7 @@ void connectdb(void) {
   dbconn = PQconnectdb(connectstr);
   
   if (!dbconn || (PQstatus(dbconn) != CONNECTION_OK)) {
-    Error("pqsql", ERR_ERROR, "Unable to connect to db: %s", PQerrorMessage(dbconn));
+    Error("pqsql", ERR_ERROR, "Unable to connect to db: %s", pqlasterror(dbconn));
     return;
   }
   Error("pqsql", ERR_INFO, "Connected!");
@@ -319,4 +319,20 @@ void dbstatus(int hooknum, void *arg) {
 
 int pqconnected(void) {
   return dbconnected;
+}
+
+char* pqlasterror(PGconn * pgconn)
+{
+  static char errormsg[PQ_ERRORMSG_LENGTH];
+  int i;
+  char *error = PQerrorMessage(pgconn);
+  int len = min(sizeof(errormsg),strlen(error));
+  strncpy(errormsg, error, len - 1);
+  errormsg[len - 1] = '\0';
+  for(i=0;i<len-1;i++) {
+    if ((errormsg[i] == '\r') || (errormsg[i] == '\n')) {
+      errormsg[i] = ' ';
+    }
+  }
+  return errormsg;
 }
