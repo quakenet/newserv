@@ -90,7 +90,7 @@ void connectdb(void) {
     return;
   }
 
-  snprintf(connectstr, sizeof(connectstr), "dbname=%s user=%s password=%s", dbdatabase->content, dbusername->content, dbpassword->content);
+  snprintf(connectstr, sizeof(connectstr), "host=%s port=%s dbname=%s user=%s password=%s", dbhost->content, dbport->content, dbdatabase->content, dbusername->content, dbpassword->content);
   
   freesstring(dbhost);
   freesstring(dbusername);
