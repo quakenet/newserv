@@ -21,6 +21,11 @@
 #include <string.h>
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
+#include "../channel/channel.h"
+#include "../localuser/localuserchannel.h"
+
+MODULE_VERSION("")
 
 #define SCANTIMEOUT      60
 
@@ -240,6 +245,7 @@ void _init(void) {
 void registerproxyscannick(void *arg) {
   sstring *psnick,*psuser,*pshost,*psrealname;
   /* Set up our nick on the network */
+  channel *cp;
 
   psnick=getcopyconfigitem("proxyscan","nick","P",NICKLEN);
   psuser=getcopyconfigitem("proxyscan","user","proxyscan",USERLEN);
@@ -255,6 +261,14 @@ void registerproxyscannick(void *arg) {
   freesstring(psuser);
   freesstring(pshost);
   freesstring(psrealname);
+
+  cp=findchannel("#twilightzone");
+  if (!cp) {
+    localcreatechannel(proxyscannick,"#twilightzone");
+  } else {
+    localjoinchannel(proxyscannick,cp);
+    localgetops(proxyscannick,cp);
+  }
 }
 
 void _fini(void) {
