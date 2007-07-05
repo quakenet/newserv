@@ -31,6 +31,8 @@ struct searchNode;
 typedef struct searchNode *(*parseFunc)(int, int, char **);
 typedef void (*freeFunc)(struct searchNode *);
 typedef void *(*exeFunc)(struct searchNode *, void *);
+typedef void (*ChanDisplayFunc)(nick *, chanindex *);
+typedef void (*NickDisplayFunc)(nick *, nick *);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -62,6 +64,7 @@ struct searchNode *modes_parse(int type, int argc, char **argv);
 struct searchNode *hostmask_parse(int type, int argc, char **argv);
 struct searchNode *realname_parse(int type, int argc, char **argv);
 struct searchNode *authname_parse(int type, int argc, char **argv);
+struct searchNode *authts_parse(int type, int argc, char **argv);
 struct searchNode *ident_parse(int type, int argc, char **argv);
 struct searchNode *host_parse(int type, int argc, char **argv);
 struct searchNode *channel_parse(int type, int argc, char **argv);
@@ -89,9 +92,10 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type);
 /* Registration functions */
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
-
-void *trueval(int type);
-void *falseval(int type);
+void regchandisp(const char *name, ChanDisplayFunc handler);
+void unregchandisp(const char *name, ChanDisplayFunc handler);
+void regnickdisp(const char *name, NickDisplayFunc handler);
+void unregnickdisp(const char *name, NickDisplayFunc handler);
 
 typedef struct searchNode {
   int returntype;

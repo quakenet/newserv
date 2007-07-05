@@ -12,16 +12,37 @@
 MODULE_VERSION("");
 
 CommandTree *searchTree;
+CommandTree *chanOutputTree;
+CommandTree *nickOutputTree;
 
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
 struct searchNode *search_parse(int type, char *input);
 
+void printnick(nick *, nick *);
+void printnick_channels(nick *, nick *);
+void printchannel(nick *, chanindex *);
+void printchannel_topic(nick *, chanindex *);
+void printchannel_services(nick *, chanindex *);
+
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
 
-void *trueval(int type);
-void *falseval(int type);
+void regchandisp(const char *name, ChanDisplayFunc handler) {
+  addcommandtotree(chanOutputTree, name, 0, 0, (CommandHandler)handler);
+}
+
+void unregchandisp(const char *name, ChanDisplayFunc handler) {
+  deletecommandfromtree(chanOutputTree, name, (CommandHandler)handler);
+}
+
+void regnickdisp(const char *name, NickDisplayFunc handler) {
+  addcommandtotree(nickOutputTree, name, 0, 0, (CommandHandler)handler);
+}
+
+void unregnickdisp(const char *name, NickDisplayFunc handler) {
+  deletecommandfromtree(nickOutputTree, name, (CommandHandler)handler);
+}
 
 const char *parseError;
 /* used for *_free functions that need to warn users of certain things
@@ -30,6 +51,8 @@ nick *senderNSExtern;
 
 void _init() {
   searchTree=newcommandtree();
+  chanOutputTree=newcommandtree();
+  nickOutputTree=newcommandtree();
 
   /* Boolean operations */
   registersearchterm("and",and_parse);
@@ -50,6 +73,7 @@ void _init() {
   registersearchterm("hostmask",hostmask_parse);
   registersearchterm("realname",realname_parse);
   registersearchterm("authname",authname_parse);
+  registersearchterm("authts",authts_parse);
   registersearchterm("ident",ident_parse);
   registersearchterm("host",host_parse);
   registersearchterm("channel",channel_parse);
@@ -75,6 +99,15 @@ void _init() {
   /* Kill / gline parameters */
   registersearchterm("kill",kill_parse);
   registersearchterm("gline",gline_parse);
+  
+  /* Nick output filters */
+  regnickdisp("default",printnick);
+  regnickdisp("channels",printnick_channels);
+    
+  /* Channel output filters */
+  regchandisp("default",printchannel);
+  regchandisp("topic",printchannel_topic);
+  regchandisp("services",printchannel_services);
 
   registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
   registercontrolhelpcmd("chansearch",NO_OPER,4,do_chansearch, "Usage: chansearch <criteria>\nSearches for channels with the given criteria.");
@@ -82,6 +115,8 @@ void _init() {
 
 void _fini() {
   destroycommandtree(searchTree);
+  destroycommandtree(chanOutputTree);
+  destroycommandtree(nickOutputTree);
   deregistercontrolcmd("nicksearch", do_nicksearch);
   deregistercontrolcmd("chansearch", do_chansearch);
 }
@@ -94,65 +129,19 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
   deletecommandfromtree(searchTree, term, (CommandHandler) parsefunc);
 }
 
-void printnick(nick *sender, nick *np) {
-  char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
-
-  controlreply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
-	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
-}
-
-void printchannel(nick *sender, chanindex *cip) {
-  /* shamelessly stolen from (now defunct) chansearch.c */
-  int i;
-  int op,voice,peon;
-  int oper,service,hosts;
-  nick *np;
-  chanuserhash *cuhp;
-  unsigned int marker;
-  
-  op=voice=peon=oper=service=hosts=0;
-  marker=nexthostmarker();
-  
-  if (cip->channel==NULL) {
-    controlreply(sender,"[         Channel currently empty          ] %s",cip->name->content);
-  } else {
-    cuhp=cip->channel->users;
-    for (i=0;i<cuhp->hashsize;i++) {
-      if (cuhp->content[i]!=nouser) {
-        if (cuhp->content[i]&CUMODE_OP) {
-          op++;
-        } else if (cuhp->content[i]&CUMODE_VOICE) {
-          voice++;
-        } else {
-          peon++;
-        }
-        if ((np=getnickbynumeric(cuhp->content[i]&CU_NUMERICMASK))!=NULL) {
-          if (IsOper(np)) {
-            oper++;
-          }
-          if (IsService(np)) {
-            service++;
-          }
-          if (np->host->marker!=marker) {
-            np->host->marker=marker;
-            hosts++;
-          }            
-        }
-      }
-    }
-    controlreply(sender,"[ %4dU %4d@ %4d+ %4d %4d* %4dk %4dH ] %s (%s)",cuhp->totalusers,op,voice,peon,oper,
-      service,hosts,cip->name->content, printflags(cip->channel->flags, cmodeflags));
-  }
-}
-
 int do_nicksearch(void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source, *np;
-  int i;
+  int i,j;
   struct searchNode *search;
   int limit=500,matches=0;
   char *ch;
   int arg=0;
-
+  struct Command *cmd;
+  NickDisplayFunc display=printnick;
+  unsigned int cmarker;
+  unsigned int tchans=0,uchans=0;
+  struct channel **cs;
+  
   if (cargc<1)
     return CMD_USAGE;
   
@@ -170,6 +159,20 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 	limit=strtoul(cargv[arg++],NULL,10);
 	break;
 	
+      case 'd':
+        if (cargc<arg) {
+          controlreply(sender,"Error: -d switch requires an argument");
+          return CMD_USAGE;
+        }
+        cmd=findcommandintree(nickOutputTree, cargv[arg], 1);
+        if (!cmd) {
+          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          return CMD_USAGE;
+        }
+        display=(NickDisplayFunc)cmd->handler;
+        arg++;
+        break;
+        
       default:
 	controlreply(sender,"Unrecognised flag -%c.",*ch);
       }
@@ -190,14 +193,30 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
+  /* Get a marker value to mark "seen" channels for unique count */
+  cmarker=nextchanmarker();
+  
   /* The top-level node needs to return a BOOL */
   search=coerceNode(search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
       if ((search->exe)(search, np)) {
+        /* Add total channels */
+        tchans += np->channels->cursi;
+        
+        /* Check channels for uniqueness */
+        cs=(channel **)np->channels->content;
+        for (j=0;j<np->channels->cursi;j++) {
+          if (cs[j]->index->marker != cmarker) {
+            cs[j]->index->marker=cmarker;
+            uchans++;
+          }
+        }
+          
 	if (matches<limit)
-	  printnick(sender, np);
+	  display(sender, np);
+	  
 	if (matches==limit)
 	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
@@ -207,8 +226,9 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 
   (search->free)(search);
 
-  controlreply(sender,"--- End of list: %d matches", matches);
-  
+  controlreply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
+                matches, tchans, uchans, (float)tchans/uchans);
+
   return CMD_OK;
 }  
 
@@ -220,6 +240,8 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   int limit=500,matches=0;
   char *ch;
   int arg=0;
+  struct Command *cmd;
+  ChanDisplayFunc display=printchannel;
 
   if (cargc<1)
     return CMD_USAGE;
@@ -237,6 +259,20 @@ int do_chansearch(void *source, int cargc, char **cargv) {
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
 	break;
+
+      case 'd':
+        if (cargc<arg) {
+          controlreply(sender,"Error: -d switch requires an argument");
+          return CMD_USAGE;
+        }
+        cmd=findcommandintree(chanOutputTree, cargv[arg], 1);
+        if (!cmd) {
+          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          return CMD_USAGE;
+        }
+        display=(ChanDisplayFunc)cmd->handler;
+        arg++;
+        break;
 	
       default:
 	controlreply(sender,"Unrecognised flag -%c.",*ch);
@@ -264,7 +300,7 @@ int do_chansearch(void *source, int cargc, char **cargv) {
     for (cip=chantable[i];cip;cip=cip->next) {
       if ((search->exe)(search, cip)) {
 	if (matches<limit)
-	  printchannel(sender, cip);
+	  display(sender, cip);
 	if (matches==limit)
 	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
@@ -277,30 +313,6 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   controlreply(sender,"--- End of list: %d matches", matches);
 
   return CMD_OK;
-}
-
-void *trueval(int type) {
-  switch(type) {
-  default:
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return (void *)1;
-    
-  case RETURNTYPE_STRING:
-    return "1";
-  }
-}
-
-void *falseval(int type) {
-  switch (type) {
-  default:
-  case RETURNTYPE_INT:
-  case RETURNTYPE_BOOL:
-    return NULL;
-    
-  case RETURNTYPE_STRING:
-    return "";
-  }
 }
 
 struct coercedata {
