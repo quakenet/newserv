@@ -11,6 +11,7 @@
 #include "../core/hooks.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
+#include "../lib/strlfunc.h"
 #include "pqsql.h"
 
 #include <stdlib.h>
@@ -74,7 +75,7 @@ void connectdb(void) {
     return;
 
   /* stolen from chanserv as I'm lazy */
-  dbhost = getcopyconfigitem("pqsql", "host", "localhost", HOSTLEN);
+  dbhost = getcopyconfigitem("pqsql", "host", "UNIX", HOSTLEN);
   dbusername = getcopyconfigitem("pqsql", "username", "newserv", 20);
   dbpassword = getcopyconfigitem("pqsql", "password", "moo", 20);
   dbdatabase = getcopyconfigitem("pqsql", "database", "newserv", 20);
@@ -89,9 +90,13 @@ void connectdb(void) {
     freesstring(dbport);
     return;
   }
-
-  snprintf(connectstr, sizeof(connectstr), "host=%s port=%s dbname=%s user=%s password=%s", dbhost->content, dbport->content, dbdatabase->content, dbusername->content, dbpassword->content);
   
+  if (!strcmp(dbhost->content,"UNIX")) {
+    snprintf(connectstr, sizeof(connectstr), "dbname=%s user=%s password=%s", dbdatabase->content, dbusername->content, dbpassword->content);
+  } else {
+    snprintf(connectstr, sizeof(connectstr), "host=%s port=%s dbname=%s user=%s password=%s", dbhost->content, dbport->content, dbdatabase->content, dbusername->content, dbpassword->content);
+  }  
+
   freesstring(dbhost);
   freesstring(dbusername);
   freesstring(dbpassword);
