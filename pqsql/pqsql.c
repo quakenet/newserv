@@ -321,18 +321,16 @@ int pqconnected(void) {
   return dbconnected;
 }
 
-char* pqlasterror(PGconn * pgconn)
-{
-  static char errormsg[PQ_ERRORMSG_LENGTH];
+char* pqlasterror(PGconn * pgconn) {
+  static char errormsg[PQ_ERRORMSG_LENGTH + 1];
   int i;
-  char *error = PQerrorMessage(pgconn);
-  int len = min(sizeof(errormsg),strlen(error));
-  strncpy(errormsg, error, len - 1);
-  errormsg[len - 1] = '\0';
-  for(i=0;i<len-1;i++) {
-    if ((errormsg[i] == '\r') || (errormsg[i] == '\n')) {
+  if(!pgconn) 
+    return "PGCONN NULL";
+  strlcpy(errormsg, PQerrorMessage(pgconn), PQ_ERRORMSG_LENGTH);
+  for(i=0;i<errormsg[i];i++) {
+    if((errormsg[i] == '\r') || (errormsg[i] == '\n'))
       errormsg[i] = ' ';
-    }
+    
   }
   return errormsg;
 }
