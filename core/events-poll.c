@@ -69,9 +69,9 @@ void checkindex(unsigned index) {
   }
 
   eventfds=(struct pollfd *)realloc((void *)eventfds,maxfds*sizeof(struct pollfd));
-  memset(&eventfds[oldmax],0,maxfds-oldmax);
+  memset(&eventfds[oldmax],0,(maxfds-oldmax)*sizeof(struct pollfd));
   eventhandlers=(reghandler *)realloc((void *)eventhandlers,maxfds*sizeof(reghandler));
-  memset(&eventhandlers[oldmax],0,maxfds-oldmax);
+  memset(&eventhandlers[oldmax],0,(maxfds-oldmax)*sizeof(reghandler));
 }
 
 /* 
