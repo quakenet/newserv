@@ -1,5 +1,5 @@
 /*
- * events.c: the event handling core, poll() version
+ * events.c: the event handling core, epoll() version
  */
 
 #include <stdio.h>
