@@ -1,5 +1,5 @@
 
-CSDIRS=database chancmds usercmds authcmds authtracker
+CSDIRS=database chancmds usercmds authcmds authtracker newsearch
 
 .PHONY: all dirs clean
 all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_chansearch.so chanserv_authlib.so dirs
