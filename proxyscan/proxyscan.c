@@ -24,6 +24,7 @@
 #include "../lib/version.h"
 #include "../channel/channel.h"
 #include "../localuser/localuserchannel.h"
+#include "../core/nsmalloc.h"
 
 MODULE_VERSION("")
 
@@ -288,7 +289,7 @@ void _fini(void) {
   dumpcachehosts(NULL);
 
   /* free() all our structures */
-  sfreeall();
+  nsfreeall(POOL_PROXYSCAN);
   
   freesstring(ps_mailname);
 #if defined(PROXYSCAN_MAIL)
