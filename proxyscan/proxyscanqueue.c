@@ -5,6 +5,7 @@
 
 #include "proxyscan.h"
 #include "../irc/irc.h"
+#include "../core/error.h"
 
 pendingscan *ps_normalqueue=NULL;
 pendingscan *ps_prioqueue=NULL;
@@ -53,16 +54,11 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
   }
 
   /* We have to queue it */
-  psp = (struct pendingscan *) malloc(sizeof(pendingscan));
-  if (!psp)
-  {
-    /* shutdown due to no memory */
-    irc_send("%s SQ %s 0 :Out of memory - exiting.",mynumeric->content,myserver->content);
-    irc_disconnected();
-    exit(0);
-  } else {
-    countpendingscan++;
-  }
+  if (!(psp=(struct pendingscan *)malloc(sizeof(pendingscan))))
+    Error("proxyscan",ERR_STOP,"Unable to allocate memory");
+
+  countpendingscan++;
+
   psp->IP=IP;
   psp->type=scantype;
   psp->port=port;
