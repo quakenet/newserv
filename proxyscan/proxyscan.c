@@ -234,7 +234,6 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 65506);
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
-  proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
   
   /* Schedule saves */
