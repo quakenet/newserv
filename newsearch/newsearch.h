@@ -71,6 +71,7 @@ struct searchNode *channel_parse(int type, int argc, char **argv);
 struct searchNode *timestamp_parse(int type, int argc, char **argv);
 struct searchNode *country_parse(int type, int argc, char **argv);
 struct searchNode *ip_parse(int type, int argc, char **argv);
+struct searchNode *channels_parse(int type, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(int type, int argc, char **argv);

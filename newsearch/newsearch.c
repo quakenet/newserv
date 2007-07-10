@@ -80,6 +80,7 @@ void _init() {
   registersearchterm("timestamp",timestamp_parse);
   registersearchterm("country",country_parse);
   registersearchterm("ip",ip_parse);
+  registersearchterm("channels",channels_parse);
 
   /* Channel operations */
   registersearchterm("exists",exists_parse);
