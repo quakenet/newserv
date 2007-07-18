@@ -899,7 +899,7 @@ struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason,
     return NULL;
 }
 
-void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) { /* PPA: if multiple users match the same user@host or *@host it'll send multiple glines?! */
+int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) { /* PPA: if multiple users match the same user@host or *@host it'll send multiple glines?! */
   char hostname[RG_MASKLEN];
   int usercount = 0;
 
@@ -940,11 +940,11 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
         nn->punish = rp->type;
       }
     }
-    return;
+    return usercount;
   }
   
   if ((rp->type <= 0) || (rp->type >= 3))
-    return;
+    return 0;
   
   if (rp->type == 1) {
     if (IsAccount(np)) {
@@ -961,6 +961,25 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   }
   
   irc_send("%s GL * +%s %d :%s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
+  return usercount;
+}
+
+int floodprotection = 0;
+
+void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) {
+  int t = time(NULL);
+
+  if(t > floodprotection) {
+    floodprotection = t;
+  } else if((floodprotection - t) / 8 > RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC) {
+    channel *cp = findchannel("#twilightzone");
+    if(cp)
+      controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
+    controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
+    floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
+  }
+
+  floodprotection+=__rg_dogline(gll, np, rp, matched);
 }
 
 void rg_logevent(nick *np, char *event, char *details, ...) {
