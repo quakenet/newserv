@@ -908,6 +908,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_SSTRING 6
 #define PUSHER_TOTALUSERS 7
 #define PUSHER_TOPIC 8
+#define PUSHER_UMODES 9
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -921,6 +922,9 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_STRING, authname);
   PUSH_NICKPUSHER(PUSHER_IP, ipnode);
   PUSH_NICKPUSHER(PUSHER_LONG, numeric);
+  PUSH_NICKPUSHER(PUSHER_LONG, timestamp);
+  PUSH_NICKPUSHER(PUSHER_LONG, accountts);
+  PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -982,6 +986,9 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         break;
       case PUSHER_TOTALUSERS:
         lua_pushint(l, (*((channel **)offset))->users->totalusers);
+        break;
+      case PUSHER_UMODES:
+        lua_pushstring(l, printflags(*((flag_t *)offset), umodeflags));
         break;
       case PUSHER_TOPIC:
         if((*((channel **)offset))->topic) {
