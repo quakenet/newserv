@@ -283,16 +283,23 @@ int handlejoinmsg(void *source, int cargc, char **cargv) {
         if (newchan) {
           delchannel(cp);
         } 
-      } else { 
+      } else {
+        chanindex *cip=cp->index;
+         
         /* If we just created a channel, flag it */
         if (newchan) {
           triggerhook(HOOK_CHANNEL_NEWCHANNEL,cp);
         }
-
-        /* send hook */
-        harg[0]=cp;
-        harg[1]=np;
-        triggerhook(HOOK_CHANNEL_JOIN,harg);
+        
+        /* Don't send HOOK_CHANNEL_JOIN if the channel doesn't exist any
+         * more (can happen if something destroys it in response to
+         * HOOK_CHANNEL_NEWCHANNEL) */
+        if (cp == cip->channel) {
+          /* send hook */
+          harg[0]=cp;
+          harg[1]=np;
+          triggerhook(HOOK_CHANNEL_JOIN,harg);
+        }
       }
     }
     nextchan=pos;
@@ -354,16 +361,22 @@ int handlecreatemsg(void *source, int cargc, char **cargv) {
       if (newchan) {
         delchannel(cp);
       }
-    } else {  
+    } else {
+      chanindex *cip = cp->index;
+        
       /* Flag the channel as new if necessary */
       if (newchan) {
         triggerhook(HOOK_CHANNEL_NEWCHANNEL,cp);
       }
     
-      /* Trigger hook */
-      harg[0]=cp;
-      harg[1]=np;
-      triggerhook(HOOK_CHANNEL_CREATE,harg);
+      /* If HOOK_CHANNEL_NEWCHANNEL has caused the channel to be deleted,
+       * don't trigger the CREATE hook. */
+      if (cip->channel == cp) {
+        /* Trigger hook */
+        harg[0]=cp;
+        harg[1]=np;
+        triggerhook(HOOK_CHANNEL_CREATE,harg);
+      }
     }
     nextchan=pos;
   }
