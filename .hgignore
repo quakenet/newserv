@@ -6,4 +6,7 @@ syntax: glob
 local.in
 newserv
 modules/
-newserv.local.conf
+newserv.conf
+chanservlog.*
+logs/*
+core/events.c
