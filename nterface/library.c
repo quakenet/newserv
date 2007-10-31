@@ -13,8 +13,8 @@
 
 #include "../core/config.h"
 #include "../lib/irc_string.h"
-#include "../lib/sha1.h"
-#include "../lib/helix.h"
+#include "../lib/sha2.h"
+#include "../lib/rijndael.h"
 
 #include "library.h"
 
@@ -47,10 +47,7 @@ unsigned char hexlookup[256] = {
                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff
                                   };
 
-FILE *challenge_random_fd = NULL;
-
-unsigned char entropybuffer[CHALLENGE_ENTROPYLEN * CHALLENGE_ENTROPYBUF];
-int entropy_remaining = 0;
+FILE *random_fd = NULL;
 
 int getcopyconfigitemint(char *section, char *key, int def, int *value) {
   char buf[50];
@@ -91,51 +88,52 @@ int positive_atoi(char *data) {
 }
 
 char *challenge_response(char *challenge, char *password) {
-  unsigned char buf[20];
+  unsigned char buf[32];
   static char output[sizeof(buf) * 2 + 1];
-  SHA1_CTX context;
+  SHA256_CTX context;
 
-  SHA1Init(&context);
-  SHA1Update(&context, (unsigned char *)password, strlen(password));
-  SHA1Update(&context, (unsigned char *)" ", 1);
-  SHA1Update(&context, (unsigned char *)challenge, strlen(challenge));
-  SHA1Final(buf, &context);
+  SHA256_Init(&context);
+  SHA256_Update(&context, (unsigned char *)challenge, strlen(challenge));
+  SHA256_Update(&context, (unsigned char *)":", 1);
+  SHA256_Update(&context, (unsigned char *)password, strlen(password));
+  SHA256_Final(buf, &context);
 
-  TwentyByteHex(output, buf);
+  SHA256_Init(&context);
+  SHA256_Update(&context, (unsigned char *)buf, 32);
+  SHA256_Final(buf, &context);
+
+  ThirtyTwoByteHex(output, buf);
 
   return output;
 }
 
-/* my entropy function from Q */
-int get_challenge_entropy(unsigned char *data) {
-  if (!challenge_random_fd) {
-    challenge_random_fd = fopen(CHALLENGE_RANDOM_LOCATION, "rb");
-    if(!challenge_random_fd)
+int get_entropy(unsigned char *buf, int bytes) {
+  if (!random_fd) {
+    random_fd = fopen(RANDOM_LOCATION, "rb");
+    if(!random_fd)
       return 0;
   }
   
-  if(!entropy_remaining) {
-    if(fread(entropybuffer, 1, sizeof(entropybuffer), challenge_random_fd) != sizeof(entropybuffer))
-      return 0;
-    entropy_remaining = CHALLENGE_ENTROPYBUF;
-  }
-  
-  memcpy(data, entropybuffer + (CHALLENGE_ENTROPYBUF - entropy_remaining) * CHALLENGE_ENTROPYLEN, CHALLENGE_ENTROPYLEN);
-  entropy_remaining--;
+  fread(buf, 1, bytes, random_fd);
   
   return 1;
 }
 
 int generate_nonce(unsigned char *nonce, int nterfacer) {
-  unsigned char entropy[CHALLENGE_ENTROPYLEN];
+  unsigned char entropy[20], output[32];
   struct timeval tvv;
-  if(!get_challenge_entropy(entropy))
+  SHA256_CTX c;
+
+  if(!get_entropy(entropy, 20))
     return 0;
 
   gettimeofday(&tvv, NULL);
 
-  memcpy(nonce, &tvv, sizeof(struct timeval));
-  memcpy(nonce + sizeof(struct timeval) - 2, entropy, NONCE_LEN - sizeof(struct timeval) + 2);
+  SHA256_Init(&c);
+  SHA256_Update(&c, entropy, 20);
+  SHA256_Update(&c, (unsigned char *)&tvv, sizeof(struct timeval));
+  SHA256_Final(output, &c);
+  memcpy(nonce, output, 16);
 
   if(nterfacer) {
     nonce[7]&=128;
@@ -144,17 +142,6 @@ int generate_nonce(unsigned char *nonce, int nterfacer) {
   }
 
   return 1;
-}
-
-char *get_random_hex(void) {
-  static char output[CHALLENGE_ENTROPYLEN * 2 + 1];
-  unsigned char stored[CHALLENGE_ENTROPYLEN];
-  if(get_challenge_entropy(stored)) {
-    TwentyByteHex(output, stored);
-  } else {
-    return NULL;
-  }
-  return output;
 }
 
 char *int_to_hex(unsigned char *input, char *buf, int len) {
@@ -216,3 +203,87 @@ char *request_error(int errn) {
 
   return err;
 }
+
+rijndaelcbc *rijndaelcbc_init(unsigned char *key, int keybits, unsigned char *iv, int decrypt) {
+  rijndaelcbc *ret = (rijndaelcbc *)malloc(sizeof(rijndaelcbc) + RKLENGTH(keybits) * sizeof(unsigned long));
+  if(!ret)
+    return NULL;
+
+  ret->rk = (unsigned long *)(ret + 1);
+
+  memcpy(ret->prevblock, iv, 16);
+
+  if(decrypt) {
+    ret->nrounds = rijndaelSetupDecrypt(ret->rk, key, keybits);
+  } else {
+    ret->nrounds = rijndaelSetupEncrypt(ret->rk, key, keybits);
+  }
+  return ret;
+}
+
+void rijndaelcbc_free(rijndaelcbc *c) {
+  free(c);
+}
+
+unsigned char *rijndaelcbc_encrypt(rijndaelcbc *c, unsigned char *ptblock) {
+  int i;
+  unsigned char *p = c->prevblock, *p2 = c->scratch;
+  for(i=0;i<16;i++)
+    *p2++ = *p++ ^ *ptblock++;
+
+  rijndaelEncrypt(c->rk, c->nrounds, c->scratch, c->prevblock);
+  return c->prevblock;
+}
+
+unsigned char *rijndaelcbc_decrypt(rijndaelcbc *c, unsigned char *ctblock) {
+  int i;
+  unsigned char *p = c->prevblock, *p2 = c->scratch;
+
+  rijndaelDecrypt(c->rk, c->nrounds, ctblock, c->scratch);
+
+  for(i=0;i<16;i++)
+    *p2++^=*p++;
+
+  memcpy(c->prevblock, ctblock, 16);
+  return c->scratch;
+}
+
+void hmacsha256_init(hmacsha256 *c, unsigned char *key, int keylen) {
+  unsigned char realkey[64], outerkey[64], innerkey[64];
+  SHA256_CTX keyc;
+  int i;
+
+  memset(realkey, 0, sizeof(realkey));
+  if(keylen > 64) {
+    SHA256_Init(&keyc);
+    SHA256_Update(&keyc, key, keylen);
+    SHA256_Final(realkey, &keyc);
+    keylen = 32;
+  } else {
+    memcpy(realkey, key, keylen);
+  }
+
+  /* abusing the cache here, if we do sha256 in between that'll erase it */
+  for(i=0;i<64;i++) {
+    int r = realkey[i];
+    innerkey[i] = r ^ 0x36;
+    outerkey[i] = r ^ 0x5c;
+  }
+
+  SHA256_Init(&c->outer);
+  SHA256_Init(&c->inner);
+  SHA256_Update(&c->outer, outerkey, 64);
+  SHA256_Update(&c->inner, innerkey, 64);
+}
+
+void hmacsha256_update(hmacsha256 *c, unsigned char *message, int messagelen) {
+  SHA256_Update(&c->inner, message, messagelen);
+}
+
+/* digest must be 32 bytes */
+void hmacsha256_final(hmacsha256 *c, unsigned char *digest) {
+  SHA256_Final(digest, &c->inner);
+  SHA256_Update(&c->outer, digest, 32);
+  SHA256_Final(digest, &c->outer);
+}
+

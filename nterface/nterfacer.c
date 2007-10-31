@@ -411,10 +411,27 @@ void nterfacer_accept_event(struct esocket *socket) {
   esocket_write_line(newsocket, "nterfacer " PROTOCOL_VERSION);
 }
 
+void derive_key(unsigned char *out, char *password, char *segment, unsigned char *noncea, unsigned char *nonceb) {
+  SHA256_CTX c;
+  SHA256_Init(&c);
+  SHA256_Update(&c, (unsigned char *)password, strlen(password));
+  SHA256_Update(&c, (unsigned char *)":", 1);
+  SHA256_Update(&c, (unsigned char *)segment, strlen(segment));
+  SHA256_Update(&c, (unsigned char *)":", 1);
+  SHA256_Update(&c, noncea, 16);
+  SHA256_Update(&c, (unsigned char *)":", 1);
+  SHA256_Update(&c, nonceb, 16);
+  SHA256_Final(out, &c);
+
+  SHA256_Init(&c);
+  SHA256_Update(&c, out, 32);
+  SHA256_Final(out, &c);
+}
+
 int nterfacer_line_event(struct esocket *sock, char *newline) {
   struct sconnect *socket = sock->tag;
-  char *response, *theirnonceh = NULL;
-  unsigned char theirnonce[NONCE_LEN];
+  char *response, *theirnonceh = NULL, *theirivh = NULL;
+  unsigned char theirnonce[16], theiriv[16];
   int number, reason;
 
   switch(socket->status) {
@@ -423,15 +440,18 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         nterface_log(nrl, NL_INFO, "Protocol mismatch from %s: %s", socket->permit->hostname->content, newline);
         return 1;
       } else {
-        char *hex, hexbuf[NONCE_LEN * 2 + 1]; /* Vekoma mAD HoUSe */
+        unsigned char challenge[32];
+        char ivhex[16 * 2 + 1], noncehex[16 * 2 + 1];
 
-        hex = get_random_hex();
-        if(!hex) {
-          nterface_log(nrl, NL_ERROR, "Unable to open challenge entropy bin!");
+        if(!get_entropy(challenge, 32) || !get_entropy(socket->iv, 16)) {
+          nterface_log(nrl, NL_ERROR, "Unable to open challenge/IV entropy bin!");
           return 1;
         }
 
-        memcpy(socket->response, challenge_response(hex, socket->permit->password->content), sizeof(socket->response));
+        int_to_hex(challenge, socket->challenge, 32);
+        int_to_hex(socket->iv, ivhex, 16);
+
+        memcpy(socket->response, challenge_response(socket->challenge, socket->permit->password->content), sizeof(socket->response));
         socket->response[sizeof(socket->response) - 1] = '\0'; /* just in case */
 
         socket->status = SS_VERSIONED;
@@ -439,8 +459,9 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
           nterface_log(nrl, NL_ERROR, "Unable to generate nonce!");
           return 1;
         }
+        int_to_hex(socket->ournonce, noncehex, 16);
 
-        if(esocket_write_line(sock, "%s %s", hex, int_to_hex(socket->ournonce, hexbuf, NONCE_LEN)))
+        if(esocket_write_line(sock, "%s %s %s", socket->challenge, ivhex, noncehex))
            return BUF_ERROR;
         return 0;
       }
@@ -449,12 +470,23 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       for(response=newline;*response;response++) {
         if((*response == ' ') && (*(response + 1))) {
           *response = '\0';
-          theirnonceh = response + 1;
+          theirivh = response + 1;
           break;
         }
       }
 
-      if(!theirnonceh || (strlen(theirnonceh) != 32) || !hex_to_int(theirnonceh, theirnonce, sizeof(theirnonce))) {
+      if(theirivh) {
+        for(response=theirivh;*response;response++) {
+          if((*response == ' ') && (*(response + 1))) {
+            *response = '\0';
+            theirnonceh = response + 1;
+            break;
+          }
+        }
+      }
+
+      if(!theirivh || (strlen(theirivh) != 32) || !hex_to_int(theirivh, theiriv, sizeof(theiriv)) ||
+         !theirnonceh || (strlen(theirnonceh) != 32) || !hex_to_int(theirnonceh, theirnonce, sizeof(theirnonce))) {
         nterface_log(nrl, NL_INFO, "Protocol error drop: %s", socket->permit->hostname->content);
         return 1;
       }
@@ -471,7 +503,12 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         socket->status = SS_AUTHENTICATED;
         ret = esocket_write_line(sock, "Oauth");
         if(!ret) {
-          switch_buffer_mode(sock, socket->permit->password->content, socket->ournonce, theirnonce);
+          unsigned char theirkey[32], ourkey[32];
+          derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce);
+          derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce);
+
+          switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);
+          return BUF_RESET;
         } else {
           return BUF_ERROR;
         }
