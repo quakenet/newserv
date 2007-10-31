@@ -1,24 +1,6 @@
 /*
   nterfacer
-  Copyright (C) 2004-2006 Chris Porter.
-  
-  v1.07a
-    - dumb config bug
-  v1.07
-    - made sure buf[0] = '\0'
-  v1.06
-    - tidy up
-  v1.05
-    - added application level ping support
-  v1.04
-    - modified for new logging system
-  v1.03
-    - newserv seems to unload this module before the ones that depend on us,
-      so deregister_service now checks to see if it's been freed already
-  v1.02
-    - moronic bug in linked lists fixed
-  v1.01
-    - logging
+  Copyright (C) 2004-2007 Chris Porter.
 */
 
 #include <stdio.h>
@@ -43,7 +25,7 @@
 #include "nterfacer.h"
 #include "logging.h"
 
-MODULE_VERSION("");
+MODULE_VERSION("1.1");
 
 struct service_node *tree = NULL;
 struct esocket_events nterfacer_events;
@@ -508,7 +490,6 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
           derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce);
 
           switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);
-          return BUF_RESET;
         } else {
           return BUF_ERROR;
         }

@@ -1,15 +1,6 @@
 /*
   Easy async socket library with HELIX encryption and authentication
-  Copyright (C) 2004-2005 Chris Porter.
-
-  v1.03
-    - changed nonce logic
-  v1.02
-    - added some \n stripping in crypto code
-  v1.01
-    - noticed small problem in _read, if ret == -1 && errno != EAGAIN then it would mess up
-    - now disconnects on write buffer filling up
-    - increased buffer size and maximum queue size
+  Copyright (C) 2004-2007 Chris Porter.
 */
 
 #include "esockets.h"
@@ -24,7 +15,6 @@
 #include <stdarg.h>
 #include <netinet/in.h>
 
-#include "../lib/sha1.h"
 #include "../core/events.h"
 
 struct esocket *socklist = NULL;
@@ -76,10 +66,13 @@ struct esocket *esocket_add(int fd, char socket_type, struct esocket_events *eve
   newsock->fd = fd;
   newsock->next = socklist;
 
-  newsock->in.on_parse = buffer_parse_ascii;
-  newsock->in.startpos = newsock->in.curpos = newsock->in.writepos = newsock->in.data;
-  newsock->in.buffer_size = MAX_ASCII_LINE_SIZE;
-  newsock->in.packet_length = 0;
+  newsock->in.mode = PARSE_ASCII;
+  newsock->in.data = NULL;
+  newsock->in.size = 0;
+  newsock->in.cryptobuf = NULL;
+  newsock->in.cryptobufsize = 0;
+  newsock->in.mac = 0;
+
   newsock->out.head = NULL;
   newsock->out.end = NULL;
   newsock->out.count = 0;
@@ -194,6 +187,11 @@ void esocket_disconnect(struct esocket *active) {
         pkt = npkt;
       }
 
+      if(p->in.data)
+        free(p->in.data);
+      if(p->in.cryptobuf)
+        free(p->in.cryptobuf);
+
       free(p);
       break;
     }  
@@ -207,37 +205,139 @@ void esocket_disconnect_when_complete(struct esocket *active) {
   }
 }
 
+int parse_ascii(struct esocket *sock, int *bytes_to_strip) {
+  struct esocket_in_buffer *buf = &sock->in;
+  char *p;
+  int i, ret;
+
+  for(p=buf->data,i=0;i<buf->size;i++,p++) {
+    if(*p == '\0' || *p == '\n') {
+      *p = '\0';
+
+      *bytes_to_strip = i + 1;
+      ret = sock->events.on_line(sock, buf->data);
+      if(ret)
+        return ret;
+
+      return 0;
+    }
+  }
+
+  *bytes_to_strip = 0;
+  return 0;
+}
+
+void seqno_update(hmacsha256 *h, u_int64_t value) {
+  u_int64_t v2 = htonq(value);
+  hmacsha256_update(h, (unsigned char *)&v2, 8);
+}
+
+int crypto_newblock(struct esocket *sock, unsigned char *block) {
+  unsigned char *p, *p2;
+  int i;
+  struct esocket_in_buffer *buf = &sock->in;
+
+  if(buf->mac) {
+    unsigned char digest[32];
+    int ret;
+    hmacsha256_final(&sock->clienthmac, digest);
+
+    if(memcmp(block, digest, 16)) /* mac error */
+      return 1;
+
+    hmacsha256_init(&sock->clienthmac, sock->clientkey, 32);
+    seqno_update(&sock->clienthmac, sock->clientseqno);
+    sock->clientseqno++;
+
+    ret = sock->events.on_line(sock, (char *)buf->cryptobuf);
+    free(buf->cryptobuf);
+    buf->cryptobuf = NULL;
+    buf->cryptobufsize = 0;
+    buf->mac = 0;
+
+    return ret;
+  }
+
+  hmacsha256_update(&sock->clienthmac, block, 16);
+  p = rijndaelcbc_decrypt(sock->clientcrypto, block);
+  for(p2=p,i=0;i<16;i++,p2++) { /* locate terminator */
+    if(*p2 == '\n' || *p2 == '\0') {
+      *p2 = '\0';
+      buf->mac = 1;
+    }
+  }
+
+  p2 = realloc(buf->cryptobuf, buf->cryptobufsize + 16);
+  if(!p2)
+    Error("nterface", ERR_STOP, "realloc() failed in crypto_newblock (esockets.c)");
+  buf->cryptobuf = p2;
+
+  memcpy(p2 + buf->cryptobufsize, p, 16);
+  buf->cryptobufsize+=16;
+
+  return 0;
+}
+
+int parse_crypt(struct esocket *sock, int *bytes_to_strip) {
+  struct esocket_in_buffer *buf = &sock->in;
+  int remaining = buf->size, ret;
+
+  *bytes_to_strip = 0;
+  if(remaining < 16)
+    return 0;
+
+  ret = crypto_newblock(sock, (unsigned char *)buf->data);
+  *bytes_to_strip = 16;
+
+  return ret;
+}
+
 int esocket_read(struct esocket *sock) {
   struct esocket_in_buffer *buf = &sock->in;
-  int ret, bytesread = read(sock->fd, buf->writepos, buf->buffer_size - (buf->writepos - buf->data));
+  char bufd[16384], *p;
+  int bytesread, ret, strip;
 
+  bytesread = read(sock->fd, bufd, sizeof(bufd));
   if(!bytesread || ((bytesread == -1) && (errno != EAGAIN)))
     return 1;
 
   if((bytesread == -1) && (errno == EAGAIN))
     return 0;
 
-  buf->writepos+=bytesread;
+  p = realloc(buf->data, buf->size + bytesread);
+  if(!p)
+    Error("nterface", ERR_STOP, "realloc() failed in esocket_read (esockets.c)");
+
+  buf->data = p;
+  memcpy(buf->data + buf->size, bufd, bytesread);
+  buf->size+=bytesread;
 
   do {
-    ret = buf->on_parse(sock);
-    if((ret != BUF_CONT) && ret)
+    if(buf->mode == PARSE_ASCII) {
+      ret = parse_ascii(sock, &strip);
+    } else {
+      ret = parse_crypt(sock, &strip);
+    }
+
+    if(strip > 0) {
+      if(buf->size - strip == 0) {
+        free(buf->data);
+        buf->data = NULL;
+      } else {
+        memmove(buf->data, buf->data + strip, buf->size - strip);
+        p = realloc(buf->data, buf->size - strip);
+        if(!p)
+          Error("nterface", ERR_STOP, "realloc() failed in esocket_read (esockets.c)");
+
+        buf->data = p;
+      }
+
+      buf->size-=strip;
+    }
+
+    if(ret)
       return ret;
-  } while(ret);
-
-  if((buf->curpos == (buf->data + buf->buffer_size)) && (buf->startpos == buf->data))
-    return 1;
-
-  if(buf->startpos != buf->curpos) {
-    int moveback = buf->writepos - buf->startpos;
-    memmove(buf->data, buf->startpos, moveback);
-    buf->writepos = buf->data + moveback;
-  } else {
-    buf->writepos = buf->data;
-  }
-
-  buf->curpos = buf->writepos;
-  buf->startpos = buf->data;
+  } while(strip && buf->data);
 
   return 0;
 }
@@ -365,32 +465,42 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
   return 1;
 }
 
-unsigned char *increase_nonce(unsigned char *nonce) {
-  u_int64_t *inonce = (u_int64_t *)(nonce + 8);
-  *inonce = htonq(ntohq(*inonce) + 1);
-  return nonce;
-}
-
 int esocket_write(struct esocket *sock, char *buffer, int bytes) {
   int ret;
-  if(sock->in.on_parse == buffer_parse_ascii) {
+  if(sock->in.mode == PARSE_ASCII) {
     ret = esocket_raw_write(sock, buffer, bytes);
   } else {
-    unsigned char mac[MAC_LEN];
-    char newbuf[MAX_BUFSIZE + USED_MAC_LEN + sizeof(packet_t)];
-    packet_t packetlength;
-    if(bytes > MAX_BUFSIZE)
-      return 1;
-    packetlength = htons(bytes + USED_MAC_LEN);
+    unsigned char newbuf[MAX_BUFSIZE + USED_MAC_LEN], *p = newbuf, hmacdigest[32];
+    hmacsha256 hmac;
+    int padding = 16 - bytes % 16, i;
 
-    memcpy(newbuf, &packetlength, sizeof(packet_t));
-    h_nonce(&sock->keysend, increase_nonce(sock->sendnonce));
-    h_encrypt(&sock->keysend, (unsigned char *)buffer, bytes, mac);
+    if(padding == 16)
+      padding = 0;
 
-    memcpy(newbuf + sizeof(packet_t), buffer, bytes);
-    memcpy(newbuf + sizeof(packet_t) + bytes, mac, USED_MAC_LEN);
+    memcpy(newbuf, buffer, bytes);
+    for(i=0;i<padding;i++)
+      newbuf[bytes + i] = i;
+    bytes+=padding;
 
-    ret = esocket_raw_write(sock, newbuf, bytes + sizeof(packet_t) + USED_MAC_LEN);
+    hmacsha256_init(&hmac, sock->serverkey, 32);
+    seqno_update(&hmac, sock->serverseqno);
+    sock->serverseqno++;
+
+    i = bytes;
+    while(i) {
+      unsigned char *ct = rijndaelcbc_encrypt(sock->servercrypto, p);
+      hmacsha256_update(&hmac, ct, 16);
+      memcpy(p, ct, 16);
+
+      buffer+=16;
+      p+=16;
+      i-=16;
+    }
+
+    hmacsha256_final(&hmac, hmacdigest);
+    memcpy(p, hmacdigest, USED_MAC_LEN);
+
+    ret = esocket_raw_write(sock, (char *)newbuf, bytes + USED_MAC_LEN);
   }
 
   /* AWOOGA!! */
@@ -407,124 +517,32 @@ int esocket_write_line(struct esocket *sock, char *format, ...) {
 
   va_start(va, format);
   
-  if(sock->in.on_parse == buffer_parse_ascii) {
-    vsnprintf(nbuf, sizeof(nbuf) - 1, format, va); /* snprintf() and vsnprintf() will write at most size-1 of the characters, one for \n */
-  } else {
-    vsnprintf(nbuf, sizeof(nbuf), format, va);
-  }
+  vsnprintf(nbuf, sizeof(nbuf) - 1, format, va); /* snprintf() and vsnprintf() will write at most size-1 of the characters, one for \n */
   va_end(va);
 
   len = strlen(nbuf);
 
-  if(sock->in.on_parse == buffer_parse_ascii)
-    nbuf[len++] = '\n';
-
+  nbuf[len++] = '\n';
   nbuf[len] = '\0';
 
   return esocket_write(sock, nbuf, len);
 }
 
-int buffer_parse_ascii(struct esocket *sock) {
-  struct esocket_in_buffer *buf = &sock->in;
+void switch_buffer_mode(struct esocket *sock, unsigned char *serverkey, unsigned char *serveriv, unsigned char *clientkey, unsigned char *clientiv) {
+  memcpy(sock->serverkey, serverkey, 32);
+  memcpy(sock->clientkey, clientkey, 32);
 
-  for(;buf->curpos<buf->writepos;buf->curpos++) {
-    if((*buf->curpos == '\n') || !*buf->curpos) {
-      int ret;
-      char *newline = buf->startpos;
+  sock->in.mode = PARSE_CRYPTO;
 
-      *buf->curpos = '\0';
+  sock->clientseqno = 0;
+  sock->serverseqno = 0;
 
-      buf->startpos = buf->curpos + 1;
+  sock->servercrypto = rijndaelcbc_init(serverkey, 256, serveriv, 0);
+  sock->clientcrypto = rijndaelcbc_init(clientkey, 256, clientiv, 1);
 
-      ret = sock->events.on_line(sock, newline);
-      if(ret)
-        return ret;
+  hmacsha256_init(&sock->clienthmac, sock->clientkey, 32);
+  seqno_update(&sock->clienthmac, sock->clientseqno);
 
-      if(buf->curpos + 1 < buf->writepos) {
-        buf->curpos++;
-        return BUF_CONT;
-      }
-    }
-  }
-
-  return 0;
-}
-
-int buffer_parse_crypt(struct esocket *sock) {
-  struct esocket_in_buffer *buf = &sock->in;
-  unsigned char mac[MAC_LEN];
-
-  if(!buf->packet_length) {
-    if(buf->writepos - buf->startpos > sizeof(packet_t)) {
-      memcpy(&buf->packet_length, buf->startpos, sizeof(packet_t));
-      buf->startpos = buf->startpos + sizeof(packet_t);
-      buf->curpos = buf->startpos;
-
-      buf->packet_length = ntohs(buf->packet_length);
-      if((buf->packet_length > buf->buffer_size - sizeof(packet_t)) || (buf->packet_length <= 0))
-        return 1;
-
-    } else {
-      buf->curpos = buf->writepos;
-      return 0;
-    }
-  }
- 
-  if(buf->packet_length <= buf->writepos - buf->startpos) {
-    int ret;
-    char *newline, *p;
-    h_nonce(&sock->keyreceive, increase_nonce(sock->recvnonce));
-    h_decrypt(&sock->keyreceive, (unsigned char *)buf->startpos, buf->packet_length - USED_MAC_LEN, mac);
-    
-    if(memcmp(mac, buf->startpos + buf->packet_length - USED_MAC_LEN, USED_MAC_LEN))
-      return 1;
-    
-    p = newline = buf->startpos;
-    newline[buf->packet_length - USED_MAC_LEN] = '\0';
-    
-    for(;*p;p++) /* shouldn't happen */
-      if(*p == '\n')
-        *p = '\0';
-
-    buf->startpos = buf->startpos + buf->packet_length;
-    buf->packet_length = 0;
-
-    ret = sock->events.on_line(sock, newline);
-    if(ret)
-      return ret;
-
-    return BUF_CONT;
-  }
-  
-  buf->curpos = buf->writepos;
-  return 0;
-}
-
-void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce, unsigned char *theirnonce) {
-  unsigned char ukey[20];
-  SHA1_CTX context;
-
-  memcpy(sock->sendnonce, ournonce, sizeof(sock->sendnonce));
-  memcpy(sock->recvnonce, theirnonce, sizeof(sock->recvnonce));
-
-  SHA1Init(&context);
-  SHA1Update(&context, (unsigned char *)key, strlen(key));
-  SHA1Update(&context, (unsigned char *)" ", 1);
-  /* not sure if this is cryptographically secure! */
-  SHA1Update(&context, (unsigned char *)ournonce, NONCE_LEN);
-  SHA1Final(ukey, &context);
-
-  sock->in.on_parse = buffer_parse_crypt;
-  sock->in.buffer_size = MAX_BINARY_LINE_SIZE;
-  
-  h_key(&sock->keysend, ukey, sizeof(ukey));
-
-  SHA1Init(&context);
-  SHA1Update(&context, (unsigned char *)key, strlen(key));
-  SHA1Update(&context, (unsigned char *)" ", 1);
-  SHA1Update(&context, (unsigned char *)theirnonce, NONCE_LEN);
-  SHA1Final(ukey, &context);
-
-  h_key(&sock->keyreceive, ukey, sizeof(ukey));
+  sock->clientseqno++;
 }
 
