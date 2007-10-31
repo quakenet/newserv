@@ -1,5 +1,5 @@
 /*
-  Easy async socket library with HELIX encryption and authentication
+  Easy async socket library
   Copyright (C) 2004-2007 Chris Porter.
 */
 
