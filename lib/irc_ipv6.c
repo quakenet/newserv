@@ -6,7 +6,7 @@
 #include <netdb.h>
 #include "irc_ipv6.h"
 
-#warning This source file is probably GPL'ed, it needs relicensing.
+#warning This source file is probably GPLed, it needs relicensing.
 
 /*
  * this new faster inet_ntoa was ripped from:

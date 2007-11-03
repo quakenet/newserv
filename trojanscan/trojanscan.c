@@ -1506,7 +1506,7 @@ void trojanscan_donickchange(void *arg) { /* just incase I choose to make this s
       } else {
         trojanscan_gennick(c_nick, trojanscan_minmaxrand(7, TROJANSCAN_MMIN(13, NICKLEN)));
       }
-    } while (c_nick && (getnickbynick(c_nick) != NULL));
+    } while (c_nick[0] && (getnickbynick(c_nick) != NULL));
 
     renamelocaluser(clone->clone, c_nick);
   }
@@ -1574,7 +1574,7 @@ void trojanscan_handlemessages(nick *target, int messagetype, void **args) {
 
       /* Split the line into params */
       cargc = splitline((char *)args[1], cargv, 50, 0);
-      if(cargc == 0 || !cargv || !cargv[0])
+      if(cargc == 0 || !cargv[0])
         return;
 
       cmd=findcommandintree(trojanscan_cmds, cargv[0], 1);

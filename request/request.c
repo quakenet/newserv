@@ -185,7 +185,7 @@ void rq_handler(nick *target, int type, void **params) {
 
       break;
     case LU_PRIVNOTICE:
-      qr_handlenotice(params[0], params[1]);
+      qr_handle_notice(params[0], params[1]);
 
       break;
   }

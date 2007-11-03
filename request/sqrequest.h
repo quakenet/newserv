@@ -23,4 +23,4 @@ int qr_requestq(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnic
 int qr_instantrequestq(nick *sender, channel *cp);
 int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnick);
 void qr_requeststats(nick *rqnick, nick *np);
-void qr_handlenotice(nick *sender, char *message);
+void qr_handle_notice(nick *sender, char *message);

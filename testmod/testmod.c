@@ -20,7 +20,7 @@ void spamserverstate(int hook, void *servernum) {
   }
 }
 
-void printnick(int hook, void *vp) {
+static void printnick(int hook, void *vp) {
 /*
 //  nick *np=(nick *)vp;
   

@@ -48,7 +48,7 @@ requestrec *nextreql, *lastreql;
 requestrec *nextreqq, *lastreqq;
 
 
-requestrec *nextqreq, *lastqreq;
+static requestrec *nextqreq, *lastqreq;
 
 extern nick *rqnick;
 int rlstate;
@@ -104,7 +104,7 @@ unsigned int rq_countchanusers(channel *cp) {
  * as part of the process.
  */
 
-void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) {
+static void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) {
   sstring *user, *password;
   requestrec **rh;
   char msgbuf[512];
@@ -299,7 +299,7 @@ void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) 
  *  Checks that a channel is beeeeg enough for teh Q
  */
 
-int qr_checksize(chanindex *cip, int what, char *failcode) {
+static int qr_checksize(chanindex *cip, int what, char *failcode) {
   chanstats *csp;
   channel *cp;
   nick *np, *qbot;
@@ -415,7 +415,7 @@ int qr_checksize(chanindex *cip, int what, char *failcode) {
  * 11:12 -L(TheLBot@lightweight.quakenet.org)- End of chanlev for #twilightzone.
  */
 
-void qr_handlenotice(nick *sender, char *message) {
+void qr_handle_notice(nick *sender, char *message) {
   char *ch, *chop;
   chanindex *cip;
   requestrec *rrp1, *rrp2;
