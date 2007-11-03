@@ -35,6 +35,9 @@ unsigned short nterfacer_token = BLANK_TOKEN;
 struct nterface_auto_log *nrl;
 
 struct service_node *ping = NULL;
+int accept_fd = -1;
+struct permitted *permits;
+int permit_count = 0;
 
 int ping_handler(struct rline *ri, int argc, char **argv);
 

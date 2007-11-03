@@ -71,10 +71,6 @@ typedef struct sconnect {
 
 extern struct nterface_auto_log *nrl;
   
-int accept_fd = -1;
-struct permitted *permits;
-int permit_count = 0;
-
 struct service_node *register_service(char *name);
 struct handler *register_handler(struct service_node *service, char *command, int args, handler_function fp);
 void deregister_service(struct service_node *service);

@@ -12,6 +12,7 @@
 #include "../localuser/localuserchannel.h"
 #include "../geoip/geoip.h"
 #include "../lib/version.h"
+#include "../core/modules.h"
 
 MODULE_VERSION("");
 
@@ -291,11 +292,10 @@ int controlobroadcast(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-const char GeoIP_country_code[247][3] = { "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN","AO","AQ","AR","AS","AT","AU","AW","AZ","BA","BB","BD","BE","BF","BG","BH","BI","BJ","BM","BN","BO","BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CX","CY","CZ","DE","DJ","DK","DM","DO","DZ","EC","EE","EG","EH","ER","ES","ET","FI","FJ","FK","FM","FO","FR","FX","GA","GB","GD","GE","GF","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY","HK","HM","HN","HR","HT","HU","ID","IE","IL","IN","IO","IQ","IR","IS","IT","JM","JO","JP","KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ","LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY","MA","MC","MD","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ","NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ","OM","PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY","QA","RE","RO","RU","RW","SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","ST","SV","SY","SZ","TC","TD","TF","TG","TH","TJ","TK","TM","TN","TO","TP","TR","TT","TV","TW","TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE","VG","VI","VN","VU","WF","WS","YE","YT","YU","ZA","ZM","ZR","ZW","A1","A2","O1"};
-
 int controlcbroadcast(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender, *nip;
   int i, ext, target;
+  GeoIP_LookupCode l;
 
   if(cargc < 2)
     return CMD_USAGE;
@@ -306,13 +306,8 @@ int controlcbroadcast(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  target = COUNTRY_MIN - 1;
-  for(i=COUNTRY_MIN;i<COUNTRY_MAX;i++) {
-    if(!strcasecmp(cargv[0], GeoIP_country_code[i])) {
-      target = i;
-      break;
-    }
-  }
+  l = ndlsym("geoip", "geoip_lookupcode");
+  target = l(cargv[0]);
 
   if(target == -1) {
     controlreply(np, "Invalid country.");

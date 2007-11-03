@@ -33,6 +33,7 @@ int handle_servicesonchan(struct rline *li, int argc, char **argv);
 int handle_counthost(struct rline *li, int argc, char **argv);
 
 struct rline *grli; /* used inline for status */
+struct service_node *n_node;
 
 void _init(void) {
   n_node = register_service("N");

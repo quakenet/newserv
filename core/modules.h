@@ -25,6 +25,7 @@ void preparereload(char *modulename);
 void reloadmarked(void);
 void safereload(char *themodule);
 void newserv_shutdown();
+void *ndlsym(char *module, char *fn);
 
 extern int newserv_shutdown_pending;
 

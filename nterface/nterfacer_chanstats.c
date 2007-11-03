@@ -13,7 +13,7 @@
 MODULE_VERSION("");
 
 int handle_chanstats(struct rline *li, int argc, char **argv);
-struct handler *hl = NULL;
+static struct handler *hl = NULL;
 
 void _init(void) {
   if(!n_node) {
