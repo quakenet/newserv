@@ -131,32 +131,35 @@ void _fini(void) {
 }
 
 int load_permits(void) {
-  int lines, loaded_lines = 0, i, j;
+  int loaded_lines = 0, i, j;
   struct permitted *new_permits, *resized, *item;
   struct hostent *host;
-  char buf[50];
+  array *hostnamesa, *passwordsa;
+  sstring **hostnames, **passwords;
 
-  lines = getcopyconfigitemintpositive("nterfacer", "permits", 0);
-  if(lines < 1) {
-    nterface_log(nrl, NL_ERROR, "No permits found in config file.");
+  hostnamesa = getconfigitems("nterfacer", "hostname");
+  passwordsa = getconfigitems("nterfacer", "password");
+  if(!hostnamesa || !passwordsa) {
+    nterface_log(nrl, NL_ERROR, "Unable to load hostnames/passwords.");
     return 0;
   }
-  nterface_log(nrl, NL_INFO, "Loading %d permit%s from config file", lines, lines==1?"":"s");
+  if(hostnamesa->cursi != passwordsa->cursi) {
+    nterface_log(nrl, NL_ERROR, "Different number of hostnames/passwords in config file.");
+    return 0;
+  }
 
-  new_permits = calloc(lines, sizeof(struct permitted));
+  hostnames = (sstring **)hostnamesa->content;
+  passwords = (sstring **)passwordsa->content;
+
+  new_permits = calloc(hostnamesa->cursi, sizeof(struct permitted));
   item = new_permits;
 
-  for(i=1;i<=lines;i++) {
-    snprintf(buf, sizeof(buf), "hostname%d", i);
-    item->hostname = getcopyconfigitem("nterfacer", buf, "", 100);
-    if(!item->hostname) {
-      nterface_log(nrl, NL_ERROR, "No hostname found for item %d.", i);
-      continue;
-    }
+  for(i=0;i<hostnamesa->cursi;i++) {
+    item->hostname = getsstring(hostnames[i]->content, hostnames[i]->length);
 
     host = gethostbyname(item->hostname->content);
     if (!host) {
-      nterface_log(nrl, NL_WARNING, "Couldn't resolve hostname: %s (item %d).", item->hostname->content, i);
+      nterface_log(nrl, NL_WARNING, "Couldn't resolve hostname: %s (item %d).", item->hostname->content, i + 1);
       freesstring(item->hostname);
       continue;
     }
@@ -164,7 +167,7 @@ int load_permits(void) {
     item->ihost = (*(struct in_addr *)host->h_addr).s_addr;
     for(j=0;j<loaded_lines;j++) {
       if(new_permits[j].ihost == item->ihost) {
-        nterface_log(nrl, NL_WARNING, "Host with items %d and %d is identical, dropping item %d.", j + 1, i, i);
+        nterface_log(nrl, NL_WARNING, "Host with items %d and %d is identical, dropping item %d.", j + 1, i + 1, i + 1);
         host = NULL;
       }
     }
@@ -174,14 +177,7 @@ int load_permits(void) {
       continue;
     }
 
-    snprintf(buf, sizeof(buf), "password%d", i);
-    item->password = getcopyconfigitem("nterfacer", buf, "", 100);
-    if(!item->password) {
-      nterface_log(nrl, NL_ERROR, "No password found for item %d.", item->hostname->content, i);
-      freesstring(item->hostname);
-      continue;
-    }
-
+    item->password = getsstring(passwords[i]->content, passwords[i]->length);
     nterface_log(nrl, NL_DEBUG, "Loaded permit, hostname: %s.", item->hostname->content);
 
     item++;
