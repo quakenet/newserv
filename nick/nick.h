@@ -16,7 +16,9 @@
 
 #include <time.h>
 
+#ifndef MAXNICKEXTS
 #define MAXNICKEXTS       6
+#endif
 
 #define UMODE_INV       0x0001
 #define UMODE_WALLOPS   0x0002
