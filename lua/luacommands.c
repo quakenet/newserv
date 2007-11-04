@@ -982,7 +982,7 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         lua_pushlong(l, *((long *)offset));
         break;
       case PUSHER_IP:
-        lua_pushstring(l, IPtostr((((patricia_node_t *)offset)->prefix->sin)));
+        lua_pushstring(l, IPtostr((*((patricia_node_t **)offset))->prefix->sin));
         break;
       case PUSHER_TOTALUSERS:
         lua_pushint(l, (*((channel **)offset))->users->totalusers);
