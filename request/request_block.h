@@ -24,7 +24,7 @@ extern array rqblocks;
 #define RQ_SPAMCOUNT 5
 #define RQ_SPAMBLOCK 3600
 
-void rq_initblocks(void);
+int rq_initblocks(void);
 void rq_finiblocks(void);
 
 int rq_loadblocks(void);

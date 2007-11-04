@@ -49,7 +49,14 @@ int rq_blocked = 0;
 /* log fd */
 FILE *rq_logfd;
 
+static int extloaded = 0;
+
 void _init(void) {
+  if(!rq_initblocks())
+    return;
+
+  extloaded = 1;
+
   rqcommands = newcommandtree();
 
   addcommandtotree(rqcommands, "showcommands", RQU_ANY, 1, &rqcmd_showcommands);
@@ -67,7 +74,6 @@ void _init(void) {
   addcommandtotree(rqcommands, "changelev", RQU_OPER, 2, &rqcmd_changelev);
   addcommandtotree(rqcommands, "userlist", RQU_OPER, 1, &rqcmd_userlist);
   
-  rq_initblocks();
   qr_initrequest();
   ru_load();
 
@@ -77,6 +83,9 @@ void _init(void) {
 }
 
 void _fini(void) {
+  if(!extloaded)
+    return;
+
   deregisterlocaluser(rqnick, NULL);
 
   deletecommandfromtree(rqcommands, "showcommands", &rqcmd_showcommands);
@@ -271,8 +280,18 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **lni
   block = rq_findblock(channelname);
 
   if (block != NULL) {
-    sendnoticetouser(rqnick, np, "Error: You are not allowed to request a "
+     /* only say when block expires if <7 days */
+     if ( block->expires < getnettime() + 3600 * 24 * 7) {
+       sendnoticetouser(rqnick, np, "Error: You are not allowed to request a "
+            "service to this channel. Keep waiting for at least %s before you try again.",
+            rq_longtoduration(block->expires - getnettime()));
+       /* give them another 5 minutes to think about it */
+       block->expires += 300;
+       rq_saveblocks();
+     } else {
+       sendnoticetouser(rqnick, np, "Error: You are not allowed to request a "
           "service to this channel.");
+     }
     sendnoticetouser(rqnick, np, "Reason: %s", block->reason->content);
 
     rq_blocked++;
