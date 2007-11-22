@@ -19,6 +19,7 @@ MODULE_VERSION(TROJANSCAN_VERSION);
 
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf);
 char *trojanscan_sanitise(char *input);
+void trojanscan_refresh_settings(void);
 
 #define TROJANSCAN_SETTING_SIZE 256
 #define TROJANSCAN_MAX_SETTINGS 50
