@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.64"
+#define TROJANSCAN_VERSION "2.65"
 
 #define TROJANSCAN_MAX_HOST_GLINE   5
 
@@ -73,7 +73,7 @@
 #define TROJANSCAN_IPLEN         20
 
 #define TROJANSCAN_VERSION_DETECT "\001VERSION"
-#define TROJANSCAN_CLONE_VERSION_REPLY "mIRC v6.17 Khaled Mardam-Bey"
+#define TROJANSCAN_DEFAULT_VERSION_REPLY "mIRC v6.31 Khaled Mardam-Bey"
 
 typedef struct trojanscan_clones {
   int              remaining, sitting, index;

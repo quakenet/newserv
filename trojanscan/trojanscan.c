@@ -1,7 +1,7 @@
 /*
  * Trojanscan version 2
  *
- * Trojanscan  copyright (C) Chris Porter 2002-2005
+ * Trojanscan  copyright (C) Chris Porter 2002-2007
  * Newserv bits copyright (C) David Mansell 2002-2003
  * 
  * TODO: CHECK::
@@ -15,9 +15,21 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("");
+MODULE_VERSION(TROJANSCAN_VERSION);
 
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf);
+char *trojanscan_sanitise(char *input);
+
+#define TROJANSCAN_SETTING_SIZE 512
+#define TROJANSCAN_MAX_SETTINGS 50
+
+static struct {
+  char setting[TROJANSCAN_SETTING_SIZE];
+  char value[TROJANSCAN_SETTING_SIZE];
+} trojanscan_settings[TROJANSCAN_MAX_SETTINGS];
+
+static int settingcount = 0;
+static char *versionreply;
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -195,9 +207,12 @@ void trojanscan_connect(void *arg) {
   trojanscan_database_query("CREATE TABLE wwwlogs (id INT(10) PRIMARY KEY AUTO_INCREMENT, authid INT(10) NOT NULL, ip VARCHAR(15), action TEXT, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE unknownlog (id INT(10) PRIMARY KEY AUTO_INCREMENT, data TEXT, user VARCHAR(%d) NOT NULL, ts TIMESTAMP)", NICKLEN+USERLEN+HOSTLEN+3);
   
-  trojanscan_database_query("DELETE FROM settings");
+  trojanscan_database_query("DELETE FROM settings WHERE setting = 'rehash' OR setting = 'changed'");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('rehash','0')");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('changed','0')");
+
+  /* assumption: constants aren't supplied by someone evil */
+  trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('versionreply','" TROJANSCAN_DEFAULT_VERSION_REPLY "')");
   
   trojanscan_read_database(1);
  
@@ -243,22 +258,57 @@ void trojanscan_connect(void *arg) {
 
 }
 
+char *trojanscan_get_setting(char *setting) {
+  int i;
+
+  for(i=0;i<settingcount;i++)
+    if(!strcmp(trojanscan_settings[i].setting, setting))
+      return trojanscan_settings[i].value;
+
+  return NULL;
+}
+
+void trojanscan_refresh_settings(void) {
+  trojanscan_database_res *res;
+  trojanscan_database_row sqlrow;
+  int i = 0;
+
+  if(trojanscan_database_query("SELECT setting, value FROM settings"))
+    return;
+
+  if(!(res = trojanscan_database_store_result(&trojanscan_sql)))
+    return;
+
+  if (trojanscan_database_num_rows(res) <= 0)
+    return;
+
+  while((sqlrow = trojanscan_database_fetch_row(res))) {
+    strlcpy(trojanscan_settings[i].setting, sqlrow[0], TROJANSCAN_SETTING_SIZE);
+    strlcpy(trojanscan_settings[i].value, sqlrow[1], TROJANSCAN_SETTING_SIZE);
+
+    trojanscan_sanitise(trojanscan_settings[i].value);
+
+    if(++i == TROJANSCAN_MAX_SETTINGS)
+      break;
+  }
+
+  settingcount = i;
+
+  trojanscan_database_free_result(res);
+
+  /* optimisation hack */
+  versionreply = trojanscan_get_setting("versionreply");
+}
+
 void trojanscan_rehash_schedule(void *arg) {
-  trojanscan_rehashschedule = scheduleoneshot(time(NULL) + 60, &trojanscan_rehash_schedule, NULL);
-  if (!(trojanscan_database_query("SELECT value FROM settings WHERE setting = 'rehash'"))) {
-    trojanscan_database_res *res;
-    if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
-      if (trojanscan_database_num_rows(res) > 0) {
-        trojanscan_database_row sqlrow = trojanscan_database_fetch_row(res);
-        if (sqlrow && (sqlrow[0][0] == '1')) {
-          trojanscan_mainchanmsg("n: rehash initiated by website. . .");
-          trojanscan_read_database(0);
-        }
-      }
-      trojanscan_database_free_result(res);
-    }
-  } 
-    
+  char *v;
+  trojanscan_refresh_settings();
+
+  v = trojanscan_get_setting("rehash");
+  if(v && v[0] == '1') {
+    trojanscan_mainchanmsg("n: rehash initiated by website. . .");
+    trojanscan_read_database(0);
+  }
 }
 
 void trojanscan_free_database(void) {
@@ -280,6 +330,16 @@ void trojanscan_free_database(void) {
   trojanscan_database.total_phrases = 0;
   trojanscan_database.total_worms = 0;
   
+}
+
+char *trojanscan_sanitise(char *input) {
+  char *p;
+
+  for(p=input;*p;p++)
+    if(*p == '\r' || *p == '\n')
+      *p = '!';
+
+  return input;
 }
 
 sstring *trojanscan_getsstring(char *string, int length) {
@@ -395,7 +455,7 @@ void trojanscan_read_database(int first_time) {
           if ((trojanscan_database.total_channels>0) && trojanscan_database.channels) {
             i = 0;
             while((sqlrow = trojanscan_database_fetch_row(res))) {
-              trojanscan_database.channels[i].name = trojanscan_getsstring(sqlrow[0], strlen(sqlrow[0]));
+              trojanscan_database.channels[i].name = trojanscan_getsstring(trojanscan_sanitise(sqlrow[0]), strlen(sqlrow[0]));
               trojanscan_database.channels[i].exempt = (sqlrow[1][0] == '1');
               i++;
             }
@@ -414,7 +474,7 @@ void trojanscan_read_database(int first_time) {
           i = 0;
           while((sqlrow = trojanscan_database_fetch_row(res))) {
             trojanscan_database.worms[i].id = atoi(sqlrow[0]);
-            trojanscan_database.worms[i].name = trojanscan_getsstring(sqlrow[1], strlen(sqlrow[1]));
+            trojanscan_database.worms[i].name = trojanscan_getsstring(trojanscan_sanitise(sqlrow[1]), strlen(sqlrow[1]));
             tempresult = atoi(sqlrow[2]);
             trojanscan_database.worms[i].glineuser = (tempresult == 0);
             trojanscan_database.worms[i].glinehost = (tempresult == 1);
@@ -1713,7 +1773,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               sendnoticetouser(target, sender, "\001VERSION T clone, though since T is currently gone you'll have to version me again in a minute for confirmation.\001");
             }
           } else {
-            sendnoticetouser(target, sender,  "\001VERSION " TROJANSCAN_CLONE_VERSION_REPLY "\001");
+            sendnoticetouser(target, sender,  "\001VERSION %s\001", versionreply);
           }
         
           return;
