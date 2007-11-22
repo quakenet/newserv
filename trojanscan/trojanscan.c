@@ -304,6 +304,8 @@ void trojanscan_refresh_settings(void) {
 
 void trojanscan_rehash_schedule(void *arg) {
   char *v;
+  trojanscan_rehashschedule = scheduleoneshot(time(NULL) + 60, &trojanscan_rehash_schedule, NULL);
+
   trojanscan_refresh_settings();
 
   v = trojanscan_get_setting("rehash");
