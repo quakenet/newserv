@@ -20,7 +20,7 @@ MODULE_VERSION(TROJANSCAN_VERSION);
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf);
 char *trojanscan_sanitise(char *input);
 
-#define TROJANSCAN_SETTING_SIZE 512
+#define TROJANSCAN_SETTING_SIZE 256
 #define TROJANSCAN_MAX_SETTINGS 50
 
 static struct {
@@ -203,7 +203,7 @@ void trojanscan_connect(void *arg) {
   trojanscan_database_query("CREATE TABLE channels (id INT(10) PRIMARY KEY AUTO_INCREMENT, channel VARCHAR(%d) NOT NULL, exempt BOOL DEFAULT 0)", CHANNELLEN);
   trojanscan_database_query("CREATE TABLE users (id INT(10) PRIMARY KEY AUTO_INCREMENT, authname VARCHAR(%d) NOT NULL, authlevel TINYINT(4) NOT NULL)", ACCOUNTLEN);
   trojanscan_database_query("CREATE TABLE hits (id INT(10) PRIMARY KEY AUTO_INCREMENT, nickname VARCHAR(%d) NOT NULL, ident VARCHAR(%d) NOT NULL, host VARCHAR(%d) NOT NULL, phrase INT(10) NOT NULL, ts TIMESTAMP, messagetype VARCHAR(1) NOT NULL DEFAULT 'm', glined BOOL DEFAULT 1)", NICKLEN, USERLEN, HOSTLEN);
-  trojanscan_database_query("CREATE TABLE settings (id INT(10) PRIMARY KEY AUTO_INCREMENT, setting VARCHAR(15) NOT NULL, value VARCHAR(15) NOT NULL)");
+  trojanscan_database_query("CREATE TABLE settings (id INT(10) PRIMARY KEY AUTO_INCREMENT, setting VARCHAR(255) NOT NULL UNIQUE, value VARCHAR(255) NOT NULL)");
   trojanscan_database_query("CREATE TABLE wwwlogs (id INT(10) PRIMARY KEY AUTO_INCREMENT, authid INT(10) NOT NULL, ip VARCHAR(15), action TEXT, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE unknownlog (id INT(10) PRIMARY KEY AUTO_INCREMENT, data TEXT, user VARCHAR(%d) NOT NULL, ts TIMESTAMP)", NICKLEN+USERLEN+HOSTLEN+3);
   
@@ -214,6 +214,7 @@ void trojanscan_connect(void *arg) {
   /* assumption: constants aren't supplied by someone evil */
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('versionreply','" TROJANSCAN_DEFAULT_VERSION_REPLY "')");
   
+  trojanscan_refresh_settings();
   trojanscan_read_database(1);
  
   cp = findchannel(TROJANSCAN_OPERCHANNEL);
@@ -525,7 +526,6 @@ void trojanscan_read_database(int first_time) {
   }
 
   trojanscan_database_query("UPDATE settings SET value = '0' where setting = 'rehash'");
-  
 }
 
 void trojanscan_log(nick *np, char *event, char *details, ...) {
@@ -1174,6 +1174,7 @@ int trojanscan_userjoin(void *sender, int cargc, char **cargv) {
 
 int trojanscan_rehash(void *sender, int cargc, char **cargv) {
   nick *np = (void *)sender;
+  trojanscan_refresh_settings();
   trojanscan_read_database(0);
   trojanscan_log(np, "rehash", "");
   trojanscan_reply(np, "Done.");
