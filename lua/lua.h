@@ -22,7 +22,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.76"
+#define LUA_BOTVERSION "1.80"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -69,6 +69,7 @@ lua_State *lua_loadscript(char *file);
 void lua_unloadscript(lua_list *l);
 lua_list *lua_scriptloaded(char *name);
 lua_list *lua_listfromstate(lua_State *l);
+int lua_listexists(lua_list *l);
 int lua_lineok(const char *data);
 
 #define lua_toint(l, n) (int)lua_tonumber(l, n)

@@ -164,6 +164,12 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case '0':
         lua_pushnil(l);
         break;
+      case 'R':
+        lua_rawgeti(l, LUA_REGISTRYINDEX, va_arg(va, long));
+        break;
+      case 'b':
+        lua_pushboolean(l, va_arg(va, int));
+        break;
       case '>':
         goto endwhile;
 
