@@ -432,6 +432,7 @@ static int lua_getnickchanindex(lua_State *l) {
 
 int hashindex;
 nick *lasthashnick;
+static int geoipext;
 
 struct lua_pusher *nickhashpusher[MAX_PUSHER];
 
@@ -458,6 +459,7 @@ static int lua_getfirstnick(lua_State *l) {
   lasthashnick = NULL;
 
   lua_setupnickpusher(l, 1, nickhashpusher, MAX_PUSHER);
+  geoipext = findnickext("geoip");
 
   return lua_getnextnick(l);
 }
@@ -909,11 +911,13 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_TOTALUSERS 7
 #define PUSHER_TOPIC 8
 #define PUSHER_UMODES 9
+#define PUSHER_COUNTRY 10
 
 void lua_initnickpusher(void) {
   int i = 0;
 
 #define PUSH_NICKPUSHER(F2, O2) nickpusher[i].argtype = F2; nickpusher[i].structname = #O2; nickpusher[i].offset = offsetof(nick, O2); i++;
+#define PUSH_NICKPUSHER_CUSTOM(F2, custom) nickpusher[i].argtype = F2; nickpusher[i].structname = custom; nickpusher[i].offset = 0; i++;
 
   PUSH_NICKPUSHER(PUSHER_STRING, nick);
   PUSH_NICKPUSHER(PUSHER_STRING, ident);
@@ -925,6 +929,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_LONG, timestamp);
   PUSH_NICKPUSHER(PUSHER_LONG, accountts);
   PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_COUNTRY, "country");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -995,6 +1000,13 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
           lua_pushstring(l, (*((channel **)offset))->topic->content);
         } else {
           lua_pushnil(l);
+        }
+        break;
+      case PUSHER_COUNTRY:
+        if(geoipext < 0) {
+          lua_pushint(l, -1);
+        } else {
+          lua_pushint(l, (long)((nick *)offset)->exts[geoipext]);
         }
         break;
     }
