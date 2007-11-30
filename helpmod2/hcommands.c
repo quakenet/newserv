@@ -2657,9 +2657,9 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
 	    if (IsAccount(nck))
                 authed_count++;
 
-            if (IsOper(nck) && strlen(nck->nick) > 1)
+            if (IsOper(nck) && strlen(nck->nick) > 1 && (IsSecret(chan) || IsPrivate(chan) || IsKey(chan) || IsInviteOnly(chan)))
             {
-                helpmod_reply(sender, returntype, "Cannot check channel: Permission denied. Channel %s has an oper on it", argv[0]);
+                helpmod_reply(sender, returntype, "Cannot check channel: Permission denied. Channel %s has an oper on it and one or more of +i/+k/+p/+s", argv[0]);
                 return;
             }
 	}
