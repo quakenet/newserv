@@ -1922,7 +1922,6 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
   char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
   char *userbit;
-  host *hp;
   unsigned int j, usercount, frequency;
   int glining = 1;
   struct trojanscan_worms *worm = phrase->worm;
@@ -1931,28 +1930,23 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   
   trojanscan_database.detections++;
   
-  if (!(hp=findhost(sender->host->name->content))) {
-    trojanscan_mainchanmsg("w: user %s!%s@%s triggered infection monitor, yet no hosts found at stage 1 -- worm: %s", sender->nick, sender->ident, sender->host->name->content, worm->name->content);
-    return;
-  } 
-
   usercount = 0; /* stupid warnings */
   if (worm->monitor) {
     glining = 0;
     usercount = -1;
-  } else if (worm->glinehost && (hp->clonecount <= TROJANSCAN_MAX_HOST_GLINE)) {
+  } else if (worm->glinehost && (sender->ipnode->usercount <= TROJANSCAN_MAX_HOST_GLINE)) {
     snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
-    usercount = hp->clonecount;
+    usercount = sender->ipnode->usercount;
   }
-  else if (worm->glineuser || (worm->glinehost && hp->clonecount > TROJANSCAN_MAX_HOST_GLINE)) {
+  else if (worm->glineuser || (worm->glinehost && sender->ipnode->usercount > TROJANSCAN_MAX_HOST_GLINE)) {
     userbit = sender->ident;
     if(userbit[0] == '~')
       userbit++;
     snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, IPtostr(sender->p_ipaddr));
     for (j=0;j<NICKHASHSIZE;j++) {
       for (np=nicktable[j];np;np=np->next) {
-        if ((np->host==hp) && (!ircd_strcmp(np->ident,sender->ident)))
-usercount++;
+        if ((np->ipnode==sender->ipnode) && (!ircd_strcmp(np->ident,sender->ident)))
+          usercount++;
       }
     }
   }
