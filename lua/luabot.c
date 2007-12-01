@@ -6,6 +6,7 @@
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
+#include "../core/config.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -72,10 +73,12 @@ void lua_deregisterevents(void) {
 
 void lua_startbot(void *arg) {
   channel *cp;
+  sstring *n;
 
   myureconnect = NULL;
 
-  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+  n = getcopyconfigitem("lua", "botnick", "U", NICKLEN);
+  lua_nick = registerlocaluser(n->content, "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;
