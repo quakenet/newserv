@@ -167,6 +167,12 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case '0':
         lua_pushnil(l);
         break;
+      case 'R':
+        lua_rawgeti(l, LUA_REGISTRYINDEX, va_arg(va, long));
+        break;
+      case 'b':
+        lua_pushboolean(l, va_arg(va, int));
+        break;
       case '>':
         goto endwhile;
 
@@ -273,14 +279,17 @@ void lua_onkick(int hooknum, void *arg) {
   nick *kicked = arglist[1];
   nick *kicker = arglist[2];
   char *message = (char *)arglist[3];
+  int mode = 1;
 
   if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
-    return;
+    mode = 0;
 
-  if(kicker) {
+  if(mode) {
     lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
+  } else if(kicker) {
+    lua_avpcall("irc_onkickall", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
   } else {
-    lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
+    lua_avpcall("irc_onkickall", "Sl0s", ci->name, kicked->numeric, message);
   }
 }
 
