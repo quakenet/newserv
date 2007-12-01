@@ -276,14 +276,15 @@ void lua_onkick(int hooknum, void *arg) {
   nick *kicked = arglist[1];
   nick *kicker = arglist[2];
   char *message = (char *)arglist[3];
+  int mode = 1;
 
-  if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
-    return;
+  if(IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
+    mode = 0;
 
   if(kicker) {
-    lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
+    lua_avpcall(mode?"irc_onkick":"irc_onkickall", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
   } else {
-    lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
+    lua_avpcall(mode?"irc_onkick":"irc_onkickall", "Sl0s", ci->name, kicked->numeric, message);
   }
 }
 
