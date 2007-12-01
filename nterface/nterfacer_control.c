@@ -41,7 +41,7 @@ void _init(void) {
     return;
 
   register_handler(n_node, "ison", 1, handle_ison);
-  register_handler(n_node, "isaccounton", 1, handle_isaccounton);
+/*  register_handler(n_node, "isaccounton", 1, handle_isaccounton); */
   register_handler(n_node, "whois", 1, handle_whois);
   register_handler(n_node, "msg", 2, handle_message);
   register_handler(n_node, "notice", 2, handle_notice);
@@ -65,7 +65,7 @@ int handle_ison(struct rline *li, int argc, char **argv) {
 
   return ri_final(li);
 }
-
+/*
 int handle_isaccounton(struct rline *li, int argc, char **argv) {
   int i;
   for(i=0;i<argc;i++)
@@ -74,7 +74,7 @@ int handle_isaccounton(struct rline *li, int argc, char **argv) {
 
   return ri_final(li);
 }
-
+*/
 int handle_whois(struct rline *li, int argc, char **argv) {
   nick *np = getnickbynick(argv[0]);
   channel **channels;
