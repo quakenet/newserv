@@ -111,7 +111,7 @@ void controlconnect(void *arg) {
   myrealname=getcopyconfigitem("control","realname","NewServ Control Service",REALLEN);
   myauthname=getcopyconfigitem("control","authname","C",ACCOUNTLEN);
 
-  mynick=registerlocaluser(cnick->content,myident->content,myhost->content,myrealname->content,myauthname->content,UMODE_SERVICE|UMODE_DEAF|UMODE_OPER|UMODE_ACCOUNT,&handlemessages);
+  mynick=registerlocaluser(cnick->content,myident->content,myhost->content,myrealname->content,myauthname->content,UMODE_SERVICE|UMODE_DEAF|UMODE_OPER|UMODE_ACCOUNT|UMODE_INV,&handlemessages);
   triggerhook(HOOK_CONTROL_REGISTERED, mynick);
   cp=findchannel("#twilightzone");
   if (!cp) {
