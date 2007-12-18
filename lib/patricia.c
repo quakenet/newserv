@@ -16,7 +16,6 @@ static char copyright[] =
 "This product includes software developed by the University of Michigan, Merit"
 "Network, Inc., and their contributors.";
 
-#include <malloc.h>
 #include <assert.h> /* assert */
 #include <ctype.h> /* isdigit */
 #include <errno.h> /* errno */

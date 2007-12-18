@@ -85,7 +85,7 @@
  * <machine/endian.h> where the appropriate definitions are actually
  * made).
  */
-#if !defined(__BYTE_ORDER)
+#if !defined(BYTE_ORDER)
 #define BYTE_ORDER __BYTE_ORDER
 #endif
 
