@@ -204,7 +204,7 @@ void lua_socket_closeall(lua_list *l) {
     lua_socket_call_close(l->sockets);
 }
 
-void lua_registersocketcomments(lua_State *l) {
+void lua_registersocketcommands(lua_State *l) {
   lua_register(l, "socket_unix_connect", lua_socket_unix_connect);
   lua_register(l, "socket_close", lua_socket_close);
   lua_register(l, "socket_write", lua_socket_write);

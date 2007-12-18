@@ -206,6 +206,7 @@ lua_State *lua_loadscript(char *file) {
   lua_registercommands(l);
   lua_registerlocalcommands(l);
   lua_registerdbcommands(l);
+  lua_registersocketcommands(l);
 
   lua_setpath(l);
 
