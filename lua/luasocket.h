@@ -14,5 +14,9 @@ typedef struct lua_socket {
   struct lua_socket *next;
 } lua_socket;
 
+#define SOCKET_CONNECTING 0x00
+#define SOCKET_CONNECTED  0x01
+#define SOCKET_CLOSED     0x02
+
 #endif
 

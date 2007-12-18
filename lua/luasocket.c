@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "../lib/strlfunc.h"
 #include "../core/events.h"
 
@@ -20,7 +21,7 @@
  * BUT I can't remember the exact semantics of the fd table WRT reuse...
  */
 static long nextidentifier = 0;
-void lua_socket_poll_event(int fd, short events);
+static void lua_socket_poll_event(int fd, short events);
 
 static int lua_socket_unix_connect(lua_State *l) {
   int len, ret;
@@ -54,13 +55,27 @@ static int lua_socket_unix_connect(lua_State *l) {
   /* don't really like this, there's a macro in sys/un.h but it's not there under FreeBSD */
   len = sizeof(r.sun_family) + strlen(r.sun_path) + 1;
 
-  /*
-   * this socket is blocking.
-   * we could potentially block the IRC socket...
-   * BUT it's far far too much work to make it writes non-blocking...
-   */
-  ret = connect(ls->fd, (struct sockaddr *)&r, len);
+  /* WTB exceptions */
+  ret = fcntl(ls->fd, F_GETFL, 0);
   if(ret < 0) {
+    free(ls);
+    close(ls->fd);
+    return 0;
+  }
+
+  ret = fcntl(ls->fd, F_SETFL, ret | O_NONBLOCK);
+  if(ret < 0) {
+    free(ls);
+    close(ls->fd);
+    return 0;
+  }
+
+  ret = connect(ls->fd, (struct sockaddr *)&r, len);
+  if(ret == 0) {
+    ls->state = SOCKET_CONNECTED;
+  } else if(ret == -1 && (errno == EINPROGRESS)) {
+    ls->state = SOCKET_CONNECTING;
+  } else {
     free(ls);
     close(ls->fd);
     return 0;
@@ -74,13 +89,13 @@ static int lua_socket_unix_connect(lua_State *l) {
   ls->next = ll->sockets;
   ll->sockets = ls;
 
-  registerhandler(ls->fd, POLLIN | POLLERR | POLLHUP, lua_socket_poll_event);
+  registerhandler(ls->fd, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, lua_socket_poll_event);
 
   lua_pushlong(l, ls->identifier);
   return 1;
 }
 
-lua_socket *socketbyfd(int fd) {
+static lua_socket *socketbyfd(int fd) {
   lua_list *l;
   lua_socket *ls;
 
@@ -92,7 +107,7 @@ lua_socket *socketbyfd(int fd) {
   return NULL;
 }
 
-lua_socket *socketbyidentifier(long identifier) {
+static lua_socket *socketbyidentifier(long identifier) {
   lua_list *l;
   lua_socket *ls;
 
@@ -104,11 +119,15 @@ lua_socket *socketbyidentifier(long identifier) {
   return NULL;
 }
 
-void lua_socket_call_close(lua_socket *ls) {
+static void lua_socket_call_close(lua_socket *ls) {
   lua_socket *p, *c;
 
   for(c=ls->l->sockets,p=NULL;c;p=c,c=c->next) {
     if(c == ls) {
+      if(ls->state == SOCKET_CLOSED)
+        return;
+
+      ls->state = SOCKET_CLOSED;
       deregisterhandler(ls->fd, 1);
 
       lua_vnpcall(ls, "close", "");
@@ -134,27 +153,31 @@ static int lua_socket_write(lua_State *l) {
   lua_socket *ls;
   int ret;
 
-  if(!lua_islong(l, 1))
-    LUA_RETURN(l, LUA_FAIL);
-
   buf = (char *)lua_tostring(l, 2);
-  if(!buf)
-    LUA_RETURN(l, LUA_FAIL);
 
+  if(!lua_islong(l, 1) || !buf) {
+    lua_pushint(l, -1);
+    return 1;
+  }
   len = lua_strlen(l, 2);
 
   ls = socketbyidentifier(lua_tolong(l, 1));
-  if(!ls)
-    LUA_RETURN(l, LUA_FAIL);
-
-  ret = write(ls->fd, buf, len);
-  if(ret != len) {
-    lua_socket_call_close(ls);
+  if(!ls || (ls->state != SOCKET_CONNECTED)) {
     lua_pushint(l, -1);
     return 1;
   }
 
-  lua_pushint(l, 0);
+  ret = write(ls->fd, buf, len);
+  if(ret == -1 && (errno == EAGAIN)) {
+    deregisterhandler(ls->fd, 0);
+    registerhandler(ls->fd, POLLIN | POLLOUT | POLLERR | POLLHUP, lua_socket_poll_event);
+    return 0;
+  }
+
+  if(ret == -1)
+    lua_socket_call_close(ls);
+
+  lua_pushint(l, ret);
   return 1;
 }
 
@@ -165,7 +188,7 @@ static int lua_socket_close(lua_State *l) {
     LUA_RETURN(l, LUA_FAIL);
 
   ls = socketbyidentifier(lua_tolong(l, 1));
-  if(!ls)
+  if(!ls || (ls->state == SOCKET_CLOSED))
     LUA_RETURN(l, LUA_FAIL);
 
   lua_socket_call_close(ls);
@@ -173,29 +196,49 @@ static int lua_socket_close(lua_State *l) {
   LUA_RETURN(l, LUA_OK);
 }
 
-void lua_socket_poll_event(int fd, short events) {
+static void lua_socket_poll_event(int fd, short events) {
   lua_socket *ls = socketbyfd(fd);
-  if(!ls)
+  if(!ls || (ls->state == SOCKET_CLOSED))
     return;
 
   if(events & (POLLERR | POLLHUP)) {
     lua_socket_call_close(ls);
     return;
   }
-  if(events & POLLIN) {
-    char buf[8192 * 2];
-    int bytesread;
 
-    bytesread = read(fd, buf, sizeof(buf));
-    if((bytesread == -1) && (errno == EAGAIN))
-      return;
+  switch(ls->state) {
+    case SOCKET_CONNECTING:
+      if(events & POLLOUT) {
+        deregisterhandler(fd, 0);
+        registerhandler(fd, POLLIN | POLLERR | POLLHUP, lua_socket_poll_event);
+        ls->state = SOCKET_CONNECTED;
 
-    if(bytesread <= 0) {
-      lua_socket_call_close(ls);
-      return;
-    }
+        lua_vnpcall(ls, "connect", "");
+      }
+      break;
+    case SOCKET_CONNECTED:
+      if(events & POLLOUT) {
+        deregisterhandler(fd, 0);
+        registerhandler(fd, POLLIN | POLLERR | POLLHUP, lua_socket_poll_event);
 
-    lua_vnpcall(ls, "read", "L", buf, bytesread);
+        lua_vnpcall(ls, "flush", "");
+      }
+      if(events & POLLIN) {
+        char buf[8192 * 2];
+        int bytesread;
+
+        bytesread = read(fd, buf, sizeof(buf));
+        if((bytesread == -1) && (errno == EAGAIN))
+          return;
+
+        if(bytesread <= 0) {
+          lua_socket_call_close(ls);
+         return;
+        }
+
+        lua_vnpcall(ls, "read", "L", buf, bytesread);
+      }
+      break;
   }
 }
 
