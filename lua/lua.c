@@ -53,6 +53,8 @@ void lua_freedebugsocket(void);
 void lua_deregisternicks(lua_list *l);
 void lua_registerlocalcommands(lua_State *ps);
 void lua_registerdebug(lua_State *ps);
+void lua_socket_closeall(lua_list *l);
+void lua_registersocketcommands(lua_State *ps);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -227,6 +229,7 @@ lua_State *lua_loadscript(char *file) {
   n->next = NULL;
   n->prev = lua_tail;
   n->nicks = NULL;
+  n->sockets = NULL;
 
   if(!lua_head) { 
     lua_head = n;
@@ -257,6 +260,7 @@ lua_State *lua_loadscript(char *file) {
 void lua_unloadscript(lua_list *l) {
   lua_onunload(l->l);
   lua_deregisternicks(l);
+  lua_socket_closeall(l);
   lua_close(l->l);
   freesstring(l->name);
 

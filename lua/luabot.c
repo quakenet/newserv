@@ -152,6 +152,13 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case 'S':
         lua_pushstring(l, ((sstring *)(va_arg(va, sstring *)))->content);
         break;
+      case 'L':
+        {
+          char *p = va_arg(va, char *);
+          long len = va_arg(va, long);
+          lua_pushlstring(l, p, len);
+        }
+        break;
       case 'N':
         {
           nick *np = va_arg(va, nick *);

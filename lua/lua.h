@@ -19,10 +19,11 @@
 #include "../lib/sstring.h"
 
 #include "lualocal.h"
+#include "luasocket.h"
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.82"
+#define LUA_BOTVERSION "1.83"
 #define LUA_CHANFIXBOT "Z"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -54,6 +55,7 @@ typedef struct lua_list {
   struct lua_list *next;
   struct lua_list *prev;
   lua_localnick *nicks;
+  lua_socket *sockets;
 } lua_list;
 
 #define LUA_STARTLOOP(l) { lua_list *ll; for(ll=lua_head;ll;ll=ll->next) {  l = ll->l
