@@ -14,7 +14,7 @@
 #include "lua.h"
 #include "luabot.h"
 
-#define lua_vnpcall(F2, N2, S2, ...) _lua_vpcall(F2->l->l, (void *)F2->handler, LUA_POINTERMODE, "ls" S2 , F2->identifier, N2 , ##__VA_ARGS__)
+#define lua_vnpcall(F2, N2, S2, ...) _lua_vpcall(F2->l->l, (void *)F2->handler, LUA_POINTERMODE, "lsR" S2 , F2->identifier, N2, F2->tag , ##__VA_ARGS__)
 
 /*
  * instead of these identifiers I could just use the file descriptor...
@@ -32,6 +32,9 @@ static int lua_socket_unix_connect(lua_State *l) {
 
   ll = lua_listfromstate(l);
   if(!ll)
+    return 0;
+
+  if(!lua_isfunction(l, 2))
     return 0;
 
   path = (char *)lua_tostring(l, 1);
@@ -83,7 +86,9 @@ static int lua_socket_unix_connect(lua_State *l) {
 
   /* this whole identifier thing should probably use userdata stuff */
   ls->identifier = nextidentifier++;
+  ls->tag = luaL_ref(l, LUA_REGISTRYINDEX);
   ls->handler = luaL_ref(l, LUA_REGISTRYINDEX);
+
   ls->l = ll;
 
   ls->next = ll->sockets;
@@ -91,8 +96,9 @@ static int lua_socket_unix_connect(lua_State *l) {
 
   registerhandler(ls->fd, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, lua_socket_poll_event);
 
+  lua_pushboolean(l, ls->state==SOCKET_CONNECTED?1:0);
   lua_pushlong(l, ls->identifier);
-  return 1;
+  return 2;
 }
 
 static lua_socket *socketbyfd(int fd) {
@@ -138,6 +144,7 @@ static void lua_socket_call_close(lua_socket *ls) {
         p->next = ls->next;
       }
 
+      luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->tag);
       luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->handler);
 
       free(ls);
@@ -171,11 +178,18 @@ static int lua_socket_write(lua_State *l) {
   if(ret == -1 && (errno == EAGAIN)) {
     deregisterhandler(ls->fd, 0);
     registerhandler(ls->fd, POLLIN | POLLOUT | POLLERR | POLLHUP, lua_socket_poll_event);
-    return 0;
+
+    lua_pushint(l, 0);
+    return 1;
   }
 
   if(ret == -1)
     lua_socket_call_close(ls);
+
+  if(ret < len) {
+    deregisterhandler(ls->fd, 0);
+    registerhandler(ls->fd, POLLIN | POLLOUT | POLLERR | POLLHUP, lua_socket_poll_event);
+  }
 
   lua_pushint(l, ret);
   return 1;

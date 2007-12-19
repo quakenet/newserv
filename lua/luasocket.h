@@ -9,6 +9,7 @@ typedef struct lua_socket {
   int fd;
   int state;
   long handler;
+  long tag;
   unsigned long identifier;
   struct lua_list *l;
   struct lua_socket *next;
