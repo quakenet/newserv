@@ -1930,25 +1930,27 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   
   trojanscan_database.detections++;
   
-  usercount = 0; /* stupid warnings */
+  usercount = 0;
   if (worm->monitor) {
     glining = 0;
     usercount = -1;
   } else if (worm->glinehost && (sender->ipnode->usercount <= TROJANSCAN_MAX_HOST_GLINE)) {
     snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
-    usercount = sender->ipnode->usercount;
-  }
-  else if (worm->glineuser || (worm->glinehost && sender->ipnode->usercount > TROJANSCAN_MAX_HOST_GLINE)) {
+    for (j=0;j<NICKHASHSIZE;j++)
+      for (np=nicktable[j];np;np=np->next)
+        if ((np->p_ipaddr==sender->p_ipaddr))
+          usercount++;
+  } else if (worm->glineuser || (worm->glinehost && sender->ipnode->usercount > TROJANSCAN_MAX_HOST_GLINE)) {
     userbit = sender->ident;
+/*
     if(userbit[0] == '~')
       userbit++;
-    snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, IPtostr(sender->p_ipaddr));
-    for (j=0;j<NICKHASHSIZE;j++) {
-      for (np=nicktable[j];np;np=np->next) {
+*/
+    snprintf(glinemask, sizeof(glinemask) - 1, "%s@%s", userbit, IPtostr(sender->p_ipaddr));
+    for (j=0;j<NICKHASHSIZE;j++)
+      for (np=nicktable[j];np;np=np->next)
         if ((np->ipnode==sender->ipnode) && (!ircd_strcmp(np->ident,sender->ident)))
           usercount++;
-      }
-    }
   }
   
   if (!usercount) {
