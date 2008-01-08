@@ -1938,7 +1938,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
     snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
     for (j=0;j<NICKHASHSIZE;j++)
       for (np=nicktable[j];np;np=np->next)
-        if ((np->p_ipaddr==sender->p_ipaddr))
+        if (np->ipnode==sender->ipnode)
           usercount++;
   } else if (worm->glineuser || (worm->glinehost && sender->ipnode->usercount > TROJANSCAN_MAX_HOST_GLINE)) {
     userbit = sender->ident;
