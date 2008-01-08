@@ -257,6 +257,7 @@ int handlejoinmsg(void *source, int cargc, char **cargv) {
         /* Send hook */
         harg[0]=ch[i];
         harg[1]=np;
+        harg[2]=NULL;
         triggerhook(HOOK_CHANNEL_PART,harg);
         delnickfromchannel(ch[i],np->numeric,0);
       }
