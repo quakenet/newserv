@@ -31,8 +31,9 @@
 #define UMODE_SETHOST   0x0400
 #define UMODE_REGPRIV   0x0800
 #define UMODE_HIDEIDLE  0x1000
+#define UMODE_PARANOID  0x2000
 
-#define UMODE_ALL       0x1FFF
+#define UMODE_ALL       0x2FFF
 
 #define IsInvisible(x)    ((x)->umodes & UMODE_INV)
 #define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
@@ -47,6 +48,7 @@
 #define IsSetHost(x)      ((x)->umodes & UMODE_SETHOST)
 #define IsRegPriv(x)      ((x)->umodes & UMODE_REGPRIV)
 #define IsHideIdle(x)     ((x)->umodes & UMODE_HIDEIDLE)
+#define IsParanoid(x)     ((x)->umodes & UMODE_PARANOID)
 
 #define SetInvisible(x)    ((x)->umodes |= UMODE_INV)
 #define SetWallops(x)      ((x)->umodes |= UMODE_WALLOPS)
@@ -61,6 +63,7 @@
 #define SetSetHost(x)      ((x)->umodes |= UMODE_SETHOST)
 #define SetRegPriv(x)      ((x)->umodes |= UMODE_REGPRIV)
 #define SetHideIdle(x)     ((x)->umodes |= UMODE_HIDEIDLE)
+#define SetParanoid(x)     ((x)->umodes |= UMODE_PARANOID)
 
 #define ClearInvisible(x)    ((x)->umodes &= ~UMODE_INV)
 #define ClearWallops(x)      ((x)->umodes &= ~UMODE_WALLOPS)
@@ -75,6 +78,7 @@
 #define ClearSetHost(x)      ((x)->umodes &= ~UMODE_SETHOST)
 #define ClearRegPriv(x)      ((x)->umodes &= ~UMODE_REGPRIV)
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
+#define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
 
 typedef struct host {
   sstring *name;
