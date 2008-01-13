@@ -33,7 +33,7 @@
 #define UMODE_HIDEIDLE  0x1000
 #define UMODE_PARANOID  0x2000
 
-#define UMODE_ALL       0x2FFF
+#define UMODE_ALL       0x3FFF
 
 #define IsInvisible(x)    ((x)->umodes & UMODE_INV)
 #define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
