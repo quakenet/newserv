@@ -1971,13 +1971,14 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   if (worm->monitor) {
     glining = 0;
     usercount = -1;
-  } else if (worm->glinehost && (sender->ipnode->usercount <= TROJANSCAN_MAX_HOST_GLINE)) {
+  } else if (worm->glinehost) {
     snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
     for (j=0;j<NICKHASHSIZE;j++)
       for (np=nicktable[j];np;np=np->next)
         if (np->ipnode==sender->ipnode)
           usercount++;
-  } else if (worm->glineuser || (worm->glinehost && sender->ipnode->usercount > TROJANSCAN_MAX_HOST_GLINE)) {
+  }
+  if (worm->glineuser || (worm->glinehost && usercount > TROJANSCAN_MAX_HOST_GLINE)) {
     userbit = sender->ident;
 /*
     if(userbit[0] == '~')
