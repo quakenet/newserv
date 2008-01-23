@@ -34,6 +34,7 @@ const flag umodeflags[] = {
    { 'h', UMODE_SETHOST },
    { 'R', UMODE_REGPRIV },
    { 'I', UMODE_HIDEIDLE },
+   { 'P', UMODE_PARANOID },
    { '\0', 0 } };
 
 #define nickhash(x)       ((crc32i(x))%NICKHASHSIZE)
