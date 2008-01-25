@@ -339,7 +339,8 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   char buf[BUFSIZE];
   char buf2[12];
   int i,j;
-  
+  char timebuf[30];
+
   if (cargc<1)
     return CMD_USAGE;
   
@@ -353,9 +354,12 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   }
   
   controlreply((nick *)sender,"Channel : %s",cp->index->name->content);
+  strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(cp->timestamp)));
+  controlreply((nick *)sender,"C-time  : %ld [%s]",cp->timestamp,timebuf);
   if (cp->topic) {
     controlreply((nick *)sender,"Topic   : %s",cp->topic->content);
-    controlreply((nick *)sender,"T-time  : %ld [%s]",cp->topictime,ctime(&(cp->topictime)));
+    strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(cp->topictime)));
+    controlreply((nick *)sender,"T-time  : %ld [%s]",cp->topictime,timebuf);
   }
   controlreply((nick *)sender,"Mode(s) : %s %s%s%s",printflags(cp->flags,cmodeflags),IsLimit(cp)?buf2:"",
     IsLimit(cp)?" ":"",IsKey(cp)?cp->key->content:"");
@@ -384,7 +388,8 @@ int controlchannel(void *sender, int cargc, char **cargv) {
         buf[i*18]=' ';
     }
   }
-    
+  
+
   for (cbp=cp->bans;cbp;cbp=cbp->next) {
     controlreply((nick *)sender,"Ban     : %s",bantostringdebug(cbp));
   }

@@ -321,6 +321,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	node->prefix = patricia_ref_prefix (prefix);
 	node->parent = NULL;
 	node->l = node->r = NULL;
+	node->usercount = 0;
 	patricia->head = node;
 	patricia->num_active_node++;
 	return (node);
@@ -392,6 +393,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     new_node->prefix = patricia_ref_prefix (prefix);
     new_node->parent = NULL;
     new_node->l = new_node->r = NULL;
+    new_node->usercount = 0;
     patricia->num_active_node++;
 
     if (node->bit == differ_bit) {
@@ -434,6 +436,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
         glue->bit = differ_bit;
         glue->prefix = NULL;
         glue->parent = node->parent;
+        glue->usercount = 0;
         patricia->num_active_node++;
 	if (differ_bit < patricia->maxbits &&
 	    (addr[differ_bit >> 3]) & (0x80 >> (differ_bit & 0x07))) {

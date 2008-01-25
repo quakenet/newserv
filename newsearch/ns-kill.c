@@ -91,6 +91,7 @@ void kill_free(struct searchNode *thenode) {
   nick *np, *nnp;
   chanindex *cip, *ncip;
   int i, j, safe=0;
+  unsigned int nickmarker;
 
   localdata = thenode->localdata;
 
@@ -103,6 +104,7 @@ void kill_free(struct searchNode *thenode) {
   }
 
   if (localdata->type == SEARCHTYPE_CHANNEL) {
+    nickmarker=nextnickmarker();
     for (i=0;i<CHANNELHASHSIZE;i++) {
       for (cip=chantable[i];cip;cip=ncip) {
         ncip = cip->next;
@@ -113,14 +115,21 @@ void kill_free(struct searchNode *thenode) {
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
               if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-                killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", np->nick,
-                  np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+                np->marker=nickmarker;
               }
               else
                 safe++;
             }
           }
         }
+      }
+    }
+    for (i=0;i<NICKHASHSIZE;i++) {
+      for(np=nicktable[i];np;np=nnp) {
+        nnp = np->next;
+        if (np->marker == nickmarker) 
+          killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", 
+                         np->nick,np->ident, IPtostr(np->p_ipaddr), localdata->reason);
       }
     }
   }
