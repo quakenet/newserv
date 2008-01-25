@@ -676,3 +676,93 @@ struct searchNode *search_parse(int type, char *input) {
     return thenode;
   }    
 }
+
+struct bufs {
+  char *buf;
+  int capacity;
+  int len;
+};
+
+static int addchar(struct bufs *buf, char c) {
+  if(buf->len >= buf->capacity - 1)
+    return 0;
+
+  buf->buf[buf->len++] = c;
+
+  return 1;
+}
+
+static int addstr(struct bufs *buf, char *c) {
+  int remaining = buf->capacity - buf->len - 1;
+  char *p;
+
+  for(p=c;*p;p++) {
+    if(remaining-- <= 0)
+      return 0;
+
+    buf->buf[buf->len++] = *p;
+  }
+
+  return 1;
+}
+
+void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
+  struct bufs b;
+  const char *p;
+  char *c;
+  char hostbuf[512];
+
+  if(size == 0)
+    return;
+
+  b.buf = buf;
+  b.capacity = size;
+  b.len = 0;
+
+  for(p=format;*p;p++) {
+    if(*p != '%') {
+      if(!addchar(&b, *p))
+        break;
+      continue;
+    }
+    p++;
+    if(*p == '\0')
+      break;
+    if(*p == '%') {
+      if(!addchar(&b, *p))
+        break;
+      continue;
+    }
+
+    c = NULL;
+    switch(*p) {
+      case 'n':
+        c = np->nick; break;
+      case 'i':
+        c = np->ident; break;
+      case 'h':
+        c = np->host->name->content; break;
+      case 'I':
+        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->p_ipaddr));
+        c = hostbuf;
+        break;
+      case 'u':
+        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->p_ipaddr));
+        c = hostbuf;
+        break;
+      default:
+        c = "(bad format specifier)";
+    }
+    if(c)
+      if(!addstr(&b, c))
+        break;
+  }
+
+  buf[b.len] = '\0';
+
+  /* not required */
+  /*
+  buf[size-1] = '\0';
+  */
+}
+

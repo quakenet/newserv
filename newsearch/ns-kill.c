@@ -10,6 +10,7 @@
 #include "../control/control.h" /* controlreply() */
 #include "../localuser/localuser.h" /* killuser() */
 #include "../lib/irc_string.h" /* IPtostr() */
+#include "../lib/strlfunc.h"
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
@@ -17,6 +18,7 @@ extern nick *senderNSExtern;
 
 void *kill_exe(struct searchNode *thenode, void *theinput);
 void kill_free(struct searchNode *thenode);
+static const char *defaultreason = "You (%u) have been disconnected for violating our terms of service";
 
 struct kill_localdata {
   unsigned int marker;
@@ -42,13 +44,18 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
     localdata->marker = nextnickmarker();
 
   if (argc==1) {
-    len = snprintf(localdata->reason, NSMAX_REASON_LEN, ":%s", argv[0]);
-    /* strip leading and trailing '"'s */
-    localdata->reason[1] = ' ';
-    localdata->reason[len-1] = '\0';
+    char *p = argv[0];
+    if(*p == '\"')
+      *p++;
+    len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
+    if(len >= sizeof(localdata->reason)) {
+      localdata->reason[sizeof(localdata->reason)-1] = '\0';
+    } else {
+      localdata->reason[len-1] = '\0';
+    }
   }
   else
-    snprintf(localdata->reason, NSMAX_REASON_LEN, ".");
+    strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
@@ -92,6 +99,7 @@ void kill_free(struct searchNode *thenode) {
   chanindex *cip, *ncip;
   int i, j, safe=0;
   unsigned int nickmarker;
+  char msgbuf[512];
 
   localdata = thenode->localdata;
 
@@ -127,9 +135,10 @@ void kill_free(struct searchNode *thenode) {
     for (i=0;i<NICKHASHSIZE;i++) {
       for(np=nicktable[i];np;np=nnp) {
         nnp = np->next;
-        if (np->marker == nickmarker) 
-          killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", 
-                         np->nick,np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+        if (np->marker == nickmarker) {
+          nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
+          killuser(NULL, np, "%s", msgbuf);
+        }
       }
     }
   }
@@ -139,8 +148,8 @@ void kill_free(struct searchNode *thenode) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
           if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-            killuser(NULL, np, "You (%s!%s@%s) have been disconnected for violating our terms of service%s", np->nick,
-              np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+            nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
+            killuser(NULL, np, "%s", msgbuf);
           }
           else
               safe++;

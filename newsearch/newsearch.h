@@ -99,6 +99,9 @@ void unregchandisp(const char *name, ChanDisplayFunc handler);
 void regnickdisp(const char *name, NickDisplayFunc handler);
 void unregnickdisp(const char *name, NickDisplayFunc handler);
 
+/* Special nick* printf */
+void nssnprintf(char *, size_t, const char *, nick *);
+
 typedef struct searchNode {
   int returntype;
   exeFunc  exe;
