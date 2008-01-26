@@ -55,6 +55,7 @@ void lua_registerlocalcommands(lua_State *ps);
 void lua_registerdebug(lua_State *ps);
 void lua_socket_closeall(lua_list *l);
 void lua_registersocketcommands(lua_State *ps);
+void lua_registercryptocommands(lua_State *ps);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -207,6 +208,7 @@ lua_State *lua_loadscript(char *file) {
   lua_registerlocalcommands(l);
   lua_registerdbcommands(l);
   lua_registersocketcommands(l);
+  lua_registercryptocommands(l);
 
   lua_setpath(l);
 
