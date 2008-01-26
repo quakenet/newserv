@@ -814,6 +814,27 @@ static int lua_simplechanmode(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_sethost(lua_State *ps) {
+  char *ident, *host;
+  nick *np;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynumeric(lua_tolong(ps, 1));
+  if(!np)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  ident = (char *)lua_tostring(ps, 2);
+  host = (char *)lua_tostring(ps, 3);
+  if(!lua_lineok(ident) || !lua_lineok(host))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  sethostuser(np, ident, host);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -866,6 +887,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_fastgetnickbynumeric", lua_fastgetnickbynumeric);
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
+  lua_register(l, "irc_sethost", lua_sethost);
 }
 
 /* --- */
