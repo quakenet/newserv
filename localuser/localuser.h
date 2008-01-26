@@ -40,5 +40,6 @@ void killuser(nick *source, nick *target, char *format, ... );
 #define localusersetaccount(np, accname) localusersetaccountwithuserid(np, accname, 0)
 void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid);
 void localusersetumodes(nick *np, flag_t newmodes);
+void sethostuser(nick *target, char *ident, char *host);
 
 #endif

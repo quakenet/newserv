@@ -28,7 +28,7 @@ struct searchNode *hostmask_parse(int type, int argc, char **argv) {
   }
 
   thenode->returntype = RETURNTYPE_STRING;
-  if (!(thenode->localdata = (void *)malloc(HOSTLEN+USERLEN+NICKLEN+3))) {
+  if (!(thenode->localdata = (void *)malloc(HOSTLEN+USERLEN+NICKLEN+REALLEN+10))) {
     /* couldn't malloc() memory for thenode->localdata, so free thenode to avoid leakage */
     parseError = "malloc: could not allocate memory for this search.";
     free(thenode);
@@ -57,7 +57,7 @@ void *hostmask_exe_real(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
 
-  sprintf(buf,"%s!%s@%s",np->nick,np->ident,np->host->name->content);
+  sprintf(buf,"%s!%s@%s\r%s",np->nick,np->ident,np->host->name->content,np->realname->name->content);
 
   return buf;
 }

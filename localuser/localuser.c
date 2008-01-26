@@ -491,6 +491,10 @@ void killuser(nick *source, nick *target, char *format, ... ) {
   }
 }
 
+void sethostuser(nick *target, char *ident, char *host) {
+  irc_send("%s SH %s %s %s", mynumeric->content, longtonumeric(target->numeric, 5), ident, host);
+}
+
 void _killuser(nick *source, nick *target, char *reason) {
   char senderstr[6];
   char sourcestring[HOSTLEN+NICKLEN+3];
