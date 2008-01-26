@@ -3,6 +3,8 @@
 #ifndef __irc_ipv6_H
 #define __irc_ipv6_H
 
+#include <limits.h>
+
 /* from res.h */
 
 /** Structure to store an IP address. */

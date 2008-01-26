@@ -10,10 +10,12 @@
 #include "../control/control.h"
 #include "../lib/version.h"
 
+#include <strings.h>
+
 #include "libGeoIP/GeoIP.h"
 #include "geoip.h"
 
-#warning This module is GPL'ed. Load/link at your peril.
+#warning This module is GPLed. Load/link at your peril.
 
 MODULE_VERSION("");
 
@@ -115,3 +117,11 @@ void geoip_whois_handler(int hooknum, void *arg) {
   }
 }
 
+int geoip_lookupcode(char *code) {
+  int i;
+  for(i=COUNTRY_MIN;i<COUNTRY_MAX;i++)
+    if(!strcasecmp(code, GeoIP_country_code[i]))
+      return i;
+
+  return -1;
+}

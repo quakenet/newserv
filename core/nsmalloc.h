@@ -18,3 +18,4 @@ void nsexit(void);
 #define POOL_CHANSERVDB		5
 #define POOL_SSTRING		6
 #define POOL_AUTHTRACKER	7
+#define POOL_PROXYSCAN		8

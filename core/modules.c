@@ -455,3 +455,14 @@ void newserv_shutdown() {
   
   Error("core",ERR_INFO,"All modules removed.  Exiting.");
 }
+
+/* very slow, make sure you cache the pointer! */
+void *ndlsym(char *modulename, char *fn) {
+  module *mods=(module *)(modules.content);
+  int i=getindex(modulename);
+
+  if (i<0)
+    return NULL;
+
+  return dlsym(mods[i].handle, fn);
+}

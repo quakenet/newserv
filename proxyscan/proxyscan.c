@@ -21,6 +21,12 @@
 #include <string.h>
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
+#include "../channel/channel.h"
+#include "../localuser/localuserchannel.h"
+#include "../core/nsmalloc.h"
+
+MODULE_VERSION("")
 
 #define SCANTIMEOUT      60
 
@@ -207,6 +213,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 808);
   proxyscan_addscantype(STYPE_HTTP, 3332);
   proxyscan_addscantype(STYPE_HTTP, 2282);
+  proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 1080);
   proxyscan_addscantype(STYPE_SOCKS5, 1080);
   proxyscan_addscantype(STYPE_SOCKS4, 1075);
@@ -215,6 +222,8 @@ void _init(void) {
   proxyscan_addscantype(STYPE_SOCKS5, 2280);
   proxyscan_addscantype(STYPE_SOCKS4, 1180);
   proxyscan_addscantype(STYPE_SOCKS5, 1180);
+  proxyscan_addscantype(STYPE_SOCKS4, 9999);
+  proxyscan_addscantype(STYPE_SOCKS5, 9999);
   proxyscan_addscantype(STYPE_WINGATE, 23);
   proxyscan_addscantype(STYPE_CISCO, 23);
   proxyscan_addscantype(STYPE_WINGATE, 1181);
@@ -225,7 +234,6 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 65506);
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
-  proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
   
   /* Schedule saves */
@@ -237,6 +245,7 @@ void _init(void) {
 void registerproxyscannick(void *arg) {
   sstring *psnick,*psuser,*pshost,*psrealname;
   /* Set up our nick on the network */
+  channel *cp;
 
   psnick=getcopyconfigitem("proxyscan","nick","P",NICKLEN);
   psuser=getcopyconfigitem("proxyscan","user","proxyscan",USERLEN);
@@ -252,6 +261,14 @@ void registerproxyscannick(void *arg) {
   freesstring(psuser);
   freesstring(pshost);
   freesstring(psrealname);
+
+  cp=findchannel("#twilightzone");
+  if (!cp) {
+    localcreatechannel(proxyscannick,"#twilightzone");
+  } else {
+    localjoinchannel(proxyscannick,cp);
+    localgetops(proxyscannick,cp);
+  }
 }
 
 void _fini(void) {
@@ -271,7 +288,7 @@ void _fini(void) {
   dumpcachehosts(NULL);
 
   /* free() all our structures */
-  sfreeall();
+  nsfreeall(POOL_PROXYSCAN);
   
   freesstring(ps_mailname);
 #if defined(PROXYSCAN_MAIL)

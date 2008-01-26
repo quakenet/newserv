@@ -1,7 +1,7 @@
 /*
  * Trojanscan version 2
  *
- * Trojanscan  copyright (C) Chris Porter 2002-2005
+ * Trojanscan  copyright (C) Chris Porter 2002-2007
  * Newserv bits copyright (C) David Mansell 2002-2003
  * 
  * TODO: CHECK::
@@ -15,7 +15,24 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 
-MODULE_VERSION("");
+MODULE_VERSION(TROJANSCAN_VERSION);
+
+void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf);
+char *trojanscan_sanitise(char *input);
+void trojanscan_refresh_settings(void);
+static void trojanscan_part_watch(int hook, void *arg);
+
+#define TROJANSCAN_SETTING_SIZE 256
+#define TROJANSCAN_MAX_SETTINGS 50
+
+static struct {
+  char setting[TROJANSCAN_SETTING_SIZE];
+  char value[TROJANSCAN_SETTING_SIZE];
+} trojanscan_settings[TROJANSCAN_MAX_SETTINGS];
+
+static int settingcount = 0;
+static char *versionreply;
+static int hooksregistered = 0;
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -65,6 +82,9 @@ void _fini(void) {
   if(trojanscan_cloneschedule)
     deleteschedule(trojanscan_poolschedule, &trojanscan_registerclones, NULL);
   
+  if(hooksregistered)
+    deregisterhook(HOOK_CHANNEL_PART, trojanscan_part_watch);
+
   while(rp) {
     deleteschedule(rp->schedule, &trojanscan_dopart, (void *)rp);
     oldrp = rp;
@@ -189,14 +209,18 @@ void trojanscan_connect(void *arg) {
   trojanscan_database_query("CREATE TABLE channels (id INT(10) PRIMARY KEY AUTO_INCREMENT, channel VARCHAR(%d) NOT NULL, exempt BOOL DEFAULT 0)", CHANNELLEN);
   trojanscan_database_query("CREATE TABLE users (id INT(10) PRIMARY KEY AUTO_INCREMENT, authname VARCHAR(%d) NOT NULL, authlevel TINYINT(4) NOT NULL)", ACCOUNTLEN);
   trojanscan_database_query("CREATE TABLE hits (id INT(10) PRIMARY KEY AUTO_INCREMENT, nickname VARCHAR(%d) NOT NULL, ident VARCHAR(%d) NOT NULL, host VARCHAR(%d) NOT NULL, phrase INT(10) NOT NULL, ts TIMESTAMP, messagetype VARCHAR(1) NOT NULL DEFAULT 'm', glined BOOL DEFAULT 1)", NICKLEN, USERLEN, HOSTLEN);
-  trojanscan_database_query("CREATE TABLE settings (id INT(10) PRIMARY KEY AUTO_INCREMENT, setting VARCHAR(15) NOT NULL, value VARCHAR(15) NOT NULL)");
+  trojanscan_database_query("CREATE TABLE settings (id INT(10) PRIMARY KEY AUTO_INCREMENT, setting VARCHAR(255) NOT NULL UNIQUE, value VARCHAR(255) NOT NULL)");
   trojanscan_database_query("CREATE TABLE wwwlogs (id INT(10) PRIMARY KEY AUTO_INCREMENT, authid INT(10) NOT NULL, ip VARCHAR(15), action TEXT, ts TIMESTAMP)");
   trojanscan_database_query("CREATE TABLE unknownlog (id INT(10) PRIMARY KEY AUTO_INCREMENT, data TEXT, user VARCHAR(%d) NOT NULL, ts TIMESTAMP)", NICKLEN+USERLEN+HOSTLEN+3);
   
-  trojanscan_database_query("DELETE FROM settings");
+  trojanscan_database_query("DELETE FROM settings WHERE setting = 'rehash' OR setting = 'changed'");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('rehash','0')");
   trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('changed','0')");
+
+  /* assumption: constants aren't supplied by someone evil */
+  trojanscan_database_query("INSERT INTO settings (setting, value) VALUES ('versionreply','" TROJANSCAN_DEFAULT_VERSION_REPLY "')");
   
+  trojanscan_refresh_settings();
   trojanscan_read_database(1);
  
   cp = findchannel(TROJANSCAN_OPERCHANNEL);
@@ -239,24 +263,63 @@ void trojanscan_connect(void *arg) {
   
   trojanscan_rehashschedule = scheduleoneshot(time(NULL) + 60, &trojanscan_rehash_schedule, NULL);
 
+  registerhook(HOOK_CHANNEL_PART, trojanscan_part_watch);
+  hooksregistered = 1;
+}
+
+char *trojanscan_get_setting(char *setting) {
+  int i;
+
+  for(i=0;i<settingcount;i++)
+    if(!strcmp(trojanscan_settings[i].setting, setting))
+      return trojanscan_settings[i].value;
+
+  return NULL;
+}
+
+void trojanscan_refresh_settings(void) {
+  trojanscan_database_res *res;
+  trojanscan_database_row sqlrow;
+  int i = 0;
+
+  if(trojanscan_database_query("SELECT setting, value FROM settings"))
+    return;
+
+  if(!(res = trojanscan_database_store_result(&trojanscan_sql)))
+    return;
+
+  if (trojanscan_database_num_rows(res) <= 0)
+    return;
+
+  while((sqlrow = trojanscan_database_fetch_row(res))) {
+    strlcpy(trojanscan_settings[i].setting, sqlrow[0], TROJANSCAN_SETTING_SIZE);
+    strlcpy(trojanscan_settings[i].value, sqlrow[1], TROJANSCAN_SETTING_SIZE);
+
+    trojanscan_sanitise(trojanscan_settings[i].value);
+
+    if(++i == TROJANSCAN_MAX_SETTINGS)
+      break;
+  }
+
+  settingcount = i;
+
+  trojanscan_database_free_result(res);
+
+  /* optimisation hack */
+  versionreply = trojanscan_get_setting("versionreply");
 }
 
 void trojanscan_rehash_schedule(void *arg) {
+  char *v;
   trojanscan_rehashschedule = scheduleoneshot(time(NULL) + 60, &trojanscan_rehash_schedule, NULL);
-  if (!(trojanscan_database_query("SELECT value FROM settings WHERE setting = 'rehash'"))) {
-    trojanscan_database_res *res;
-    if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
-      if (trojanscan_database_num_rows(res) > 0) {
-        trojanscan_database_row sqlrow = trojanscan_database_fetch_row(res);
-        if (sqlrow && (sqlrow[0][0] == '1')) {
-          trojanscan_mainchanmsg("n: rehash initiated by website. . .");
-          trojanscan_read_database(0);
-        }
-      }
-      trojanscan_database_free_result(res);
-    }
-  } 
-    
+
+  trojanscan_refresh_settings();
+
+  v = trojanscan_get_setting("rehash");
+  if(v && v[0] == '1') {
+    trojanscan_mainchanmsg("n: rehash initiated by website. . .");
+    trojanscan_read_database(0);
+  }
 }
 
 void trojanscan_free_database(void) {
@@ -278,6 +341,16 @@ void trojanscan_free_database(void) {
   trojanscan_database.total_phrases = 0;
   trojanscan_database.total_worms = 0;
   
+}
+
+char *trojanscan_sanitise(char *input) {
+  char *p;
+
+  for(p=input;*p;p++)
+    if(*p == '\r' || *p == '\n')
+      *p = '!';
+
+  return input;
 }
 
 sstring *trojanscan_getsstring(char *string, int length) {
@@ -393,7 +466,7 @@ void trojanscan_read_database(int first_time) {
           if ((trojanscan_database.total_channels>0) && trojanscan_database.channels) {
             i = 0;
             while((sqlrow = trojanscan_database_fetch_row(res))) {
-              trojanscan_database.channels[i].name = trojanscan_getsstring(sqlrow[0], strlen(sqlrow[0]));
+              trojanscan_database.channels[i].name = trojanscan_getsstring(trojanscan_sanitise(sqlrow[0]), strlen(sqlrow[0]));
               trojanscan_database.channels[i].exempt = (sqlrow[1][0] == '1');
               i++;
             }
@@ -412,7 +485,7 @@ void trojanscan_read_database(int first_time) {
           i = 0;
           while((sqlrow = trojanscan_database_fetch_row(res))) {
             trojanscan_database.worms[i].id = atoi(sqlrow[0]);
-            trojanscan_database.worms[i].name = trojanscan_getsstring(sqlrow[1], strlen(sqlrow[1]));
+            trojanscan_database.worms[i].name = trojanscan_getsstring(trojanscan_sanitise(sqlrow[1]), strlen(sqlrow[1]));
             tempresult = atoi(sqlrow[2]);
             trojanscan_database.worms[i].glineuser = (tempresult == 0);
             trojanscan_database.worms[i].glinehost = (tempresult == 1);
@@ -463,7 +536,6 @@ void trojanscan_read_database(int first_time) {
   }
 
   trojanscan_database_query("UPDATE settings SET value = '0' where setting = 'rehash'");
-  
 }
 
 void trojanscan_log(nick *np, char *event, char *details, ...) {
@@ -1112,6 +1184,7 @@ int trojanscan_userjoin(void *sender, int cargc, char **cargv) {
 
 int trojanscan_rehash(void *sender, int cargc, char **cargv) {
   nick *np = (void *)sender;
+  trojanscan_refresh_settings();
   trojanscan_read_database(0);
   trojanscan_log(np, "rehash", "");
   trojanscan_reply(np, "Done.");
@@ -1506,7 +1579,7 @@ void trojanscan_donickchange(void *arg) { /* just incase I choose to make this s
       } else {
         trojanscan_gennick(c_nick, trojanscan_minmaxrand(7, TROJANSCAN_MMIN(13, NICKLEN)));
       }
-    } while (c_nick && (getnickbynick(c_nick) != NULL));
+    } while (c_nick[0] && (getnickbynick(c_nick) != NULL));
 
     renamelocaluser(clone->clone, c_nick);
   }
@@ -1574,7 +1647,7 @@ void trojanscan_handlemessages(nick *target, int messagetype, void **args) {
 
       /* Split the line into params */
       cargc = splitline((char *)args[1], cargv, 50, 0);
-      if(cargc == 0 || !cargv || !cargv[0])
+      if(cargc == 0 || !cargv[0])
         return;
 
       cmd=findcommandintree(trojanscan_cmds, cargv[0], 1);
@@ -1647,6 +1720,13 @@ void trojanscan_handlemessages(nick *target, int messagetype, void **args) {
   }
 }
 
+static char trojanscan_getmtfromhooktype(int input) {
+  switch(input) {
+    case HOOK_CHANNEL_PART: return 'P';
+    default:                return '?';
+  }
+}
+
 char trojanscan_getmtfrommessagetype(int input) {
   switch(input) {
     case LU_PRIVMSG:    return 'm';
@@ -1658,16 +1738,78 @@ char trojanscan_getmtfrommessagetype(int input) {
   }
 }
 
+static void trojanscan_process(nick *sender, channel *cp, char mt, char *pretext) {
+  char text[513];
+  unsigned int len;
+  unsigned int i;
+  struct trojanscan_worms *worm;
+  int vector[30], detected = 0;
+
+  trojanscan_strip_codes(text, sizeof(text) - 1, pretext);
+      
+  len = strlen(text);
+      
+  for(i=0;i<trojanscan_database.total_phrases;i++) {
+    if (
+         (
+           (worm = trojanscan_database.phrases[i].worm)
+         ) &&
+         (
+           (
+             (
+               (mt == 'm') || (mt == 's') || (mt == 'n')
+             ) &&
+             (
+               (trojanscan_database.phrases[i].worm->hitpriv)
+             )
+           ) ||
+           (
+             (
+               (mt == 'M') || (mt == 'N') || (mt == 'P')
+             ) &&
+             (
+               (trojanscan_database.phrases[i].worm->hitchans)
+             )
+           )
+         ) &&
+         (trojanscan_database.phrases[i].phrase)
+       ) {
+      int pre = pcre_exec(trojanscan_database.phrases[i].phrase, trojanscan_database.phrases[i].hint, text, len, 0, 0, vector, 30);
+      if(pre >= 0) {
+        char matchbuf[513];
+        matchbuf[0] = 0;
+        matchbuf[512] = 0; /* hmm */
+   
+        if(pre > 1)
+          if(pcre_copy_substring(text, vector, pre, 1, matchbuf, sizeof(matchbuf) - 1) <= 0)
+            matchbuf[0] = 0;
+           
+        trojanscan_phrasematch(cp, sender, &trojanscan_database.phrases[i], mt, matchbuf);
+
+        detected = 1;
+        break;
+      }
+    }
+  }
+  if (!detected && (mt != 'N') && (mt != 'M')) {
+    char etext[TROJANSCAN_QUERY_TEMP_BUF_SIZE], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
+    trojanscan_database_escape_string(etext, text, len);
+    trojanscan_database_escape_string(enick, sender->nick, strlen(sender->nick));
+    trojanscan_database_escape_string(eident, sender->ident, strlen(sender->ident));
+    trojanscan_database_escape_string(ehost, sender->host->name->content, sender->host->name->length);
+    trojanscan_database_query("INSERT INTO unknownlog (data, user) VALUES ('%s','%s!%s@%s')", etext, enick, eident, ehost);
+  }
+}
+
 void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) {
-  char *pretext = NULL, etext[TROJANSCAN_QUERY_TEMP_BUF_SIZE], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE], text[513], detected = 0;
+  char *pretext = NULL;
   nick *sender;
   struct trojanscan_realchannels *rp;
   struct trojanscan_rejoinlist *rj;
-  unsigned int i, len;
-  struct trojanscan_worms *worm;
-  int vector[30];
   char mt = trojanscan_getmtfrommessagetype(messagetype);
   char *channel_name;
+  channel *cp = NULL;
+  int i;
 
   switch(messagetype) {
     case LU_PRIVMSG:
@@ -1678,13 +1820,15 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
     
     case LU_CHANMSG:
     case LU_CHANNOTICE:
-      
       sender = (nick *)args[0];
+
       if (strlen(sender->nick) < 2)
         break;
       
-      if (!pretext)
+      if (!pretext) {
         pretext = (char *)args[2];  
+        cp = args[1];
+      }
 
       if(strncmp(TROJANSCAN_VERSION_DETECT, pretext, sizeof(TROJANSCAN_VERSION_DETECT)-1)==0) {
         char p = pretext[sizeof(TROJANSCAN_VERSION_DETECT)-1];
@@ -1711,151 +1855,14 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
               sendnoticetouser(target, sender, "\001VERSION T clone, though since T is currently gone you'll have to version me again in a minute for confirmation.\001");
             }
           } else {
-            sendnoticetouser(target, sender,  "\001VERSION " TROJANSCAN_CLONE_VERSION_REPLY "\001");
+            sendnoticetouser(target, sender,  "\001VERSION %s\001", versionreply);
           }
         
           return;
         }
       }
       
-      trojanscan_strip_codes(text, sizeof(text) - 1, pretext);
-      
-      len = strlen(text);
-      
-      for(i=0;i<trojanscan_database.total_phrases;i++) {
-        if (
-             (
-               (worm = trojanscan_database.phrases[i].worm)
-             ) &&
-             (
-               (
-                 (
-                   (messagetype == LU_PRIVMSG) || (messagetype == LU_SECUREMSG) || (messagetype == LU_PRIVNOTICE)
-                 ) &&
-                 (
-                   (trojanscan_database.phrases[i].worm->hitpriv)
-                 )
-               ) ||
-               (
-                 (
-                   (messagetype == LU_CHANMSG) || (messagetype == LU_CHANNOTICE)
-                 ) &&
-                 (
-                   (trojanscan_database.phrases[i].worm->hitchans)
-                 )
-               )
-             ) &&
-             (trojanscan_database.phrases[i].phrase)
-           ) {
-          int pre = pcre_exec(trojanscan_database.phrases[i].phrase, trojanscan_database.phrases[i].hint, text, len, 0, 0, vector, 30);
-          if(pre >= 0) {
-            char glinemask[HOSTLEN + USERLEN + NICKLEN + 4];
-            char *userbit;
-            host *hp;
-            unsigned int j, usercount, frequency;
-            int glining = 1;
-            channel *chp = (channel *)args[1];
-            
-            nick *np = NULL; /* sigh at warnings */
-            
-            detected = 1;
-            
-            trojanscan_database.detections++;
-            
-            if (!(hp=findhost(sender->host->name->content))) {
-              trojanscan_mainchanmsg("w: user %s!%s@%s triggered infection monitor, yet no hosts found at stage 1 -- worm: %s", sender->nick, sender->ident, sender->host->name->content, worm->name->content);
-              break;
-            } 
-
-            usercount = 0; /* stupid warnings */
-            if (worm->monitor) {
-              glining = 0;
-              usercount = -1;
-            } else if (worm->glinehost && (hp->clonecount <= TROJANSCAN_MAX_HOST_GLINE)) {
-              snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
-              usercount = hp->clonecount;
-            }
-            else if (worm->glineuser || (worm->glinehost && hp->clonecount > TROJANSCAN_MAX_HOST_GLINE)) {
-              userbit = sender->ident;
-              if(userbit[0] == '~')
-                userbit++;
-              snprintf(glinemask, sizeof(glinemask) - 1, "*%s@%s", userbit, IPtostr(sender->p_ipaddr));
-              for (j=0;j<NICKHASHSIZE;j++) {
-                for (np=nicktable[j];np;np=np->next) {
-                  if ((np->host==hp) && (!ircd_strcmp(np->ident,sender->ident)))
-                    usercount++;
-                }
-              }
-            }
-            
-            if (!usercount) {
-              trojanscan_mainchanmsg("w: user %s!%s@%s triggered infection monitor, yet no hosts found at stage 2 -- worm: %s", sender->nick, sender->ident, sender->host->name->content, worm->name->content);
-              break;
-            }
-             
-            if (glining && (usercount > trojanscan_maxusers)) {
-              trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too many users (%d) with mask: *!%s -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, usercount, glinemask, worm->name->content);
-              break;
-            }
-
-            if (glining && !worm->datalen) {
-              trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too lack of removal data with mask: *!%s (%d users) -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, glinemask, usercount, worm->name->content);
-              break;
-            }
-                        
-            trojanscan_database_escape_string(enick, sender->nick, strlen(sender->nick));
-            trojanscan_database_escape_string(eident, sender->ident, strlen(sender->ident));
-            trojanscan_database_escape_string(ehost, sender->host->name->content, sender->host->name->length);
-            
-            frequency = 1;
-            
-            if (!(trojanscan_database_query("SELECT COUNT(*) FROM hits WHERE glined = %d AND host = '%s'", glining, ehost))) {
-              trojanscan_database_res *res;
-              if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
-                trojanscan_database_row sqlrow;
-                if ((trojanscan_database_num_rows(res) > 0) && (sqlrow = trojanscan_database_fetch_row(res)))
-                  frequency = atoi(sqlrow[0]) + 1;
-                trojanscan_database_free_result(res);
-              }
-            } 
-
-            if (!glining) {
-              char matchbuf[513];
-              matchbuf[0] = 0;
-              matchbuf[512] = 0; /* hmm */
-              
-              if(pre > 1)
-                if (pcre_copy_substring(text, vector, pre, 1, matchbuf, sizeof(matchbuf) - 1) <= 0)
-                  matchbuf[0] = 0;
-              
-              trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s p: %d %s%s", mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, trojanscan_database.phrases[i].id, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
-#ifdef TROJANSCAN_PEONCHANNEL
-              trojanscan_peonchanmsg("m: t: %c u: %s!%s@%s%s%s%s w: %s %s%s", mt, sender->nick, sender->ident, (IsHideHost(sender)&&IsAccount(sender))?sender->authname:sender->host->name->content, (IsHideHost(sender)&&IsAccount(sender))?"."HIS_HIDDENHOST:"", mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
-#endif
-            } else {
-              int glinetime = TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1);
-              if(glinetime > 7 * 24)
-                glinetime = 7 * 24; /* can't set glines over 7 days with normal non U:lined glines */
-
-              trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, trojanscan_database.phrases[i].id, mt, glining);          
-              trojanscan_database.glines++;
-              
-              irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, sender->nick, sender->ident, sender->host->name->content, worm->name->content, trojanscan_database.phrases[i].id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
-
-              trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d", glinemask, mt, sender->nick, sender->ident, sender->host->name->content, mt=='N'||mt=='M'?" #: ":"", mt=='N'||mt=='M'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", trojanscan_database.phrases[i].id, frequency);
-            }
-            
-            break;
-          }
-        }
-      }
-      if (!detected && (mt != 'N') && (mt != 'M')) {
-        trojanscan_database_escape_string(etext, text, len);
-        trojanscan_database_escape_string(enick, sender->nick, strlen(sender->nick));
-        trojanscan_database_escape_string(eident, sender->ident, strlen(sender->ident));
-        trojanscan_database_escape_string(ehost, sender->host->name->content, sender->host->name->length);
-        trojanscan_database_query("INSERT INTO unknownlog (data, user) VALUES ('%s','%s!%s@%s')", etext, enick, eident, ehost);
-      }
+      trojanscan_process(sender, cp, mt, pretext);
       break;         
     case LU_KILLED:
       /* someone killed me?  Bastards */
@@ -1937,6 +1944,103 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
   }
 }
 
+static void trojanscan_part_watch(int hook, void *arg) {
+  void **arglist = (void **)arg;
+  channel *cp = (channel *)arglist[0];
+  nick *np = arglist[1];
+  char *reason = arglist[2];
+
+  if(!cp || !np || !reason || (*reason == '\0'))
+    return;
+
+  trojanscan_process(np, cp, trojanscan_getmtfromhooktype(hook), reason);
+}
+
+void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
+  char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
+  char *userbit;
+  unsigned int j, usercount, frequency;
+  int glining = 1;
+  struct trojanscan_worms *worm = phrase->worm;
+
+  nick *np = NULL; /* sigh at warnings */
+  
+  trojanscan_database.detections++;
+  
+  usercount = 0;
+  if (worm->monitor) {
+    glining = 0;
+    usercount = -1;
+  } else if (worm->glinehost) {
+    snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
+    for (j=0;j<NICKHASHSIZE;j++)
+      for (np=nicktable[j];np;np=np->next)
+        if (np->ipnode==sender->ipnode)
+          usercount++;
+  }
+  if (worm->glineuser || (worm->glinehost && usercount > TROJANSCAN_MAX_HOST_GLINE)) {
+    userbit = sender->ident;
+/*
+    if(userbit[0] == '~')
+      userbit++;
+*/
+    snprintf(glinemask, sizeof(glinemask) - 1, "%s@%s", userbit, IPtostr(sender->p_ipaddr));
+    for (j=0;j<NICKHASHSIZE;j++)
+      for (np=nicktable[j];np;np=np->next)
+        if ((np->ipnode==sender->ipnode) && (!ircd_strcmp(np->ident,sender->ident)))
+          usercount++;
+  }
+  
+  if (!usercount) {
+    trojanscan_mainchanmsg("w: user %s!%s@%s triggered infection monitor, yet no hosts found at stage 2 -- worm: %s", sender->nick, sender->ident, sender->host->name->content, worm->name->content);
+    return;
+  }
+   
+  if (glining && (usercount > trojanscan_maxusers)) {
+    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too many users (%d) with mask: *!%s -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, usercount, glinemask, worm->name->content);
+    return;
+  }
+
+  if (glining && !worm->datalen) {
+    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too lack of removal data with mask: *!%s (%d users) -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, glinemask, usercount, worm->name->content);
+    return;
+  }
+    
+  trojanscan_database_escape_string(enick, sender->nick, strlen(sender->nick));
+  trojanscan_database_escape_string(eident, sender->ident, strlen(sender->ident));
+  trojanscan_database_escape_string(ehost, sender->host->name->content, sender->host->name->length);
+  
+  frequency = 1;
+  
+  if (!(trojanscan_database_query("SELECT COUNT(*) FROM hits WHERE glined = %d AND host = '%s'", glining, ehost))) {
+    trojanscan_database_res *res;
+    if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
+      trojanscan_database_row sqlrow;
+      if ((trojanscan_database_num_rows(res) > 0) && (sqlrow = trojanscan_database_fetch_row(res)))
+        frequency = atoi(sqlrow[0]) + 1;
+      trojanscan_database_free_result(res);
+    }
+  } 
+
+  if (!glining) {
+    trojanscan_mainchanmsg("m: t: %c u: %s!%s@%s%s%s w: %s p: %d %s%s", messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", worm->name->content, phrase->id, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+#ifdef TROJANSCAN_PEONCHANNEL
+    trojanscan_peonchanmsg("m: t: %c u: %s!%s@%s%s%s%s w: %s %s%s", messagetype, sender->nick, sender->ident, (IsHideHost(sender)&&IsAccount(sender))?sender->authname:sender->host->name->content, (IsHideHost(sender)&&IsAccount(sender))?"."HIS_HIDDENHOST:"", messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", worm->name->content, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+#endif
+  } else {
+    int glinetime = TROJANSCAN_FIRST_OFFENSE * frequency * (worm->epidemic?TROJANSCAN_EPIDEMIC_MULTIPLIER:1);
+    if(glinetime > 7 * 24)
+      glinetime = 7 * 24; /* can't set glines over 7 days with normal non U:lined glines */
+
+    trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, phrase->id, messagetype, glining);
+    trojanscan_database.glines++;
+    
+    irc_send("%s GL * +%s %d :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+
+    trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d", glinemask, messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", phrase->id, frequency);
+  }
+}
+            
 void trojanscan_rejoin_channel(void *arg) {
   struct trojanscan_rejoinlist *rj2, *lrj, *rj = (struct trojanscan_rejoinlist *)arg;
   

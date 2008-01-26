@@ -31,6 +31,7 @@ MODULE_VERSION(LUA_FULLVERSION);
 void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_registercommands(lua_State *l);
+void lua_registerdbcommands(lua_State *l);
 void lua_initnickpusher(void);
 void lua_initchanpusher(void);
 void lua_loadlibs(lua_State *l);
@@ -52,6 +53,8 @@ void lua_freedebugsocket(void);
 void lua_deregisternicks(lua_list *l);
 void lua_registerlocalcommands(lua_State *ps);
 void lua_registerdebug(lua_State *ps);
+void lua_socket_closeall(lua_list *l);
+void lua_registersocketcommands(lua_State *ps);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -202,6 +205,8 @@ lua_State *lua_loadscript(char *file) {
   lua_registerdebug(l);
   lua_registercommands(l);
   lua_registerlocalcommands(l);
+  lua_registerdbcommands(l);
+  lua_registersocketcommands(l);
 
   lua_setpath(l);
 
@@ -220,6 +225,21 @@ lua_State *lua_loadscript(char *file) {
     return NULL;
   }
 
+  n->l = l;
+
+  n->next = NULL;
+  n->prev = lua_tail;
+  n->nicks = NULL;
+  n->sockets = NULL;
+
+  if(!lua_head) { 
+    lua_head = n;
+  } else {
+    lua_tail->next = n;
+  }
+
+  lua_tail = n;
+
   top = lua_gettop(l);
 
   if(lua_pcall(l, 0, 0, 0)) {
@@ -233,20 +253,6 @@ lua_State *lua_loadscript(char *file) {
   lua_settop(l, top);
 
   Error("lua", ERR_INFO, "Loaded %s.", file);
-  n->l = l;
-
-  n->next = NULL;
-  n->prev = lua_tail;
-  n->nicks = NULL;
-
-  if(!lua_head) { 
-    lua_head = n;
-  } else {
-    lua_tail->next = n;
-  }
-
-  lua_tail = n;
-
   lua_onload(l);
 
   return l;
@@ -255,6 +261,7 @@ lua_State *lua_loadscript(char *file) {
 void lua_unloadscript(lua_list *l) {
   lua_onunload(l->l);
   lua_deregisternicks(l);
+  lua_socket_closeall(l);
   lua_close(l->l);
   freesstring(l->name);
 
@@ -417,6 +424,16 @@ lua_list *lua_listfromstate(lua_State *l) {
       return i;
 
   return &dummy;
+}
+
+int lua_listexists(lua_list *l) {
+  lua_list *i;
+
+  for(i=lua_head;i;i=i->next)
+    if(i == l)
+      return 1;
+
+  return 0;
 }
 
 int lua_lineok(const char *data) {

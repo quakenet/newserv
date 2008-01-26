@@ -3,3 +3,6 @@
 
 extern int geoip_totals[COUNTRY_MAX + 1];
 
+int geoip_lookupcode(char *code);
+typedef int (*GeoIP_LookupCode)(char *);
+

@@ -1,12 +1,14 @@
 /*
-  Easy async socket library with HELIX encryption and authentication
-  Copyright (C) 2004 Chris Porter.
+  Easy async socket library
+  Copyright (C) 2004-2007 Chris Porter.
 */
 
 #ifndef __esockets_H
 #define __esockets_H
 
-#include "../lib/helix.h"
+#include "../lib/rijndael.h"
+#include "../lib/sha2.h"
+#include "library.h"
 #include <sys/types.h>
 #include <ctype.h>
 
@@ -33,15 +35,19 @@
 #define BUF_CONT -1
 #define BUF_OVERFLOW -2
 #define BUF_ERROR -3
+#define BUF_RESET -4
+
+#define PARSE_ASCII 0
+#define PARSE_CRYPTO 1
 
 #define MAX_BUFSIZE 50000
 
-#define USED_MAC_LEN 3
+#define USED_MAC_LEN 16
 
 typedef unsigned short packet_t;
 
 #define MAX_BINARY_LINE_SIZE MAX_BUFSIZE
-#define MAX_ASCII_LINE_SIZE  MAX_BINARY_LINE_SIZE - sizeof(packet_t) - USED_MAC_LEN
+#define MAX_ASCII_LINE_SIZE  MAX_BINARY_LINE_SIZE - 10 - USED_MAC_LEN
 
 #define MAX_OUT_QUEUE_SIZE   5000
 
@@ -53,13 +59,12 @@ typedef int (*parse_event)(struct esocket *sock);
 typedef int (*line_event)(struct esocket *sock, char *newline);
 
 typedef struct esocket_in_buffer {
-  char data[MAX_BUFSIZE];
-  char *writepos;
-  char *curpos;
-  char *startpos;
-  unsigned short buffer_size;
-  parse_event on_parse;
-  packet_t packet_length;
+  char *data;
+  int size;
+  short mode;
+  unsigned char *cryptobuf;
+  int cryptobufsize;
+  short mac;
 } in_buffer;
 
 typedef struct esocket_packet {
@@ -94,10 +99,14 @@ typedef struct esocket {
   struct esocket *next;
   unsigned short token;
   void *tag;
-  helix_ctx keysend;
-  helix_ctx keyreceive;
-  unsigned char sendnonce[NONCE_LEN];
-  unsigned char recvnonce[NONCE_LEN];
+
+  unsigned char clientkey[32];
+  unsigned char serverkey[32];
+  u_int64_t clientseqno;
+  u_int64_t serverseqno;
+  hmacsha256 clienthmac;
+  rijndaelcbc *clientcrypto;
+  rijndaelcbc *servercrypto;
 } esocket;
 
 struct esocket *esocket_add(int fd, char socket_type, struct esocket_events *events, unsigned short token);
@@ -111,7 +120,7 @@ int esocket_write_line(struct esocket *sock, char *format, ...);
 unsigned short esocket_token(void);
 struct esocket *find_esocket_from_fd(int fd);
 void esocket_clean_by_token(unsigned short token);
-void switch_buffer_mode(struct esocket *sock, char *key, unsigned char *ournonce, unsigned char *theirnonce);
+void switch_buffer_mode(struct esocket *sock, unsigned char *serverkey, unsigned char *serveriv, unsigned char *clientkey, unsigned char *clientiv);
 void esocket_disconnect_when_complete(struct esocket *active);
 int esocket_raw_write(struct esocket *sock, char *buffer, int bytes);
 

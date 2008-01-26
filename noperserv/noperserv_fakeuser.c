@@ -59,7 +59,7 @@ void reconnectfake(void *details);
 void _init() {
   if (!fakeuser_loaddb())
   {
-    Error("noperserv_fakeuser", ERR_ERROR, "Cannot load database");
+    Error("noperserv_fakeuser", ERR_FATAL, "Cannot load database");
     return;
   }
   registercontrolhelpcmd("fakeuser", NO_OPER, 4, &fakeadd, "Usage: FAKEUSER nick <ident> <host> <realname>\nCreates a fake user.");
@@ -92,11 +92,13 @@ void fakeuser_cleanup()
     free(killed);
   }
   fakeusercount = 0;
+  killedusercount = 0;
   fakeuserlist = NULL;
   killeduserlist = NULL;
 }
 
 int fakeuser_loaddb()
+// Called from _init
 {
   if (!pqconnected())
     return 0;
@@ -112,21 +114,21 @@ int fakeuser_loaddb()
 }
 
 void fakeusers_load(PGconn *dbconn, void *tag)
+// Called automatically when the async database query finishes
 {
   PGresult *pgres = PQgetResult(dbconn);
   user_details details;
   int i, rowcount;
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
-    Error("noperserv_fakeuser", ERR_ERROR, "Error loading fakeuser list (%d)", PQresultStatus(pgres));
+    Error("noperserv_fakeuser", ERR_FATAL, "Error loading fakeuser list (%d)", PQresultStatus(pgres));
     return;
   }
-  details.schedule = NULL;
   rowcount = PQntuples(pgres);
   Error("noperserv_fakeuser", ERR_INFO, "Loading %d users", rowcount);
 
   details.lastkill = 0;
-
+  details.schedule = NULL;
   for (i = 0; i < rowcount; i++)
   {
     strlcpy(details.nick, PQgetvalue(pgres, i, 0), NICKLEN + 1);
@@ -143,11 +145,11 @@ user_details *getdetails(nick *user)
   details = malloc(sizeof(user_details));
   if (!details)
     return NULL;
-  details->schedule = NULL;
   strlcpy(details->nick, user->nick, NICKLEN + 1);
   strlcpy(details->ident, user->ident, USERLEN + 1);
   strlcpy(details->host, user->host->name->content, HOSTLEN + 1);
   strlcpy(details->realname, user->realname->name->content, REALLEN + 1);
+  details->schedule = NULL;
   details->lastkill = 0;
   return details;
 }
@@ -160,7 +162,7 @@ int err_code;
 nick *register_fakeuser(user_details *details)
 {
   nick *user;
-  if((user = getnickbynick(details->nick)) && (IsOper(user) || IsService(user) || IsXOper(user))) {
+  if ((user = getnickbynick(details->nick)) && (IsOper(user) || IsService(user) || IsXOper(user))) {
     err_code = ERR_WONTKILL;
     return NULL;
   }
@@ -170,7 +172,8 @@ nick *register_fakeuser(user_details *details)
     NULL, UMODE_INV | UMODE_DEAF, &fakeuser_handler);
 }
 
-fakeuser *ll_add(user_details *details) //Adds to the (sorted) linked list
+fakeuser *ll_add(user_details *details) 
+// Adds to the (sorted) linked list
 {
   fakeuser *fake, *newfake;
   int cmp;
@@ -194,13 +197,11 @@ fakeuser *ll_add(user_details *details) //Adds to the (sorted) linked list
       err_code = ERR_MEM;
       return NULL;
     }
-
     newfake->user = register_fakeuser(details);
     if (!newfake->user)
     {
       free(newfake);
-      /* errcode already set by register_fakeuser */
-      return NULL;
+      return NULL;   //errcode already set by register_fakeuser
     }
     newfake->lastkill = details->lastkill;
     newfake->next = fakeuserlist;
@@ -228,8 +229,7 @@ fakeuser *ll_add(user_details *details) //Adds to the (sorted) linked list
       if (!newfake->user)
       {
         free(newfake);
-        /* errcode already set by register_fakeuser */
-        return NULL;
+        return NULL;   //errcode already set by register_fakeuser
       }
       newfake->lastkill = details->lastkill;
       newfake->next = fake->next;
@@ -248,8 +248,7 @@ fakeuser *ll_add(user_details *details) //Adds to the (sorted) linked list
   if (!newfake->user)
   {
     free(newfake);
-    /* errcode already set by register_fakeuser */
-    return NULL;
+    return NULL;   //errcode already set by register_fakeuser
   }
   newfake->lastkill = details->lastkill;
   newfake->next = NULL;
@@ -258,7 +257,8 @@ fakeuser *ll_add(user_details *details) //Adds to the (sorted) linked list
   return newfake;
 }
 
-void kll_add(user_details *details) //Adds to the (sorted) linked list of killed users
+void kll_add(user_details *details)
+//Adds to the (sorted) linked list of killed users
 {
   int cmp;
   user_details *killed;
@@ -291,7 +291,8 @@ void kll_add(user_details *details) //Adds to the (sorted) linked list of killed
   return;
 }
 
-fakeuser *ll_remove(char *nickname) //Removes from the linked list
+fakeuser *ll_remove(char *nickname)
+//Removes from the linked list
 {
   fakeuser *fake, *rmfake;
   int cmp;
@@ -371,18 +372,19 @@ void fakeuser_handler(nick *user, int command, void **params)
 
     details = getdetails(user);
     item = ll_remove(details->nick);
-    if(!item)
+    if (!item)
+    {
+      controlwall(NO_OPER, NL_FAKEUSERS, "Error: A fakeuser was killed, but wasn't found in the list");
+      Error("noperserv_fakeuser", ERR_ERROR, "A fakeuser was killed, but wasn't found in the list");
       return;
+    }
 
     details->lastkill = item->lastkill;
     free(item);
 
-    if(timenow - item->lastkill < KILL_TIME) {
+    if (timenow - details->lastkill < KILL_TIME) {
       char escnick[NICKLEN * 2 + 1];
       controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) KILL'ed twice under in %d seconds. Removing.", details->nick, details->ident, details->host, details->realname, KILL_TIME);
-      item = ll_remove(details->nick);
-      free(item);
-
       PQescapeString(escnick, details->nick, strlen(details->nick));
       pqquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
       return;
@@ -439,11 +441,17 @@ int fakeadd(void *sender, int cargc, char **cargv)
     if (err_code == ERR_EXISTS)
       controlreply(sender, "Error: fakeuser already exists");
     else if (err_code == ERR_MEM)
+    {
       controlreply(sender, "Error: memory error!!");
+      Error("noperserv_fakeuser", ERR_STOP, "malloc error");
+    }
     else if (err_code == ERR_WONTKILL)
       controlreply(sender, "Nick already exists and I won't kill it");
     else
+    {
       controlreply(sender, "Unknown error when adding fakeuser");
+      Error("noperserv_fakeuser", ERR_ERROR, "Unknown error when adding fakeuser");
+    }
     return CMD_ERROR;
   }
   newnick = newfake->user;
@@ -536,6 +544,7 @@ int fakekill(void *sender, int cargc, char **cargv)
 }
 
 void reconnectfake(void *details)
+//Called after the timeout period has expired since a fakeuser was killed, or on load
 {
   fakeuser *fake;
   user_details *u_details = details;

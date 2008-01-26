@@ -6,6 +6,7 @@
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
+#include "../core/config.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -72,10 +73,12 @@ void lua_deregisterevents(void) {
 
 void lua_startbot(void *arg) {
   channel *cp;
+  sstring *n;
 
   myureconnect = NULL;
 
-  lua_nick = registerlocaluser("U", "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+  n = getcopyconfigitem("lua", "botnick", "U", NICKLEN);
+  lua_nick = registerlocaluser(n->content, "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;
@@ -149,6 +152,13 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case 'S':
         lua_pushstring(l, ((sstring *)(va_arg(va, sstring *)))->content);
         break;
+      case 'L':
+        {
+          char *p = va_arg(va, char *);
+          long len = va_arg(va, long);
+          lua_pushlstring(l, p, len);
+        }
+        break;
       case 'N':
         {
           nick *np = va_arg(va, nick *);
@@ -163,6 +173,12 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
         }
       case '0':
         lua_pushnil(l);
+        break;
+      case 'R':
+        lua_rawgeti(l, LUA_REGISTRYINDEX, va_arg(va, long));
+        break;
+      case 'b':
+        lua_pushboolean(l, va_arg(va, int));
         break;
       case '>':
         goto endwhile;
@@ -270,14 +286,17 @@ void lua_onkick(int hooknum, void *arg) {
   nick *kicked = arglist[1];
   nick *kicker = arglist[2];
   char *message = (char *)arglist[3];
+  int mode = 1;
 
   if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
-    return;
+    mode = 0;
 
-  if(kicker) {
+  if(mode) {
     lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
+  } else if(kicker) {
+    lua_avpcall("irc_onkickall", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
   } else {
-    lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
+    lua_avpcall("irc_onkickall", "Sl0s", ci->name, kicked->numeric, message);
   }
 }
 

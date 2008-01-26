@@ -23,7 +23,7 @@
 
 #define MAX_ARGS 100
 
-#define PROTOCOL_VERSION "2"
+#define PROTOCOL_VERSION "3"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
 
 struct rline;
@@ -63,17 +63,14 @@ typedef struct permitted {
 
 typedef struct sconnect {
   int status;
-  char response[20 * 2 + 1]; /* could store this in binary form but I really can't be assed */
+  char response[32 * 2 + 1], challenge[32 * 2 + 1];
+  unsigned char iv[16];
   struct permitted *permit;
-  unsigned char ournonce[NONCE_LEN];
+  unsigned char ournonce[16];
 } sconnect;
 
 extern struct nterface_auto_log *nrl;
   
-int accept_fd = -1;
-struct permitted *permits;
-int permit_count = 0;
-
 struct service_node *register_service(char *name);
 struct handler *register_handler(struct service_node *service, char *command, int args, handler_function fp);
 void deregister_service(struct service_node *service);

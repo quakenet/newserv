@@ -4,6 +4,7 @@
 #include <libpq-fe.h>
 
 #define QH_CREATE 0x01
+#define PQ_ERRORMSG_LENGTH 1024
 
 typedef void (*PQQueryHandler)(PGconn *, void *);
 
@@ -15,5 +16,6 @@ void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQu
 #define pqquery(format, ...) pqasyncqueryf(NULL, NULL, 0, format , ##__VA_ARGS__)
 
 int pqconnected(void);
+char* pqlasterror(PGconn * pgconn);
 
 #endif

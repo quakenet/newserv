@@ -15,7 +15,11 @@ int rq_loading;
 
 void rqhook_lostnick(int hook, void *arg);
 
-void rq_initblocks(void) {
+int rq_initblocks(void) {
+  rqnext = registernickext("request");
+  if(rqnext < 0)
+    return 0;
+
   array_init(&rqblocks, sizeof(rq_block));
   array_setlim1(&rqblocks, 5);
   array_setlim2(&rqblocks, 20);
@@ -29,7 +33,7 @@ void rq_initblocks(void) {
 
   registerhook(HOOK_NICK_LOSTNICK, &rqhook_lostnick);
 
-  rqnext = registernickext("request");
+  return 1;
 }
 
 void rq_finiblocks(void) {

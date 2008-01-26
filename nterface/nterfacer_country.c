@@ -15,7 +15,7 @@ MODULE_VERSION("");
 
 int country_nickext = -1;
 
-struct handler *hl = NULL, *hl2 = NULL;
+static struct handler *hl = NULL, *hl2 = NULL;
 
 int handle_countrytotals(struct rline *li, int argc, char **argv);
 int handle_countrywhois(struct rline *li, int argc, char **argv);

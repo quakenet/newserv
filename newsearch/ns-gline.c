@@ -11,10 +11,12 @@
 #include "../control/control.h" /* controlreply() */
 #include "../irc/irc.h" /* irc_send() */
 #include "../lib/irc_string.h" /* IPtostr(), longtoduration(), durationtolong() */
+#include "../lib/strlfunc.h"
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
 extern nick *senderNSExtern;
+static const char *defaultreason = "You (%u) have been g-lined for violating our terms of service";
 
 void *gline_exe(struct searchNode *thenode, void *theinput);
 void gline_free(struct searchNode *thenode);
@@ -31,6 +33,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
   int len;
+  char *p;
 
   if (!(localdata = (struct gline_localdata *) malloc(sizeof(struct gline_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -46,7 +49,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   switch (argc) {
   case 0:
     localdata->duration = NSGLINE_DURATION;
-    snprintf(localdata->reason, NSMAX_REASON_LEN, ".");
+    strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
     break;
 
   case 1:
@@ -55,14 +58,20 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
       /* error checking on gline duration */
       if (localdata->duration == 0)
         localdata->duration = NSGLINE_DURATION;
-      snprintf(localdata->reason, NSMAX_REASON_LEN, ".");
+      strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
     }
     else { /* reason specified */
       localdata->duration = NSGLINE_DURATION;
-      len = snprintf(localdata->reason, NSMAX_REASON_LEN, ":%s", argv[0]);
-      /* strip leading and trailing '"'s */
-      localdata->reason[1] = ' ';
-      localdata->reason[len-1] = '\0';
+
+      p = argv[0];
+      if(*p == '\"')
+        *p++;
+      len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
+      if(len >= sizeof(localdata->reason)) {
+        localdata->reason[sizeof(localdata->reason)-1] = '\0';
+      } else {
+        localdata->reason[len-1] = '\0';
+      }
     }
     break;
 
@@ -71,12 +80,18 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
     /* error checking on gline duration */
     if (localdata->duration == 0)
       localdata->duration = NSGLINE_DURATION;
-    len = snprintf(localdata->reason, NSMAX_REASON_LEN, ":%s", argv[1]);
-    /* strip leading and trailing '"'s */
-    localdata->reason[1] = ' ';
-    localdata->reason[len-1] = '\0';
-    break;
 
+    p = argv[1];
+    if(*p == '\"')
+      *p++;
+    len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
+    if(len >= sizeof(localdata->reason)) {
+      localdata->reason[sizeof(localdata->reason)-1] = '\0';
+    } else {
+      localdata->reason[len-1] = '\0';
+    }
+
+    break;
   default:
     free(localdata);
     parseError = "gline: invalid number of arguments";
@@ -124,6 +139,7 @@ void gline_free(struct searchNode *thenode) {
   nick *np, *nnp;
   chanindex *cip, *ncip;
   int i, j, safe=0;
+  char msgbuf[512];
 
   localdata = thenode->localdata;
 
@@ -146,15 +162,14 @@ void gline_free(struct searchNode *thenode) {
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
               if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
+                nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
                 if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-                  irc_send("%s GL * +*@%s %u :You (%s!%s@%s) have been glined for violating our terms of service%s", 
-                    mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+                  irc_send("%s GL * +*@%s %u :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
                 else
-                  irc_send("%s GL * +%s@%s %u :You (%s!%s@%s) have been glined for violating our terms of service%s", 
-                    mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr), localdata->reason);
-                }
-                else
-                  safe++;
+                  irc_send("%s GL * +%s@%s %u :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
+              }
+              else
+                safe++;
             }
           }
         }
@@ -167,12 +182,11 @@ void gline_free(struct searchNode *thenode) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
           if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
+            nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
             if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-              irc_send("%s GL * +*@%s %u :You (%s!%s@%s) have been glined for violating our terms of service%s", 
-                mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+              irc_send("%s GL * +*@%s %u :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
             else
-              irc_send("%s GL * +%s@%s %u :You (%s!%s@%s) have been glined for violating our terms of service%s", 
-                mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, np->nick, np->ident, IPtostr(np->p_ipaddr), localdata->reason);
+              irc_send("%s GL * +%s@%s %u :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
           }
           else
               safe++;

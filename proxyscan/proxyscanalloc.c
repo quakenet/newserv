@@ -1,6 +1,7 @@
 /* proxyscanalloc.c */
 
 #include "proxyscan.h"
+#include "../core/nsmalloc.h"
 
 #include <stdlib.h>
 
@@ -11,43 +12,13 @@ cachehost *freecachehosts;
 pendingscan *freependingscans;
 foundproxy *freefoundproxies;
 
-void *mallocs=NULL;
-
-void *smalloc(size_t size) {
-  void **mem;
-
-  /* Get the memory we want, with an extra four bytes for our pointer */
-  mem=(void **)malloc(size+sizeof(void *));
-
-  /* Set the first word to point at the last chunk we got */
-  *mem=mallocs;
-
-  /* Now set the "last chunk" pointer to the address of this one */
-  mallocs=(void *)mem;
-
-  /* Return the rest of the memory to the caller */
-  return (void *)(mem+1);
-}
-
-void sfreeall() {
-  void *vp,**vp2;
-  
-  vp=mallocs;
-
-  while (vp!=NULL) {
-    vp2=(void **)vp;
-    vp=*vp2;
-    free((void *)vp2);
-  }
-}
-
 scan *getscan() {
   int i;
   scan *sp;
   
   if (freescans==NULL) {
     /* Eep.  Allocate more. */
-    freescans=(scan *)smalloc(ALLOCUNIT*sizeof(scan));
+    freescans=(scan *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT*sizeof(scan));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freescans[i].next=&(freescans[i+1]);
     }
@@ -70,7 +41,7 @@ cachehost *getcachehost() {
   cachehost *chp;
   
   if (freecachehosts==NULL) {
-    freecachehosts=(cachehost *)smalloc(ALLOCUNIT*sizeof(cachehost));
+    freecachehosts=(cachehost *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT*sizeof(cachehost));
     for (i=0;i<(ALLOCUNIT-1);i++) {
       freecachehosts[i].next=&(freecachehosts[i+1]);
     }
@@ -93,7 +64,7 @@ pendingscan *getpendingscan() {
   pendingscan *psp;
 
   if (!freependingscans) {
-    freependingscans=(pendingscan *)smalloc(ALLOCUNIT * sizeof(pendingscan));
+    freependingscans=(pendingscan *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT * sizeof(pendingscan));
     for (i=0;i<(ALLOCUNIT-1);i++)
       freependingscans[i].next = freependingscans+i+1;
     freependingscans[ALLOCUNIT-1].next=NULL;
@@ -115,7 +86,7 @@ foundproxy *getfoundproxy() {
   foundproxy *fpp;
 
   if (!freefoundproxies) {
-    freefoundproxies=(foundproxy *)smalloc(ALLOCUNIT * sizeof(foundproxy));
+    freefoundproxies=(foundproxy *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT * sizeof(foundproxy));
     for (i=0;i<(ALLOCUNIT-1);i++)
       freefoundproxies[i].next = freefoundproxies+i+1;
     freefoundproxies[ALLOCUNIT-1].next=NULL;
