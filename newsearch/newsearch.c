@@ -539,7 +539,10 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
 
 /* Literals always return constant strings... */
 void *literal_exe(struct searchNode *thenode, void *theinput) {
-  return ((sstring *)thenode->localdata)->content;
+  if (thenode->localdata) 
+    return ((sstring *)thenode->localdata)->content;
+  else
+    return "";
 }
 
 void literal_free(struct searchNode *thenode) {
