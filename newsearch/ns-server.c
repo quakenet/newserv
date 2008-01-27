@@ -29,6 +29,11 @@ struct searchNode *server_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
+  if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
+    parseError = "malloc: could not allocate memory for this search.";
+    return NULL;
+  }
+
   if (argc>0) {
     numeric = -1;
     for(i=0;i<MAXSERVERS;i++) {
