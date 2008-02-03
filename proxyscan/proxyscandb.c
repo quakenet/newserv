@@ -123,7 +123,7 @@ int scantodm(int scannum) {
  *  the unique ID assigned to this gline (for the gline message itself).
  */
 
-void loggline(cachehost *chp) {
+void loggline(cachehost *chp, patricia_node_t *node) {
   char reasonlist[100];
   char reasonesc[200 + 1]; /* reasonlist*2+1 */
   int reasonmask=0;
@@ -146,7 +146,7 @@ void loggline(cachehost *chp) {
 
     PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
     pqquery("INSERT INTO openproxies VALUES(%u,'%s',%d,%ld,'%s')",chp->glineid,
-	    IPlongtostr(chp->IP),reasonmask,getnettime(),reasonesc);
+	    IPtostr(((patricia_node_t *)node)->prefix->sin),reasonmask,getnettime(),reasonesc);
   } else {
     PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
     pqquery("UPDATE openproxies SET PM=%d,RH='%s' where ID=%u",

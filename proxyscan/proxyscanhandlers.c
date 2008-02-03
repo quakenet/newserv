@@ -1,23 +1,33 @@
 #include "proxyscan.h"
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
+#include "../core/error.h"
 
 void proxyscan_newnick(int hooknum, void *arg) {
   nick *np=(nick *)arg;
   cachehost *chp;
   foundproxy *fpp, *nfpp;
+  extrascan *esp, *espp;
+
   int i;
 
   /* Skip 127.* and 0.* hosts */
   if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
     return;
 
+  unsigned int ip = irc_in_addr_v4_to_int(&np->p_ipaddr);
+
+  /* before we look at a normal host, see if we think we have an open proxy */
+  if ((esp=findextrascan(np->ipnode))) {
+    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
+    for (espp=esp;espp;espp=espp->nextbynode) { 
+      queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
+    }
+  }
 
   /* ignore newnick for first 120s */
   if (ps_start_ts+120 > time(NULL))
     return;
-
-  unsigned int ip = irc_in_addr_v4_to_int(&np->p_ipaddr);
 
   /*
    * Logic for connecting hosts:
@@ -33,7 +43,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
    * If they're not in the cache, we queue up their scans
    */
 
-  if ((chp=findcachehost(ip))) {
+  if ((chp=findcachehost(np->ipnode))) {
     if (!chp->proxies)
       return;
 
@@ -48,14 +58,14 @@ void proxyscan_newnick(int hooknum, void *arg) {
           break;
       
       if (!fpp)
-        queuescan(ip, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
+        queuescan(np->ipnode, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
       }
     }
 
     /* We want these scans to start around now, so we put them at the front of the priority queue */
     for (fpp=chp->proxies;fpp;fpp=nfpp) {
       nfpp=fpp->next;
-      queuescan(ip, fpp->type, fpp->port, SCLASS_CHECK, time(NULL));
+      queuescan(np->ipnode, fpp->type, fpp->port, SCLASS_CHECK, time(NULL));
       freefoundproxy(fpp);
     }
 
@@ -67,11 +77,13 @@ void proxyscan_newnick(int hooknum, void *arg) {
     chp->proxies=NULL;
     chp->glineid=0;
   } else {
-    chp=addcleanhost(ip, time(NULL));
+    chp=addcleanhost(time(NULL));
+    np->ipnode->slots[ps_cache_ext] = chp;
+    patricia_ref_prefix(np->ipnode->prefix);
 
     /* Queue up all the normal scans - on the normal queue */
     for (i=0;i<numscans;i++)
-      queuescan(ip, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
+      queuescan(np->ipnode, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
   }
 }
 

@@ -16,7 +16,7 @@ unsigned int prioqueuedscans=0;
 
 unsigned long countpendingscan=0;
 
-void queuescan(unsigned int IP, short scantype, unsigned short port, char class, time_t when) {
+void queuescan(patricia_node_t *node, short scantype, unsigned short port, char class, time_t when) {
   pendingscan *psp, *psp2;
 
   /* check if the IP/port combo is already queued - don't queue up
@@ -25,7 +25,7 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
   psp = ps_prioqueue;
   while (psp != NULL)
   {
-    if (psp->IP == IP && psp->type == scantype &&
+    if (psp->node == node && psp->type == scantype &&
       psp->port == port && psp->class == class)
     {
       /* found it, ignore */
@@ -37,7 +37,7 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
   psp = ps_normalqueue;
   while (psp != NULL)
   {
-    if (psp->IP == IP && psp->type == scantype &&
+    if (psp->node == node && psp->type == scantype &&
       psp->port == port && psp->class == class)
     {
       /* found it, ignore */
@@ -49,7 +49,7 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
   /* If there are scans spare, just start it immediately.. 
    * provided we're not supposed to wait */
   if (activescans < maxscans && when<=time(NULL) && (ps_start_ts+120 <= time(NULL))) {
-    startscan(IP, scantype, port, class);
+    startscan(node, scantype, port, class);
     return;
   }
 
@@ -59,7 +59,7 @@ void queuescan(unsigned int IP, short scantype, unsigned short port, char class,
 
   countpendingscan++;
 
-  psp->IP=IP;
+  psp->node=node;
   psp->type=scantype;
   psp->port=port;
   psp->class=class;
@@ -112,7 +112,7 @@ void startqueuedscans() {
     }
     
     if (psp) {
-      startscan(psp->IP, psp->type, psp->port, psp->class);
+      startscan(psp->node, psp->type, psp->port, psp->class);
       free(psp);
       countpendingscan--;
       psp=NULL;

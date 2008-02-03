@@ -38,8 +38,15 @@ typedef struct scantype {
   int hits;
 } scantype;
 
+typedef struct extrascan {
+  unsigned short port;
+  unsigned char type;
+  struct extrascan *next;
+  struct extrascan *nextbynode;
+} extrascan;
+
 typedef struct pendingscan {
-  unsigned int IP;
+  patricia_node_t *node; 
   unsigned short port;
   unsigned char type;
   unsigned char class;
@@ -54,7 +61,6 @@ typedef struct foundproxy {
 } foundproxy;
 
 typedef struct cachehost {
-  unsigned long IP;
   time_t lastscan;
   foundproxy *proxies;
   int glineid;
@@ -63,12 +69,12 @@ typedef struct cachehost {
   sstring *lasthostmask; /* Not saved to disk */
   time_t lastconnect;    /* Not saved to disk */
 #endif
-  struct cachehost *next;
+  struct cachehost *next; 
 } cachehost;
 
 typedef struct scan {
   int fd;
-  unsigned int IP;
+  patricia_node_t *node; 
   short type;
   unsigned short port;
   unsigned short state;
@@ -93,6 +99,10 @@ extern int maxscans;
 extern int numscans;
 extern scantype thescans[];
 extern int brokendb;
+extern int ps_cache_ext;
+extern int ps_scan_ext;
+extern int ps_extscan_ext;
+
 
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;
@@ -104,8 +114,8 @@ extern unsigned long countpendingscan;
 extern unsigned long scanspermin;
 
 /* proxyscancache.c */
-cachehost *addcleanhost(unsigned long IP, time_t timestamp);
-cachehost *findcachehost(unsigned long IP);
+cachehost *addcleanhost(time_t timestamp);
+cachehost *findcachehost(patricia_node_t *node);
 void delcachehost(cachehost *);
 void dumpcachehosts();
 void loadcachehosts();
@@ -124,6 +134,8 @@ void freefoundproxy(foundproxy *fpp);
 pendingscan *getpendingscan();
 void freependingscan(pendingscan *psp);
 void sfreeall();
+extrascan *getextrascan();
+void freeextrascan(extrascan *esp);
 
 /* proxyscanlisten.c */
 int openlistensocket(int portnum);
@@ -133,7 +145,7 @@ void handlelistensocket(int fd, short events);
 int createconnectsocket(long ip, int socknum);
 
 /* proxyscandb.c */
-void loggline(cachehost *chp);
+void loggline(cachehost *chp, patricia_node_t *node);
 void proxyscandbclose();
 int proxyscandbinit();
 void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce);
@@ -147,11 +159,17 @@ void ps_makereportmail(scanhost *shp);
 #endif
 
 /* proxyscanqueue.c */
-void queuescan(unsigned int IP, short scantype, unsigned short port, char class, time_t when);
+void queuescan(patricia_node_t *node, short scantype, unsigned short port, char class, time_t when);
 void startqueuedscans();
 
 /* proxyscan.c */
-void startscan(unsigned int IP, int type, int port, int class);
+void startscan(patricia_node_t *node, int type, int port, int class);
 
+/* proxyscanext.c */
+unsigned int extrascancount();
+void loadextrascans();
+extrascan *findextrascan(patricia_node_t *node);
+void delextrascan(extrascan *esp);
+extrascan *addextrascan(unsigned short port, unsigned char type);
 
 #endif

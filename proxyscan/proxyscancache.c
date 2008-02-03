@@ -9,32 +9,22 @@
 #include "../core/error.h"
 #include <string.h>
 
-#define HOSTCACHEHASHSIZE     50000
-
-cachehost *cachetable[HOSTCACHEHASHSIZE];
 time_t cleanscaninterval;
 time_t dirtyscaninterval;
 
 void cachehostinit(time_t ri) {
   cleanscaninterval=ri;
   dirtyscaninterval=ri*7;
-  memset(cachetable,0,sizeof(cachetable));
 }
 
-cachehost *addcleanhost(unsigned long IP, time_t timestamp) {
+cachehost *addcleanhost(time_t timestamp) {
   cachehost *chp;
   int hash;
 
-  hash=(IP%HOSTCACHEHASHSIZE);
-
   chp=getcachehost();
-  chp->IP=IP;
   chp->lastscan=timestamp;
   chp->proxies=NULL;
   chp->glineid=0;
-  chp->next=cachetable[hash];
-  
-  cachetable[hash]=chp;
   
   return chp;
 }
@@ -42,17 +32,7 @@ cachehost *addcleanhost(unsigned long IP, time_t timestamp) {
 void delcachehost(cachehost *chp) {
   cachehost **chh;
   foundproxy *fpp, *nfpp;
-  int hash;
 
-  hash=(chp->IP%HOSTCACHEHASHSIZE);
-
-  for (chh=&(cachetable[hash]);*chh;chh=&((*chh)->next)) {
-    if (*chh==chp) {
-      *chh=chp->next;
-      break;
-    }
-  }
-  
   for (fpp=chp->proxies;fpp;fpp=nfpp) {
     nfpp=fpp->next;
     freefoundproxy(fpp);
@@ -64,23 +44,21 @@ void delcachehost(cachehost *chp) {
  * Returns a cachehost * for the named IP
  */
 
-cachehost *findcachehost(unsigned long IP) {
+cachehost *findcachehost(patricia_node_t *node) {
   int hash;
   cachehost *chp;
 
-  hash=(IP%HOSTCACHEHASHSIZE);
-
-  for (chp=cachetable[hash];chp;chp=chp->next) {
-    if (chp->IP==IP) {
-      /* match */
-      if(chp->lastscan < (time(NULL)-(chp->proxies ? dirtyscaninterval : cleanscaninterval))) {
-	/* Needs rescan; delete and return 1 */
-	delcachehost(chp);
-	return NULL;
-      } else {
-        /* valid: return it */
-	return chp;
-      }
+  if( (cachehost *)node->slots[ps_cache_ext] ) {
+    chp = (cachehost *)node->slots[ps_cache_ext];
+    if(chp->lastscan < (time(NULL)-(chp->proxies ? dirtyscaninterval : cleanscaninterval))) {
+      /* Needs rescan; delete and return 1 */
+      delcachehost(chp);
+      patricia_deref_prefix(node->prefix);
+      node->slots[ps_cache_ext] = NULL;
+      return NULL;
+    } else {
+      /* valid: return it */
+      return chp;
     }
   }
 
@@ -96,36 +74,40 @@ cachehost *findcachehost(unsigned long IP) {
 void dumpcachehosts(void *arg) {
   int i;
   FILE *fp;
-  cachehost *chp,*nchp;
+  cachehost *chp;
   time_t now=time(NULL);
   foundproxy *fpp;
+  patricia_node_t *node;
 
   if ((fp=fopen("cleanhosts","w"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for writing!");
     return;
   }
 
-  for(i=0;i<HOSTCACHEHASHSIZE;i++) {
-    for(chp=cachetable[i];chp;chp=nchp) {
-      nchp=chp->next;
+  PATRICIA_WALK (iptree->head, node) {
+    if ( node->slots[ps_cache_ext] ) {
+      chp = (cachehost *) node->slots[ps_cache_ext];
       if (chp->proxies) {
         if (chp->lastscan < (now-dirtyscaninterval)) {
-          delcachehost(chp);
+          patricia_deref_prefix(node->prefix);
+	  delcachehost(chp);
           continue;
         }
         
         for (fpp=chp->proxies;fpp;fpp=fpp->next) 
-          fprintf(fp, "%lu %lu %u %i %u\n",chp->IP,chp->lastscan,chp->glineid,fpp->type,fpp->port);
+          fprintf(fp, "%s %lu %u %i %u\n",IPtostr(node->prefix->sin),chp->lastscan,chp->glineid,fpp->type,fpp->port);
       } else {
         if (chp->lastscan < (now-cleanscaninterval)) {
           /* Needs rescan anyway, so delete it */
+	  patricia_deref_prefix(node->prefix);
 	  delcachehost(chp);
 	  continue;
         }
-        fprintf(fp,"%lu %lu\n",chp->IP,chp->lastscan);
+        fprintf(fp,"%s %lu\n",IPtostr(node->prefix->sin),chp->lastscan);
       }
     }
-  }
+  } PATRICIA_WALK_END;
+  
 
   fclose(fp);
 }
@@ -141,12 +123,17 @@ void loadcachehosts() {
   char buf[512];
   cachehost *chp=NULL;
   foundproxy *fpp;
+  char ip[512];
   int res;
-  
+  struct irc_in_addr sin;
+  unsigned char bits;
+  patricia_node_t *node;
+
   if ((fp=fopen("cleanhosts","r"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for reading!");
     return;
   }
+
 
   while (!feof(fp)) {
     fgets(buf,512,fp);
@@ -154,23 +141,31 @@ void loadcachehosts() {
       break;
     }
 
-    res=sscanf(buf,"%lu %lu %lu %lu %lu",&IP,&timestamp,&glineid,&ptype,&pport);
+    res=sscanf(buf,"%s %lu %lu %lu %lu",&ip,&timestamp,&glineid,&ptype,&pport);
 
     if (res<2)
       continue;
 
-    if (!chp || (chp->IP != IP))
-      chp=addcleanhost(IP, timestamp);
+    if (0 == ipmask_parse(ip,&sin, &bits)) {
+      /* invalid mask */
+    } else {
+      node = refnode(iptree, &sin, bits);
+      if( node ) {
+        chp=addcleanhost(timestamp);
+        node->slots[ps_cache_ext] = chp;
       
-    if (res==5) {
-      chp->glineid=glineid;
-      fpp=getfoundproxy();
-      fpp->type=ptype;
-      fpp->port=pport;
-      fpp->next=chp->proxies;
-      chp->proxies=fpp;
+        if (res==5) {
+          chp->glineid=glineid;
+          fpp=getfoundproxy();
+          fpp->type=ptype;
+          fpp->port=pport;
+          fpp->next=chp->proxies;
+          chp->proxies=fpp;
+	}
+      }
     }
   }
+  
 }
 
 /*
@@ -182,13 +177,16 @@ unsigned int cleancount() {
   int i;
   unsigned int total=0;
   cachehost *chp;
+  patricia_node_t *node;
 
-  for(i=0;i<HOSTCACHEHASHSIZE;i++) {
-    for (chp=cachetable[i];chp;chp=chp->next) {
+  PATRICIA_WALK (iptree->head, node) {
+    if ( node->slots[ps_cache_ext] ) {
+      chp = (cachehost *) node->slots[ps_cache_ext];
+
       if (!chp->proxies)
         total++;
     }
-  }
+  } PATRICIA_WALK_END;
 
   return total;
 }
@@ -197,13 +195,15 @@ unsigned int dirtycount() {
   int i;
   unsigned int total=0;
   cachehost *chp;
+  patricia_node_t *node;
 
-  for(i=0;i<HOSTCACHEHASHSIZE;i++) {
-    for (chp=cachetable[i];chp;chp=chp->next) {
+  PATRICIA_WALK (iptree->head, node) {
+    if ( node->slots[ps_cache_ext] ) {
+      chp = (cachehost *) node->slots[ps_cache_ext];
       if (chp->proxies)
         total++;
     }
-  }
+  } PATRICIA_WALK_END;
 
   return total;
 }
@@ -218,12 +218,16 @@ void scanall(int type, int port) {
   cachehost *chp, *nchp;
   nick *np;
   unsigned int hostmarker;
+  patricia_node_t *node;
 
   hostmarker=nexthostmarker();
 
-  for (i=0;i<HOSTCACHEHASHSIZE;i++)
-    for (chp=cachetable[i];chp;chp=chp->next)
+  PATRICIA_WALK (iptree->head, node) {
+    if ( node->slots[ps_cache_ext] ) {
+      chp = (cachehost *) node->slots[ps_cache_ext];
       chp->marker=0;
+    }
+  } PATRICIA_WALK_END; 
 
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
@@ -235,20 +239,10 @@ void scanall(int type, int port) {
       if (!irc_in_addr_is_ipv4(&np->p_ipaddr))
         continue;
 
-      unsigned int ip2 = irc_in_addr_v4_to_int(&np->p_ipaddr);
-
-      if ((chp=findcachehost(ip2)))
+      if ((chp=findcachehost(np->ipnode)))
 	chp->marker=1;
 
-      queuescan(ip2, type, port, SCLASS_NORMAL, 0);
-    }
-  }
-
-  for (i=0;i<HOSTCACHEHASHSIZE;i++) {
-    for (chp=cachetable[i];chp;chp=nchp) {
-      nchp=chp->next;
-      if (!chp->proxies && !chp->marker)
-	delcachehost(chp);
+      queuescan(np->ipnode, type, port, SCLASS_NORMAL, 0);
     }
   }
 }

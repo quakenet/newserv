@@ -25,6 +25,7 @@
 #include "../channel/channel.h"
 #include "../localuser/localuserchannel.h"
 #include "../core/nsmalloc.h"
+#include "../lib/irc_ipv6.h"
 
 MODULE_VERSION("")
 
@@ -47,6 +48,8 @@ int rescaninterval;
 int warningsent;
 int glinedhosts;
 time_t ps_starttime;
+int ps_cache_ext;
+int ps_extscan_ext;
 
 int numscans; /* number of scan types currently valid */
 scantype thescans[PSCAN_MAXSCANS];
@@ -127,6 +130,14 @@ void _init(void) {
 
   ps_start_ts = time(NULL);
 
+  ps_cache_ext = registernodeext("proxyscancache");
+  if( !ps_cache_ext ) {
+
+  }
+  ps_extscan_ext = registernodeext("proxyscanextscan");
+  if ( !ps_extscan_ext ) { 
+
+  }
   memset(scantable,0,sizeof(scantable));
   maxscans=200;
   activescans=0;
@@ -193,6 +204,9 @@ void _init(void) {
 
   /* Read in the clean hosts */
   loadcachehosts();
+
+  /* Read in any custom ports to scan */
+  loadextrascans();
 
   /* Set up the database */
   if ((proxyscandbinit())!=0) {
@@ -274,6 +288,9 @@ void registerproxyscannick(void *arg) {
 void _fini(void) {
 
   deregisterlocaluser(proxyscannick,NULL);
+  
+  releasenodeext(ps_cache_ext);
+  releasenodeext(ps_extscan_ext);
 
   deregisterhook(HOOK_NICK_NEWNICK,&proxyscan_newnick);
 
@@ -304,6 +321,9 @@ void proxyscanuserhandler(nick *target, int message, void **params) {
   nick *sender;
   char *msg;
   int i;
+  struct irc_in_addr sin;
+  unsigned char bits;
+  patricia_node_t *node;
 
   switch(message) {
   case LU_KILLED:
@@ -357,14 +377,14 @@ void proxyscanuserhandler(nick *target, int message, void **params) {
       }
 
       if (!ircd_strncmp(msg,"scan ",5)) {
-        unsigned long a,b,c,d;
-        if (4 != sscanf(&msg[5],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
-          sendnoticetouser(proxyscannick,sender,"Usage: scan a.b.c.d");
+        if (0 == ipmask_parse(&msg[5],&sin, &bits)) {
+          sendnoticetouser(proxyscannick,sender,"Usage: scan <ip>");
         } else {
-          sendnoticetouser(proxyscannick,sender,"Forcing scan of %lu.%lu.%lu.%lu",a,b,c,d);
-	  /* Just queue the scans directly here.. plonk them on the priority queue */
-	  for(i=0;i<numscans;i++) {
-	    queuescan((a<<24)+(b<<16)+(c<<8)+d,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
+          sendnoticetouser(proxyscannick,sender,"Forcing scan of %s",IPtostr(sin));
+	  // * Just queue the scans directly here.. plonk them on the priority queue * /
+          node = refnode(iptree, &sin, bits); /* node leaks node here - should only allow to scan a nick? */
+          for(i=0;i<numscans;i++) {
+	    queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
 	  }
         }      
       }
@@ -447,9 +467,8 @@ scan *findscan(int fd) {
   return NULL;
 }
 
-void startscan(unsigned int IP, int type, int port, int class) {
+void startscan(patricia_node_t *node, int type, int port, int class) {
   scan *sp;
-
   float scantmp;
 
   if (scansdone>maxscans)
@@ -472,14 +491,14 @@ void startscan(unsigned int IP, int type, int port, int class) {
   
   sp->outcome=SOUTCOME_INPROGRESS;
   sp->port=port;
-  sp->IP=IP;
+  sp->node=node;
   sp->type=type;
   sp->class=class;
   sp->bytesread=0;
   sp->totalbytesread=0;
   memset(sp->readbuf, '\0', PSCAN_READBUFSIZE);
 
-  sp->fd=createconnectsocket(sp->IP,sp->port);
+  sp->fd=createconnectsocket(irc_in_addr_v4_to_int(&((patricia_node_t *)sp->node)->prefix->sin),sp->port);
   sp->state=SSTATE_CONNECTING;
   if (sp->fd<0) {
     /* Couldn't set up the socket? */
@@ -518,21 +537,23 @@ void killsock(scan *sp, int outcome) {
   if (sp->outcome==SOUTCOME_CLOSED &&
       ((sp->class==SCLASS_CHECK) ||
        (sp->class==SCLASS_NORMAL && (sp->state==SSTATE_SENTREQUEST || sp->state==SSTATE_GOTRESPONSE))))
-    queuescan(sp->IP, sp->type, sp->port, SCLASS_PASS2, time(NULL)+300);
+    queuescan(sp->node, sp->type, sp->port, SCLASS_PASS2, time(NULL)+300);
 
   if (sp->outcome==SOUTCOME_CLOSED && sp->class==SCLASS_PASS2)
-    queuescan(sp->IP, sp->type, sp->port, SCLASS_PASS3, time(NULL)+300);
+    queuescan(sp->node, sp->type, sp->port, SCLASS_PASS3, time(NULL)+300);
 
   if (sp->outcome==SOUTCOME_CLOSED && sp->class==SCLASS_PASS3)
-    queuescan(sp->IP, sp->type, sp->port, SCLASS_PASS4, time(NULL)+300);
+    queuescan(sp->node, sp->type, sp->port, SCLASS_PASS4, time(NULL)+300);
 
   if (sp->outcome==SOUTCOME_OPEN) {
     hitsbyclass[sp->class]++;
   
     /* Lets try and get the cache record.  If there isn't one, make a new one. */
-    if (!(chp=findcachehost(sp->IP)))
-      chp=addcleanhost(sp->IP, time(NULL));
-    
+    if (!(chp=findcachehost(sp->node))) {
+      chp=addcleanhost(time(NULL));
+      patricia_ref_prefix(sp->node->prefix);
+      sp->node->slots[ps_cache_ext] = chp;
+    }
     /* Stick it on the cache's list of proxies, if necessary */
     for (fpp=chp->proxies;fpp;fpp=fpp->next)
       if (fpp->type==sp->type && fpp->port==sp->port)
@@ -548,12 +569,12 @@ void killsock(scan *sp, int outcome) {
     
     if (!chp->glineid) {
       glinedhosts++;
-      loggline(chp);
+      loggline(chp, sp->node);
       irc_send("%s GL * +*@%s 1800 :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	       mynumeric->content,IPlongtostr(sp->IP),chp->glineid);
-      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPlongtostr(sp->IP));
+	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),chp->glineid);
+      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
     } else {
-      loggline(chp);  /* Update log only */
+      loggline(chp, sp->node);  /* Update log only */
     }
 
     /* Update counter */
@@ -761,7 +782,7 @@ void killallscans() {
   for(i=0;i<SCANHASHSIZE;i++) {
     for(sp=scantable[i];sp;sp=sp->next) {
       /* If there is a pending scan, delete it's clean host record.. */
-      if ((chp=findcachehost(sp->IP)) && !chp->proxies)
+      if ((chp=findcachehost(sp->node)) && !chp->proxies)
         delcachehost(chp);
         
       if (sp->fd!=-1) {
@@ -823,7 +844,8 @@ void proxyscandostatus(nick *np) {
   sendnoticetouser(proxyscannick,np,"Timed queued scans:     %d",prioqueuedscans);
   sendnoticetouser(proxyscannick,np,"'Clean' cached hosts:   %d",cleancount());
   sendnoticetouser(proxyscannick,np,"'Dirty' cached hosts:   %d",dirtycount());
-  
+ 
+  sendnoticetouser(proxyscannick,np,"Extra scans: %d", extrascancount());
   for (i=0;i<5;i++)
     sendnoticetouser(proxyscannick,np,"Open proxies, class %1d:  %d/%d (%.2f%%)",i,hitsbyclass[i],scansbyclass[i],((float)hitsbyclass[i]*100)/scansbyclass[i]);
   
@@ -849,6 +871,8 @@ void proxyscandebug(nick *np) {
   int activescansfound=0;
   int totalscansfound=0;
   scan *sp;
+  patricia_node_t *node;
+  cachehost *chp;
 
   sendnoticetouser(proxyscannick,np,"Active scans : %d",activescans);
   
@@ -859,9 +883,17 @@ void proxyscandebug(nick *np) {
       }
       totalscansfound++;
       sendnoticetouser(proxyscannick,np,"fd: %d type: %d port: %d state: %d outcome: %d IP: %s",
-		       sp->fd,sp->type,sp->port,sp->state,sp->outcome,IPlongtostr(sp->IP));
+		       sp->fd,sp->type,sp->port,sp->state,sp->outcome,IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
     }
   }
+
+  PATRICIA_WALK (iptree->head, node) {
+    if ( node->slots[ps_cache_ext] ) {
+      chp = (cachehost *) node->slots[ps_cache_ext];
+      if (chp)
+        sendnoticetouser(proxyscannick,np,"node: %s , chp: %d", IPtostr(((patricia_node_t *)node)->prefix->sin), chp); 
+    }
+  } PATRICIA_WALK_END;
 
   sendnoticetouser(proxyscannick,np,"Total %d scans actually found (%d active)",totalscansfound,activescansfound);
 }

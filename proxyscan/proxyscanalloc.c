@@ -11,6 +11,7 @@ scan *freescans;
 cachehost *freecachehosts;
 pendingscan *freependingscans;
 foundproxy *freefoundproxies;
+extrascan *freeextrascans;
 
 scan *getscan() {
   int i;
@@ -101,5 +102,28 @@ foundproxy *getfoundproxy() {
 void freefoundproxy(foundproxy *fpp) {
   fpp->next=freefoundproxies;
   freefoundproxies=fpp;
+}
+
+extrascan *getextrascan() {
+  int i;
+  extrascan *esp;
+
+  if (freeextrascans==NULL) {
+    freeextrascans=(extrascan *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT*sizeof(extrascan));
+    for (i=0;i<(ALLOCUNIT-1);i++) {
+      freeextrascans[i].next=&(freeextrascans[i+1]);
+    }
+    freeextrascans[ALLOCUNIT-1].next=NULL;
+  }
+
+  esp=freeextrascans;
+  freeextrascans=esp->next;
+
+  return esp;
+}
+
+void freeextrascan(extrascan *esp) {
+  esp->next=freeextrascans;
+  freeextrascans=esp;
 }
 
