@@ -212,7 +212,7 @@ int handleburstmsg(void *source, int cargc, char **cargv) {
 int handlejoinmsg(void *source, int cargc, char **cargv) {
   char *pos,*nextchan;
   nick *np;
-  void *harg[2];
+  void *harg[3];
   channel *cp,**ch;
   long timestamp=0;
   int i;
