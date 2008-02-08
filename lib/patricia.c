@@ -12,7 +12,7 @@
  * "demo.c" so that it could be used as a standalone API.
  */
 
-static char copyright[] =
+char patricia_copyright[] =
 "This product includes software developed by the University of Michigan, Merit"
 "Network, Inc., and their contributors.";
 

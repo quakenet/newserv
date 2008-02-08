@@ -97,7 +97,7 @@ void clearprofiles() {
 }
 
 int cpcompare(const void *a, const void *b) {
-  const struct chanprofile **cpa=a, **cpb=b;
+  const struct chanprofile **cpa=(const struct chanprofile **)a, **cpb=(const struct chanprofile **)b;
   
   return (*cpb)->clones - (*cpa)->clones;
 }
