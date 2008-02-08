@@ -1985,7 +1985,6 @@ static int trojanscan_hostcount(nick *sender, int hostmode, char *mask, int mask
 
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
   char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
-  char *userbit;
   unsigned int frequency;
   int glining = 0, usercount;
   struct trojanscan_worms *worm = phrase->worm;
