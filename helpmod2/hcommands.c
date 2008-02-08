@@ -1038,7 +1038,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
             }
             if (strregexp(htrm->description->content, pattern) || strregexp(htrm->name->content, pattern))
             {
-                sprintf(buffer+strlen(buffer) /* :) */, "%s(%ld) ", htrm->name->content, strlen(htrm->description->content));
+                sprintf(buffer+strlen(buffer) /* :) */, "%s(%u) ", htrm->name->content, strlen(htrm->description->content));
                 count++;
             }
         }
