@@ -24,7 +24,7 @@ struct chanprofile *getcprec(nick *np) {
   
   for (i=0;i<np->channels->cursi;i++) {
     clen+=cs[i]->index->name->length;
-    hash ^= (unsigned int )cs[i];
+    hash ^= (unsigned long)cs[i];
   }
   
   mhash=hash%CPHASHSIZE;
@@ -97,7 +97,7 @@ void clearprofiles() {
 }
 
 int cpcompare(const void *a, const void *b) {
-  const struct chanprofile **cpa=a, **cpb=b;
+  const struct chanprofile **cpa=(const struct chanprofile **)a, **cpb=(const struct chanprofile **)b;
   
   return (*cpb)->clones - (*cpa)->clones;
 }

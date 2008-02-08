@@ -110,3 +110,6 @@ typedef struct searchNode {
 } searchNode;
 
 extern const char *parseError;
+
+void printnick(nick *, nick *);
+

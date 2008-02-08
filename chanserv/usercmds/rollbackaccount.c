@@ -18,7 +18,7 @@
 #include <string.h>
 
 void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup;
   unsigned int userID;
   char *oldpass, *newpass, *oldemail, *newemail;

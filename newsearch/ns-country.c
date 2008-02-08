@@ -20,7 +20,7 @@ int ext;
 struct searchNode *country_parse(int type, int argc, char **argv) {
   struct searchNode *thenode;
   GeoIP_LookupCode l;
-  int target;
+  long target;
 
   if (type != SEARCHTYPE_NICK) {
     parseError = "country: this function is only valid for nick searches.";
@@ -60,7 +60,7 @@ struct searchNode *country_parse(int type, int argc, char **argv) {
 
 void *country_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-  int country = (int)thenode->localdata, rc = (int)np->exts[ext];
+  long country = (long)thenode->localdata, rc = (long)np->exts[ext];
 
   if(country == rc)
     return (void *)1;

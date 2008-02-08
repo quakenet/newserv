@@ -376,7 +376,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       addregusertomaildomain(rup, rup->domain);
      
       char *dupemail = strdup(rup->email->content);
-      if(local=strchr(dupemail, '@')) {
+      if((local=strchr(dupemail, '@'))) {
         *(local++)='\0';
         rup->localpart=getsstring(local,EMAILLEN);
       } else {

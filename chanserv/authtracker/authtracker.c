@@ -5,6 +5,8 @@
 #include "../../core/hooks.h"
 #include "../../core/error.h"
 
+void at_newnick(int, void *);
+
 void _init() {
   at_finddanglingsessions();
 }

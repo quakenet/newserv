@@ -65,7 +65,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
 
       p = argv[0];
       if(*p == '\"')
-        *p++;
+        p++;
       len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
       if(len >= sizeof(localdata->reason)) {
         localdata->reason[sizeof(localdata->reason)-1] = '\0';
@@ -83,7 +83,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
 
     p = argv[1];
     if(*p == '\"')
-      *p++;
+      p++;
     len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
     if(len >= sizeof(localdata->reason)) {
       localdata->reason[sizeof(localdata->reason)-1] = '\0';

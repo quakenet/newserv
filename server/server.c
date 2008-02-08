@@ -154,7 +154,7 @@ void completelink(int servernum) {
   
   /* This server is now fully linked. */
   serverlist[servernum].linkstate=LS_LINKED;
-  triggerhook(HOOK_SERVER_LINKED, (void *)servernum);
+  triggerhook(HOOK_SERVER_LINKED, (void *)(long)servernum);
   Error("server",ERR_DEBUG,"Setting link state on %s to LS_LINKED",serverlist[servernum].name->content);
 }  
 

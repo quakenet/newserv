@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
   unsigned int userID, channelID, targetID;
   time_t changetime, authtime;

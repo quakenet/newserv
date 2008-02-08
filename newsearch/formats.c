@@ -17,7 +17,6 @@ void printnick(nick *sender, nick *np) {
 }
 
 void printnick_channels(nick *sender, nick *np) {
-  char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
   char chanlistbuf[512];
   unsigned int bufpos=0, overflow=0;
   channel **cs, *cp;

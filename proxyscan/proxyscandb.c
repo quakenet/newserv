@@ -168,7 +168,7 @@ void proxyscandbclose() {
  */
 
 void proxyscandolistopen_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   PGresult *pgres;
   int i, num;
 
@@ -210,7 +210,7 @@ void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
  */
 
 void proxyscanspewip_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   PGresult *pgres;
   int i, num;
 
@@ -253,7 +253,7 @@ void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned lon
  */
 
 void proxyscanshowkill_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   PGresult *pgres;
   int i, num;
 

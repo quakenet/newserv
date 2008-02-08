@@ -46,7 +46,7 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
   if (argc==1) {
     char *p = argv[0];
     if(*p == '\"')
-      *p++;
+      p++;
     len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
     if(len >= sizeof(localdata->reason)) {
       localdata->reason[sizeof(localdata->reason)-1] = '\0';

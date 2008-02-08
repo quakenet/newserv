@@ -44,10 +44,9 @@ char *getdomainmode(maildomain *mdp) {
 int csu_dodomainmode(void *source, int cargc, char **cargv) {
   maildomain *mdp; 
   nick *sender=source;
-  flag_t forceflags,denyflags;
+  flag_t forceflags;
   char buf1[60];
   int carg=2,limdone=0,actlimdone=0;
-  sstring *newkey=NULL;
   unsigned int newlim=0;
   unsigned int newactlim=0;
 

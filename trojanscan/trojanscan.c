@@ -1956,39 +1956,48 @@ static void trojanscan_part_watch(int hook, void *arg) {
   trojanscan_process(np, cp, trojanscan_getmtfromhooktype(hook), reason);
 }
 
-void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
-  char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
-  char *userbit;
-  unsigned int j, usercount, frequency;
-  int glining = 1;
-  struct trojanscan_worms *worm = phrase->worm;
-
+static int trojanscan_hostcount(nick *sender, int hostmode, char *mask, int masklen) {
+  int usercount = 0, j;
   nick *np = NULL; /* sigh at warnings */
-  
-  trojanscan_database.detections++;
-  
-  usercount = 0;
-  if (worm->monitor) {
-    glining = 0;
-    usercount = -1;
-  } else if (worm->glinehost) {
-    snprintf(glinemask, sizeof(glinemask) - 1, "*@%s", IPtostr(sender->p_ipaddr));
+
+  if(hostmode)
     for (j=0;j<NICKHASHSIZE;j++)
       for (np=nicktable[j];np;np=np->next)
         if (np->ipnode==sender->ipnode)
           usercount++;
+
+  if(usercount > TROJANSCAN_MAX_HOST_GLINE) {
+    hostmode = 0;
+    usercount = 0;
   }
-  if (worm->glineuser || (worm->glinehost && usercount > TROJANSCAN_MAX_HOST_GLINE)) {
-    userbit = sender->ident;
-/*
-    if(userbit[0] == '~')
-      userbit++;
-*/
-    snprintf(glinemask, sizeof(glinemask) - 1, "%s@%s", userbit, IPtostr(sender->p_ipaddr));
+
+  if(!hostmode)
     for (j=0;j<NICKHASHSIZE;j++)
       for (np=nicktable[j];np;np=np->next)
-        if ((np->ipnode==sender->ipnode) && (!ircd_strcmp(np->ident,sender->ident)))
+        if (np->ipnode==sender->ipnode && !ircd_strcmp(np->ident, sender->ident))
           usercount++;
+
+  if(mask)
+    snprintf(mask, masklen, "%s@%s", hostmode?"*":sender->ident, IPtostr(sender->p_ipaddr));
+
+  return usercount;
+}
+
+void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
+  char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
+  unsigned int frequency;
+  int glining = 0, usercount;
+  struct trojanscan_worms *worm = phrase->worm;
+
+  trojanscan_database.detections++;
+  
+  usercount = 0;
+  if (worm->monitor) {
+    usercount = -1;
+  } else if(worm->glinehost || worm->glineuser) {
+    glining = 1;
+
+    usercount = trojanscan_hostcount(sender, worm->glinehost, glinemask, sizeof(glinemask));
   }
   
   if (!usercount) {

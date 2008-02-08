@@ -7,6 +7,8 @@
 #ifndef __CHANSERV_H
 #define __CHANSERV_H
 
+#define _GNU_SOURCE
+#include <string.h>
 #include <time.h>
 #include "../lib/sstring.h"
 #include "../core/schedule.h"

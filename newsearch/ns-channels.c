@@ -37,7 +37,7 @@ struct searchNode *channels_parse(int type, int argc, char **argv) {
 void *channels_exe(struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
-  return (void *)np->channels->cursi;
+  return (void *)(long)np->channels->cursi;
 }
 
 void channels_free(struct searchNode *thenode) {
