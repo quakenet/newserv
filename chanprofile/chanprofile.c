@@ -24,7 +24,7 @@ struct chanprofile *getcprec(nick *np) {
   
   for (i=0;i<np->channels->cursi;i++) {
     clen+=cs[i]->index->name->length;
-    hash ^= (unsigned int )cs[i];
+    hash ^= (unsigned long)cs[i];
   }
   
   mhash=hash%CPHASHSIZE;

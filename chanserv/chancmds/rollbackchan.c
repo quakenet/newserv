@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned int)arg);
+  nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
   chanindex *cip;
   regchan *rcp=NULL;

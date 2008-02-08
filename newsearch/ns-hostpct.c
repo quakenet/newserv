@@ -57,7 +57,7 @@ void *hostpct_exe(struct searchNode *thenode, void *theinput) {
     }
   }
   
-  return (void *)((hosts * 100)/cip->channel->users->totalusers);
+  return (void *)(long)((hosts * 100)/cip->channel->users->totalusers);
 }
 
 void hostpct_free(struct searchNode *thenode) {

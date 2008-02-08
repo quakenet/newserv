@@ -52,7 +52,7 @@ void *authedpct_exe(struct searchNode *thenode, void *theinput) {
       j++;
   }
 
-  return (void *)((j * 100) / cip->channel->users->totalusers);
+  return (void *)(long)((j * 100) / cip->channel->users->totalusers);
 }  
 
 void authedpct_free(struct searchNode *thenode) {

@@ -68,7 +68,7 @@ void *match_exe(struct searchNode *thenode, void *theinput) {
   pattern = (char *)(localdata->patnode->exe) (localdata->patnode, theinput);
   target  = (char *)(localdata->targnode->exe)(localdata->targnode,theinput);
 
-  return (void *)match2strings(pattern, target);
+  return (void *)(long)match2strings(pattern, target);
 }
 
 void match_free(struct searchNode *thenode) {

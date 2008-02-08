@@ -50,7 +50,7 @@ void *oppct_exe(struct searchNode *thenode, void *theinput) {
     }
   }
 
-  return (void *)((ops * 100) / cip->channel->users->totalusers);
+  return (void *)(long)((ops * 100) / cip->channel->users->totalusers);
 }
 
 void oppct_free(struct searchNode *thenode) {
