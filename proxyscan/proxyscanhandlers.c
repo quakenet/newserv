@@ -78,7 +78,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
     chp->glineid=0;
   } else {
     chp=addcleanhost(time(NULL));
-    np->ipnode->slots[ps_cache_ext] = chp;
+    np->ipnode->exts[ps_cache_ext] = chp;
     patricia_ref_prefix(np->ipnode->prefix);
 
     /* Queue up all the normal scans - on the normal queue */

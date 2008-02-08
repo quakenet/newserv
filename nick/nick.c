@@ -412,6 +412,6 @@ void releasenodeext(int index) {
 
   PATRICIA_WALK_ALL(head, node)
   {
-      node->slots[index]=NULL;
+      node->exts[index]=NULL;
   } PATRICIA_WALK_END;
 }

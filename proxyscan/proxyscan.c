@@ -131,13 +131,16 @@ void _init(void) {
   ps_start_ts = time(NULL);
 
   ps_cache_ext = registernodeext("proxyscancache");
-  if( !ps_cache_ext ) {
-
+  if( ps_cache_ext == -1 ) {
+    Error("proxyscan",ERR_INFO,"failed to reg node ext");
+    return;
   }
   ps_extscan_ext = registernodeext("proxyscanextscan");
-  if ( !ps_extscan_ext ) { 
-
+  if ( ps_extscan_ext == -1) { 
+    Error("proxyscan",ERR_INFO,"failed to reg node ext");
+    return;
   }
+
   memset(scantable,0,sizeof(scantable));
   maxscans=200;
   activescans=0;
@@ -552,7 +555,7 @@ void killsock(scan *sp, int outcome) {
     if (!(chp=findcachehost(sp->node))) {
       chp=addcleanhost(time(NULL));
       patricia_ref_prefix(sp->node->prefix);
-      sp->node->slots[ps_cache_ext] = chp;
+      sp->node->exts[ps_cache_ext] = chp;
     }
     /* Stick it on the cache's list of proxies, if necessary */
     for (fpp=chp->proxies;fpp;fpp=fpp->next)
@@ -782,8 +785,11 @@ void killallscans() {
   for(i=0;i<SCANHASHSIZE;i++) {
     for(sp=scantable[i];sp;sp=sp->next) {
       /* If there is a pending scan, delete it's clean host record.. */
-      if ((chp=findcachehost(sp->node)) && !chp->proxies)
+      if ((chp=findcachehost(sp->node)) && !chp->proxies) {
+        sp->node->exts[ps_cache_ext] = NULL;
+        derefnode(iptree,sp->node); 
         delcachehost(chp);
+      }
         
       if (sp->fd!=-1) {
 	deregisterhandler(sp->fd,1);
@@ -888,8 +894,8 @@ void proxyscandebug(nick *np) {
   }
 
   PATRICIA_WALK (iptree->head, node) {
-    if ( node->slots[ps_cache_ext] ) {
-      chp = (cachehost *) node->slots[ps_cache_ext];
+    if ( node->exts[ps_cache_ext] ) {
+      chp = (cachehost *) node->exts[ps_cache_ext];
       if (chp)
         sendnoticetouser(proxyscannick,np,"node: %s , chp: %d", IPtostr(((patricia_node_t *)node)->prefix->sin), chp); 
     }

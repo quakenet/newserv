@@ -48,13 +48,13 @@ cachehost *findcachehost(patricia_node_t *node) {
   int hash;
   cachehost *chp;
 
-  if( (cachehost *)node->slots[ps_cache_ext] ) {
-    chp = (cachehost *)node->slots[ps_cache_ext];
+  if( (cachehost *)node->exts[ps_cache_ext] ) {
+    chp = (cachehost *)node->exts[ps_cache_ext];
     if(chp->lastscan < (time(NULL)-(chp->proxies ? dirtyscaninterval : cleanscaninterval))) {
       /* Needs rescan; delete and return 1 */
       delcachehost(chp);
-      patricia_deref_prefix(node->prefix);
-      node->slots[ps_cache_ext] = NULL;
+      derefnode(iptree,node);
+      node->exts[ps_cache_ext] = NULL;
       return NULL;
     } else {
       /* valid: return it */
@@ -85,25 +85,29 @@ void dumpcachehosts(void *arg) {
   }
 
   PATRICIA_WALK (iptree->head, node) {
-    if ( node->slots[ps_cache_ext] ) {
-      chp = (cachehost *) node->slots[ps_cache_ext];
-      if (chp->proxies) {
-        if (chp->lastscan < (now-dirtyscaninterval)) {
-          patricia_deref_prefix(node->prefix);
-	  delcachehost(chp);
-          continue;
-        }
+    if (node->exts[ps_cache_ext] ) {
+      chp = (cachehost *) node->exts[ps_cache_ext];
+      if (chp) { 
+        if (chp->proxies) {
+          if (chp->lastscan < (now-dirtyscaninterval)) {
+            //derefnode(iptree,node); 
+	    //delcachehost(chp);
+  	    //node->exts[ps_cache_ext] = NULL;
+            //continue;
+          } else
         
-        for (fpp=chp->proxies;fpp;fpp=fpp->next) 
-          fprintf(fp, "%s %lu %u %i %u\n",IPtostr(node->prefix->sin),chp->lastscan,chp->glineid,fpp->type,fpp->port);
-      } else {
-        if (chp->lastscan < (now-cleanscaninterval)) {
-          /* Needs rescan anyway, so delete it */
-	  patricia_deref_prefix(node->prefix);
-	  delcachehost(chp);
-	  continue;
+          for (fpp=chp->proxies;fpp;fpp=fpp->next) 
+            fprintf(fp, "%s %lu %u %i %u\n",IPtostr(node->prefix->sin),chp->lastscan,chp->glineid,fpp->type,fpp->port);
+        } else {
+          if (chp->lastscan < (now-cleanscaninterval)) {
+            /* Needs rescan anyway, so delete it */
+	    //derefnode(iptree,node); 
+	    //delcachehost(chp);
+            //node->exts[ps_cache_ext] = NULL;          
+            //continue;
+          } else
+          fprintf(fp,"%s %lu\n",IPtostr(node->prefix->sin),chp->lastscan);
         }
-        fprintf(fp,"%s %lu\n",IPtostr(node->prefix->sin),chp->lastscan);
       }
     }
   } PATRICIA_WALK_END;
@@ -152,7 +156,7 @@ void loadcachehosts() {
       node = refnode(iptree, &sin, bits);
       if( node ) {
         chp=addcleanhost(timestamp);
-        node->slots[ps_cache_ext] = chp;
+        node->exts[ps_cache_ext] = chp;
       
         if (res==5) {
           chp->glineid=glineid;
@@ -177,11 +181,11 @@ unsigned int cleancount() {
   int i;
   unsigned int total=0;
   cachehost *chp;
-  patricia_node_t *node;
-
-  PATRICIA_WALK (iptree->head, node) {
-    if ( node->slots[ps_cache_ext] ) {
-      chp = (cachehost *) node->slots[ps_cache_ext];
+  patricia_node_t *head, *node;
+  head = iptree->head;
+  PATRICIA_WALK (head, node) {
+    if ( node->exts[ps_cache_ext] ) {
+      chp = (cachehost *) node->exts[ps_cache_ext];
 
       if (!chp->proxies)
         total++;
@@ -198,8 +202,8 @@ unsigned int dirtycount() {
   patricia_node_t *node;
 
   PATRICIA_WALK (iptree->head, node) {
-    if ( node->slots[ps_cache_ext] ) {
-      chp = (cachehost *) node->slots[ps_cache_ext];
+    if ( node->exts[ps_cache_ext] ) {
+      chp = (cachehost *) node->exts[ps_cache_ext];
       if (chp->proxies)
         total++;
     }
@@ -223,8 +227,8 @@ void scanall(int type, int port) {
   hostmarker=nexthostmarker();
 
   PATRICIA_WALK (iptree->head, node) {
-    if ( node->slots[ps_cache_ext] ) {
-      chp = (cachehost *) node->slots[ps_cache_ext];
+    if ( node->exts[ps_cache_ext] ) {
+      chp = (cachehost *) node->exts[ps_cache_ext];
       chp->marker=0;
     }
   } PATRICIA_WALK_END; 

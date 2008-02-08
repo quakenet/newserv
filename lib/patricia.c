@@ -132,8 +132,8 @@ patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func)
             patricia_node_t *r = Xrn->r;
 
     	    if (Xrn->prefix) {
-		if (Xrn->slots && func)
-			func(Xrn->slots);
+		if (Xrn->exts && func)
+			func(Xrn->exts);
 		patricia_deref_prefix (Xrn->prefix);
 	    }
     	    free(Xrn);
@@ -317,6 +317,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     /* if new trie, create the first node */
     if (patricia->head == NULL) {
 	node = malloc(sizeof *node);
+	memset(node->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
 	node->bit = prefix->bitlen;
 	node->prefix = patricia_ref_prefix (prefix);
 	node->parent = NULL;
@@ -389,6 +390,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     }
 
     new_node = malloc(sizeof *new_node);
+    memset(new_node->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
     new_node->bit = prefix->bitlen;
     new_node->prefix = patricia_ref_prefix (prefix);
     new_node->parent = NULL;
@@ -433,6 +435,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     }
     else {
         glue = malloc(sizeof *glue);
+	memset(glue->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
         glue->bit = differ_bit;
         glue->prefix = NULL;
         glue->parent = node->parent;
@@ -566,8 +569,6 @@ refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
   if (node == NULL) {
     prefix = patricia_new_prefix(sin, bitlen);
     node = patricia_lookup(tree, prefix);
-    node->slots = (void **)malloc(PATRICIA_MAXSLOTS * sizeof(void *));
-    memset(node->slots, 0, PATRICIA_MAXSLOTS * sizeof(void *));
     patricia_deref_prefix(prefix);
   } else if (node->prefix) {
     patricia_ref_prefix(node->prefix);
@@ -582,7 +583,6 @@ derefnode(patricia_tree_t *tree, patricia_node_t *node) {
     return;
 
   if (node->prefix->ref_count == 1) {
-    free(node->slots);
     patricia_remove(tree, node);
   } else
     patricia_deref_prefix(node->prefix);
