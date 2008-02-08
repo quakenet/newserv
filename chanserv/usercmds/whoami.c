@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
+int csu_dowhois(void *, int, char **);
+
 int csu_dowhoami(void *source, int cargc, char **cargv) {
   nick *sender=source;
   cargv[0] = sender->nick;

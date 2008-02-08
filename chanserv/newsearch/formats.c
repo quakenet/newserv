@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "../chanserv.h"
 #include "../../newsearch/newsearch.h"
 #include "../../control/control.h"
