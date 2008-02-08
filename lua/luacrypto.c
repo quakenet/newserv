@@ -4,14 +4,14 @@
 
 static int crypto_sha1(lua_State *ps) {
   unsigned char digestbuf[20];
-  unsigned char hexbuf[sizeof(digestbuf) * 2 + 1];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
   SHA1_CTX c;
 
   char *s = (char *)lua_tostring(ps, 1);
   int len = lua_strlen(ps, 1);
 
   SHA1Init(&c);
-  SHA1Update(&c, s, len);
+  SHA1Update(&c, (unsigned char *)s, len);
   SHA1Final(digestbuf, &c);
 
   /* hah */
@@ -23,14 +23,14 @@ static int crypto_sha1(lua_State *ps) {
 
 static int crypto_sha256(lua_State *ps) {
   unsigned char digestbuf[32];
-  unsigned char hexbuf[sizeof(digestbuf) * 2 + 1];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
   SHA256_CTX c;
 
   char *s = (char *)lua_tostring(ps, 1);
   int len = lua_strlen(ps, 1);
 
   SHA256_Init(&c);
-  SHA256_Update(&c, s, len);
+  SHA256_Update(&c, (unsigned char *)s, len);
   SHA256_Final(digestbuf, &c);
 
   /* hahahaha */
@@ -42,14 +42,14 @@ static int crypto_sha256(lua_State *ps) {
 
 static int crypto_sha384(lua_State *ps) {
   unsigned char digestbuf[48];
-  unsigned char hexbuf[sizeof(digestbuf) * 2 + 1];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
   SHA384_CTX c;
 
   char *s = (char *)lua_tostring(ps, 1);
   int len = lua_strlen(ps, 1);
 
   SHA384_Init(&c);
-  SHA384_Update(&c, s, len);
+  SHA384_Update(&c, (unsigned char *)s, len);
   SHA384_Final(digestbuf, &c);
 
   /* hahahahahahahahaa */
@@ -61,14 +61,14 @@ static int crypto_sha384(lua_State *ps) {
 
 static int crypto_sha512(lua_State *ps) {
   unsigned char digestbuf[64];
-  unsigned char hexbuf[sizeof(digestbuf) * 2 + 1];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
   SHA512_CTX c;
 
   char *s = (char *)lua_tostring(ps, 1);
   int len = lua_strlen(ps, 1);
 
   SHA512_Init(&c);
-  SHA512_Update(&c, s, len);
+  SHA512_Update(&c, (unsigned char *)s, len);
   SHA512_Final(digestbuf, &c);
 
   /* MUHAHAHAHAHAHAHAHAHAHAAHAHAHAHAHAHHAHAHAAH */
