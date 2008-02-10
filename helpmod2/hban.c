@@ -171,7 +171,12 @@ const char *hban_ban_string(nick *nck, int banflags)
         strcat(buffer, ".users.quakenet.org");
     }
     else if ((banflags & HBAN_REAL_HOST) || ((banflags & HBAN_HOST)))
+    {
+      if (IsSetHost(nck))
+        strcat(buffer, nck->sethost->content);
+      else
         strcat(buffer, nck->host->name->content);
+    }
     else
         strcat(buffer, "*");
 
