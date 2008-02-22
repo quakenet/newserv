@@ -245,7 +245,7 @@ int crypto_newblock(struct esocket *sock, unsigned char *block) {
     if(memcmp(block, digest, 16)) /* mac error */
       return 1;
 
-    hmacsha256_init(&sock->clienthmac, sock->clientkey, 32);
+    hmacsha256_init(&sock->clienthmac, sock->clienthmackey, 32);
     seqno_update(&sock->clienthmac, sock->clientseqno);
     sock->clientseqno++;
 
@@ -482,7 +482,7 @@ int esocket_write(struct esocket *sock, char *buffer, int bytes) {
       newbuf[bytes + i] = i;
     bytes+=padding;
 
-    hmacsha256_init(&hmac, sock->serverkey, 32);
+    hmacsha256_init(&hmac, sock->serverhmackey, 32);
     seqno_update(&hmac, sock->serverseqno);
     sock->serverseqno++;
 
@@ -528,19 +528,46 @@ int esocket_write_line(struct esocket *sock, char *format, ...) {
   return esocket_write(sock, nbuf, len);
 }
 
+static void derive_key(unsigned char *out, unsigned char *key, u_int64_t seqno, unsigned char *extra, int extralen) {
+  hmacsha256 hmac;
+
+  hmacsha256_init(&hmac, key, 32);
+  seqno_update(&hmac, seqno);
+  hmacsha256_update(&hmac, extra, extralen);
+
+  hmacsha256_final(&hmac, out);
+}
+
+void rekey_esocket(struct esocket *sock, unsigned char *serveriv, unsigned char *clientiv) {
+  unsigned char key[32];
+  char hexout[65];
+
+  derive_key(key, sock->serverrawkey, sock->serverkeyno, ":SKEY", 5);
+  sock->servercrypto = rijndaelcbc_init(key, 256, serveriv, 0);
+  derive_key(sock->serverhmackey, sock->serverrawkey, sock->serverkeyno, ":SHMAC", 6);
+  sock->serverkeyno++;
+
+  derive_key(key, sock->clientrawkey, sock->clientkeyno, ":CKEY", 5);
+  sock->clientcrypto = rijndaelcbc_init(key, 256, clientiv, 1);
+  derive_key(sock->clienthmackey, sock->clientrawkey, sock->clientkeyno, ":CHMAC", 6);
+  sock->clientkeyno++;
+}
+
 void switch_buffer_mode(struct esocket *sock, unsigned char *serverkey, unsigned char *serveriv, unsigned char *clientkey, unsigned char *clientiv) {
-  memcpy(sock->serverkey, serverkey, 32);
-  memcpy(sock->clientkey, clientkey, 32);
+  memcpy(sock->serverrawkey, serverkey, 32);
+  memcpy(sock->clientrawkey, clientkey, 32);
 
   sock->in.mode = PARSE_CRYPTO;
 
   sock->clientseqno = 0;
   sock->serverseqno = 0;
 
-  sock->servercrypto = rijndaelcbc_init(serverkey, 256, serveriv, 0);
-  sock->clientcrypto = rijndaelcbc_init(clientkey, 256, clientiv, 1);
+  sock->clientkeyno = 0;
+  sock->serverkeyno = 0;
 
-  hmacsha256_init(&sock->clienthmac, sock->clientkey, 32);
+  rekey_esocket(sock, serveriv, clientiv);
+
+  hmacsha256_init(&sock->clienthmac, sock->clienthmackey, 32);
   seqno_update(&sock->clienthmac, sock->clientseqno);
 
   sock->clientseqno++;

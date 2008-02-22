@@ -100,10 +100,11 @@ typedef struct esocket {
   unsigned short token;
   void *tag;
 
-  unsigned char clientkey[32];
-  unsigned char serverkey[32];
-  u_int64_t clientseqno;
-  u_int64_t serverseqno;
+  unsigned char clientrawkey[32], serverrawkey[32];
+  unsigned char clienthmackey[32], serverhmackey[32];
+  u_int64_t clientseqno, serverseqno;
+  u_int64_t clientkeyno, serverkeyno;
+
   hmacsha256 clienthmac;
   rijndaelcbc *clientcrypto;
   rijndaelcbc *servercrypto;

@@ -23,7 +23,7 @@
 
 #define MAX_ARGS 100
 
-#define PROTOCOL_VERSION "3"
+#define PROTOCOL_VERSION "4"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
 
 struct rline;

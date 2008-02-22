@@ -25,7 +25,7 @@
 #include "nterfacer.h"
 #include "logging.h"
 
-MODULE_VERSION("1.1");
+MODULE_VERSION("1.1p" PROTOCOL_VERSION);
 
 struct service_node *tree = NULL;
 struct esocket_events nterfacer_events;
@@ -392,7 +392,7 @@ void nterfacer_accept_event(struct esocket *socket) {
   esocket_write_line(newsocket, "nterfacer " PROTOCOL_VERSION);
 }
 
-void derive_key(unsigned char *out, char *password, char *segment, unsigned char *noncea, unsigned char *nonceb) {
+void derive_key(unsigned char *out, char *password, char *segment, unsigned char *noncea, unsigned char *nonceb, unsigned char *extra, int extralen) {
   SHA256_CTX c;
   SHA256_Init(&c);
   SHA256_Update(&c, (unsigned char *)password, strlen(password));
@@ -402,6 +402,8 @@ void derive_key(unsigned char *out, char *password, char *segment, unsigned char
   SHA256_Update(&c, noncea, 16);
   SHA256_Update(&c, (unsigned char *)":", 1);
   SHA256_Update(&c, nonceb, 16);
+  SHA256_Update(&c, (unsigned char *)":", 1);
+  SHA256_Update(&c, extra, extralen);
   SHA256_Final(out, &c);
 
   SHA256_Init(&c);
@@ -478,20 +480,17 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       }
 
       if(!strncasecmp(newline, socket->response, sizeof(socket->response))) {
-        int ret;
+        unsigned char theirkey[32], ourkey[32];
 
+        derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce, "SERVER", 6);
+
+        derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce, "CLIENT", 6);
         nterface_log(nrl, NL_INFO, "Authed: %s", socket->permit->hostname->content);
         socket->status = SS_AUTHENTICATED;
-        ret = esocket_write_line(sock, "Oauth");
-        if(!ret) {
-          unsigned char theirkey[32], ourkey[32];
-          derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce);
-          derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce);
+        switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);
 
-          switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);
-        } else {
+        if(esocket_write_line(sock, "Oauth"))
           return BUF_ERROR;
-        }
       } else {
         nterface_log(nrl, NL_INFO, "Bad CR drop: %s", socket->permit->hostname->content);
         
