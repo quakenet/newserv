@@ -100,10 +100,12 @@ int csc_dobandel(void *source, int cargc, char **cargv) {
       i++;
       if ((banid  && (i==banid)) ||
 	  (theban && banequal(theban, cbp))) {
+        char *banmask = bantostring(cbp);
+
 	/* got it - this is just a channel ban */
-	chanservstdmessage(sender, QM_REMOVEDCHANBAN, bantostring(cbp), cip->name->content);
+	chanservstdmessage(sender, QM_REMOVEDCHANBAN, banmask, cip->name->content);
 	localsetmodeinit(&changes, cip->channel, chanservnick);
-	localdosetmode_ban(&changes, cargv[1], MCB_DEL);
+	localdosetmode_ban(&changes, banmask, MCB_DEL);
 	localsetmodeflush(&changes, 1);
 
 	if (theban)

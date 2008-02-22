@@ -154,7 +154,25 @@ void updatechanstats(chanindex *cip, time_t now) {
   }
 
   if (cip->channel!=NULL) {
-    currentusers=countuniquehosts(cip->channel);
+    channel *cp = cip->channel;
+    int i;
+    nick *np;
+
+    currentusers=countuniquehosts(cp);
+
+    for (i=0;i<cp->users->hashsize;i++) {
+      if (cp->users->content[i]==nouser)
+        continue;
+
+      if ((np=getnickbynumeric(cp->users->content[i]))==NULL) {
+        Error("channel",ERR_ERROR,"Found unknown numeric %u on channel %s",cp->users->content[i],cp->index->name->content);
+        continue;
+      }
+
+      if (IsXOper(np) || IsService(np))
+        currentusers--;
+    }
+
     csp->todaysamples++;
   } else {
     currentusers=0;

@@ -15,8 +15,6 @@ void proxyscan_newnick(int hooknum, void *arg) {
   if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
     return;
 
-  unsigned int ip = irc_in_addr_v4_to_int(&np->p_ipaddr);
-
   /* before we look at a normal host, see if we think we have an open proxy */
   if ((esp=findextrascan(np->ipnode))) {
     Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 

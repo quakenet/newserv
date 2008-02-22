@@ -152,7 +152,7 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case 'S':
         lua_pushstring(l, ((sstring *)(va_arg(va, sstring *)))->content);
         break;
-      case 'L':
+      case 'L': /* BE VERY CAREFUL USING THIS, MAKE SURE YOU CAST THE VALUE TO LONG */
         {
           char *p = va_arg(va, char *);
           long len = va_arg(va, long);

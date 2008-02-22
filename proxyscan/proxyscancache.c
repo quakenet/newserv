@@ -19,7 +19,6 @@ void cachehostinit(time_t ri) {
 
 cachehost *addcleanhost(time_t timestamp) {
   cachehost *chp;
-  int hash;
 
   chp=getcachehost();
   chp->lastscan=timestamp;
@@ -30,7 +29,6 @@ cachehost *addcleanhost(time_t timestamp) {
 }
 
 void delcachehost(cachehost *chp) {
-  cachehost **chh;
   foundproxy *fpp, *nfpp;
 
   for (fpp=chp->proxies;fpp;fpp=nfpp) {
@@ -45,7 +43,6 @@ void delcachehost(cachehost *chp) {
  */
 
 cachehost *findcachehost(patricia_node_t *node) {
-  int hash;
   cachehost *chp;
 
   if( (cachehost *)node->exts[ps_cache_ext] ) {
@@ -72,7 +69,6 @@ cachehost *findcachehost(patricia_node_t *node) {
  */
 
 void dumpcachehosts(void *arg) {
-  int i;
   FILE *fp;
   cachehost *chp;
   time_t now=time(NULL);
@@ -123,7 +119,7 @@ void dumpcachehosts(void *arg) {
 
 void loadcachehosts() {
   FILE *fp;
-  unsigned long IP,timestamp,glineid,ptype,pport;
+  unsigned long timestamp,glineid,ptype,pport;
   char buf[512];
   cachehost *chp=NULL;
   foundproxy *fpp;
@@ -145,7 +141,7 @@ void loadcachehosts() {
       break;
     }
 
-    res=sscanf(buf,"%s %lu %lu %lu %lu",&ip,&timestamp,&glineid,&ptype,&pport);
+    res=sscanf(buf,"%s %lu %lu %lu %lu",ip,&timestamp,&glineid,&ptype,&pport);
 
     if (res<2)
       continue;
@@ -178,7 +174,6 @@ void loadcachehosts() {
  */
 
 unsigned int cleancount() {
-  int i;
   unsigned int total=0;
   cachehost *chp;
   patricia_node_t *head, *node;
@@ -196,7 +191,6 @@ unsigned int cleancount() {
 }
 
 unsigned int dirtycount() {
-  int i;
   unsigned int total=0;
   cachehost *chp;
   patricia_node_t *node;
@@ -219,7 +213,7 @@ unsigned int dirtycount() {
 
 void scanall(int type, int port) {
   int i;
-  cachehost *chp, *nchp;
+  cachehost *chp;
   nick *np;
   unsigned int hostmarker;
   patricia_node_t *node;

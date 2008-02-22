@@ -250,7 +250,7 @@ static void lua_socket_poll_event(int fd, short events) {
          return;
         }
 
-        lua_vnpcall(ls, "read", "L", buf, bytesread);
+        lua_vnpcall(ls, "read", "L", buf, (long)bytesread);
       }
       break;
   }
