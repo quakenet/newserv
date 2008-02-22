@@ -482,9 +482,9 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       if(!strncasecmp(newline, socket->response, sizeof(socket->response))) {
         unsigned char theirkey[32], ourkey[32];
 
-        derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce, "SERVER", 6);
+        derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce, (unsigned char *)"SERVER", 6);
 
-        derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce, "CLIENT", 6);
+        derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce, (unsigned char *)"CLIENT", 6);
         nterface_log(nrl, NL_INFO, "Authed: %s", socket->permit->hostname->content);
         socket->status = SS_AUTHENTICATED;
         switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);

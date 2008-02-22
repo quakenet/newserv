@@ -540,16 +540,15 @@ static void derive_key(unsigned char *out, unsigned char *key, u_int64_t seqno, 
 
 void rekey_esocket(struct esocket *sock, unsigned char *serveriv, unsigned char *clientiv) {
   unsigned char key[32];
-  char hexout[65];
 
-  derive_key(key, sock->serverrawkey, sock->serverkeyno, ":SKEY", 5);
+  derive_key(key, sock->serverrawkey, sock->serverkeyno, (unsigned char *)":SKEY", 5);
   sock->servercrypto = rijndaelcbc_init(key, 256, serveriv, 0);
-  derive_key(sock->serverhmackey, sock->serverrawkey, sock->serverkeyno, ":SHMAC", 6);
+  derive_key(sock->serverhmackey, sock->serverrawkey, sock->serverkeyno, (unsigned char *)":SHMAC", 6);
   sock->serverkeyno++;
 
-  derive_key(key, sock->clientrawkey, sock->clientkeyno, ":CKEY", 5);
+  derive_key(key, sock->clientrawkey, sock->clientkeyno, (unsigned char *)":CKEY", 5);
   sock->clientcrypto = rijndaelcbc_init(key, 256, clientiv, 1);
-  derive_key(sock->clienthmackey, sock->clientrawkey, sock->clientkeyno, ":CHMAC", 6);
+  derive_key(sock->clienthmackey, sock->clientrawkey, sock->clientkeyno, (unsigned char *)":CHMAC", 6);
   sock->clientkeyno++;
 }
 
