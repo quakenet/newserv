@@ -1,4 +1,5 @@
 #include "hmac.h"
+#include <string.h>
 
 void hmacsha256_init(hmacsha256 *c, unsigned char *key, int keylen) {
   unsigned char realkey[64], outerkey[64], innerkey[64];
@@ -30,5 +31,11 @@ void hmacsha256_init(hmacsha256 *c, unsigned char *key, int keylen) {
 
 void hmacsha256_update(hmacsha256 *c, unsigned char *message, int messagelen) {
   SHA256_Update(&c->inner, message, messagelen);
+}
+
+void hmacsha256_final(hmacsha256 *c, unsigned char *digest) {
+  SHA256_Final(digest, &c->inner);
+  SHA256_Update(&c->outer, digest, 32);
+  SHA256_Final(digest, &c->outer);
 }
 

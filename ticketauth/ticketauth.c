@@ -14,7 +14,7 @@
 #include "../core/hooks.h"
 #include "../irc/irc.h"
 
-#define WARN_CHANNEL "#fishcowcow"
+#define WARN_CHANNEL "#twilightzone"
 
 MODULE_VERSION("");
 
@@ -33,11 +33,11 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargc != 3)
+  if(cargc != 5)
     return CMD_USAGE;
 
   acc = cargv[0];
-  expiry = atoi(cargv[1]) + 30;
+  expiry = atoi(cargv[1]);
   id = atoi(cargv[2]);
   acclen = strlen(acc);
   junk = cargv[3];
@@ -48,14 +48,14 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(time(NULL) > expiry) {
+  if(time(NULL) > expiry + 30) {
     controlwall(NO_OPER, NL_MISC, "%s!%s@%s attempted to TICKETAUTH as %s (expired)", np->nick, np->ident, np->host->name->content, acc);
     controlreply(np, "Ticket time is bad or has expired.");
     return CMD_ERROR;
   }
 
   hmacsha256_init(&hmac, (unsigned char *)sharedsecret->content, sharedsecret->length);
-  snprintf(buffer, sizeof(buffer), "%s %d %d %s", acc, id, expiry, junk);
+  snprintf(buffer, sizeof(buffer), "%s %d %d %s", acc, expiry, id, junk);
   hmacsha256_update(&hmac, (unsigned char *)buffer, strlen(buffer));
   hmacsha256_final(&hmac, digest);
   
@@ -94,7 +94,7 @@ void _init() {
     return;
   }
 
-  registercontrolhelpcmd("ticketauth", NO_OPERED, 3, ta_ticketauth, "Usage: ticketauth <ticket>");
+  registercontrolhelpcmd("ticketauth", NO_OPERED, 5, ta_ticketauth, "Usage: ticketauth <ticket>");
 }
 
 void _fini() {
