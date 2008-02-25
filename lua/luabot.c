@@ -162,7 +162,7 @@ int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
       case 'N':
         {
           nick *np = va_arg(va, nick *);
-          LUA_PUSHNICK(l, np);
+          lua_pushnumeric(l, np->numeric);
           break;
         }
       case 'C':
