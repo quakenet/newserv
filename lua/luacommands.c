@@ -262,7 +262,8 @@ static int lua_gline(lua_State *ps) {
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
 }
 
-static int lua_getchaninfo(lua_State *ps) {
+static int lua_fastgetchaninfo(lua_State *ps) {
+  static struct lua_pusher *ourpusher[MAX_PUSHER];
   channel *cp;
 
   if(!lua_isstring(ps, 1))
@@ -272,9 +273,8 @@ static int lua_getchaninfo(lua_State *ps) {
   if(!cp)
     return 0;
 
-  LUA_PUSHCHAN(ps, cp);
-
-  return 1;
+  lua_setupchanpusher(ps, 2, ourpusher, MAX_PUSHER);
+  return lua_usepusher(ps, ourpusher, cp);
 }
 
 static int lua_opchan(lua_State *ps) {
@@ -691,34 +691,6 @@ static int lua_getusermodes(lua_State *l) {
   return 1;
 }
 
-static int lua_getnickbynick(lua_State *l) {
-  nick *np;
-
-  if(!lua_isstring(l, 1))
-    return 0;
-
-  np = getnickbynick(lua_tostring(l, 1));
-  if(!np)
-    return 0;
-
-  LUA_PUSHNICK(l, np);
-  return 1;
-}
-
-static int lua_getnickbynumeric(lua_State *l) {
-  nick *np;
-
-  if(!lua_islong(l, 1))
-    return 0;
-
-  np = getnickbynumeric(lua_tolong(l, 1));
-  if(!np)
-    return 0;
-
-  LUA_PUSHNICK(l, np);
-  return 1;
-}
-
 static int lua_fastgetnickbynumeric(lua_State *l) {
   static struct lua_pusher *ourpusher[MAX_PUSHER];
   nick *np;
@@ -727,6 +699,21 @@ static int lua_fastgetnickbynumeric(lua_State *l) {
     return 0;
 
   np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_setupnickpusher(l, 2, ourpusher, MAX_PUSHER);
+  return lua_usepusher(l, ourpusher, np);
+}
+
+static int lua_fastgetnickbynick(lua_State *l) {
+  static struct lua_pusher *ourpusher[MAX_PUSHER];
+  nick *np;
+
+  if(!lua_isstring(l, 1))
+    return 0;
+
+  np = getnickbynick((char *)lua_tostring(l, 1));
   if(!np)
     return 0;
 
@@ -849,7 +836,6 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_kick", lua_kick);
   lua_register(l, "irc_invite", lua_invite);
   lua_register(l, "irc_gline", lua_gline);
-  lua_register(l, "irc_getchaninfo", lua_getchaninfo);
   lua_register(l, "irc_counthost", lua_counthost);
   lua_register(l, "irc_getuserbyauth", lua_getuserbyauth);
   lua_register(l, "irc_notice", lua_noticecmd);
@@ -862,8 +848,6 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_deopchan", lua_deopchan);
   lua_register(l, "irc_topic", lua_topic);
 
-  lua_register(l, "irc_getnickbynick", lua_getnickbynick);
-  lua_register(l, "irc_getnickbynumeric", lua_getnickbynumeric);
   lua_register(l, "irc_getfirstnick", lua_getfirstnick);
   lua_register(l, "irc_getnextnick", lua_getnextnick);
 
@@ -885,6 +869,8 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_nickonchan", lua_nickonchan);
 
   lua_register(l, "irc_fastgetnickbynumeric", lua_fastgetnickbynumeric);
+  lua_register(l, "irc_fastgetnickbynick", lua_fastgetnickbynick);
+  lua_register(l, "irc_fastgetchaninfo", lua_fastgetchaninfo);
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
   lua_register(l, "irc_sethost", lua_sethost);
@@ -934,6 +920,9 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_TOPIC 8
 #define PUSHER_UMODES 9
 #define PUSHER_COUNTRY 10
+#define PUSHER_REALUSERS 11
+#define PUSHER_CHANMODES 12
+#define PUSHER_TIMESTAMP 13
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -1008,11 +997,37 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
       case PUSHER_LONG:
         lua_pushlong(l, *((long *)offset));
         break;
+      case PUSHER_TIMESTAMP:
+        lua_pushlong(l, (*((channel **)offset))->timestamp);
+        break;
       case PUSHER_IP:
         lua_pushstring(l, IPtostr((*((patricia_node_t **)offset))->prefix->sin));
         break;
       case PUSHER_TOTALUSERS:
         lua_pushint(l, (*((channel **)offset))->users->totalusers);
+        break;
+      case PUSHER_CHANMODES:
+        lua_pushstring(l, printallmodes(*((channel **)offset)));
+        break;
+      case PUSHER_REALUSERS:
+        {
+          channel *cp = *((channel **)offset);
+          nick *np2;
+          int i, currentusers = countuniquehosts(cp);
+          for(i=0;i<cp->users->hashsize;i++) {
+            if(cp->users->content[i]==nouser)
+              continue;
+
+            if((np2=getnickbynumeric(cp->users->content[i]))==NULL) {
+              Error("lua", ERR_ERROR, "Found unknown numeric %u on channel %s", cp->users->content[i], cp->index->name->content);
+              continue;
+            }
+
+            if (IsXOper(np2) || IsService(np2))
+              currentusers--;
+          }
+          lua_pushint(l, currentusers);
+        }
         break;
       case PUSHER_UMODES:
         lua_pushstring(l, printflags(*((flag_t *)offset), umodeflags));
@@ -1048,6 +1063,9 @@ void lua_initchanpusher(void) {
   PUSH_CHANPUSHER(PUSHER_SSTRING, name, "name");
   PUSH_CHANPUSHER(PUSHER_TOTALUSERS, channel, "totalusers");
   PUSH_CHANPUSHER(PUSHER_TOPIC, channel, "topic");
+  PUSH_CHANPUSHER(PUSHER_REALUSERS, channel, "realusers");
+  PUSH_CHANPUSHER(PUSHER_TIMESTAMP, channel, "timestamp");
+  PUSH_CHANPUSHER(PUSHER_CHANMODES, channel, "modes");
 
   chanpushercount = i;
   chanpusher[i].argtype = 0;
