@@ -81,6 +81,9 @@ int lua_lineok(const char *data);
 #define lua_tolong(l, n) (long)lua_tonumber(l, n)
 #define lua_islong(l, n) lua_isnumber(l, n)
 #define lua_pushlong(l, n) lua_pushnumber(l, n)
+#define lua_pushnumeric(l, n) lua_pushlong(l, n)
+#define lua_tonumeric(l, n) lua_tolong(l, n)
+#define lua_isnumeric(l, n) lua_islong(l, n)
 
 extern struct rusage r_usages;
 extern struct rusage r_usagee;

@@ -270,11 +270,11 @@ static int lua_fastgetchaninfo(lua_State *ps) {
     return 0;
 
   cp = findchannel((char *)lua_tostring(ps, 1));
-  if(!cp)
+  if(!cp || cp->index != cp)
     return 0;
 
   lua_setupchanpusher(ps, 2, ourpusher, MAX_PUSHER);
-  return lua_usepusher(ps, ourpusher, cp);
+  return lua_usepusher(ps, ourpusher, cp->index);
 }
 
 static int lua_opchan(lua_State *ps) {
@@ -381,8 +381,8 @@ static int lua_getuserbyauth(lua_State *l) {
 
   for(i=0;i<NICKHASHSIZE;i++) {
     for(np=nicktable[i];np;np=np->next) {
-      if(np && np->authname && !ircd_strcmp(np->authname, acc)) {
-        LUA_PUSHNICK(l, np);
+      if(np && np->authname && !ircd_strcmp(np->authname, acc)) {  
+        lua_pushnumeric(l, np->numeric);
         found++;
       }
     }
@@ -526,7 +526,7 @@ static int lua_gethostusers(lua_State *l) {
   count = np->host->clonecount;
 
   do {
-    LUA_PUSHNICK(l, np);
+    lua_pushnumeric(l, np->numeric);
     np = np->nextbyhost;
   } while(np);
 
