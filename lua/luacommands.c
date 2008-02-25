@@ -270,7 +270,7 @@ static int lua_fastgetchaninfo(lua_State *ps) {
     return 0;
 
   cp = findchannel((char *)lua_tostring(ps, 1));
-  if(!cp || cp->index != cp)
+  if(!cp || cp->index->channel != cp)
     return 0;
 
   lua_setupchanpusher(ps, 2, ourpusher, MAX_PUSHER);
