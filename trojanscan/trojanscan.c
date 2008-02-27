@@ -21,6 +21,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
 char *trojanscan_sanitise(char *input);
 void trojanscan_refresh_settings(void);
 static void trojanscan_part_watch(int hook, void *arg);
+static void trojanscan_connect_nick(void *);
 
 #define TROJANSCAN_SETTING_SIZE 256
 #define TROJANSCAN_MAX_SETTINGS 50
@@ -33,6 +34,7 @@ static struct {
 static int settingcount = 0;
 static char *versionreply;
 static int hooksregistered = 0;
+static void *trojanscan_connect_nick_schedule;
 
 void _init() {
   trojanscan_cmds = newcommandtree();
@@ -72,6 +74,9 @@ void _fini(void) {
   
   if (trojanscan_connect_schedule)
     deleteschedule(trojanscan_connect_schedule, &trojanscan_connect, NULL);
+    
+  if (trojanscan_connect_nick_schedule)
+    deleteschedule(trojanscan_connect_nick_schedule, &trojanscan_connect_nick, NULL);
     
   if(trojanscan_schedule)
     deleteschedule(trojanscan_schedule, &trojanscan_dojoin, NULL);
@@ -122,10 +127,55 @@ void _fini(void) {
   trojanscan_database_close();
 }
 
-void trojanscan_connect(void *arg) {
+static void trojanscan_connect_nick(void *arg) {
   sstring *mnick, *myident, *myhost, *myrealname, *myauthname;
-  sstring *dbhost, *dbuser, *dbpass, *db, *dbport, *temp;
   channel *cp;
+
+  mnick = getcopyconfigitem("trojanscan", "nick", "T", NICKLEN);
+  myident = getcopyconfigitem("trojanscan", "ident", "trojanscan", NICKLEN);
+  myhost = getcopyconfigitem("trojanscan", "hostname", "trojanscan.slug.netsplit.net", HOSTLEN);
+  myrealname = getcopyconfigitem("trojanscan", "realname", "Trojanscan v" TROJANSCAN_VERSION, REALLEN);
+  myauthname = getcopyconfigitem("trojanscan", "authname", "T", ACCOUNTLEN);
+
+  trojanscan_nick = registerlocaluser(mnick->content, myident->content, myhost->content, myrealname->content, myauthname->content, UMODE_SERVICE | UMODE_DEAF |
+                                                                                                                          UMODE_OPER | UMODE_INV |
+                                                                                                                          UMODE_ACCOUNT,
+                                                                                                                          &trojanscan_handlemessages);                                                                                                                            
+  freesstring(mnick);
+  freesstring(myident);
+  freesstring(myhost);
+  freesstring(myrealname);
+  freesstring(myauthname);
+
+  cp = findchannel(TROJANSCAN_OPERCHANNEL);
+  if (!cp) {
+    localcreatechannel(trojanscan_nick, TROJANSCAN_OPERCHANNEL);
+  } else {
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
+  }
+
+  cp = findchannel(TROJANSCAN_CHANNEL);
+  if (!cp) {
+    localcreatechannel(trojanscan_nick, TROJANSCAN_CHANNEL);
+  } else {
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
+  }
+
+#ifdef TROJANSCAN_PEONCHANNEL
+  cp = findchannel(TROJANSCAN_PEONCHANNEL);
+  if (!cp) {
+    localcreatechannel(trojanscan_nick, TROJANSCAN_PEONCHANNEL);
+  } else {
+    if(!localjoinchannel(trojanscan_nick, cp))
+      localgetops(trojanscan_nick, cp);
+  }
+#endif
+}
+
+void trojanscan_connect(void *arg) {
+  sstring *dbhost, *dbuser, *dbpass, *db, *dbport, *temp;
   int length, i;
   char buf[10];
   
@@ -143,12 +193,6 @@ void trojanscan_connect(void *arg) {
   trojanscan_database.glines = 0;
   trojanscan_database.detections = 0;
     
-  mnick = getcopyconfigitem("trojanscan", "nick", "T", NICKLEN);
-  myident = getcopyconfigitem("trojanscan", "ident", "trojanscan", NICKLEN);
-  myhost = getcopyconfigitem("trojanscan", "hostname", "trojanscan.slug.netsplit.net", HOSTLEN);
-  myrealname = getcopyconfigitem("trojanscan", "realname", "Trojanscan v" TROJANSCAN_VERSION, REALLEN);
-  myauthname = getcopyconfigitem("trojanscan", "authname", "T", ACCOUNTLEN);
-
   dbhost = getcopyconfigitem("trojanscan", "dbhost", "localhost", HOSTLEN);
   dbuser = getcopyconfigitem("trojanscan", "dbuser", "", NICKLEN);
   dbpass = getcopyconfigitem("trojanscan", "dbpass", "", REALLEN);
@@ -193,10 +237,7 @@ void trojanscan_connect(void *arg) {
   trojanscan_minchansize = atoi(temp->content);
   freesstring(temp);
 
-  trojanscan_nick = registerlocaluser(mnick->content, myident->content, myhost->content, myrealname->content, myauthname->content, UMODE_SERVICE | UMODE_DEAF |
-                                                                                                                          UMODE_OPER | UMODE_INV |
-                                                                                                                          UMODE_ACCOUNT,
-                                                                                                                          &trojanscan_handlemessages);                                                                                                                            
+  trojanscan_connect_nick(NULL);
 
   if (trojanscan_database_connect(dbhost->content, dbuser->content, dbpass->content, db->content, atoi(dbport->content)) < 0) {
     Error("trojanscan", ERR_FATAL, "Cannot connect to database host!");
@@ -223,37 +264,6 @@ void trojanscan_connect(void *arg) {
   trojanscan_refresh_settings();
   trojanscan_read_database(1);
  
-  cp = findchannel(TROJANSCAN_OPERCHANNEL);
-  if (!cp) {
-    localcreatechannel(trojanscan_nick, TROJANSCAN_OPERCHANNEL);
-  } else {
-    if(!localjoinchannel(trojanscan_nick, cp))
-      localgetops(trojanscan_nick, cp);
-  }
-
-  cp = findchannel(TROJANSCAN_CHANNEL);
-  if (!cp) {
-    localcreatechannel(trojanscan_nick, TROJANSCAN_CHANNEL);
-  } else {
-    if(!localjoinchannel(trojanscan_nick, cp))
-      localgetops(trojanscan_nick, cp);
-  }
-
-#ifdef TROJANSCAN_PEONCHANNEL
-  cp = findchannel(TROJANSCAN_PEONCHANNEL);
-  if (!cp) {
-    localcreatechannel(trojanscan_nick, TROJANSCAN_PEONCHANNEL);
-  } else {
-    if(!localjoinchannel(trojanscan_nick, cp))
-      localgetops(trojanscan_nick, cp);
-  }
-#endif
-
-  freesstring(mnick);
-  freesstring(myident);
-  freesstring(myhost);
-  freesstring(myrealname);
-  freesstring(myauthname);
   freesstring(dbhost);
   freesstring(dbuser);
   freesstring(dbpass);
@@ -1711,7 +1721,7 @@ void trojanscan_handlemessages(nick *target, int messagetype, void **args) {
       
     case LU_KILLED:
       /* someone killed me?  Bastards */
-      trojanscan_connect_schedule = scheduleoneshot(time(NULL) + 1, &trojanscan_connect, NULL);
+      trojanscan_connect_nick_schedule = scheduleoneshot(time(NULL) + 1, &trojanscan_connect_nick, NULL);
       trojanscan_nick = NULL;
       break;
       
