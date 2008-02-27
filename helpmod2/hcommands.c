@@ -3774,7 +3774,7 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 {
     int argc = 0, useless_var;
     char args_copy[512];
-    char *parsed_args[H_CMD_MAX_ARGS + 3], *ptr = args_copy;
+    char *parsed_args[H_CMD_MAX_ARGS + 4], *ptr = args_copy;
 
     /* only accept commands from valid sources */
     if (huser_get_level(sender) > H_ADMIN)
@@ -3791,9 +3791,11 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
     if (*args == '-' || *args == '?')
         args++;
 
-    strcpy(args_copy, args);
+    strncpy(args_copy, args, (sizeof(args_copy) - 1));
+    args_copy[sizeof(args_copy) - 1] = '\0';
+
     /* FIX stringituki */
-    while (argc < 10)
+    while (argc < (H_CMD_MAX_ARGS + 4))
     {
         while (isspace(*ptr) && *ptr)
             ptr++;
