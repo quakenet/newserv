@@ -535,6 +535,7 @@ void cs_checknick(nick *np) {
       rup->flags=QUFLAG_NOTICE;
       rup->languageid=0;
       rup->suspendby=0;
+      rup->suspendexp=0;
       rup->password[0]='\0';
       rup->masterpass[0]='\0';
       rup->email=NULL;
