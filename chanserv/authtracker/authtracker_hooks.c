@@ -50,8 +50,6 @@ void at_handlequitorkill(int hooknum, void *arg) {
   if (!(userid=at_getuserid(np)) || !np->accountts)
     return;
 
-  Error("authtracker",ERR_INFO,"KILL/QUIT: reason = %s",reason);
-  
   at_lastuserid=userid;
   at_lastauthts=np->accountts;
   at_lastnum=np->numeric;
