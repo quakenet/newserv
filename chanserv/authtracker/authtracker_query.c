@@ -33,7 +33,7 @@ void at_lognewsession(unsigned int userid, nick *np) {
 
   pqquery("INSERT INTO authhistory (userID, nick, username, host, authtime, disconnecttime, numeric) "
     "VALUES (%lu, '%s', '%s', '%s', %lu, %lu, %u)",
-    userid, escnick, escuser, eschost, np->accountts, 0, np->numeric);
+    userid, escnick, escuser, eschost, np->accountts, 0UL, np->numeric);
 }
 
 static void real_at_finddanglingsessions(PGconn *dbconn, void *arg) {
