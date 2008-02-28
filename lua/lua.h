@@ -17,9 +17,13 @@
 #include <unistd.h>
 
 #include "../lib/sstring.h"
+#include "../core/nsmalloc.h"
 
 #include "lualocal.h"
 #include "luasocket.h"
+
+#define luamalloc(x) nsmalloc(POOL_LUA, x)
+#define luafree(x) nsfree(POOL_LUA, x)
 
 /*** defines ************************************/
 

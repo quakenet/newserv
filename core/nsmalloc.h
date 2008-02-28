@@ -19,3 +19,4 @@ void nsexit(void);
 #define POOL_SSTRING		6
 #define POOL_AUTHTRACKER	7
 #define POOL_PROXYSCAN		8
+#define POOL_LUA		9

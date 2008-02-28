@@ -41,13 +41,13 @@ static int lua_socket_unix_connect(lua_State *l) {
   if(!path)
     return 0;
 
-  ls = (lua_socket *)malloc(sizeof(lua_socket));
+  ls = (lua_socket *)luamalloc(sizeof(lua_socket));
   if(!ls)
     return 0;
 
   ls->fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if(ls->fd <= -1) {
-    free(ls);
+    luafree(ls);
     return 0;
   }
 
@@ -61,14 +61,14 @@ static int lua_socket_unix_connect(lua_State *l) {
   /* WTB exceptions */
   ret = fcntl(ls->fd, F_GETFL, 0);
   if(ret < 0) {
-    free(ls);
+    luafree(ls);
     close(ls->fd);
     return 0;
   }
 
   ret = fcntl(ls->fd, F_SETFL, ret | O_NONBLOCK);
   if(ret < 0) {
-    free(ls);
+    luafree(ls);
     close(ls->fd);
     return 0;
   }
@@ -79,7 +79,7 @@ static int lua_socket_unix_connect(lua_State *l) {
   } else if(ret == -1 && (errno == EINPROGRESS)) {
     ls->state = SOCKET_CONNECTING;
   } else {
-    free(ls);
+    luafree(ls);
     close(ls->fd);
     return 0;
   }
@@ -147,7 +147,7 @@ static void lua_socket_call_close(lua_socket *ls) {
       luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->tag);
       luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->handler);
 
-      free(ls);
+      luafree(ls);
       return;
     }
   }

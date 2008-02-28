@@ -181,11 +181,11 @@ lua_State *lua_loadscript(char *file) {
   if(lua_scriptloaded(file))
     return NULL;
 
-  l = lua_open();
+  l = lua_newstate(, NULL);
   if(!l)
     return NULL;
 
-  n = (lua_list *)malloc(sizeof(lua_list));;
+  n = (lua_list *)luamalloc(sizeof(lua_list));;
   if(!n) {
     Error("lua", ERR_ERROR, "Error allocing list for %s.", file);
     return NULL;
@@ -194,7 +194,7 @@ lua_State *lua_loadscript(char *file) {
   n->name = getsstring(file, LUA_PATHLEN);
   if(!n->name) {
     Error("lua", ERR_ERROR, "Error allocing name item for %s.", file);
-    free(n);
+    luafree(n);
     return NULL;
   }
   n->calls = 0;
@@ -223,7 +223,7 @@ lua_State *lua_loadscript(char *file) {
     Error("lua", ERR_ERROR, "Error loading %s.", file);
     lua_close(l);
     freesstring(n->name);
-    free(n);
+    luafree(n);
     return NULL;
   }
 
@@ -248,7 +248,7 @@ lua_State *lua_loadscript(char *file) {
     Error("lua", ERR_ERROR, "Error pcalling: %s.", file);
     lua_close(l);
     freesstring(n->name);
-    free(n);
+    luafree(n);
     return NULL;
   }
 
@@ -290,7 +290,7 @@ void lua_unloadscript(lua_list *l) {
      }
   }
 
-  free(l);
+  luafree(l);
 }
 
 void lua_setpath(lua_State *l) {

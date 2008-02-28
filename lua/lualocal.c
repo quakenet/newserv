@@ -37,7 +37,7 @@ static int lua_registerlocaluser(lua_State *ps) {
   if(!l)
     return 0;
 
-  ln = (lua_localnick *)malloc(sizeof(lua_localnick));
+  ln = (lua_localnick *)luamalloc(sizeof(lua_localnick));
   if(!ln)
     return 0;
 
@@ -45,7 +45,7 @@ static int lua_registerlocaluser(lua_State *ps) {
 
   ln->nick = registerlocaluser(nickname, ident, hostname, realname, account, modes, &lua_localnickhandler);
   if(!ln->nick) {
-    free(ln);
+    luafree(ln);
     return 0;
   }
 
@@ -67,7 +67,7 @@ void lua_freelocalnick(lua_State *ps, lua_localnick *l, char *quitm) {
 
   luaL_unref(ps, LUA_REGISTRYINDEX, l->handler);
 
-  free(l);
+  luafree(l);
 }
 
 int lua_getlocalnickbynick(nick *np, lua_list **rl, lua_localnick **rln) {

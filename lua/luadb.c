@@ -65,7 +65,7 @@ void lua_dbcallback(PGconn *dbconn, void *arg) {
   lua_callback *c = (lua_callback *)arg;
 
   if(!lua_listexists(c->l)) {
-    free(c);
+    luafree(c);
     return;
   }
 
@@ -74,7 +74,7 @@ void lua_dbcallback(PGconn *dbconn, void *arg) {
 
     luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->handler);
     luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->args);
-    free(c);
+    luafree(c);
     return;
   }
 
@@ -82,7 +82,7 @@ void lua_dbcallback(PGconn *dbconn, void *arg) {
 
   luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->handler);
   luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->args);
-  free(c);
+  luafree(c);
   PQclear(pgres);
   pgres = NULL;
 }
@@ -101,7 +101,7 @@ static int lua_dbquery(lua_State *ps) {
     LUA_RETURN(ps, LUA_OK);
   }
 
-  cb = (lua_callback *)malloc(sizeof(lua_callback));
+  cb = (lua_callback *)luamalloc(sizeof(lua_callback));
   if(!cb)
     LUA_RETURN(ps, LUA_FAIL);
 
