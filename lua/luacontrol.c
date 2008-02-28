@@ -12,12 +12,16 @@ int lua_inslua(void *sender, int cargc, char **cargv);
 int lua_rmlua(void *sender, int cargc, char **cargv);
 int lua_reloadlua(void *sender, int cargc, char **cargv);
 int lua_lslua(void *sender, int cargc, char **cargv);
+int lua_forcegc(void *sender, int cargc, char **cargv);
+void lua_controlstatus(int hooknum, void *arg);
 
 void lua_startcontrol(void) {
   registercontrolhelpcmd("inslua", NO_DEVELOPER, 1, &lua_inslua, "Usage: inslua <script>\nLoads the supplied Lua script..");
   registercontrolhelpcmd("rmlua", NO_DEVELOPER, 1, &lua_rmlua, "Usage: rmlua <script>\nUnloads the supplied Lua script.");
   registercontrolhelpcmd("reloadlua", NO_DEVELOPER, 1, &lua_reloadlua, "Usage: reloadlua <script>\nReloads the supplied Lua script.");
   registercontrolhelpcmd("lslua", NO_DEVELOPER, 0, &lua_lslua, "Usage: lslua\nLists all currently loaded Lua scripts and shows their memory usage.");
+  registercontrolhelpcmd("forcegc", NO_DEVELOPER, 1, &lua_forcegc, "Usage: forcegc ?script?\nForces a full garbage collection for a specific script (if supplied), all scripts otherwise.");
+  registerhook(HOOK_CORE_STATSREQUEST, lua_controlstatus);
 }
 
 void lua_destroycontrol(void) {
@@ -25,8 +29,9 @@ void lua_destroycontrol(void) {
   deregistercontrolcmd("rmlua", &lua_rmlua);
   deregistercontrolcmd("reloadlua", &lua_reloadlua);
   deregistercontrolcmd("lslua", &lua_lslua);
+  deregistercontrolcmd("forcegc", &lua_forcegc);
+  deregisterhook(HOOK_CORE_STATSREQUEST, lua_controlstatus);
 }
-
 
 int lua_inslua(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
@@ -98,3 +103,44 @@ int lua_lslua(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void lua_controlstatus(int hooknum, void *arg) {
+  char buf[1024];
+  int memusage = 0;
+  lua_list *l;
+
+  if ((long)arg <= 10)
+    return;
+
+  for(l=lua_head;l;l=l->next)
+    memusage+=lua_gc(l->l, LUA_GCCOUNT, 0);
+
+  snprintf(buf, sizeof(buf), "Lua     : %dKb in use in total by scripts.", memusage);
+  triggerhook(HOOK_CORE_STATSREPLY, buf);
+}
+
+int lua_forcegc(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  lua_list *l;
+  int membefore = 0, memafter = 0;
+  if(cargc == 0) {
+    for(l=lua_head;l;l=l->next) {
+      membefore+=lua_gc(l->l, LUA_GCCOUNT, 0);
+      controlreply(np, "GC'ing %s. . .", l->name->content);
+      lua_gc(l->l, LUA_GCCOLLECT, 0);
+      memafter+=lua_gc(l->l, LUA_GCCOUNT, 0);
+    }
+  } else {
+    l = lua_scriptloaded(cargv[0]);
+    if(!l) {
+      controlreply(np, "Script %s is not loaded.", cargv[0]);
+      return CMD_ERROR;
+    }
+
+    membefore+=lua_gc(l->l, LUA_GCCOUNT, 0);
+    lua_gc(l->l, LUA_GCCOLLECT, 0);
+    memafter+=lua_gc(l->l, LUA_GCCOUNT, 0);
+  }
+  controlreply(np, "Done.");
+  controlreply(np, "Freed: %dKb (%0.2f%% of %dKb) -- %dKb now in use.", membefore - memafter, ((double)membefore - (double)memafter) / (double)membefore * 100, membefore, memafter);
+  return CMD_OK;
+}
