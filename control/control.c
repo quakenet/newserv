@@ -147,16 +147,17 @@ int controlstatus(void *sender, int cargc, char **cargv) {
   if (level >= 50) {
     int i;
     unsigned long count;
-    size_t size;
+    size_t size, realsize;
+    char *poolname;
 
     for(i=0;;i++) {
-      if(!nspoolstats(i, &size, &count))
+      if(!nspoolstats(i, &size, &count, &poolname, &realsize))
         break;
 
       if (count == 0)
         continue;
 
-      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d: %luKb, %lu items", i, (unsigned long)size / 1024, count);
+      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d (%s): %lu items, %luKb allocated for %luKb space, %luKb (%0.2f%%) overhead", i, poolname?poolname:"??", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
       triggerhook(HOOK_CORE_STATSREPLY, buf);
     }
   }
@@ -615,3 +616,4 @@ void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format
       if (IsOper(np))
         controlnotice(np, "%s", broadcast);
 }
+
