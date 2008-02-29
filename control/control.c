@@ -156,7 +156,7 @@ int controlstatus(void *sender, int cargc, char **cargv) {
       if (count == 0)
         continue;
 
-      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d: %luKb, %lu items", i, size / 1024, count);
+      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d: %luKb, %lu items", i, (unsigned long)size / 1024, count);
       triggerhook(HOOK_CORE_STATSREPLY, buf);
     }
   }
