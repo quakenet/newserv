@@ -20,6 +20,7 @@
 #include "../lib/base64.h"
 #include "../core/modules.h"
 #include "../lib/version.h"
+#include "../core/nsmalloc.h"
 #include "control.h"
 
 #include <stdio.h>
@@ -134,14 +135,32 @@ void handlestats(int hooknum, void *arg) {
 
 int controlstatus(void *sender, int cargc, char **cargv) {
   unsigned long level=5;
-
+  char buf[1024];
   hooknick=(nick *)sender;
   
   if (cargc>0) {
     level=strtoul(cargv[0],NULL,10);
   }
-  
+
   registerhook(HOOK_CORE_STATSREPLY,&handlestats);
+
+  if (level >= 50) {
+    int i;
+    unsigned long count;
+    size_t size;
+
+    for(i=0;;i++) {
+      if(!nspoolstats(i, &size, &count))
+        break;
+
+      if (count == 0)
+        continue;
+
+      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d: %luKb, %lu items", i, size / 1024, count);
+      triggerhook(HOOK_CORE_STATSREPLY, buf);
+    }
+  }
+
   triggerhook(HOOK_CORE_STATSREQUEST,(void *)level);
   deregisterhook(HOOK_CORE_STATSREPLY,&handlestats);
   return CMD_OK;
@@ -202,6 +221,8 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     controlreply((nick *)sender,"Account   : %s",target->authname);
     if (target->accountts) 
       controlreply((nick *)sender,"AccountTS : %ld",target->accountts);
+    if (target->auth) 
+      controlreply((nick *)sender,"UserID    : %ld",target->auth->userid);
   }
 
   hooknick=(nick *)sender;

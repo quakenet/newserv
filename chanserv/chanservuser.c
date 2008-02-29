@@ -522,12 +522,21 @@ void cs_checknick(nick *np) {
       rup->nicks=nlp;
       triggerhook(HOOK_CHANSERV_SETUSERID, np);
       cs_doallautomodes(np);
+      if (np->auth && (rup->ID != np->auth->userid)) {
+        Error("chanserv",ERR_INFO,"UserID mismatch for %s: %lu != %lu", rup->username, rup->ID, np->auth->userid);
+      }
     } else {
       aup->rup=NULL;
       /* Auto create user.. */
       rup=getreguser();
       rup->status=0;
-      rup->ID=++lastuserID;
+      if (np->auth && !(np->auth->exts[chanservaext])) {
+        rup->ID=np->auth->userid;
+        if (rup->ID > lastuserID)
+          lastuserID=rup->ID;
+      } else {
+        rup->ID=++lastuserID;
+      }
       strncpy(rup->username,np->authname,NICKLEN); rup->username[NICKLEN]='\0';
       rup->created=time(NULL);
       rup->lastauth=time(NULL);

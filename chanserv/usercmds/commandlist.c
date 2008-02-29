@@ -4,6 +4,7 @@
 
 /* Prototypes */
 int csa_doaccounthistory(void *source, int cargc, char **cargv);
+int csa_doauthhistory(void *source, int cargc, char **cargv);
 int csu_docleanupdb(void *source, int cargc, char **cargv);
 int csu_dodeluser(void *source, int cargc, char **cargv);
 int csu_dodomainmode(void *source, int cargc, char **cargv);
@@ -25,6 +26,7 @@ int csu_dowhois(void *source, int cargc, char **cargv);
 
 void _init() {
   chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.");
+  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.");
   chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db");
   chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.");
   chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes");
@@ -47,6 +49,7 @@ void _init() {
 
 void _fini() {
   chanservremovecommand("accounthistory", csa_doaccounthistory);
+  chanservremovecommand("authhistory", csa_doauthhistory);
   chanservremovecommand("cleanupdb", csu_docleanupdb);
   chanservremovecommand("deluser", csu_dodeluser);
   chanservremovecommand("domainmode", csu_dodomainmode);
