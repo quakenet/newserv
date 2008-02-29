@@ -1,6 +1,6 @@
-#include "../pqsql/pqsql.h"
 #include "lua.h"
 #include "luabot.h"
+#include "../pqsql/pqsql.h"
 
 static int lua_dbcreatequery(lua_State *ps) {
   char *s = (char *)lua_tostring(ps, 1);
