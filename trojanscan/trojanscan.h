@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.70"
+#define TROJANSCAN_VERSION "2.71"
 
 #define TROJANSCAN_MAX_HOST_GLINE   5
 

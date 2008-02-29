@@ -167,6 +167,17 @@ void lua_loadscripts(void) {
   }
 }
 
+/* taken from the lua manual, modified to use nsmalloc */
+static void *lua_nsmalloc(void *ud, void *ptr, size_t osize, size_t nsize) {
+  if(nsize == 0) {
+    if(ptr != NULL)
+      luafree(ptr);
+    return NULL;
+  }
+
+  return luarealloc(ptr, nsize);
+}
+
 lua_State *lua_loadscript(char *file) {
   char fullpath[LUA_PATHLEN];
   int top;
@@ -181,7 +192,7 @@ lua_State *lua_loadscript(char *file) {
   if(lua_scriptloaded(file))
     return NULL;
 
-  l = lua_newstate(, NULL);
+  l = lua_newstate(lua_nsmalloc, NULL);
   if(!l)
     return NULL;
 

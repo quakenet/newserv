@@ -23,6 +23,7 @@
 #include "luasocket.h"
 
 #define luamalloc(x) nsmalloc(POOL_LUA, x)
+#define luarealloc(x, y) nsrealloc(POOL_LUA, x, y)
 #define luafree(x) nsfree(POOL_LUA, x)
 
 /*** defines ************************************/
