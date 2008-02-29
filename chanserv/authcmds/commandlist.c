@@ -4,6 +4,7 @@
 
 /* Prototypes */
 int csa_doauth(void *source, int cargc, char **cargv);
+int csa_doauthhistory(void *source, int cargc, char **cargv);
 int csa_doemail(void *source, int cargc, char **cargv);
 int csa_dohello(void *source, int cargc, char **cargv);
 int csa_doauth(void *source, int cargc, char **cargv);
@@ -16,6 +17,7 @@ int csa_dosetpw(void *source, int cargc, char **cargv);
 
 void _init() {
   chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.");
+  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.");
   chanservaddcommand("email", QCMD_AUTHED, 3, csa_doemail, "Change your email address.");
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.");
   chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.");
@@ -29,6 +31,7 @@ void _init() {
 
 void _fini() {
   chanservremovecommand("auth", csa_doauth);
+  chanservremovecommand("authhistory", csa_doauthhistory);
   chanservremovecommand("email", csa_doemail);
   chanservremovecommand("hello", csa_dohello);
   chanservremovecommand("login", csa_doauth);
