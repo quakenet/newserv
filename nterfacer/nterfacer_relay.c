@@ -213,7 +213,7 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
     if(strchr(argv[i], '\r'))
       return ri_error(ri, RELAY_INVALID_CHARS, "Invalid character in input");
 
-  np = malloc(sizeof(struct rld));
+  np = ntmalloc(sizeof(struct rld));
   MemCheckR(np, ri_error(ri, RELAY_MEMORY_ERROR, "Memory error"));
 
   np->rline = ri;
@@ -221,13 +221,13 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
      np->termination.pcre.phrase = pcre_compile(argv[1], PCRE_FLAGS, &rerror, &erroroffset, NULL);
     if(!np->termination.pcre.phrase) {
       MemError();
-      free(np);
+      ntfree(np);
       return ri_error(ri, RELAY_REGEX_ERROR, "Regex compliation error");
     }
     np->termination.pcre.hint = pcre_study(np->termination.pcre.phrase, 0, &rerror);
     if(rerror) {
       pcre_free(np->termination.pcre.phrase);
-      free(np);
+      ntfree(np);
       return ri_error(ri, RELAY_REGEX_HINT_ERROR, "Regex hint error");
     }
 
@@ -243,7 +243,7 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
       if(np->termination.pcre.hint)
         pcre_free(np->termination.pcre.hint);
     }
-    free(np);
+    ntfree(np);
     return ri_error(ri, RELAY_NICK_ERROR, "Unable to get a nickname!");
   }
 
@@ -256,7 +256,7 @@ int relay_handler(struct rline *ri, int argc, char **argv) {
         pcre_free(np->termination.pcre.hint);
     }
     deregisterlocaluser(np->nick, NULL);
-    free(np);
+    ntfree(np);
     return ri_error(ri, RELAY_MEMORY_ERROR, "Memory error");
   }
 
@@ -296,7 +296,7 @@ int stats_handler(struct rline *ri, int argc, char **argv) {
     more = NULL;
   }
 
-  np = malloc(sizeof(struct rld));
+  np = ntmalloc(sizeof(struct rld));
   MemCheckR(np, ri_error(ri, RELAY_MEMORY_ERROR, "Memory error"));
 
   np->rline = ri;
@@ -304,7 +304,7 @@ int stats_handler(struct rline *ri, int argc, char **argv) {
   np->dest = NULL;
 
   if(!(np->nick = relay_getnick())) {
-    free(np);
+    ntfree(np);
     return ri_error(ri, RELAY_NICK_ERROR, "Unable to get a nickname!");
   }
 
@@ -312,7 +312,7 @@ int stats_handler(struct rline *ri, int argc, char **argv) {
   if(!np->schedule) {
     MemError();
     deregisterlocaluser(np->nick, NULL);
-    free(np);
+    ntfree(np);
   }
 
   np->next = list;
@@ -419,7 +419,7 @@ void dispose_rld_dontquit(struct rld *item, int dontquit) {
     if(item->termination.pcre.hint)
       pcre_free(item->termination.pcre.hint);
   }
-  free(item);
+  ntfree(item);
 }
 
 void relay_timeout(void *arg) {

@@ -29,7 +29,7 @@ unsigned short esocket_token(void) {
 
 struct esocket *esocket_add(int fd, char socket_type, struct esocket_events *events, unsigned short token) {
   int flags;
-  struct esocket *newsock = (struct esocket *)malloc(sizeof(struct esocket));
+  struct esocket *newsock = (struct esocket *)ntmalloc(sizeof(struct esocket));
   if(!newsock)
     return NULL;
 
@@ -182,17 +182,17 @@ void esocket_disconnect(struct esocket *active) {
 
       for(;pkt;) {
         npkt = pkt->next;
-        free(pkt->line);
-        free(pkt);
+        ntfree(pkt->line);
+        ntfree(pkt);
         pkt = npkt;
       }
 
       if(p->in.data)
-        free(p->in.data);
+        ntfree(p->in.data);
       if(p->in.cryptobuf)
-        free(p->in.cryptobuf);
+        ntfree(p->in.cryptobuf);
 
-      free(p);
+      ntfree(p);
       break;
     }  
 }
@@ -250,7 +250,7 @@ int crypto_newblock(struct esocket *sock, unsigned char *block) {
     sock->clientseqno++;
 
     ret = sock->events.on_line(sock, (char *)buf->cryptobuf);
-    free(buf->cryptobuf);
+    ntfree(buf->cryptobuf);
     buf->cryptobuf = NULL;
     buf->cryptobufsize = 0;
     buf->mac = 0;
@@ -267,9 +267,9 @@ int crypto_newblock(struct esocket *sock, unsigned char *block) {
     }
   }
 
-  p2 = realloc(buf->cryptobuf, buf->cryptobufsize + 16);
+  p2 = ntrealloc(buf->cryptobuf, buf->cryptobufsize + 16);
   if(!p2)
-    Error("nterface", ERR_STOP, "realloc() failed in crypto_newblock (esockets.c)");
+    Error("nterface", ERR_STOP, "ntrealloc() failed in crypto_newblock (esockets.c)");
   buf->cryptobuf = p2;
 
   memcpy(p2 + buf->cryptobufsize, p, 16);
@@ -304,9 +304,9 @@ int esocket_read(struct esocket *sock) {
   if((bytesread == -1) && (errno == EAGAIN))
     return 0;
 
-  p = realloc(buf->data, buf->size + bytesread);
+  p = ntrealloc(buf->data, buf->size + bytesread);
   if(!p)
-    Error("nterface", ERR_STOP, "realloc() failed in esocket_read (esockets.c)");
+    Error("nterface", ERR_STOP, "ntrealloc() failed in esocket_read (esockets.c)");
 
   buf->data = p;
   memcpy(buf->data + buf->size, bufd, bytesread);
@@ -321,13 +321,13 @@ int esocket_read(struct esocket *sock) {
 
     if(strip > 0) {
       if(buf->size - strip == 0) {
-        free(buf->data);
+        ntfree(buf->data);
         buf->data = NULL;
       } else {
         memmove(buf->data, buf->data + strip, buf->size - strip);
-        p = realloc(buf->data, buf->size - strip);
+        p = ntrealloc(buf->data, buf->size - strip);
         if(!p)
-          Error("nterface", ERR_STOP, "realloc() failed in esocket_read (esockets.c)");
+          Error("nterface", ERR_STOP, "ntrealloc() failed in esocket_read (esockets.c)");
 
         buf->data = p;
       }
@@ -348,13 +348,13 @@ struct esocket_packet *esocket_new_packet(struct esocket_out_buffer *buf, char *
   if(buf->count == MAX_OUT_QUEUE_SIZE)
     return NULL;
 
-  nw = malloc(sizeof(struct esocket_packet));
+  nw = ntmalloc(sizeof(struct esocket_packet));
   if(!nw)
     return NULL;
 
-  nw->line = malloc(bytes);
+  nw->line = ntmalloc(bytes);
   if(!nw->line) {
-    free(nw);
+    ntfree(nw);
     return NULL;
   }
 
@@ -426,8 +426,8 @@ int esocket_raw_write(struct esocket *sock, char *buffer, int bytes) {
         struct esocket_packet *p = buf->head;
         buf->head = buf->head->next;
 
-        free(p->line);
-        free(p);
+        ntfree(p->line);
+        ntfree(p);
 
         buf->count--;
         if(!buf->head) { /* if we've exhausted the buffer */

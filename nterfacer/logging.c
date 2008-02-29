@@ -70,12 +70,12 @@ void nterface_rotate_log(void *arg) {
   if(!us)
     return;
 
-  filename = malloc(filenamelen);
+  filename = ntmalloc(filenamelen);
   MemCheck(filename);
-  filename2 = malloc(filenamelen);
+  filename2 = ntmalloc(filenamelen);
   if(!filename2) {
     MemError();
-    free(filename);
+    ntfree(filename);
     return;
   }
 
@@ -128,8 +128,8 @@ void nterface_rotate_log(void *arg) {
     unlink(filename);
   }
 
-  free(filename);
-  free(filename2);
+  ntfree(filename);
+  ntfree(filename2);
 }
 
 int direxists(char *filename) {
@@ -140,7 +140,7 @@ int direxists(char *filename) {
 
   if(lastp) {
     int ret = 0;
-    char *newp = malloc(lastp - filename + 1);
+    char *newp = ntmalloc(lastp - filename + 1);
     if(!newp) {
       MemError();
       return 0;
@@ -155,7 +155,7 @@ int direxists(char *filename) {
       ret = mkdir(newp, DIR_PERMISSIONS);
     }
 
-    free(newp);
+    ntfree(newp);
     if(ret)
       return 0;
   }
@@ -163,20 +163,20 @@ int direxists(char *filename) {
 }
 
 struct nterface_auto_log *nterface_open_log(char *name, char *filename, int debug) {
-  struct nterface_auto_log *us = malloc(sizeof(struct nterface_auto_log));
+  struct nterface_auto_log *us = ntmalloc(sizeof(struct nterface_auto_log));
   MemCheckR(us, NULL);
 
   us->filename = getsstring(filename, strlen(filename));
   if(!us->filename) {
     MemError();
-    free(us);
+    ntfree(us);
   }
 
   us->name = getsstring(name, strlen(name));
   if(!us->name) {
     MemError();
     freesstring(us->filename);
-    free(us);
+    ntfree(us);
   }
 
   if(direxists(filename)) {
@@ -209,7 +209,7 @@ struct nterface_auto_log *nterface_close_log(struct nterface_auto_log *ourlog) {
     nterface_log(ourlog, NL_SYSTEM, "Log closed");
     if(ourlog->log)
       fclose(ourlog->log);
-    free(ourlog);
+    ntfree(ourlog);
   }
   return NULL;
 }

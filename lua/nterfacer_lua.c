@@ -7,8 +7,8 @@
 
 #include "../lua/lua.h"
 
-#include "../nterface/library.h"
-#include "../nterface/nterfacer.h"
+#include "../nterfacer/library.h"
+#include "../nterfacer/nterfacer.h"
 
 MODULE_VERSION("");
 

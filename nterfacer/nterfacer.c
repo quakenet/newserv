@@ -81,7 +81,7 @@ void _init(void) {
 
 void free_handler(struct handler *hp) {
   freesstring(hp->command);
-  free(hp);
+  ntfree(hp);
 }
 
 void free_handlers(struct service_node *tp) {
@@ -107,7 +107,7 @@ void _fini(void) {
     lp = tp;
     tp = tp->next;
     free_handlers(lp);
-    free(lp);
+    ntfree(lp);
   }
   tree = NULL;
 
@@ -122,7 +122,7 @@ void _fini(void) {
       freesstring(permits[i].hostname);
       freesstring(permits[i].password);
     }
-    free(permits);
+    ntfree(permits);
     permit_count = 0;
     permits = NULL;
   }
@@ -151,7 +151,8 @@ int load_permits(void) {
   hostnames = (sstring **)hostnamesa->content;
   passwords = (sstring **)passwordsa->content;
 
-  new_permits = calloc(hostnamesa->cursi, sizeof(struct permitted));
+  new_permits = ntmalloc(hostnamesa->cursi * sizeof(struct permitted));
+  memset(new_permits, 0, hostnamesa->cursi * sizeof(struct permitted));
   item = new_permits;
 
   for(i=0;i<hostnamesa->cursi;i++) {
@@ -185,14 +186,14 @@ int load_permits(void) {
   }
 
   if(!loaded_lines) {
-    free(new_permits);
+    ntfree(new_permits);
     return 0;
   }
 
-  resized = realloc(new_permits, sizeof(struct permitted) * loaded_lines);
+  resized = ntrealloc(new_permits, sizeof(struct permitted) * loaded_lines);
   if(!resized) {
     MemError();
-    free(new_permits);
+    ntfree(new_permits);
     return 0;
   }
   permits = resized;
@@ -240,13 +241,13 @@ int setup_listening_socket(void) {
 }
 
 struct service_node *register_service(char *name) {
-  struct service_node *np = malloc(sizeof(service_node));
+  struct service_node *np = ntmalloc(sizeof(service_node));
   MemCheckR(np, NULL);
 
   np->name = getsstring(name, strlen(name));
   if(!np->name) {
     MemError();
-    free(np);
+    ntfree(np);
     return NULL;
   }
 
@@ -258,13 +259,13 @@ struct service_node *register_service(char *name) {
 }
 
 struct handler *register_handler(struct service_node *service, char *command, int args, handler_function fp) {
-  struct handler *hp = malloc(sizeof(handler));
+  struct handler *hp = ntmalloc(sizeof(handler));
   MemCheckR(hp, NULL);
 
   hp->command = getsstring(command, strlen(command));
   if(!hp->command) {
     MemError();
-    free(hp);
+    ntfree(hp);
     return NULL;
   }
 
@@ -318,11 +319,11 @@ void deregister_service(struct service_node *service) {
     if(li->service == service) {
       if(pi) {
         pi->next = li->next;
-        free(li);
+        ntfree(li);
         li = pi->next;
       } else {
         rlines = li->next;
-        free(li);
+        ntfree(li);
         li = rlines;
       }
     } else {
@@ -331,7 +332,7 @@ void deregister_service(struct service_node *service) {
   }
   freesstring(service->name);
 
-  free(service);
+  ntfree(service);
 }
 
 void nterfacer_accept_event(struct esocket *socket) {
@@ -367,7 +368,7 @@ void nterfacer_accept_event(struct esocket *socket) {
     return;
   }
 
-  temp = (struct sconnect *)malloc(sizeof(struct sconnect));
+  temp = (struct sconnect *)ntmalloc(sizeof(struct sconnect));
   if(!temp) {
     MemError();
     close(newfd);
@@ -378,7 +379,7 @@ void nterfacer_accept_event(struct esocket *socket) {
 
   newsocket = esocket_add(newfd, ESOCKET_UNIX_DOMAIN_CONNECTED, &nterfacer_events, nterfacer_token);
   if(!newsocket) {
-    free(temp);
+    ntfree(temp);
     close(newfd);
     return;
   }
@@ -592,7 +593,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
     return RE_COMMAND_NOT_FOUND;
 
   if(argcount) {
-    parsebuf = (char *)malloc(strlen(pp) + 1);
+    parsebuf = (char *)ntmalloc(strlen(pp) + 1);
     MemCheckR(parsebuf, RE_MEM_ERROR);
     newp = parsebuf;
   
@@ -608,7 +609,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
         *newp++ = '\0';
         args[argcount++] = newp;
         if(argcount > MAX_ARGS) {
-          free(parsebuf);
+          ntfree(parsebuf);
           return RE_TOO_MANY_ARGS;
         }
       } else {
@@ -619,15 +620,15 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   }
   if(argcount < hl->args) {
     if(argcount && parsebuf)
-      free(parsebuf);
+      ntfree(parsebuf);
     return RE_WRONG_ARG_COUNT;
   }
 
-  prequest = (struct rline *)malloc(sizeof(struct rline));
+  prequest = (struct rline *)ntmalloc(sizeof(struct rline));
   if(!prequest) {
     MemError();
     if(argcount && parsebuf)
-      free(parsebuf);
+      ntfree(parsebuf);
     return RE_MEM_ERROR;
   }
 
@@ -644,7 +645,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   re = (hl->function)(prequest, argcount, args);
   
   if(argcount && parsebuf)
-    free(parsebuf);
+    ntfree(parsebuf);
 
   return re;
 }
@@ -661,7 +662,7 @@ void nterfacer_disconnect_event(struct esocket *sock) {
     if(li->socket->tag == socket)
       li->socket = NULL;
 
-  free(socket);
+  ntfree(socket);
 }
 
 int ri_append(struct rline *li, char *format, ...) {
@@ -723,7 +724,7 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
       } else {
         rlines = li->next;
       }
-      free(li);
+      ntfree(li);
       break;
     }
   }
@@ -746,7 +747,7 @@ int ri_final(struct rline *li) {
       } else {
         rlines = li->next;
       }
-      free(li);
+      ntfree(li);
       break;
     }
   }

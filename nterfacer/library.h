@@ -7,6 +7,7 @@
 #define __nterface_library_H
 
 #include "../core/error.h"
+#include "../core/nsmalloc.h"
 
 #include "../lib/sha2.h"
 
@@ -66,5 +67,9 @@ unsigned char *rijndaelcbc_decrypt(rijndaelcbc *c, unsigned char *ctblock);
 unsigned char *rijndaelcbc_encrypt(rijndaelcbc *c, unsigned char *ptblock);
 void rijndaelcbc_free(rijndaelcbc *c);
 rijndaelcbc *rijndaelcbc_init(unsigned char *key, int keybits, unsigned char *iv, int decrypt);
+
+#define ntmalloc(x)  nsmalloc(POOL_NTERFACER, x)
+#define ntfree(x)    nsfree(POOL_NTERFACER, x)
+#define ntrealloc(x, y) nsrealloc(POOL_NTERFACER, x, y)
 
 #endif

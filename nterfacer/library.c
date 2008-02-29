@@ -205,7 +205,7 @@ char *request_error(int errn) {
 }
 
 rijndaelcbc *rijndaelcbc_init(unsigned char *key, int keybits, unsigned char *iv, int decrypt) {
-  rijndaelcbc *ret = (rijndaelcbc *)malloc(sizeof(rijndaelcbc) + RKLENGTH(keybits) * sizeof(unsigned long));
+  rijndaelcbc *ret = (rijndaelcbc *)ntmalloc(sizeof(rijndaelcbc) + RKLENGTH(keybits) * sizeof(unsigned long));
   if(!ret)
     return NULL;
 
@@ -222,7 +222,7 @@ rijndaelcbc *rijndaelcbc_init(unsigned char *key, int keybits, unsigned char *iv
 }
 
 void rijndaelcbc_free(rijndaelcbc *c) {
-  free(c);
+  ntfree(c);
 }
 
 unsigned char *rijndaelcbc_encrypt(rijndaelcbc *c, unsigned char *ptblock) {

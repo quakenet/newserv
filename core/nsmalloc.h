@@ -23,3 +23,4 @@ int nspoolstats(unsigned int poolid, size_t *size, unsigned long *count);
 #define POOL_PROXYSCAN		8
 #define POOL_LUA		9
 #define POOL_TROJANSCAN		10
+#define POOL_NTERFACER		11
