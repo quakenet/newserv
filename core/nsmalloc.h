@@ -6,6 +6,8 @@ void *nsmalloc(unsigned int poolid, size_t size);
 void nsfree(unsigned int poolid, void *ptr);
 void nsfreeall(unsigned int poolid);
 void nsexit(void);
+void *nsrealloc(unsigned int poolid, void *ptr, size_t size);
+int nspoolstats(unsigned int poolid, size_t *size, unsigned long *count);
 
 #define MAXPOOL		100
 
@@ -20,3 +22,4 @@ void nsexit(void);
 #define POOL_AUTHTRACKER	7
 #define POOL_PROXYSCAN		8
 #define POOL_LUA		9
+#define POOL_TROJANSCAN		10
