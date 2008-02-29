@@ -1419,7 +1419,7 @@ void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count)
   struct trojanscan_templist *markedlist = NULL;
 
   if(count > 0) {
-    markedlist = (struct trojanscan_templist *)malloc(count * sizeof(struct trojanscan_templist));
+    markedlist = (struct trojanscan_templist *)tmalloc(count * sizeof(struct trojanscan_templist));
     if (!markedlist)
       return;
     memset(markedlist, 0, sizeof(struct trojanscan_templist) * count);
