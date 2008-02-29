@@ -346,7 +346,7 @@ int die(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
-  controlwall(0,0,"DIE from %s: %s",((nick *)sender)->nick, cargv[0]);
+  controlwall(NO_OPER,NL_OPERATIONS,"DIE from %s: %s",((nick *)sender)->nick, cargv[0]);
   
   newserv_shutdown_pending=1;
   
