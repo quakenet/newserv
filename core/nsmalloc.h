@@ -9,7 +9,7 @@
 #define endpools();
 #else
 #define pool(x) POOL_ ## x
-#define beginpools(x) enum
+#define beginpools(x) typedef enum nsmallocpools
 #define endpools() nsmallocpools;
 
 #include <stdlib.h>
