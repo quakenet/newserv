@@ -656,7 +656,7 @@ void trojanscan_registerclones(void *arg) {
   trojanscan_mainchanmsg("n: swarm (%d clones) created.", TROJANSCAN_CLONE_TOTAL);
   trojanscan_swarm_created = 1;
 
-  trojanscan_initialschedule = scheduleoneshot(time(NULL) + 5, &trojanscan_fill_channels, NULL);
+  trojanscan_initialschedule = scheduleoneshot(time(NULL) + 60, &trojanscan_fill_channels, NULL);
 }
 
 int trojanscan_status(void *sender, int cargc, char **cargv) {
