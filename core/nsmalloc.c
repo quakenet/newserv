@@ -129,15 +129,21 @@ void nsfreeall(unsigned int poolid) {
   pools[poolid].count=0;
 }
 
+void nscheckfreeall(unsigned int poolid) {
+  if (poolid >= MAXPOOL)
+    return;
+ 
+  if (pools[poolid].first.next) {
+    Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%s): %lub, %lu items",poolid,poolnames[poolid]?poolnames[poolid]:"??",pools[poolid].size,pools[poolid].count);
+    nsfreeall(poolid);
+  }
+}
+
 void nsexit() {
   unsigned int i;
   
-  for (i=0;i<MAXPOOL;i++) {
-    if (pools[i].first.next) {
-      Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%lub, %lu items)\n",i,pools[i].size, pools[i].count);
-      nsfreeall(i);
-    }
-  }
+  for (i=0;i<MAXPOOL;i++)
+    nscheckfreeall(i);
 }
 
 int nspoolstats(unsigned int poolid, size_t *size, unsigned long *count, char **poolname, size_t *realsize) {

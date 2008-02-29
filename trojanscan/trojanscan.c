@@ -129,6 +129,8 @@ void _fini(void) {
   for (i=0;i<trojanscan_tailpoolsize;i++)
     freesstring(trojanscan_tailpool[i]);
   trojanscan_database_close();
+
+  nscheckfreeall(POOL_TROJANSCAN);
 }
 
 static void trojanscan_connect_nick(void *arg) {

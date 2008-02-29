@@ -128,6 +128,7 @@ void _fini(void) {
   }
 
   nrl = nterface_close_log(nrl);
+  nscheckfreeall(POOL_NTERFACER);
 }
 
 int load_permits(void) {
