@@ -37,6 +37,11 @@ const flag umodeflags[] = {
    { 'P', UMODE_PARANOID },
    { '\0', 0 } };
 
+const flag accountflags[] = {
+   { 's', AFLAG_STAFF },
+   { 'd', AFLAG_DEVELOPER },
+   { '\0', 0 } };
+
 #define nickhash(x)       ((crc32i(x))%NICKHASHSIZE)
 
 nick *nicktable[NICKHASHSIZE];

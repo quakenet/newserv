@@ -23,8 +23,9 @@ typedef void (*UserMessageHandler)(nick *,int,void **);
 
 extern UserMessageHandler umhandlers[MAXLOCALUSER+1];
 
+#define registerlocaluserwithuserid(nickname, ident, host, realname, authname, id, umodes, handler) registerlocaluserwithuseridflags(nickname, ident, host, realname, authname, id, umodes, 0, handler)
 #define registerlocaluser(nickname, ident, host, realname, authname, umodes, handler) registerlocaluserwithuserid(nickname, ident, host, realname, authname, 0, umodes, handler)
-nick *registerlocaluserwithuserid(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, UserMessageHandler hander);
+nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, flag_t accountflags, UserMessageHandler hander);
 int renamelocaluser(nick *np, char *newnick);
 int deregisterlocaluser(nick *np, char *reason);
 UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler);
@@ -38,7 +39,8 @@ void sendsecuremessagetouser(nick *source, nick *target, char *servername, char 
 void sendnoticetouser(nick *source, nick *target, char *format, ... );
 void killuser(nick *source, nick *target, char *format, ... );
 #define localusersetaccount(np, accname) localusersetaccountwithuserid(np, accname, 0)
-void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid);
+#define localusersetaccountwithuserid(np, accname, userid) localusersetaccountwithuseridflags(np, accname, 0, 0)
+void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long accid, flag_t accountflags);
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
 

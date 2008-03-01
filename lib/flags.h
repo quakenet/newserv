@@ -4,6 +4,7 @@
 #define __FLAGS_H
 
 typedef unsigned short flag_t;
+#define FLAG_T_SPECIFIER "%hu"
 
 typedef struct {
   unsigned char flagchar;

@@ -37,6 +37,9 @@
 
 #define UMODE_ALL       0x3FFF
 
+#define AFLAG_STAFF     0x0001
+#define AFLAG_DEVELOPER 0x0002
+
 #define IsInvisible(x)    ((x)->umodes & UMODE_INV)
 #define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
 #define IsDebug(x)        ((x)->umodes & UMODE_DEBUG)
@@ -82,6 +85,15 @@
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
 #define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
 
+#define IsStaff(x)           ((x)->umodes & AFLAG_STAFF)
+#define IsDeveloper(x)       ((x)->umodes & AFLAG_DEVELOPER)
+
+#define SetStaff(x)          ((x)->umodes |= AFLAG_STAFF)
+#define SetDeveloper(x)      ((x)->umodes |= AFLAG_DEVELOPER)
+
+#define ClearStaff(x)        ((x)->umodes &= ~AFLAG_STAFF)
+#define ClearDeveloper(x)    ((x)->umodes &= ~AFLAG_DEVELOPER)
+
 typedef struct host {
   sstring *name;
   int clonecount;
@@ -111,6 +123,7 @@ typedef struct nick {
   authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
+  flag_t accountflags;
   patricia_node_t *ipnode;
   unsigned int marker;
   struct nick *next;
@@ -133,6 +146,7 @@ extern nick **servernicks[MAXSERVERS];
 extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
 extern const flag umodeflags[];
+extern const flag accountflags[];
 extern patricia_tree_t *iptree;
 
 #define MAXNUMERIC 0x3FFFFFFF

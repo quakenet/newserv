@@ -67,11 +67,11 @@ void _fini() {
 }
 
 /*
- * registerlocaluserwithuserid:
+ * registerlocaluserwithuseridflags:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluserwithuserid(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, UserMessageHandler handler) {
+nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, flag_t accountflags, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
   struct irc_in_addr ipaddress;
@@ -100,6 +100,7 @@ nick *registerlocaluserwithuserid(char *nickname, char *ident, char *host, char 
   newuser->nextbyrealname=newuser->realname->nicks;
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
+  newuser->accountflags=accountflags;
   
   memset(&ipaddress, 0, sizeof(ipaddress));
   ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
@@ -264,11 +265,16 @@ void sendnickmsg(nick *np) {
   numericbuf[5]='\0';
   
   if (IsAccount(np)) {
-    if (np->auth) {
-      irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu %s %s :%s",
+    if(np->accountflags) {
+      irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu:" FLAG_T_SPECIFIER " %s %s :%s",
         mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-        printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,
+        printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth?np->auth->userid:0,np->accountflags,
         iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+    } else if (np->auth) {
+        irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu %s %s :%s",
+          mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+          printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,
+          iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
     } else if (np->accountts) {
       irc_send("%s N %s 1 %ld %s %s %s %s:%ld %s %s :%s",
         mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
@@ -547,7 +553,7 @@ void checkpendingkills(int hooknum, void *arg) {
 }
 
 /* Auth user */
-void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid) {
+void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long accid, flag_t accountflags) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
@@ -557,6 +563,7 @@ void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid)
   strncpy(np->authname, accname, ACCOUNTLEN);
   np->authname[ACCOUNTLEN]='\0';
   np->accountts=getnettime();
+  np->accountflags=accountflags;
 
   if (accid) {
     np->auth=findorcreateauthname(accid);
@@ -568,7 +575,9 @@ void localusersetaccountwithuserid(nick *np, char *accname, unsigned long accid)
   }
 
   if (connected) {
-    if (np->auth) {
+    if (np->accountflags) {
+      irc_send("%s AC %s %s %ld %lu %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth?np->auth->userid:0, np->accountflags);
+    } else if (np->auth) {
       irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
     } else {
       irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);

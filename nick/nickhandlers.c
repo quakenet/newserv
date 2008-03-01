@@ -27,6 +27,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   nick **nh;
   char *fakehost;
   char *accountts;
+  char *accountflags;
   struct irc_in_addr ipaddress;
   char *accountid;
   unsigned long userid;
@@ -149,6 +150,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
     np->authname[0]='\0';
     np->auth=NULL;
+    np->accountflags=0;
     if(cargc>=9) {
       setflags(&(np->umodes),UMODE_ALL,cargv[5],umodeflags,REJECT_NONE);
       if (IsAccount(np)) {
@@ -156,7 +158,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
           *accountts++='\0';
           np->accountts=strtoul(accountts,&accountid,10);
           if(accountid) {
-            userid=strtoul(accountid + 1,NULL,10);
+            userid=strtoul(accountid + 1,&accountflags,10);
             if(!userid) {
               np->auth=NULL;
             } else {
@@ -165,6 +167,8 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
             }
+            if(accountflags)
+              np->accountflags=strtoul(accountflags + 1,NULL,10);
           } else {
             np->auth=NULL;
           }
@@ -396,6 +400,8 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
         target->nextbyauthname = target->auth->nicks;
         target->auth->nicks = target;
       }
+      if (cargc>=5)
+        target->accountflags=strtoul(cargv[4],NULL,10);
     } else {
       target->auth=NULL;
     }

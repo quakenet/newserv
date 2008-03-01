@@ -223,6 +223,8 @@ int controlwhois(void *sender, int cargc, char **cargv) {
       controlreply((nick *)sender,"AccountTS : %ld",target->accountts);
     if (target->auth) 
       controlreply((nick *)sender,"UserID    : %ld",target->auth->userid);
+    if (target->accountflags) 
+      controlreply((nick *)sender,"AccFlags  : %s",printflags(target->accountflags,accountflags));
   }
 
   hooknick=(nick *)sender;
