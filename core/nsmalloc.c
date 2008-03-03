@@ -1,8 +1,15 @@
 /* nsmalloc: Simple pooled malloc() thing. */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "nsmalloc.h"
+#define __NSMALLOC_C
+#undef __NSMALLOC_H
+#include "nsmalloc.h"
+
+#include "../core/hooks.h"
 #include "../core/error.h"
 
 void *nsmalloc(unsigned int poolid, size_t size);
@@ -11,16 +18,26 @@ void nsfreeall(unsigned int poolid);
 
 struct nsminfo {
   struct nsminfo *next;
-  union {
-    struct nsminfo *prev;
-    unsigned long count;
-  } p;
+  struct nsminfo *prev;
 
   size_t size;
   char data[];
 };
 
-struct nsminfo pools[MAXPOOL];
+struct nsmpool {
+  struct nsminfo first;
+
+  unsigned long count;
+  size_t size;
+};
+
+struct nsmpool pools[MAXPOOL];
+
+void nsmstats(int hookhum, void *arg);
+
+void initnsmalloc(void) {
+  registerhook(HOOK_CORE_STATSREQUEST, &nsmstats);
+}
 
 void *nsmalloc(unsigned int poolid, size_t size) {
   struct nsminfo *nsmp;
@@ -36,13 +53,13 @@ void *nsmalloc(unsigned int poolid, size_t size) {
   
   nsmp->size=size;
   pools[poolid].size+=size;
-  pools[poolid].p.count++;
+  pools[poolid].count++;
 
-  nsmp->next=pools[poolid].next;
-  nsmp->p.prev=&pools[poolid];
-  if (pools[poolid].next)
-    pools[poolid].next->p.prev=nsmp;
-  pools[poolid].next=nsmp;
+  nsmp->next=pools[poolid].first.next;
+  nsmp->prev=&pools[poolid].first;
+  if (pools[poolid].first.next)
+    pools[poolid].first.next->prev=nsmp;
+  pools[poolid].first.next=nsmp;
 
   return (void *)nsmp->data;
 }
@@ -58,12 +75,12 @@ void nsfree(unsigned int poolid, void *ptr) {
   nsmp=(struct nsminfo*)ptr - 1;
 
   /* always set as we have a sentinel */
-  nsmp->p.prev->next=nsmp->next;
+  nsmp->prev->next=nsmp->next;
   if (nsmp->next)
-    nsmp->next->p.prev=nsmp->p.prev;
+    nsmp->next->prev=nsmp->prev;
 
   pools[poolid].size-=nsmp->size;
-  pools[poolid].p.count--;
+  pools[poolid].count--;
 
   free(nsmp);
   return;
@@ -97,10 +114,10 @@ void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
   nsmpn->size=size;
 
   /* always set as we have a sentinel */
-  nsmpn->p.prev->next=nsmpn;
+  nsmpn->prev->next=nsmpn;
 
   if (nsmpn->next)
-    nsmpn->next->p.prev=nsmpn;
+    nsmpn->next->prev=nsmpn;
 
   return (void *)nsmpn->data;
 }
@@ -111,33 +128,82 @@ void nsfreeall(unsigned int poolid) {
   if (poolid >= MAXPOOL)
     return;
  
-  for (nsmp=pools[poolid].next;nsmp;nsmp=nnsmp) {
+  for (nsmp=pools[poolid].first.next;nsmp;nsmp=nnsmp) {
     nnsmp=nsmp->next;
     free(nsmp);
   }
   
-  pools[poolid].next=NULL;
+  pools[poolid].first.next=NULL;
   pools[poolid].size=0;
-  pools[poolid].p.count=0;
+  pools[poolid].count=0;
 }
 
-void nsexit() {
-  unsigned int i;
-  
-  for (i=0;i<MAXPOOL;i++) {
-    if (pools[i].next) {
-      Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%lub, %lu items)\n",i,pools[i].size, pools[i].p.count);
-      nsfreeall(i);
-    }
+void nscheckfreeall(unsigned int poolid) {
+  if (poolid >= MAXPOOL)
+    return;
+ 
+  if (pools[poolid].first.next) {
+    Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%s): %lub, %lu items",poolid,poolnames[poolid]?poolnames[poolid]:"??",pools[poolid].size,pools[poolid].count);
+    nsfreeall(poolid);
   }
 }
 
-int nspoolstats(unsigned int poolid, size_t *size, unsigned long *count) {
-  if (poolid >= MAXPOOL)
-    return 0;
+void nsexit(void) {
+  unsigned int i;
+  
+  for (i=0;i<MAXPOOL;i++)
+    nscheckfreeall(i);
+}
 
-  *size = pools[poolid].size;
-  *count = pools[poolid].p.count;
+static char *formatmbuf(unsigned long count, size_t size, size_t realsize) {
+  static char buf[1024];
 
-  return 1;
+  snprintf(buf, sizeof(buf), "%lu items, %luKb allocated for %luKb space, %luKb (%0.2f%%) overhead", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
+  return buf;
+}
+
+void nsmstats(int hookhum, void *arg) {
+  int i;
+  char buf[1024], header[1024];
+  unsigned long totalcount = 0;
+  size_t totalsize = 0, totalrealsize = 0;
+  long level = (long)arg;
+
+  for (i=0;i<MAXPOOL;i++) {
+    struct nsmpool *pool=&pools[i];
+    size_t realsize;
+
+    if (!pool->count)
+      continue;
+
+    realsize=pool->size + pool->count * sizeof(struct nsminfo) + sizeof(struct nsmpool);
+
+    snprintf(header, sizeof(header), "NSMalloc: pool %2d (%s): ", i, poolnames[i]?poolnames[i]:"??");
+
+    if(level > 10) {
+      snprintf(buf, sizeof(buf), "%s %s", header, formatmbuf(pool->count, pool->size, realsize));
+      triggerhook(HOOK_CORE_STATSREPLY, buf);
+    }
+
+    totalsize+=pool->size;
+    totalrealsize+=realsize;
+    totalcount+=pool->count;
+
+    if(level > 100) {
+      struct nsminfo *np = pool->first.next;
+      double mean = (double)pool->size / pool->count, variance;
+      unsigned long long int sumsq = 0;
+
+      for (np=pool->first.next;np;np=np->next)
+        sumsq+=np->size * np->size;
+
+      variance=(double)sumsq / pool->count - mean * mean;
+
+      snprintf(buf, sizeof(buf), "%s allocation sumsq: %llu mean: %.2f variance: %.2f stddev: %.2f", header, sumsq, mean, variance, sqrtf(variance));
+      triggerhook(HOOK_CORE_STATSREPLY, buf);
+    }
+  }
+
+  snprintf(buf, sizeof(buf), "NSMalloc: pool totals: %s", formatmbuf(totalcount, totalsize, totalrealsize));
+  triggerhook(HOOK_CORE_STATSREPLY, buf);
 }

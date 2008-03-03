@@ -151,6 +151,7 @@ void _fini() {
   freesstring(dummy.name);
 
   lua_freedebugsocket();
+  nscheckfreeall(POOL_LUA);
 }
 
 void lua_loadscripts(void) {

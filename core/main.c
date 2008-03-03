@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
   initschedule();
   
   initsstring();
+  initnsmalloc();
   
   if (argc>1) {
     initconfig(argv[1]);
