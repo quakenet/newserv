@@ -158,13 +158,13 @@ void nsexit(void) {
 static char *formatmbuf(unsigned long count, size_t size, size_t realsize) {
   static char buf[1024];
 
-  snprintf(buf, sizeof(buf), "%lu items, %luKb allocated for %luKb space, %luKb (%0.2f%%) overhead", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
+  snprintf(buf, sizeof(buf), "%lu items, %luKb allocated for %luKb, %luKb (%.2f%%) overhead", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
   return buf;
 }
 
 void nsmstats(int hookhum, void *arg) {
   int i;
-  char buf[1024], header[1024];
+  char buf[1024], extra[1024];
   unsigned long totalcount = 0;
   size_t totalsize = 0, totalrealsize = 0;
   long level = (long)arg;
@@ -178,28 +178,26 @@ void nsmstats(int hookhum, void *arg) {
 
     realsize=pool->size + pool->count * sizeof(struct nsminfo) + sizeof(struct nsmpool);
 
-    snprintf(header, sizeof(header), "NSMalloc: pool %2d (%s): ", i, poolnames[i]?poolnames[i]:"??");
-
-    if(level > 10) {
-      snprintf(buf, sizeof(buf), "%s %s", header, formatmbuf(pool->count, pool->size, realsize));
-      triggerhook(HOOK_CORE_STATSREPLY, buf);
-    }
-
     totalsize+=pool->size;
     totalrealsize+=realsize;
     totalcount+=pool->count;
 
-    if(level > 100) {
-      struct nsminfo *np = pool->first.next;
-      double mean = (double)pool->size / pool->count, variance;
-      unsigned long long int sumsq = 0;
+    if(level > 10) {
+      extra[0] = '\0';
+      if(level > 100) {
+        struct nsminfo *np = pool->first.next;
+        double mean = (double)pool->size / pool->count, variance;
+        unsigned long long int sumsq = 0;
 
-      for (np=pool->first.next;np;np=np->next)
-        sumsq+=np->size * np->size;
+        for (np=pool->first.next;np;np=np->next)
+          sumsq+=np->size * np->size;
 
-      variance=(double)sumsq / pool->count - mean * mean;
+        variance=(double)sumsq / pool->count - mean * mean;
 
-      snprintf(buf, sizeof(buf), "%s allocation sumsq: %llu mean: %.2f variance: %.2f stddev: %.2f", header, sumsq, mean, variance, sqrtf(variance));
+        snprintf(extra, sizeof(extra), ", mean: %.2fKb stddev: %.2fKb", mean / 1024, sqrtf(variance) / 1024);
+      }
+
+      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d (%10s): %s%s", i, poolnames[i]?poolnames[i]:"??", formatmbuf(pool->count, pool->size, realsize), extra);
       triggerhook(HOOK_CORE_STATSREPLY, buf);
     }
   }
