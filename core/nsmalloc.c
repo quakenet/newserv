@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "nsmalloc.h"
 #define __NSMALLOC_C
@@ -163,7 +164,7 @@ static char *formatmbuf(unsigned long count, size_t size, size_t realsize) {
 
 void nsmstats(int hookhum, void *arg) {
   int i;
-  char buf[1024];
+  char buf[1024], header[1024];
   unsigned long totalcount = 0;
   size_t totalsize = 0, totalrealsize = 0;
   long level = (long)arg;
@@ -177,14 +178,30 @@ void nsmstats(int hookhum, void *arg) {
 
     realsize=pool->size + pool->count * sizeof(struct nsminfo) + sizeof(struct nsmpool);
 
+    snprintf(header, sizeof(header), "NSMalloc: pool %2d (%s): ", i, poolnames[i]?poolnames[i]:"??");
+
     if(level > 10) {
-      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d (%s): %s", i, poolnames[i]?poolnames[i]:"??", formatmbuf(pool->count, pool->size, realsize));
+      snprintf(buf, sizeof(buf), "%s %s", header, formatmbuf(pool->count, pool->size, realsize));
       triggerhook(HOOK_CORE_STATSREPLY, buf);
     }
 
     totalsize+=pool->size;
     totalrealsize+=realsize;
     totalcount+=pool->count;
+
+    if(level > 100) {
+      struct nsminfo *np = pool->first.next;
+      double mean = (double)pool->size / pool->count, variance;
+      unsigned long long int sumsq = 0;
+
+      for (np=pool->first.next;np;np=np->next)
+        sumsq+=np->size * np->size;
+
+      variance=(double)sumsq / pool->count - mean * mean;
+
+      snprintf(buf, sizeof(buf), "%s allocation sumsq: %llu mean: %.2f variance: %.2f stddev: %.2f", header, sumsq, mean, variance, sqrtf(variance));
+      triggerhook(HOOK_CORE_STATSREPLY, buf);
+    }
   }
 
   snprintf(buf, sizeof(buf), "NSMalloc: pool totals: %s", formatmbuf(totalcount, totalsize, totalrealsize));
