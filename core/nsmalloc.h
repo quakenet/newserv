@@ -5,12 +5,12 @@
 
 #ifdef __NSMALLOC_C
 #define pool(x) #x
-#define beginpools() char *poolnames[MAXPOOL] =
+#define beginpools() char *nsmpoolnames[MAXPOOL] =
 #define endpools();
 #else
 #define pool(x) POOL_ ## x
 #define beginpools(x) typedef enum nsmallocpools
-#define endpools() nsmallocpools;
+#define endpools() nsmallocpools; extern char *nsmpoolnames[MAXPOOL];
 
 #include <stdlib.h>
 
@@ -20,9 +20,25 @@ void nsfreeall(unsigned int poolid);
 void nsexit(void);
 void *nsrealloc(unsigned int poolid, void *ptr, size_t size);
 void nscheckfreeall(unsigned int poolid);
-void initnsmalloc(void);
 
 #define MAXPOOL		100
+
+struct nsminfo {
+  struct nsminfo *next;
+  struct nsminfo *prev;
+
+  size_t size;
+  char data[];
+};
+
+struct nsmpool {
+  struct nsminfo first;
+
+  unsigned long count;
+  size_t size;
+};
+
+extern struct nsmpool nsmpools[MAXPOOL];
 
 #endif
 
