@@ -12,6 +12,8 @@
 #include "../core/hooks.h"
 #include "../core/error.h"
 
+#ifndef USE_VALGRIND
+
 void *nsmalloc(unsigned int poolid, size_t size);
 void nsfree(unsigned int poolid, void *ptr);
 void nsfreeall(unsigned int poolid);
@@ -205,3 +207,32 @@ void nsmstats(int hookhum, void *arg) {
   snprintf(buf, sizeof(buf), "NSMalloc: pool totals: %s", formatmbuf(totalcount, totalsize, totalrealsize));
   triggerhook(HOOK_CORE_STATSREPLY, buf);
 }
+
+#else
+
+void initnsmalloc(void) {
+}
+
+void *nsmalloc(unsigned int poolid, size_t size) {
+  return malloc(size);
+}
+
+void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
+  return realloc(ptr, size);
+}
+
+void nsfree(unsigned int poolid, void *ptr) {
+  free(ptr);
+}
+
+void nsfreeall(unsigned int poolid) {
+}
+
+void nsexit(void) {
+}
+
+void nscheckfreeall(unsigned int poolid) {
+}
+
+#endif
+
