@@ -91,10 +91,11 @@ static int hcompare_freq(const void *a, const void *b) {
 }
 
 /*
- * okay, this is slightly crazy, we create a list of all sizes and sort them.
- * then we make the list contain unique item only, then we calculate frequencies
- * by looking through this sorted list using a binary chop...
- * should be O(n log n)
+ * since this is gonna process over a million allocations, we can't just do
+ * it the simple O(n^2) way, so here's the crazy fast(er) way:
+ * we create a list of all sizes and sort them, then store unique items
+ * we can then calculate frequencies in O(n log n) time by searching this
+ * sorted list using a binary chop...
  */
 int nsmhistogram(void *sender, int cargc, char **cargv) {
   int i, max;
@@ -165,11 +166,10 @@ int nsmhistogram(void *sender, int cargc, char **cargv) {
 
   /* O(n log n) */
   qsort(freqs, dst, sizeof(struct nsmhistogram_s), hcompare_freq);
-  max = 20;
+  max = 2000;
 
-  for(i=dst-1;i>=0&&max-->0;i--) {
+  for(i=dst-1;i>=0&&max-->0;i--)
     controlreply(sender, "%10lu: %10lu", (unsigned long)freqs[i].size, (unsigned long)freqs[i].freq);
-  }
 
   free(freqs);
   return CMD_OK;
