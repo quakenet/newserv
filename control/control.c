@@ -20,7 +20,6 @@
 #include "../lib/base64.h"
 #include "../core/modules.h"
 #include "../lib/version.h"
-#include "../core/nsmalloc.h"
 #include "control.h"
 
 #include <stdio.h>
@@ -135,7 +134,6 @@ void handlestats(int hooknum, void *arg) {
 
 int controlstatus(void *sender, int cargc, char **cargv) {
   unsigned long level=5;
-  char buf[1024];
   hooknick=(nick *)sender;
   
   if (cargc>0) {
@@ -143,24 +141,6 @@ int controlstatus(void *sender, int cargc, char **cargv) {
   }
 
   registerhook(HOOK_CORE_STATSREPLY,&handlestats);
-
-  if (level >= 50) {
-    int i;
-    unsigned long count;
-    size_t size, realsize;
-    char *poolname;
-
-    for(i=0;;i++) {
-      if(!nspoolstats(i, &size, &count, &poolname, &realsize))
-        break;
-
-      if (count == 0)
-        continue;
-
-      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d (%s): %lu items, %luKb allocated for %luKb space, %luKb (%0.2f%%) overhead", i, poolname?poolname:"??", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
-      triggerhook(HOOK_CORE_STATSREPLY, buf);
-    }
-  }
 
   triggerhook(HOOK_CORE_STATSREQUEST,(void *)level);
   deregisterhook(HOOK_CORE_STATSREPLY,&handlestats);

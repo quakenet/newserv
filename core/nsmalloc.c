@@ -1,12 +1,14 @@
 /* nsmalloc: Simple pooled malloc() thing. */
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "nsmalloc.h"
 #define __NSMALLOC_C
 #undef __NSMALLOC_H
 #include "nsmalloc.h"
 
+#include "../core/hooks.h"
 #include "../core/error.h"
 
 void *nsmalloc(unsigned int poolid, size_t size);
@@ -29,6 +31,12 @@ struct nsmpool {
 };
 
 struct nsmpool pools[MAXPOOL];
+
+void nsmstats(int hookhum, void *arg);
+
+void initnsmalloc(void) {
+  registerhook(HOOK_CORE_STATSREQUEST, &nsmstats);
+}
 
 void *nsmalloc(unsigned int poolid, size_t size) {
   struct nsminfo *nsmp;
@@ -139,21 +147,46 @@ void nscheckfreeall(unsigned int poolid) {
   }
 }
 
-void nsexit() {
+void nsexit(void) {
   unsigned int i;
   
   for (i=0;i<MAXPOOL;i++)
     nscheckfreeall(i);
 }
 
-int nspoolstats(unsigned int poolid, size_t *size, unsigned long *count, char **poolname, size_t *realsize) {
-  if (poolid >= MAXPOOL)
-    return 0;
+static char *formatmbuf(unsigned long count, size_t size, size_t realsize) {
+  static char buf[1024];
 
-  *size = pools[poolid].size;
-  *realsize = pools[poolid].size + pools[poolid].count * sizeof(struct nsminfo) + sizeof(struct nsmpool);
-  *count = pools[poolid].count;
-  *poolname = poolnames[poolid];
+  snprintf(buf, sizeof(buf), "%lu items, %luKb allocated for %luKb space, %luKb (%0.2f%%) overhead", count, (unsigned long)size / 1024, (unsigned long)realsize / 1024, (unsigned long)(realsize - size) / 1024, (double)(realsize - size) / (double)size * 100);
+  return buf;
+}
 
-  return 1;
+void nsmstats(int hookhum, void *arg) {
+  int i;
+  char buf[1024];
+  unsigned long totalcount = 0;
+  size_t totalsize = 0, totalrealsize = 0;
+  long level = (long)arg;
+
+  for (i=0;i<MAXPOOL;i++) {
+    struct nsmpool *pool=&pools[i];
+    size_t realsize;
+
+    if (!pool->count)
+      continue;
+
+    realsize=pool->size + pool->count * sizeof(struct nsminfo) + sizeof(struct nsmpool);
+
+    if(level > 10) {
+      snprintf(buf, sizeof(buf), "NSMalloc: pool %2d (%s): %s", i, poolnames[i]?poolnames[i]:"??", formatmbuf(pool->count, pool->size, realsize));
+      triggerhook(HOOK_CORE_STATSREPLY, buf);
+    }
+
+    totalsize+=pool->size;
+    totalrealsize+=realsize;
+    totalcount+=pool->count;
+  }
+
+  snprintf(buf, sizeof(buf), "NSMalloc: pool totals: %s", formatmbuf(totalcount, totalsize, totalrealsize));
+  triggerhook(HOOK_CORE_STATSREPLY, buf);
 }
