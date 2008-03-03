@@ -4,9 +4,12 @@
 #include "../chanserv.h"
 #include "../../core/hooks.h"
 #include "../../nick/nick.h"
+#include "../../lib/irc_string.h"
 
 #include <time.h>
 #include <string.h>
+
+#define NTERFACER_AUTH	"nterfacer"
 
 /* OK, we need to deal separately with users who have definitely gone (QUIT
  * or KILL) and those who has mysteriously vanished (lost in netsplit). 
@@ -26,6 +29,12 @@ unsigned long at_getuserid(nick *np) {
   /* If they are not +r, forget it. */
   if (!IsAccount(np))
     return 0;
+
+  /* Ignore that pesky nterfacer */
+#ifdef NTERFACER_AUTH
+  if (!ircd_strcmp(np->authname, NTERFACER_AUTH))
+    return 0;
+#endif
     
   /* Try getting it from np->auth */
   if (np->auth)
