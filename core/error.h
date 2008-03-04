@@ -41,6 +41,7 @@
 struct error_event {
   int severity;
   char *message;
+  char *source;
 };
 
 void Error(char *source, int severity, char *reason, ... );

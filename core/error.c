@@ -52,6 +52,7 @@ void Error(char *source, int severity, char *reason, ... ) {
   
   evt.severity=severity;
   evt.message=buf;
+  evt.source=source;
   triggerhook(HOOK_CORE_ERROR, &evt);
   
   if (severity>ERR_DEBUG) {
