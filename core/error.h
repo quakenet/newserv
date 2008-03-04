@@ -1,3 +1,6 @@
+#ifndef __ERROR_H
+#define __ERROR_H
+
 /* error.h:
  *
  * Error flagging routines 
@@ -45,3 +48,5 @@ struct error_event {
 };
 
 void Error(char *source, int severity, char *reason, ... );
+
+#endif
