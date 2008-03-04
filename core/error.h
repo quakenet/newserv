@@ -38,4 +38,9 @@
 #define ERR_FATAL    4
 #define ERR_STOP     5
 
+struct error_event {
+  int severity;
+  char *message;
+};
+
 void Error(char *source, int severity, char *reason, ... );
