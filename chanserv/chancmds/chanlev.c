@@ -201,14 +201,24 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	  changemask |= ( QCUFLAG_KNOWN | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | 
 			  QCUFLAG_TOPIC | QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY | QCUFLAG_PROTECT);
 	
-	/* Owners are allowed to manipulate +ms as well */
+	/* Owners are allowed to manipulate +ms as well.
+	 * We allow +n to be given initially, but we check later to see if the flag has been added.
+	 * if it has, abort and say "use giveowner"
+	 */
 	if (CUIsOwner(rcup))
-	  changemask |= ( QCUFLAG_MASTER );
+	  changemask |= ( QCUFLAG_MASTER | QCUFLAG_OWNER );
       }
 
       oldflags=rcuplist->flags;
       if (setflags(&(rcuplist->flags), changemask, cargv[2], rcuflags, REJECT_UNKNOWN | REJECT_DISALLOWED)) {
 	chanservstdmessage(sender, QM_INVALIDCHANLEVCHANGE);
+	return CMD_ERROR;
+      }
+
+      /* check to see if +n has been given */
+      if (!(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
+        rcuplist->flags=oldflags;
+	chanservstdmessage(sender, QM_USEGIVEOWNER);
 	return CMD_ERROR;
       }
 

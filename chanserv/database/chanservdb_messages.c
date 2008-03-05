@@ -154,6 +154,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 143*/ "CHALLENGE %s %s",
   /* 144*/ "Invalid digest algorithm.",
   /* 144*/ "Challenge has either not been requested or has expired.",
+  /* 145*/ "To give the +n flag use GIVEOWNER. Change aborted.",
 };
 
 void initmessages() {

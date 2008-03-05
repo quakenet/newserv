@@ -209,6 +209,7 @@
 #define QM_CHALLENGE               143
 #define QM_CHALLENGEBADALGORITHM   144
 #define QM_NOCHALLENGE             145
+#define QM_USEGIVEOWNER            146
 
 /* List of privileged operations */
 
