@@ -10,12 +10,17 @@
 #include <regex.h>
 
 regex_t preg;
+static int regexinit;
 
 int csa_initregex() {
-  if (regcomp(&preg, VALID_EMAIL, REG_EXTENDED | REG_NOSUB | REG_ICASE))
-    return(1);
-  else
-    return(0);
+  if (regexinit)
+    return 1;
+
+  if (!regcomp(&preg, VALID_EMAIL, REG_EXTENDED | REG_NOSUB | REG_ICASE))
+    return 0;
+
+  regexinit = 1;
+  return 1;
 }
 
 void csa_freeregex() {
@@ -68,6 +73,7 @@ int csa_checkeboy(nick *sender, char *eboy)
     return (1);
   }
 
+  csa_initregex();
   if (regexec(&preg, eboy, (size_t) 0, NULL, 0)) {
     if (sender)
       chanservstdmessage(sender, QM_INVALIDEMAIL, eboy);
