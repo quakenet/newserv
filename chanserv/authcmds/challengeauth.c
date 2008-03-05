@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: challengeauth
- * CMDLEVEL: QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED
+ * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED
  * CMDARGS: 3
  * CMDDESC: Authenticates you on the bot using challenge response.
  * CMDFUNC: csa_dochallengeauth

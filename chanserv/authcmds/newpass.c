@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: newpass
- * CMDLEVEL: QCMD_AUTHED
+ * CMDLEVEL: QCMD_SECURE | QCMD_AUTHED
  * CMDARGS: 3
  * CMDDESC: Change your password.
  * CMDFUNC: csa_donewpw

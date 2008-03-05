@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: email
- * CMDLEVEL: QCMD_AUTHED
+ * CMDLEVEL: QCMD_SECURE | QCMD_AUTHED
  * CMDARGS: 3
  * CMDDESC: Change your email address.
  * CMDFUNC: csa_doemail
