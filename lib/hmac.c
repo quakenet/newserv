@@ -77,11 +77,49 @@ void hmacsha1_final(hmacsha1 *c, unsigned char *digest) {
   SHA1Final(digest, &c->outer);
 }
 
+void hmacmd5_init(hmacmd5 *c, unsigned char *key, int keylen) {
+  unsigned char realkey[64], outerkey[64], innerkey[64];
+  MD5Context keyc;
+  int i;
+
+  memset(realkey, 0, sizeof(realkey));
+  if(keylen > 64) {
+    MD5Init(&keyc);
+    MD5Update(&keyc, key, keylen);
+    MD5Final(realkey, &keyc);
+    keylen = 16;
+  } else {
+    memcpy(realkey, key, keylen);
+  }
+
+  /* abusing the cache here, if we do sha1 in between that'll erase it */
+  for(i=0;i<64;i++) {
+    int r = realkey[i];
+    innerkey[i] = r ^ 0x36;
+    outerkey[i] = r ^ 0x5c;
+  }
+
+  MD5Init(&c->outer);
+  MD5Init(&c->inner);
+  MD5Update(&c->outer, outerkey, 64);
+  MD5Update(&c->inner, innerkey, 64);
+}
+
+void hmacmd5_update(hmacmd5 *c, unsigned char *message, int messagelen) {
+  MD5Update(&c->inner, message, messagelen);
+}
+
+void hmacmd5_final(hmacmd5 *c, unsigned char *digest) {
+  MD5Final(digest, &c->inner);
+  MD5Update(&c->outer, digest, 16);
+  MD5Final(digest, &c->outer);
+}
+
 static const char *hexdigits = "0123456789abcdef";
 
 char *hmac_printhex(unsigned char *data, char *out, size_t len) {
   size_t i;
-  unsigned char *o = out;
+  unsigned char *o = (unsigned char *)out;
 
   for(i=0;i<len;i++) {
     *o++ = hexdigits[(*data & 0xf0) >> 4];
