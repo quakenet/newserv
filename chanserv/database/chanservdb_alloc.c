@@ -175,6 +175,7 @@ activeuser *getactiveuser() {
   
   aup->rup=NULL;
   aup->authattempts=0;
+  aup->entropyttl=0;
   
   return aup;
 }

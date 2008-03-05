@@ -58,6 +58,10 @@
 #define MAXLANG      50
 #define MAXMESSAGES  200
 
+/* Sources of entropy and standard length defines */
+#define ENTROPYSOURCE "/dev/urandom"
+#define ENTROPYLEN    8
+
 /* The list of messages */
 #define QM_PROTECTED                 0
 #define QM_UNKNOWNCMD                1
@@ -202,6 +206,7 @@
 #define QM_GIVEOWNERNEEDHASH       140
 #define QM_GIVEOWNERWRONGHASH      141
 #define QM_SHOWINGDURATION         142
+#define QM_CHALLENGE               143
 
 /* List of privileged operations */
 
@@ -680,6 +685,9 @@ typedef struct activeuser {
 #endif
   reguser*           rup;          /* pointer to auth data */
   int                authattempts; /* number of times user has attempted to auth */
+
+  unsigned char      entropy[ENTROPYLEN]; /* entropy used for challengeauth */
+  time_t             entropyttl;
   struct activeuser *next;         /* purely for keeping track of free, but not free'd structures */
 } activeuser;
 
@@ -941,5 +949,7 @@ void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t ol
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail);
 void csdb_cleanuphistories();
 
+/* chanservcrypto.c */
+void cs_getrandbytes(unsigned char *buf, size_t bytes);
 
 #endif
