@@ -15,15 +15,20 @@
 #include <stdio.h>
 #include <string.h>
 
-int csa_doauth(void *source, int cargc, char **cargv) {
+int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   reguser *rup;
   activeuser* aup;
   nick *sender=source;
   nicklist *nl = NULL;
   char userhost[USERLEN+HOSTLEN+2];
   int ucount=0;
+  int challenge=0;
+  char *authtype = "AUTH";
 
-  if (cargc<2) {
+  if (alg) {
+    challenge=1;
+    authtype = "CHALLENGEAUTH";
+  } else if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "auth");
     return CMD_ERROR;
   }
@@ -34,23 +39,31 @@ int csa_doauth(void *source, int cargc, char **cargv) {
   aup->authattempts++;
   if (aup->authattempts > MAXAUTHATTEMPT) {
     if ((aup->authattempts % 100) == 0)
-      chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: AUTH %s %s", 
-        nl->np->nick, nl->np->ident, nl->np->host->name->content, cargv[0], cargv[1]);
+      chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: %s %s %s",
+        nl->np->nick, nl->np->ident, nl->np->host->name->content, authtype, cargv[0], cargv[1]);
     chanservstdmessage(sender, QM_AUTHFAIL);
-    cs_log(sender,"AUTH FAIL too many auth attempts (last attempt: AUTH %s %s)",cargv[0], cargv[1]); 
+    cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
     return CMD_ERROR;
   }
 
   if (!(rup=findreguserbynick(cargv[0]))) {
     chanservstdmessage(sender, QM_AUTHFAIL);
-    cs_log(sender,"AUTH FAIL bad username %s",cargv[0]); 
+    cs_log(sender,"%s FAIL bad username %s",authtype,cargv[0]); 
     return CMD_ERROR;
   }
 
-  if (!checkpassword(rup, cargv[1])) {
-    chanservstdmessage(sender, QM_AUTHFAIL);
-    cs_log(sender,"AUTH FAIL username %s bad password %s",rup->username,cargv[1]);
-    return CMD_ERROR;
+  if (!challenge) {
+    if (!checkpassword(rup, cargv[1])) {
+      chanservstdmessage(sender, QM_AUTHFAIL);
+      cs_log(sender,"%s FAIL username %s bad password %s",authtype,rup->username,cargv[1]);
+      return CMD_ERROR;
+    }
+  } else {
+    if (!checkresponse(rup, aup->entropy, cargv[1], alg)) {
+      chanservstdmessage(sender, QM_AUTHFAIL);
+      cs_log(sender,"%s FAIL username %s bad response",authtype,rup->username);
+      return CMD_ERROR;
+    }
   }
 
   rup->lastauth=time(NULL);
@@ -109,8 +122,13 @@ int csa_doauth(void *source, int cargc, char **cargv) {
   }
   
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
-  cs_log(sender,"AUTH OK username %s", rup->username);
+
+  cs_log(sender,"%s OK username %s", authtype,rup->username);
   localusersetaccount(sender, rup->username);
 
   return CMD_OK;
+}
+
+int csa_doauth(void *source, int cargc, char **cargv) {
+  return csa_auth(source, cargc, cargv, NULL);
 }

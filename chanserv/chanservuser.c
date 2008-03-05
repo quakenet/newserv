@@ -16,6 +16,7 @@
 #include "../nick/nick.h"
 #include "../parser/parser.h"
 #include "../lib/splitline.h"
+#include "../lib/irc_string.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -486,6 +487,16 @@ int checkpassword(reguser *rup, const char *pass) {
   if (!strncmp(rup->password, pass, PASSLEN))
     return 1;
   return 0;
+}
+
+int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm) {
+  char usernamel[NICKLEN+1], *dp, *up;
+
+  for(up=rup->username,dp=usernamel;*up;)
+    *dp++ = ToLower(*up++);
+  *dp = '\0';
+
+  return algorithm(usernamel, rup->password, cs_calcchallenge(entropy), response);
 }
 
 int setmasterpassword(reguser *rup, const char *pass) {

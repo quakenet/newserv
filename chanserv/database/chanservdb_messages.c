@@ -151,7 +151,9 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 140*/ "WARNING: This command will give COMPLETE control over %s to %s, including the ability to remove you as owner.\nIf you are sure you want to do this, type /msg Q GIVEOWNER %s #%s %s",
   /* 141*/ "Hash value incorrect.",
   /* 142*/ "Showing %s for last %s.",
-  /* 143*/ "CHALLENGE %s %s"
+  /* 143*/ "CHALLENGE %s %s",
+  /* 144*/ "Invalid digest algorithm.",
+  /* 144*/ "Challenge has either not been requested or has expired.",
 };
 
 void initmessages() {

@@ -207,6 +207,8 @@
 #define QM_GIVEOWNERWRONGHASH      141
 #define QM_SHOWINGDURATION         142
 #define QM_CHALLENGE               143
+#define QM_CHALLENGEBADALGORITHM   144
+#define QM_NOCHALLENGE             145
 
 /* List of privileged operations */
 
@@ -841,6 +843,14 @@ char *csdb_gethelpstr(char *command, int language);
 void csdb_createmail(reguser *rup, int type);
 void csdb_dohelp(nick *np, Command *cmd);
 
+/* chanservcrypto.c */
+typedef int (*CRAlgorithm)(char *, const char *, const char *, const char *);
+void chanservcryptoinit(void);
+void cs_getrandbytes(unsigned char *buf, size_t bytes);
+char *cs_calcchallenge(const unsigned char *entropy);
+CRAlgorithm cs_cralgorithm(const char *algorithm);
+const char *cs_cralgorithmlist(void);
+
 /* chanservuser.c */
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
@@ -874,6 +884,7 @@ void cs_setregban(chanindex *cip, regban *rbp);
 int cs_bancheck(nick *np, channel *cp);
 void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reason);
 void cs_removeuser(reguser *rup);
+int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);
@@ -948,9 +959,5 @@ void csdb_updatemaildomain(maildomain *mdp);
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail);
 void csdb_cleanuphistories();
-
-/* chanservcrypto.c */
-void chanservcryptoinit(void);
-void cs_getrandbytes(unsigned char *buf, size_t bytes);
 
 #endif
