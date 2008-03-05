@@ -30,9 +30,9 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
 
-  if (!checkmasterpassword(rup, cargv[0])) {
+  if (!checkpassword(rup, cargv[0])) {
     chanservstdmessage(sender, QM_AUTHFAIL);
-    cs_log(sender,"EMAIL FAIL username %s bad masterpass %s",rup->username,cargv[0]);
+    cs_log(sender,"EMAIL FAIL username %s bad password %s",rup->username,cargv[0]);
     return CMD_ERROR;
   }
 

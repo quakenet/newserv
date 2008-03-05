@@ -84,7 +84,6 @@ static void setuptables() {
                "suspendby     INT               NOT NULL,"
                "suspendexp    INT               NOT NULL,"
                "password      VARCHAR(11)          NOT NULL,"
-               "masterpass    VARCHAR(11),"
                "email         VARCHAR(100),"
                "lastuserhost  VARCHAR(75),"
                "suspendreason VARCHAR(250),"
@@ -349,7 +348,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=16) {
+  if (PQnfields(pgres)!=15) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
@@ -369,8 +368,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     rup->suspendby=strtoul(PQgetvalue(pgres,i,7),NULL,10);
     rup->suspendexp=strtoul(PQgetvalue(pgres,i,8),NULL,10);
     strncpy(rup->password,PQgetvalue(pgres,i,9),PASSLEN); rup->password[PASSLEN]='\0';
-    strncpy(rup->masterpass,PQgetvalue(pgres,i,10),PASSLEN); rup->masterpass[PASSLEN]='\0';
-    rup->email=getsstring(PQgetvalue(pgres,i,11),100);
+    rup->email=getsstring(PQgetvalue(pgres,i,10),100);
     if (rup->email) {
       rup->domain=findorcreatemaildomain(rup->email->content);
       addregusertomaildomain(rup, rup->domain);
@@ -387,10 +385,10 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       rup->domain=NULL;
       rup->localpart=NULL;
     }
-    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,12),75);
-    rup->suspendreason=getsstring(PQgetvalue(pgres,i,13),250);
-    rup->comment=getsstring(PQgetvalue(pgres,i,14),250);
-    rup->info=getsstring(PQgetvalue(pgres,i,15),100);
+    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,11),75);
+    rup->suspendreason=getsstring(PQgetvalue(pgres,i,12),250);
+    rup->comment=getsstring(PQgetvalue(pgres,i,13),250);
+    rup->info=getsstring(PQgetvalue(pgres,i,14),100);
     rup->knownon=NULL;
     rup->nicks=NULL;
     rup->checkshd=NULL;

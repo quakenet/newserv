@@ -176,7 +176,6 @@ void csdb_deleteuser(reguser *rup) {
 
 void csdb_updateuser(reguser *rup) {
   char escpassword[25];
-  char escmasterpass[25];
   char escemail[210];
   char esclastuserhost[160];
   char escreason[510];
@@ -184,7 +183,6 @@ void csdb_updateuser(reguser *rup) {
   char escinfo[210];
   
   PQescapeString(escpassword, rup->password, strlen(rup->password));
-  PQescapeString(escmasterpass, rup->masterpass, strlen(rup->masterpass));
    
   if (rup->email)
     PQescapeString(escemail, rup->email->content, rup->email->length);
@@ -212,16 +210,15 @@ void csdb_updateuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("UPDATE users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
-		  "language=%u, suspendby=%u, suspendexp=%lu, password='%s', masterpass='%s', email='%s',"
+		  "language=%u, suspendby=%u, suspendexp=%lu, password='%s', email='%s',"
 		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s' WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
-		  escpassword, escmasterpass, escemail, esclastuserhost, escreason, esccomment, escinfo,
+		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
 		  rup->ID);
 }  
 
 void csdb_createuser(reguser *rup) {
   char escpassword[25];
-  char escmasterpass[25];
   char escemail[210];
   char esclastuserhost[160];
   char escreason[510];
@@ -231,7 +228,6 @@ void csdb_createuser(reguser *rup) {
 
   PQescapeString(escusername, rup->username, strlen(rup->username));
   PQescapeString(escpassword, rup->password, strlen(rup->password));
-  PQescapeString(escmasterpass, rup->masterpass, strlen(rup->masterpass));
   
   if (rup->email)
     PQescapeString(escemail, rup->email->content, rup->email->length);
@@ -259,12 +255,12 @@ void csdb_createuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
-		  "flags, language, suspendby, suspendexp, password, masterpass, email, lastuserhost, "
+		  "flags, language, suspendby, suspendexp, password, email, lastuserhost, "
 		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,'%s','%s',"
-		  "'%s','%s','%s','%s','%s')",
+		  "'%s','%s','%s','%s')",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
 		  rup->languageid, rup->suspendby, rup->suspendexp,
-		  escpassword, escmasterpass, escemail, esclastuserhost, escreason, esccomment, escinfo);
+		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo);
 }  
 
 

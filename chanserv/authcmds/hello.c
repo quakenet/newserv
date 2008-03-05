@@ -83,7 +83,6 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->suspendby=0;
   rup->suspendexp=0;
   rup->password[0]='\0';
-  rup->masterpass[0]='\0';
   rup->email=getsstring(cargv[0],EMAILLEN);
   rup->localpart=getsstring(local,EMAILLEN);
   rup->domain=mdp;
@@ -100,7 +99,6 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->nicks=NULL;
   addregusertohash(rup);
   csa_createrandompw(rup->password, PASSLEN);
-  csa_createrandompw(rup->masterpass, PASSLEN);
   chanservstdmessage(sender, QM_NEWACCOUNT, rup->username,rup->email->content);
   cs_log(sender,"HELLO OK created auth %s (%s)",rup->username,rup->email->content); 
   csdb_createuser(rup);

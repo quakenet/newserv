@@ -477,12 +477,6 @@ void chanservkillstdmessage(nick *target, int messageid, ... ) {
   killuser(chanservnick, target, buf);
 }
 
-int checkmasterpassword(reguser *rup, const char *pass) {
-  if (!strncmp(rup->masterpass, pass, PASSLEN))
-    return 1;
-  return 0;
-}
-
 int checkpassword(reguser *rup, const char *pass) {
   if (!strncmp(rup->password, pass, PASSLEN))
     return 1;
@@ -497,12 +491,6 @@ int checkresponse(reguser *rup, const unsigned char *entropy, const char *respon
   *dp = '\0';
 
   return algorithm(usernamel, rup->password, cs_calcchallenge(entropy), response);
-}
-
-int setmasterpassword(reguser *rup, const char *pass) {
-  strncpy(rup->masterpass, pass, PASSLEN);
-  rup->masterpass[PASSLEN]='\0';
-  return 1;
 }
 
 int setpassword(reguser *rup, const char *pass) {
@@ -548,7 +536,6 @@ void cs_checknick(nick *np) {
       rup->suspendby=0;
       rup->suspendexp=0;
       rup->password[0]='\0';
-      rup->masterpass[0]='\0';
       rup->email=NULL;
       rup->localpart=NULL;
       rup->domain=NULL;

@@ -631,7 +631,6 @@ typedef struct reguser {
   time_t              suspendexp;    /* Expiry date of suspension */
 
   char                password[PASSLEN+1];
-  char                masterpass[PASSLEN+1];
 
   sstring            *localpart;
   maildomain         *domain;
@@ -864,9 +863,7 @@ void chanservremovecommand(char *command, CommandHandler handler);
 void chanservaddctcpcommand(char *command, CommandHandler hander);
 void chanservremovectcpcommand(char *command, CommandHandler handler);
 void chanservkillstdmessage(nick *target, int messageid, ... );
-int checkmasterpassword(reguser *rup, const char *pass);
 int checkpassword(reguser *rup, const char *pass);
-int setmasterpassword(reguser *rup, const char *pass);
 int setpassword(reguser *rup, const char *pass);
 /*reguser *getreguserfromnick(nick *np);
 activeuser *getactiveuserfromnick(nick *np);*/
