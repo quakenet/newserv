@@ -338,7 +338,6 @@
 #define   QCFLAG_JOINED       0x0080  /* +j */
 #define   QCFLAG_KNOWNONLY    0x0100  /* +k */
 #define   QCFLAG_PROTECT      0x0200  /* +p */
-#define   QCFLAG_SPAMPROT     0x0400  /* +s */
 #define   QCFLAG_TOPICSAVE    0x0800  /* +t */
 #define   QCFLAG_VOICEALL     0x1000  /* +v */
 #define   QCFLAG_WELCOME      0x2000  /* +w */
@@ -353,7 +352,6 @@
 #define CIsJoined(x)        ((x)->flags & QCFLAG_JOINED)
 #define CIsKnownOnly(x)     ((x)->flags & QCFLAG_KNOWNONLY)
 #define CIsProtect(x)       ((x)->flags & QCFLAG_PROTECT)
-#define CIsSpamProt(x)      ((x)->flags & QCFLAG_SPAMPROT)
 #define CIsTopicSave(x)     ((x)->flags & QCFLAG_TOPICSAVE)
 #define CIsVoiceAll(x)      ((x)->flags & QCFLAG_VOICEALL)
 #define CIsWelcome(x)       ((x)->flags & QCFLAG_WELCOME)
@@ -369,7 +367,6 @@
 #define CSetJoined(x)        ((x)->flags |= QCFLAG_JOINED)
 #define CSetKnownOnly(x)     ((x)->flags |= QCFLAG_KNOWNONLY)
 #define CSetProtect(x)       ((x)->flags |= QCFLAG_PROTECT)
-#define CSetSpamProt(x)      ((x)->flags |= QCFLAG_SPAMPROT)
 #define CSetTopicSave(x)     ((x)->flags |= QCFLAG_TOPICSAVE)
 #define CSetVoiceAll(x)      ((x)->flags |= QCFLAG_VOICEALL)
 #define CSetWelcome(x)       ((x)->flags |= QCFLAG_WELCOME)
@@ -384,7 +381,6 @@
 #define CClearJoined(x)        ((x)->flags &= ~QCFLAG_JOINED)
 #define CClearKnownOnly(x)     ((x)->flags &= ~QCFLAG_KNOWNONLY)
 #define CClearProtect(x)       ((x)->flags &= ~QCFLAG_PROTECT)
-#define CClearSpamProt(x)      ((x)->flags &= ~QCFLAG_SPAMPROT)
 #define CClearTopicSave(x)     ((x)->flags &= ~QCFLAG_TOPICSAVE)
 #define CClearVoiceAll(x)      ((x)->flags &= ~QCFLAG_VOICEALL)
 #define CClearWelcome(x)       ((x)->flags &= ~QCFLAG_WELCOME)
@@ -392,8 +388,7 @@
 
 #define   QCFLAG_USERCONTROL (QCFLAG_AUTOOP|QCFLAG_BITCH|QCFLAG_AUTOLIMIT| \
 			       QCFLAG_ENFORCE|QCFLAG_FORCETOPIC|QCFLAG_AUTOVOICE| \
-			       QCFLAG_JOINED|QCFLAG_PROTECT|QCFLAG_INFO| \
-			       QCFLAG_SPAMPROT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
+			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
 			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
 
 #define   QCFLAG_ALL          0x7fff
@@ -411,7 +406,6 @@
 #define   QCUFLAG_DENY        0x0004  /* +d */
 #define   QCUFLAG_AUTOVOICE   0x0008  /* +g */
 #define   QCUFLAG_QUIET       0x0010  /* +q */
-#define   QCUFLAG_SPAMCON     0x0020  /* +s */
 #define   QCUFLAG_TOPIC       0x0040  /* +t */
 #define   QCUFLAG_HIDEWELCOME 0x0080  /* +w */
 #define   QCUFLAG_PROTECT     0x0100  /* +p */
@@ -426,7 +420,7 @@
 			     QCUFLAG_VOICE|QCUFLAG_PROTECT)
 
 #define   QCUFLAG_SELFCON   (QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | \
-                             QCUFLAG_SPAMCON | QCUFLAG_TOPIC | QCUFLAG_HIDEINFO)
+                             QCUFLAG_TOPIC | QCUFLAG_HIDEINFO)
 
 #define   QCUFLAG_ALL         0xffff
 
@@ -439,7 +433,6 @@
 #define   CUIsDeny(x)         ((x)->flags & QCUFLAG_DENY)
 #define   CUIsAutoVoice(x)    ((x)->flags & QCUFLAG_AUTOVOICE)
 #define   CUIsQuiet(x)        ((x)->flags & QCUFLAG_QUIET)
-#define   CUIsSpamCon(x)      ((x)->flags & QCUFLAG_SPAMCON)
 #define   CUIsTopic(x)        ((x)->flags & QCUFLAG_TOPIC)
 #define   CUIsHideWelcome(x)  ((x)->flags & QCUFLAG_HIDEWELCOME)
 #define   CUIsProtect(x)      ((x)->flags & QCUFLAG_PROTECT)
@@ -462,7 +455,6 @@
 #define   CUSetDeny(x)         ((x)->flags |= QCUFLAG_DENY)
 #define   CUSetAutoVoice(x)    ((x)->flags |= QCUFLAG_AUTOVOICE)
 #define   CUSetQuiet(x)        ((x)->flags |= QCUFLAG_QUIET)
-#define   CUSetSpamCon(x)      ((x)->flags |= QCUFLAG_SPAMCON)
 #define   CUSetTopic(x)        ((x)->flags |= QCUFLAG_TOPIC)
 #define   CUSetHideWelcome(x)  ((x)->flags |= QCUFLAG_HIDEWELCOME)
 #define   CUSetKnown(x)        ((x)->flags |= QCUFLAG_KNOWN)
@@ -477,7 +469,6 @@
 #define   CUClearDeny(x)         ((x)->flags &= ~QCUFLAG_DENY)
 #define   CUClearAutoVoice(x)    ((x)->flags &= ~QCUFLAG_AUTOVOICE)
 #define   CUClearQuiet(x)        ((x)->flags &= ~QCUFLAG_QUIET)
-#define   CUClearSpamCon(x)      ((x)->flags &= ~QCUFLAG_SPAMCON)
 #define   CUClearTopic(x)        ((x)->flags &= ~QCUFLAG_TOPIC)
 #define   CUClearHideWelcome(x)  ((x)->flags &= ~QCUFLAG_HIDEWELCOME)
 #define   CUClearKnown(x)        ((x)->flags &= ~QCUFLAG_KNOWN)
@@ -634,7 +625,7 @@ typedef struct reguser {
 
   char                password[PASSLEN+1];
   char                masterpass[PASSLEN+1];
-  
+
   sstring            *localpart;
   maildomain         *domain;
 

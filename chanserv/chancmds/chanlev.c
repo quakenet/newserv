@@ -70,7 +70,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
   /* Set flagmask for +v/+o users (can't see bans etc.) */
   flagmask = (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOVOICE | 
-	      QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_SPAMCON | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
+	      QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
   
   /* If user has +m or above, or helper access, show everything */
   if (cs_privcheck(QPRIV_VIEWFULLCHANLEV, sender) || CUHasMasterPriv(rcup)) {
@@ -203,7 +203,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	
 	/* Owners are allowed to manipulate +ms as well */
 	if (CUIsOwner(rcup))
-	  changemask |= ( QCUFLAG_MASTER | QCUFLAG_SPAMCON );
+	  changemask |= ( QCUFLAG_MASTER );
       }
 
       oldflags=rcuplist->flags;

@@ -137,7 +137,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 	continue;
       
       flagmask = (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOVOICE | 
-		  QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_SPAMCON);
+		  QCUFLAG_AUTOOP | QCUFLAG_TOPIC);
       
       if (CUHasMasterPriv(rcup2))
 	flagmask |= (QCUFLAG_DENY | QCUFLAG_QUIET | QCUFLAG_BANNED);
