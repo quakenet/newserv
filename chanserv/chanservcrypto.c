@@ -32,9 +32,9 @@ ub4 cs_getrandint(void) {
 
 void cs_getrandbytes(unsigned char *buf, size_t bytes) {
   ub4 b;
-  
-  for(;bytes>0;bytes-=sizeof(b),buf+=sizeof(b)) {
+
+  for(;bytes>0;bytes-=4,buf+=4) {
     ub4 b = cs_getrandint();
-    memcpy(buf, &b, sizeof(b));
+    memcpy(buf, &b, 4);
   }
 }

@@ -82,6 +82,8 @@ void _init() {
   /* Register the nick extension - the others are registered in the db module */
   chanservnext=registernickext("nickserv");
 
+  chanservcryptoinit();
+
   if (chanservext!=-1 && chanservnext!=-1 && chanservaext!=-1) {
     /* Set up the chantypes */
     chantypes=(sstring **)malloc(CHANTYPES*sizeof(sstring *));

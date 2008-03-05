@@ -950,6 +950,7 @@ void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring 
 void csdb_cleanuphistories();
 
 /* chanservcrypto.c */
+void chanservcryptoinit(void);
 void cs_getrandbytes(unsigned char *buf, size_t bytes);
 
 #endif
