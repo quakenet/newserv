@@ -81,7 +81,7 @@ static const char *hexdigits = "0123456789abcdef";
 
 char *hmac_printhex(unsigned char *data, char *out, size_t len) {
   size_t i;
-  char *o = out;
+  unsigned char *o = out;
 
   for(i=0;i<len;i++) {
     *o++ = hexdigits[(*data & 0xf0) >> 4];
