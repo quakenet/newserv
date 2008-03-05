@@ -89,5 +89,6 @@ char *hmac_printhex(unsigned char *data, char *out, size_t len) {
     data++;
   }
 
+  *o = '\0';
   return out;
 }
