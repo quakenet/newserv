@@ -28,7 +28,7 @@ int csa_dochallenge(void *source, int cargc, char **cargv) {
     aup->entropyttl=t + 30;
   }
 
-  chanservstdmessage(sender,QM_CHALLENGE,cs_calcchallenge(aup->entropy),cs_cralgorithmlist());
+  chanservsendmessage(sender,"CHALLENGE %s %s",cs_calcchallenge(aup->entropy),cs_cralgorithmlist());
   cs_log(sender,"CHALLENGE");
 
   return CMD_OK;

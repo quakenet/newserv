@@ -28,7 +28,7 @@ void _init() {
   chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db");
   chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.");
   chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes");
-  chanservaddcommand("info", QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.");
+  chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.");
   chanservaddcommand("language", QCMD_AUTHED, 1, csu_dolanguage, "Shows or changes your current language.");
   chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.");
   chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.");

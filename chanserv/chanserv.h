@@ -151,7 +151,7 @@
 #define QM_PWDONTMATCH              85
 #define QM_PWTOSHORT                86
 #define QM_PWCHANGED                87
-#define QM_MASTERPWCHANGED          88
+#define UNUSED_1                    88
 #define QM_EMAILCHANGED             89
 #define QM_EMAILDONTMATCH           90
 #define QM_INVALIDEMAIL             91
@@ -206,7 +206,7 @@
 #define QM_GIVEOWNERNEEDHASH       140
 #define QM_GIVEOWNERWRONGHASH      141
 #define QM_SHOWINGDURATION         142
-#define QM_CHALLENGE               143
+#define UNUSED_2                    143
 #define QM_CHALLENGEBADALGORITHM   144
 #define QM_NOCHALLENGE             145
 #define QM_USEGIVEOWNER            146
@@ -850,6 +850,7 @@ void cs_getrandbytes(unsigned char *buf, size_t bytes);
 char *cs_calcchallenge(const unsigned char *entropy);
 CRAlgorithm cs_cralgorithm(const char *algorithm);
 const char *cs_cralgorithmlist(void);
+int cs_checkhashpass(const char *username, const char *password, const char *junk, const char *hash);
 
 /* chanservuser.c */
 void chanservreguser(void *arg);
@@ -883,6 +884,7 @@ int cs_bancheck(nick *np, channel *cp);
 void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reason);
 void cs_removeuser(reguser *rup);
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
+int checkhashpass(reguser *rup, const char *junk, const char *hash);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

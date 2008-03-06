@@ -161,3 +161,20 @@ char *cs_calcchallenge(const unsigned char *entropy) {
 
   return hexbuf;
 }
+
+int cs_checkhashpass(const char *username, const char *password, const char *junk, const char *hash) {
+  MD5Context ctx;
+  unsigned char digest[16];
+  char hexbuf[sizeof(digest) * 2 + 1], buf[512];
+
+  snprintf(buf, sizeof(buf), "%s %s%s%s", username, password, junk?" ":"", junk?junk:"");
+
+  MD5Init(&ctx);
+  MD5Update(&ctx, (unsigned char *)buf, strlen(buf));
+  MD5Final(digest, &ctx);
+
+  if(strcasecmp(hash, hmac_printhex(digest, hexbuf, sizeof(digest))))
+    return 0;
+
+  return 1;
+}

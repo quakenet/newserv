@@ -7,6 +7,7 @@ int csa_doauth(void *source, int cargc, char **cargv);
 int csa_doauthhistory(void *source, int cargc, char **cargv);
 int csa_dochallenge(void *source, int cargc, char **cargv);
 int csa_dochallengeauth(void *source, int cargc, char **cargv);
+int csa_docheckhashpass(void *source, int cargc, char **cargv);
 int csa_doemail(void *source, int cargc, char **cargv);
 int csa_dohello(void *source, int cargc, char **cargv);
 int csa_doauth(void *source, int cargc, char **cargv);
@@ -20,6 +21,7 @@ void _init() {
   chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.");
   chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.");
   chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.");
+  chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.");
   chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.");
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.");
   chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.");
@@ -34,6 +36,7 @@ void _fini() {
   chanservremovecommand("authhistory", csa_doauthhistory);
   chanservremovecommand("challenge", csa_dochallenge);
   chanservremovecommand("challengeauth", csa_dochallengeauth);
+  chanservremovecommand("checkhashpass", csa_docheckhashpass);
   chanservremovecommand("email", csa_doemail);
   chanservremovecommand("hello", csa_dohello);
   chanservremovecommand("login", csa_doauth);

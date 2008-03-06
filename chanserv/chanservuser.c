@@ -493,6 +493,16 @@ int checkresponse(reguser *rup, const unsigned char *entropy, const char *respon
   return algorithm(usernamel, rup->password, cs_calcchallenge(entropy), response);
 }
 
+int checkhashpass(reguser *rup, const char *junk, const char *hash) {
+  char usernamel[NICKLEN+1], *dp, *up;
+
+  for(up=rup->username,dp=usernamel;*up;)
+    *dp++ = ToLower(*up++);
+  *dp = '\0';
+
+  return cs_checkhashpass(usernamel, rup->password, junk, hash);
+}
+
 int setpassword(reguser *rup, const char *pass) {
   strncpy(rup->password, pass, PASSLEN);
   rup->password[PASSLEN]='\0';
