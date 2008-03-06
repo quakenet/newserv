@@ -36,7 +36,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   if (!(target=findreguser(sender, cargv[0]))) {
     nick* np;
     
-    if ((np=getnickbynick(cargv[0]))) {
+    if (cs_privcheck(QPRIV_VIEWFULLWHOIS, sender) && (np=getnickbynick(cargv[0]))) {
       activeuser* aup=getactiveuserfromnick(np);
       chanservsendmessage(sender, "%s has attempted to auth %d time%s.", np->nick, aup->authattempts, 
         aup->authattempts==1?"":"s");
