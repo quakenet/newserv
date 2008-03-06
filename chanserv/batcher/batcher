@@ -14,8 +14,14 @@ MAILTEMPLATES["languages"][""] = MAILTEMPLATES["languages"][CONFIG["defaultlang"
 
 def inject(to, subject, body):
   msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nX-Mailer: Q9Batcher\r\n\r\n%s" % (CONFIG["from"], to, subject, body)
-  server = smtplib.SMTP(CONFIG["smtphost"])
+# this should probably go outside the loop...
+# making a connection for each email SUCKS
+# todo: lookup semantics of exceptions and stuff
+  server = smtplib.SMTP(CONFIG["smtphost"], local_hostname="localhost")
+  if CONFIG.setdefault("smtpauth"):
+    server.login(*CONFIG["smtpauth"])
   server.sendmail(CONFIG["from"], to, msg)
+  server.quit()
 
 def processtemplate(emailtype, lang, obj):
   if MAILTEMPLATES["mutators"].has_key(emailtype):
