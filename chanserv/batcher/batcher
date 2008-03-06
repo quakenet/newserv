@@ -45,25 +45,38 @@ def email(userid, emailtype, prevemail):
     language = ""
 
   template, subject = processtemplate(emailtype, language, unifieddict)
+  print "%s -> %s" % (`subject`, `unifieddict["user.email"]`)
   inject(unifieddict["user.email"], subject, template)
 
 def main():
-  ignoring = []
+  ignoring = {}
   while True:
     cur = conn.cursor()
     cur.execute("SELECT mailid, userid, emailtype, prevemail FROM email")
 
     deleting = []
     while True:
+      t = time.time()
       rows = cur.fetchone() 
       if not rows:
         break
 
       try:
+        if ignoring.has_key(rows[0]):
+          d = ignoring[rows[0]]
+          if d[1] > t:
+            continue
+        else:
+          d = None
+
         email(rows[1], rows[2], rows[3])
         deleting.append(rows[0])
+        if d:
+          del ignoring[rows[0]]
       except:
-        ignoring.append(rows[0])
+        ex = ignoring.has_key(rows[0]) and ignoring[rows[0]][0] or 30
+        ignoring[rows[0]] = (ex * 2, time.time() + ex * 2)
+        print "Error processing id %d." % rows[0]
         traceback.print_exc()
 
     if len(deleting) > 0:
