@@ -15,12 +15,15 @@
 int newserv_shutdown_pending;
 
 void initseed();
+void init_logfile();
 
 int main(int argc, char **argv) {
   initseed();
   inithooks();
   inithandlers();
   initschedule();
+
+  init_logfile();
   
   initsstring();
   

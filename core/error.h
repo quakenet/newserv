@@ -1,3 +1,6 @@
+#ifndef __ERROR_H
+#define __ERROR_H
+
 /* error.h:
  *
  * Error flagging routines 
@@ -38,4 +41,12 @@
 #define ERR_FATAL    4
 #define ERR_STOP     5
 
+struct error_event {
+  int severity;
+  char *message;
+  char *source;
+};
+
 void Error(char *source, int severity, char *reason, ... );
+
+#endif
