@@ -131,8 +131,9 @@ void cs_handlejoin(int hooknum, void *arg) {
   reguser *rup;
   regchanuser *rcup=NULL;
   chanindex *cip;
-  int iscreate;
+  int iscreate, isopped;
   int dowelcome=0;
+  unsigned long *lp;
 
   short modes=0;
  
@@ -162,10 +163,20 @@ void cs_handlejoin(int hooknum, void *arg) {
     rcp->lastcountersync=time(NULL);
   }
 
+  /* OK, this may be a CREATE but it's possible we have already bursted onto
+   * the channel and deopped them.  So let's just check that out now.
+   *
+   * There's a distinction between "is it a create?" and "are they opped
+   * already?", since we need to send the generic "This is a Q9 channel"
+   * message on create even if we already deopped them. */
   if (hooknum==HOOK_CHANNEL_CREATE) {
     iscreate=1;
+    if ((lp=getnumerichandlefromchanhash(cp->users, np->numeric)) && (*lp & CUMODE_OP))
+      isopped=1;
+    else
+      isopped=0;
   } else {
-    iscreate=0;
+    isopped=iscreate=0;
   }  
 
   /* Check for "Q ban" */
@@ -200,7 +211,7 @@ void cs_handlejoin(int hooknum, void *arg) {
 
   if (!rup || !rcup) {
     /* They're not a registered user, so deop if it is a create */
-    if (iscreate && !IsService(np)) {
+    if (isopped && !IsService(np)) {
       modes |= MC_DEOP;
     }
     if (CIsVoiceAll(rcp)) {
@@ -223,12 +234,12 @@ void cs_handlejoin(int hooknum, void *arg) {
     if (CUIsOp(rcup) && (CIsAutoOp(rcp) || CUIsAutoOp(rcup) || CUIsProtect(rcup) || CIsProtect(rcp)) && 
     	!CUIsDeny(rcup)) {
       /* Auto op */
-      if (!iscreate) {
+      if (!isopped) {
         modes |= MC_OP;
       }
     } else {
-      /* Not auto op */
-      if (iscreate && !CUIsOp(rcup) && !IsService(np)) {
+      /* Not auto op; deop them if they are opped and are not allowed them */
+      if (isopped && !CUHasOpPriv(rcup) && !IsService(np)) {
         modes |= MC_DEOP;
       }
 
