@@ -1,0 +1,9 @@
+CONFIG = {
+  "conn": "dbname='q9' user='' password=''",
+  "smtphost": "localhost",
+  "from": "q9@quakenet.org",
+  "defaultlang": "en",
+  "url": "http://webdev.quakenet.org/~slug/q9dev/",
+  "urlkey": "keyere",
+  "urlsecret": secretere",
+}

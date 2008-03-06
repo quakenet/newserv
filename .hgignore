@@ -10,3 +10,8 @@ newserv.conf
 chanservlog.*
 logs/*
 core/events.c
+*.pyc
+config.py
+ktrace.out
+newserv.core
+
