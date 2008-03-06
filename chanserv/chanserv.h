@@ -331,7 +331,6 @@
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */
 #define QMAIL_NEWPW                3  /* new password */
-#define QMAIL_NEWMASTERPW          4  /* new master password */
 #define QMAIL_NEWEMAIL             5  /* new email address */
 
 

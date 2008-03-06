@@ -171,7 +171,8 @@ static void setuptables() {
                  "userID       INT               NOT NULL,"
                  "emailtype    INT               NOT NULL,"
                  "prevEmail    VARCHAR(100),"
-                 "mailID       VARCHAR(128))");
+                 "mailID       SERIAL,"
+		 "PRIMARY KEY (mailID))");
 
   pqcreatequery("CREATE TABLE maildomain ("
                  "ID           INT               NOT NULL,"
