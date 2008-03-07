@@ -512,7 +512,6 @@ int setpassword(reguser *rup, const char *pass) {
 void cs_checknick(nick *np) {
   activeuser* aup;
   reguser *rup;
-  nicklist *nlp;
   char userhost[USERLEN+HOSTLEN+3];
   
   if (!(aup=getactiveuserfromnick(np))) {
@@ -522,21 +521,17 @@ void cs_checknick(nick *np) {
   
   assert(getactiveuserfromnick(np));
 
-  if (IsAccount(np)) {
+  if (IsAccount(np) && np->auth) {
     if ((rup=findreguserbynick(np->authname))!=NULL) {
-      aup->rup=rup;
-      nlp=getnicklist();
-      nlp->np=np;
-      nlp->next=rup->nicks;
-      rup->nicks=nlp;
       triggerhook(HOOK_CHANSERV_SETUSERID, np);
       cs_doallautomodes(np);
     } else {
-      aup->rup=NULL;
       /* Auto create user.. */
       rup=getreguser();
       rup->status=0;
-      rup->ID=++lastuserID;
+      rup->ID=np->auth->userid;
+      if (rup->ID > lastuserID)
+        lastuserID=rup->ID;
       strncpy(rup->username,np->authname,NICKLEN); rup->username[NICKLEN]='\0';
       rup->created=time(NULL);
       rup->lastauth=time(NULL);
@@ -558,16 +553,10 @@ void cs_checknick(nick *np) {
       rup->checkshd=NULL;
       rup->stealcount=0;
       rup->fakeuser=NULL;
-      rup->nicks=getnicklist();
-      rup->nicks->np=np;
-      rup->nicks->next=NULL;
       addregusertohash(rup);
 
       csdb_createuser(rup);
-      aup->rup=rup;
     }
-  } else {
-    aup->rup=NULL;
   }
 
   cs_checknickbans(np);
@@ -1001,6 +990,7 @@ void cs_removeuser(reguser *rup) {
   int i;
   regchanuser *rcup, *nrcup;
   regchan *rcp;
+  struct authname *anp;
   
   /* Remove the user from all its channels */
   for (rcup=rup->knownon;rcup;rcup=nrcup) {
@@ -1037,7 +1027,7 @@ void cs_removeuser(reguser *rup) {
 
   removereguserfromhash(rup);
   
-  if (rup->nicks) {
+  if ((anp=findauthname(rup->ID)) && anp->nicks) {
     rup->status |= QUSTAT_DEAD;
   } else {
     freereguser(rup);

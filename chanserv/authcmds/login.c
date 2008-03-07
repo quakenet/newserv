@@ -17,13 +17,12 @@
 
 int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   reguser *rup;
-  activeuser* aup;
+  activeuser *aup;
   nick *sender=source;
-  nicklist *nl = NULL;
   char userhost[USERLEN+HOSTLEN+2];
-  int ucount=0;
   int challenge=0;
   char *authtype = "AUTH";
+  authname *anp;
 
   if (alg) {
     challenge=1;
@@ -40,7 +39,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   if (aup->authattempts > MAXAUTHATTEMPT) {
     if ((aup->authattempts % 100) == 0)
       chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: %s %s %s",
-        nl->np->nick, nl->np->ident, nl->np->host->name->content, authtype, cargv[0], cargv[1]);
+        sender->nick, sender->ident, sender->host->name->content, authtype, cargv[0], cargv[1]);
     chanservstdmessage(sender, QM_AUTHFAIL);
     cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
     return CMD_ERROR;
@@ -89,13 +88,11 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     /* delayed-gline - schedule the user's squelching */
     deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
     scheduleoneshot(time(NULL)+rand()%900, &chanservdgline, (void*)rup);
-  }
-  else if (UIsGline(rup)) {
+  } else if (UIsGline(rup)) {
     /* instant-gline - lets be lazy and set a schedule expiring now :) */
     deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
     scheduleoneshot(time(NULL), &chanservdgline, (void*)rup);
-  }
-  else if (UIsSuspended(rup)) {
+  } else if (UIsSuspended(rup)) {
     /* plain suspend */
     chanservstdmessage(sender, QM_AUTHSUSPENDED);
     if(rup->suspendreason)
@@ -112,10 +109,8 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   }
   
   if (!UHasHelperPriv(rup) && !UIsNoAuthLimit(rup)) {
-    for (nl=rup->nicks; nl; nl=nl->next)
-      ucount++;
-    
-    if (ucount >= MAXAUTHCOUNT) {
+    anp=findauthname(rup->ID);
+    if (!anp || (anp->usercount >= MAXAUTHCOUNT)) {
       chanservstdmessage(sender, QM_TOOMANYAUTHS);
       return CMD_ERROR;
     }
@@ -124,7 +119,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
 
   cs_log(sender,"%s OK username %s", authtype,rup->username);
-  localusersetaccount(sender, rup->username);
+  localusersetaccountwithuserid(sender, rup->username, rup->ID);;
 
   return CMD_OK;
 }

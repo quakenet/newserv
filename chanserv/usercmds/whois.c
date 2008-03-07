@@ -19,11 +19,12 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender), *target;
   char buf[200];
   char nbpos=0;
-  nicklist *nlp;
   struct tm *tmp;
   regchanuser *rcup, *rcup2;
   flag_t flagmask, flags;
   int doneheader=0;
+  authname *anp;
+  nick *tnp;
 
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
@@ -34,10 +35,10 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
   
   if (!(target=findreguser(sender, cargv[0]))) {
-    nick* np;
+    nick *np;
     
     if (cs_privcheck(QPRIV_VIEWFULLWHOIS, sender) && (np=getnickbynick(cargv[0]))) {
-      activeuser* aup=getactiveuserfromnick(np);
+      activeuser *aup=getactiveuserfromnick(np);
       chanservsendmessage(sender, "%s has attempted to auth %d time%s.", np->nick, aup->authattempts, 
         aup->authattempts==1?"":"s");
     }
@@ -77,19 +78,19 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   if (flagmask & target->flags)
     chanservstdmessage(sender, QM_WHOIS_FLAGS, printflags(flagmask & target->flags, ruflags));
 
-  if (!target->nicks) {
+  if (!(anp=findauthname(target->ID)) || !anp->nicks) {
     chanservstdmessage(sender, QM_WHOIS_USERS, "(none)");
   } else {
-    for (nlp=target->nicks; ;nlp=nlp->next) {
-      if (nbpos>0 && (!nlp || nbpos+strlen(nlp->np->nick) > 60)) {
+    for (tnp=anp->nicks; ;tnp=tnp->nextbyauthname) {
+      if (nbpos>0 && (!tnp || nbpos+strlen(tnp->nick) > 60)) {
 	chanservstdmessage(sender, QM_WHOIS_USERS, buf);
 	nbpos=0;
       }
 
-      if (!nlp)
+      if (!tnp)
 	break;
 
-      nbpos+=sprintf(buf+nbpos,"%s ",nlp->np->nick);
+      nbpos+=sprintf(buf+nbpos,"%s ",tnp->nick);
     }
   }
 
