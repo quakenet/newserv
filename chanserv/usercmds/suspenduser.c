@@ -14,18 +14,34 @@
 #include <stdio.h>
 #include <string.h>
 
+static int killtheusers(nick *sender, reguser *rup) {
+  int count=0;
+  authname *anp;
+  
+  if (!(anp=findauthname(rup->ID)))
+    return 0;
+  
+  while (anp->nicks) {
+    chanservstdmessage(sender, QM_DISCONNECTINGUSER, anp->nicks->nick, rup->username);
+    chanservkillstdmessage(anp->nicks, QM_SUSPENDKILL);
+    count++;
+  }
+  
+  return count;
+}
+
 int csu_dosuspenduser(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender);
   reguser *vrup;
-  char* flag;
-  char* victim;
-  char* dur_p;
-  char* reason;
+  char *flag;
+  char *victim;
+  char *dur_p;
+  char *reason;
   int kill=1, gline=0, email=0, password=0, hitcount=0;
   time_t expires=0;
   int duration=0;
-  struct tm* tmp;
+  struct tm *tmp;
   char buf[200]="";
   int dgwait;
   
@@ -140,13 +156,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           vrup->suspendexp=expires;
           vrup->suspendreason=getsstring(reason, strlen(reason)+1);
           
-          while (vrup->nicks) {
-            if (!vrup->nicks->np)
-              continue;
-
-            chanservstdmessage(sender, QM_DISCONNECTINGUSER, vrup->nicks->np->nick, vrup->username);
-            chanservkillstdmessage(vrup->nicks->np, QM_SUSPENDKILL);
-          }
+          killtheusers(sender,vrup);
           csdb_updateuser(vrup);
         }
       }
@@ -172,13 +182,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           vrup->suspendexp=expires;
           vrup->suspendreason=getsstring(reason, strlen(reason)+1);
           
-          while (vrup->nicks) {
-            if (!vrup->nicks->np)
-              continue;
-
-            chanservstdmessage(sender, QM_DISCONNECTINGUSER, vrup->nicks->np->nick, vrup->username);
-            chanservkillstdmessage(vrup->nicks->np, QM_SUSPENDKILL);
-          }
+          killtheusers(sender,vrup);
           csdb_updateuser(vrup);
         }
       }
@@ -226,14 +230,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       scheduleoneshot(time(NULL)+dgwait, &chanservdgline, (void*)vrup);
     }
     else if (kill) {
-      while (vrup->nicks) {
-        if (!vrup->nicks->np)
-          continue;
-        
-        chanservstdmessage(sender, QM_DISCONNECTINGUSER, vrup->nicks->np->nick, vrup->username);
-        chanservkillstdmessage(vrup->nicks->np, QM_SUSPENDKILL);
-        hitcount++;
-      }
+      hitcount += killtheusers(sender,vrup);
     }
 
     csdb_updateuser(vrup);

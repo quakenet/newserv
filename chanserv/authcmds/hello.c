@@ -96,7 +96,6 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->checkshd=NULL;
   rup->stealcount=0;
   rup->fakeuser=NULL;
-  rup->nicks=NULL;
   addregusertohash(rup);
   csa_createrandompw(rup->password, PASSLEN);
   chanservstdmessage(sender, QM_NEWACCOUNT, rup->username,rup->email->content);
