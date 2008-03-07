@@ -24,25 +24,25 @@ int csu_dowhoami(void *source, int cargc, char **cargv);
 int csu_dowhois(void *source, int cargc, char **cargv);
 
 void _init() {
-  chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.");
-  chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db");
-  chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.");
-  chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes");
-  chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.");
-  chanservaddcommand("language", QCMD_AUTHED, 1, csu_dolanguage, "Shows or changes your current language.");
-  chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.");
-  chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.");
-  chanservaddcommand("spewdb", QCMD_OPER, 1, csu_dospewdb, "Search for a user in the database.");
-  chanservaddcommand("spewdomain", QCMD_OPER, 1, csu_dospewdomain, "Spew Mail Domains.");
-  chanservaddcommand("spewemail", QCMD_OPER, 1, csu_dospewemail, "Search for an e-mail in the database.");
-  chanservaddcommand("spewpass", QCMD_OPER, 1, csu_dospewpass, "Search for a password in the database.");
-  chanservaddcommand("suspenduser", QCMD_OPER, 1, csu_dosuspenduser, "Suspend/Delay GLINE/Instantly GLINE a user.");
-  chanservaddcommand("suspenduserlist", QCMD_HELPER, 1, csu_dosuspenduserlist, "Lists suspended/locked users.");
-  chanservaddcommand("unsuspenduser", QCMD_OPER, 1, csu_dounsuspenduser, "Unsuspend a user.");
-  chanservaddcommand("usercomment", QCMD_OPER, 2, csu_dousercomment, "Shows or changes staff comment for a user.");
-  chanservaddcommand("userflags", QCMD_AUTHED, 2, csu_douserflags, "Shows or changes user flags.");
-  chanservaddcommand("whoami", QCMD_AUTHED, 0, csu_dowhoami, "Displays information about you");
-  chanservaddcommand("whois", QCMD_AUTHED, 1, csu_dowhois, "Displays information about a user.");
+  chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.", "");
+  chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db", "");
+  chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.", "");
+  chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes", "");
+  chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.", "");
+  chanservaddcommand("language", QCMD_AUTHED, 1, csu_dolanguage, "Shows or changes your current language.", "");
+  chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.", "");
+  chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.", "");
+  chanservaddcommand("spewdb", QCMD_OPER, 1, csu_dospewdb, "Search for a user in the database.", "");
+  chanservaddcommand("spewdomain", QCMD_OPER, 1, csu_dospewdomain, "Spew Mail Domains.", "");
+  chanservaddcommand("spewemail", QCMD_OPER, 1, csu_dospewemail, "Search for an e-mail in the database.", "");
+  chanservaddcommand("spewpass", QCMD_OPER, 1, csu_dospewpass, "Search for a password in the database.", "");
+  chanservaddcommand("suspenduser", QCMD_OPER, 1, csu_dosuspenduser, "Suspend/Delay GLINE/Instantly GLINE a user.", "");
+  chanservaddcommand("suspenduserlist", QCMD_HELPER, 1, csu_dosuspenduserlist, "Lists suspended/locked users.", "");
+  chanservaddcommand("unsuspenduser", QCMD_OPER, 1, csu_dounsuspenduser, "Unsuspend a user.", "");
+  chanservaddcommand("usercomment", QCMD_OPER, 2, csu_dousercomment, "Shows or changes staff comment for a user.", "");
+  chanservaddcommand("userflags", QCMD_AUTHED, 2, csu_douserflags, "Shows or changes user flags.", "");
+  chanservaddcommand("whoami", QCMD_AUTHED, 0, csu_dowhoami, "Displays information about you", "");
+  chanservaddcommand("whois", QCMD_AUTHED, 1, csu_dowhois, "Displays information about a user.", "");
 }
 
 void _fini() {

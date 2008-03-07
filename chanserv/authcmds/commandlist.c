@@ -17,18 +17,18 @@ int csa_dosetmail(void *source, int cargc, char **cargv);
 int csa_dosetpw(void *source, int cargc, char **cargv);
 
 void _init() {
-  chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.");
-  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.");
-  chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.");
-  chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.");
-  chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.");
-  chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.");
-  chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.");
-  chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.");
-  chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.");
-  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.");
-  chanservaddcommand("setemail", QCMD_OPER, 2, csa_dosetmail, "Set the email address.");
-  chanservaddcommand("setpassword", QCMD_OPER, 2, csa_dosetpw, "Set a new password.");
+  chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "");
+  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "");
+  chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "");
+  chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "");
+  chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "");
+  chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "");
+  chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "");
+  chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: login <username> <password>\nAuthenticates using the supplied username and password.\n");
+  chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "");
+  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.", "");
+  chanservaddcommand("setemail", QCMD_OPER, 2, csa_dosetmail, "Set the email address.", "");
+  chanservaddcommand("setpassword", QCMD_OPER, 2, csa_dosetpw, "Set a new password.", "");
 }
 
 void _fini() {

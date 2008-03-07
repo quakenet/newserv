@@ -7,6 +7,39 @@
  * CMDDESC: Shows or modifies user access on a channel.
  * CMDFUNC: csc_dochanlev
  * CMDPROTO: int csc_dochanlev(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: chanlev <#channel> [<user> [<flag change>]]
+ * CMDHELP:  where <user> is either nickname on the network or #accountname.
+ * CMDHELP: If only a channel name is supplied, list registered users on the channel.
+ * CMDHELP: If a user is also specified, shows that user's access on the channel.
+ * CMDHELP: If a change string is specified, the flags for that user are changed, provided
+ * CMDHELP: you have sufficient access on the channel to do so.  This can be used to add or
+ * CMDHELP: remove users from the channel.
+ * CMDHELP: Valid flags are:
+ * CMDHELP: Access level flags - these control your overall privilege level on the channel:
+ * CMDHELP:  +n OWNER     Can add or remove masters and all other flags (except personal flags)
+ * CMDHELP:  +m MASTER    Can add or remove all access except master or owner
+ * CMDHELP:  +o OP        Can get ops on the channel
+ * CMDHELP:  +v VOICE     Can get voice on the channel
+ * CMDHELP:  +k KNOWN     Known on the channel - can get invites to the channel via INVITE
+ * CMDHELP:  +q DEVOICE   Not allowed to be voiced on the channel
+ * CMDHELP:  +d DEOP      Not allowed to be opped on the channel
+ * CMDHELP:  +b BANNED    Banned from the channel
+ * CMDHELP: Extra flags - these control specific behaviour on the channel:
+ * CMDHELP:  +a AUTOOP    Ops the user automatically when they join the channel (the user 
+ * CMDHELP:               must also hold +o in order to have this flag)
+ * CMDHELP:  +g AUTOVOICE Voices the user automatically when they join the channel (the 
+ * CMDHELP:               user must also hold +v in order to have this flag)
+ * CMDHELP:  +p PROTECT   If the user has +o or +v, this makes sure they will always have
+ * CMDHELP:               that status, they will be reopped/voiced if deopped/voiced
+ * CMDHELP:  +t TOPIC     Can use SETTOPIC to alter the topic on the channel
+ * CMDHELP: Personal flags - these control user personal preferences and can only be changed
+ * CMDHELP:                  by the user concerned.  You need to be known on the channel (hold +k, 
+ * CMDHELP:                  +v, +o, +m or +n) in order to set personal flags.
+ * CMDHELP:  +w NOWELCOME Prevents the welcome message being sent when you join the channel.
+ * CMDHELP:  +j AUTOINV   Invites you to the channel automatically when you authenticate.
+ * CMDHELP: Note that channel owners (+n) can grant +n to channel masters but they must use 
+ * CMDHELP: the the GIVEOWNER command for this.
+ * CMDHELP: Non-sensible combinations of flags are not allowed.
  */
 
 #include "../chanserv.h"
@@ -72,8 +105,14 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   flagmask = (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOVOICE | 
 	      QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
   
-  /* If user has +m or above, or helper access, show everything */
-  if (cs_privcheck(QPRIV_VIEWFULLCHANLEV, sender) || CUHasMasterPriv(rcup)) {
+  /* masters and above can see everything except personal flags */
+  if (CUHasMasterPriv(rcup)) {
+    flagmask = QCUFLAG_ALL & ~QCUFLAGS_PERSONAL;
+    showtimes=1;
+  }
+  
+  /* Staff access, show everything */
+  if (cs_privcheck(QPRIV_VIEWFULLCHANLEV, sender)) {
     flagmask = QCUFLAG_ALL;
     showtimes=1;
   }
@@ -118,6 +157,11 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
       if (!(flags=rcuplist->flags & flagmask)) 
 	continue;
+      
+      /* If you're listing yourself, we should show personal flags too */
+      if (rcuplist==rcup) {
+        flags=rcuplist->flags & (flagmask | QCUFLAGS_PERSONAL);
+      }
       
       if (!donehead) {
 	chanservstdmessage(sender, QM_CHANLEVHEADER, cip->name->content);
@@ -189,11 +233,11 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       } else {
 	changemask=0;
 	
-	/* Everyone can change their own flags (except +dqb), and turn +iwj on/off */
+	/* Everyone can change their own flags (except +dqb), and control (and see) personal flags */
 	if (rcup==rcuplist) {
-	  changemask = (rcup->flags | QCUFLAG_HIDEWELCOME | QCUFLAG_HIDEINFO | QCUFLAG_AUTOINVITE) & 
+	  changemask = (rcup->flags | QCUFLAGS_PERSONAL) & 
 	              ~(QCUFLAG_BANNED | QCUFLAG_DENY | QCUFLAG_QUIET);
-	  flagmask |= (QCUFLAG_HIDEWELCOME | QCUFLAG_HIDEINFO | QCUFLAG_AUTOINVITE);
+	  flagmask |= QCUFLAGS_PERSONAL;
 	}
 	
 	/* Masters are allowed to manipulate +ovagtbqdpk */
@@ -246,6 +290,10 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       /* and -ov can't be +p */
       if (!CUIsOp(rcuplist) && !CUIsVoice(rcuplist)) 
       	rcuplist->flags &= ~QCUFLAG_PROTECT;
+
+      /* Unknown users aren't allowed personal flags */
+      if (!CUKnown(rcuplist))
+        rcuplist->flags &= ~QCUFLAGS_PERSONAL;
 
       /* Check if anything "significant" has changed */
       if ((oldflags ^ rcuplist->flags) & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP))
