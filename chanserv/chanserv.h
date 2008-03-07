@@ -670,6 +670,7 @@ typedef struct cslang {
 typedef struct cmdsummary {
   sstring *def;
   sstring *bylang[MAXLANG];
+  char *defhelp;
 } cmdsummary;
 
 typedef struct activeuser {
@@ -848,7 +849,7 @@ void chanservwallmessage(char *message, ... );
 void chanservcommandinit();
 void chanservcommandclose();
 void chanservstdmessage(nick *np, int messageid, ... );
-void chanservaddcommand(char *command, int flags, int maxparams, CommandHandler handler, char *description);
+void chanservaddcommand(char *command, int flags, int maxparams, CommandHandler handler, char *description, const char *help);
 void chanservremovecommand(char *command, CommandHandler handler);
 void chanservaddctcpcommand(char *command, CommandHandler hander);
 void chanservremovectcpcommand(char *command, CommandHandler handler);

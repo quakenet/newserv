@@ -30,7 +30,7 @@ extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 #endif
 
 void _init() {
-  chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.");
+  chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.","");
 }
 
 void _fini() {

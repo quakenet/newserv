@@ -181,6 +181,7 @@ void csdb_dohelp_real(PGconn *, void *);
 struct helpinfo {
   unsigned int numeric;
   sstring *commandname;
+  Command *cmd;
 };
 
 /* Help stuff */
@@ -191,6 +192,7 @@ void csdb_dohelp(nick *np, Command *cmd) {
 
   hip->numeric=np->numeric;
   hip->commandname=getsstring(cmd->command->content, cmd->command->length);
+  hip->cmd=cmd;
 
   pqasyncquery(csdb_dohelp_real, (void *)hip, 
 		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
@@ -239,10 +241,16 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
     }
   }
 
-  if (!result)
-    chanservstdmessage(np, QM_NOHELP, hip->commandname->content);
-  else
+  if (result) {
     chanservsendmessage(np, result);
+  } else {
+    cmdsummary *sum=hip->cmd->ext;
+    if (sum->defhelp && *(sum->defhelp)) {
+      chanservsendmessage(np, sum->defhelp);
+    } else {
+      chanservstdmessage(np, QM_NOHELP, hip->commandname->content);
+    }
+  }
   
   freesstring(hip->commandname);
   free(hip);

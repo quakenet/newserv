@@ -96,7 +96,7 @@ print CL "\nvoid _init() {\n";
 
 while (my $cn = shift @cmdnames) {
   print CL "  chanservaddcommand(\"".$cn."\", ".(shift @cmdlevels).", ".(shift @cmdargs).", ";
-  print CL (shift @cmdfunc).", \"".(shift @cmddesc)."\");\n";
+  print CL (shift @cmdfunc).", \"".(shift @cmddesc)."\", \"\");\n";
 }
 
 print CL "}\n\nvoid _fini() {\n";
