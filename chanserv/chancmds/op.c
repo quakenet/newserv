@@ -30,6 +30,8 @@ int csc_doop(void *source, int cargc, char **cargv) {
   unsigned long *lp;
   int i;
   modechanges changes;
+  int donotice=0;
+  char buf[512], bufpos=0;
 
   if (!rup)
     return CMD_ERROR;
@@ -79,8 +81,8 @@ int csc_doop(void *source, int cargc, char **cargv) {
   }
 
   /* You've got to be a master to 'silently' op other people */
-  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "op", 0, 0))
-    return CMD_ERROR;
+  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "op", 0, 1))
+    donotice=1;
 
   /* Set up the modes */
   localsetmodeinit(&changes, cip->channel, chanservnick);
@@ -113,9 +115,14 @@ int csc_doop(void *source, int cargc, char **cargv) {
       continue;
     }
 
+    bufpos += sprintf(buf+bufpos,"%s%s",bufpos?", ":"",np->nick);
     localdosetmode_nick(&changes, np, MC_OP);
   }
 
+  if (donotice && bufpos) {
+    sendopnoticetochannel(chanservnick, cip->channel, "%s opped %s", sender, buf);
+  }
+      
   localsetmodeflush(&changes, 1);
   chanservstdmessage(sender, QM_DONE);
 

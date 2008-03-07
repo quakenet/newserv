@@ -39,6 +39,10 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   rcp=cip->exts[chanservext];
 
   duration=durationtolong(cargv[2]);
+  if (duration > 400000000) {
+    chanservstdmessage(sender, QM_DURATIONTOOLONG, cargv[2]);
+    return CMD_ERROR;
+  }
   
   rbp=getregban();
   rbp->ID=++lastbanID;

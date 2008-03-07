@@ -96,7 +96,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 85 */ "Sorry, but passwords do not match",
   /* 86 */ "Sorry, but new password is to short",
   /* 87 */ "Ok, password changed",
-  /* 88 */ "UNUSED_1",
+  /* 88 */ "Duration too long or invalid: %s",
   /* 89 */ "Ok, email changed to \"%s\"",
   /* 90 */ "Sorry, but first and second email addresses don't match",
   /* 91 */ "%s is not a valid email address",

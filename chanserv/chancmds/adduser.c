@@ -7,6 +7,13 @@
  * CMDDESC: Adds one or more users to a channel as +aot.
  * CMDFUNC: csc_doadduser
  * CMDPROTO: int csc_doadduser(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: ADDUSER <channel> <user1> [<user2> [<user3> [...]]]
+ * CMDHELP: Adds the named user(s) to the channel with +aot chanlev flags (see CHANLEV).  
+ * CMDHELP: Where:
+ * CMDHELP: channel - the channel to use
+ * CMDHELP: user<n> - either a user's current nickname on the network or #accountname. Up to
+ * CMDHELP:           18 users can be specified.
+ * CMDHELP: ADDUSER requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

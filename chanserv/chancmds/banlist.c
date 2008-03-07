@@ -7,6 +7,13 @@
  * CMDDESC: Displays all persistent bans on a channel.
  * CMDFUNC: csc_dobanlist
  * CMDPROTO: int csc_dobanlist(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: BANLIST <channel>
+ * CMDHELP: Displays a list of persistent and channel bans on the named channel.  Each ban
+ * CMDHELP: is identified by a number which can be passed to a subsequent BANDEL command.
+ * CMDHELP: Note that the numbers can change if bans are added to or removed from the 
+ * CMDHELP: chennel. Where:
+ * CMDHELP: channel - the channel to use
+ * CMDHELP: BANLIST requires operator (+o) access on the named channel.
  */
 
 #include "../chanserv.h"
@@ -49,20 +56,22 @@ int csc_dobanlist(void *source, int cargc, char **cargv) {
 			  rup?rup->username:"<unknown>",
 			  rbp->reason?rbp->reason->content:"");
     }
-    for (cbp=cip->channel->bans;cbp;cbp=cbp->next) {
-      for (rbp=rcp->bans;rbp;rbp=rbp->next) {
-	if (banequal(rbp->cbp, cbp))
-	  break;
-      }
-      if (!rbp) {
-	if (rcp->banduration) {
-	  exp=(cbp->timeset + rcp->banduration) - time(NULL);
-	} else {
-	  exp=0;
-	} 
-	chanservsendmessage(sender, " #%-2d %-29s %-18s %-15s",++i,bantostring(cbp),
-			    exp ? longtoduration(exp,0) : "Permanent",
-			    "(channel ban)");
+    if (cip->channel) {
+      for (cbp=cip->channel->bans;cbp;cbp=cbp->next) {
+        for (rbp=rcp->bans;rbp;rbp=rbp->next) {
+          if (banequal(rbp->cbp, cbp))
+	    break;
+        }
+        if (!rbp) {
+	  if (rcp->banduration) {
+	    exp=(cbp->timeset + rcp->banduration) - time(NULL);
+          } else {
+	    exp=0;
+          } 
+          chanservsendmessage(sender, " #%-2d %-29s %-18s %-15s",++i,bantostring(cbp),
+	    		      exp ? longtoduration(exp,0) : "Permanent",
+	    		      "(channel ban)");
+        }
       }
     }
     chanservstdmessage(sender, QM_ENDOFLIST);

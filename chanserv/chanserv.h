@@ -151,7 +151,7 @@
 #define QM_PWDONTMATCH              85
 #define QM_PWTOSHORT                86
 #define QM_PWCHANGED                87
-#define UNUSED_1                    88
+#define QM_DURATIONTOOLONG          88
 #define QM_EMAILCHANGED             89
 #define QM_EMAILDONTMATCH           90
 #define QM_INVALIDEMAIL             91
