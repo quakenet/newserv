@@ -119,6 +119,11 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       if (!(flags=rcuplist->flags & flagmask)) 
 	continue;
       
+      /* If you're listing yourself, we should show personal flags too */
+      if (rcuplist==rcup) {
+        flags=rcuplist->flags & (flagmask | QCUFLAGS_PERSONAL);
+      }
+      
       if (!donehead) {
 	chanservstdmessage(sender, QM_CHANLEVHEADER, cip->name->content);
 	if (showtimes) 
@@ -189,11 +194,11 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       } else {
 	changemask=0;
 	
-	/* Everyone can change their own flags (except +dqb), and turn +iwj on/off */
+	/* Everyone can change their own flags (except +dqb), and control personal flags */
 	if (rcup==rcuplist) {
-	  changemask = (rcup->flags | QCUFLAG_HIDEWELCOME | QCUFLAG_HIDEINFO | QCUFLAG_AUTOINVITE) & 
+	  changemask = (rcup->flags | QCUFLAGS_PERSONAL) & 
 	              ~(QCUFLAG_BANNED | QCUFLAG_DENY | QCUFLAG_QUIET);
-	  flagmask |= (QCUFLAG_HIDEWELCOME | QCUFLAG_HIDEINFO | QCUFLAG_AUTOINVITE);
+	  flagmask |= QCUFLAGS_PERSONAL;
 	}
 	
 	/* Masters are allowed to manipulate +ovagtbqdpk */
@@ -246,6 +251,10 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       /* and -ov can't be +p */
       if (!CUIsOp(rcuplist) && !CUIsVoice(rcuplist)) 
       	rcuplist->flags &= ~QCUFLAG_PROTECT;
+
+      /* Unknown users aren't allowed personal flags */
+      if (!CUKnown(rcuplist))
+        rcuplist->flags &= ~QCUFLAGS_PERSONAL;
 
       /* Check if anything "significant" has changed */
       if ((oldflags ^ rcuplist->flags) & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP))
