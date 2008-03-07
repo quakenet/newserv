@@ -78,6 +78,10 @@ int csc_doop(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
+  /* You've got to be a master to 'silently' op other people */
+  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "op", 0, 0))
+    return CMD_ERROR;
+
   /* Set up the modes */
   localsetmodeinit(&changes, cip->channel, chanservnick);
 

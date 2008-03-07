@@ -80,7 +80,8 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  if (!(cip=cs_checkaccess(sender, NULL, CA_OPPRIV, cip, "voice", 0, 0)))
+  /* You've got to be a master to 'silently' voice other people */
+  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "voice", 0, 0))
     return CMD_ERROR;
 
   rcp=cip->exts[chanservext];
