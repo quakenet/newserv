@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <strings.h>
 
 #include "chanserv.h"
 #include "../core/error.h"
