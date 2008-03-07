@@ -36,13 +36,9 @@ unsigned long at_getuserid(nick *np) {
     return 0;
 #endif
     
-  /* Try getting it from np->auth */
+  /* Use the userid from authext only. */
   if (np->auth)
     return np->auth->userid;
-  
-  /* Else use the chanserv nickext */
-  if ((rup=getreguserfromnick(np)))
-    return rup->ID;
   
   Error("authtracker",ERR_WARNING,"Unable to get userID from IsAccount() user %s",np->nick);
   return 0;
@@ -108,7 +104,8 @@ void at_hookinit() {
   registerhook(HOOK_NICK_QUIT, at_handlequitorkill);
   registerhook(HOOK_NICK_KILL, at_handlequitorkill);
   registerhook(HOOK_NICK_LOSTNICK, at_handlelostnick);
-  registerhook(HOOK_CHANSERV_SETUSERID, at_newnick);
+  registerhook(HOOK_NICK_NEWNICK, at_newnick);
+  registerhook(HOOK_NICK_ACCOUNT, at_newnick);
   registerhook(HOOK_SERVER_LINKED, at_serverlinked);
 }
 
@@ -116,6 +113,7 @@ void at_hookfini() {
   deregisterhook(HOOK_NICK_QUIT, at_handlequitorkill);
   deregisterhook(HOOK_NICK_KILL, at_handlequitorkill);
   deregisterhook(HOOK_NICK_LOSTNICK, at_handlelostnick);
-  deregisterhook(HOOK_CHANSERV_SETUSERID, at_newnick);
+  deregisterhook(HOOK_NICK_NEWNICK, at_newnick);
+  deregisterhook(HOOK_NICK_ACCOUNT, at_newnick);
   deregisterhook(HOOK_SERVER_LINKED, at_serverlinked);
 }      

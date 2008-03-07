@@ -522,8 +522,7 @@ void cs_checknick(nick *np) {
   assert(getactiveuserfromnick(np));
 
   if (IsAccount(np) && np->auth) {
-    if ((rup=findreguserbynick(np->authname))!=NULL) {
-      triggerhook(HOOK_CHANSERV_SETUSERID, np);
+    if (np->auth->exts[chanservaext]) {
       cs_doallautomodes(np);
     } else {
       /* Auto create user.. */
