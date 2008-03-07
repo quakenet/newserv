@@ -19,11 +19,15 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   reguser *vrup, *srup;
   authname *anp;
   int i;
-  long to_age = 0L;
+  time_t t;
+  long to_age, unused_age;
   struct tm *tmp;
   char buf[200];
-  int j = 0;
-  to_age = time(NULL) - (80 * 3600 * 24);  
+  int expired = 0, unauthed = 0;
+
+  t = time(NULL);
+  to_age = t - (80 * 3600 * 24);  
+  unused_age = t - (10 * 3600 * 24);
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (vrup=regusernicktable[i]; vrup; vrup=srup) {
@@ -31,16 +35,23 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
       if (!(anp=findauthname(vrup->ID)))
         continue; /* should maybe raise hell instead */
         
-      if(!anp->nicks && vrup->lastauth < to_age && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
+      if(!anp->nicks && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
+        if(vrup->lastauth && (vrup->lastauth < to_age)) {
+          expired++;
+        } else if(!vrup->lastauth && (vrup->created < unused_age)) {
+          unauthed++;
+        } else {
+          continue;
+        }
+
         tmp=gmtime(&(vrup->lastauth));
         strftime(buf,15,"%d/%m/%y %H:%M",tmp);
 
         cs_removeuser(vrup);
-        j++;
       }
     }
   }
   
-  chanservsendmessage(sender, "Removed %d Accounts (not used for 80 days)", j);
+  chanservsendmessage(sender, "Cleanup complete, %d unused for 80 days, %d didn't auth within 10 days.", expired, unauthed);
   return CMD_OK;
 }

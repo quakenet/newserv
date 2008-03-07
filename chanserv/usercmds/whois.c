@@ -101,9 +101,12 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_WHOIS_CREATED, buf);
   }
 
-  tmp=gmtime(&(target->lastauth));
-  strftime(buf,15,"%d/%m/%y %H:%M",tmp);
-
+  if (target->lastauth == 0) {
+    snprintf(buf,sizeof(buf),"(never)");
+  } else {
+    tmp=gmtime(&(target->lastauth));
+    strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+  }
   chanservstdmessage(sender, QM_WHOIS_LASTAUTH, buf);
   
   if (target->lastuserhost && (rup==target || cs_privcheck(QPRIV_VIEWFULLWHOIS, sender))) {

@@ -534,7 +534,7 @@ void cs_checknick(nick *np) {
         lastuserID=rup->ID;
       strncpy(rup->username,np->authname,NICKLEN); rup->username[NICKLEN]='\0';
       rup->created=time(NULL);
-      rup->lastauth=time(NULL);
+      rup->lastauth=time(NULL); /* questionable */
       rup->lastemailchange=0;
       rup->flags=QUFLAG_NOTICE;
       rup->languageid=0;

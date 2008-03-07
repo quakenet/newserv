@@ -38,7 +38,12 @@ int csa_doreqpw(void *source, int cargc, char **cargv) {
 
   rup->lastemailchange=time(NULL);
   csdb_updateuser(rup);
-  csdb_createmail(rup, QMAIL_REQPW);
+
+  if(rup->lastauth) {
+    csdb_createmail(rup, QMAIL_REQPW);
+  } else {
+    csdb_createmail(rup, QMAIL_NEWACCOUNT); /* user hasn't authed yet and needs to do the captcha */
+  }
   chanservstdmessage(sender, QM_MAILQUEUED, rup->username);
   cs_log(sender,"REQUESTPASSWORD OK username %s email %s", rup->username,rup->email->content);
 

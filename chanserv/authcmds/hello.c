@@ -76,7 +76,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->ID=++lastuserID;
   strncpy(rup->username,sender->nick,NICKLEN); rup->username[NICKLEN]='\0';
   rup->created=time(NULL);
-  rup->lastauth=time(NULL);
+  rup->lastauth=0;
   rup->lastemailchange=time(NULL);
   rup->flags=QUFLAG_NOTICE;
   rup->languageid=0;
