@@ -9,6 +9,7 @@ my @cmddesc;
 my @cmdfunc;
 my @protos;
 my @files;
+my @help;
 
 my @filelist = <*.c>;
 
@@ -25,7 +26,8 @@ for (@filelist) {
   next if (/commandlist.c/);
   
   my $fname = $_;
-  my ($cn, $cl, $ca, $cd, $cf, $cp);
+  my ($cn, $cl, $ca, $cd, $cf, $cp, $ch);
+  $ch="";
 
   open INFILE,"<$fname";
   
@@ -55,6 +57,10 @@ for (@filelist) {
     if (/CMDPROTO: (.*)/) {
       $cp=$1;
     }
+    
+    if (/CMDHELP: (.*)/) {
+      $ch.=$1."\\n";
+    }
   }
   
   if (defined $cn and defined $cl and defined $ca and defined $cd and defined $cf and defined $cp) {
@@ -66,6 +72,7 @@ for (@filelist) {
     push @cmddesc, $cd;
     push @cmdfunc, $cf;
     push @protos, $cp;
+    push @help, $ch;
   } else {
     print "Warning: found source file $fname without complete tags, skipping...\n";
   }
@@ -96,7 +103,7 @@ print CL "\nvoid _init() {\n";
 
 while (my $cn = shift @cmdnames) {
   print CL "  chanservaddcommand(\"".$cn."\", ".(shift @cmdlevels).", ".(shift @cmdargs).", ";
-  print CL (shift @cmdfunc).", \"".(shift @cmddesc)."\", \"\");\n";
+  print CL (shift @cmdfunc).", \"".(shift @cmddesc)."\", \"".(shift @help),"\");\n";
 }
 
 print CL "}\n\nvoid _fini() {\n";

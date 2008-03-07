@@ -7,6 +7,8 @@
  * CMDDESC: Authenticates you on the bot.
  * CMDFUNC: csa_doauth
  * CMDPROTO: int csa_doauth(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: login <username> <password>
+ * CMDHELP: Authenticates using the supplied username and password.
  */
 
 #include "../chanserv.h"

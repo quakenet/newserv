@@ -24,7 +24,7 @@ void _init() {
   chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "");
   chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "");
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "");
-  chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "");
+  chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: login <username> <password>\nAuthenticates using the supplied username and password.\n");
   chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "");
   chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.", "");
   chanservaddcommand("setemail", QCMD_OPER, 2, csa_dosetmail, "Set the email address.", "");
