@@ -81,6 +81,7 @@ void _init() {
   registersearchterm("ip",ip_parse);
   registersearchterm("channels",channels_parse);
   registersearchterm("server",server_parse);
+  registersearchterm("authid",authid_parse);
 
   /* Channel operations */
   registersearchterm("exists",exists_parse);
