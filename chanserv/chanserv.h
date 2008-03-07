@@ -602,19 +602,11 @@ typedef struct regchan {
   struct regban      *bans;            /* List of bans on the channel */
 } regchan;
 
-/* Little list thing: which network users are authed 
- * as this user */
-typedef struct nicklist {
-  nick               *np;
-  struct nicklist    *next;
-} nicklist;
-
 /* Registered user */
 typedef struct reguser {
 #ifdef CS_PARANOID
   unsigned int        reguser_magic;
 #endif
-
   unsigned int        ID;            /* From the database */
   
   char                username[NICKLEN+1];
@@ -642,8 +634,6 @@ typedef struct reguser {
   sstring            *info;          /* User-settable info line */
 
   struct regchanuser *knownon;       /* Which channels this user is known on */
-
-  struct nicklist    *nicks;         /* Which nicks are authed as this user */
 
   /* These fields are for the nick protection system */
   void               *checkshd;      /* When we're going to check for an imposter */
@@ -684,7 +674,6 @@ typedef struct activeuser {
 #ifdef CS_PARANOID
   unsigned int       activeuser_magic;
 #endif
-  reguser*           rup;          /* pointer to auth data */
   int                authattempts; /* number of times user has attempted to auth */
 
   unsigned char      entropy[ENTROPYLEN]; /* entropy used for challengeauth */
@@ -734,7 +723,7 @@ typedef struct activeuser {
 #endif
 
 #define getactiveuserfromnick(x)  ((activeuser*)(x)->exts[chanservnext])
-#define getreguserfromnick(x)     (getactiveuserfromnick(x)?getactiveuserfromnick(x)->rup:NULL)
+#define getreguserfromnick(x)     ((x)->auth?(reguser *)(x)->auth->exts[chanservaext]:NULL)
    
 /* Global variables for chanserv module */
 extern unsigned int lastuserID;
@@ -785,8 +774,6 @@ reguser *getreguser();
 void freereguser(reguser *rup);
 regchanuser *getregchanuser();
 void freeregchanuser(regchanuser *rcup);
-nicklist *getnicklist();
-void freenicklist(nicklist *nlp);
 regban *getregban();
 void freeregban(regban *rbp);
 activeuser *getactiveuser();

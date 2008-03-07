@@ -17,6 +17,7 @@
 int csu_docleanupdb(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *vrup, *srup;
+  authname *anp;
   int i;
   long to_age = 0L;
   struct tm *tmp;
@@ -27,7 +28,10 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (vrup=regusernicktable[i]; vrup; vrup=srup) {
       srup=vrup->nextbyname;
-      if(!vrup->nicks && vrup->lastauth < to_age && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
+      if (!(anp=findauthname(vrup->ID)))
+        continue; /* should maybe raise hell instead */
+        
+      if(!anp->nicks && vrup->lastauth < to_age && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
         tmp=gmtime(&(vrup->lastauth));
         strftime(buf,15,"%d/%m/%y %H:%M",tmp);
 

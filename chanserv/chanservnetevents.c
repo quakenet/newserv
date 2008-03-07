@@ -32,20 +32,12 @@ void cs_handlesethost(int hooknum, void *arg) {
 
 void cs_handlelostnick(int hooknum, void *arg) {
   nick *np=(nick *)arg;
-  nicklist **nlh;
-  nicklist *nlp;
   reguser *rup;
   
   if ((rup=getreguserfromnick(np))) {
-    for (nlh=&(rup->nicks);*nlh;nlh=&((*nlh)->next)) {
-      if ((*nlh)->np==np) {
-        nlp=*nlh;
-        *nlh=nlp->next;
-        freenicklist(nlp);
-        break;
-      }
-    }
-    if ((rup->status & QUSTAT_DEAD) && !rup->nicks) {
+    /* Clean up if this is the last user.  auth->usercount is decremented
+     * AFTER the hook is sent... */
+    if ((rup->status & QUSTAT_DEAD) && (np->auth->usercount==1)) {
       freereguser(rup);
     }	
   }

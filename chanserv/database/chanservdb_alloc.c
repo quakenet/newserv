@@ -13,7 +13,6 @@
 regchan     *csfreechans;
 reguser     *csfreeusers;
 regchanuser *csfreechanusers;
-nicklist    *csfreenicklists;
 regban      *csfreeregbans;
 activeuser  *csfreeactiveusers;
 maildomain  *csfreemaildomains;
@@ -24,7 +23,6 @@ void chanservallocinit() {
   csfreechans=NULL;
   csfreeusers=NULL;
   csfreechanusers=NULL;
-  csfreenicklists=NULL;
   csfreeregbans=NULL;
   csfreeactiveusers=NULL;
 }
@@ -107,29 +105,6 @@ void freeregchanuser(regchanuser *rcup) {
   csfreechanusers=rcup;
 }
 
-nicklist *getnicklist() {
-  int i;
-  nicklist *nlp;
-  
-  if (csfreenicklists==NULL) {
-    csfreenicklists=(nicklist *)nsmalloc(POOL_CHANSERVDB,ALLOCUNIT*sizeof(nicklist));
-    for (i=0;i<(ALLOCUNIT-1);i++) {
-      csfreenicklists[i].next=&(csfreenicklists[i+1]);
-    }
-    csfreenicklists[ALLOCUNIT-1].next=NULL;
-  }
-  
-  nlp=csfreenicklists;
-  csfreenicklists=nlp->next;
-  
-  return nlp;
-}
-
-void freenicklist(nicklist *nlp) {
-  nlp->next=csfreenicklists;
-  csfreenicklists=nlp;
-}
-
 regban *getregban() {
   int i;
   regban *rbp;
@@ -173,7 +148,6 @@ activeuser *getactiveuser() {
   
   tagactiveuser(aup);
   
-  aup->rup=NULL;
   aup->authattempts=0;
   aup->entropyttl=0;
   

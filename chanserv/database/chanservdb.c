@@ -391,7 +391,6 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     rup->comment=getsstring(PQgetvalue(pgres,i,13),250);
     rup->info=getsstring(PQgetvalue(pgres,i,14),100);
     rup->knownon=NULL;
-    rup->nicks=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;
     rup->fakeuser=NULL;
