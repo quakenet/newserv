@@ -73,6 +73,7 @@ struct searchNode *country_parse(int type, int argc, char **argv);
 struct searchNode *ip_parse(int type, int argc, char **argv);
 struct searchNode *channels_parse(int type, int argc, char **argv);
 struct searchNode *server_parse(int type, int argc, char **argv);
+struct searchNode *authid_parse(int type, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(int type, int argc, char **argv);
