@@ -18,7 +18,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender), *target;
   int arg=0;
-  flag_t flagmask, changemask;
+  flag_t flagmask, changemask, oldflags;
   char flagbuf[30];
 
   if (!rup)
@@ -52,6 +52,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     }
 
     strcpy(flagbuf,printflags(target->flags, ruflags));
+    oldflags=target->flags;
 
     changemask=QUFLAG_NOTICE | QUFLAG_INFO;
 
@@ -79,6 +80,11 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     }
 
     cs_log(sender,"USERFLAGS #%s %s (%s -> %s)",target->username,cargv[arg],flagbuf,printflags(target->flags, ruflags));
+
+    /* only warn about interesting changes */
+    if((target->flags ^ oldflags) & ~(QUFLAG_NOTICE | QUFLAG_INFO))
+      chanservwallmessage("%s (%s) just used USERFLAGS on %s %s (%s -> %s)",sender->nick,rup->username,target->username,cargv[arg],flagbuf,printflags(target->flags,ruflags));
+
     csdb_updateuser(target);
     chanservstdmessage(sender, QM_DONE);
   }
