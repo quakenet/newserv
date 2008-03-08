@@ -199,7 +199,7 @@ void chanservaddcommand(char *command, int flags, int maxparams, CommandHandler 
   memset((void *)summary,0,sizeof(cmdsummary));
 
   summary->def=getsstring(description, 250);
-  summary->defhelp=help; /* Assume that help is a constant */
+  summary->defhelp=(char *)help; /* Assume that help is a constant */
   
   newcmd->ext=(void *)summary;
   loadcommandsummary(newcmd);
