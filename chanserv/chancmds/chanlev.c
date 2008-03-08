@@ -231,6 +231,18 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       }
       
       if (!rcuplist) {
+        /* new user, we could store a count instead... that's probably better... */
+        unsigned int count;
+
+        for (count=i=0;i<REGCHANUSERHASHSIZE;i++)
+          for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
+            count++;
+
+        if(count >= MAXCHANLEVS) {
+          chanservstdmessage(sender, QM_TOOMANYCHANLEVS);
+          return CMD_ERROR;
+        }
+   
 	rcuplist=getregchanuser();
 	rcuplist->user=target;
 	rcuplist->chan=rcp;

@@ -41,6 +41,7 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender);
   struct chanban *b;
   char banbuf[1024];
+  unsigned int count = 0;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "permban");
@@ -59,6 +60,7 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
   b=makeban(banbuf);
 
   for(rbp=rcp->bans;rbp;rbp=rbp->next) {
+    count++;
     if(banequal(b,rbp->cbp)) { /* if they're equal and one is temporary we just replace it */
       if(rbp->expiry) {
         if(toreplace) { /* shouldn't happen */
@@ -78,6 +80,12 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
       continue;
     }
     freechanban(b);
+    return CMD_ERROR;
+  }
+
+  if(count >= MAXBANS) {
+    freechanban(b);
+    chanservstdmessage(sender, QM_TOOMANYBANS);
     return CMD_ERROR;
   }
 

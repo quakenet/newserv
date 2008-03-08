@@ -46,6 +46,7 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   unsigned int duration;
   struct chanban *b;
   char banbuf[1024];
+  unsigned int count = 0;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "tempban");
@@ -71,6 +72,7 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   b=makeban(banbuf);
 
   for(rbp=rcp->bans;rbp;rbp=rbp->next) {
+    count++;
     if(banequal(b,rbp->cbp)) {
       if(rbp->expiry && (duration > rbp->expiry)) {
         if(toreplace) { /* shouldn't happen */
@@ -93,7 +95,13 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
     freechanban(b);
     return CMD_ERROR;
   }
-  
+
+  if(count >= MAXBANS) {
+    freechanban(b);
+    chanservstdmessage(sender, QM_TOOMANYBANS);
+    return CMD_ERROR;
+  }
+
   if(toreplace) {
     freechanban(b);
     chanservstdmessage(sender, QM_REPLACINGBANSDURATION);

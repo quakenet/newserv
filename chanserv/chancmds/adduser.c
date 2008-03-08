@@ -33,13 +33,13 @@
 int csc_doadduser(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
-  regchanuser *rcup;
+  regchanuser *rcup, *rcuplist;
   regchan *rcp;
   reguser *rup;
   flag_t addflags;
   char *flagbuf;
-  
-  int i=1;
+  unsigned int count=0;  
+  int i;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
@@ -79,13 +79,24 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
 
   flagbuf=printflags(addflags, rcuflags);  
 
-  for (;i<cargc;i++) {
+  /* ugh */
+  for (count=i=0;i<REGCHANUSERHASHSIZE;i++)
+    for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
+      count++;
+
+  for (i=1;i<cargc;i++) {
     if (!(rup=findreguser(sender, cargv[i])))
       continue;
 
     if ((rcup=findreguseronchannel(rcp, rup))) {
       chanservstdmessage(sender, QM_ALREADYKNOWNONCHAN, cargv[i], cip->name->content);
       continue;
+    }
+
+    if(count++ >= MAXCHANLEVS) {
+      chanservstdmessage(sender, QM_TOOMANYCHANLEVS);
+      chanservstdmessage(sender, QM_DONE);
+      return CMD_OK;
     }
 
     rcup=getregchanuser();

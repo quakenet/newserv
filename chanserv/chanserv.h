@@ -58,6 +58,10 @@
 #define MAXLANG      50
 #define MAXMESSAGES  200
 
+/* Maximum number of user chanlevs and bans */
+#define MAXCHANLEVS  250
+#define MAXBANS      50
+
 /* Sources of entropy and standard length defines */
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
@@ -217,6 +221,8 @@
 #define QM_PERMBANALREADYSET       151
 #define QM_NOTREPLACINGBANLDURATION 152
 #define QM_REPLACINGBANSDURATION   153
+#define QM_TOOMANYCHANLEVS         154
+#define QM_TOOMANYBANS             155
 
 /* List of privileged operations */
 
