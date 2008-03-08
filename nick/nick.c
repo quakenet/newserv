@@ -54,6 +54,14 @@ patricia_tree_t *iptree;
 void nickstats(int hooknum, void *arg);
 
 void _init() {
+  unsigned int i;
+  authname *anp;
+
+  /* Clear up the nicks in authext */
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) 
+    for (anp=authnametable[i];anp;anp=anp->next)
+      anp->nicks=NULL;  
+
   initnickalloc();
   initnickhelpers();
   memset(nicktable,0,sizeof(nicktable));

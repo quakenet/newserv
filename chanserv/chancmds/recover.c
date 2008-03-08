@@ -7,6 +7,12 @@
  * CMDDESC: Recovers a channel (same as deopall, unbanall, clearchan).
  * CMDFUNC: csc_dorecover
  * CMDPROTO: int csc_dorecover(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: RECOVER <channel>
+ * CMDHELP: This command resets the named channel if undesired modes, bans or ops have been
+ * CMDHELP: set.  This has the same effect as DEOPALL followed by UNBANALL followed by
+ * CMDHELP: CLEARCHAN on the channel, where:
+ * CMDHELP: channel - channel to recover
+ * CMDHELP: RECOVER requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

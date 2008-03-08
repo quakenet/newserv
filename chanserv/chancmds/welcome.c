@@ -7,6 +7,15 @@
  * CMDDESC: Shows or changes the welcome message on a channel.
  * CMDFUNC: csc_dowelcome
  * CMDPROTO: int csc_dowelcome(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: WELCOME <channel> [<message>]
+ * CMDHELP: This shows the current welcome message set on a channel and allows it to be
+ * CMDHELP: changed.  In order to be displayed to users, the feature must be enabled
+ * CMDHELP: by the +w chanflag (see CHANFLAGS).  Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: message - welcome message to set.  If this is not provided the existing welcome
+ * CMDHELP:           message is displayed.
+ * CMDHELP: Displaying the message requires operator (+o) access on the named channel.
+ * CMDHELP: Changing the message requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

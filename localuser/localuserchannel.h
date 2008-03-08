@@ -40,6 +40,7 @@ void localsettopic(nick *np, channel *cp, char *topic);
 void localkickuser(nick *np, channel *cp, nick *target, const char *message);
 void localusermodechange(nick *np, channel *cp, char *modes);
 void sendmessagetochannel(nick *source, channel *cp, char *format, ... );
+void sendopnoticetochannel(nick *source, channel *cp, char *format, ... );
 void localinvite(nick *source, channel *cp, nick *target);
 
 void localsetmodeinit (modechanges *changes, channel *cp, nick *np);

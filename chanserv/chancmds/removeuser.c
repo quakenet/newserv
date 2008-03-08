@@ -7,6 +7,15 @@
  * CMDDESC: Removes one or more users from a channel.
  * CMDFUNC: csc_doremoveuser
  * CMDPROTO: int csc_doremoveuser(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: REMOVEUSER <channel> <user1> [<user2> [<user3> [...]]]
+ * CMDHELP: Removes any flags the named user(s) have on the channel.  This command
+ * CMDHELP: cannot be used to remove owners (+n) from the channel, and cannot be used
+ * CMDHELP: to remove masters (+m) unless the user issuing the command is an owner.
+ * CMDHELP: Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: user<n> - a user to remove.  Can either be a nickname on the network
+ * CMDHELP:           or #authname.  Up to 18 users can be specified.
+ * CMDHELP: REMOVEUSER requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

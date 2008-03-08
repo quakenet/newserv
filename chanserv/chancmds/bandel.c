@@ -7,6 +7,12 @@
  * CMDDESC: Removes a single ban from a channel.
  * CMDFUNC: csc_dobandel
  * CMDPROTO: int csc_dobandel(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: BANDEL <channel> <ban>
+ * CMDHELP: Removes the specified persistent or channel ban, where:
+ * CMDHELP: channel - the channel to use
+ * CMDHELP: ban     - either a ban mask (nick!user@host), or #number (see BANLIST)
+ * CMDHELP: Removing channel bans requires operator (+o) access on the named channel.
+ * CMDHELP: Removing persistent bans requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

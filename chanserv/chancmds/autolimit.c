@@ -7,6 +7,14 @@
  * CMDDESC: Shows or changes the autolimit threshold on a channel.
  * CMDFUNC: csc_doautolimit
  * CMDPROTO: int csc_doautolimit(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: AUTOLIMIT <channel> [<threshold>]
+ * CMDHELP: This command shows or changes the number of free slots to keep on the channel
+ * CMDHELP: when autolimit (see CHANFLAGS) is enabled.  Where:
+ * CMDHELP: channel   - the channel to use.
+ * CMDHELP: threshold - specifies the new threshold.  If not specified, the current threshold 
+ * CMDHELP:             is displayed.
+ * CMDHELP: Viewing the current threshold requires operator (+o) access on the named channel.
+ * CMDHELP: Updating the threshold requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

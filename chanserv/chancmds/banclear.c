@@ -7,6 +7,10 @@
  * CMDDESC: Removes all bans from a channel including persistent bans.
  * CMDFUNC: csc_dobanclear
  * CMDPROTO: int csc_dobanclear(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: BANCLEAR <channel>
+ * CMDHELP: Removes all temporary and persistent bans from a channel, where:
+ * CMDHELP: channel - the channel to use
+ * CMDHELP: BANCLEAR requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

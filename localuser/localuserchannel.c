@@ -334,11 +334,12 @@ int localjoinchannel(nick *np, channel *cp) {
   harg[0]=cp;
   harg[1]=np;
     
-  triggerhook(HOOK_CHANNEL_JOIN, harg);
-    
   if (connected) {
     irc_send("%s J %s %lu",longtonumeric(np->numeric,5),cp->index->name->content,cp->timestamp);
   }
+
+  triggerhook(HOOK_CHANNEL_JOIN, harg);
+    
   return 0;
 }
 
@@ -1021,6 +1022,29 @@ void sendmessagetochannel(nick *source, channel *cp, char *format, ... ) {
 
   if (connected) {
     irc_send("%s P %s :%s",senderstr,cp->index->name->content,buf);
+  }
+}
+
+void sendopnoticetochannel(nick *source, channel *cp, char *format, ... ) {
+  char buf[BUFSIZE];
+  char senderstr[6];
+  va_list va;
+  
+  if (!source)
+    return;
+ 
+  longtonumeric2(source->numeric,5,senderstr);
+     
+  va_start(va,format);
+  /* 10 bytes of numeric, 5 bytes of fixed format + terminator = 17 bytes */
+  /* So max sendable message is 495 bytes.  Of course, a client won't be able
+   * to receive this.. */
+
+  vsnprintf(buf,BUFSIZE-17,format,va);
+  va_end(va);
+
+  if (connected) {
+    irc_send("%s WC %s :%s",senderstr,cp->index->name->content,buf);
   }
 }
 

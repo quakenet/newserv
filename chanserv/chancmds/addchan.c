@@ -7,6 +7,13 @@
  * CMDDESC: Adds a new channel to the bot.
  * CMDFUNC: csc_doaddchan
  * CMDPROTO: int csc_doaddchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: addchan <channel> [<owner> [<flags> [<type>]]]
+ * CMDHELP: Adds the given channel to the bot, where:
+ * CMDHELP: owner - can be either nickname on the network or #authname.  If not supplied,
+ * CMDHELP:         the channel will belong to the user issuing the ADDCHAN command.
+ * CMDHELP: flags - can be any valid chanflags (see CHANFLAGS).  If not specified this 
+ * CMDHELP:         defaults to +j.
+ * CMDHELP: type  - is a channel type as per old Q and is now obsolete.
  */
 
 #include "../chanserv.h"
@@ -54,7 +61,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     flags=0;
     setflags(&flags, QCFLAG_ALL, cargv[2], rcflags, REJECT_NONE);    
   } else {
-    flags = (QCFLAG_JOINED | QCFLAG_BITCH | QCFLAG_PROTECT | QCFLAG_ENFORCE);
+    flags = (QCFLAG_JOINED);
   }
   
   /* Pick up the chantype */
@@ -105,7 +112,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   rcp->banstyle=0;
   
   rcp->created=rcp->lastactive=rcp->statsreset=rcp->ostatsreset=time(NULL);
-  rcp->banduration=1800;
+  rcp->banduration=0;
   rcp->autoupdate=0;
   rcp->lastbancheck=0;
   

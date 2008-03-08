@@ -7,6 +7,12 @@
  * CMDDESC: Displays channel activity statistics.
  * CMDFUNC: csc_dochanstat
  * CMDPROTO: int csc_dochanstat(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: CHANSTAT <channel>
+ * CMDHELP: Shows some statistics about a channel, including total number of joins and 
+ * CMDHELP: maximum channel size.  Two sets of statistics are displayed, a lifetime
+ * CMDHELP: counter, and a trip meter counter which can be reset.  Where:
+ * CMDHELP: channel - channel to display statistics for.
+ * CMDHELP: CHANSTAT requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

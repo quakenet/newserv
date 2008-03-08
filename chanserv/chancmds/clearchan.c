@@ -7,6 +7,12 @@
  * CMDDESC: Removes all modes from a channel.
  * CMDFUNC: csc_doclearchan
  * CMDPROTO: int csc_doclearchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: CLEARCHAN <channel>
+ * CMDHELP: Removes all channel modes (such as keys, limits, invite only, etc.) from
+ * CMDHELP: the named channel.  Modes being enfored (see CHANMODE) will not be removed.
+ * CMDHELP: Where:
+ * CMDHELP: channel - channel to remove modes from
+ * CMDHELP: CLEARCHAN requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

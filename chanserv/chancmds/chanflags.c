@@ -7,6 +7,41 @@
  * CMDDESC: Shows or changes the flags on a channel.
  * CMDFUNC: csc_dochanflags
  * CMDPROTO: int csc_dochanflags(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: CHANFLAGS <channel> [<changes>]
+ * CMDHELP: Shows or changes the status of channel flags, where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: changes - changes to apply to the channel flags in the usual +/- format, e.g. +c
+ * CMDHELP:           to set +c and -c to remove it.
+ * CMDHELP: Viewing the current flags requires operator (+o) access on the named channel.
+ * CMDHELP: Changing the flags requires master (+m) access on the named channel.
+ * CMDHELP: Valid channel flags are:
+ * CMDHELP:  +a AUTOOP     Automatically ops any user who has op access when they join the
+ * CMDHELP:                channel.  Same effect as giving all ops the +a chanlev flag.
+ * CMDHELP:  +b BITCH      Prevents users who don't have operator access on the channel
+ * CMDHELP:                from being opped (automatically deops them)
+ * CMDHELP:  +c AUTOLIMIT  Enables automatic limit feature - updates the channel limit at
+ * CMDHELP:                regular intervals to keep a certain number of free spaces.  This
+ * CMDHELP:                can mitigate the effect of join floods.  See AUTOLIMIT.
+ * CMDHELP:  +e ENFORCE    Enforces bans on the channel.  Any user who is banned will be
+ * CMDHELP:                kicked automatically.
+ * CMDHELP:  +f FORCETOPIC Prevents channel ops from changing the topic.  The SETTOPIC
+ * CMDHELP:                command must be used instead.
+ * CMDHELP:  +g AUTOVOICE  Automatically voices any user who has voice access when they join
+ * CMDHELP:                the channel.  Same effect as giving all voices the +g chanlev flag.
+ * CMDHELP:  +j JOINED     Causes Q to remain on the channel.  Cannot be removed.
+ * CMDHELP:  +k KNOWNONLY  Any user who joins the channel who is not known (+k) will be kicked.  
+ * CMDHELP:                Unless channel mode +i is set they will be banned as well.
+ * CMDHELP:  +p PROTECT    Any user with voice (+v) or operator (+o) access will have that 
+ * CMDHELP:                status enforced on the channel at all times.  Same effect as giving
+ * CMDHELP:                all ops and voices the +p chanlev flag.
+ * CMDHELP:  +t TOPICSAVE  Saves the topic when it changes.  Such saved topics can be restored
+ * CMDHELP:                via settopic, or when the bot rejoins when a channel has been left
+ * CMDHELP:                empty.
+ * CMDHELP:  +v VOICEALL   Automatically grants voice (+v) on the channel to any user who enters,
+ * CMDHELP:                unless they have quiet (+q) chanlev flag.
+ * CMDHELP:  +w WELCOME    Sends the welcome message to users joining the channel.  See WELCOME.
+ * CMDHELP: Note: Previous versions of Q included the facility to enforce limits and keys using
+ * CMDHELP: +k and +l chanflags.  This functionality is now available via the CHANMODE command.
  */
 
 #include "../chanserv.h"

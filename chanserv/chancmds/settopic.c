@@ -7,6 +7,13 @@
  * CMDDESC: Changes the topic on a channel.
  * CMDFUNC: csc_dosettopic
  * CMDPROTO: int csc_dosettopic(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: SETTOPIC <channel> [<topic>]
+ * CMDHELP: Changes the topic on the channel, where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: topic   - new topic.  If no topic is set, the stored topic will be reset (this
+ * CMDHELP:           feature is useful if some users can no longer see the topic due to a 
+ * CMDHELP:           netsplit).
+ * CMDHELP: SETTOPIC requires topic (+t) or master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

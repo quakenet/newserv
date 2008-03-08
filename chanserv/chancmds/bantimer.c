@@ -7,6 +7,18 @@
  * CMDDESC: Shows or changes the time after which bans are removed.
  * CMDFUNC: csc_dobantimer
  * CMDPROTO: int csc_dobantimer(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: BANTIMER <channel> [<duration>]
+ * CMDHELP: To help keep channels clear of the clutter of too many bans, Q can automatically
+ * CMDHELP: remove channel bans after a specified time.  This command is used to alter that
+ * CMDHELP: time period, disable the feature, or show the current setting, where:
+ * CMDHELP: channel  - the channel to use
+ * CMDHELP: duration - how long to remove channel bans after.  If duration is 0 then channel
+ * CMDHELP:            bans will not be automatically removed.  If duration is not specified,
+ * CMDHELP:            the current setting will be displayed.  Suffixes can m (minutes), 
+ * CMDHELP:            h (hours), d (days), w (weeks), M (months) and y (years) can be used 
+ * CMDHELP:            to specify the duration, for example 3d, 1w, 1h30m.
+ * CMDHELP: Viewing the current setting requires operator (+o) access on the named channel.
+ * CMDHELP: Changing the setting requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

@@ -7,20 +7,36 @@
  * CMDDESC: Shows or modifies user access on a channel.
  * CMDFUNC: csc_dochanlev
  * CMDPROTO: int csc_dochanlev(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: chanlev <#channel> [<user> [<flag change>]]
- * CMDHELP:  where <user> is either nickname on the network or #accountname.
- * CMDHELP: If only a channel name is supplied, list registered users on the channel.
- * CMDHELP: If a user is also specified, shows that user's access on the channel.
- * CMDHELP: If a change string is specified, the flags for that user are changed, provided
- * CMDHELP: you have sufficient access on the channel to do so.  This can be used to add or
- * CMDHELP: remove users from the channel.
+ * CMDHELP: Usage: CHANLEV <channel> [<user> [<change>]]
+ * CMDHELP: Displays or alters the access of known users on a channel, where:
+ * CMDHELP: channel - the channel to use
+ * CMDHELP: user    - the user to list or modify.  user can be specified as either an active
+ * CMDHELP:           nickname on the network or #accountname.  If user is not specified then
+ * CMDHELP:           all known users are listed.
+ * CMDHELP: change  - lists the flags to add or remove, with + to add or - to remove.  For
+ * CMDHELP:           example, +ao to add a and o flags, or -gv to remove g and v flags.  This 
+ * CMDHELP:           can be used to add or remove users from the channel.  If change is not
+ * CMDHELP:           specified then the current access of the named user is displayed.
+ * CMDHELP: Displaying known user information requires you to be known (+k) on the named channel.
+ * CMDHELP: Adjusting flags for other users requires master (+m) access on the named channel.
+ * CMDHELP: Adding or removing the +m flag for other users requires owner (+n) access on the 
+ * CMDHELP:  named channel.
+ * CMDHELP: You may always remove your own flags, except +qdb flags (which are not visible to you).
+ * CMDHELP: Adding or removing personal flags requires you to be known (+k) on the named channel.
+ * CMDHELP: Note that channel owners (+n) can grant +n to channel masters but they must use 
+ * CMDHELP: the GIVEOWNER command for this.
+ * CMDHELP: The access level flags determine which commands a user is allowed to use on a channel.
+ * CMDHELP: Holding an access flag also grants access to any action requiring a lesser flag (e.g.
+ * CMDHELP: +m users can perform actions requiring operator (+o) status even if they do not
+ * CMDHELP: actually have +o set).  The access flags are listed in descending order.
  * CMDHELP: Valid flags are:
- * CMDHELP: Access level flags - these control your overall privilege level on the channel:
+ * CMDHELP: Access level flags - these control the user's overall privilege level on the channel:
  * CMDHELP:  +n OWNER     Can add or remove masters and all other flags (except personal flags)
  * CMDHELP:  +m MASTER    Can add or remove all access except master or owner
  * CMDHELP:  +o OP        Can get ops on the channel
  * CMDHELP:  +v VOICE     Can get voice on the channel
  * CMDHELP:  +k KNOWN     Known on the channel - can get invites to the channel via INVITE
+ * CMDHELP: Punishment flags - these restrict the user on the channel in some way:
  * CMDHELP:  +q DEVOICE   Not allowed to be voiced on the channel
  * CMDHELP:  +d DEOP      Not allowed to be opped on the channel
  * CMDHELP:  +b BANNED    Banned from the channel
@@ -33,13 +49,11 @@
  * CMDHELP:               that status, they will be reopped/voiced if deopped/voiced
  * CMDHELP:  +t TOPIC     Can use SETTOPIC to alter the topic on the channel
  * CMDHELP: Personal flags - these control user personal preferences and can only be changed
- * CMDHELP:                  by the user concerned.  You need to be known on the channel (hold +k, 
- * CMDHELP:                  +v, +o, +m or +n) in order to set personal flags.
+ * CMDHELP:                  by the user concerned.  They are not visible to other users.
  * CMDHELP:  +w NOWELCOME Prevents the welcome message being sent when you join the channel.
  * CMDHELP:  +j AUTOINV   Invites you to the channel automatically when you authenticate.
- * CMDHELP: Note that channel owners (+n) can grant +n to channel masters but they must use 
- * CMDHELP: the the GIVEOWNER command for this.
- * CMDHELP: Non-sensible combinations of flags are not allowed.
+ * CMDHELP: Note that non-sensible combinations of flags are not allowed.  After making a 
+ * CMDHELP: change the current status of the named user on the channel will be confirmed.
  */
 
 #include "../chanserv.h"
@@ -106,7 +120,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	      QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
   
   /* masters and above can see everything except personal flags */
-  if (CUHasMasterPriv(rcup)) {
+  if (rcup && CUHasMasterPriv(rcup)) {
     flagmask = QCUFLAG_ALL & ~QCUFLAGS_PERSONAL;
     showtimes=1;
   }

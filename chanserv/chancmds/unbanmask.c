@@ -7,6 +7,15 @@
  * CMDDESC: Removes bans matching a particular mask from a channel.
  * CMDFUNC: csc_dounbanmask
  * CMDPROTO: int csc_dounbanmask(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: UNBANMASK <channel> <mask>
+ * CMDHELP: Removes any bans on the channel which are overlapped by the named mask.  Can
+ * CMDHELP: remove both channel bans and registered bans.  Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: mask    - mask to remove.  Any ban subsumed by this mask will be removed.  For
+ * CMDHELP:           example, UNBANMASK *!*@*.isp.net would remove *!*@host1.isp.net and 
+ * CMDHELP:           *!*@host2.isp.net and *!user@*.isp.net.
+ * CMDHELP: UNBANMASK requires operator (+o) access on the named channel.
+ * CMDHELP: Removing registered bans requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"
