@@ -7,6 +7,12 @@
  * CMDDESC: Deops all users on channel.
  * CMDFUNC: csc_dodeopall
  * CMDPROTO: int csc_dodeopall(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: DEOPALL <channel>
+ * CMDHELP: Deops every user in the channel.  Registered channel operators (+o on CHANLEV) 
+ * CMDHELP: who are protected (via the +p flag in CHANLEV or CHANFLAGS) will not be deopped.
+ * CMDHELP: Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: DEOPALL requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

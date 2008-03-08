@@ -7,6 +7,20 @@
  * CMDDESC: Voices you or other users on channel(s).
  * CMDFUNC: csc_dovoice
  * CMDPROTO: int csc_dovoice(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: VOICE [<channel> [<user1> [<user2> [...]]]
+ * CMDHELP: Grants voice to you on one or more channels, or grants voice to one or more
+ * CMDHELP: other users on a particular channel.  This command cannot be used to grant
+ * CMDHELP: voice to users who would otherwise be prevented from obtaining voice, e.g.
+ * CMDHELP: the quiet (+q) chanlev flag.  Where:
+ * CMDHELP: channel - channel to use.  If no channel is specified, you will be granted voice
+ * CMDHELP:           on every channel where you have appropriate access and are not already 
+ * CMDHELP:           voiced.
+ * CMDHELP: user<n> - other users to grant voice to.  Must be specified as the nickname
+ * CMDHELP:           of users who are on the named channel.
+ * CMDHELP: Voicing yourself requires voice (+v) access on the relevant channels.
+ * CMDHELP: Voicing other users requires operator (+o) access on the named channel.  If this 
+ * CMDHELP: command is used to voice other users, a notice will be sent to channel operators
+ * CMDHELP: on the channel identifying you, unless you have master (+m) access.
  */
 
 #include "../chanserv.h"
@@ -30,6 +44,8 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
   unsigned long *lp;
   int i;
   modechanges changes;
+  char buf[512];
+  unsigned int bufpos=0,donotice=0;
 
   if (!rup)
     return CMD_ERROR;
@@ -80,9 +96,13 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  /* You've got to be a master to 'silently' voice other people */
-  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "voice", 0, 0))
+  /* You've got to be an operator to voice other people */
+  if (!cs_checkaccess(sender, NULL, CA_OPPRIV, cip, "voice", 0, 0))
     return CMD_ERROR;
+
+  /* You've got to be a master to 'silently' voice other people */
+  if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, "voice", 0, 1))
+    donotice=1;
 
   rcp=cip->exts[chanservext];
 
@@ -109,8 +129,13 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
       chanservstdmessage(sender, QM_CANTVOICE, np->nick, cip->name->content);
       continue;
     }
-
+    
+    bufpos+=sprintf(buf+bufpos,"%s%s",bufpos?", ":"",np->nick);
     localdosetmode_nick(&changes, np, MC_VOICE);
+  }
+
+  if (donotice && bufpos) {
+    sendopnoticetochannel(chanservnick, cip->channel, "%s voiced %s", sender, buf);
   }
 
   localsetmodeflush(&changes, 1);

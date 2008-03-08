@@ -7,6 +7,27 @@
  * CMDDESC: Shows which modes are forced or denied on a channel.
  * CMDFUNC: csc_dochanmode
  * CMDPROTO: int csc_dochanmode(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: CHANMODE <channel> [<modes>]
+ * CMDHELP: Shows or changes the list of channel modes being enforced on the channel, where:
+ * CMDHELP: channel  - the channel to use
+ * CMDHELP: modes    - the list of modes to allow or deny.  Modes specified with + will be
+ * CMDHELP:            enforced on the channel at all times, those specified with - will not
+ * CMDHELP:            be allowed on the channel.  If modes are not specified the current
+ * CMDHELP:            setting will be displayed.  If +k or +l modes are included, the actual
+ * CMDHELP:            key or limit to be enforced must also be specified, for example 
+ * CMDHELP:            \"-il+ntk mykey\", or \"+nstl-Cc 20\".  If you do not want any modes
+ * CMDHELP:            enforced, \"CHANMODE <channel> +\" will clear the list.
+ * CMDHELP: Viewing the enforced modes requires operator (+o) access on the named channel.
+ * CMDHELP: Updating the enforced modes requires master (+m) access on the named channel.
+ * CMDHELP: Note: unlike similar commands that work on flags, specifying modes REPLACES
+ * CMDHELP: the list of modes to be enforced rather than changing the existing list.  This 
+ * CMDHELP: is because - modes are valid as well as + modes.  Thus whenever you specify 
+ * CMDHELP: the modes argument you must provide the complete list of desired modes each
+ * CMDHELP: time.
+ * CMDHELP: Note: if autolimit is enabled (see CHANFLAGS) it will cause a +l limit mode
+ * CMDHELP: to be enforced, with the value updating periodically as users join and leave.
+ * CMDHELP: This +l forcing cannot be changed or overridden without disabling the autolimit
+ * CMDHELP: function using the CHANFLAGS command.
  */
 
 #include "../chanserv.h"

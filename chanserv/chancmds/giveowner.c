@@ -5,6 +5,18 @@
  * CMDDESC: Gives total control over a channel to another user.
  * CMDFUNC: csc_dogiveowner
  * CMDPROTO: int csc_dogiveowner(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: GIVEOWNER <channel> <user> [<code>]
+ * CMDHELP: Gives complete control (+n flag) to the named user on the channel.  The new owner
+ * CMDHELP: will have full control over the channel, including the ability to remove the
+ * CMDHELP: existing owner(s).  As a precaution the named user must already have master (+m) 
+ * CMDHELP: access on the channel.  Use this command with extreme caution.  Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: user    - user to give owner to, either a nickname on the network or #accountname.
+ * CMDHELP: code    - a unique code used to authorize the operation.  If the code is not 
+ * CMDHELP:           supplied, the appropriate code will be provided together with a 
+ * CMDHELP:           warning about the dangers of this command.  If the wrong code is
+ * CMDHELP:           entered owner access will not be granted.
+ * CMDHELP: GIVEOWNER requires owner (+n) access on the named channel.
  */
 
 #include "../chanserv.h"

@@ -7,6 +7,10 @@
  * CMDDESC: Invites you to a channel.
  * CMDFUNC: csc_doinvite
  * CMDPROTO: int csc_doinvite(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: INVITE <channel>
+ * CMDHELP: Invites you to the named channel, where:
+ * CMDHELP: channel - channel to be invited to.
+ * CMDHELP: INVITE requires you to be known (+k) on the named channel.
  */
 
 #include "../chanserv.h"

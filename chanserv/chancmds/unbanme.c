@@ -7,6 +7,11 @@
  * CMDDESC: Removes any bans affecting you from a channel.
  * CMDFUNC: csc_dounbanme
  * CMDPROTO: int csc_dounbanme(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: UNBANME <channel>
+ * CMDHELP: This command removes any channel bans which affect you from a channel.  It does
+ * CMDHELP: not affect persistent bans set by PERMBAN and TEMPBAN.  Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: UNBANME requires operator (+o) access on the named channel.
  */
 
 #include "../chanserv.h"

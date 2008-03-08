@@ -7,6 +7,12 @@
  * CMDDESC: Removes all bans from a channel.
  * CMDFUNC: csc_dounbanall
  * CMDPROTO: int csc_dounbanall(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: UNBANALL <channel>
+ * CMDHELP: Removes all the channel bans set on the named channel.  This does not affect
+ * CMDHELP: persistent bans set via the TEMPBAN and PERMBAN commands, see BANCLEAR or
+ * CMDHELP: BANDEL for more information on removing those bans.  Where:
+ * CMDHELP: channel - channel to use
+ * CMDHELP: UNBANALL requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

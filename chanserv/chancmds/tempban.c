@@ -7,6 +7,23 @@
  * CMDDESC: Bans a hostmask on a channel for a specified time period.
  * CMDFUNC: csc_dotempban
  * CMDPROTO: int csc_dotempban(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: TEMPBAN <channel> <hostmask> <duration> [<reason>]
+ * CMDHELP: Temporarily bans the provided hostmask on the channel.  If the ban is
+ * CMDHELP: removed from the channel e.g. by a channel op or the BANTIMER feature, the
+ * CMDHELP: ban will be reapplied if a matching user joins the channel.  When the time 
+ * CMDHELP: expires the ban will be removed automatically.  Bans set with the PERMBAN 
+ * CMDHELP: command can be removed via BANCLEAR or BANDEL.  Any users matching the hostmask 
+ * CMDHELP: will be kicked from the channel.
+ * CMDHELP: Where:
+ * CMDHELP: channel  - channel to set a ban on
+ * CMDHELP: hostmask - hastmask (nick!user@host) to ban.
+ * CMDHELP: duration - length of time to apply the ban for.  Suffixes m (minutes), h (hours),
+ * CMDHELP:            d (days), w (weeks), M (months) and y (years) can be used to specify 
+ * CMDHELP:            the duration, for example 3d, 5h, 1h30m, 1M.
+ * CMDHELP: reason   - reason for the ban.  This will be used in kick messages when kicking
+ * CMDHELP:            users matching the ban.  If this is not provided the generic message
+ * CMDHELP:            \"Banned.\" will be used.
+ * CMDHELP: TEMPBAN requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"

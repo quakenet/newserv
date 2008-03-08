@@ -25,13 +25,18 @@
  * CMDHELP: Adding or removing personal flags requires you to be known (+k) on the named channel.
  * CMDHELP: Note that channel owners (+n) can grant +n to channel masters but they must use 
  * CMDHELP: the GIVEOWNER command for this.
+ * CMDHELP: The access level flags determine which commands a user is allowed to use on a channel.
+ * CMDHELP: Holding an access flag also grants access to any action requiring a lesser flag (e.g.
+ * CMDHELP: +m users can perform actions requiring operator (+o) status even if they do not
+ * CMDHELP: actually have +o set).  The access flags are listed in descending order.
  * CMDHELP: Valid flags are:
- * CMDHELP: Access level flags - these control your overall privilege level on the channel:
+ * CMDHELP: Access level flags - these control the user's overall privilege level on the channel:
  * CMDHELP:  +n OWNER     Can add or remove masters and all other flags (except personal flags)
  * CMDHELP:  +m MASTER    Can add or remove all access except master or owner
  * CMDHELP:  +o OP        Can get ops on the channel
  * CMDHELP:  +v VOICE     Can get voice on the channel
  * CMDHELP:  +k KNOWN     Known on the channel - can get invites to the channel via INVITE
+ * CMDHELP: Punishment flags - these restrict the user on the channel in some way:
  * CMDHELP:  +q DEVOICE   Not allowed to be voiced on the channel
  * CMDHELP:  +d DEOP      Not allowed to be opped on the channel
  * CMDHELP:  +b BANNED    Banned from the channel

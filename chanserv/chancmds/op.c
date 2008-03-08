@@ -7,6 +7,19 @@
  * CMDDESC: Ops you or other users on channel(s).
  * CMDFUNC: csc_doop
  * CMDPROTO: int csc_doop(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: OP [<channel> [<user1> [<user2> [...]]]
+ * CMDHELP: Ops you on one or more channels, or ops other named users on a given channel.
+ * CMDHELP: This command cannot be used to op users who are otherwise prevented from getting
+ * CMDHELP: ops, e.g. via the +d chanlev flag (see CHANLEV) or bitch mode (see CHANFLAGS).
+ * CMDHELP: Where:
+ * CMDHELP: channel - channel to use.  If no channel is specified, you will be given ops on
+ * CMDHELP:           every channel where you have appropriate access and are not already
+ * CMDHELP:           opped.
+ * CMDHELP: user<n> - user(s) to op instead of yourself.  Each user must be specified as the
+ * CMDHELP:           current nickname of a user on the named channel.
+ * CMDHELP: OP requires operator access (+o) on the named channel.  If this command is used
+ * CMDHELP: to op other users, a notice will be sent to other channel operators on the 
+ * CMDHELP: channel identifying you, unless you have master (+m) access.
  */
 
 #include "../chanserv.h"

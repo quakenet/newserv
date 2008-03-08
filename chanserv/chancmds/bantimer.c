@@ -14,7 +14,9 @@
  * CMDHELP: channel  - the channel to use
  * CMDHELP: duration - how long to remove channel bans after.  If duration is 0 then channel
  * CMDHELP:            bans will not be automatically removed.  If duration is not specified,
- * CMDHELP:            the current setting will be displayed.
+ * CMDHELP:            the current setting will be displayed.  Suffixes can m (minutes), 
+ * CMDHELP:            h (hours), d (days), w (weeks), M (months) and y (years) can be used 
+ * CMDHELP:            to specify the duration, for example 3d, 1w, 1h30m.
  * CMDHELP: Viewing the current setting requires operator (+o) access on the named channel.
  * CMDHELP: Changing the setting requires master (+m) access on the named channel.
  */

@@ -7,6 +7,10 @@
  * CMDDESC: Devoices all users on a channel.
  * CMDFUNC: csc_dodevoiceall
  * CMDPROTO: int csc_dodevoiceall(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: DEVOICEALL <channel>
+ * CMDHELP: Devoices all users in the channel.  Registered voices (+v on CHANLEV) who are 
+ * CMDHELP: protected (+p flag set in CHANLEV or CHANFLAGS) will not be devoiced.
+ * CMDHELP: DEVOICEALL requires master (+m) access on the named channel.
  */
 
 #include "../chanserv.h"
