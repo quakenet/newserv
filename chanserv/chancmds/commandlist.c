@@ -29,6 +29,7 @@ int csc_dorecover(void *source, int cargc, char **cargv);
 int csc_dorejoin(void *source, int cargc, char **cargv);
 int csc_doremoveuser(void *source, int cargc, char **cargv);
 int csc_dorenchan(void *source, int cargc, char **cargv);
+int csc_dorequestowner(void *source, int cargc, char **cargv);
 int csc_dorollbackchan(void *source, int cargc, char **cargv);
 int csc_dosettopic(void *source, int cargc, char **cargv);
 int csc_dosuspendchan(void *source, int cargc, char **cargv);
@@ -69,6 +70,7 @@ void _init() {
   chanservaddcommand("rejoin", QCMD_OPER, 1, csc_dorejoin, "Makes the bot rejoin a channel.", "");
   chanservaddcommand("removeuser", QCMD_AUTHED, 20, csc_doremoveuser, "Removes one or more users from a channel.", "Usage: REMOVEUSER <channel> <user1> [<user2> [<user3> [...]]]\nRemoves any flags the named user(s) have on the channel.  This command\ncannot be used to remove owners (+n) from the channel, and cannot be used\nto remove masters (+m) unless the user issuing the command is an owner.\nWhere:\nchannel - channel to use\nuser<n> - a user to remove.  Can either be a nickname on the network\n          or #authname.  Up to 18 users can be specified.\nREMOVEUSER requires master (+m) access on the named channel.\n");
   chanservaddcommand("renchan", QCMD_OPER, 2, csc_dorenchan, "Renames a channel on the bot.", "");
+  chanservaddcommand("requestowner", QCMD_AUTHED, 1, csc_dorequestowner, "Requests ownership of a channel on which there are no owners.", "");
   chanservaddcommand("rollbackchan", QCMD_OPER, 3, csc_dorollbackchan, "Roll back access changes on a channel.", "");
   chanservaddcommand("settopic", QCMD_AUTHED, 2, csc_dosettopic, "Changes the topic on a channel.", "Usage: SETTOPIC <channel> [<topic>]\nChanges the topic on the channel, where:\nchannel - channel to use\ntopic   - new topic.  If no topic is set, the stored topic will be reset (this\n          feature is useful if some users can no longer see the topic due to a \n          netsplit).\nSETTOPIC requires topic (+t) or master (+m) access on the named channel.\n");
   chanservaddcommand("suspendchan", QCMD_OPER, 2, csc_dosuspendchan, "Suspends a channel from the bot.", "");
@@ -110,6 +112,7 @@ void _fini() {
   chanservremovecommand("rejoin", csc_dorejoin);
   chanservremovecommand("removeuser", csc_doremoveuser);
   chanservremovecommand("renchan", csc_dorenchan);
+  chanservremovecommand("requestowner", csc_dorequestowner);
   chanservremovecommand("rollbackchan", csc_dorollbackchan);
   chanservremovecommand("settopic", csc_dosettopic);
   chanservremovecommand("suspendchan", csc_dosuspendchan);
