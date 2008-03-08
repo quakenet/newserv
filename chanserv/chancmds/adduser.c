@@ -7,10 +7,13 @@
  * CMDDESC: Adds one or more users to a channel as +aot.
  * CMDFUNC: csc_doadduser
  * CMDPROTO: int csc_doadduser(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: ADDUSER <channel> <user1> [<user2> [<user3> [...]]]
- * CMDHELP: Adds the named user(s) to the channel with +aot chanlev flags (see CHANLEV).  
- * CMDHELP: Where:
+ * CMDHELP: Usage: ADDUSER <channel> [<flags>] <user1> [<user2> [<user3> [...]]]
+ * CMDHELP: Adds the named user(s) to the channel, where:
  * CMDHELP: channel - the channel to use
+ * CMDHELP: flags   - the list of flags to add for each user, introduced by + (for example
+ * CMDHELP:           +gv).  See CHANLEV for valid flags.  If no flags are specified, 
+ * CMDHELP:           +aot is used.  This command cannot be used to add masters (+m) or
+ * CMDHELP:           owners (+n).
  * CMDHELP: user<n> - either a user's current nickname on the network or #accountname. Up to
  * CMDHELP:           18 users can be specified.
  * CMDHELP: ADDUSER requires master (+m) access on the named channel.
@@ -33,7 +36,10 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
   regchanuser *rcup;
   regchan *rcp;
   reguser *rup;
-  int i;
+  flag_t addflags;
+  char *flagbuf;
+  
+  int i=1;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
@@ -45,7 +51,35 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
 
   rcp=cip->exts[chanservext];
 
-  for (i=1;i<cargc;i++) {
+  /* See if there are flags defined */
+  if (*cargv[1] == '+') {
+    /* If there are we now need at least 3 parameters */
+    if (cargc<3) {
+      chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
+      return CMD_ERROR;
+    }
+    addflags=0;
+    
+    /* Set the flags.  We allow everything except personal flags and +mn. */
+    setflags(&addflags, QCUFLAG_ALL & ~(QCUFLAGS_PERSONAL | QCUFLAG_MASTER | QCUFLAG_OWNER), cargv[1], rcuflags, 0);
+
+    /* Remove impossible combinations */
+    addflags=cs_sanitisechanlev(addflags);
+    
+    /* It helps a lot if they have actually set something */
+    if (!addflags) {
+      chanservstdmessage(sender, QM_NOFLAGSPECIFIED);
+      return CMD_ERROR;
+    }
+    
+    i++;
+  } else {
+    addflags=QCUFLAG_OP | QCUFLAG_AUTOOP | QCUFLAG_TOPIC;
+  }
+
+  flagbuf=printflags(addflags, rcuflags);  
+
+  for (;i<cargc;i++) {
     if (!(rup=findreguser(sender, cargv[i])))
       continue;
 
@@ -57,12 +91,12 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
     rcup=getregchanuser();
     rcup->chan=rcp;
     rcup->user=rup;
-    rcup->flags = QCUFLAG_OP | QCUFLAG_AUTOOP | QCUFLAG_TOPIC;
+    rcup->flags = addflags;
     rcup->changetime=time(NULL);
     rcup->usetime=0;
     rcup->info=NULL;
    
-    cs_log(sender,"CHANLEV %s #%s +aot (+ -> +aot)",cip->name->content,rup->username);
+    cs_log(sender,"CHANLEV %s #%s %s (+ -> %s)",cip->name->content,rup->username, flagbuf, flagbuf);
     addregusertochannel(rcup);
     csdb_createchanuser(rcup);
     csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);

@@ -1131,6 +1131,47 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
   
   localkickuser(chanservnick, cip->channel, np, reason?reason:"Banned.");
 }
+
+/*
+ * cs_sanitisechanlev: Removes impossible combinations from chanlev flags.
+ * chanservuser.c is probably not the right file for this, but nowhere better
+ * presented itself...
+ */
+flag_t cs_sanitisechanlev(flag_t flags) {
+  /* +m or +n cannot have any "punishment" flags */
+  if (flags & (QCUFLAG_MASTER | QCUFLAG_OWNER))
+    flags &= ~(QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY);
+  
+  /* +d can't be +o */
+  if (flags & QCUFLAG_DENY)
+    flags &= ~QCUFLAG_OP;
+  
+  /* +q can't be +v */
+  if (flags & QCUFLAG_QUIET)
+    flags &= ~QCUFLAG_VOICE;
+  
+  /* +p trumps +a and +g */
+  if (flags & QCUFLAG_PROTECT)
+    flags &= ~(QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE);
+    
+  /* -o can't be +a */
+  if (!(flags & QCUFLAG_OP)) 
+    flags &= ~QCUFLAG_AUTOOP;
+  
+  /* +a or -v can't be +g.  +a implies +o at this stage (see above) */
+  if (!(flags & QCUFLAG_VOICE) || (flags & QCUFLAG_AUTOOP))
+    flags &= ~QCUFLAG_AUTOVOICE;
+  
+  /* +p requires +o or +v */
+  if (!(flags & (QCUFLAG_VOICE | QCUFLAG_OP)))
+    flags &= ~QCUFLAG_PROTECT;
+  
+  /* The personal flags require one of +mnovk */
+  if (!(flags & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_KNOWN)))
+    flags &= ~QCUFLAGS_PERSONAL;
+  
+  return flags;
+}
 	      
 /*
  * findreguser:
