@@ -554,7 +554,7 @@ void checkpendingkills(int hooknum, void *arg) {
 
 /* Auth user */
 void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long accid, flag_t accountflags) {
-  if (IsAccount(np) && (np->accountts != 0)) { /* special case if TS is 0 - migrating users */
+  if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
   }
