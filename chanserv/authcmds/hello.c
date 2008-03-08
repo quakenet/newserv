@@ -47,6 +47,9 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[0]))
     return CMD_ERROR;
 
+  if (csa_checkaccountname(sender, sender->nick))
+    return CMD_ERROR;
+
   mdp=findorcreatemaildomain(cargv[0]);
   for(smdp=mdp; smdp; smdp=smdp->parent) {
     if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {

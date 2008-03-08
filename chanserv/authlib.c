@@ -9,22 +9,32 @@
 #include <sys/types.h>
 #include <regex.h>
 
-regex_t preg;
+regex_t remail, raccount;
 static int regexinit;
 
-int csa_initregex() {
+int csa_initregex(void) {
   if (regexinit)
     return 1;
 
-  if (!regcomp(&preg, VALID_EMAIL, REG_EXTENDED | REG_NOSUB | REG_ICASE))
+  if (regcomp(&remail, VALID_EMAIL, REG_EXTENDED | REG_NOSUB | REG_ICASE))
     return 0;
+
+  if (regcomp(&raccount, VALID_ACCOUNT_NAME, REG_EXTENDED | REG_NOSUB | REG_ICASE)) {
+    regfree(&remail);
+    return 0;
+  }
 
   regexinit = 1;
   return 1;
 }
 
-void csa_freeregex() {
-  regfree(&preg);
+void csa_freeregex(void) {
+  if(!regexinit)
+    return;
+
+  regfree(&remail);
+  regfree(&raccount);
+  regexinit = 0;
 }
 
 /*
@@ -73,8 +83,7 @@ int csa_checkeboy(nick *sender, char *eboy)
     return (1);
   }
 
-  csa_initregex();
-  if (regexec(&preg, eboy, (size_t) 0, NULL, 0)) {
+  if (regexec(&remail, eboy, (size_t) 0, NULL, 0)) {
     if (sender)
       chanservstdmessage(sender, QM_INVALIDEMAIL, eboy);
     return (1);
@@ -82,6 +91,19 @@ int csa_checkeboy(nick *sender, char *eboy)
 
   return (0);
 }
+
+/*
+ * use regex matching to determine if it's a valid account name or not
+ */
+int csa_checkaccountname(nick *sender, char *accountname) {
+  if (regexec(&raccount, accountname, (size_t) 0, NULL, 0)) {
+    if (sender)
+      chanservstdmessage(sender, QM_INVALIDACCOUNTNAME);
+    return (1);
+  }
+  return (0);
+}
+
 
 /*
  * create a random pw. code stolen from fox's O

@@ -206,7 +206,7 @@
 #define QM_GIVEOWNERNEEDHASH       140
 #define QM_GIVEOWNERWRONGHASH      141
 #define QM_SHOWINGDURATION         142
-#define UNUSED_2                    143
+#define QM_INVALIDACCOUNTNAME      143
 #define QM_CHALLENGEBADALGORITHM   144
 #define QM_NOCHALLENGE             145
 #define QM_USEGIVEOWNER            146
@@ -327,6 +327,8 @@
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
 #define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgo]|fo|me|seum|op|ro)?$"
+
+#define VALID_ACCOUNT_NAME  "^[-a-z0-9]*$"
 
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */

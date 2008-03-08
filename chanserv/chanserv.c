@@ -4,6 +4,7 @@
  */
 
 #include "chanserv.h"
+#include "authlib.h"
 #include "../core/hooks.h"
 #include "../core/schedule.h"
 
@@ -83,6 +84,7 @@ void _init() {
   chanservnext=registernickext("nickserv");
 
   chanservcryptoinit();
+  csa_initregex();
 
   if (chanservext!=-1 && chanservnext!=-1 && chanservaext!=-1) {
     /* Set up the chantypes */
@@ -213,6 +215,8 @@ void _fini() {
   chanservremovectcpcommand("version",cs_doctcpversion);
   chanservremovectcpcommand("gender",cs_doctcpgender);
   chanservcommandclose();
+
+  csa_freeregex();
 
   cs_closelog();
 }
