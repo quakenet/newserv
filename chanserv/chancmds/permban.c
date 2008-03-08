@@ -40,6 +40,7 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
   regchan *rcp;
   reguser *rup=getreguserfromnick(sender);
   struct chanban *b;
+  char banbuf[1024];
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "permban");
@@ -51,7 +52,11 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
 
   rcp=cip->exts[chanservext];
 
+  /* saves us having to do repeat a LOT more sanity checking *wink* *wink* */
   b=makeban(cargv[1]);
+  snprintf(banbuf,sizeof(banbuf),"%s",bantostring(b));
+  freechanban(b);
+  b=makeban(banbuf);
 
   for(rbp=rcp->bans;rbp;rbp=rbp->next) {
     if(banequal(b,rbp->cbp)) { /* if they're equal and one is temporary we just replace it */
@@ -68,7 +73,7 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
     } else if(banoverlap(rbp->cbp,b)) { /* new ban is contained in an already existing one */
       chanservstdmessage(sender, QM_NEWBANALREADYBANNED, bantostring(rbp->cbp));
     }else if(banoverlap(b,rbp->cbp)) { /* existing ban is contained in new one */
-      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), cargv[1]);
+      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), banbuf);
     } else {
       continue;
     }

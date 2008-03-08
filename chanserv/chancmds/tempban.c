@@ -45,6 +45,7 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender);
   unsigned int duration;
   struct chanban *b;
+  char banbuf[1024];
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "tempban");
@@ -63,7 +64,12 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   }
   duration+=time(NULL);
 
+  /* saves us having to do repeat a LOT more sanity checking *wink* *wink* */
   b=makeban(cargv[1]);
+  snprintf(banbuf,sizeof(banbuf),"%s",bantostring(b));
+  freechanban(b);
+  b=makeban(banbuf);
+
   for(rbp=rcp->bans;rbp;rbp=rbp->next) {
     if(banequal(b,rbp->cbp)) {
       if(rbp->expiry && (duration > rbp->expiry)) {
@@ -79,7 +85,7 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
     } else if(banoverlap(rbp->cbp,b)) {
       chanservstdmessage(sender, QM_NEWBANALREADYBANNED, bantostring(rbp->cbp));
     } else if(banoverlap(b,rbp->cbp)) {
-      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), cargv[1]);
+      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), banbuf);
     } else {
       continue;
     }
