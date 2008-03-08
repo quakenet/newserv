@@ -43,8 +43,8 @@ int csc_doop(void *source, int cargc, char **cargv) {
   unsigned long *lp;
   int i;
   modechanges changes;
-  int donotice=0;
-  char buf[512], bufpos=0;
+  int donotice=0, bufpos=0;
+  char buf[512];
 
   if (!rup)
     return CMD_ERROR;

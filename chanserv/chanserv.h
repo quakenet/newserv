@@ -210,6 +210,7 @@
 #define QM_CHALLENGEBADALGORITHM   144
 #define QM_NOCHALLENGE             145
 #define QM_USEGIVEOWNER            146
+#define QM_NOFLAGSPECIFIED         147
 
 /* List of privileged operations */
 
@@ -876,6 +877,7 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
 void cs_removeuser(reguser *rup);
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
 int checkhashpass(reguser *rup, const char *junk, const char *hash);
+flag_t cs_sanitisechanlev(flag_t flags);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

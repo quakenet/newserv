@@ -280,34 +280,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	return CMD_ERROR;
       }
 
-      /* Now fix up some "impossible" combinations.. */
-      /* +m can't be any of +qdb */
-      if (CUHasMasterPriv(rcuplist))
-	rcuplist->flags &= ~(QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY);
-      
-      /* +d can't be +o */
-      if (CUIsDeny(rcuplist))
-	rcuplist->flags &= ~QCUFLAG_OP;
-
-      /* +q can't be +v */
-      if (CUIsQuiet(rcuplist))
-	rcuplist->flags &= ~QCUFLAG_VOICE;
-
-      /* -o or +p can't be +a */
-      if (!CUIsOp(rcuplist) || CUIsProtect(rcuplist))
-	rcuplist->flags &= ~QCUFLAG_AUTOOP;
-      
-      /* +a or -v or +p can't be +g */
-      if (!CUIsVoice(rcuplist) || CUIsAutoOp(rcuplist) || CUIsProtect(rcuplist))
-	rcuplist->flags &= ~QCUFLAG_AUTOVOICE;
-
-      /* and -ov can't be +p */
-      if (!CUIsOp(rcuplist) && !CUIsVoice(rcuplist)) 
-      	rcuplist->flags &= ~QCUFLAG_PROTECT;
-
-      /* Unknown users aren't allowed personal flags */
-      if (!CUKnown(rcuplist))
-        rcuplist->flags &= ~QCUFLAGS_PERSONAL;
+      /* Fix up impossible combinations */
+      rcuplist->flags = cs_sanitisechanlev(rcuplist->flags);
 
       /* Check if anything "significant" has changed */
       if ((oldflags ^ rcuplist->flags) & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP))
