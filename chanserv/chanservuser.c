@@ -1137,10 +1137,12 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
  *  This function does the standard "nick or #user" lookup.
  *  If "sender" is not NULL, a suitable error message will
  *  be sent if the lookup fails.
+ *  "sender" MUST be sent when a user is requesting a lookup
+ *  as there is some policy code here.
  */
 
 reguser *findreguser(nick *sender, const char *str) {
-  reguser *rup;
+  reguser *rup, *vrup = getreguserfromnick(sender);;
   nick *np;
 
   if (!str || !*str)
@@ -1153,6 +1155,14 @@ reguser *findreguser(nick *sender, const char *str) {
       return NULL;
     }
     if (!(rup=findreguserbynick(str+1)) && sender)
+      chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+  } else if (*str=='&' && vrup && UHasHelperPriv(vrup)) {
+    if (str[1]=='\0') {
+      if (sender)
+      	chanservstdmessage(sender, QM_UNKNOWNUSER, str);
+      return NULL;
+    }
+    if (!(rup=findreguserbyID(atoi(str+1))) && sender)
       chanservstdmessage(sender, QM_UNKNOWNUSER, str);
   } else {
     if (!(np=getnickbynick(str))) {
