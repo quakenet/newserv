@@ -198,6 +198,7 @@ void csdb_dohelp(nick *np, Command *cmd) {
 		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
 }
 
+/* @todo: leaks */
 void csdb_dohelp_real(PGconn *dbconn, void *arg) {
   struct helpinfo *hip=arg;
   nick *np=getnickbynumeric(hip->numeric);

@@ -23,6 +23,7 @@ struct authhistoryinfo {
   unsigned int userID;
 };
 
+/* @todo: MEMORY LEAKS */
 void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
   struct authhistoryinfo *ahi=(struct authhistoryinfo*)arg;
   nick *np=getnickbynumeric(ahi->numeric);

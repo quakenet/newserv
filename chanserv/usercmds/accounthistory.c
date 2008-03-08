@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
+/* @todo: leak */
 void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup;

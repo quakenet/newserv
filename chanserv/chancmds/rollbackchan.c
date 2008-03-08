@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 
+/* @todo: MEMORY LEAKS */
 void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
