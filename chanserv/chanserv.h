@@ -211,6 +211,11 @@
 #define QM_NOCHALLENGE             145
 #define QM_USEGIVEOWNER            146
 #define QM_NOFLAGSPECIFIED         147
+#define QM_NEWBANALREADYBANNED     148
+#define QM_NEWBANOVERLAPS          149
+#define QM_REPLACINGTEMPBAN        150
+#define QM_PERMBANALREADYSET       151
+#define QM_BANALREADYSET           152
 
 /* List of privileged operations */
 
@@ -831,6 +836,7 @@ void csdb_createuser(reguser *rup);
 void csdb_updateuser(reguser *rup);
 void csdb_createban(regchan *rcp, regban *rbp);
 void csdb_deleteban(regban *rbp);
+void csdb_updateban(regchan *rcp, regban *rbp);
 char *csdb_gethelpstr(char *command, int language);
 void csdb_createmail(reguser *rup, int type);
 void csdb_dohelp(nick *np, Command *cmd);

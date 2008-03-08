@@ -15,7 +15,7 @@
  * CMDHELP: matching the hostmask will be kicked from the channel.
  * CMDHELP: Where:
  * CMDHELP: channel  - channel to set a ban on
- * CMDHELP: hostmask - hastmask (nick!user@host) to ban.
+ * CMDHELP: hostmask - hostmask (nick!user@host) to ban.
  * CMDHELP: reason   - reason for the ban.  This will be used in kick messages when kicking
  * CMDHELP:            users matching the ban.  If this is not provided the generic message
  * CMDHELP:            \"Banned.\" will be used.
@@ -36,9 +36,10 @@
 int csc_dopermban(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
-  regban *rbp;
+  regban *rbp, *toreplace=NULL;
   regchan *rcp;
   reguser *rup=getreguserfromnick(sender);
+  struct chanban *b;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "permban");
@@ -50,21 +51,60 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
 
   rcp=cip->exts[chanservext];
 
-  rbp=getregban();
-  rbp->ID=++lastbanID;
-  rbp->cbp=makeban(cargv[1]);
+  b=makeban(cargv[1]);
+
+  for(rbp=rcp->bans;rbp;rbp=rbp->next) {
+    if(banequal(b,rbp->cbp)) { /* if they're equal and one is temporary we just replace it */
+      if(rbp->expiry) {
+        if(toreplace) { /* shouldn't happen */
+          chanservsendmessage(sender, "Internal error, duplicate bans found on banlist.");
+        } else {
+          toreplace=rbp;
+          continue;
+        }
+      } else {
+        chanservstdmessage(sender, QM_PERMBANALREADYSET);
+      }
+    } else if(banoverlap(rbp->cbp,b)) { /* new ban is contained in an already existing one */
+      chanservstdmessage(sender, QM_NEWBANALREADYBANNED, bantostring(rbp->cbp));
+    }else if(banoverlap(b,rbp->cbp)) { /* existing ban is contained in new one */
+      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), cargv[1]);
+    } else {
+      continue;
+    }
+    freechanban(b);
+    return CMD_ERROR;
+  }
+
+  if(toreplace) {
+    freechanban(b);
+    chanservstdmessage(sender, QM_REPLACINGTEMPBAN);
+
+    rbp=toreplace;
+    if(rbp->reason)
+      freesstring(toreplace->reason);
+  } else {
+    rbp=getregban();
+    rbp->ID=++lastbanID;
+    rbp->cbp=b;
+
+    rbp->next=rcp->bans;
+    rcp->bans=rbp;
+  }
+
   rbp->setby=rup->ID;
   rbp->expiry=0;
   if (cargc>2)
     rbp->reason=getsstring(cargv[2],200);
   else
     rbp->reason=NULL;
-  rbp->next=rcp->bans;
-  rcp->bans=rbp;
 
   cs_setregban(cip, rbp);
-  csdb_createban(rcp, rbp);
-  
+  if(toreplace) {
+    csdb_updateban(rcp, rbp);
+  } else {
+    csdb_createban(rcp, rbp);
+  }
   chanservstdmessage(sender, QM_DONE);
   return CMD_OK;
 }

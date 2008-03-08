@@ -313,6 +313,23 @@ void csdb_createban(regchan *rcp, regban *rbp) {
 		  rbp->setby, escban, rbp->expiry, escreason);
 }
 
+void csdb_updateban(regchan *rcp, regban *rbp) {
+  char escreason[500];
+  char banstr[100];
+  char escban[200];
+
+  strcpy(banstr,bantostring(rbp->cbp));
+  PQescapeString(escban,banstr,strlen(banstr));
+  
+  if (rbp->reason)
+    PQescapeString(escreason, rbp->reason->content, rbp->reason->length);
+  else
+    escreason[0]='\0';
+
+  pqquery("UPDATE bans set channelID=%u, userID=%u, hostmask='%s', expiry=%lu, reason='%s' "
+                  "WHERE banID=%u", rcp->ID, rbp->setby, escban, rbp->expiry, escreason, rbp->ID);
+}
+
 void csdb_deleteban(regban *rbp) {
   pqquery("DELETE FROM bans WHERE banID=%u", rbp->ID);
 }

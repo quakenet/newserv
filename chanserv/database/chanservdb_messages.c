@@ -153,9 +153,14 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 142*/ "Showing %s for last %s.",
   /* 143*/ "Change your nickname to something with none of the following characters: `~^[]{}|_\\",
   /* 144*/ "Invalid digest algorithm.",
-  /* 144*/ "Challenge has either not been requested or has expired.",
-  /* 145*/ "To give the +n flag use GIVEOWNER. Change aborted.",
-  /* 146*/ "You must specify at least one valid flag to add."
+  /* 145*/ "Challenge has either not been requested or has expired.",
+  /* 146*/ "To give the +n flag use GIVEOWNER. Change aborted.",
+  /* 147*/ "You must specify at least one valid flag to add.",
+  /* 148*/ "New ban is already contained within existing ban: %s",
+  /* 149*/ "New ban would replace at least one existing ban (%s), use UNBANMASK %s first if you want to set this ban.",
+  /* 150*/ "A temporary ban with this mask already exists, replacing it.",
+  /* 151*/ "That permanent ban already exists.",
+  /* 152*/ "That ban already exists.",
 };
 
 void initmessages() {

@@ -16,7 +16,7 @@
  * CMDHELP: will be kicked from the channel.
  * CMDHELP: Where:
  * CMDHELP: channel  - channel to set a ban on
- * CMDHELP: hostmask - hastmask (nick!user@host) to ban.
+ * CMDHELP: hostmask - hostmask (nick!user@host) to ban.
  * CMDHELP: duration - length of time to apply the ban for.  Suffixes m (minutes), h (hours),
  * CMDHELP:            d (days), w (weeks), M (months) and y (years) can be used to specify 
  * CMDHELP:            the duration, for example 3d, 5h, 1h30m, 1M.
@@ -44,6 +44,7 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
   regchan *rcp;
   reguser *rup=getreguserfromnick(sender);
   unsigned int duration;
+  struct chanban *b;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "tempban");
@@ -61,9 +62,25 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
+  b=makeban(cargv[1]);
+  for(rbp=rcp->bans;rbp;rbp=rbp->next) {
+    if(banequal(b,rbp->cbp)) {
+      chanservstdmessage(sender, QM_BANALREADYSET);
+    } else if(banoverlap(rbp->cbp,b)) {
+      chanservstdmessage(sender, QM_NEWBANALREADYBANNED, bantostring(rbp->cbp));
+    } else if(banoverlap(b,rbp->cbp)) {
+      chanservstdmessage(sender, QM_NEWBANOVERLAPS, bantostring(rbp->cbp), cargv[1]);
+    } else {
+      continue;
+    }
+
+    freechanban(b);
+    return CMD_ERROR;
+  }
+  
   rbp=getregban();
   rbp->ID=++lastbanID;
-  rbp->cbp=makeban(cargv[1]);
+  rbp->cbp=b;
   rbp->setby=rup->ID;
   rbp->expiry=time(NULL)+duration;
   if (cargc>3)
