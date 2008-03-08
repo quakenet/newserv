@@ -160,7 +160,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 149*/ "New ban would replace at least one existing ban (%s), use UNBANMASK %s first if you want to set this ban.",
   /* 150*/ "A temporary ban with this mask already exists, replacing it.",
   /* 151*/ "That permanent ban already exists.",
-  /* 152*/ "That ban already exists.",
+  /* 152*/ "A ban with the same mask and longer duration exists, aborting.",
+  /* 153*/ "Replacing existing ban with the same mask as it has a shorter duration.",
 };
 
 void initmessages() {

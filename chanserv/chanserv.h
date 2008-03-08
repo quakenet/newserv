@@ -215,7 +215,8 @@
 #define QM_NEWBANOVERLAPS          149
 #define QM_REPLACINGTEMPBAN        150
 #define QM_PERMBANALREADYSET       151
-#define QM_BANALREADYSET           152
+#define QM_NOTREPLACINGBANLDURATION 152
+#define QM_REPLACINGBANSDURATION   153
 
 /* List of privileged operations */
 

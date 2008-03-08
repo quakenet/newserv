@@ -40,7 +40,7 @@
 int csc_dotempban(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
-  regban *rbp;
+  regban *rbp, *toreplace = NULL;
   regchan *rcp;
   reguser *rup=getreguserfromnick(sender);
   unsigned int duration;
@@ -61,11 +61,21 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_DURATIONTOOLONG, cargv[2]);
     return CMD_ERROR;
   }
-  
+  duration+=time(NULL);
+
   b=makeban(cargv[1]);
   for(rbp=rcp->bans;rbp;rbp=rbp->next) {
     if(banequal(b,rbp->cbp)) {
-      chanservstdmessage(sender, QM_BANALREADYSET);
+      if(rbp->expiry && (duration > rbp->expiry)) {
+        if(toreplace) { /* shouldn't happen */
+          chanservsendmessage(sender, "Internal error, duplicate bans found on banlist."); 
+        } else {
+          toreplace=rbp;
+          continue;
+        }
+      } else {
+        chanservstdmessage(sender, QM_NOTREPLACINGBANLDURATION);
+      }
     } else if(banoverlap(rbp->cbp,b)) {
       chanservstdmessage(sender, QM_NEWBANALREADYBANNED, bantostring(rbp->cbp));
     } else if(banoverlap(b,rbp->cbp)) {
@@ -78,20 +88,34 @@ int csc_dotempban(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
-  rbp=getregban();
-  rbp->ID=++lastbanID;
-  rbp->cbp=b;
+  if(toreplace) {
+    freechanban(b);
+    chanservstdmessage(sender, QM_REPLACINGBANSDURATION);
+    rbp=toreplace;
+    if(rbp->reason)
+      freesstring(toreplace->reason);
+  } else {
+    rbp=getregban();
+    rbp->ID=++lastbanID;
+    rbp->cbp=b;
+
+    rbp->next=rcp->bans;
+    rcp->bans=rbp;
+  }
+
   rbp->setby=rup->ID;
-  rbp->expiry=time(NULL)+duration;
+  rbp->expiry=duration;
   if (cargc>3)
     rbp->reason=getsstring(cargv[3],200);
   else
     rbp->reason=NULL;
-  rbp->next=rcp->bans;
-  rcp->bans=rbp;
 
   cs_setregban(cip, rbp);
-  csdb_createban(rcp, rbp);
+  if(toreplace) {
+    csdb_updateban(rcp, rbp);
+  } else {
+    csdb_createban(rcp, rbp);
+  }
   
   chanservstdmessage(sender, QM_DONE);
   return CMD_OK;
