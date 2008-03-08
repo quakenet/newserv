@@ -9,6 +9,7 @@ int csa_dochallenge(void *source, int cargc, char **cargv);
 int csa_dochallengeauth(void *source, int cargc, char **cargv);
 int csa_docheckhashpass(void *source, int cargc, char **cargv);
 int csa_doemail(void *source, int cargc, char **cargv);
+int csa_dogetpw(void *source, int cargc, char **cargv);
 int csa_dohello(void *source, int cargc, char **cargv);
 int csa_doauth(void *source, int cargc, char **cargv);
 int csa_donewpw(void *source, int cargc, char **cargv);
@@ -23,6 +24,7 @@ void _init() {
   chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "");
   chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "");
   chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "");
+  chanservaddcommand("getpassword", QCMD_OPER, 2, csa_dogetpw, "Gets a users password", "");
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "");
   chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: login <username> <password>\nAuthenticates using the supplied username and password.\n");
   chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "");
@@ -38,6 +40,7 @@ void _fini() {
   chanservremovecommand("challengeauth", csa_dochallengeauth);
   chanservremovecommand("checkhashpass", csa_docheckhashpass);
   chanservremovecommand("email", csa_doemail);
+  chanservremovecommand("getpassword", csa_dogetpw);
   chanservremovecommand("hello", csa_dohello);
   chanservremovecommand("login", csa_doauth);
   chanservremovecommand("newpass", csa_donewpw);

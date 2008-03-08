@@ -16,8 +16,8 @@
 #include <string.h>
 
 int csa_dosetpw(void *source, int cargc, char **cargv) {
-  reguser *rup;
   nick *sender=source;
+  reguser *rup, *vrup=getreguserfromnick(sender);
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setpassword");
@@ -27,11 +27,21 @@ int csa_dosetpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
+  if(UHasHelperPriv(rup)) {
+    cs_log(sender,"GETPASSWORD FAILED username %s",rup->username);
+    chanservwallmessage("%s (%s) just FAILED using SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
+    chanservsendmessage(sender, "Sorry, that user is privileged.");
+    return CMD_ERROR;
+  }
+
+  cs_log(sender,"SETPASSWORD OK username %s",rup->username);
+  chanservwallmessage("%s (%s) just used SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
+
   strncpy(rup->password,cargv[1],PASSLEN);
   rup->password[PASSLEN]='\0';
-  chanservstdmessage(sender, QM_PWCHANGED);
-  cs_log(sender,"SETPASSWORD OK username %s",rup->username);
   csdb_updateuser(rup);
+
+  chanservstdmessage(sender, QM_PWCHANGED);
 
   return CMD_OK;
 }
