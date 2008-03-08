@@ -1215,7 +1215,8 @@ reguser *findreguser(nick *sender, const char *str) {
       chanservstdmessage(sender, QM_USERNOTAUTHED, str);
   }
 
-  if (rup && (UIsSuspended(rup) || (rup->status & QUSTAT_DEAD))) {
+  /* removed the suspended check from here, I don't see the point... */
+  if (rup && (rup->status & QUSTAT_DEAD)) {
     chanservstdmessage(sender, QM_USERHASBADAUTH, rup->username);
     return NULL;
   }

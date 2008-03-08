@@ -89,7 +89,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 78 */ "Staff comment for %s: %s.",
   /* 79 */ "No staff comment for %s.",
   /* 80 */ "%s: Your account has been deleted or suspended.",
-  /* 81 */ "Account %s has been deleted or suspended.",
+  /* 81 */ "Account %s has been deleted.",
   /* 82 */ "Wrong email address for account \"%s\"",
   /* 83 */ "Sorry, but you have already requested a password. You will have to wait atleast %.1f hours, before requesting again.",
   /* 84 */ "Mail queued for delivery",
