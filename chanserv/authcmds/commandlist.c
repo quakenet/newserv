@@ -18,17 +18,17 @@ int csa_dosetmail(void *source, int cargc, char **cargv);
 int csa_dosetpw(void *source, int cargc, char **cargv);
 
 void _init() {
-  chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "");
-  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "");
+  chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: AUTH <username> <password>\nAuthenticates you on the bot, where:\nusername - your username\npassword - your password\nIf you do not have a username and password, see HELLO.\nNote: due to the sensitive nature of this command, you must send the message\nto Q@CServe.quakenet.org when using it.\n");
+  chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "Usage: AUTHHISTORY\nDisplays details of the last 10 logins with your account.  Details include\nhostmask, login time, disconnect time and reason.\n");
   chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "");
   chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "");
   chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "");
-  chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "");
+  chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "Usage: EMAIL <password> <email> <email>\nChanges your register email address.  Confirmation of the change will be sent\nboth old and new addresses.  Where:\npassword - your password\nemail    - new email address.  Must be entered exactly the same way twice to avoid\n           mistakes.\nNote: due to the sensitive nature of this command, you must send the message \nto Q@CServe.quakenet.org when using it.\n");
   chanservaddcommand("getpassword", QCMD_OPER, 2, csa_dogetpw, "Gets a users password", "");
-  chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "");
+  chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "Usage: HELLO <email> <email>\nCreates a new user account for yourself.  Your current nickname will be used\nfor the name of the account, and may only contain letters, numbers and \nhyphens (-).  An email containing password details will be sent to the email\naddress supplied.  Where:\nemail    - your email address.  Must be entered the same way both times.\n");
   chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: login <username> <password>\nAuthenticates using the supplied username and password.\n");
-  chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "");
-  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.", "");
+  chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "Usage: NEWPASS <oldpassword> <newpassword> <newpassword>\nChanges your account password.  Your new password must be at least 6 characters\nlong, contain at least one number and one letter, and may not contain sequences\nof letters or numbers.  Your new password will be sent to your registered email\naddress.  Where:\noldpassword - your existing account password\nnewpassword - your desired new password.  Must be entered the same both times.\nNote: due to the sensitive nature of this command, you must send the message to\nQ@CServe.quakenet.org when using it.\n");
+  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.", "Usage: REQUESTPASSWORD <username> <email>\nSends your current password to your registered email address, where:\nusername - your username\nemail    - your registered email address\n");
   chanservaddcommand("setemail", QCMD_OPER, 2, csa_dosetmail, "Set the email address.", "");
   chanservaddcommand("setpassword", QCMD_OPER, 2, csa_dosetpw, "Set a new password.", "");
 }

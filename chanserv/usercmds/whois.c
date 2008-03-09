@@ -7,6 +7,10 @@
  * CMDDESC: Displays information about a user.
  * CMDFUNC: csu_dowhois
  * CMDPROTO: int csu_dowhois(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: WHOIS <user>
+ * CMDHELP: Displays information about a user, where:
+ * CMDHELP: user  - user to request information for, either the nickname of an active user on
+ * CMDHELP:         the network or #accountname.
  */
 
 #include "../chanserv.h"
@@ -110,8 +114,9 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   chanservstdmessage(sender, QM_WHOIS_LASTAUTH, buf);
   
   if (target->lastuserhost && (rup==target || cs_privcheck(QPRIV_VIEWFULLWHOIS, sender))) {
+/* Commenting out language until we implement some - splidge 
     chanservstdmessage(sender, QM_WHOIS_USERLANG, cslanguages[target->languageid] ?
-		       cslanguages[target->languageid]->name->content : "(unknown)");
+		       cslanguages[target->languageid]->name->content : "(unknown)");  */
     chanservstdmessage(sender, QM_WHOIS_LASTUSERHOST, target->lastuserhost->content);
   }
 

@@ -7,6 +7,9 @@
  * CMDDESC: View auth history for an account.
  * CMDFUNC: csa_doauthhistory
  * CMDPROTO: int csa_doauthhistory(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: AUTHHISTORY
+ * CMDHELP: Displays details of the last 10 logins with your account.  Details include
+ * CMDHELP: hostmask, login time, disconnect time and reason.
  */
 
 #include "../chanserv.h"

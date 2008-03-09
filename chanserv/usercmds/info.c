@@ -7,6 +7,14 @@
  * CMDDESC: Shows or changes info line.
  * CMDFUNC: csu_doinfo
  * CMDPROTO: int csu_doinfo(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: INFO [<channel>] [<info line>]
+ * CMDHELP: Shows or updates your current info line, which can be configured to be displayed
+ * CMDHELP: when you join a channel.  Where:
+ * CMDHELP: channel   - channel to set info line on.  If no channel is specified, your default
+ * CMDHELP:             info line will be used.  If a channel is specified you must be known
+ * CMDHELP:             (+k) on the channel.
+ * CMDHELP: info line - new info line to set.  If not specified, the current info line will be
+ * CMDHELP:             displayed.  If \"none\" is specified, the info line will be cleared.
  */
 
 #include "../chanserv.h"

@@ -7,6 +7,12 @@
  * CMDDESC: Shows or changes user flags.
  * CMDFUNC: csu_douserflags
  * CMDPROTO: int csu_douserflags(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: USERFLAGS <flags>
+ * CMDHELP: Changes your current user flags, where:
+ * CMDHELP: flags - changes to apply, in the usual flag letters preceded by +/- format.
+ * CMDHELP: Valid user flags are:
+ * CMDHELP:  +n NOTICE  - causes the bot to sent you NOTICEs.  If this flag is not set the
+ * CMDHELP:               bot will communicate using PRIVMSG.
  */
 
 #include "../chanserv.h"

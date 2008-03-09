@@ -7,6 +7,12 @@
  * CMDDESC: Creates a new user account.
  * CMDFUNC: csa_dohello
  * CMDPROTO: int csa_dohello(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: HELLO <email> <email>
+ * CMDHELP: Creates a new user account for yourself.  Your current nickname will be used
+ * CMDHELP: for the name of the account, and may only contain letters, numbers and 
+ * CMDHELP: hyphens (-).  An email containing password details will be sent to the email
+ * CMDHELP: address supplied.  Where:
+ * CMDHELP: email    - your email address.  Must be entered the same way both times.
  */
 
 #include "../chanserv.h"

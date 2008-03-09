@@ -7,6 +7,11 @@
  * CMDDESC: Requests ownership of a channel on which there are no owners.
  * CMDFUNC: csc_dorequestowner
  * CMDPROTO: int csc_dorequestowner(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: requestowner <channel>
+ * CMDHELP: Requests owner (+n) access to the named channel.  In order to use this command,
+ * CMDHELP: there must be no owners left on the channel, and you must have the highest
+ * CMDHELP: access level of the remaining users.  Where:
+ * CMDHELP: channel - the channel to request ownership of
  */
 
 #include "../chanserv.h"

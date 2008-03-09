@@ -28,8 +28,8 @@ void _init() {
   chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db", "");
   chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.", "");
   chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes", "");
-  chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.", "");
-  chanservaddcommand("language", QCMD_AUTHED, 1, csu_dolanguage, "Shows or changes your current language.", "");
+  chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.", "Usage: INFO [<channel>] [<info line>]\nShows or updates your current info line, which can be configured to be displayed\nwhen you join a channel.  Where:\nchannel   - channel to set info line on.  If no channel is specified, your default\n            info line will be used.  If a channel is specified you must be known\n            (+k) on the channel.\ninfo line - new info line to set.  If not specified, the current info line will be\n            displayed.  If \"none\" is specified, the info line will be cleared.\n");
+  chanservaddcommand("language", QCMD_AUTHED | QCMD_OPER, 1, csu_dolanguage, "Shows or changes your current language.", "");
   chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.", "");
   chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.", "");
   chanservaddcommand("spewdb", QCMD_OPER, 1, csu_dospewdb, "Search for a user in the database.", "");
@@ -40,9 +40,9 @@ void _init() {
   chanservaddcommand("suspenduserlist", QCMD_HELPER, 1, csu_dosuspenduserlist, "Lists suspended/locked users.", "");
   chanservaddcommand("unsuspenduser", QCMD_OPER, 1, csu_dounsuspenduser, "Unsuspend a user.", "");
   chanservaddcommand("usercomment", QCMD_OPER, 2, csu_dousercomment, "Shows or changes staff comment for a user.", "");
-  chanservaddcommand("userflags", QCMD_AUTHED, 2, csu_douserflags, "Shows or changes user flags.", "");
-  chanservaddcommand("whoami", QCMD_AUTHED, 0, csu_dowhoami, "Displays information about you", "");
-  chanservaddcommand("whois", QCMD_AUTHED, 1, csu_dowhois, "Displays information about a user.", "");
+  chanservaddcommand("userflags", QCMD_AUTHED, 2, csu_douserflags, "Shows or changes user flags.", "Usage: USERFLAGS <flags>\nChanges your current user flags, where:\nflags - changes to apply, in the usual flag letters preceded by +/- format.\nValid user flags are:\n +n NOTICE  - causes the bot to sent you NOTICEs.  If this flag is not set the\n              bot will communicate using PRIVMSG.\n");
+  chanservaddcommand("whoami", QCMD_AUTHED, 0, csu_dowhoami, "Displays information about you", "Usage: WHOAMI\nDisplays various information about your account.\n");
+  chanservaddcommand("whois", QCMD_AUTHED, 1, csu_dowhois, "Displays information about a user.", "Usage: WHOIS <user>\nDisplays information about a user, where:\nuser  - user to request information for, either the nickname of an active user on\n        the network or #accountname.\n");
 }
 
 void _fini() {

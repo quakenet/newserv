@@ -7,6 +7,8 @@
  * CMDDESC: Displays information about you
  * CMDFUNC: csu_dowhoami
  * CMDPROTO: int csu_dowhoami(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: WHOAMI
+ * CMDHELP: Displays various information about your account.
  */
 
 #include "../chanserv.h"

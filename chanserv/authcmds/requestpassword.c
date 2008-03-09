@@ -7,6 +7,10 @@
  * CMDDESC: Requests the current password by email.
  * CMDFUNC: csa_doreqpw
  * CMDPROTO: int csa_doreqpw(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: REQUESTPASSWORD <username> <email>
+ * CMDHELP: Sends your current password to your registered email address, where:
+ * CMDHELP: username - your username
+ * CMDHELP: email    - your registered email address
  */
 
 #include "../chanserv.h"
