@@ -292,7 +292,8 @@
 #define   QUFLAG_DELAYEDGLINE  0x0800  /* +G */
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
-#define   QUFLAG_ALL          0x1fff
+#define   QUFLAG_TRUST         0x8000  /* +T */
+#define   QUFLAG_ALL           0xdfff
 
 #define UIsNeedAuth(x)      ((x)->flags & QUFLAG_NEEDAUTH)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
@@ -423,7 +424,7 @@
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
 			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
 
-#define   QCFLAG_ALL          0x7fff
+#define   QCFLAG_ALL          0x7bff
 
 
 /* Channel user ("chanlev") flags */
@@ -456,7 +457,7 @@
 
 #define   QCUFLAGS_PERSONAL (QCUFLAG_HIDEINFO | QCUFLAG_HIDEWELCOME | QCUFLAG_AUTOINVITE)
 
-#define   QCUFLAG_ALL         0xffff
+#define   QCUFLAG_ALL         0xffdf
 
 #define   CUIsOwner(x)        ((x)->flags & QCUFLAG_OWNER)
 #define   CUIsMaster(x)       ((x)->flags & QCUFLAG_MASTER)
