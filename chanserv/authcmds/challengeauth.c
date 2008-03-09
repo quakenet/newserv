@@ -7,6 +7,14 @@
  * CMDDESC: Authenticates you on the bot using challenge response.
  * CMDFUNC: csa_dochallengeauth
  * CMDPROTO: int csa_dochallengeauth(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: challengeauth <username> <response> <hmac algorithm>
+ * CMDHELP: Authenticates using challenge response.
+ * CMDHELP: To generate the response from the challenge, calculate the following:
+ * CMDHELP:   HMAC(challenge){k}
+ * CMDHELP: where HMAC is the hash message authentication code as described in
+ * CMDHELP: RFC 2104, k is HEXDIGEST(<lower case username>:HEXDIGEST(<password>))
+ * CMDHELP: and HEXDIGEST is the hash function used in the MAC construction.
+ * CMDHELP: For example code see the website.
  */
 
 #include "../chanserv.h"

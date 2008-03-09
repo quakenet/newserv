@@ -20,8 +20,8 @@ int csa_dosetpw(void *source, int cargc, char **cargv);
 void _init() {
   chanservaddcommand("auth", QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "");
   chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "");
-  chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "");
-  chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "");
+  chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "Usage: challenge\nSupplies you with a challenge and a list of algorithms accepted\nfor challenge response authentication, see CHALLENGEAUTH help\nfor more details.\n");
+  chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "Usage: challengeauth <username> <response> <hmac algorithm>\nAuthenticates using challenge response.\nTo generate the response from the challenge, calculate the following:\n  HMAC(challenge){k}\nwhere HMAC is the hash message authentication code as described in\nRFC 2104, k is HEXDIGEST(<lower case username>:HEXDIGEST(<password>))\nand HEXDIGEST is the hash function used in the MAC construction.\nFor example code see the website.\n");
   chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "");
   chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "");
   chanservaddcommand("getpassword", QCMD_OPER, 2, csa_dogetpw, "Gets a users password", "");
