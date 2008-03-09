@@ -11,6 +11,7 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
+#include "../../lib/strlfunc.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -21,6 +22,7 @@ int csu_dospewdomain(void *source, int cargc, char **cargv) {
   unsigned int count=0;
   maildomain *smdp;
   int limit=0, actlimit=0;
+  char flagbuf[100], smallbuf[20];
 
   if (!rup)
     return CMD_ERROR;
@@ -49,8 +51,20 @@ int csu_dospewdomain(void *source, int cargc, char **cargv) {
             break;
           }
         }
+
+        snprintf(flagbuf, sizeof(flagbuf), "%s",printflags(mdp->flags, mdflags));
+        if(MDHasLimit(mdp)) {
+          snprintf(smallbuf, sizeof(smallbuf), " %d", limit);
+          strlcat(flagbuf, smallbuf, sizeof(flagbuf));
+        }
+
+        if(MDHasActLimit(mdp)) {
+          snprintf(smallbuf, sizeof(smallbuf), " %d", actlimit);
+          strlcat(flagbuf, smallbuf, sizeof(flagbuf));
+        }
+
         /***@@@ bug here? i.e. we recurse up to find limit, then check MDHaslimit for current domain only?*/
-        chanservsendmessage(sender, "%-19s %-7d %d%s %d%s", mdp->name->content, mdp->count, limit,MDHasLimit(mdp) ? "*":"", actlimit,MDHasActLimit(mdp) ? "*":""); 
+        chanservsendmessage(sender, "%-19s %-7d %s", mdp->name->content, mdp->count, flagbuf);
         count++;
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "domains");

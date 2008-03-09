@@ -53,6 +53,9 @@
 /* Maximum number of times a user may actually be authed */
 #define   MAXAUTHCOUNT        2
 
+/* Maximum number of accounts that may share an email address */
+#define   MD_DEFAULTACTLIMIT  2
+
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
 #define   MAILDOMAINHASHSIZE  60000
@@ -228,6 +231,8 @@
 #define QM_TOOMANYBANS             155
 #define QM_WARNNOTREMOVEDPERMBAN   156
 #define QM_MAXHELLOLIMIT           157
+#define QM_ADDRESSLIMIT            158
+#define QM_DOMAINBANNED            159
 
 /* List of privileged operations */
 
@@ -548,6 +553,8 @@ typedef struct maildomain {
 #define   MDFLAG_ACTLIMIT    0x0004 /* +u */
 #define   MDFLAG_ALL         0x0007
 
+#define   MDFLAG_DEFAULT     MDFLAG_ACTLIMIT
+
 #define MDHasLimit(x)        ((x)->flags & MDFLAG_LIMIT)
 #define MDSetLimit(x)        ((x)->flags |= MDFLAG_LIMIT)
 #define MDClearLimit(x)      ((x)->flags &= ~MDFLAG_LIMIT)
@@ -823,6 +830,7 @@ maildomain *findmaildomainbyID(unsigned int ID);
 maildomain *findmaildomainbydomain(char *domain);
 maildomain *findmaildomainbyemail(char *email);
 maildomain *findorcreatemaildomain(char *email);
+maildomain *findnearestmaildomain(char *domain);
 void removemaildomainfromhash(maildomain *mdp);
 void addregusertomaildomain(reguser *rup, maildomain *mdp);
 void delreguserfrommaildomain(reguser *rup, maildomain *mdp);
