@@ -12,23 +12,25 @@ MAILTEMPLATES = {
   "mutators": {
     1: generate_url,
   },
-
+  "sendto": {
+    5: "prevemail",
+  },
   "languages": {
     "en": {
       1: {
-        "subject": "New account registration",
+        "subject": "%(config.bot)s account registration",
         "body": """
 Thank you for registering.
 To get your password please visit:
 %(url)s
 
 In case you forget your login/password use:
-/msg %(config.bot)s REQUESTPASSWORD %(user)s %(user.email)s
+/msg %(config.bot)s REQUESTPASSWORD %(user.username)s %(user.email)s
 
-Make sure you've read the %(config.bot)s FAQ FAQ at http://www.quakenet.org for a complete
+Make sure you've read the %(config.bot)s FAQ at %(config.siteurl)s for a complete
 reference on Q's commands and usage.
 
- ** PLEASE READ http://www.quakenet.org/faq/faq.php?c=160 --
+ ** PLEASE READ %(config.securityurl)s --
     it contains important information about keeping your account secure.
     Note that QuakeNet Operators will not intervene if you fail to read
     the above URL and your account is compromised as a result.
@@ -39,9 +41,24 @@ AFTER %(config.cleanup)d DAYS, AND ALL CHANLEVS ARE LOST!
 NB: Save this email for future reference.
 """,
       },
-      2: { "subject": "Password request", "body": "Your password: %(user.password)s", },
-      3: { "subject": "New password", "body": "Your new password: %(user.password)s", },
-      5: { "subject": "Email change", "body": "Your old email address: %(prevemail)s", },
+      2: { "subject": "%(config.bot)s password request", "body": """
+Your username/password is:
+
+Username: %(user.username)s
+Password: %(user.password)s
+
+To auth yourself to %(config.bot)s, type the following command
+
+   /MSG %(config.bot)s@%(config.server)s AUTH %(user.username)s %(user.password)s
+""", },
+      3: { "subject": "%(config.bot)s password change", "body": "Your new password: %(user.password)s", },
+      5: { "subject": "%(config.bot)s email change", "body": """
+Your email address has been changed on %(config.bot)s.
+
+ADD RESET STUFF,
+
+blah %(user.email)s
+""", },
     },
   },
 }

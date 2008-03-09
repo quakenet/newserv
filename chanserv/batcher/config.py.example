@@ -2,6 +2,13 @@ CONFIG = {
   "conn": "dbname='q9' user='' password=''",
   "smtphost": "localhost",
   "smtpauth": None,
+  "templateoptions": {
+    "bot": "Q9",
+    "cleanup": 80,
+    "securityurl": "http://www.quakenet.org/faq/faq.php?c=160",
+    "siteurl": "http://www.quakenet.org/",
+    "server": "CServe.test.quakenet.org",
+  },
   "from": "q9@quakenet.org",
   "defaultlang": "en",
   "url": "http://webdev.quakenet.org/~slug/q9dev/",

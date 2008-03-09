@@ -32,7 +32,7 @@ def processtemplate(emailtype, lang, obj):
   else:
     k = template, subject = MAILTEMPLATES["languages"][""][emailtype]
 
-  return k["body"] % obj, k["subject"] % obj
+  return k["body"] % obj, k["subject"] % obj, MAILTEMPLATES["sendto"].setdefault(emailtype)
 
 def email(userid, emailtype, prevemail):
   cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -53,9 +53,12 @@ def email(userid, emailtype, prevemail):
   else:
     language = ""
 
-  template, subject = processtemplate(emailtype, language, unifieddict)
+  template, subject, mailto = processtemplate(emailtype, language, unifieddict)
+  if not mailto:
+    mailto = "user.email"
+
   print "%s -> %s" % (`subject`, `unifieddict["user.email"]`)
-  inject(unifieddict["user.email"], subject, template)
+  inject(unifieddict[mailto], subject, template)
 
 def main():
   ignoring = {}
