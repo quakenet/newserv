@@ -7,20 +7,20 @@ sstring *csmessages[MAXLANG][MAXMESSAGES];
 
 char *defaultmessages[MAXMESSAGES] = {
   /*  0 */ "Channel %s is protected by %s.",
-  /*  1 */ "%s: Unknown command.",
-  /*  2 */ "To use the %s command, you must use /msg %s@%s.",
+  /*  1 */ "Unknown command %s.  Type SHOWCOMMANDS for a list of available commands.",
+  /*  2 */ "To prevent sensitive information being accidentally send to malicious users\non other networks, when using the %s command, you must use\n/msg %s@%s.",
   /*  3 */ "%s is only available to authed users.",
   /*  4 */ "%s is only available to unauthed users.",
-  /*  5 */ "The following commands are available to you:",
+  /*  5 */ "The following commands are available to you.\nFor more information on a specific command, type HELP <command>:",
   /*  6 */ "End of list.",
   /*  7 */ "Done.",
-  /*  8 */ "%s: Not enough parameters.",
+  /*  8 */ "You didn't provide enough parameters for %s.",
   /*  9 */ "Channel %s is unknown or suspended.",
   /* 10 */ "You do not have sufficient access on %s to use %s.",
   /* 11 */ "Current channel flags for %s: %s",
   /* 12 */ "Current forced modes on %s: %s",
   /* 13 */ "You do not have sufficient privileges to use %s.",
-  /* 14 */ "Unknown user %s.",
+  /* 14 */ "Can't find user %s.",
   /* 15 */ "User %s is not authed.",
   /* 16 */ "Known users on %s:",
   /* 17 */ "Username        Flags",
@@ -166,6 +166,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 155*/ "Channel has too many bans set, aborting.",
   /* 156*/ "Warning: not removing registered ban %s from %s.",
   /* 157*/ "Sorry, the registration service is unavailable to you at this time. Please try again later.", /* a deliberately vague message */
+  /* 158*/ "For more information, type HELP %s."
 };
 
 void initmessages() {

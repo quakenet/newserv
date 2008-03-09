@@ -228,6 +228,7 @@
 #define QM_TOOMANYBANS             155
 #define QM_WARNNOTREMOVEDPERMBAN   156
 #define QM_MAXHELLOLIMIT           157
+#define QM_TYPEHELPFORHELP         158
 
 /* List of privileged operations */
 
@@ -865,7 +866,9 @@ int cs_checkhashpass(const char *username, const char *password, const char *jun
 /* chanservuser.c */
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
-void chanservsendmessage(nick *np, char *message, ... );
+#define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
+#define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... );
 void chanservwallmessage(char *message, ... );
 void chanservcommandinit();
 void chanservcommandclose();
@@ -910,6 +913,7 @@ int cs_doversion(void *source, int cargc, char **cargv);
 int cs_doctcpping(void *source, int cargc, char **cargv);
 int cs_doctcpversion(void *source, int cargc, char **cargv);
 int cs_doctcpgender(void *source, int cargc, char **cargv);
+int cs_sendhelp(nick *sender, char *cmd, int oneline);
 
 /* chanservnetevents.c */
 void cs_handlenick(int hooknum, void *arg);

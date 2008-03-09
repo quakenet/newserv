@@ -130,21 +130,42 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
+  Command *cmd;
+  cmdsummary *sum;
+
+  if (!(cmd=findcommandintree(cscommands, thecmd, 1))) {
+    chanservstdmessage(sender, QM_UNKNOWNCMD, thecmd);
+    return CMD_ERROR;
+  }
+  
+/*  Disable database help for now - splidge
+  csdb_dohelp(sender, cmd); */
+
+  sum=cmd->ext;
+
+  if (sum->defhelp && *(sum->defhelp)) {
+    if (oneline) {
+      chanservsendmessageoneline(sender, sum->defhelp);
+    } else {
+      chanservsendmessage(sender, sum->defhelp);
+    }
+  } else {
+    if (!oneline)
+      chanservstdmessage(sender, QM_NOHELP, cmd->command->content);
+  }
+
+  return CMD_OK;
+}
+
+
 int cs_dohelp(void *source, int cargc, char **cargv) {
   nick *sender=source;
-  Command *cmd;
 
   if (cargc==0)
     return cs_doshowcommands(source,cargc,cargv);
   
-  if (!(cmd=findcommandintree(cscommands, cargv[0], 1))) {
-    chanservstdmessage(sender, QM_UNKNOWNCMD, cargv[0]);
-    return CMD_ERROR;
-  }
-
-  csdb_dohelp(sender, cmd);
-
-  return CMD_OK;
+  return cs_sendhelp(sender, cargv[0], 0);
 }
 
 

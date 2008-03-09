@@ -11,7 +11,7 @@
  * CMDHELP: Temporarily bans the provided hostmask on the channel.  If the ban is
  * CMDHELP: removed from the channel e.g. by a channel op or the BANTIMER feature, the
  * CMDHELP: ban will be reapplied if a matching user joins the channel.  When the time 
- * CMDHELP: expires the ban will be removed automatically.  Bans set with the PERMBAN 
+ * CMDHELP: expires the ban will be removed automatically.  Bans set with the TEMPBAN 
  * CMDHELP: command can be removed via BANCLEAR or BANDEL.  Any users matching the hostmask 
  * CMDHELP: will be kicked from the channel.
  * CMDHELP: Where:
