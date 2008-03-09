@@ -11,6 +11,7 @@ int csu_doinfo(void *source, int cargc, char **cargv);
 int csu_dolanguage(void *source, int cargc, char **cargv);
 int csu_dolistflags(void *source, int cargc, char **cargv);
 int csa_dorollbackaccount(void *source, int cargc, char **cargv);
+int csu_dosendpw(void *source, int cargc, char **cargv);
 int csu_dospewdb(void *source, int cargc, char **cargv);
 int csu_dospewdomain(void *source, int cargc, char **cargv);
 int csu_dospewemail(void *source, int cargc, char **cargv);
@@ -32,6 +33,7 @@ void _init() {
   chanservaddcommand("language", QCMD_AUTHED | QCMD_OPER, 1, csu_dolanguage, "Shows or changes your current language.", "");
   chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.", "");
   chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.", "");
+  chanservaddcommand("sendpassword", QCMD_OPER, 1, csu_dosendpw, "Sends the users current password by email.", "Usage: SENDPASSWORD <username>\nSends the password for the specified account to the specified users email address.\n");
   chanservaddcommand("spewdb", QCMD_OPER, 1, csu_dospewdb, "Search for a user in the database.", "");
   chanservaddcommand("spewdomain", QCMD_OPER, 1, csu_dospewdomain, "Spew Mail Domains.", "");
   chanservaddcommand("spewemail", QCMD_OPER, 1, csu_dospewemail, "Search for an e-mail in the database.", "");
@@ -54,6 +56,7 @@ void _fini() {
   chanservremovecommand("language", csu_dolanguage);
   chanservremovecommand("listflags", csu_dolistflags);
   chanservremovecommand("rollbackaccount", csa_dorollbackaccount);
+  chanservremovecommand("sendpassword", csu_dosendpw);
   chanservremovecommand("spewdb", csu_dospewdb);
   chanservremovecommand("spewdomain", csu_dospewdomain);
   chanservremovecommand("spewemail", csu_dospewemail);
