@@ -102,12 +102,12 @@ void _init() {
 
     /* Set up the command handler, and built in commands */
     chanservcommandinit();
-    chanservaddcommand("showcommands", 0, 1, cs_doshowcommands, "Lists available commands.","Usage: showcommands\n\nPrints a list of all commands currently available to you.\n");
+    chanservaddcommand("showcommands", 0, 1, cs_doshowcommands, "Lists available commands.","Usage: SHOWCOMMANDS\n\nPrints a list of all commands currently available to you.\n");
     chanservaddcommand("quit", QCMD_DEV, 1, cs_doquit, "Makes the bot QUIT and \"reconnect\".","");
     chanservaddcommand("rename", QCMD_DEV, 1, cs_dorename, "Changes the bot's name.","");
     chanservaddcommand("rehash", QCMD_DEV, 0, cs_dorehash, "Reloads all text from database.","");
-    chanservaddcommand("help", 0, 1, cs_dohelp, "Displays help on a specific command.","");
-    chanservaddcommand("version", 0, 1, cs_doversion, "Show Version.","");
+    chanservaddcommand("help", 0, 1, cs_dohelp, "Displays help on a specific command.","Usage: HELP <command>\nShows help for a command, where:\ncommand - the command to show help for.\nFor a list of available commands, see SHOWCOMMANDS.\n");
+    chanservaddcommand("version", 0, 1, cs_doversion, "Show Version.","Usage: VERSION\nShows the version number of the running bot.");
 
     chanservaddctcpcommand("ping",cs_doctcpping);
     chanservaddctcpcommand("version",cs_doctcpversion);
