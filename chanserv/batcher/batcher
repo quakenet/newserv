@@ -42,6 +42,9 @@ def email(userid, emailtype, prevemail):
   for key, value in cur.fetchone().items():
     unifieddict["user.%s" % key] = value
 
+  for key, value in CONFIG["templateoptions"].items():
+    unifieddict["config.%s" % key] = value
+
   if prevemail:
     unifieddict["prevemail"] = prevemail
 

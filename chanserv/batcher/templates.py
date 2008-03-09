@@ -19,9 +19,24 @@ MAILTEMPLATES = {
         "subject": "New account registration",
         "body": """
 Thank you for registering.
+To get your password please visit:
+%(url)s
 
-Username: %(user.username)s
-Please visit %(url)s to get your password.
+In case you forget your login/password use:
+/msg %(config.bot)s REQUESTPASSWORD %(user)s %(user.email)s
+
+Make sure you've read the %(config.bot)s FAQ FAQ at http://www.quakenet.org for a complete
+reference on Q's commands and usage.
+
+ ** PLEASE READ http://www.quakenet.org/faq/faq.php?c=160 --
+    it contains important information about keeping your account secure.
+    Note that QuakeNet Operators will not intervene if you fail to read
+    the above URL and your account is compromised as a result.
+
+PLEASE REMEMBER THAT UNUSED ACCOUNTS ARE AUTOMATICALLY REMOVED
+AFTER %(config.cleanup)d DAYS, AND ALL CHANLEVS ARE LOST!
+
+NB: Save this email for future reference.
 """,
       },
       2: { "subject": "Password request", "body": "Your password: %(user.password)s", },
