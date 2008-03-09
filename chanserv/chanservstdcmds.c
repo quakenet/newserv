@@ -210,11 +210,16 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
     Error("chanserv",ERR_ERROR,"Error loading help text.");
+    freesstring(hip->commandname);
+    free(hip);
     return; 
   }
 
   if (PQnfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Help text format error.");
+    PQclear(pgres);
+    freesstring(hip->commandname);
+    free(hip);
     return;
   }
   

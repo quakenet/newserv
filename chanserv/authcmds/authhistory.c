@@ -41,11 +41,14 @@ void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
     Error("chanserv", ERR_ERROR, "Error loading auth history data.");
+    free(ahi);
     return;
   }
 
   if (PQnfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Auth history data format error.");
+    PQclear(pgres);
+    free(ahi);
     return;
   }
 

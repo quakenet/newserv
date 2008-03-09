@@ -59,6 +59,9 @@ int csc_dorecover(void *source, int cargc, char **cargv) {
       localdosetmode_ban(&changes, bantostring(cip->channel->bans), MCB_DEL);
     }
 
+    /* remove the registered bans that match on me */
+    cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1);
+
     /* deopall */
     for (i=0,lp=cip->channel->users->content;
 	 i<cip->channel->users->hashsize;i++,lp++) {

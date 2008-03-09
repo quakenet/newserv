@@ -35,6 +35,7 @@ void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Account rollback data format error.");
+    PQclear(pgres);
     return;
   }
 

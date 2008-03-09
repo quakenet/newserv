@@ -45,6 +45,7 @@ void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Chanlev history data format error.");
+    PQclear(pgres);
     return;
   }
 

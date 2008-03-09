@@ -58,6 +58,10 @@
 #define MAXLANG      50
 #define MAXMESSAGES  200
 
+/* Maximum number of user chanlevs and bans */
+#define MAXCHANLEVS  250
+#define MAXBANS      50
+
 /* Sources of entropy and standard length defines */
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
@@ -217,6 +221,9 @@
 #define QM_PERMBANALREADYSET       151
 #define QM_NOTREPLACINGBANLDURATION 152
 #define QM_REPLACINGBANSDURATION   153
+#define QM_TOOMANYCHANLEVS         154
+#define QM_TOOMANYBANS             155
+#define QM_WARNNOTREMOVEDPERMBAN   156
 
 /* List of privileged operations */
 
@@ -885,6 +892,9 @@ void cs_removeuser(reguser *rup);
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
 int checkhashpass(reguser *rup, const char *junk, const char *hash);
 flag_t cs_sanitisechanlev(flag_t flags);
+
+typedef int (*UnbanFN)(void *arg, struct chanban *ban);
+void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

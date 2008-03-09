@@ -752,6 +752,7 @@ void loadcommandsummary_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Command summary format error.");
+    PQclear(pgres);
     return;
   }
 

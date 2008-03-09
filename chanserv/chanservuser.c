@@ -524,6 +524,12 @@ void cs_checknick(nick *np) {
 
   if (IsAccount(np) && np->auth) {
     if (np->auth->exts[chanservaext]) {
+      rup=getreguserfromnick(np);
+      /* safe? */
+      if(rup && UHasSuspension(rup)) {
+        chanservkillstdmessage(np, QM_SUSPENDKILL);
+        return;
+      }
       cs_doallautomodes(np);
     } else {
       /* Auto create user.. */
@@ -1222,4 +1228,64 @@ reguser *findreguser(nick *sender, const char *str) {
   }
 
   return rup;
+}
+
+/*
+ * Unbans a mask from a channel, including permbans if user has correct privs.
+ */
+void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans) {
+  regban **rbh, *rbp;
+  chanban **cbh, *cbp;
+  regchan *rcp;
+  modechanges changes;
+  char *banstr;
+
+  rcp=cip->exts[chanservext];
+
+  if (cip->channel)
+    localsetmodeinit(&changes, cip->channel, chanservnick);
+
+  for (rbh=&(rcp->bans); *rbh; ) {
+    rbp=*rbh;
+    if (fn(arg, rbp->cbp)) {
+      banstr=bantostring(rbp->cbp);
+      /* Check perms and remove */
+      if(!removepermbans) {
+        chanservstdmessage(sender, QM_WARNNOTREMOVEDPERMBAN, banstr, cip->name->content);
+        rbh=&(rbp->next);
+      } else if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, NULL, 0, 1)) {
+        chanservstdmessage(sender, QM_NOTREMOVEDPERMBAN, banstr, cip->name->content);
+        rbh=&(rbp->next);
+      } else {
+        chanservstdmessage(sender, QM_REMOVEDPERMBAN, banstr, cip->name->content);
+        if (cip->channel)
+          localdosetmode_ban(&changes, banstr, MCB_DEL);
+        /* Remove from database */
+        csdb_deleteban(rbp);
+        /* Remove from list */
+        (*rbh)=rbp->next;
+        /* Free ban/string and update setby refcount, and free actual regban */
+        freesstring(rbp->reason);
+        freechanban(rbp->cbp);
+        freeregban(rbp);
+      }
+    } else {
+      rbh=&(rbp->next);
+    }
+  }
+
+  if (cip->channel) {
+    for (cbh=&(cip->channel->bans); *cbh; ) {
+      cbp=*cbh;
+      if (fn(arg, cbp)) {
+        /* Remove */
+        banstr=bantostring(cbp);
+        chanservstdmessage(sender, QM_REMOVEDCHANBAN, banstr, cip->name->content);
+        localdosetmode_ban(&changes, banstr, MCB_DEL);
+      } else {
+        cbh=&(cbp->next);
+      }
+    }
+    localsetmodeflush(&changes,1);
+  }
 }

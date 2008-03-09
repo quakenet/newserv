@@ -162,6 +162,9 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 151*/ "That permanent ban already exists.",
   /* 152*/ "A ban with the same mask and longer duration exists, aborting.",
   /* 153*/ "Replacing existing ban with the same mask as it has a shorter duration.",
+  /* 154*/ "Channel has too many user entries, aborting.",
+  /* 155*/ "Channel has too many bans set, aborting.",
+  /* 156*/ "Warning: not removing registered ban %s from %s.",
 };
 
 void initmessages() {

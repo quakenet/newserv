@@ -27,11 +27,8 @@
 
 int csc_dounbanme(void *source, int cargc, char **cargv) {
   nick *sender=source;
-  regchan *rcp;
   chanindex *cip;
-  modechanges changes;
-  chanban **cbh;
-
+  
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "unbanme");
     return CMD_ERROR;
@@ -40,20 +37,7 @@ int csc_dounbanme(void *source, int cargc, char **cargv) {
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_OPPRIV, NULL, "unbanme", 0, 0)))
     return CMD_ERROR;
 
-  rcp=cip->exts[chanservext];
-
-  if (cip->channel) {
-    localsetmodeinit(&changes, cip->channel, chanservnick);
-
-    for (cbh=&(cip->channel->bans);*cbh;) {
-      if (nickmatchban(sender, *cbh))
-	localdosetmode_ban(&changes, bantostring(*cbh), MCB_DEL);
-      else
-	cbh=&((*cbh)->next);
-    }
-
-    localsetmodeflush(&changes, 1);
-  }
+  cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1);
 
   cs_log(sender,"UNBANME %s",cip->name->content);
   chanservstdmessage(sender, QM_DONE);

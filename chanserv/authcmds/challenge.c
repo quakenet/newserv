@@ -5,6 +5,10 @@
  * CMDDESC: Returns a challenge for use in challengeauth.
  * CMDFUNC: csa_dochallenge
  * CMDPROTO: int csa_dochallenge(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: challenge
+ * CMDHELP: Supplies you with a challenge and a list of algorithms accepted
+ * CMDHELP: for challenge response authentication, see CHALLENGEAUTH help
+ * CMDHELP: for more details.
  */
 
 #include "../chanserv.h"

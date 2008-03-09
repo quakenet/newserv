@@ -37,6 +37,7 @@ void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Account history data format error.");
+    PQclear(pgres);
     return;
   }
 
