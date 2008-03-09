@@ -837,6 +837,7 @@ maildomain *findnearestmaildomain(char *domain);
 void removemaildomainfromhash(maildomain *mdp);
 void addregusertomaildomain(reguser *rup, maildomain *mdp);
 void delreguserfrommaildomain(reguser *rup, maildomain *mdp);
+reguser *findreguserbyemail(const char *email);
 
 /* chanservdb.c */
 int chanservdbinit();

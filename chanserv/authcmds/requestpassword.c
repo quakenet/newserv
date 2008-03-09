@@ -3,13 +3,12 @@
  *
  * CMDNAME: requestpassword
  * CMDLEVEL: QCMD_NOTAUTHED
- * CMDARGS: 2
+ * CMDARGS: 1
  * CMDDESC: Requests the current password by email.
  * CMDFUNC: csa_doreqpw
  * CMDPROTO: int csa_doreqpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: REQUESTPASSWORD <username> <email>
+ * CMDHELP: Usage: REQUESTPASSWORD <email>
  * CMDHELP: Sends your current password to your registered email address, where:
- * CMDHELP: username - your username
  * CMDHELP: email    - your registered email address
  */
 
@@ -22,40 +21,49 @@
 int csa_doreqpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
+  int i, matched = 0;
 
-  if (cargc<2) {
+  if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "requestpassword");
     return CMD_ERROR;
   }
 
-  if (!(rup=findreguser(sender, cargv[0])))
-    return CMD_ERROR;
+  for (i=0;i<REGUSERHASHSIZE;i++) {
+    for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
+      if(!rup->email || strcasecmp(cargv[0],rup->email->content))
+        continue;
 
-  if(UHasHelperPriv(rup)) {
-    chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
-    cs_log(sender,"REQUESTPASSWORD FAIL privilidged user %s",rup->username);
-    return CMD_ERROR;
+      if(UHasHelperPriv(rup)) {
+        cs_log(sender,"REQUESTPASSWORD FAIL privileged email %s",cargv[0]);
+        continue;
+      }
+
+      matched = 1;
+
+      if(csa_checkthrottled(sender, rup, "REQUESTPASSWORD"))
+        continue;
+
+      rup->lastemailchange=time(NULL);
+      csdb_updateuser(rup);
+
+      if(rup->lastauth) {
+        csdb_createmail(rup, QMAIL_REQPW);
+      } else {
+        csdb_createmail(rup, QMAIL_NEWACCOUNT); /* user hasn't authed yet and needs to do the captcha */
+      }
+
+      cs_log(sender,"REQUESTPASSWORD OK username %s email %s", rup->username,rup->email->content);
+      chanservstdmessage(sender, QM_MAILQUEUED);
+    }
   }
 
-  if (strcasecmp(cargv[1],rup->email->content)) {
-    chanservstdmessage(sender, QM_BADEMAIL, rup->username);
-    cs_log(sender,"REQUESTPASSWORD FAIL wrong email, username %s email %s",rup->username,cargv[1]);
+  if(!matched) {
+    cs_log(sender,"REQUESTPASSWORD FAIL email %s",cargv[0]);
+    chanservstdmessage(sender, QM_BADEMAIL);
     return CMD_ERROR;
-  }
-
-  if (csa_checkthrottled(sender, rup, "REQUESTPASSWORD"))
-    return CMD_ERROR;
-
-  rup->lastemailchange=time(NULL);
-  csdb_updateuser(rup);
-
-  if(rup->lastauth) {
-    csdb_createmail(rup, QMAIL_REQPW);
   } else {
-    csdb_createmail(rup, QMAIL_NEWACCOUNT); /* user hasn't authed yet and needs to do the captcha */
+    chanservstdmessage(sender, QM_DONE);
   }
-  chanservstdmessage(sender, QM_MAILQUEUED, rup->username);
-  cs_log(sender,"REQUESTPASSWORD OK username %s email %s", rup->username,rup->email->content);
 
   return CMD_OK;
 }

@@ -45,7 +45,7 @@ int csa_dosendpw(void *source, int cargc, char **cargv) {
   } else {
     csdb_createmail(rup, QMAIL_NEWACCOUNT); /* user hasn't authed yet and needs to do the captcha */
   }
-  chanservstdmessage(sender, QM_MAILQUEUED, rup->username);
+  chanservstdmessage(sender, QM_MAILQUEUED);
   cs_log(sender,"SENDPASSWORD username", rup->username);
 
   return CMD_OK;

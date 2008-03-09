@@ -72,7 +72,7 @@ reguser *findreguserbyemail(const char *email) {
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      if (!strcasecmp(email,rup->email->content)) {
+      if (rup->email && !strcasecmp(email,rup->email->content)) {
         return rup;
       }
     }
