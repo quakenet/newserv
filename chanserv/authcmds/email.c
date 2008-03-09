@@ -50,6 +50,11 @@ int csa_doemail(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if(rup->email && !strcasecmp(cargv[1], rup->email->content)) {
+    chanservstdmessage(sender, QM_EMAILMATCHESOLD);
+    return CMD_ERROR;
+  }
+
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
 

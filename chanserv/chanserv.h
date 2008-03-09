@@ -235,6 +235,7 @@
 #define QM_DOMAINBANNED            159
 #define QM_TYPEHELPFORHELP         160
 #define QM_REQUESTPASSPRIVUSER     161
+#define QM_EMAILMATCHESOLD         162
 
 /* List of privileged operations */
 

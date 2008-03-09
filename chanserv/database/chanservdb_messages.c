@@ -170,6 +170,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 159*/ "That email address has been blocked.",
   /* 160*/ "For more information, type HELP %s.",
   /* 161*/ "Cannot send password for that account.",
+  /* 162*/ "The new email address is the same as current one.",
 };
 
 void initmessages() {
