@@ -213,6 +213,8 @@ maildomain *findnearestmaildomain(char *domain) {
 
   if(!m && (p=strchr(domain, '.')))
     return findnearestmaildomain(++p);
+
+  return NULL;
 }
 
 maildomain *findmaildomainbyemail(char *email) {
@@ -229,7 +231,7 @@ maildomain *findmaildomainbyemail(char *email) {
 maildomain *findorcreatemaildomain(char *email) {
   unsigned int hash;
   char *domain,*pdomain;
-  maildomain *mdp, *pmdp;
+  maildomain *mdp;
 
   if (!(domain=strchr(email, '@')))
     domain=email;

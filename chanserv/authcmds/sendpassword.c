@@ -5,8 +5,8 @@
  * CMDLEVEL: QCMD_OPER
  * CMDARGS: 1
  * CMDDESC: Sends the users current password by email.
- * CMDFUNC: csu_dosendpw
- * CMDPROTO: int csu_dosendpw(void *source, int cargc, char **cargv);
+ * CMDFUNC: csa_dosendpw
+ * CMDPROTO: int csa_dosendpw(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: SENDPASSWORD <username>
  * CMDHELP: Sends the password for the specified account to the specified users email address.
  */
@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int csu_dosendpw(void *source, int cargc, char **cargv) {
+int csa_dosendpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
 
@@ -28,6 +28,12 @@ int csu_dosendpw(void *source, int cargc, char **cargv) {
 
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
+
+  if(UHasHelperPriv(rup)) {
+    chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
+    cs_log(sender,"REQUESTPASSWORD FAIL privilidged user %s",rup->username);
+    return CMD_ERROR;
+  }
 
   /* we don't reset the throttling timer
   rup->lastemailchange=time(NULL);

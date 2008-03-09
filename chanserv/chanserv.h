@@ -234,6 +234,7 @@
 #define QM_ADDRESSLIMIT            158
 #define QM_DOMAINBANNED            159
 #define QM_TYPEHELPFORHELP         160
+#define QM_REQUESTPASSPRIVUSER     161
 
 /* List of privileged operations */
 

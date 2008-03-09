@@ -31,6 +31,12 @@ int csa_doreqpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
+  if(UHasHelperPriv(rup)) {
+    chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
+    cs_log(sender,"REQUESTPASSWORD FAIL privilidged user %s",rup->username);
+    return CMD_ERROR;
+  }
+
   if (strcasecmp(cargv[1],rup->email->content)) {
     chanservstdmessage(sender, QM_BADEMAIL, rup->username);
     cs_log(sender,"REQUESTPASSWORD FAIL wrong email, username %s email %s",rup->username,cargv[1]);

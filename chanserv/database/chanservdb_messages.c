@@ -168,7 +168,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 157*/ "Sorry, the registration service is unavailable to you at this time. Please try again later.", /* a deliberately vague message */
   /* 158*/ "Too many accounts exist from this email address.",
   /* 159*/ "That email address has been blocked.",
-  /* 160*/ "For more information, type HELP %s."
+  /* 160*/ "For more information, type HELP %s.",
+  /* 161*/ "Cannot send password for that account.",
 };
 
 void initmessages() {
