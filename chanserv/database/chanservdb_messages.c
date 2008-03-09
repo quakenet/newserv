@@ -53,7 +53,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 44 */ "Username or password incorrect.",
   /* 45 */ "You are now logged in as %s.",
   /* 46 */ "User %s created, account information will be sent to \"%s\"",
-  /* 47 */ "A user with that name already exists.  Change your nick and try again.",
+  /* 47 */ "A user with that name already exists.  If you have said HELLO before, use AUTH to\nlogin, or REQUESTPASSWORD if you have forgotten the password.  Otherwise,\nplease change your nick and try again.",
   /* 48 */ "You're already on %s.",
   /* 49 */ "You're not on %s.",
   /* 50 */ "You're already opped on %s.",
