@@ -165,6 +165,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 154*/ "Channel has too many user entries, aborting.",
   /* 155*/ "Channel has too many bans set, aborting.",
   /* 156*/ "Warning: not removing registered ban %s from %s.",
+  /* 157*/ "Sorry, the registration service is unavailable to you at this time. Please try again later.", /* a deliberately vague message */
 };
 
 void initmessages() {

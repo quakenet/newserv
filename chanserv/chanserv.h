@@ -47,6 +47,9 @@
 /* Maximum number of times a user may attempt to auth */
 #define   MAXAUTHATTEMPT      3
 
+/* Maximum number of hellos in a session */
+#define   MAXHELLOS           3
+
 /* Maximum number of times a user may actually be authed */
 #define   MAXAUTHCOUNT        2
 
@@ -224,6 +227,7 @@
 #define QM_TOOMANYCHANLEVS         154
 #define QM_TOOMANYBANS             155
 #define QM_WARNNOTREMOVEDPERMBAN   156
+#define QM_MAXHELLOLIMIT           157
 
 /* List of privileged operations */
 
@@ -693,8 +697,8 @@ typedef struct activeuser {
 #ifdef CS_PARANOID
   unsigned int       activeuser_magic;
 #endif
-  int                authattempts; /* number of times user has attempted to auth */
-
+  unsigned short                authattempts; /* number of times user has attempted to auth */
+  unsigned short                helloattempts; /* number of times user has attempted to hello... */
   unsigned char      entropy[ENTROPYLEN]; /* entropy used for challengeauth */
   time_t             entropyttl;
   struct activeuser *next;         /* purely for keeping track of free, but not free'd structures */

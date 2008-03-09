@@ -149,6 +149,7 @@ activeuser *getactiveuser() {
   tagactiveuser(aup);
   
   aup->authattempts=0;
+  aup->helloattempts=0;
   aup->entropyttl=0;
   
   return aup;
