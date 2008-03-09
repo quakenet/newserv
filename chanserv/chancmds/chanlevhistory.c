@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdio.h>
 
-/* @todo: leaks */
 void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
@@ -44,6 +43,7 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Chanlev history data format error.");
+    PQclear(pgres);
     return;
   }
   num=PQntuples(pgres);

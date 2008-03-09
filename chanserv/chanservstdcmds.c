@@ -198,7 +198,6 @@ void csdb_dohelp(nick *np, Command *cmd) {
 		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
 }
 
-/* @todo: leaks */
 void csdb_dohelp_real(PGconn *dbconn, void *arg) {
   struct helpinfo *hip=arg;
   nick *np=getnickbynumeric(hip->numeric);
@@ -211,11 +210,16 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
     Error("chanserv",ERR_ERROR,"Error loading help text.");
+    freesstring(hip->commandname);
+    free(hip);
     return; 
   }
 
   if (PQnfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Help text format error.");
+    PQclear(pgres);
+    freesstring(hip->commandname);
+    free(hip);
     return;
   }
   

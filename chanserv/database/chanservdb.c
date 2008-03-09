@@ -730,7 +730,6 @@ void loadcommandsummary(Command *cmd) {
 		  "SELECT languageID,summary from help where lower(command) = lower('%s')",cmd->command->content);
 }
 
-/* @todo: leaks */
 void loadcommandsummary_real(PGconn *dbconn, void *arg) {
   int i,j,num;
   PGresult *pgres;
@@ -753,6 +752,7 @@ void loadcommandsummary_real(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Command summary format error.");
+    PQclear(pgres);
     return;
   }
 
