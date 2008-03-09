@@ -524,6 +524,12 @@ void cs_checknick(nick *np) {
 
   if (IsAccount(np) && np->auth) {
     if (np->auth->exts[chanservaext]) {
+      rup=getreguserfromnick(np);
+      /* safe? */
+      if(rup && UHasSuspension(rup)) {
+        chanservkillstdmessage(np, QM_SUSPENDKILL);
+        return;
+      }
       cs_doallautomodes(np);
     } else {
       /* Auto create user.. */
