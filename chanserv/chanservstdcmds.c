@@ -133,7 +133,8 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
   Command *cmd;
   cmdsummary *sum;
-
+  reguser *rup;
+  
   if (!(cmd=findcommandintree(cscommands, thecmd, 1))) {
     chanservstdmessage(sender, QM_UNKNOWNCMD, thecmd);
     return CMD_ERROR;
@@ -141,6 +142,17 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
   
 /*  Disable database help for now - splidge
   csdb_dohelp(sender, cmd); */
+  
+  rup=getreguserfromnick(sender);
+  
+  /* Don't showhelp for privileged users to others.. */
+  if (((cmd->level & QCMD_HELPER) && (!rup || !UHasHelperPriv(rup))) ||
+      ((cmd->level & QCMD_OPER) && (!rup || !UHasOperPriv(rup))) ||
+      ((cmd->level & QCMD_ADMIN) && (!rup || !UHasAdminPriv(rup))) ||
+      ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup)))) {
+    chanservstdmessage(sender, QM_NOHELP, cmd->command->content);
+    return CMD_OK;
+  }
 
   sum=cmd->ext;
 
