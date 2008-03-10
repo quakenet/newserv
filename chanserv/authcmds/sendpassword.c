@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: sendpassword
- * CMDLEVEL: QCMD_OPER
+ * CMDLEVEL: QCMD_HELPER
  * CMDARGS: 1
  * CMDDESC: Sends the users current password by email.
  * CMDFUNC: csa_dosendpw
