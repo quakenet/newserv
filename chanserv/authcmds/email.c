@@ -30,6 +30,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   char *dupemail;
   int found = 0;
   time_t t = time(NULL);
+  maillock *mlp;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "email");
@@ -65,6 +66,13 @@ int csa_doemail(void *source, int cargc, char **cargv) {
 
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
+
+  for(mlp=maillocks;mlp;mlp=mlp->next) {
+    if(!match(mlp->pattern->content, cargv[1])) {
+      chanservstdmessage(sender, QM_MAILLOCKED);
+      return CMD_ERROR;
+    }
+  }
 
   dupemail = strdup(cargv[1]);
   local=strchr(dupemail, '@');

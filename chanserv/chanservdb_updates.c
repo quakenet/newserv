@@ -435,3 +435,34 @@ void csdb_cleanuphistories() {
   pqquery("DELETE FROM accounthistory WHERE changetime < %lu", expire_time);
 }
 
+void csdb_deletemaillock(maillock *mlp) {
+  pqquery("DELETE FROM maillocks WHERE ID=%u", mlp->id);
+}
+
+void csdb_createmaillock(maillock *mlp) {
+  char escpattern[1024], escreason[1024];
+
+  PQescapeString(escpattern, mlp->pattern->content, mlp->pattern->length);
+
+  if (mlp->reason)
+    PQescapeString(escreason, mlp->reason->content, mlp->reason->length);
+  else
+    escreason[0]='\0';
+
+  pqquery("INSERT INTO maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %u)",
+          mlp->id,escpattern,escreason,mlp->createdby,mlp->created);
+}
+
+void csdb_updatemaillock(maillock *mlp) {
+  char escpattern[1024], escreason[1024];
+
+  PQescapeString(escpattern, mlp->pattern->content, mlp->pattern->length);
+
+  if (mlp->reason)
+    PQescapeString(escreason, mlp->reason->content, mlp->reason->length);
+  else
+    escreason[0]='\0';
+
+  pqquery("UPDATE maillocks SET pattern='%s', reason='%s', createdby=%u, created=%u WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
+}
+

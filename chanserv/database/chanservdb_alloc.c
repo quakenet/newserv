@@ -187,3 +187,18 @@ void freemaildomain(maildomain *mdp) {
   csfreemaildomains=mdp;
 }
 
+maillock *getmaillock() {
+  /* we don't create too many of these */
+  maillock *mlp = nsmalloc(POOL_CHANSERVDB,sizeof(maillock));
+  tagmaillock(mlp);
+
+  return mlp;
+}
+
+void freemaillock(maillock *mlp) {
+  verifymaillock(mlp);
+
+  freesstring(mlp->pattern);
+  freesstring(mlp->reason);
+  free(mlp);
+}

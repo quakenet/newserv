@@ -27,6 +27,7 @@ typedef struct tabledesc {
 } tabledesc;
 
 regchan **allchans;
+maillock *maillocks;
 
 int chanservext;
 int chanservaext;
@@ -35,6 +36,7 @@ unsigned int lastchannelID;
 unsigned int lastuserID;
 unsigned int lastbanID;
 unsigned int lastdomainID;
+unsigned int lastmaillockID;
 
 /* Local prototypes */
 void csdb_handlestats(int hooknum, void *arg);
@@ -66,6 +68,10 @@ void loadchanbansdone(PGconn *, void *);
 /* Mail Domain loading functions */
 void loadsomemaildomains(PGconn *, void *);
 void loadmaildomainsdone(PGconn *, void *);
+
+/* Mail lock loading functions */
+void loadsomemaillocks(PGconn *, void *);
+void loadmaillocksdone(PGconn *, void *);
 
 /* Free sstrings in the structures */
 void csdb_freestuff();
@@ -222,6 +228,14 @@ static void setuptables() {
                   "PRIMARY KEY (userID, changetime))");
 
    pqcreatequery("CREATE INDEX accounthistory_userID_index on accounthistory(userID)");
+
+   pqcreatequery("CREATE TABLE maillocks ("
+                 "ID           INT               NOT NULL,"
+                 "pattern      VARCHAR           NOT NULL,"
+                 "reason       VARCHAR           NOT NULL,"
+                 "createdby    INT               NOT NULL,"
+                 "created      INT               NOT NULL,"
+                 "PRIMARY KEY (ID))");
 }
 
 void _init() {
@@ -247,6 +261,7 @@ void _init() {
     loadall("chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
     loadall("bans",NULL,loadsomechanbans,loadchanbansdone);
     loadall("maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
+    loadall("maillocks",NULL, loadsomemaillocks,loadmaillocksdone);
     
     loadmessages(); 
   }
@@ -786,6 +801,7 @@ void csdb_freestuff() {
   regchanuser *rcup;
   regban *rbp;
   maildomain *mdp;
+  maillock *mlp, *nmlp;
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
@@ -824,6 +840,12 @@ void csdb_freestuff() {
     for (mdp=maildomainnametable[i]; mdp; mdp=mdp->nextbyname)
       freesstring(mdp->name);
   }
+
+  for(mlp=maillocks;mlp;mlp=nmlp) {
+    nmlp=mlp->next;
+    freemaillock(mlp);
+  }
+  maillocks=NULL;
 }
 
 void loadsomemaildomains(PGconn *dbconn,void *arg) {
@@ -864,5 +886,44 @@ void loadsomemaildomains(PGconn *dbconn,void *arg) {
 
 void loadmaildomainsdone(PGconn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Load Mail Domains done (highest ID was %d)",lastdomainID);
+}
+
+void loadsomemaillocks(PGconn *dbconn,void *arg) {
+  PGresult *pgres;
+  maillock *mlp;
+  unsigned int i,num;
+  pgres=PQgetResult(dbconn);
+
+  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+    Error("chanserv",ERR_ERROR,"Error loading maillock DB");
+    return;
+ }
+
+  if (PQnfields(pgres)!=5) {
+    Error("chanserv",ERR_ERROR,"Maillock DB format error");
+    return;
+  }
+  num=PQntuples(pgres);
+  lastmaillockID=0;
+
+  for(i=0;i<num;i++) {
+    mlp=getmaillock();
+    mlp->id=strtoul(PQgetvalue(pgres,i,0),NULL,10);
+    mlp->pattern=getsstring(PQgetvalue(pgres,i,1), 300);
+    mlp->reason=getsstring(PQgetvalue(pgres,i,2), 300);
+    mlp->createdby=strtoul(PQgetvalue(pgres,i,3),NULL,10);
+    mlp->created=strtoul(PQgetvalue(pgres,i,4),NULL,10);
+    mlp->next=maillocks;
+    maillocks=mlp;
+
+    if (mlp->id > lastmaillockID)
+      lastmaillockID=mlp->id;
+  }
+
+  PQclear(pgres);
+}
+
+void loadmaillocksdone(PGconn *dbconn, void *arg) {
+  Error("chanserv",ERR_INFO,"Load Mail Locks done (highest ID was %d)",lastmaillockID);
 }
 

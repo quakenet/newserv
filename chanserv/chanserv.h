@@ -243,6 +243,11 @@
 #define QM_BADRESETCODE            167
 #define QM_CHALLENGEDDEPRECATED    168
 #define QM_CHANLEVSUMMARY          169
+#define QM_MAILLOCKHEADER          170
+#define QM_MAILLOCKLINE            171
+#define QM_MAILLOCKDOESNTEXIST     172
+#define QM_MAILLOCKALREADYEXISTS   173
+#define QM_MAILLOCKED              174
 
 /* List of privileged operations */
 
@@ -727,6 +732,18 @@ typedef struct activeuser {
   struct activeuser *next;         /* purely for keeping track of free, but not free'd structures */
 } activeuser;
 
+typedef struct maillock {
+#ifdef CS_PARANOID
+  unsigned int maillock_magic;
+#endif
+  unsigned int        id;
+  sstring            *pattern;
+  sstring            *reason;
+  unsigned int        createdby;
+  time_t              created;
+  struct maillock    *next;
+} maillock;
+
 #ifdef CS_PARANOID
 
 #define REGUSERMAGIC      0x4d42de03
@@ -735,6 +752,7 @@ typedef struct activeuser {
 #define REGCHANBANMAGIC   0x5a6f555a
 #define ACTIVEUSERMAGIC   0x897f98a0
 #define MAILDOMAINMAGIC   0x27cde46f
+#define MAILLOCKMAGIC     0x3c81d762
 
 #define verifyreguser(x)      assert((x)->reguser_magic      == REGUSERMAGIC)
 #define verifyregchan(x)      assert((x)->regchan_magic      == REGCHANMAGIC)
@@ -742,6 +760,7 @@ typedef struct activeuser {
 #define verifyregchanban(x)   assert((x)->regchanban_magic   == REGCHANBANMAGIC)
 #define verifyactiveuser(x)   assert((x)->activeuser_magic   == ACTIVEUSERMAGIC)
 #define verifymaildomain(x)   assert((x)->maildomain_magic   == MAILDOMAINMAGIC)
+#define verifymaillock(x)     assert((x)->maillock_magic     == MAILLOCKMAGIC)
 
 #define tagreguser(x)         ((x)->reguser_magic = REGUSERMAGIC)
 #define tagregchan(x)         ((x)->regchan_magic = REGCHANMAGIC)
@@ -749,7 +768,7 @@ typedef struct activeuser {
 #define tagregchanban(x)      ((x)->regchanban_magic = REGCHANBANMAGIC)
 #define tagactiveuser(x)      ((x)->activeuser_magic = ACTIVEUSERMAGIC)
 #define tagmaildomain(x)      ((x)->maildomain_magic = MAILDOMAINMAGIC)
-
+#define tagmaillock(x)        ((x)->maillock_magic = MAILLOCKMAGIC)
 #else
 
 #define verifyreguser(x)
@@ -758,6 +777,7 @@ typedef struct activeuser {
 #define verifyregchanban(x)
 #define verifyactiveuser(x)
 #define verifymaildomain(x)
+#define verifymaillock(x)
 
 #define tagreguser(x)
 #define tagregchan(x)
@@ -765,6 +785,7 @@ typedef struct activeuser {
 #define tagregchanban(x)
 #define tagactiveuser(x)
 #define tagmaildomain(x)
+#define tagmaillock(x)
 
 #endif
 
@@ -776,6 +797,7 @@ extern unsigned int lastuserID;
 extern unsigned int lastchannelID;
 extern unsigned int lastbanID;
 extern unsigned int lastdomainID;
+extern unsigned int lastmaillockID;
 
 extern int chanserv_init_status;
 extern int chanservdb_ready;
@@ -806,6 +828,8 @@ extern CommandTree *cscommands;
 
 extern sstring **chantypes;
 
+extern maillock *maillocks;
+
 /* Function prototypes */
 
 /* chanserv.c */
@@ -826,6 +850,8 @@ activeuser *getactiveuser();
 void freeactiveuser(activeuser *aup);
 maildomain *getmaildomain();
 void freemaildomain(maildomain *mdp);
+maillock *getmaillock();
+void freemaillock(maillock *mlp);
 
 /* chanservhash.c */
 void chanservhashinit();
@@ -1003,5 +1029,8 @@ void csdb_updatemaildomain(maildomain *mdp);
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail);
 void csdb_cleanuphistories();
+void csdb_deletemaillock(maillock *mlp);
+void csdb_createmaillock(maillock *mlp);
+void csdb_updatemaillock(maillock *mlp);
 
 #endif

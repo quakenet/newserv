@@ -177,7 +177,12 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 166*/ "Your old account settings have been restored, please check your email.",
   /* 167*/ "Bad reset code.",
   /* 168*/ "WARNING: the selected algorithm is legacy functionality and is likely to be removed in the near future.",
-  /* 169*/ "Total: %d (owner: %d, master: %d, op: %d, voice: %d, known: %d, ban: %d)."
+  /* 169*/ "Total: %d (owner: %d, master: %d, op: %d, voice: %d, known: %d, ban: %d).",
+  /* 170*/ "Pattern:                                           Created by:     Reason:                   Created:",
+  /* 171*/ "%-50s %-15s %-25s %s",
+  /* 172*/ "That pattern doesn't exist.",
+  /* 173*/ "That pattern already exists!",
+  /* 174*/ "Sorry, you can't use that email address.",
 };
 
 void initmessages() {

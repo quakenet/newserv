@@ -10,6 +10,7 @@ int csu_dodomainmode(void *source, int cargc, char **cargv);
 int csu_doinfo(void *source, int cargc, char **cargv);
 int csu_dolanguage(void *source, int cargc, char **cargv);
 int csu_dolistflags(void *source, int cargc, char **cargv);
+int csu_domaillock(void *source, int cargc, char **cargv);
 int csa_dorollbackaccount(void *source, int cargc, char **cargv);
 int csu_dospewdb(void *source, int cargc, char **cargv);
 int csu_dospewdomain(void *source, int cargc, char **cargv);
@@ -31,6 +32,7 @@ void _init() {
   chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.", "Usage: INFO [<channel>] [<info line>]\nShows or updates your current info line, which can be configured to be displayed\nwhen you join a channel.  Where:\nchannel   - channel to set info line on.  If no channel is specified, your default\n            info line will be used.  If a channel is specified you must be known\n            (+k) on the channel.\ninfo line - new info line to set.  If not specified, the current info line will be\n            displayed.  If \"none\" is specified, the info line will be cleared.\n");
   chanservaddcommand("language", QCMD_AUTHED | QCMD_OPER, 1, csu_dolanguage, "Shows or changes your current language.", "");
   chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.", "");
+  chanservaddcommand("maillock", QCMD_OPER, 3, csu_domaillock, "Set/unset/list mail lock patterns", "Usage: maillock <-list|-add|-del> <pattern> [<reason>]\nManipulates the list of mail lock patterns.\nAny email address matching the pattern will be refused in HELLO/EMAIL.\nA reason is optional for -list, but recommended.\n");
   chanservaddcommand("rollbackaccount", QCMD_OPER, 2, csa_dorollbackaccount, "Roll back password/email changes on an account.", "");
   chanservaddcommand("spewdb", QCMD_OPER, 1, csu_dospewdb, "Search for a user in the database.", "");
   chanservaddcommand("spewdomain", QCMD_OPER, 1, csu_dospewdomain, "Spew Mail Domains.", "");
@@ -53,6 +55,7 @@ void _fini() {
   chanservremovecommand("info", csu_doinfo);
   chanservremovecommand("language", csu_dolanguage);
   chanservremovecommand("listflags", csu_dolistflags);
+  chanservremovecommand("maillock", csu_domaillock);
   chanservremovecommand("rollbackaccount", csa_dorollbackaccount);
   chanservremovecommand("spewdb", csu_dospewdb);
   chanservremovecommand("spewdomain", csu_dospewdomain);

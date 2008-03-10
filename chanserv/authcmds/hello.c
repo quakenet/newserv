@@ -31,6 +31,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   int found=0;
   char *dupemail;
   activeuser *aup;
+  maillock *mlp;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -64,6 +65,13 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   if (csa_checkaccountname(sender, sender->nick))
     return CMD_ERROR;
+
+  for(mlp=maillocks;mlp;mlp=mlp->next) {
+    if(!match(mlp->pattern->content, cargv[0])) {
+      chanservstdmessage(sender, QM_MAILLOCKED);
+      return CMD_ERROR;
+    }
+  }
 
   dupemail = strdup(cargv[0]);
   local=strchr(dupemail, '@');
