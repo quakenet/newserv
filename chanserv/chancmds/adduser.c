@@ -38,7 +38,8 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
   reguser *rup;
   flag_t addflags;
   char *flagbuf;
-  unsigned int count=0;  
+  unsigned int count=0;
+  int added=0;
   int i;
 
   if (cargc<2) {
@@ -111,12 +112,14 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
     addregusertochannel(rcup);
     csdb_createchanuser(rcup);
     csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);
+    added++;
   }
 
   rcp->status |= QCSTAT_OPCHECK;
   cs_timerfunc(cip);
 
-  chanservstdmessage(sender, QM_DONE);
+  if (added)
+    chanservstdmessage(sender, QM_DONE);
 
   return CMD_OK;
 }

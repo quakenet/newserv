@@ -36,6 +36,7 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
   regchan *rcp;
   reguser *rup;
   int isowner=0;
+  int removed=0;
   int i;
 
   if (cargc<2) {
@@ -76,12 +77,14 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
     csdb_deletechanuser(rcup);
     delreguserfromchannel(rcp, rup);
     csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
+    removed++;
   }
 
   rcp->status |= QCSTAT_OPCHECK;
   cs_timerfunc(cip);
 
-  chanservstdmessage(sender, QM_DONE);
+  if (removed)
+    chanservstdmessage(sender, QM_DONE);
 
   return CMD_OK;
 }
