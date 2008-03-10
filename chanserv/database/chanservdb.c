@@ -89,6 +89,7 @@ static void setuptables() {
                "suspendreason VARCHAR(250),"
                "comment       VARCHAR(250),"
                "info          VARCHAR(100),"
+               "lockuntil     INT               NOT NULL,"
                "PRIMARY KEY (ID))");
 
   pqcreatequery("CREATE INDEX user_username_index ON users (username)");
@@ -349,7 +350,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=15) {
+  if (PQnfields(pgres)!=16) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
@@ -390,6 +391,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     rup->suspendreason=getsstring(PQgetvalue(pgres,i,12),250);
     rup->comment=getsstring(PQgetvalue(pgres,i,13),250);
     rup->info=getsstring(PQgetvalue(pgres,i,14),100);
+    rup->lockuntil=strtoul(PQgetvalue(pgres,i,15),NULL,10);
     rup->knownon=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;

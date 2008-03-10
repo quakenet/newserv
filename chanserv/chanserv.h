@@ -655,6 +655,7 @@ typedef struct reguser {
  
   unsigned int        suspendby;     /* Userid of oper who suspended this user */
   time_t              suspendexp;    /* Expiry date of suspension */
+  time_t              lockuntil;     /* User password/email is locked until this date */
 
   char                password[PASSLEN+1];
 
