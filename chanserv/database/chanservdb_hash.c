@@ -319,6 +319,9 @@ void delreguserfrommaildomain(reguser *rup, maildomain *mdp) {
   reguser *ruh, *pruh=NULL;
   int found=0;
 
+  if(!mdp)
+    return;
+
   for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
     if (ruh==rup) {
       /* Found the user */
