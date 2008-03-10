@@ -57,8 +57,14 @@ int csc_dobantimer(void *source, int cargc, char **cargv) {
     oldtimer=rcp->banduration;
     rcp->banduration=durationtolong(cargv[1]);
 
-    if (rcp->banduration<0)
+    if (rcp->banduration<=0) {
+      if(strcmp(cargv[1], "0")) {
+        rcp->banduration=oldtimer;
+        chanservstdmessage(sender, QM_INVALIDDURATION2, cargv[1]);
+        return CMD_ERROR;
+      }
       rcp->banduration=0;
+    }
     
     /* Arbitrary limit */
     if (rcp->banduration > 31622400)
