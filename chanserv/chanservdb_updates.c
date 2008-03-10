@@ -210,10 +210,10 @@ void csdb_updateuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("UPDATE users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
-		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, password='%s', email='%s',"
+		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, lockuntil=%lu, password='%s', email='%s',"
 		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s' WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
-		  rup->suspendtime, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
+		  rup->suspendtime, rup->lockuntil, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
 		  rup->ID);
 }  
 
@@ -255,11 +255,11 @@ void csdb_createuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
-		  "flags, language, suspendby, suspendexp, suspendtime, password, email, lastuserhost, "
-		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,'%s','%s',"
+		  "flags, language, suspendby, suspendexp, suspendtime, lockuntil, password, email, lastuserhost, "
+		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
 		  "'%s','%s','%s','%s')",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
-		  rup->languageid, rup->suspendby, rup->suspendexp,
+		  rup->languageid, rup->suspendby, rup->suspendexp, rup->suspendtime, rup->lockuntil,
 		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo);
 }  
 

@@ -119,6 +119,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->suspendby=0;
   rup->suspendexp=0;
   rup->suspendtime=0;
+  rup->lockuntil=0;
   rup->password[0]='\0';
   rup->email=getsstring(cargv[0],EMAILLEN);
 
