@@ -3,14 +3,35 @@
 
 #include "chanserv.h"
 #include "../core/error.h"
+#include "../core/config.h"
 #include "../lib/prng.h"
 #include "../lib/sha1.h"
 #include "../lib/sha2.h"
 #include "../lib/md5.h"
 #include "../lib/hmac.h"
 
-prngctx rng;
+static prngctx rng;
+static sstring *secret, *codesecret;
 
+static sstring *combinesecret(char *str) {
+  SHA256_CTX ctx;
+  unsigned char digest[32];
+  char hexbuf[sizeof(digest) * 2 + 1];
+
+  SHA256_Init(&ctx);
+  SHA256_Update(&ctx, (unsigned char *)secret->content, secret->length);
+  SHA256_Update(&ctx, (unsigned char *)":", 1);
+  SHA256_Update(&ctx, (unsigned char *)str, strlen(str));
+  SHA256_Final(digest, &ctx);    
+
+  SHA256_Init(&ctx);
+  SHA256_Update(&ctx, digest, sizeof(digest));
+  SHA256_Final(digest, &ctx);    
+  hmac_printhex(digest, hexbuf, sizeof(digest));
+
+  return getsstring(hexbuf, strlen(hexbuf));
+}
+ 
 void chanservcryptoinit(void) {
   int ret;
 
@@ -29,6 +50,25 @@ void chanservcryptoinit(void) {
   }
 
   prnginit(&rng, 1);
+
+  secret=getcopyconfigitem("chanserv","secret","",128);
+  if(!secret || !secret->content || !secret->content[0]) {
+    unsigned char buf[32];
+    char hexbuf[sizeof(buf) * 2 + 1];
+
+    Error("chanserv",ERR_WARNING,"Shared secret not set, generating a random string...");
+
+    cs_getrandbytes(buf, 32);
+    hmac_printhex(buf, hexbuf, sizeof(buf));
+    secret=getsstring(hexbuf, strlen(hexbuf));
+  }
+  codesecret=combinesecret("codegenerator");
+}
+
+
+void chanservcryptofree(void) {
+  freesstring(secret);
+  freesstring(codesecret);
 }
 
 ub4 cs_getrandint(void) {
@@ -178,4 +218,28 @@ int cs_checkhashpass(const char *username, const char *password, const char *jun
     return 0;
 
   return 1;
+}
+
+char *csc_generateresetcode(time_t lockuntil, char *username) {
+  unsigned char digest[32];
+  static char hexbuf[sizeof(digest) * 2 + 1];
+  hmacsha256 hmac;
+  SHA256_CTX ctx;
+  char buf[1024];
+
+  snprintf(buf, sizeof(buf), "%s:%lu", username, lockuntil);
+
+  SHA256_Init(&ctx);
+  SHA256_Update(&ctx, (unsigned char *)buf, strlen(buf));
+  SHA256_Final(digest, &ctx);
+
+  hmac_printhex(digest, hexbuf, sizeof(digest));
+
+  hmacsha256_init(&hmac, (unsigned char *)codesecret->content, codesecret->length);
+  hmacsha256_update(&hmac, (unsigned char *)hexbuf, strlen(hexbuf));
+  hmacsha256_final(&hmac, digest);
+
+  hmac_printhex(digest, hexbuf, sizeof(digest));
+
+  return hexbuf;
 }

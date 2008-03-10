@@ -29,6 +29,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   char *local;
   char *dupemail;
   int found = 0;
+  time_t t = time(NULL);
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "email");
@@ -47,6 +48,13 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   if (strcmp(cargv[1],cargv[2])) {
     chanservstdmessage(sender, QM_EMAILDONTMATCH);
     cs_log(sender,"EMAIL FAIL username %s email don't match (%s vs %s)",rup->username,cargv[1],cargv[2]);
+    return CMD_ERROR;
+  }
+
+  if(rup->lockuntil && rup->lockuntil > t) {
+    char buf[100];
+    strftime(buf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lockuntil)));
+    chanservstdmessage(sender, QM_ACCOUNTLOCKED, buf);
     return CMD_ERROR;
   }
 
@@ -101,10 +109,14 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   csdb_createmail(rup, QMAIL_NEWEMAIL);
   csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
   delreguserfrommaildomain(rup,rup->domain);
-  freesstring(rup->email);
+
+  if(rup->lastemail)
+    freesstring(rup->lastemail);
+  rup->lastemail=rup->email;
   rup->email=getsstring(cargv[1],EMAILLEN);
-  rup->lastemailchange=time(NULL);
+  rup->lastemailchange=t;
   rup->domain=findorcreatemaildomain(rup->email->content);
+  rup->lockuntil=t+7*24*3600;
   addregusertomaildomain(rup, rup->domain);
 
   if(local) {

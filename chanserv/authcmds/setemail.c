@@ -42,6 +42,11 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   freesstring(rup->email);
   rup->email=getsstring(cargv[1],EMAILLEN);
   rup->lastemailchange=time(NULL);
+  if(rup->lastemail) {
+    freesstring(rup->lastemail);
+    rup->lastemail=NULL;
+  }
+  rup->lockuntil=0;
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
   dupemail = strdup(rup->email->content);

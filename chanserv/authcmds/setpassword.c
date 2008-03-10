@@ -37,6 +37,11 @@ int csa_dosetpw(void *source, int cargc, char **cargv) {
   cs_log(sender,"SETPASSWORD OK username %s",rup->username);
   chanservwallmessage("%s (%s) just used SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
 
+  if(rup->lastemail) {
+    freesstring(rup->lastemail);
+    rup->lastemail=NULL;
+  }
+  rup->lockuntil=0;
   strncpy(rup->password,cargv[1],PASSLEN);
   rup->password[PASSLEN]='\0';
   csdb_updateuser(rup);

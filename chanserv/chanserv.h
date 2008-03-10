@@ -237,6 +237,10 @@
 #define QM_REQUESTPASSPRIVUSER     161
 #define QM_EMAILMATCHESOLD         162
 #define QM_INVALIDLIMIT            163
+#define QM_ACCOUNTLOCKED           164
+#define QM_ACCOUNTNOTLOCKED        165
+#define QM_RESETOK                 166
+#define QM_BADRESETCODE            167
 
 /* List of privileged operations */
 
@@ -361,6 +365,7 @@
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */
 #define QMAIL_NEWPW                3  /* new password */
+#define QMAIL_RESET                4  /* reset account */
 #define QMAIL_NEWEMAIL             5  /* new email address */
 
 
@@ -874,11 +879,13 @@ void csdb_dohelp(nick *np, Command *cmd);
 /* chanservcrypto.c */
 typedef int (*CRAlgorithm)(char *, const char *, const char *, const char *);
 void chanservcryptoinit(void);
+void chanservcryptofree(void);
 void cs_getrandbytes(unsigned char *buf, size_t bytes);
 char *cs_calcchallenge(const unsigned char *entropy);
 CRAlgorithm cs_cralgorithm(const char *algorithm);
 const char *cs_cralgorithmlist(void);
 int cs_checkhashpass(const char *username, const char *password, const char *junk, const char *hash);
+char *csc_generateresetcode(time_t lockuntil, char *username);
 
 /* chanservuser.c */
 void chanservreguser(void *arg);

@@ -219,6 +219,7 @@ void _fini() {
   chanservcommandclose();
 
   csa_freeregex();
+  chanservcryptofree();
 
   cs_closelog();
 }

@@ -172,6 +172,10 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 161*/ "Cannot send password for that account.",
   /* 162*/ "The new email address is the same as current one.",
   /* 163*/ "Supplied autolimit is invalid: %s",
+  /* 164*/ "This account has recently been modified. It will be unlocked on %s.",
+  /* 165*/ "That account is not locked.",
+  /* 166*/ "Your old account settings have been restored, please check your email.",
+  /* 167*/ "Bad reset code.",
 };
 
 void initmessages() {
