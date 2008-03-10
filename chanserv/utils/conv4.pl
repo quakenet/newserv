@@ -224,6 +224,7 @@ sub map_chanflags {
 
   if ($oldflags & 0x04) {  # +c
     $newflags |= 0x04;
+    $forcemodes |= 0x20;
   } 
 
   if ($oldflags & 0x20) { # +f
