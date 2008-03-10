@@ -36,6 +36,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   reguser *founder;
   flag_t flags;
   short type=0;
+  unsigned int i;
   
   if (!rup)
     return CMD_ERROR;
@@ -134,6 +135,11 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   
   rcp->checksched=NULL;
   rcp->ltimestamp=0;
+  for (i=0;i<CHANOPHISTORY;i++) {
+    rcp->chanopnicks[i][0]='\0';
+    rcp->chanopaccts[i]=0;
+  }
+  rcp->chanoppos=0;  
 
   /* Add new channel to db.. */  
   csdb_createchannel(rcp);

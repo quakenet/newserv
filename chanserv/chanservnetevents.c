@@ -228,6 +228,7 @@ void cs_handlejoin(int hooknum, void *arg) {
       /* Auto op */
       if (!isopped) {
         modes |= MC_OP;
+        cs_logchanop(rcp, np->nick, rup);
       }
     } else {
       /* Not auto op; deop them if they are opped and are not allowed them */

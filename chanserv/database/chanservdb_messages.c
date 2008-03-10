@@ -52,7 +52,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 43 */ "%s is authed as %s.  Cannot reclaim nick.",
   /* 44 */ "Username or password incorrect.",
   /* 45 */ "You are now logged in as %s.",
-  /* 46 */ "User %s created, account information will be sent to \"%s\"",
+  /* 46 */ "User %s created successfully.\nInformation about how to access and use your new account will be sent to your email address, %s.\nIf you do not see an email soon be sure to check your spam folder.",
   /* 47 */ "A user with that name already exists.  If you have said HELLO before, use AUTH to\nlogin, or REQUESTPASSWORD if you have forgotten the password.  Otherwise,\nplease change your nick and try again.",
   /* 48 */ "You're already on %s.",
   /* 49 */ "You're not on %s.",
@@ -183,6 +183,9 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 172*/ "That pattern doesn't exist.",
   /* 173*/ "That pattern already exists!",
   /* 174*/ "Sorry, you can't use that email address.",
+  /* 175*/ "You do not have sufficient access to use %s on %s.",
+  /* 176*/ "No channel op events have been logged for %s.",
+  /* 177*/ "Channel op events on %s:\nNickname        Account used",
 };
 
 void initmessages() {

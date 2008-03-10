@@ -667,8 +667,10 @@ void cs_docheckopvoice(channel *cp, modechanges *changes) {
            (rcup && CUIsDeny(rcup)))
         localdosetmode_nick(changes, np, MC_DEOP);
     } else {
-      if (rcup && (CUIsProtect(rcup) || CIsProtect(rcp)) && CUIsOp(rcup) && !CUIsDeny(rcup))
+      if (rcup && (CUIsProtect(rcup) || CIsProtect(rcp)) && CUIsOp(rcup) && !CUIsDeny(rcup)) {
         localdosetmode_nick(changes, np, MC_OP);    
+        cs_logchanop(rcp, np->nick, rcup->user);
+      }
     }
     
     if (cp->users->content[i] & CUMODE_VOICE) {
@@ -705,8 +707,10 @@ void cs_doallautomodes(nick *np) {
 	    localdosetmode_nick(&changes, np, MC_DEOP);
 	} else {
 	  if (!CUIsDeny(rcup) && CUIsOp(rcup) && 
-	      (CUIsProtect(rcup) || CIsProtect(rcup->chan) || CUIsAutoOp(rcup)))
+	      (CUIsProtect(rcup) || CIsProtect(rcup->chan) || CUIsAutoOp(rcup))) {
 	    localdosetmode_nick(&changes, np, MC_OP);
+	    cs_logchanop(rcup->chan, np->nick, rup);
+          }
 	}
 	
 	if (*lp & CUMODE_VOICE) {
@@ -1302,4 +1306,12 @@ void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removep
     }
     localsetmodeflush(&changes,1);
   }
+}
+
+/* Add entry to channel op history when someone gets ops. */
+void cs_logchanop(regchan *rcp, char *nick, reguser *rup) {
+  strncpy(rcp->chanopnicks[rcp->chanoppos], nick, NICKLEN);
+  rcp->chanopnicks[rcp->chanoppos][NICKLEN]='\0';
+  rcp->chanopaccts[rcp->chanoppos]=rup->ID;
+  rcp->chanoppos=(rcp->chanoppos+1)%CHANOPHISTORY;
 }

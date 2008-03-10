@@ -36,6 +36,7 @@
 int csc_doop(void *source, int cargc, char **cargv) {
   nick *sender=source, *np;
   reguser *rup=getreguserfromnick(sender);
+  reguser *srup=rup;
   chanindex *cip;
   regchan *rcp=NULL;
   regchanuser *rcup;
@@ -64,6 +65,7 @@ int csc_doop(void *source, int cargc, char **cargv) {
 	    localsetmodeinit(&changes, ca[i], chanservnick);
 	    localdosetmode_nick(&changes, sender, MC_OP);
 	    localsetmodeflush(&changes,1);
+	    cs_logchanop(rcp, sender->nick, rup);
 	  }
 	}
       }
@@ -88,6 +90,7 @@ int csc_doop(void *source, int cargc, char **cargv) {
     localsetmodeinit(&changes, cip->channel, chanservnick);
     localdosetmode_nick(&changes, sender, MC_OP);
     localsetmodeflush(&changes,1);
+    cs_logchanop(rcp, sender->nick, srup);
 
     chanservstdmessage(sender, QM_DONE);
     return CMD_OK;
@@ -130,6 +133,7 @@ int csc_doop(void *source, int cargc, char **cargv) {
 
     bufpos += sprintf(buf+bufpos,"%s%s",bufpos?", ":"",np->nick);
     localdosetmode_nick(&changes, np, MC_OP);
+    cs_logchanop(rcp, np->nick, srup);
   }
 
   if (donotice && bufpos) {
