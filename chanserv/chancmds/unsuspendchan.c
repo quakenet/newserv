@@ -51,7 +51,8 @@ int csc_dounsuspendchan(void *source, int cargc, char **cargv) {
   rcp->suspendreason = NULL;
   rcp->suspendby = 0;
 
-  chanservjoinchan(cip->channel);
+  if(cip->channel)
+    chanservjoinchan(cip->channel);
 
   csdb_updatechannel(rcp);
   chanservstdmessage(sender, QM_DONE);
