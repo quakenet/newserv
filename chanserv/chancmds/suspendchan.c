@@ -47,6 +47,7 @@ int csc_dosuspendchan(void *source, int cargc, char **cargv) {
   CSetSuspended(rcp);
   rcp->suspendreason = getsstring(cargv[1], 250);
   rcp->suspendby = rup->ID;
+  rcp->suspendtime = time(NULL);
   cs_log(sender,"SUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason->content);
   if(cip->channel)
     chanservjoinchan(cip->channel);

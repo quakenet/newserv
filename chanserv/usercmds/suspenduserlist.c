@@ -22,7 +22,7 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
   int i;
   unsigned int count=0;
   struct tm *tmp;
-  char buf[200];
+  char buf[200], buf2[200];
   
   if (!rup)
     return CMD_ERROR;
@@ -71,8 +71,11 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
           strftime(buf,15,"%d/%m/%y %H:%M",tmp);
         }
         
+        tmp=gmtime(&(dbrup->suspendtime));
+        strftime(buf2,15,"%d/%m/%y %H:%M",tmp);
+
         count++;
-        chanservsendmessage(sender, "%-15s %-13s %-15s %-15s %s", dbrup->username, suspendtype, UHasOperPriv(rup)?(bywhom?bywhom:"unknown"):"not shown", (dbrup->suspendexp)?((time(0) >= dbrup->suspendexp)?"next auth":buf):"never", dbrup->suspendreason->content);
+        chanservsendmessage(sender, "%-15s %-13s %-15s %-15s %-15s %s", dbrup->username, suspendtype, UHasOperPriv(rup)?(bywhom?bywhom:"unknown"):"not shown", buf2, (dbrup->suspendexp)?((time(0) >= dbrup->suspendexp)?"next auth":buf):"never", dbrup->suspendreason->content);
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "users");
           return CMD_ERROR;

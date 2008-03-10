@@ -154,6 +154,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           vrup->flags|=QUFLAG_SUSPENDED;
           vrup->suspendby=rup->ID;
           vrup->suspendexp=expires;
+          vrup->suspendtime=time(NULL);
           vrup->suspendreason=getsstring(reason, strlen(reason)+1);
           
           killtheusers(sender,vrup);
@@ -180,6 +181,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           vrup->flags|=QUFLAG_SUSPENDED;
           vrup->suspendby=rup->ID;
           vrup->suspendexp=expires;
+          vrup->suspendtime=time(NULL);
           vrup->suspendreason=getsstring(reason, strlen(reason)+1);
           
           killtheusers(sender,vrup);
@@ -219,6 +221,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       vrup->flags|=QUFLAG_SUSPENDED;
     vrup->suspendby=rup->ID;
     vrup->suspendexp=expires;
+    vrup->suspendtime=time(NULL);
     vrup->suspendreason=getsstring(reason, strlen(reason)+1);
     
     chanservwallmessage("%s (%s) %s %s (expires: %s)", sender->nick, rup->username, (gline)?((gline == 2)?"instantly glined":"delayed glined"):"suspended", vrup->username, expires?buf:"never");

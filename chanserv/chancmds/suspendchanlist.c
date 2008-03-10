@@ -26,9 +26,9 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
   chanindex *cip;
   regchan *rcp;
   int i;
-  char *bywhom;
+  char *bywhom, buf[200];
   unsigned int count=0;
-  
+  struct tm *tmp;
   if (!rup)
     return CMD_ERROR;
   
@@ -59,7 +59,11 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
           bywhom="unknown";
       }
       count++;
-      chanservsendmessage(sender, "%-30s %-15s %s", cip->name->content, bywhom, rcp->suspendreason->content);
+
+      tmp=gmtime(&(rcp->suspendtime));
+      strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+
+      chanservsendmessage(sender, "%-30s %-15s %-15s %s", cip->name->content, bywhom, buf, rcp->suspendreason->content);
       if (count >= 2000) {
         chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "channels");
         return CMD_ERROR;
