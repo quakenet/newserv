@@ -103,7 +103,7 @@ void _init() {
 
     /* Set up the command handler, and built in commands */
     chanservcommandinit();
-    chanservaddcommand("showcommands", 0, 1, cs_doshowcommands, "Lists available commands.","Usage: SHOWCOMMANDS\n\nPrints a list of all commands currently available to you.\n");
+    chanservaddcommand("showcommands", 0, 1, cs_doshowcommands, "Lists available commands.","Usage: SHOWCOMMANDS [<mask>]\nPrints a list of commands currently available to you, where:\nmask - Mask of commands to list (* or ? are wildcards).  If no mask is specified,\n       all available commands are displayed.");
     chanservaddcommand("quit", QCMD_DEV, 1, cs_doquit, "Makes the bot QUIT and \"reconnect\".","");
     chanservaddcommand("rename", QCMD_DEV, 1, cs_dorename, "Changes the bot's name.","");
     chanservaddcommand("rehash", QCMD_DEV, 0, cs_dorehash, "Reloads all text from database.","");

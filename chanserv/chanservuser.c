@@ -318,7 +318,7 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
   int notice;
   reguser *rup;
   int language;
-  va_list va;
+  va_list va, va2;
   char *message;
   char *bp2,*bp;
   int len;
@@ -345,6 +345,7 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
   }
 
   va_start(va,messageid);
+  va_copy(va2, va);
   vsnprintf(buf,5000,message,va);
   va_end(va);
 
@@ -378,9 +379,18 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
       *bp2++=*bp;
     }
   }
+  
+  /* Special case: If it's a "not enough parameters" message, show the first line of help */
+  if (messageid==QM_NOTENOUGHPARAMS) {
+    char *command=va_arg(va2, char *);
+    cs_sendhelp(np, command, 1);
+    chanservstdmessage(np, QM_TYPEHELPFORHELP, command); 
+  }
+  
+  va_end(va2);
 }
 
-void chanservsendmessage(nick *np, char *message, ... ) {
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) {
   char buf[5010]; /* Very large buffer.. */
   char buf2[512], *bp, *bp2;
   int notice;
@@ -424,7 +434,7 @@ void chanservsendmessage(nick *np, char *message, ... ) {
       }
 
       /* If we ran out of buffer, get out here */
-      if (!*bp)
+      if (!*bp || (*bp=='\n' && oneline))
 	break;
       
       bp2=buf2;

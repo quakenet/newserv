@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: auth
- * CMDLEVEL: QCMD_ALIAS | QCMD_SECURE | QCMD_NOTAUTHED
+ * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED
  * CMDARGS: 2
  * CMDDESC: Authenticates you on the bot.
  * CMDFUNC: csa_doauth
@@ -14,6 +14,7 @@
  * CMDHELP: If you do not have a username and password, see HELLO.
  * CMDHELP: Note: due to the sensitive nature of this command, you must send the message
  * CMDHELP: to Q@CServe.quakenet.org when using it.
+ * CMDHELP: Note: the preferred way to authenticate is to use the /AUTH command.
  */
 
 /* Actual function is in login.c */

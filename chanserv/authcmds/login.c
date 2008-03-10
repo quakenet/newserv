@@ -2,13 +2,19 @@
  *
  *
  * CMDNAME: login
- * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED
+ * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED | QCMD_ALIAS
  * CMDARGS: 2
  * CMDDESC: Authenticates you on the bot.
  * CMDFUNC: csa_doauth
  * CMDPROTO: int csa_doauth(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: login <username> <password>
- * CMDHELP: Authenticates using the supplied username and password.
+ * CMDHELP: Usage: LOGIN <username> <password>
+ * CMDHELP: Authenticates you on the bot, where:
+ * CMDHELP: username - your username
+ * CMDHELP: password - your password
+ * CMDHELP: If you do not have a username and password, see HELLO.
+ * CMDHELP: Note: due to the sensitive nature of this command, you must send the message
+ * CMDHELP: to Q@CServe.quakenet.org when using it.
+ * CMDHELP: Note: the preferred way to authenticate is to use the /AUTH command.
  */
 
 #include "../chanserv.h"
