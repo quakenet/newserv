@@ -38,7 +38,7 @@
 #define   LINGERTIME          300
 #define   DUMPINTERVAL        300
 #define   EMAILLEN            60
-#define   CHANTYPES           7
+#define   CHANTYPES           8
 
 /* Suspension and g-line hit count limits */
 #define   MAXGLINEUSERS       50
