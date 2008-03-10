@@ -30,6 +30,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   reguser *ruh;
   int found=0;
   char *dupemail;
+  activeuser *aup;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -41,6 +42,14 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   if (findreguserbynick(sender->nick)) {
     chanservstdmessage(sender, QM_AUTHNAMEINUSE, sender->nick);
+    return CMD_ERROR;
+  }
+
+  if (!(aup = getactiveuserfromnick(sender)))
+    return CMD_ERROR;
+
+  if (aup->helloattempts > MAXHELLOS) {
+    chanservstdmessage(sender, QM_MAXHELLOLIMIT);
     return CMD_ERROR;
   }
 
@@ -64,6 +73,8 @@ int csa_dohello(void *source, int cargc, char **cargv) {
     }
   }
 
+  aup->helloattempts++;
+  
   dupemail = strdup(cargv[0]);
   local=strchr(dupemail, '@');
   *(local++)='\0';
