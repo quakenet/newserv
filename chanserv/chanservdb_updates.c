@@ -268,7 +268,7 @@ void csdb_createuser(reguser *rup) {
 
   pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
 		  "flags, language, suspendby, suspendexp, suspendtime, lockuntil, password, email, lastuserhost, "
-		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
+		  "suspendreason, comment, info, lastemail) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
 		  "'%s','%s','%s','%s','%s')",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
 		  rup->languageid, rup->suspendby, rup->suspendexp, rup->suspendtime, rup->lockuntil,
