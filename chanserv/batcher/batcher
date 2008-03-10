@@ -57,7 +57,7 @@ def email(userid, emailtype, prevemail):
   if not mailto:
     mailto = "user.email"
 
-  print "%s -> %s" % (`subject`, `unifieddict["user.email"]`)
+  print "%s -> %s" % (`subject`, `unifieddict[mailto]`)
   inject(unifieddict[mailto], subject, template)
 
 def main():
