@@ -26,11 +26,12 @@
 int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   reguser *rup;
   activeuser *aup;
-  nick *sender=source;
+  nick *sender=source, *onp;
   char userhost[USERLEN+HOSTLEN+2];
   int challenge=0;
   char *authtype = "AUTH";
   authname *anp;
+  int toomanyauths=0;
 
   if (alg) {
     challenge=1;
@@ -72,6 +73,32 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
       return CMD_ERROR;
     }
   }
+
+  /* This should never fail but do something other than crashing if it does. */
+  if (!(anp=findauthname(rup->ID))) {
+    chanservstdmessage(sender, QM_AUTHFAIL);
+    return CMD_ERROR;
+  }
+
+  /* Check for too many auths.  Don't return immediately, since we will still warn
+   * other users on the acct in this case. */
+  if (!UHasHelperPriv(rup) && !UIsNoAuthLimit(rup)) {
+    if (anp->usercount >= MAXAUTHCOUNT) {
+      chanservstdmessage(sender, QM_TOOMANYAUTHS);
+      toomanyauths=1;
+    }
+  }
+  
+  for (onp=anp->nicks;onp;onp=onp->nextbyauthname) {
+    if (toomanyauths) {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHEDLIMIT, sender->nick, sender->ident, sender->host->name->content, MAXAUTHCOUNT);
+    } else {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHED, sender->nick, sender->ident, sender->host->name->content);
+    }
+  }
+  
+  if (toomanyauths)
+    return CMD_ERROR;
 
   rup->lastauth=time(NULL);
   sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
@@ -116,13 +143,6 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     return CMD_ERROR;
   }
   
-  if (!UHasHelperPriv(rup) && !UIsNoAuthLimit(rup)) {
-    anp=findauthname(rup->ID);
-    if (!anp || (anp->usercount >= MAXAUTHCOUNT)) {
-      chanservstdmessage(sender, QM_TOOMANYAUTHS);
-      return CMD_ERROR;
-    }
-  }
   
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
 

@@ -43,10 +43,10 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (!(cip=cs_checkaccess(sender, cargv[0], CA_MASTERPRIV, NULL, "adduser", QPRIV_CHANGECHANLEV, 0)))
+  if (!(cip=cs_checkaccess(sender, cargv[0], CA_MASTERPRIV, NULL, "removeuser", QPRIV_CHANGECHANLEV, 0)))
     return CMD_ERROR;
 
-  if (cs_checkaccess(sender, NULL, CA_OWNERPRIV, cip, "adduser", QPRIV_CHANGECHANLEV, 1))
+  if (cs_checkaccess(sender, NULL, CA_OWNERPRIV, cip, "removeuser", QPRIV_CHANGECHANLEV, 1))
     isowner=1;
 
   rcp=cip->exts[chanservext];

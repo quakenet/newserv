@@ -252,6 +252,8 @@
 #define QM_NOACCESSONUSER          175
 #define QM_NOCHANOPHISTORY         176
 #define QM_CHANOPHISTORYHEADER     177
+#define QM_OTHERUSERAUTHEDLIMIT    178
+#define QM_OTHERUSERAUTHED         179
 
 /* List of privileged operations */
 
