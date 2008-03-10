@@ -21,8 +21,6 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   int i;
   time_t t;
   long to_age, unused_age;
-  struct tm *tmp;
-  char buf[200];
   int expired = 0, unauthed = 0;
 
   t = time(NULL);
@@ -43,9 +41,6 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
         } else {
           continue;
         }
-
-        tmp=gmtime(&(vrup->lastauth));
-        strftime(buf,15,"%d/%m/%y %H:%M",tmp);
 
         cs_removeuser(vrup);
       }
