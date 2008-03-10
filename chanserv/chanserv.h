@@ -25,7 +25,7 @@
 #endif
 
 /* Q9 Version */
-#define QVERSION "0.80"
+#define QVERSION "1.00-RC1"
 
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */

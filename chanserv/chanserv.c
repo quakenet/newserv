@@ -7,6 +7,9 @@
 #include "authlib.h"
 #include "../core/hooks.h"
 #include "../core/schedule.h"
+#include "../lib/version.h"
+
+MODULE_VERSION(QVERSION);
 
 int chanservnext;
 
