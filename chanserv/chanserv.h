@@ -39,6 +39,7 @@
 #define   DUMPINTERVAL        300
 #define   EMAILLEN            60
 #define   CHANTYPES           8
+#define   CHANOPHISTORY       10
 
 /* Suspension and g-line hit count limits */
 #define   MAXGLINEUSERS       50
@@ -243,6 +244,9 @@
 #define QM_BADRESETCODE            167
 #define QM_CHALLENGEDDEPRECATED    168
 #define QM_CHANLEVSUMMARY          169
+#define QM_NOACCESSONUSER          170
+#define QM_NOCHANOPHISTORY         171
+#define QM_CHANOPHISTORYHEADER     172
 
 /* List of privileged operations */
 
@@ -642,6 +646,10 @@ typedef struct regchan {
 
   struct regchanuser *regusers[REGCHANUSERHASHSIZE];
   struct regban      *bans;            /* List of bans on the channel */
+  
+  char                chanopnicks[CHANOPHISTORY][NICKLEN+1];  /* Last CHANOPHISTORY ppl to get ops */
+  unsigned int        chanopaccts[CHANOPHISTORY];             /* Which account was responsible for each one */
+  short               chanoppos;                              /* Position in the array */  
 } regchan;
 
 /* Registered user */
@@ -925,9 +933,9 @@ void cs_removeuser(reguser *rup);
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
 int checkhashpass(reguser *rup, const char *junk, const char *hash);
 flag_t cs_sanitisechanlev(flag_t flags);
-
 typedef int (*UnbanFN)(void *arg, struct chanban *ban);
 void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans);
+void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

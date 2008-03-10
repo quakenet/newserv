@@ -116,13 +116,13 @@ int csa_doauthhistory(void *source, int cargc, char **cargv) {
 
     /* don't allow non-opers to view oper auth history, but allow helpers to view non-oper history */
     if ((trup != rup) && ((UHasOperPriv(trup) && !UHasOperPriv(rup)) || !UHasHelperPriv(rup))) {
-      chanservstdmessage(sender, QM_NOACCESSONCHAN, "authhistory", cargv[0]);
+      chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[0]);
       return CMD_ERROR;
     }
-  }
-  else
+  } else {
     trup=rup;
-
+  }
+  
   csdb_retreiveauthhistory(sender, trup, 10);
 
   return CMD_OK;

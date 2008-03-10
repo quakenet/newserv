@@ -30,12 +30,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   if (!rup)
     return CMD_ERROR;
   
-  if (cargc<1) {
-    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "userflags");
-    return CMD_ERROR;
-  }
-
-  if (*cargv[0]!='+' && *cargv[0]!='-') {
+  if (cargc>0 && (*cargv[0]!='+' && *cargv[0]!='-')) {
     arg++;
     /* If the first char isn't a "change" character, it must specify a target */
 
@@ -43,7 +38,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       return CMD_ERROR;
 
     if (target!=rup && !cs_privcheck(QPRIV_VIEWUSERFLAGS, sender)) {
-      chanservstdmessage(sender, QM_NOACCESS, "userflags");
+      chanservstdmessage(sender, QM_NOACCESSONUSER, "userflags", cargv[0]);
       return CMD_ERROR;
     }
   } else {
@@ -53,7 +48,8 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   if (cargc>arg) {
     /* OK, now we have a changestring.. */
     if (target!=rup && !cs_privcheck(QPRIV_CHANGEUSERFLAGS, sender)) {
-      chanservstdmessage(sender, QM_NOACCESS, "userflags");
+      /* Safe to use cargv[0] because if target != rup then first arg must have been the target name */
+      chanservstdmessage(sender, QM_NOACCESSONUSER, "userflags", cargv[0]);
       return CMD_ERROR;
     }
 

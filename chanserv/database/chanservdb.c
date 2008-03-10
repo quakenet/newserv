@@ -424,7 +424,7 @@ void loadusersdone(PGconn *conn, void *arg) {
 void loadsomechannels(PGconn *dbconn, void *arg) {
   PGresult *pgres;
   regchan *rcp;
-  int i,num;
+  int i,j,num;
   chanindex *cip;
   time_t now=time(NULL);
 
@@ -491,6 +491,12 @@ void loadsomechannels(PGconn *dbconn, void *arg) {
     
     if (CIsAutoLimit(rcp))
       rcp->limit=0;
+    
+    for (j=0;j<CHANOPHISTORY;j++) {
+      rcp->chanopnicks[j][0]='\0';
+      rcp->chanopaccts[j]=0;
+    }
+    rcp->chanoppos=0;
   }
 
   PQclear(pgres);
