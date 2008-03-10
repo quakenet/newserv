@@ -11,6 +11,7 @@
  * CMDHELP: ban     - either a ban mask (nick!user@host), or #number (see BANLIST)
  * CMDHELP: Removing channel bans requires operator (+o) access on the named channel.
  * CMDHELP: Removing persistent bans requires master (+m) access on the named channel.
+ * CMDHELP: UNBAN is an alias for BANDEL.
  */
 
 /* This is an alias for BANDEL */
