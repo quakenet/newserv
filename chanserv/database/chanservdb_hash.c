@@ -72,7 +72,7 @@ reguser *findreguserbyemail(const char *email) {
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      if (!strcasecmp(email,rup->email->content)) {
+      if (rup->email && !strcasecmp(email,rup->email->content)) {
         return rup;
       }
     }
@@ -213,6 +213,8 @@ maildomain *findnearestmaildomain(char *domain) {
 
   if(!m && (p=strchr(domain, '.')))
     return findnearestmaildomain(++p);
+
+  return NULL;
 }
 
 maildomain *findmaildomainbyemail(char *email) {
@@ -229,7 +231,7 @@ maildomain *findmaildomainbyemail(char *email) {
 maildomain *findorcreatemaildomain(char *email) {
   unsigned int hash;
   char *domain,*pdomain;
-  maildomain *mdp, *pmdp;
+  maildomain *mdp;
 
   if (!(domain=strchr(email, '@')))
     domain=email;

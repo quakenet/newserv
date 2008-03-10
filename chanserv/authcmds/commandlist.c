@@ -14,6 +14,7 @@ int csa_dohello(void *source, int cargc, char **cargv);
 int csa_doauth(void *source, int cargc, char **cargv);
 int csa_donewpw(void *source, int cargc, char **cargv);
 int csa_doreqpw(void *source, int cargc, char **cargv);
+int csa_dosendpw(void *source, int cargc, char **cargv);
 int csa_dosetmail(void *source, int cargc, char **cargv);
 int csa_dosetpw(void *source, int cargc, char **cargv);
 
@@ -28,7 +29,8 @@ void _init() {
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "Usage: HELLO <email> <email>\nCreates a new user account for yourself.  Your current nickname will be used\nfor the name of the account, and may only contain letters, numbers and \nhyphens (-).  An email containing password details will be sent to the email\naddress supplied.  Where:\nemail    - your email address.  Must be entered the same way both times.\n");
   chanservaddcommand("login", QCMD_SECURE | QCMD_NOTAUTHED | QCMD_ALIAS, 2, csa_doauth, "Authenticates you on the bot.", "Usage: LOGIN <username> <password>\nAuthenticates you on the bot, where:\nusername - your username\npassword - your password\nIf you do not have a username and password, see HELLO.\nNote: due to the sensitive nature of this command, you must send the message\nto Q@CServe.quakenet.org when using it.\nNote: the preferred way to authenticate is to use the /AUTH command.\n");
   chanservaddcommand("newpass", QCMD_SECURE | QCMD_AUTHED, 3, csa_donewpw, "Change your password.", "Usage: NEWPASS <oldpassword> <newpassword> <newpassword>\nChanges your account password.  Your new password must be at least 6 characters\nlong, contain at least one number and one letter, and may not contain sequences\nof letters or numbers.  Your new password will be sent to your registered email\naddress.  Where:\noldpassword - your existing account password\nnewpassword - your desired new password.  Must be entered the same both times.\nNote: due to the sensitive nature of this command, you must send the message to\nQ@CServe.quakenet.org when using it.\n");
-  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 2, csa_doreqpw, "Requests the current password by email.", "Usage: REQUESTPASSWORD <username> <email>\nSends your current password to your registered email address, where:\nusername - your username\nemail    - your registered email address\n");
+  chanservaddcommand("requestpassword", QCMD_NOTAUTHED, 1, csa_doreqpw, "Requests the current password by email.", "Usage: REQUESTPASSWORD <email>\nSends your current password to your registered email address, where:\nemail    - your registered email address\n");
+  chanservaddcommand("sendpassword", QCMD_OPER, 1, csa_dosendpw, "Sends the users current password by email.", "Usage: SENDPASSWORD <username>\nSends the password for the specified account to the specified users email address.\n");
   chanservaddcommand("setemail", QCMD_OPER, 2, csa_dosetmail, "Set the email address.", "");
   chanservaddcommand("setpassword", QCMD_OPER, 2, csa_dosetpw, "Set a new password.", "");
 }
@@ -45,6 +47,7 @@ void _fini() {
   chanservremovecommand("login", csa_doauth);
   chanservremovecommand("newpass", csa_donewpw);
   chanservremovecommand("requestpassword", csa_doreqpw);
+  chanservremovecommand("sendpassword", csa_dosendpw);
   chanservremovecommand("setemail", csa_dosetmail);
   chanservremovecommand("setpassword", csa_dosetpw);
 }

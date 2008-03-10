@@ -90,7 +90,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 79 */ "No staff comment for %s.",
   /* 80 */ "%s: Your account has been deleted or suspended.",
   /* 81 */ "Account %s has been deleted.",
-  /* 82 */ "Wrong email address for account \"%s\"",
+  /* 82 */ "Sorry, no accounts have that email address.",
   /* 83 */ "Sorry, but you have already requested a password. You will have to wait atleast %.1f hours, before requesting again.",
   /* 84 */ "Mail queued for delivery",
   /* 85 */ "Sorry, but passwords do not match",
@@ -168,7 +168,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 157*/ "Sorry, the registration service is unavailable to you at this time. Please try again later.", /* a deliberately vague message */
   /* 158*/ "Too many accounts exist from this email address.",
   /* 159*/ "That email address has been blocked.",
-  /* 160*/ "For more information, type HELP %s."
+  /* 160*/ "For more information, type HELP %s.",
+  /* 161*/ "Cannot send password for that account.",
 };
 
 void initmessages() {

@@ -234,6 +234,7 @@
 #define QM_ADDRESSLIMIT            158
 #define QM_DOMAINBANNED            159
 #define QM_TYPEHELPFORHELP         160
+#define QM_REQUESTPASSPRIVUSER     161
 
 /* List of privileged operations */
 
@@ -836,6 +837,7 @@ maildomain *findnearestmaildomain(char *domain);
 void removemaildomainfromhash(maildomain *mdp);
 void addregusertomaildomain(reguser *rup, maildomain *mdp);
 void delreguserfrommaildomain(reguser *rup, maildomain *mdp);
+reguser *findreguserbyemail(const char *email);
 
 /* chanservdb.c */
 int chanservdbinit();
