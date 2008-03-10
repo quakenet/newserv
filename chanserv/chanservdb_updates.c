@@ -359,14 +359,14 @@ void csdb_createmaildomain(maildomain *mdp) {
   char escdomain[210];
   PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
-  pqquery("INSERT INTO maildomain (id, name, domainlimit) VALUES(%u, '%s', %u)", mdp->ID,escdomain,mdp->limit);
+  pqquery("INSERT INTO maildomain (id, name, domainlimit, actlimit, flags) VALUES(%u, '%s', %u, %u, %u)", mdp->ID,escdomain,mdp->limit,mdp->actlimit,mdp->flags);
 }
 
 void csdb_updatemaildomain(maildomain *mdp) {
   char escdomain[210];
   PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
-  pqquery("UPDATE maildomain SET domainlimit=%u WHERE ID=%u", mdp->limit,mdp->ID);
+  pqquery("UPDATE maildomain SET domainlimit=%u, actlimit=%u, flags=%u, name='%s' WHERE ID=%u", mdp->limit,mdp->actlimit,mdp->flags,escdomain,mdp->ID);
 }
 
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags) {

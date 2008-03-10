@@ -72,7 +72,7 @@ reguser *findreguserbyemail(const char *email) {
 
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      if (!ircd_strcmp(email,rup->email->content)) {
+      if (!strcasecmp(email,rup->email->content)) {
         return rup;
       }
     }
@@ -201,10 +201,18 @@ maildomain *findmaildomainbydomain(char *domain) {
 
   hash=maildomainnamehash(domain);
   for (mdp=maildomainnametable[hash]; mdp; mdp=mdp->nextbyname)
-    if (!ircd_strcmp(mdp->name->content, domain))
+    if (!strcasecmp(mdp->name->content, domain))
       return mdp;
 
   return NULL;
+}
+
+maildomain *findnearestmaildomain(char *domain) {
+  maildomain *m = findmaildomainbydomain(domain);
+  char *p;
+
+  if(!m && (p=strchr(domain, '.')))
+    return findnearestmaildomain(++p);
 }
 
 maildomain *findmaildomainbyemail(char *email) {
@@ -222,7 +230,6 @@ maildomain *findorcreatemaildomain(char *email) {
   unsigned int hash;
   char *domain,*pdomain;
   maildomain *mdp, *pmdp;
-  char parent=0;
 
   if (!(domain=strchr(email, '@')))
     domain=email;
@@ -234,7 +241,7 @@ maildomain *findorcreatemaildomain(char *email) {
 
   hash=maildomainnamehash(domain);
   for (mdp=maildomainnametable[hash]; mdp; mdp=mdp->nextbyname)
-    if (!ircd_strcmp(mdp->name->content, domain))
+    if (!strcasecmp(mdp->name->content, domain))
       return mdp;
 
   mdp=getmaildomain();
@@ -242,19 +249,20 @@ maildomain *findorcreatemaildomain(char *email) {
   mdp->name=getsstring(domain, EMAILLEN);
   mdp->count=0;
   mdp->limit=0;
+  mdp->actlimit=MD_DEFAULTACTLIMIT;
+  mdp->flags=MDFLAG_DEFAULT;
   mdp->users=NULL;
   addmaildomaintohash(mdp);
 
-  pdomain=domain;
-  while((pdomain=strchr(pdomain, '.'))) {
-    parent = 1;
+  pdomain=strchr(domain, '.');
+
+  if(pdomain) {
     pdomain++;
-    pmdp = findorcreatemaildomain(pdomain);
-    mdp->parent = pmdp;
-  }
-  if(!parent) {
+    mdp->parent = findorcreatemaildomain(pdomain);
+  } else {
     mdp->parent = NULL;
   }
+
   return mdp;
 }
 

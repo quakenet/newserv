@@ -65,32 +65,48 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   if (csa_checkaccountname(sender, sender->nick))
     return CMD_ERROR;
 
-  mdp=findorcreatemaildomain(cargv[0]);
-  for(smdp=mdp; smdp; smdp=smdp->parent) {
-    if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
-      chanservstdmessage(sender, QM_DOMAINLIMIT);
+  dupemail = strdup(cargv[0]);
+  local=strchr(dupemail, '@');
+  if(!local)
+    return CMD_ERROR;
+  *(local++)='\0';
+
+  mdp=findnearestmaildomain(local);
+  if(mdp) {
+    for(smdp=mdp; smdp; smdp=smdp->parent) {
+      if(MDIsBanned(smdp)) {
+        free(dupemail);
+        chanservstdmessage(sender, QM_DOMAINBANNED);
+        return CMD_ERROR;
+      }
+      if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
+        free(dupemail);
+        chanservstdmessage(sender, QM_DOMAINLIMIT);
+        return CMD_ERROR;
+      }
+    }
+  }
+
+  mdp=findmaildomainbydomain(local);
+  if(mdp) {
+    for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
+      if (ruh->localpart)
+        if (!strcasecmp(dupemail, ruh->localpart->content)) {
+          found++;
+        }
+    }
+
+    if((found >= mdp->actlimit) && (mdp->actlimit > 0)) {
+      free(dupemail);
+      chanservstdmessage(sender, QM_ADDRESSLIMIT);
       return CMD_ERROR;
     }
   }
 
+  mdp=findorcreatemaildomain(cargv[0]);
+
   aup->helloattempts++;
   
-  dupemail = strdup(cargv[0]);
-  local=strchr(dupemail, '@');
-  *(local++)='\0';
-  for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
-    if (ruh->localpart)
-      if (!match(local, ruh->localpart->content)) {
-        found++;
-      }
-  }
-  free(dupemail);
-
-  if((found > mdp->actlimit) && (mdp->actlimit > 0)) {
-    chanservstdmessage(sender, QM_DOMAINLIMIT);
-    return CMD_ERROR;
-  }
-
   rup=getreguser();
   rup->status=0;
   rup->ID=++lastuserID;
@@ -104,7 +120,10 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->suspendexp=0;
   rup->password[0]='\0';
   rup->email=getsstring(cargv[0],EMAILLEN);
-  rup->localpart=getsstring(local,EMAILLEN);
+
+  rup->localpart=getsstring(dupemail,EMAILLEN);
+  free(dupemail);
+
   rup->domain=mdp;
   addregusertomaildomain(rup, rup->domain);
   rup->info=NULL;

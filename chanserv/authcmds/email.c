@@ -23,11 +23,12 @@
 #include <string.h>
 
 int csa_doemail(void *source, int cargc, char **cargv) {
-  reguser *rup;
+  reguser *rup, *ruh;
   nick *sender=source;
   maildomain *mdp, *smdp;
   char *local;
   char *dupemail;
+  int found = 0;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "email");
@@ -52,13 +53,45 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
 
-  mdp=findorcreatemaildomain(cargv[1]);
-  for(smdp=mdp; smdp; smdp=smdp->parent) {
-    if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
-      chanservstdmessage(sender, QM_DOMAINLIMIT);
+  dupemail = strdup(cargv[1]);
+  local=strchr(dupemail, '@');
+  if(!local)
+    return CMD_ERROR;
+  *(local++)='\0';
+
+  mdp=findnearestmaildomain(local);
+  if(mdp) {
+    for(smdp=mdp; smdp; smdp=smdp->parent) {
+      if(MDIsBanned(smdp)) {
+        free(dupemail);
+        chanservstdmessage(sender, QM_DOMAINBANNED);
+        return CMD_ERROR;
+      }
+      if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
+        free(dupemail);
+        chanservstdmessage(sender, QM_DOMAINLIMIT);
+        return CMD_ERROR;
+      }
+    }
+  }
+
+  mdp=findmaildomainbydomain(local);
+  if(mdp) {
+    for (ruh=mdp->users; ruh; ruh=ruh->nextbydomain) {
+      if (ruh->localpart)
+        if (!strcasecmp(dupemail, ruh->localpart->content)) {
+          found++;
+        }
+    }
+
+    if((found >= mdp->actlimit) && (mdp->actlimit > 0)) {
+      free(dupemail);
+      chanservstdmessage(sender, QM_ADDRESSLIMIT);
       return CMD_ERROR;
     }
   }
+
+  mdp=findorcreatemaildomain(cargv[1]);
 
   csdb_createmail(rup, QMAIL_NEWEMAIL);
   csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
@@ -68,10 +101,9 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   rup->lastemailchange=time(NULL);
   rup->domain=findorcreatemaildomain(rup->email->content);
   addregusertomaildomain(rup, rup->domain);
-  dupemail = strdup(rup->email->content);
-  if((local=strchr(dupemail, '@'))) {
-    *(local++)='\0';
-    rup->localpart=getsstring(local,EMAILLEN);
+
+  if(local) {
+    rup->localpart=getsstring(dupemail,EMAILLEN);
   } else {
     rup->localpart=NULL;
   }

@@ -42,7 +42,7 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   dupemail = strdup(rup->email->content);
   if((local=strchr(dupemail, '@'))) {
     *(local++)='\0';
-    rup->localpart=getsstring(local,EMAILLEN);
+    rup->localpart=getsstring(dupemail,EMAILLEN);
   } else {
     rup->localpart=NULL;
   }

@@ -143,7 +143,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     
     for (i=0;i<REGUSERHASHSIZE;i++) {
       for (vrup=regusernicktable[i]; vrup; vrup=vrup->nextbyname) {
-        if (!ircd_strcmp(vrup->email->content, victim)) {
+        if (!strcasecmp(vrup->email->content, victim)) {
           if (UHasSuspension(vrup))
             continue;
           

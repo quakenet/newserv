@@ -143,7 +143,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 132*/ "You have been granted ownership of %s.",
   /* 133*/ "#:  User:                                              Authed:         Disconnected:   Reason:",
   /* 134*/ "Current modes on %s: %s",
-  /* 135*/ "Domain:             Users:  Limit:",
+  /* 135*/ "Domain:             Users:  Flags:",
   /* 136*/ "Too many accounts exist from this email domain",
   /* 137*/ "Password too weak - You need to avoid repeating characters, and have different character types (e.g. 1 number and 1 letter)",
   /* 138*/ "User %s is not a master on %s - you must promote user to master status first.",
@@ -166,6 +166,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 155*/ "Channel has too many bans set, aborting.",
   /* 156*/ "Warning: not removing registered ban %s from %s.",
   /* 157*/ "Sorry, the registration service is unavailable to you at this time. Please try again later.", /* a deliberately vague message */
+  /* 158*/ "Too many accounts exist from this email address.",
+  /* 159*/ "That email address has been blocked.",
 };
 
 void initmessages() {

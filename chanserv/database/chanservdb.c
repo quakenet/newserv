@@ -377,7 +377,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       char *dupemail = strdup(rup->email->content);
       if((local=strchr(dupemail, '@'))) {
         *(local++)='\0';
-        rup->localpart=getsstring(local,EMAILLEN);
+        rup->localpart=getsstring(dupemail,EMAILLEN);
       } else {
         rup->localpart=NULL;
       }
@@ -827,7 +827,7 @@ void loadsomemaildomains(PGconn *dbconn,void *arg) {
     return;
  }
 
-  if (PQnfields(pgres)!=4) {
+  if (PQnfields(pgres)!=5) {
     Error("chanserv",ERR_ERROR,"Mail Domain DB format error");
     return;
   }

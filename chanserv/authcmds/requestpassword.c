@@ -31,7 +31,7 @@ int csa_doreqpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if (ircd_strcmp(cargv[1],rup->email->content)) {
+  if (strcasecmp(cargv[1],rup->email->content)) {
     chanservstdmessage(sender, QM_BADEMAIL, rup->username);
     cs_log(sender,"REQUESTPASSWORD FAIL wrong email, username %s email %s",rup->username,cargv[1]);
     return CMD_ERROR;
