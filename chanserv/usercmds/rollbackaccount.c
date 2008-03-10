@@ -66,6 +66,7 @@ void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
       chanservsendmessage(np, "Restoring old password (%s -> %s)", newpass, oldpass);
     }
     else if (strlen(newemail) > 0) {
+      /* WARNING: lastemail untouched */
       freesstring(rup->email);
       rup->email=getsstring(oldemail, EMAILLEN);
       rup->lastemailchange=changetime;

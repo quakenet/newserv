@@ -122,6 +122,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->lockuntil=0;
   rup->password[0]='\0';
   rup->email=getsstring(cargv[0],EMAILLEN);
+  rup->lastemail=NULL;
 
   rup->localpart=getsstring(dupemail,EMAILLEN);
   free(dupemail);

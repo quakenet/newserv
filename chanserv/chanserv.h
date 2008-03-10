@@ -664,7 +664,8 @@ typedef struct reguser {
   sstring            *localpart;
   maildomain         *domain;
 
-  sstring            *email;         /* Registered e-mail */
+  sstring            *email;         /* Registered e-mail */ 
+  sstring            *lastemail;     /* Last registered e-mail */
   sstring            *lastuserhost;  /* Last user@host */
   sstring            *suspendreason; /* Why the account is suspended */
   sstring            *comment;       /* Oper-settable user comment */

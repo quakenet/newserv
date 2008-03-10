@@ -560,6 +560,7 @@ void cs_checknick(nick *np) {
       rup->lockuntil=0;
       rup->password[0]='\0';
       rup->email=NULL;
+      rup->lastemail=NULL;
       rup->localpart=NULL;
       rup->domain=NULL;
       rup->info=NULL;
@@ -1036,6 +1037,7 @@ void cs_removeuser(reguser *rup) {
     delreguserfrommaildomain(rup,rup->domain);
   freesstring(rup->localpart);
   freesstring(rup->email);
+  freesstring(rup->lastemail);
   freesstring(rup->lastuserhost);
   freesstring(rup->suspendreason);
   freesstring(rup->comment);

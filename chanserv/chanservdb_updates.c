@@ -181,13 +181,19 @@ void csdb_updateuser(reguser *rup) {
   char escreason[510];
   char esccomment[510];
   char escinfo[210];
-  
+  char esclastemail[210];
+
   PQescapeString(escpassword, rup->password, strlen(rup->password));
    
   if (rup->email)
     PQescapeString(escemail, rup->email->content, rup->email->length);
   else
     escemail[0]='\0';
+
+  if (rup->lastemail)
+    PQescapeString(esclastemail, rup->lastemail->content, rup->lastemail->length);
+  else
+    esclastemail[0]='\0';
 
   if (rup->lastuserhost)
     PQescapeString(esclastuserhost, rup->lastuserhost->content, rup->lastuserhost->length);
@@ -211,9 +217,9 @@ void csdb_updateuser(reguser *rup) {
 
   pqquery("UPDATE users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
 		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, lockuntil=%lu, password='%s', email='%s',"
-		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s' WHERE ID=%u",
+		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s', lastemail='%s' WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
-		  rup->suspendtime, rup->lockuntil, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
+		  rup->suspendtime, rup->lockuntil, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo, esclastemail,
 		  rup->ID);
 }  
 
@@ -225,6 +231,7 @@ void csdb_createuser(reguser *rup) {
   char esccomment[510];
   char escusername[35];
   char escinfo[210];
+  char esclastemail[210];
 
   PQescapeString(escusername, rup->username, strlen(rup->username));
   PQescapeString(escpassword, rup->password, strlen(rup->password));
@@ -233,6 +240,11 @@ void csdb_createuser(reguser *rup) {
     PQescapeString(escemail, rup->email->content, rup->email->length);
   else
     escemail[0]='\0';
+
+  if (rup->lastemail)
+    PQescapeString(esclastemail, rup->lastemail->content, rup->lastemail->length);
+  else
+    esclastemail[0]='\0';
 
   if (rup->lastuserhost)
     PQescapeString(esclastuserhost, rup->lastuserhost->content, rup->lastuserhost->length);
@@ -257,10 +269,10 @@ void csdb_createuser(reguser *rup) {
   pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
 		  "flags, language, suspendby, suspendexp, suspendtime, lockuntil, password, email, lastuserhost, "
 		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
-		  "'%s','%s','%s','%s')",
+		  "'%s','%s','%s','%s','%s')",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
 		  rup->languageid, rup->suspendby, rup->suspendexp, rup->suspendtime, rup->lockuntil,
-		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo);
+		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo, esclastemail);
 }  
 
 

@@ -87,6 +87,7 @@ static void setuptables() {
                "lockuntil     INT               NOT NULL,"
                "password      VARCHAR(11)          NOT NULL,"
                "email         VARCHAR(100),"
+               "lastemail     VARCHAR(100),"
                "lastuserhost  VARCHAR(75),"
                "suspendreason VARCHAR(250),"
                "comment       VARCHAR(250),"
@@ -352,7 +353,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=17) {
+  if (PQnfields(pgres)!=18) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
@@ -391,10 +392,11 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       rup->domain=NULL;
       rup->localpart=NULL;
     }
-    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,13),75);
-    rup->suspendreason=getsstring(PQgetvalue(pgres,i,14),250);
-    rup->comment=getsstring(PQgetvalue(pgres,i,15),250);
-    rup->info=getsstring(PQgetvalue(pgres,i,16),100);
+    rup->lastemail=getsstring(PQgetvalue(pgres,i,13),100);
+    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,14),75);
+    rup->suspendreason=getsstring(PQgetvalue(pgres,i,15),250);
+    rup->comment=getsstring(PQgetvalue(pgres,i,16),250);
+    rup->info=getsstring(PQgetvalue(pgres,i,17),100);
     rup->knownon=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;
@@ -786,6 +788,7 @@ void csdb_freestuff() {
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
       freesstring(rup->email);
+      freesstring(rup->lastemail);
       freesstring(rup->lastuserhost);
       freesstring(rup->suspendreason);
       freesstring(rup->comment);
