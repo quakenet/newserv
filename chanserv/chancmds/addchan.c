@@ -124,6 +124,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
  
   /* Suspend by */
   rcp->suspendby=0;
+  rcp->suspendtime=0;
   
   rcp->totaljoins=rcp->tripjoins=rcp->otripjoins=rcp->maxusers=rcp->tripusers=rcp->otripusers=0;
   rcp->welcome=rcp->topic=rcp->key=rcp->suspendreason=rcp->comment=NULL;

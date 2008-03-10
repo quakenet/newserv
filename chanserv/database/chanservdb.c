@@ -83,6 +83,7 @@ static void setuptables() {
                "language      INT               NOT NULL,"
                "suspendby     INT               NOT NULL,"
                "suspendexp    INT               NOT NULL,"
+               "suspendtime   INT               NOT NULL,"
                "password      VARCHAR(11)          NOT NULL,"
                "email         VARCHAR(100),"
                "lastuserhost  VARCHAR(75),"
@@ -110,6 +111,7 @@ static void setuptables() {
                  "founder       INT               NOT NULL,"
                  "addedby       INT               NOT NULL,"
                  "suspendby     INT               NOT NULL,"
+                 "suspendtime   INT               NOT NULL,"
                  "chantype      SMALLINT          NOT NULL,"
                  "totaljoins    INT               NOT NULL,"
                  "tripjoins     INT               NOT NULL,"
@@ -349,7 +351,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=15) {
+  if (PQnfields(pgres)!=16) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
@@ -368,8 +370,9 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     rup->languageid=strtoul(PQgetvalue(pgres,i,6),NULL,10);
     rup->suspendby=strtoul(PQgetvalue(pgres,i,7),NULL,10);
     rup->suspendexp=strtoul(PQgetvalue(pgres,i,8),NULL,10);
-    strncpy(rup->password,PQgetvalue(pgres,i,9),PASSLEN); rup->password[PASSLEN]='\0';
-    rup->email=getsstring(PQgetvalue(pgres,i,10),100);
+    rup->suspendtime=strtoul(PQgetvalue(pgres,i,9),NULL,10);
+    strncpy(rup->password,PQgetvalue(pgres,i,10),PASSLEN); rup->password[PASSLEN]='\0';
+    rup->email=getsstring(PQgetvalue(pgres,i,11),100);
     if (rup->email) {
       rup->domain=findorcreatemaildomain(rup->email->content);
       addregusertomaildomain(rup, rup->domain);
@@ -386,10 +389,10 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       rup->domain=NULL;
       rup->localpart=NULL;
     }
-    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,11),75);
-    rup->suspendreason=getsstring(PQgetvalue(pgres,i,12),250);
-    rup->comment=getsstring(PQgetvalue(pgres,i,13),250);
-    rup->info=getsstring(PQgetvalue(pgres,i,14),100);
+    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,12),75);
+    rup->suspendreason=getsstring(PQgetvalue(pgres,i,13),250);
+    rup->comment=getsstring(PQgetvalue(pgres,i,14),250);
+    rup->info=getsstring(PQgetvalue(pgres,i,15),100);
     rup->knownon=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;
@@ -426,7 +429,7 @@ void loadsomechannels(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if (PQnfields(pgres)!=26) {
+  if (PQnfields(pgres)!=27) {
     Error("chanserv",ERR_ERROR,"Channel DB format error");
     return;
   }
@@ -462,18 +465,19 @@ void loadsomechannels(PGconn *dbconn, void *arg) {
     rcp->founder=strtol(PQgetvalue(pgres,i,12),NULL,10);
     rcp->addedby=strtol(PQgetvalue(pgres,i,13),NULL,10);
     rcp->suspendby=strtol(PQgetvalue(pgres,i,14),NULL,10);
-    rcp->chantype=strtoul(PQgetvalue(pgres,i,15),NULL,10);
-    rcp->totaljoins=strtoul(PQgetvalue(pgres,i,16),NULL,10);
-    rcp->tripjoins=strtoul(PQgetvalue(pgres,i,17),NULL,10);
-    rcp->maxusers=strtoul(PQgetvalue(pgres,i,18),NULL,10);
-    rcp->tripusers=strtoul(PQgetvalue(pgres,i,19),NULL,10);
-    rcp->welcome=getsstring(PQgetvalue(pgres,i,20),500);
-    rcp->topic=getsstring(PQgetvalue(pgres,i,21),TOPICLEN);
-    rcp->key=getsstring(PQgetvalue(pgres,i,22),KEYLEN);
-    rcp->suspendreason=getsstring(PQgetvalue(pgres,i,23),250);
-    rcp->comment=getsstring(PQgetvalue(pgres,i,24),250);
+    rcp->suspendtime=strtol(PQgetvalue(pgres,i,15),NULL,10);
+    rcp->chantype=strtoul(PQgetvalue(pgres,i,16),NULL,10);
+    rcp->totaljoins=strtoul(PQgetvalue(pgres,i,17),NULL,10);
+    rcp->tripjoins=strtoul(PQgetvalue(pgres,i,18),NULL,10);
+    rcp->maxusers=strtoul(PQgetvalue(pgres,i,19),NULL,10);
+    rcp->tripusers=strtoul(PQgetvalue(pgres,i,20),NULL,10);
+    rcp->welcome=getsstring(PQgetvalue(pgres,i,21),500);
+    rcp->topic=getsstring(PQgetvalue(pgres,i,22),TOPICLEN);
+    rcp->key=getsstring(PQgetvalue(pgres,i,23),KEYLEN);
+    rcp->suspendreason=getsstring(PQgetvalue(pgres,i,24),250);
+    rcp->comment=getsstring(PQgetvalue(pgres,i,25),250);
     rcp->checksched=NULL;
-    rcp->ltimestamp=strtoul(PQgetvalue(pgres,i,25),NULL,10);
+    rcp->ltimestamp=strtoul(PQgetvalue(pgres,i,26),NULL,10);
     memset(rcp->regusers,0,REGCHANUSERHASHSIZE*sizeof(reguser *));
 
     if (rcp->ID > lastchannelID)
