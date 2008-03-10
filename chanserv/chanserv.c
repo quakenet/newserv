@@ -60,7 +60,6 @@ const flag ruflags[] = {
   { 'G',  QUFLAG_DELAYEDGLINE },
   { 'h',  QUFLAG_HELPER },
   { 'i',  QUFLAG_INFO },
-  { 'l',  QUFLAG_NEEDAUTH },
   { 'L',  QUFLAG_NOAUTHLIMIT },
   { 'n',  QUFLAG_NOTICE },
   { 'o',  QUFLAG_OPER },

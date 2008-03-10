@@ -279,6 +279,7 @@ sub loadusers {
   my $suspendtime=0;
   my $suspendexp=0;
   my $suspendreason="";
+  my $created=0;
 
   while (<USERLIST>) {
     chomp;
@@ -333,8 +334,10 @@ sub loadusers {
         }
         if (exists $suspends{$username}) {
           my $ar=$suspends{$username};
-          if ($$ar[0] == 7) { # never authed
-            $uflags |= 0x1;
+          $created=0; # Q doesn't have created time for auths so default it to 0
+          if ($$ar[0] == 7) { # never authed - copy the "last auth" time into "created time".
+            $created=$lastauth;
+            $lastauth=0; # new Q uses lastauth=0 to indicate an unused account
           } elsif ($$ar[0] == 5) { # delayed gline
             $uflags |= 0x0800;
           } elsif ($$ar[0] == 6) { # instant gline
@@ -354,8 +357,9 @@ sub loadusers {
           $suspendtime=0;
           $suspendexp=0;
           $suspendreason="";
+          $created=0;
         }  
-	print USERS "$userid,".doquote($username).",0,$lastauth,$lastemailrq,$uflags,0,$suspendwho,$suspendexp,$suspendtime,$lockuntil,".doquote($password).",".doquote($emailaddr).",".doquote($lastemail).",".doquote("${lastusername}\@${lasthostname}").",,,\n";
+	print USERS "$userid,".doquote($username).",$created,$lastauth,$lastemailrq,$uflags,0,$suspendwho,$suspendexp,$suspendtime,$lockuntil,".doquote($password).",".doquote($emailaddr).",".doquote($lastemail).",".doquote("${lastusername}\@${lasthostname}").",".$suspendreason.",,\n";
 	$users{irc_lc($username)}=$userid;
 	$state=-1;
 	$usercount++;

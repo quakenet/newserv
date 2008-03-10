@@ -69,15 +69,12 @@ int csu_dounsuspenduser(void *source, int cargc, char **cargv) {
   else if (UIsSuspended(vrup)) {
     strcpy(action, "unsuspended");
   }
-  else if (UIsNeedAuth(vrup)) {
-    strcpy(action, "enabled");
-  }
   else {
     chanservsendmessage(sender, "Unknown suspend type encountered.");
     return CMD_ERROR;
   }
   
-  vrup->flags&=(~(QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED|QUFLAG_NEEDAUTH));
+  vrup->flags&=(~(QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED));
   vrup->suspendby=0;
   vrup->suspendexp=0;
   freesstring(vrup->suspendreason);

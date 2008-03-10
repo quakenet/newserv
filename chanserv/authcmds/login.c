@@ -115,8 +115,6 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     rup->suspendreason=0;
   }
   
-  if (UIsNeedAuth(rup))
-    rup->flags&=~(QUFLAG_NEEDAUTH);
   csdb_updateuser(rup);
   
   if (UIsDelayedGline(rup)) {
