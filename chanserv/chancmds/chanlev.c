@@ -133,6 +133,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   
   if (cargc==1) {
     /* One arg: list chanlev */
+    int ncnt=0,mcnt=0,ocnt=0,vcnt=0,kcnt=0,bcnt=0;
+    
     if (cs_privcheck(QPRIV_VIEWFULLCHANLEV, sender)) {
       reguser *founder=NULL, *addedby=NULL;
       addedby=findreguserbyID(rcp->addedby);
@@ -177,6 +179,16 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
         flags=rcuplist->flags & (flagmask | QCUFLAGS_PERSONAL);
       }
       
+      /* Do the count here; note that +n's aren't counted as +m (and so on).  We're not
+       * using the IsX() macros because the displayed count needs to match up with 
+       * the displayed flags... */
+      if (flags & QCUFLAG_OWNER) ncnt++; else
+      if (flags & QCUFLAG_MASTER) mcnt++; else
+      if (flags & QCUFLAG_OP) ocnt++; else
+      if (flags & QCUFLAG_VOICE) vcnt++; else
+      if (flags & QCUFLAG_KNOWN) kcnt++;
+      if (flags & QCUFLAG_BANNED) bcnt++;
+      
       if (!donehead) {
 	chanservstdmessage(sender, QM_CHANLEVHEADER, cip->name->content);
 	if (showtimes) 
@@ -207,6 +219,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     
     if (donehead) {
       chanservstdmessage(sender, QM_ENDOFLIST);
+      chanservstdmessage(sender, QM_CHANLEVSUMMARY, j, ncnt, mcnt, ocnt, vcnt, kcnt, bcnt);
     } else {
       chanservstdmessage(sender, QM_NOUSERSONCHANLEV, cip->name->content);
     }

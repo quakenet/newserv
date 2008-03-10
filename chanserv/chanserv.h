@@ -242,6 +242,7 @@
 #define QM_RESETOK                 166
 #define QM_BADRESETCODE            167
 #define QM_CHALLENGEDDEPRECATED    168
+#define QM_CHANLEVSUMMARY          169
 
 /* List of privileged operations */
 
