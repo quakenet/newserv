@@ -81,7 +81,7 @@ void csdb_updatechannel(regchan *rcp) {
   pqquery("UPDATE channels SET name='%s', flags=%d, forcemodes=%d,"
 		  "denymodes=%d, chanlimit=%d, autolimit=%d, banstyle=%d,"
 		  "lastactive=%lu,statsreset=%lu, banduration=%lu, founder=%u,"
-		  "addedby=%u, suspendby=%u, supendtime=%lu, chantype=%d, totaljoins=%u,"
+		  "addedby=%u, suspendby=%u, suspendtime=%lu, chantype=%d, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u,"
 		  "welcome='%s', topic='%s', chankey='%s', suspendreason='%s',"
 		  "comment='%s', lasttimestamp=%d WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
