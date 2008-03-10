@@ -253,6 +253,8 @@ void _init() {
 }
 
 void _fini() {
+  deregisterhook(HOOK_CORE_STATSREQUEST, csdb_handlestats);
+  
   if (chanservext!=-1)
     releasechanext(chanservext);
   
