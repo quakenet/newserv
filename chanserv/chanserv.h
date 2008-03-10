@@ -611,7 +611,6 @@ typedef struct regchan {
   time_t              lastcountersync; /* When the counters were last synced.. */
   time_t              lastpart;        /* When the last user left the channel */
   time_t              suspendtime;     /* When the channel was suspended */
-  time_t              lockuntil;       /* Time until users account is unlocked (pass change, email, etc) */
   
   unsigned int        founder;         /* founder */
   unsigned int        addedby;         /* oper adding chan */
@@ -658,6 +657,7 @@ typedef struct reguser {
   unsigned int        suspendby;     /* Userid of oper who suspended this user */
   time_t              suspendexp;    /* Expiry date of suspension */
   time_t              suspendtime;   /* When user was suspended */
+  time_t              lockuntil;     /* Time until users account is unlocked (pass change, email, etc) */
 
   char                password[PASSLEN+1];
 
