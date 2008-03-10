@@ -161,7 +161,7 @@
 #define QM_PWDONTMATCH              85
 #define QM_PWTOSHORT                86
 #define QM_PWCHANGED                87
-#define QM_DURATIONTOOLONG          88
+#define QM_INVALIDDURATION2         88
 #define QM_EMAILCHANGED             89
 #define QM_EMAILDONTMATCH           90
 #define QM_INVALIDEMAIL             91
@@ -236,6 +236,7 @@
 #define QM_TYPEHELPFORHELP         160
 #define QM_REQUESTPASSPRIVUSER     161
 #define QM_EMAILMATCHESOLD         162
+#define QM_INVALIDLIMIT            163
 
 /* List of privileged operations */
 

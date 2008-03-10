@@ -52,9 +52,11 @@ int csc_doautolimit(void *source, int cargc, char **cargv) {
 
     oldlimit=rcp->autolimit;
     rcp->autolimit=strtol(cargv[1],NULL,10);
-
-    if (rcp->autolimit<1)
-      rcp->autolimit=1;
+    if (rcp->autolimit<1) {
+      rcp->autolimit=oldlimit;
+      chanservstdmessage(sender, QM_INVALIDLIMIT, cargv[1]);
+      return CMD_ERROR;
+    }
     
     csdb_updatechannel(rcp);
     

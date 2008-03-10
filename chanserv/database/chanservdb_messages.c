@@ -171,6 +171,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 160*/ "For more information, type HELP %s.",
   /* 161*/ "Cannot send password for that account.",
   /* 162*/ "The new email address is the same as current one.",
+  /* 163*/ "Supplied autolimit is invalid: %s",
 };
 
 void initmessages() {
