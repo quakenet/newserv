@@ -551,11 +551,12 @@ sub loadldb {
 	my $ocuflags=$2;
 	$userid=getuserid($1);
 	if ($userid != 0) {
-	  if ($ocuflags =~ /a/) {
-	    $cuflags |= 0x1;
-	  }
-	  if ($ocuflags =~ /g/) {
+	  if (($ocuflags =~ /g/) && ($ocuflags =~ /v/)) {
 	    $cuflags |= 0x8;
+	  }
+	  if (($ocuflags =~ /a/) && ($ocuflags =~ /o/)) {
+	    $cuflags |= 0x1;
+	    $cuflags &= (~0x8);
 	  }
 	  if ($ocuflags =~ /m/) {
 	    $cuflags |= 0x4000;

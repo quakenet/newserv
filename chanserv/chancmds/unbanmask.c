@@ -44,7 +44,7 @@ int csc_dounbanmask(void *source, int cargc, char **cargv) {
 
   theban=makeban(cargv[1]);
   /* nice cast here */
-  cs_unbanfn(sender, cip, (UnbanFN)banoverlap, theban, 1);
+  cs_unbanfn(sender, cip, (UnbanFN)banoverlap, theban, 1, 0);
   cs_log(sender,"UNBANMASK %s",bantostring(theban));
 
   chanservstdmessage(sender, QM_DONE);

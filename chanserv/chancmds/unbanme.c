@@ -37,9 +37,11 @@ int csc_dounbanme(void *source, int cargc, char **cargv) {
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_OPPRIV, NULL, "unbanme", 0, 0)))
     return CMD_ERROR;
 
-  cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1);
+  /* Try to unban, if it fails we'll let the failure message speak for itself */
+  if (!cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1, 1)) {
+    chanservstdmessage(sender, QM_DONE);
+  }  
 
   cs_log(sender,"UNBANME %s",cip->name->content);
-  chanservstdmessage(sender, QM_DONE);
   return CMD_OK;
 }     

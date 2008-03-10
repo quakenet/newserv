@@ -8,8 +8,13 @@
  * CMDFUNC: csc_doautolimit
  * CMDPROTO: int csc_doautolimit(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: AUTOLIMIT <channel> [<threshold>]
- * CMDHELP: This command shows or changes the number of free slots to keep on the channel
- * CMDHELP: when autolimit (see CHANFLAGS) is enabled.  Where:
+ * CMDHELP: The autolimit feature maintains a user limit (+l) on the channel which is
+ * CMDHELP: regularly updated to keep a fixed number of spaces free on the channel for
+ * CMDHELP: people to join.  This is useful since it prevents a large number of \"clones\"
+ * CMDHELP: joining at the same time.  However, if the number of free spaces is too small
+ * CMDHELP: it's possible that legitimate users won't be able to join.  This command allows
+ * CMDHELP: you to adjust the number of free spaces to maintain when autolimit is enabled.  
+ * CMDHELP: To actually turn the autolimit feature on or off, see CHANFLAGS.  Where:
  * CMDHELP: channel   - the channel to use.
  * CMDHELP: threshold - specifies the new threshold.  If not specified, the current threshold 
  * CMDHELP:             is displayed.

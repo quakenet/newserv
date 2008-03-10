@@ -959,7 +959,7 @@ int checkresponse(reguser *rup, const unsigned char *entropy, const char *respon
 int checkhashpass(reguser *rup, const char *junk, const char *hash);
 flag_t cs_sanitisechanlev(flag_t flags);
 typedef int (*UnbanFN)(void *arg, struct chanban *ban);
-void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans);
+int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 
 /* chanservstdcmds.c */

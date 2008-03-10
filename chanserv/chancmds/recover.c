@@ -60,7 +60,7 @@ int csc_dorecover(void *source, int cargc, char **cargv) {
     }
 
     /* remove the registered bans that match on me */
-    cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1);
+    cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1, 0);
 
     /* deopall */
     for (i=0,lp=cip->channel->users->content;

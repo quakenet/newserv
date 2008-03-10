@@ -12,8 +12,8 @@
  * CMDHELP: removed from the channel e.g. by a channel op or the BANTIMER feature, the
  * CMDHELP: ban will be reapplied if a matching user joins the channel.  When the time 
  * CMDHELP: expires the ban will be removed automatically.  Bans set with the TEMPBAN 
- * CMDHELP: command can be removed via BANCLEAR or BANDEL.  Any users matching the hostmask 
- * CMDHELP: will be kicked from the channel.
+ * CMDHELP: command can be removed before they expire with BANCLEAR or BANDEL.  Any users 
+ * CMDHELP: matching the hostmask will be kicked from the channel.
  * CMDHELP: Where:
  * CMDHELP: channel  - channel to set a ban on
  * CMDHELP: hostmask - hostmask (nick!user@host) to ban.

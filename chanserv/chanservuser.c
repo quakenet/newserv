@@ -247,8 +247,8 @@ void chanservjoinchan(channel *cp) {
   if (!(rcp=cp->index->exts[chanservext]))
     return;
     
-  /* Check for a new timestamp */
-  if ((!rcp->ltimestamp) || (cp->timestamp < rcp->ltimestamp)) {
+  /* Check for a new timestamp.  But don't do anything stupid if the incoming timestamp is 0 */
+  if (cp->timestamp && ((!rcp->ltimestamp) || (cp->timestamp < rcp->ltimestamp))) {
     rcp->ltimestamp=cp->timestamp;
     csdb_updatechanneltimestamp(rcp);
   }
@@ -1250,8 +1250,10 @@ reguser *findreguser(nick *sender, const char *str) {
 
 /*
  * Unbans a mask from a channel, including permbans if user has correct privs.
+ *
+ * Return 0 if it works, 1 if it don't.
  */
-void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans) {
+int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure) {
   regban **rbh, *rbp;
   chanban **cbh, *cbp;
   regchan *rcp;
@@ -1273,6 +1275,7 @@ void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removep
         rbh=&(rbp->next);
       } else if (!cs_checkaccess(sender, NULL, CA_MASTERPRIV, cip, NULL, 0, 1)) {
         chanservstdmessage(sender, QM_NOTREMOVEDPERMBAN, banstr, cip->name->content);
+        if (abortonfailure) return 1; /* Just give up... */
         rbh=&(rbp->next);
       } else {
         chanservstdmessage(sender, QM_REMOVEDPERMBAN, banstr, cip->name->content);
@@ -1306,6 +1309,8 @@ void cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removep
     }
     localsetmodeflush(&changes,1);
   }
+  
+  return 0;
 }
 
 /* Add entry to channel op history when someone gets ops. */
