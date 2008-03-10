@@ -81,13 +81,13 @@ void csdb_updatechannel(regchan *rcp) {
   pqquery("UPDATE channels SET name='%s', flags=%d, forcemodes=%d,"
 		  "denymodes=%d, chanlimit=%d, autolimit=%d, banstyle=%d,"
 		  "lastactive=%lu,statsreset=%lu, banduration=%lu, founder=%u,"
-		  "addedby=%u, suspendby=%u, chantype=%d, totaljoins=%u,"
+		  "addedby=%u, suspendby=%u, supendtime=%lu, chantype=%d, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u,"
 		  "welcome='%s', topic='%s', chankey='%s', suspendreason='%s',"
 		  "comment='%s', lasttimestamp=%d WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle,
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
-		  rcp->founder, rcp->addedby, rcp->suspendby,
+		  rcp->founder, rcp->addedby, rcp->suspendby, rcp->suspendtime,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
 		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp,rcp->ID);
@@ -150,14 +150,14 @@ void csdb_createchannel(regchan *rcp) {
 
   pqquery("INSERT INTO channels (ID, name, flags, forcemodes, denymodes,"
 		  "chanlimit, autolimit, banstyle, created, lastactive, statsreset, "
-		  "banduration, founder, addedby, suspendby, chantype, totaljoins, tripjoins,"
+		  "banduration, founder, addedby, suspendby, suspendtime, chantype, totaljoins, tripjoins,"
 		  "maxusers, tripusers, welcome, topic, chankey, suspendreason, "
 		  "comment, lasttimestamp) VALUES (%u,'%s',%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%u,"
-		  "%u,%u,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s',%d)",
+		  "%u,%u,%lu,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s',%d)",
 		  rcp->ID, escname, rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle, rcp->created, 
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
-		  rcp->founder, rcp->addedby, rcp->suspendby,
+		  rcp->founder, rcp->addedby, rcp->suspendby, rcp->suspendtime,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
 		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp);
@@ -210,10 +210,10 @@ void csdb_updateuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("UPDATE users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
-		  "language=%u, suspendby=%u, suspendexp=%lu, password='%s', email='%s',"
+		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, password='%s', email='%s',"
 		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s' WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
-		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
+		  rup->suspendtime, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo,
 		  rup->ID);
 }  
 
@@ -255,8 +255,8 @@ void csdb_createuser(reguser *rup) {
     escinfo[0]='\0';
 
   pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
-		  "flags, language, suspendby, suspendexp, password, email, lastuserhost, "
-		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,'%s','%s',"
+		  "flags, language, suspendby, suspendexp, suspendtime, password, email, lastuserhost, "
+		  "suspendreason, comment, info) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,'%s','%s',"
 		  "'%s','%s','%s','%s')",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
 		  rup->languageid, rup->suspendby, rup->suspendexp,
