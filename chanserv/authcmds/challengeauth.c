@@ -50,5 +50,8 @@ int csa_dochallengeauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if(!strcasecmp(cargv[2], "legacy-md5"))
+    chanservstdmessage(sender, QM_CHALLENGEDDEPRECATED);
+
   return csa_auth(sender, cargc, cargv, alg);
 }

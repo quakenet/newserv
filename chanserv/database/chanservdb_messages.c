@@ -176,6 +176,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 165*/ "That account is not locked.",
   /* 166*/ "Your old account settings have been restored, please check your email.",
   /* 167*/ "Bad reset code.",
+  /* 168*/ "WARNING: the selected algorithm is legacy functionality and is likely to be removed in the near future.",
 };
 
 void initmessages() {

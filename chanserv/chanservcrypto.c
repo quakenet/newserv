@@ -83,7 +83,7 @@ void cs_getrandbytes(unsigned char *buf, size_t bytes) {
 }
 
 const char *cs_cralgorithmlist(void) {
-  return "HMAC-MD5 HMAC-SHA-1 HMAC-SHA-256";
+  return "HMAC-MD5 HMAC-SHA-1 HMAC-SHA-256 LEGACY-MD5";
 }
 
 int crsha1(char *username, const char *password, const char *challenge, const char *response) {
@@ -175,6 +175,23 @@ int crmd5(char *username, const char *password, const char *challenge, const cha
   return 0;
 }
 
+int crlegacymd5(char *username, const char *password, const char *challenge, const char *response) {
+  MD5Context ctx;
+  unsigned char digest[16];
+  char hexbuf[sizeof(digest) * 2 + 1];
+
+  MD5Init(&ctx);
+  MD5Update(&ctx, (unsigned char *)password, strlen(password));
+  MD5Update(&ctx, (unsigned char *)" ", 1);
+  MD5Update(&ctx, (unsigned char *)challenge, strlen(challenge));
+  MD5Final(digest, &ctx);
+
+  if(!strcasecmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
+    return 1;
+
+  return 0;
+}
+
 CRAlgorithm cs_cralgorithm(const char *algorithm) {
   if(!strcasecmp(algorithm, "hmac-sha-1"))
     return crsha1;
@@ -184,6 +201,9 @@ CRAlgorithm cs_cralgorithm(const char *algorithm) {
 
   if(!strcasecmp(algorithm, "hmac-md5"))
     return crmd5;
+
+  if(!strcasecmp(algorithm, "legacy-md5"))
+    return crlegacymd5;
 
   return 0;
 }
@@ -198,7 +218,7 @@ char *cs_calcchallenge(const unsigned char *entropy) {
   SHA1Update(&ctx, entropy, ENTROPYLEN);
   SHA1Final(buf, &ctx);
 
-  hmac_printhex(buf, hexbuf, sizeof(buf));
+  hmac_printhex(buf, hexbuf, 16);
 
   return hexbuf;
 }

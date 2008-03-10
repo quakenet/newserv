@@ -241,6 +241,7 @@
 #define QM_ACCOUNTNOTLOCKED        165
 #define QM_RESETOK                 166
 #define QM_BADRESETCODE            167
+#define QM_CHALLENGEDDEPRECATED    168
 
 /* List of privileged operations */
 
