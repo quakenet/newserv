@@ -161,7 +161,7 @@ int insertcommand(Command *c, CommandTree *ct, int depth) {
     }
     ct->cmd=c;
     /* Use a static NUL string rather than the allocated one if possible. */
-    if (c->command->length < depth)
+    if (c->command->length > depth)
       ct->final=&(c->command->content[depth]);
     else
       ct->final="";
