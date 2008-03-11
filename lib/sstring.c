@@ -249,7 +249,7 @@ sstring *getsstring(const char *inputstr, int maxlen) {
 }
 
 void freesstring(sstring *inval) {
-  sstringlist *s, *ss, *sp;
+  sstringlist *s;
   if(!inval)
     return;
 
