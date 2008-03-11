@@ -1190,9 +1190,9 @@ flag_t cs_sanitisechanlev(flag_t flags) {
   if (!(flags & (QCUFLAG_VOICE | QCUFLAG_OP)))
     flags &= ~QCUFLAG_PROTECT;
   
-  /* The personal flags require one of +mnovk */
+  /* The personal flags require one of +mnovk, as does +t */
   if (!(flags & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_KNOWN)))
-    flags &= ~QCUFLAGS_PERSONAL;
+    flags &= ~(QCUFLAGS_PERSONAL | QCUFLAG_TOPIC);
   
   return flags;
 }
