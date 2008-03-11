@@ -54,7 +54,7 @@ char *getdomainmode(maildomain *mdp) {
 int csu_dodomainmode(void *source, int cargc, char **cargv) {
   maildomain *mdp; 
   nick *sender=source;
-  flag_t forceflags;
+  flag_t forceflags, currentflags;
   char buf1[60];
   int carg=2,limdone=0,actlimdone=0;
   unsigned int newlim=0;
@@ -76,6 +76,8 @@ int csu_dodomainmode(void *source, int cargc, char **cargv) {
     /* Pick out the + flags: start from 0 */
     forceflags=0;
     setflags(&forceflags, MDFLAG_ALL, cargv[1], mdflags, REJECT_NONE);
+    currentflags=mdp->flags;
+    setflags(&currentflags, MDFLAG_ALL, cargv[1], mdflags, REJECT_NONE);
 
     if ((forceflags & MDFLAG_LIMIT) &&
         (!(forceflags & MDFLAG_ACTLIMIT) || strrchr(cargv[1],'l') < strrchr(cargv[1],'u'))) {
@@ -106,9 +108,15 @@ int csu_dodomainmode(void *source, int cargc, char **cargv) {
     }
 
     /* It parsed OK, so update the structure.. */
-    mdp->flags=forceflags;
-    mdp->actlimit=newactlim; 
-    mdp->limit=newlim;
+    mdp->flags=currentflags;
+    if(actlimdone)
+      mdp->actlimit=newactlim; 
+    if(!(currentflags & MDFLAG_ACTLIMIT))
+      mdp->actlimit=0;
+    if(limdone)
+      mdp->limit=newlim;
+    if(!(currentflags & MDFLAG_LIMIT))
+      mdp->limit=0;
     if(mdp->ID) {
       if(mdp->flags) {
         csdb_updatemaildomain(mdp);
