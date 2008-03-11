@@ -88,8 +88,8 @@ void _init() {
 }
 
 void _fini() {
-  nsfreeall(POOL_NICK);
   fininickhelpers();
+  nsfreeall(POOL_NICK);
 
   /* Free the hooks */
   deregisterhook(HOOK_SERVER_NEWSERVER,&handleserverchange);
