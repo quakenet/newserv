@@ -138,7 +138,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
   
   for (rcup=target->knownon;rcup;rcup=rcup->nextbyuser) {
-    if (!UHasHelperPriv(rup)) {
+    if (!UHasHelperPriv(rup) || (UHasOperPriv(target) && UHasHelperPriv(rup) && !UHasOperPriv(rup))) {
       if (!(rcup2=findreguseronchannel(rcup->chan,rup)))
 	continue;
       
