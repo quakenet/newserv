@@ -127,7 +127,7 @@ void nsexit(void) {
   unsigned int i;
   
   for (i=0;i<MAXPOOL;i++)
-    nscheckfreeall(i);
+    nsfreeall(i);
 }
 
 #else

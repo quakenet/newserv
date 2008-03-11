@@ -11,11 +11,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+#include <signal.h>
 
 int newserv_shutdown_pending;
 
 void initseed();
 void init_logfile();
+void siginthandler(int sig);
 
 int main(int argc, char **argv) {
   initseed();
@@ -35,6 +37,7 @@ int main(int argc, char **argv) {
 
   /* Loading the modules will bring in the bulk of the code */
   initmodules();
+  signal(SIGINT, siginthandler);
 
   /* Main loop */
   for(;;) {
@@ -60,4 +63,8 @@ void initseed() {
 
   gettimeofday(&t, NULL);
   srand(t.tv_usec);
+}
+
+void siginthandler(int sig) {
+  newserv_shutdown_pending = 1;
 }
