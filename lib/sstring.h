@@ -42,5 +42,6 @@ sstring *getsstring(const char *, int);
 void freesstring(sstring *);
 int sstringcompare(sstring *ss1, sstring *ss2);
 void initsstring();
+void finisstring();
 
 #endif /* __SSTRING_H */

@@ -24,8 +24,6 @@ time_t at_lastauthts;
 unsigned long at_lastuserid;
 
 unsigned long at_getuserid(nick *np) {
-  reguser *rup;
-  
   /* If they are not +r, forget it. */
   if (!IsAccount(np))
     return 0;

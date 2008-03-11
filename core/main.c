@@ -5,6 +5,7 @@
 #include "modules.h"
 #include "config.h"
 #include "error.h"
+#include "nsmalloc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
