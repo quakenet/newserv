@@ -5,6 +5,7 @@
 
 #include "../core/hooks.h"
 #include "../core/nsmalloc.h"
+#include "../core/error.h"
 
 #include <stdio.h>
 
@@ -50,6 +51,10 @@ void initsstring() {
   allocstring=0;
   
   registerhook(HOOK_CORE_STATSREQUEST,&sstringstats);
+}
+
+void finisstring() {
+  nsfreeall(POOL_SSTRING);
 }
 
 sstring *getsstring(const char *inputstr, int maxlen) {
@@ -187,28 +192,74 @@ void sstringstats(int hooknum, void *arg) {
 }
 
 #else /* USE_VALGRIND */
+
+typedef struct sstringlist {
+  struct sstringlist *prev;
+  struct sstringlist *next;
+  sstring s[];
+} sstringlist;
+
+static sstringlist *head;
+
 void initsstring() {
+}
+
+void finisstring() {
+  sstringlist *s, *sn;
+
+  /* here we deliberately don't free the pointers so valgrind can tell us where they were allocated, in theory */
+
+  for(s=head;s;s=sn) {
+    sn = s->next;
+    s->next = NULL;
+    s->prev = NULL;
+
+    Error("sstring", ERR_WARNING, "sstring still allocated: %s", s->s->content);
+  }
+
+  head = NULL;
 }
 
 sstring *getsstring(const char *inputstr, int maxlen) {
   size_t len = strlen(inputstr);
-  sstring *s;
+  sstringlist *s;
 
-  s=(sstring *)nsmalloc(POOL_SSTRING,sizeof(sstring));
-  s->u.l.length = strlen(inputstr);
-  s->content=(char *)nsmalloc(POOL_SSTRING,s->u.l.length + 1);
+  s=(sstringlist *)malloc(sizeof(sstringlist) + sizeof(sstring));
+  
+  s->s->u.l.length = strlen(inputstr);
+  s->s->content=(char *)malloc(s->s->u.l.length + 1);
 
-  memcpy(s->content, inputstr, len + 1);
+  memcpy(s->s->content, inputstr, len);
+  s->s->content[len] = '\0';
 
-  return s;
+  s->next = head;
+  s->prev = NULL;
+  if(head)
+    head->prev = s;
+  head = s;
+
+  return s->s;
 }
 
 void freesstring(sstring *inval) {
+  sstringlist *s, *ss, *sp;
   if(!inval)
     return;
 
-  nsfree(POOL_SSTRING,inval->content);
-  nsfree(POOL_SSTRING,inval);
+  s = (sstringlist *)inval - 1;
+
+  if(s->prev) {
+    s->prev->next = s->next;
+    if(s->next)
+      s->next->prev = s->prev;
+  } else {
+    head = s->next;
+    if(head)
+      head->prev = NULL;
+  }
+
+  free(inval->content);
+  free(s);
 }
 #endif
 

@@ -11,6 +11,7 @@
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
+#include "../lib/strlfunc.h"
 #include "config.h"
 #include "error.h"
 #include <stdio.h>
@@ -70,6 +71,7 @@ void clearmoduledeps() {
   unsigned int i;
   
   for (i=0;i<knownmodules;i++) {
+    freesstring(moduledeps[i].name);
     if (moduledeps[i].parents) {
       free(moduledeps[i].parents);
       moduledeps[i].parents=NULL;
@@ -447,12 +449,23 @@ void safereload(char *themodule) {
 
 void newserv_shutdown() {
   module *mods;
-  
+  char buf[1024];
+
   while (modules.cursi) {
     mods=(module *)(modules.content);
-    rmmod(mods[0].name->content);
+
+    strlcpy(buf, mods[0].name->content, sizeof(buf));
+    rmmod(buf);
   }
   
+  clearmoduledeps();
+
+  if (moddir!=NULL)
+    freesstring(moddir);
+
+  if (modsuffix!=NULL)
+    freesstring(modsuffix);
+
   Error("core",ERR_INFO,"All modules removed.  Exiting.");
 }
 

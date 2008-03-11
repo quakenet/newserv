@@ -20,6 +20,30 @@ void initnickhelpers() {
   memset(realnametable,0,sizeof(realnametable));
 }
 
+void fininickhelpers() {
+  host *hnp, *hnpn;
+  realname *rnp, *rnpn;
+  int i;
+
+  for(i=0;i<HOSTHASHSIZE;i++) {
+    for(hnp=hosttable[i];hnp;hnp=hnpn) {
+      hnpn=hnp->next;
+      freesstring(hnp->name);
+      freehost(hnp);
+    }
+    hosttable[i]=NULL;
+  }
+
+  for(i=0;i<REALNAMEHASHSIZE;i++) {
+    for(rnp=realnametable[i];rnp;rnp=rnpn) {
+      rnpn=rnp->next;
+      freesstring(rnp->name);
+      freerealname(rnp);
+    }
+    realnametable[i]=NULL;
+  }
+}
+
 host *findhost(const char *hostname) {
   host *hp;
   for (hp=hosttable[hosthash(hostname)];hp;hp=(host *)hp->next) {

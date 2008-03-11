@@ -5,7 +5,6 @@
 #include "modules.h"
 #include "config.h"
 #include "error.h"
-#include "nsmalloc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,9 +44,11 @@ int main(int argc, char **argv) {
       break;
     }
   }  
-  
-  nsfreeall(POOL_SSTRING);
+
   nsexit();
+
+  freeconfig();
+  finisstring();  
 }
 
 /*

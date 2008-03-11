@@ -58,8 +58,8 @@ void _fini() {
   deregisterhook(HOOK_IRC_DISCON,&handledisconnect);
   
   for (i=0;i<MAXSERVERS;i++) {
-    if (serverlist[i].name!=NULL)
-      freesstring(serverlist[i].name);
+    freesstring(serverlist[i].name);
+    freesstring(serverlist[i].description);
   }
 }
 

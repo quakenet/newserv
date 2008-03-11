@@ -12,7 +12,7 @@
 
 struct nsmpool nsmpools[MAXPOOL];
 
-#ifndef USE_VALGRIND
+#ifndef USE_NSMALLOC_VALGRIND
 
 void *nsmalloc(unsigned int poolid, size_t size) {
   struct nsminfo *nsmp;

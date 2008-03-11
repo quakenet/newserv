@@ -201,6 +201,7 @@ nick *getnickbynumericstr(char *numericstr);
                     
 /* nickhelpers.c functions */
 void initnickhelpers();
+void fininickhelpers();
 host *findhost(const char *hostname);
 host *findorcreatehost(const char *hostname);
 void releasehost(host *hp);
