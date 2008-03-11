@@ -227,7 +227,7 @@ void csdb_dohelp(nick *np, Command *cmd) {
   hip->commandname=getsstring(cmd->command->content, cmd->command->length);
   hip->cmd=cmd;
 
-  pqasyncquery(csdb_dohelp_real, (void *)hip, 
+  q9asyncquery(csdb_dohelp_real, (void *)hip, 
 		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
 }
 
@@ -239,6 +239,12 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
   PGresult *pgres;
   int i,j,num,lang=0;
   
+  if(!dbconn) {
+    freesstring(hip->commandname);
+    free(hip);
+    return; 
+  }
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {

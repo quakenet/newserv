@@ -17,6 +17,7 @@
 #include "../channel/channel.h"
 #include "../parser/parser.h"
 #include "../localuser/localuserchannel.h"
+#include "../pqsql/pqsql.h"
 
 #define CS_PARANOID
 
@@ -808,6 +809,7 @@ extern unsigned int lastmaillockID;
 
 extern int chanserv_init_status;
 extern int chanservdb_ready;
+extern PQModuleIdentifier q9pqid, q9apqid, q9cpqid, q9upqid;
 
 extern maildomain *maildomainnametable[MAILDOMAINHASHSIZE];
 extern maildomain *maildomainIDtable[MAILDOMAINHASHSIZE];
@@ -910,6 +912,11 @@ void csdb_updateban(regchan *rcp, regban *rbp);
 char *csdb_gethelpstr(char *command, int language);
 void csdb_createmail(reguser *rup, int type);
 void csdb_dohelp(nick *np, Command *cmd);
+
+#define q9asyncquery(handler, tag, format, ...) pqasyncqueryi(q9pqid, handler, tag, format , ##__VA_ARGS__)
+#define q9a_asyncquery(handler, tag, format, ...) pqasyncqueryi(q9apqid, handler, tag, format , ##__VA_ARGS__)
+#define q9u_asyncquery(handler, tag, format, ...) pqasyncqueryi(q9upqid, handler, tag, format , ##__VA_ARGS__)
+#define q9c_asyncquery(handler, tag, format, ...) pqasyncqueryi(q9cpqid, handler, tag, format , ##__VA_ARGS__)
 
 /* chanservcrypto.c */
 typedef int (*CRAlgorithm)(char *, const char *, const char *, const char *);

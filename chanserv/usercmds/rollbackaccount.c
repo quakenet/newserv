@@ -26,6 +26,9 @@ void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
   PGresult *pgres;
   int i, num;
 
+  if(!dbconn)
+    return;
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -80,7 +83,7 @@ void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
 }
 
 void csdb_rollbackaccounthistory(nick *np, reguser* rup, time_t starttime) {
-  pqasyncquery(csdb_dorollbackaccount_real, (void *)np->numeric,
+  q9u_asyncquery(csdb_dorollbackaccount_real, (void *)np->numeric,
     "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
     "userID=%u and changetime>%lu order by changetime desc limit 10", rup->ID, starttime);
 }

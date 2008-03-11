@@ -78,6 +78,8 @@ const flag mdflags[] = {
 void chanservfreestuff();
 void chanservfinishinit(int hooknum, void *arg);
 
+PQModuleIdentifier q9pqid;
+
 void chanservdumpstuff(void *arg) {
   dumplastjoindata("lastjoin.dump");
 }
@@ -88,6 +90,8 @@ void _init() {
 
   chanservcryptoinit();
   csa_initregex();
+
+  q9pqid = pqgetid();
 
   if (chanservext!=-1 && chanservnext!=-1 && chanservaext!=-1) {
     /* Set up the chantypes */
@@ -171,6 +175,8 @@ void chanserv_finalinit() {
 }
 
 void _fini() {
+  pqfreeid(q9pqid);
+
   deleteallschedules(cs_timerfunc);
   deleteallschedules(chanservreguser);
   deleteallschedules(chanservdumpstuff);

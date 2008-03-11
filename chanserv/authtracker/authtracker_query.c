@@ -39,7 +39,10 @@ void at_lognewsession(unsigned int userid, nick *np) {
 static void real_at_finddanglingsessions(PGconn *dbconn, void *arg) {
   PGresult *pgres;
   unsigned int i,num;
-  
+
+  if(!dbconn)
+    return;
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -49,6 +52,7 @@ static void real_at_finddanglingsessions(PGconn *dbconn, void *arg) {
 
   if (PQnfields(pgres)!=3) {
     Error("authtracker",ERR_ERROR,"Dangling sessions format error");
+    PQclear(pgres);
     return;
   }
   
@@ -70,7 +74,7 @@ static void real_at_finddanglingsessions(PGconn *dbconn, void *arg) {
 }
 
 void at_finddanglingsessions() {
-  pqasyncquery(real_at_finddanglingsessions, NULL, 
+  pqasyncqueryi(authtrackerpq, real_at_finddanglingsessions, NULL, 
 	"SELECT numeric,userID,authtime FROM authhistory WHERE disconnecttime=0");
 
 }

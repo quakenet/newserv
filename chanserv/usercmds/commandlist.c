@@ -23,8 +23,12 @@ int csu_dousercomment(void *source, int cargc, char **cargv);
 int csu_douserflags(void *source, int cargc, char **cargv);
 int csu_dowhoami(void *source, int cargc, char **cargv);
 int csu_dowhois(void *source, int cargc, char **cargv);
+void usercmds_init(void);
+void usercmds_fini(void);
+
 
 void _init() {
+  usercmds_init();
   chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.", "Usage: accounthistory <account>\nShows password/email history for the specified account.\n");
   chanservaddcommand("cleanupdb", QCMD_DEV, 0, csu_docleanupdb, "Clean up database.", "Usage: cleanupdb\nRemoves unused and never used accounts that exceed the idleness\nthresholds.\n");
   chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.", "Usage: deluser <username>\nRemoves the specified username from the bot.\n");
@@ -48,6 +52,7 @@ void _init() {
 }
 
 void _fini() {
+  usercmds_fini();
   chanservremovecommand("accounthistory", csa_doaccounthistory);
   chanservremovecommand("cleanupdb", csu_docleanupdb);
   chanservremovecommand("deluser", csu_dodeluser);

@@ -22,8 +22,14 @@ unless (@ARGV) {
   $modname=$ARGV[0];
 }
 
+my $smallname;
+$smallname=$modname;
+$smallname=~s/^chanserv_//;
+$smallname=~s/\.so$//;
+
 for (@filelist) {
   next if (/commandlist.c/);
+  next if (/init.c/);
   
   my $fname = $_;
   my ($cn, $cl, $ca, $cd, $cf, $cp, $ch);
@@ -99,7 +105,11 @@ foreach (@protos) {
 my @names2 = @cmdnames;
 my @func2 = @cmdfunc;
 
+print CL "void ".$smallname."_init(void);\n";
+print CL "void ".$smallname."_fini(void);\n\n";
+
 print CL "\nvoid _init() {\n";
+print CL "  ".$smallname."_init();\n";
 
 while (my $cn = shift @cmdnames) {
   print CL "  chanservaddcommand(\"".$cn."\", ".(shift @cmdlevels).", ".(shift @cmdargs).", ";
@@ -107,6 +117,7 @@ while (my $cn = shift @cmdnames) {
 }
 
 print CL "}\n\nvoid _fini() {\n";
+print CL "  ".$smallname."_fini();\n";
 
 while (my $cn = shift @names2) {
   print CL "  chanservremovecommand(\"".$cn."\", ".(shift @func2).");\n";
@@ -130,6 +141,7 @@ print MF "\t../mkcommandlist.pl $modname\n";
 print MF "\n$modname: ";
 
 push @files,"commandlist.c";
+push @files,"init.c";
 
 foreach (@files) {
   s/.c$/.o/;

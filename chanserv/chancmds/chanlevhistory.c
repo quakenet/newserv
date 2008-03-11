@@ -34,6 +34,11 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
   struct tm *tmp;
   char tbuf[15], fbuf[18];
 
+  if(!dbconn) {
+    PQclear(pgres);
+    return;
+  }
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -81,7 +86,7 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
 }
 
 void csdb_retreivechanlevhistory(nick *np, regchan *rcp, time_t starttime) {
-  pqasyncquery(csdb_dochanlevhistory_real, (void *)np->numeric,
+  q9c_asyncquery(csdb_dochanlevhistory_real, (void *)np->numeric,
     "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
     "channelID=%u and changetime>%lu order by changetime desc limit 1000", rcp->ID, starttime);
 }

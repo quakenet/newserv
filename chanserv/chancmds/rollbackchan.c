@@ -36,6 +36,9 @@ void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
   int i, j, num, newuser;
   char fbuf[18];
 
+  if(!dbconn)
+    return;
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -155,11 +158,11 @@ void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
 
 void csdb_rollbackchanlevhistory(nick *np, regchan *rcp, reguser* rup, time_t starttime) {
   if (rup)
-    pqasyncquery(csc_dorollbackchan_real, (void *)np->numeric,
+    q9c_asyncquery(csc_dorollbackchan_real, (void *)np->numeric,
       "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
       "userID=%u and channelID=%u and changetime>%lu order by changetime desc limit 1000", rup->ID, rcp->ID, starttime);
   else
-    pqasyncquery(csc_dorollbackchan_real, (void *)np->numeric,
+    q9c_asyncquery(csc_dorollbackchan_real, (void *)np->numeric,
       "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
       "channelID=%u and changetime>%lu order by changetime desc limit 1000", rcp->ID, starttime);
 }

@@ -44,8 +44,12 @@ int csc_dounbanme(void *source, int cargc, char **cargv);
 int csc_dounsuspendchan(void *source, int cargc, char **cargv);
 int csc_dovoice(void *source, int cargc, char **cargv);
 int csc_dowelcome(void *source, int cargc, char **cargv);
+void chancmds_init(void);
+void chancmds_fini(void);
+
 
 void _init() {
+  chancmds_init();
   chanservaddcommand("addchan", QCMD_OPER, 4, csc_doaddchan, "Adds a new channel to the bot.", "Usage: addchan <channel> [<owner> [<flags> [<type>]]]\nAdds the given channel to the bot, where:\nowner - can be either nickname on the network or #authname.  If not supplied,\n        the channel will belong to the user issuing the ADDCHAN command.\nflags - can be any valid chanflags (see CHANFLAGS).  If not specified this \n        defaults to +j.\ntype  - is a channel type as per old Q and is now obsolete.\n");
   chanservaddcommand("adduser", QCMD_AUTHED, 20, csc_doadduser, "Adds one or more users to a channel as +aot.", "Usage: ADDUSER <channel> [<flags>] <user1> [<user2> [<user3> [...]]]\nAdds the named user(s) to the channel, where:\nchannel - the channel to use\nflags   - the list of flags to add for each user, introduced by + (for example\n          +gv).  See CHANLEV for valid flags.  If no flags are specified, \n          +aot is used.  This command cannot be used to add masters (+m) or\n          owners (+n).\nuser<n> - either a user's current nickname on the network or #accountname. Up to\n          18 users can be specified.\nADDUSER requires master (+m) access on the named channel.\n");
   chanservaddcommand("autolimit", QCMD_AUTHED, 2, csc_doautolimit, "Shows or changes the autolimit threshold on a channel.", "Usage: AUTOLIMIT <channel> [<threshold>]\nThe autolimit feature maintains a user limit (+l) on the channel which is\nregularly updated to keep a fixed number of spaces free on the channel for\npeople to join.  This is useful since it prevents a large number of \"clones\"\njoining at the same time.  However, if the number of free spaces is too small\nit's possible that legitimate users won't be able to join.  This command allows\nyou to adjust the number of free spaces to maintain when autolimit is enabled.  \nTo actually turn the autolimit feature on or off, see CHANFLAGS.  Where:\nchannel   - the channel to use.\nthreshold - specifies the new threshold.  If not specified, the current threshold \n            is displayed.\nViewing the current threshold requires operator (+o) access on the named channel.\nUpdating the threshold requires master (+m) access on the named channel.\n");
@@ -90,6 +94,7 @@ void _init() {
 }
 
 void _fini() {
+  chancmds_fini();
   chanservremovecommand("addchan", csc_doaddchan);
   chanservremovecommand("adduser", csc_doadduser);
   chanservremovecommand("autolimit", csc_doautolimit);

@@ -18,8 +18,12 @@ int csa_doreset(void *source, int cargc, char **cargv);
 int csa_dosendpw(void *source, int cargc, char **cargv);
 int csa_dosetmail(void *source, int cargc, char **cargv);
 int csa_dosetpw(void *source, int cargc, char **cargv);
+void authcmds_init(void);
+void authcmds_fini(void);
+
 
 void _init() {
+  authcmds_init();
   chanservaddcommand("auth", QCMD_SECURE | QCMD_NOTAUTHED, 2, csa_doauth, "Authenticates you on the bot.", "Usage: AUTH <username> <password>\nAuthenticates you on the bot, where:\nusername - your username\npassword - your password\nIf you do not have a username and password, see HELLO.\nNote: due to the sensitive nature of this command, you must send the message\nto Q@CServe.quakenet.org when using it.\nNote: the preferred way to authenticate is to use the /AUTH command.\n");
   chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "Usage: AUTHHISTORY\nDisplays details of the last 10 logins with your account.  Details include\nhostmask, login time, disconnect time and reason.\n");
   chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "Usage: challenge\nSupplies you with a challenge and a list of algorithms accepted\nfor challenge response authentication, see CHALLENGEAUTH help\nfor more details.\n");
@@ -38,6 +42,7 @@ void _init() {
 }
 
 void _fini() {
+  authcmds_fini();
   chanservremovecommand("auth", csa_doauth);
   chanservremovecommand("authhistory", csa_doauthhistory);
   chanservremovecommand("challenge", csa_dochallenge);

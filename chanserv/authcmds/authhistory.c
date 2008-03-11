@@ -37,6 +37,11 @@ void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
   struct tm *tmp;
   char tbuf1[15], tbuf2[15], uhbuf[51];
 
+  if(!dbconn) {
+    free(ahi);
+    return;
+  }
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -98,7 +103,7 @@ void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit) {
   ahi=(struct authhistoryinfo *)malloc(sizeof(struct authhistoryinfo));
   ahi->numeric=np->numeric;
   ahi->userID=rup->ID;
-  pqasyncquery(csdb_doauthhistory_real, (void *)ahi,
+  q9a_asyncquery(csdb_doauthhistory_real, (void *)ahi,
     "SELECT userID, nick, username, host, authtime, disconnecttime, quitreason from authhistory where "
     "userID=%u order by authtime desc limit %d", rup->ID, limit);
 }

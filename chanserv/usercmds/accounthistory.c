@@ -30,6 +30,9 @@ void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
   struct tm *tmp;
   char tbuf[15];
 
+  if(!dbconn)
+    return;
+
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
@@ -75,7 +78,7 @@ void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
 }
 
 void csdb_retreiveaccounthistory(nick *np, reguser *rup, int limit) {
-  pqasyncquery(csdb_doaccounthistory_real, (void *)np->numeric,
+  q9u_asyncquery(csdb_doaccounthistory_real, (void *)np->numeric,
     "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
     "userID=%u order by changetime desc limit %d", rup->ID, limit);
 }
