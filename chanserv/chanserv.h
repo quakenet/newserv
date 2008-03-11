@@ -302,7 +302,7 @@
 /* SPARE FLAG                  0x0001 */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
-#define   QUFLAG_RESTRICTED    0x0008  /* +r */
+/* SPARE FLAG                  0x0008 */
 #define   QUFLAG_SUSPENDED     0x0010  /* +z */
 #define   QUFLAG_OPER          0x0020  /* +o */
 #define   QUFLAG_DEV           0x0040  /* +d */
@@ -314,11 +314,10 @@
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdffe
+#define   QUFLAG_ALL           0xdff6
 
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
 #define UIsNotice(x)        ((x)->flags & QUFLAG_NOTICE)
-#define UIsRestricted(x)    ((x)->flags & QUFLAG_RESTRICTED)
 #define UIsSuspended(x)     ((x)->flags & QUFLAG_SUSPENDED)
 #define UIsOper(x)          ((x)->flags & QUFLAG_OPER)
 #define UIsDev(x)           ((x)->flags & QUFLAG_DEV)
@@ -338,7 +337,6 @@
 
 #define USetGline(x)         ((x)->flags |= QUFLAG_GLINE)
 #define USetNotice(x)        ((x)->flags |= QUFLAG_NOTICE)
-#define USetRestricted(x)    ((x)->flags |= QUFLAG_RESTRICTED)
 #define USetSuspended(x)     ((x)->flags |= QUFLAG_SUSPENDED)
 #define USetOper(x)          ((x)->flags |= QUFLAG_OPER)
 #define USetDev(x)           ((x)->flags |= QUFLAG_DEV)
@@ -353,7 +351,6 @@
 
 #define UClearGline(x)         ((x)->flags &= ~QUFLAG_GLINE)
 #define UClearNotice(x)        ((x)->flags &= ~QUFLAG_NOTICE)
-#define UClearRestricted(x)    ((x)->flags &= ~QUFLAG_RESTRICTED)
 #define UClearSuspended(x)     ((x)->flags &= ~QUFLAG_SUSPENDED)
 #define UClearOper(x)          ((x)->flags &= ~QUFLAG_OPER)
 #define UClearDev(x)           ((x)->flags &= ~QUFLAG_DEV)
