@@ -39,6 +39,7 @@ typedef struct pqasyncquery_s {
   void *tag;
   PQQueryHandler handler;
   int flags;
+  PQModuleIdentifier identifier;
   struct pqasyncquery_s *next;
 } pqasyncquery_s;
 
@@ -51,6 +52,7 @@ typedef struct pqtableloaderinfo_s
 pqasyncquery_s *queryhead = NULL, *querytail = NULL;
 
 int dbconnected = 0;
+static PQModuleIdentifier moduleid = 0;
 PGconn *dbconn;
 
 void dbhandler(int fd, short revents);
@@ -65,6 +67,46 @@ void _init(void) {
 
 void _fini(void) {
   disconnectdb();
+}
+
+PQModuleIdentifier pqgetid(void) {
+  moduleid++;
+  if(moduleid < 10)
+    moduleid = 10;
+
+  return moduleid;
+}
+
+void pqfreeid(PQModuleIdentifier identifier) {
+  pqasyncquery_s *q, *p;
+  
+  if(identifier == 0 || !queryhead)
+    return;
+
+  if(queryhead->identifier == identifier) {
+    (queryhead->handler)(NULL, queryhead->tag);
+    queryhead->identifier = QH_ALREADYFIRED;
+  }
+
+  for(p=queryhead,q=queryhead->next;q;) {
+    if(q->identifier == identifier) {
+      (q->handler)(NULL, q->tag);
+      p->next = q->next;
+
+      if (q->query_ss) {
+        freesstring(q->query_ss);
+      } else {
+        free(q->query);
+      }
+      free(q);
+      q = p->next;
+    } else {
+      p = q;
+      q = q->next;
+    }
+  }
+
+  querytail = p;
 }
 
 void connectdb(void) {
@@ -131,24 +173,26 @@ void dbhandler(int fd, short revents) {
     PQconsumeInput(dbconn);
     
     if(!PQisBusy(dbconn)) { /* query is complete */
-      if(queryhead->handler)
+      if(queryhead->handler && queryhead->identifier != QH_ALREADYFIRED)
         (queryhead->handler)(dbconn, queryhead->tag);
 
       while((res = PQgetResult(dbconn))) {
-        switch(PQresultStatus(res)) {
-          case PGRES_TUPLES_OK:
-            Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
-            break;
+        if(queryhead->identifier != QH_ALREADYFIRED) {
+          switch(PQresultStatus(res)) {
+            case PGRES_TUPLES_OK:
+              Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
+              break;
 
-          case PGRES_NONFATAL_ERROR:
-          case PGRES_FATAL_ERROR:
-            /* if a create query returns an error assume it went ok, paul will winge about this */
-            if(!(queryhead->flags & QH_CREATE))
-              Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
-            break;
+            case PGRES_NONFATAL_ERROR:
+            case PGRES_FATAL_ERROR:
+              /* if a create query returns an error assume it went ok, paul will winge about this */
+              if(!(queryhead->flags & QH_CREATE))
+                Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
+              break;
 	  
-          default:
-            break;
+            default:
+              break;
+          }
         }
 	
         PQclear(res);
@@ -180,7 +224,7 @@ void dbhandler(int fd, short revents) {
 }
 
 /* sorry Q9 */
-void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, ...) {
+void pqasyncqueryf(int identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...) {
   char querybuf[8192];
   va_list va;
   int len;
@@ -212,6 +256,7 @@ void pqasyncqueryf(PQQueryHandler handler, void *tag, int flags, char *format, .
   qp->handler = handler;
   qp->next = NULL; /* shove them at the end */
   qp->flags = flags;
+  qp->identifier = identifier;
 
   if(querytail) {
     querytail->next = qp;
