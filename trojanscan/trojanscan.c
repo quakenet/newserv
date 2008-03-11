@@ -130,6 +130,22 @@ void _fini(void) {
     freesstring(trojanscan_tailpool[i]);
   trojanscan_database_close();
 
+  deletecommandfromtree(trojanscan_cmds, "showcommands", &trojanscan_showcommands);
+  deletecommandfromtree(trojanscan_cmds, "help", &trojanscan_help);
+  deletecommandfromtree(trojanscan_cmds, "hello", &trojanscan_hello);
+  deletecommandfromtree(trojanscan_cmds, "join", &trojanscan_userjoin);
+  deletecommandfromtree(trojanscan_cmds, "chanlist", &trojanscan_chanlist);
+  deletecommandfromtree(trojanscan_cmds, "whois", &trojanscan_whois);
+  deletecommandfromtree(trojanscan_cmds, "changelev", &trojanscan_changelev);
+  deletecommandfromtree(trojanscan_cmds, "deluser", &trojanscan_deluser);
+  deletecommandfromtree(trojanscan_cmds, "mew", &trojanscan_mew);
+  deletecommandfromtree(trojanscan_cmds, "status", &trojanscan_status);
+  deletecommandfromtree(trojanscan_cmds, "listusers", &trojanscan_listusers);
+  deletecommandfromtree(trojanscan_cmds, "rehash", &trojanscan_rehash);
+  deletecommandfromtree(trojanscan_cmds, "cat", &trojanscan_cat);
+  deletecommandfromtree(trojanscan_cmds, "reschedule", &trojanscan_reschedule);
+
+  destroycommandtree(trojanscan_cmds);
   nscheckfreeall(POOL_TROJANSCAN);
 }
 
