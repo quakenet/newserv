@@ -13,6 +13,8 @@
 #define __USE_GNU
 #include <string.h>
 
+#ifndef USE_VALGRIND
+
 /* List of free stuff */
 sstring *freelist[SSTRING_MAXLEN+1];
 
@@ -184,9 +186,36 @@ void sstringstats(int hooknum, void *arg) {
   }
 }
 
+#else /* USE_VALGRIND */
+void initsstring() {
+}
+
+sstring *getsstring(const char *inputstr, int maxlen) {
+  size_t len = strlen(inputstr);
+  sstring *s;
+
+  s=(sstring *)nsmalloc(POOL_SSTRING,sizeof(sstring));
+  s->u.l.length = strlen(inputstr);
+  s->content=(char *)nsmalloc(POOL_SSTRING,s->u.l.length + 1);
+
+  memcpy(s->content, inputstr, len + 1);
+
+  return s;
+}
+
+void freesstring(sstring *inval) {
+  if(!inval)
+    return;
+
+  nsfree(POOL_SSTRING,inval->content);
+  nsfree(POOL_SSTRING,inval);
+}
+#endif
+
 int sstringcompare(sstring *ss1, sstring *ss2) {
   if (ss1->u.l.length != ss2->u.l.length)
     return -1;
   
   return strncmp(ss1->content, ss2->content, ss1->u.l.length);
 }
+
