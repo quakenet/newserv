@@ -340,13 +340,10 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	}
 	freeregchanuser(rcuplist);
 	rcuplist=NULL;
-        for (i=0;i<REGCHANUSERHASHSIZE;i++)
-          if (rcp->regusers[i])
-            break;
-        if (i==REGCHANUSERHASHSIZE) {
-	  cs_log(sender,"DELCHAN %s (Cleared chanlev)",cip->name->content);
-          cs_removechannel(rcp);	
-	}
+	if (cs_removechannelifempty(sender, rcp)) {
+	  chanservstdmessage(sender, QM_CHANLEVEMPTIEDCHANNEL);
+          return CMD_OK;
+        }
       }
 
       /* Say we've done it */

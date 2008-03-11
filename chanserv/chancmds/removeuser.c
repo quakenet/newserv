@@ -83,8 +83,13 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
   rcp->status |= QCSTAT_OPCHECK;
   cs_timerfunc(cip);
 
-  if (removed)
-    chanservstdmessage(sender, QM_DONE);
+  if (removed) {
+    if (cs_removechannelifempty(sender, rcp)) {
+      chanservstdmessage(sender, QM_CHANLEVEMPTIEDCHANNEL);
+    } else {
+      chanservstdmessage(sender, QM_DONE);
+    }
+  }
 
   return CMD_OK;
 }

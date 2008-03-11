@@ -1009,8 +1009,27 @@ void cs_removechannel(regchan *rcp) {
   releasechanindex(cip);
 }
 
+/* Sender is who the DELCHAN is attributed to.. */
+int cs_removechannelifempty(nick *sender, regchan *rcp) {
+  unsigned int i;
+  regchanuser *rcup;
+  
+  for (i=0;i<REGCHANUSERHASHSIZE;i++) {
+    for (rcup=rcp->regusers[i];rcup;rcup=rcup->nextbychan) {
+      if (rcup->flags & ~(QCUFLAG_BANNED | QCUFLAG_DENY | QCUFLAG_QUIET));
+        return 0;
+    }
+  }
+  
+  if (i==REGCHANUSERHASHSIZE) {
+    cs_log(sender,"DELCHAN %s (Empty)",rcp->index->name->content);
+    cs_removechannel(rcp);
+  }
+  
+  return 1;
+}
+
 void cs_removeuser(reguser *rup) {
-  int i;
   regchanuser *rcup, *nrcup;
   regchan *rcp;
   struct authname *anp;
@@ -1022,19 +1041,7 @@ void cs_removeuser(reguser *rup) {
     rcp=rcup->chan;
 
     delreguserfromchannel(rcp, rup);
-
-    for (i=0;i<REGCHANUSERHASHSIZE;i++) {
-      if (rcp->regusers[i])
-	break;
-    }
-
-    if (i==REGCHANUSERHASHSIZE) {
-      /* There are no users left on this channel! */
-      cs_log(NULL, "DELCHAN %s (last user removed)",rcp->index->name->content);
-      cs_removechannel(rcp);
-    }
-    
-    freeregchanuser(rcup);
+    cs_removechannelifempty(NULL, rcp);
   }
 
   if(rup->domain)
