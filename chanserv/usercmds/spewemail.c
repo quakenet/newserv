@@ -7,6 +7,8 @@
  * CMDDESC: Search for an e-mail in the database.
  * CMDFUNC: csu_dospewemail
  * CMDPROTO: int csu_dospewemail(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: spewdb <pattern>
+ * CMDHELP: Displays all users with email addresses that match the supplied pattern.
  */
 
 #include "../chanserv.h"

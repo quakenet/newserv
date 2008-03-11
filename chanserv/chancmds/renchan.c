@@ -7,6 +7,8 @@
  * CMDDESC: Renames a channel on the bot.
  * CMDFUNC: csc_dorenchan
  * CMDPROTO: int csc_dorenchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: renchan <old channel> <new channel>
+ * CMDHELP: Moves the bot from one channel to another, preserving flags.
  */
 
 #include "../chanserv.h"

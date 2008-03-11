@@ -7,6 +7,8 @@
  * CMDDESC: Spew Mail Domains.
  * CMDFUNC: csu_dospewdomain
  * CMDPROTO: int csu_dospewdomain(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: spewdomain <pattern>
+ * CMDHELP: Displays all mail domains that match the specified pattern.
  */
 
 #include "../chanserv.h"

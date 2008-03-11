@@ -7,6 +7,8 @@
  * CMDDESC: Shows or changes the staff comment for a channel.
  * CMDFUNC: csc_dochannelcomment
  * CMDPROTO: int csc_dochannelcomment(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: channelcomment <channel> [<comment>]
+ * CMDHELP: Sets or views a comment for a channel.
  */
 
 #include "../chanserv.h"

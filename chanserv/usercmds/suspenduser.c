@@ -7,6 +7,18 @@
  * CMDDESC: Suspend/Delay GLINE/Instantly GLINE a user.
  * CMDFUNC: csu_dosuspenduser
  * CMDPROTO: int csu_dosuspenduser(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: suspenduser <username> [<duration>] <reason>
+ * CMDHELP:                    -nokill <username> [<duration>] <reason>
+ * CMDHELP:                    -gline <username> [<duration>] <reason>
+ * CMDHELP:                    -instantgline <username> [<duration>] <reason>
+ * CMDHELP:                    -password <password> [<duration>] <reason>
+ * CMDHELP:                    -email <email address> [<duration>] <reason>
+ * CMDHELP: Suspends one or more users, either based on username, email
+ * CMDHELP: address or password.
+ * CMDHELP: By default the user will be immediately disconnected unless
+ * CMDHELP: nokill is specified.
+ * CMDHELP: gline will gline the user at some random period of time after
+ * CMDHELP: they auth, instantgline will gline them the moment they auth.
  */
 
 #include "../chanserv.h"
@@ -147,7 +159,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           if (UHasSuspension(vrup))
             continue;
           
-          if (UHasOperPriv(vrup) && !UHasAdminPriv(rup))
+          if (UHasHelperPriv(vrup) && !UHasAdminPriv(rup))
             continue;
           
           hitcount++;
@@ -174,7 +186,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           if (UHasSuspension(vrup))
             continue;
           
-          if (UHasOperPriv(vrup) && !UHasAdminPriv(rup))
+          if (UHasHelperPriv(vrup) && !UHasAdminPriv(rup))
             continue;
           
           hitcount++;

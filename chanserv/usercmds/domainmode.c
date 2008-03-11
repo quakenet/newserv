@@ -7,7 +7,7 @@
  * CMDDESC: Set/Unset Mail Domain Modes
  * CMDFUNC: csu_dodomainmode
  * CMDPROTO: int csu_dodomainmode(void *source, int cargc, char **cargv);
- * CMDHELP: Syntax: domainmode <domain> [<flags>]
+ * CMDHELP: Usage: domainmode <domain> [<flags>]
  * CMDHELP: Views or modifies the domainmode flags for specified domain.
  * CMDHELP: Flags consist of:
  * CMDHELP:   +b          don't allow email addresses from this domain.

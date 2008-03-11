@@ -7,6 +7,8 @@
  * CMDDESC: Shows or changes a channel's type.
  * CMDFUNC: csc_dochantype
  * CMDPROTO: int csc_dochantype(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: chantype <channel> [<channel type>]
+ * CMDHELP: Views or changes the channel type for the specified channel.
  */
 
 #include "../chanserv.h"

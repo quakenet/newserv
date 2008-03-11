@@ -7,6 +7,8 @@
  * CMDDESC: Lists suspended channels.
  * CMDFUNC: csc_dosuspendchanlist
  * CMDPROTO: int csc_dosuspendchanlist(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: suspendchanlist <pattern>
+ * CMDHELP: Lists all suspended channels that match the specified pattern.
  */
 
 #include "../chanserv.h"

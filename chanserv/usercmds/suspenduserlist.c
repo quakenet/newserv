@@ -7,6 +7,9 @@
  * CMDDESC: Lists suspended/locked users.
  * CMDFUNC: csu_dosuspenduserlist
  * CMDPROTO: int csu_dosuspenduserlist(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: suspenduserlist <username or pattern>
+ * CMDHELP: Displays all suspend users with usernames matching the specified pattern,
+ * CMDHELP: or the single user with the specified username.
  */
 
 #include "../chanserv.h"
@@ -41,7 +44,7 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
         continue;
       
       /*if (!ircd_strcmp(dbrup->username, cargv[0]) || (dbrup->suspendby == vrup->ID)) {*/
-      if (!match(cargv[0], dbrup->username) || (vrup && (dbrup->suspendby == vrup->ID))) {
+      if ((vrup && (dbrup->suspendby == vrup->ID))) {
         char suspendtype[100];
         char *bywhom=0;
         

@@ -7,6 +7,8 @@
  * CMDDESC: Unsuspends a channel from the bot.
  * CMDFUNC: csc_dounsuspendchan
  * CMDPROTO: int csc_dounsuspendchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: unsuspendchan <channel>
+ * CMDHELP: Unsuspends specified channel.
  */
 
 #include "../chanserv.h"

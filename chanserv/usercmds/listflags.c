@@ -7,6 +7,8 @@
  * CMDDESC: List users with the specified user flags.
  * CMDFUNC: csu_dolistflags
  * CMDPROTO: int csu_dolistflags(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: listflags <flags>
+ * CMDHELP: Shows a list of all users with the specified user flags.
  */
 
 #include "../chanserv.h"

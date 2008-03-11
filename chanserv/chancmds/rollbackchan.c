@@ -7,6 +7,9 @@
  * CMDDESC: Roll back access changes on a channel.
  * CMDFUNC: csc_dorollbackchan
  * CMDPROTO: int csc_dorollbackchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: rollbackchan <channel> [<username>] <duration>
+ * CMDHELP: Reverts a channel's user access entries to a point in the past.
+ * CMDHELP: If username is specified only changes to that user will be made.
  */
 
 #include "../chanserv.h"

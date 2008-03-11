@@ -7,6 +7,8 @@
  * CMDDESC: Roll back password/email changes on an account.
  * CMDFUNC: csa_dorollbackaccount
  * CMDPROTO: int csa_dorollbackaccount(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: rollbackaccount <username> <duration>
+ * CMDHELP: Rolls back an account to a previous point, reverting password and email changes.
  */
 
 #include "../chanserv.h"

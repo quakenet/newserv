@@ -7,6 +7,8 @@
  * CMDDESC: Unsuspend a user.
  * CMDFUNC: csu_dounsuspenduser
  * CMDPROTO: int csu_dounsuspenduser(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: unsuspenduser <username>
+ * CMDHELP: Unsuspends the specified user.
  */
 
 #include "../chanserv.h"

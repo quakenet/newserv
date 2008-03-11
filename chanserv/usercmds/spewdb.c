@@ -7,6 +7,8 @@
  * CMDDESC: Search for a user in the database.
  * CMDFUNC: csu_dospewdb
  * CMDPROTO: int csu_dospewdb(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: spewdb <pattern>
+ * CMDHELP: Displays all users with usernames that match the specified pattern.
  */
 
 #include "../chanserv.h"

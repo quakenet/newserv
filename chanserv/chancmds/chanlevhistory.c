@@ -7,6 +7,8 @@
  * CMDDESC: View user access changes on a channel.
  * CMDFUNC: csc_dochanlevhistory
  * CMDPROTO: int csc_dochanlevhistory(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: chanlevhistory <channel>
+ * CMDHELP: Shows you recent modifications to a channels user access entries.
  */
 
 #include "../chanserv.h"

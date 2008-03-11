@@ -7,6 +7,8 @@
  * CMDDESC: Suspends a channel from the bot.
  * CMDFUNC: csc_dosuspendchan
  * CMDPROTO: int csc_dosuspendchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: suspendchan <channel> [<reason>]
+ * CMDHELP: Suspends the specified channel, with an optional reason.
  */
 
 #include "../chanserv.h"

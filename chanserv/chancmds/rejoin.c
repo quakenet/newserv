@@ -7,6 +7,8 @@
  * CMDDESC: Makes the bot rejoin a channel.
  * CMDFUNC: csc_dorejoin
  * CMDPROTO: int csc_dorejoin(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: rejoin <channel>
+ * CMDHELP: Makes the bot rejoin the specified channel.
  */
 
 #include "../chanserv.h"

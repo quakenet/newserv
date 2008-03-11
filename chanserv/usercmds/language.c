@@ -8,6 +8,9 @@
  * CMDDESC: Shows or changes your current language.
  * CMDFUNC: csu_dolanguage
  * CMDPROTO: int csu_dolanguage(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: language [<language code>]
+ * CMDHELP: Shows your currently selected language and a list of others
+ * CMDHELP: by default, changes your language when you specify a language code.
  */
 
 #include "../chanserv.h"

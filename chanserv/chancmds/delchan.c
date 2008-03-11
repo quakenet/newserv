@@ -7,6 +7,8 @@
  * CMDDESC: Removes a channel from the bot.
  * CMDFUNC: csc_dodelchan
  * CMDPROTO: int csc_dodelchan(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: delchan <channel> [<reason>]
+ * CMDHELP: Removes a channel from the bot, reason is optional.
  */
 
 #include "../chanserv.h"
