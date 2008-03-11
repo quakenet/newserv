@@ -187,7 +187,8 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 176*/ "No channel op events have been logged for %s.",
   /* 177*/ "Channel op events on %s:\nNickname        Account used",
   /* 178*/ "Warning: %s (%s@%s) attempted to auth with your password but you already had %d users authed to your account.",
-  /* 179*/ "Warning: %s (%s@%s) authed with your password."
+  /* 179*/ "Warning: %s (%s@%s) authed with your password.",
+  /* 180*/ "Resettable statistics reset for %s."
 };
 
 void initmessages() {
