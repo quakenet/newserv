@@ -214,7 +214,7 @@ void finisstring() {
     s->next = NULL;
     s->prev = NULL;
 
-    Error("sstring", ERR_WARNING, "sstring still allocated: %s", s->s->content);
+    Error("sstring", ERR_WARNING, "sstring of length %d still allocated: %s", s->s->u.l.length, s->s->content);
   }
 
   head = NULL;
