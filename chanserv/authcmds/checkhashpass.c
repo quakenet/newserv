@@ -7,6 +7,7 @@
  * CMDDESC: Checks supplied password against a version hashed in the database.
  * CMDFUNC: csa_docheckhashpass
  * CMDPROTO: int csa_docheckhashpass(void *source, int cargc, char **cargv);
+ * CMDHELP: Used by external services for password verficiation.
  */
 
 #include "../chanserv.h"

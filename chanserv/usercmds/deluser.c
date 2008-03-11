@@ -7,6 +7,8 @@
  * CMDDESC: Removes a user from the bot.
  * CMDFUNC: csu_dodeluser
  * CMDPROTO: int csu_dodeluser(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: deluser <username>
+ * CMDHELP: Removes the specified username from the bot.
  */
 
 #include "../chanserv.h"

@@ -25,10 +25,10 @@ int csu_dowhoami(void *source, int cargc, char **cargv);
 int csu_dowhois(void *source, int cargc, char **cargv);
 
 void _init() {
-  chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.", "");
-  chanservaddcommand("cleanupdb", QCMD_OPER, 0, csu_docleanupdb, "Clean Up Db", "");
-  chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.", "");
-  chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes", "");
+  chanservaddcommand("accounthistory", QCMD_OPER, 1, csa_doaccounthistory, "View password/email history for an account.", "Usage: accounthistory <account>\nShows password/email history for the specified account.\n");
+  chanservaddcommand("cleanupdb", QCMD_DEV, 0, csu_docleanupdb, "Clean up database.", "Usage: cleanupdb\nRemoves unused and never used accounts that exceed the idleness\nthresholds.\n");
+  chanservaddcommand("deluser", QCMD_OPER, 2, csu_dodeluser, "Removes a user from the bot.", "Usage: deluser <username>\nRemoves the specified username from the bot.\n");
+  chanservaddcommand("domainmode", QCMD_OPER, 4, csu_dodomainmode, "Set/Unset Mail Domain Modes", "Syntax: domainmode <domain> [<flags>]\nViews or modifies the domainmode flags for specified domain.\nFlags consist of:\n  +b          don't allow email addresses from this domain.\n  +u <limit>  don't allow more than <limit> accounts to share\n              email addresses on this domain.\n  +l <limit>  don't allow more than <limit> accounts with\n              email addresses on this domain.\nNote that domains are hierarchical, so setting +b on org will\nprevent operations from quakenet.org, fish.quakenet.org, etc.\n");
   chanservaddcommand("info", QCMD_OPER | QCMD_AUTHED, 2, csu_doinfo, "Shows or changes info line.", "Usage: INFO [<channel>] [<info line>]\nShows or updates your current info line, which can be configured to be displayed\nwhen you join a channel.  Where:\nchannel   - channel to set info line on.  If no channel is specified, your default\n            info line will be used.  If a channel is specified you must be known\n            (+k) on the channel.\ninfo line - new info line to set.  If not specified, the current info line will be\n            displayed.  If \"none\" is specified, the info line will be cleared.\n");
   chanservaddcommand("language", QCMD_AUTHED | QCMD_OPER, 1, csu_dolanguage, "Shows or changes your current language.", "");
   chanservaddcommand("listflags", QCMD_OPER, 1, csu_dolistflags, "List users with the specified user flags.", "");

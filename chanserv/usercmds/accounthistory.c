@@ -7,6 +7,8 @@
  * CMDDESC: View password/email history for an account.
  * CMDFUNC: csa_doaccounthistory
  * CMDPROTO: int csa_doaccounthistory(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: accounthistory <account>
+ * CMDHELP: Shows password/email history for the specified account.
  */
 
 #include "../chanserv.h"

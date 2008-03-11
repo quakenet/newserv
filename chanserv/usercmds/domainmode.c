@@ -7,6 +7,16 @@
  * CMDDESC: Set/Unset Mail Domain Modes
  * CMDFUNC: csu_dodomainmode
  * CMDPROTO: int csu_dodomainmode(void *source, int cargc, char **cargv);
+ * CMDHELP: Syntax: domainmode <domain> [<flags>]
+ * CMDHELP: Views or modifies the domainmode flags for specified domain.
+ * CMDHELP: Flags consist of:
+ * CMDHELP:   +b          don't allow email addresses from this domain.
+ * CMDHELP:   +u <limit>  don't allow more than <limit> accounts to share
+ * CMDHELP:               email addresses on this domain.
+ * CMDHELP:   +l <limit>  don't allow more than <limit> accounts with
+ * CMDHELP:               email addresses on this domain.
+ * CMDHELP: Note that domains are hierarchical, so setting +b on org will
+ * CMDHELP: prevent operations from quakenet.org, fish.quakenet.org, etc.
  */
 
 #include "../chanserv.h"

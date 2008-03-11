@@ -7,6 +7,8 @@
  * CMDDESC: Set the email address.
  * CMDFUNC: csa_dosetmail
  * CMDPROTO: int csa_dosetmail(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: setemail <username> <email address>
+ * CMDHELP: Sets the email address for the specified username.
  */
 
 #include "../chanserv.h"

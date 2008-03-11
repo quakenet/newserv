@@ -2,11 +2,14 @@
  *
  *
  * CMDNAME: cleanupdb
- * CMDLEVEL: QCMD_OPER
+ * CMDLEVEL: QCMD_DEV
  * CMDARGS: 0
- * CMDDESC: Clean Up Db
+ * CMDDESC: Clean up database.
  * CMDFUNC: csu_docleanupdb
  * CMDPROTO: int csu_docleanupdb(void *source, int cargc, char **cargv);
+ * CMDHELP: Usage: cleanupdb
+ * CMDHELP: Removes unused and never used accounts that exceed the idleness
+ * CMDHELP: thresholds.
  */
 
 #include "../chanserv.h"
