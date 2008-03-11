@@ -47,7 +47,7 @@ int csc_dobanlist(void *source, int cargc, char **cargv) {
 
   rcp=cip->exts[chanservext];
   
-  if (rcp->bans || cip->channel->bans) {
+  if (rcp->bans || (cip->channel && cip->channel->bans)) {
     chanservstdmessage(sender, QM_REGBANHEADER, cip->name->content);
     for(rbp=rcp->bans;rbp;rbp=rbp->next) {
       rup=findreguserbyID(rbp->setby);
