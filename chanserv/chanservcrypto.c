@@ -55,7 +55,7 @@ void chanservcryptoinit(void) {
   if(!secret || !secret->content || !secret->content[0]) {
     unsigned char buf[32];
     char hexbuf[sizeof(buf) * 2 + 1];
-
+    freesstring(secret);
     Error("chanserv",ERR_WARNING,"Shared secret not set, generating a random string...");
 
     cs_getrandbytes(buf, 32);

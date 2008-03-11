@@ -200,5 +200,5 @@ void freemaillock(maillock *mlp) {
 
   freesstring(mlp->pattern);
   freesstring(mlp->reason);
-  free(mlp);
+  nsfree(POOL_CHANSERVDB,mlp);
 }

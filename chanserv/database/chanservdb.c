@@ -10,6 +10,7 @@
 #include "../../parser/parser.h"
 #include "../../core/events.h"
 #include "../../core/nsmalloc.h"
+#include "../../lib/strlfunc.h"
 
 #include <string.h>
 #include <libpq-fe.h>
@@ -362,6 +363,7 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
   reguser *rup;
   unsigned int i,num;
   char *local;
+  char mailbuf[1024];
 
   pgres=PQgetResult(dbconn);
 
@@ -396,15 +398,14 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     if (rup->email) {
       rup->domain=findorcreatemaildomain(rup->email->content);
       addregusertomaildomain(rup, rup->domain);
-     
-      char *dupemail = strdup(rup->email->content);
-      if((local=strchr(dupemail, '@'))) {
+
+      strlcpy(mailbuf, rup->email->content, sizeof(mailbuf));
+      if((local=strchr(mailbuf, '@'))) {
         *(local++)='\0';
-        rup->localpart=getsstring(dupemail,EMAILLEN);
+        rup->localpart=getsstring(mailbuf,EMAILLEN);
       } else {
         rup->localpart=NULL;
       }
-      free(dupemail);
     } else {
       rup->domain=NULL;
       rup->localpart=NULL;
@@ -874,7 +875,7 @@ void loadsomemaildomains(PGconn *dbconn,void *arg) {
   lastdomainID=0;
 
   for(i=0;i<num;i++) {
-    domain=strdup(PQgetvalue(pgres,i,1));
+    domain=PQgetvalue(pgres,i,1);
     mdp=findorcreatemaildomain(domain); //@@@ LEN
 
     mdp->ID=strtoul(PQgetvalue(pgres,i,0),NULL,10);
