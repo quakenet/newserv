@@ -271,13 +271,14 @@ void _init() {
 void _fini() {
   deregisterhook(HOOK_CORE_STATSREQUEST, csdb_handlestats);
   
+  csdb_freestuff();
+
   if (chanservext!=-1)
     releasechanext(chanservext);
   
   if (chanservaext!=-1)
     releaseauthnameext(chanservaext);
     
-  csdb_freestuff();
   nsfreeall(POOL_CHANSERVDB);
 }
 
@@ -813,6 +814,7 @@ void csdb_freestuff() {
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
       freesstring(rup->email);
+      freesstring(rup->localpart);
       freesstring(rup->lastemail);
       freesstring(rup->lastuserhost);
       freesstring(rup->suspendreason);
