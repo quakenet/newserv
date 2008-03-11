@@ -255,6 +255,7 @@
 #define QM_CHANOPHISTORYHEADER     177
 #define QM_OTHERUSERAUTHEDLIMIT    178
 #define QM_OTHERUSERAUTHED         179
+#define QM_STATSRESET              180
 
 /* List of privileged operations */
 

@@ -160,7 +160,11 @@ int insertcommand(Command *c, CommandTree *ct, int depth) {
       insertcommand(ct->cmd,(CommandTree *)ct->next[oldcharindex],depth+1);
     }
     ct->cmd=c;
-    ct->final=&(c->command->content[depth]);
+    /* Use a static NUL string rather than the allocated one if possible. */
+    if (c->command->length < depth)
+      ct->final=&(c->command->content[depth]);
+    else
+      ct->final="";
     return 0;
   } else {
     if ((ct->cmd!=NULL) && (ct->final[0]!='\0')) {
@@ -243,6 +247,15 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         if(c->help)
           free(c->help);
         free(c);
+
+        /* We need to regenerate the final pointer if needed;
+         * if ct->cmd is still pointing to a command it has the same name.
+         * Otherwise we should clear it.*/
+        if (ct->cmd)
+          ct->final=&(ct->cmd->command->content[depth]);
+        else
+          ct->final="";
+
         return 0;
       }
     }

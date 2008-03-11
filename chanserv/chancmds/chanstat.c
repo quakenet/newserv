@@ -3,11 +3,11 @@
  *
  * CMDNAME: chanstat
  * CMDLEVEL: QCMD_AUTHED
- * CMDARGS: 1
+ * CMDARGS: 2
  * CMDDESC: Displays channel activity statistics.
  * CMDFUNC: csc_dochanstat
  * CMDPROTO: int csc_dochanstat(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: CHANSTAT <channel>
+ * CMDHELP: Usage: CHANSTAT <channel> [RESET]
  * CMDHELP: Shows some statistics about a channel, including total number of joins and 
  * CMDHELP: maximum channel size.  Two sets of statistics are displayed, a lifetime
  * CMDHELP: counter, and a trip meter counter which can be reset.  Where:
@@ -72,6 +72,14 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_STATSJOINS, timebuf, rcp->tripusers, rcp->tripjoins, 
 		     (float)rcp->tripjoins / ((time(NULL)-rcp->statsreset)/(3600*24)));
+  
+  if (cargc>1 && !ircd_strcmp(cargv[1],"reset")) {
+    rcp->statsreset=time(NULL);
+    rcp->tripusers=0;
+    rcp->tripjoins=0;
+    chanservstdmessage(sender, QM_STATSRESET, cip->name->content);
+    csdb_updatechannel(rcp);
+  }
 
   return CMD_OK;
 }
