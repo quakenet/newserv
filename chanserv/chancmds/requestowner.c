@@ -41,7 +41,7 @@ int csc_dorequestowner(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (!(cip=cs_checkaccess(sender, cargv[0], CA_VOICEPRIV, NULL, "requestowner", 0, 0)))
+  if (!(cip=cs_checkaccess(sender, cargv[0], CA_KNOWN, NULL, "requestowner", 0, 0)))
     return CMD_ERROR;
 
   rup=getreguserfromnick(sender);
@@ -57,7 +57,8 @@ int csc_dorequestowner(void *source, int cargc, char **cargv) {
     for(rcup=rcp->regusers[i];rcup;rcup=rcup->nextbychan) {
       if (CUIsOwner(rcup) ||
          (CUIsMaster(rcup) && !CUHasMasterPriv(requester)) ||
-         (CUIsOp(rcup) && !CUHasOpPriv(requester))) {
+         (CUIsOp(rcup) && !CUHasOpPriv(requester)) ||
+         (CUIsVoice(rcup) && !CUHasVoicePriv(requester)) ) {
         chanservstdmessage(sender, QM_NOREQUESTOWNER, cip->name->content, CUIsOwner(rcup)?"owner":CUIsMaster(rcup)?"master":"op");
         return CMD_ERROR;
       }

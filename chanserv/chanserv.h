@@ -256,6 +256,7 @@
 #define QM_OTHERUSERAUTHEDLIMIT    178
 #define QM_OTHERUSERAUTHED         179
 #define QM_STATSRESET              180
+#define QM_CHANLEVEMPTIEDCHANNEL   181
 
 /* List of privileged operations */
 
@@ -954,6 +955,7 @@ void cs_checkbans(channel *cp);
 void cs_schedupdate(chanindex *cip, int mintime, int maxtime);
 void cs_timerfunc(void *arg);
 void cs_removechannel(regchan *rcp);
+int cs_removechannelifempty(nick *sender, regchan *rcp);
 void cs_doallautomodes(nick *np);
 void cs_checknickbans(nick *np);
 void cs_setregban(chanindex *cip, regban *rbp);
