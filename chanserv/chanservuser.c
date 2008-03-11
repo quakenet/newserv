@@ -45,7 +45,7 @@ void chanservreguser(void *arg) {
 
   chanservnick=registerlocaluser(csnick->content,csuser->content,cshost->content,
 				 csrealname->content,NULL,
-				 UMODE_INV|UMODE_SERVICE|UMODE_DEAF,
+				 UMODE_INV|UMODE_SERVICE|UMODE_DEAF|UMODE_OPER,
 				 &chanservuserhandler);
 
   freesstring(csnick);
