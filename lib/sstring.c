@@ -159,7 +159,6 @@ getstruct:
 
 void freesstring(sstring *inval) {
   int alloc;
- 
   
   /* Allow people to call this with a NULL value */
   if (inval==NULL)
@@ -221,13 +220,21 @@ void finisstring() {
 }
 
 sstring *getsstring(const char *inputstr, int maxlen) {
-  size_t len = strlen(inputstr);
   sstringlist *s;
+  size_t len;
+  char *p;
 
+  if(!inputstr)
+    return NULL;
+
+  for(p=(char *)inputstr;*p&&maxlen;maxlen--,p++)
+    ; /* empty */
+
+  len = p - inputstr;
   s=(sstringlist *)malloc(sizeof(sstringlist) + sizeof(sstring));
   
-  s->s->u.l.length = strlen(inputstr);
-  s->s->content=(char *)malloc(s->s->u.l.length + 1);
+  s->s->u.l.length = len;
+  s->s->content=(char *)malloc(len + 1);
 
   memcpy(s->s->content, inputstr, len);
   s->s->content[len] = '\0';
