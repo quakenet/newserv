@@ -64,7 +64,6 @@ const flag ruflags[] = {
   { 'n',  QUFLAG_NOTICE },
   { 'o',  QUFLAG_OPER },
   { 'p',  QUFLAG_PROTECT },
-  { 'r',  QUFLAG_RESTRICTED },
   { 'T',  QUFLAG_TRUST },
   { 'z',  QUFLAG_SUSPENDED },
   { '\0', 0 } };
