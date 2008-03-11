@@ -88,7 +88,18 @@ void _init() {
 }
 
 void _fini() {
+  nick *np;
+  int i;
+
   fininickhelpers();
+
+  for (i=0;i<NICKHASHSIZE;i++) {
+    for (np=nicktable[i];np;np=np->next) {
+      freesstring(np->shident);
+      freesstring(np->sethost);
+    }
+  }
+
   nsfreeall(POOL_NICK);
 
   /* Free the hooks */
