@@ -18,7 +18,7 @@ extern nick *senderNSExtern;
 
 void *kill_exe(struct searchNode *thenode, void *theinput);
 void kill_free(struct searchNode *thenode);
-static const char *defaultreason = "You (%u) have been disconnected for violating our terms of service";
+static const char *defaultreason = "You (%n) have been disconnected for violating our terms of service";
 
 struct kill_localdata {
   unsigned int marker;
