@@ -137,6 +137,12 @@ int csa_doemail(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_EMAILCHANGED, cargv[1]);
   cs_log(sender,"EMAIL OK username %s",rup->username);
+
+#ifdef AUTHGATE_WARNINGS
+  if(UHasHelperPriv(rup))
+    chanservsendmessage(sender, "You MUST go to https://auth.quakenet.org and login successfully to update the cache.");
+#endif
+
   csdb_updateuser(rup);
 
   return CMD_OK;

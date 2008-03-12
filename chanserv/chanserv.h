@@ -58,6 +58,9 @@
 /* Maximum number of accounts that may share an email address */
 #define   MD_DEFAULTACTLIMIT  2
 
+/* If set will issue warnings when authgate cached stuff changes */
+#define   AUTHGATE_WARNINGS
+
 /* Cleanup options */
 #define CLEANUP_ACCOUNT_INACTIVE  80
 #define CLEANUP_ACCOUNT_UNUSED    10

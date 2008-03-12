@@ -84,9 +84,14 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     cs_log(sender,"USERFLAGS #%s %s (%s -> %s)",target->username,cargv[arg],flagbuf,printflags(target->flags, ruflags));
 
     /* only warn about interesting changes */
-    if((target->flags ^ oldflags) & ~(QUFLAG_NOTICE | QUFLAG_INFO))
+    if((target->flags ^ oldflags) & ~(QUFLAG_NOTICE | QUFLAG_INFO)) {
       chanservwallmessage("%s (%s) just used USERFLAGS on %s %s (%s -> %s)",sender->nick,rup->username,target->username,cargv[arg],flagbuf,printflags(target->flags,ruflags));
 
+#ifdef AUTHGATE_WARNINGS
+      if(UHasHelperPriv(rup))
+        chanservsendmessage(sender, "You MUST go to https://auth.quakenet.org and attempt to login as %s (with any password) to update the cache.",rup->username);
+#endif
+    }
     csdb_updateuser(target);
     chanservstdmessage(sender, QM_DONE);
   }

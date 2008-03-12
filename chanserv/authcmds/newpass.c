@@ -92,6 +92,12 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
   rup->lastauth=time(NULL);
   chanservstdmessage(sender, QM_PWCHANGED);
   cs_log(sender,"NEWPASS OK username %s", rup->username);
+
+#ifdef AUTHGATE_WARNINGS
+  if(UHasHelperPriv(rup))
+    chanservsendmessage(sender, "You MUST go to https://auth.quakenet.org and login successfully to update the cache.");
+#endif
+
   csdb_updateuser(rup);
   csdb_createmail(rup, QMAIL_NEWPW);
 
