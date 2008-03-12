@@ -7,7 +7,6 @@ int csa_doauth(void *source, int cargc, char **cargv);
 int csa_doauthhistory(void *source, int cargc, char **cargv);
 int csa_dochallenge(void *source, int cargc, char **cargv);
 int csa_dochallengeauth(void *source, int cargc, char **cargv);
-int csa_docheckhashpass(void *source, int cargc, char **cargv);
 int csa_doemail(void *source, int cargc, char **cargv);
 int csa_dogetpw(void *source, int cargc, char **cargv);
 int csa_dohello(void *source, int cargc, char **cargv);
@@ -28,7 +27,6 @@ void _init() {
   chanservaddcommand("authhistory", QCMD_AUTHED, 1, csa_doauthhistory, "View auth history for an account.", "Usage: AUTHHISTORY\nDisplays details of the last 10 logins with your account.  Details include\nhostmask, login time, disconnect time and reason.\n");
   chanservaddcommand("challenge", QCMD_SECURE | QCMD_NOTAUTHED, 0, csa_dochallenge, "Returns a challenge for use in challengeauth.", "Usage: challenge\nSupplies you with a challenge and a list of algorithms accepted\nfor challenge response authentication, see CHALLENGEAUTH help\nfor more details.\n");
   chanservaddcommand("challengeauth", QCMD_SECURE | QCMD_NOTAUTHED, 3, csa_dochallengeauth, "Authenticates you on the bot using challenge response.", "Usage: challengeauth <username> <response> <hmac algorithm>\nAuthenticates using challenge response.\nTo generate the response from the challenge, calculate the following:\n  HMAC(challenge){k}\nwhere HMAC is the hash message authentication code as described in\nRFC 2104, k is HEXDIGEST(<lower case username>:HEXDIGEST(<password>))\nand HEXDIGEST is the hash function used in the MAC construction.\nFor example code see the website.\n");
-  chanservaddcommand("checkhashpass", QCMD_OPER, 3, csa_docheckhashpass, "Checks supplied password against a version hashed in the database.", "Used by external services for password verficiation.\n");
   chanservaddcommand("email", QCMD_SECURE | QCMD_AUTHED, 3, csa_doemail, "Change your email address.", "Usage: EMAIL <password> <email> <email>\nChanges your register email address.  Confirmation of the change will be sent\nboth old and new addresses.  Where:\npassword - your password\nemail    - new email address.  Must be entered exactly the same way twice to avoid\n           mistakes.\nNote: due to the sensitive nature of this command, you must send the message \nto Q@CServe.quakenet.org when using it.\n");
   chanservaddcommand("getpassword", QCMD_OPER, 2, csa_dogetpw, "Gets a users password", "Usage: getpassword <username>\nFetches the password for the specified username.\n");
   chanservaddcommand("hello", QCMD_NOTAUTHED, 2, csa_dohello, "Creates a new user account.", "Usage: HELLO <email> <email>\nCreates a new user account for yourself.  Your current nickname will be used\nfor the name of the account, and may only contain letters, numbers and \nhyphens (-).  An email containing password details will be sent to the email\naddress supplied.  Where:\nemail    - your email address.  Must be entered the same way both times.\n");
@@ -47,7 +45,6 @@ void _fini() {
   chanservremovecommand("authhistory", csa_doauthhistory);
   chanservremovecommand("challenge", csa_dochallenge);
   chanservremovecommand("challengeauth", csa_dochallengeauth);
-  chanservremovecommand("checkhashpass", csa_docheckhashpass);
   chanservremovecommand("email", csa_doemail);
   chanservremovecommand("getpassword", csa_dogetpw);
   chanservremovecommand("hello", csa_dohello);

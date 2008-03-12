@@ -2,7 +2,7 @@
 CSDIRS=database chancmds usercmds authcmds authtracker newsearch
 
 .PHONY: all dirs clean
-all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_chansearch.so dirs
+all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_chansearch.so chanserv_relay.so dirs
 
 dirs:
 	for i in $(CSDIRS) ; do $(MAKE) -C $$i all ; done
@@ -22,5 +22,8 @@ chanserv_grep.so: chanservgrep.o
 	ld -shared -Bdynamic ${LIBPCRE} -o $@ $^
 
 chanserv_chansearch.so: chanserv-chansearch.o
+	ld -shared -Bdynamic -o $@ $^
+
+chanserv_relay.so: chanserv_relay.o
 	ld -shared -Bdynamic -o $@ $^
 

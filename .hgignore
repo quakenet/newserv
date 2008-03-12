@@ -14,4 +14,5 @@ core/events.c
 config.py
 ktrace.out
 newserv.core
-
+*.log
+*.dump
