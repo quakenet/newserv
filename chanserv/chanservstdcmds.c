@@ -117,15 +117,15 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
     summary=(cmdsummary *)cmdlist[i]->ext;
     
     if (cmdlist[i]->level & QCMD_DEV) {
-      sprintf(cmdbuf,"%s (+d)",cmdlist[i]->command->content);
+      sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
     } else if(cmdlist[i]->level & QCMD_ADMIN) {
-      sprintf(cmdbuf,"%s (+a)",cmdlist[i]->command->content);
+      sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
     } else if(cmdlist[i]->level & QCMD_OPER) {
-      sprintf(cmdbuf,"%s (+o)",cmdlist[i]->command->content);
+      sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
     } else if(cmdlist[i]->level & QCMD_HELPER) {
-      sprintf(cmdbuf,"%s (+h)",cmdlist[i]->command->content);
+      sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
     } else {
-      strcpy(cmdbuf, cmdlist[i]->command->content);
+      sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
     }
     
     if (summary->bylang[lang]) {
@@ -136,7 +136,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
       message=summary->def->content;
     }
     
-    chanservsendmessage(sender, "%-20s %s",cmdbuf, message);
+    chanservsendmessage(sender, "%-20s %s",UHasHelperPriv(rup)?cmdbuf:cmdlist[i]->command->content, message);
   }
 
   chanservstdmessage(sender, QM_ENDOFLIST);
