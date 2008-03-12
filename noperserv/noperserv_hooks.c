@@ -464,7 +464,7 @@ void noperserv_wall(flag_t permissionlevel, flag_t noticelevel, char *format, ..
   Error("noperserv", ERR_INFO, "$%s$ %s", flags, buf);
 
   for(;au;au=au->next) {
-    if(NOGetNoticeLevel(au) & noticelevel) {
+    if((NOGetNoticeLevel(au) & noticelevel) && !(NOGetAuthLevel(au) & __NO_RELAY))) {
       for(nl=au->nick;nl;nl=nl->next)
         if(noperserv_policy_command_permitted(permissionlevel, nl->nick))
           controlreply(nl->nick, "$%s$ %s", flags, buf);
