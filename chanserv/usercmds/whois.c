@@ -142,14 +142,17 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
       if (!(rcup2=findreguseronchannel(rcup->chan,rup)))
 	continue;
       
-      if (!CUHasVoicePriv(rcup2))
+      if (!CUKnown(rcup2))
 	continue;
       
       flagmask = (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOVOICE | 
-		  QCUFLAG_AUTOOP | QCUFLAG_TOPIC);
+		  QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_KNOWN | QCUFLAG_PROTECT );
       
       if (CUHasMasterPriv(rcup2))
-	flagmask |= (QCUFLAG_DENY | QCUFLAG_QUIET | QCUFLAG_BANNED);
+	flagmask |= QCUFLAGS_PUNISH;
+      
+      if (rcup2==rcup)
+        flagmask |= QCUFLAGS_PERSONAL;
     } else {
       flagmask=QCUFLAG_ALL;
     }
@@ -165,7 +168,8 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     chanservsendmessage(sender, " %-30s %s",rcup->chan->index->name->content,printflags(flags, rcuflags));
   }
 
-  chanservstdmessage(sender, QM_ENDOFLIST);
+  if (doneheader)
+    chanservstdmessage(sender, QM_ENDOFLIST);
 
   return CMD_OK;
 }

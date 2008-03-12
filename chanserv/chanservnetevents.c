@@ -267,11 +267,15 @@ void cs_handlejoin(int hooknum, void *arg) {
           break;
   }        
 
-  if (rup && rcup && CIsInfo(rcp) && UIsInfo(rcup->user) && !CUIsHideInfo(rcup) && chanservnick) {
-    if (rcup->info) {
+  /* Display infoline if... (deep breath) user is registered, known on channel,
+   * user,channel,chanlev all +i and user,channel,chanlev all -s AND Q online */
+  if (rup && rcup && 
+      CIsInfo(rcp) && UIsInfo(rcup->user) && CUIsInfo(rcup) && 
+      !CIsNoInfo(rcp) && !UIsNoInfo(rcup->user) && !CUIsNoInfo(rcup) && chanservnick) {
+    if (rcup->info && *(rcup->info->content)) {
       /* Chan-specific info */
       sendmessagetochannel(chanservnick, cp, "[%s] %s",np->nick, rcup->info->content);
-    } else if (rup->info) {
+    } else if (rup->info && *(rup->info->content)) {
       /* Default info */
       sendmessagetochannel(chanservnick, cp, "[%s] %s",np->nick, rup->info->content);
     }

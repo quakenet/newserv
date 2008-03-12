@@ -69,6 +69,7 @@ int csc_dorequestowner(void *source, int cargc, char **cargv) {
   strlcpy(flagbuf,printflags(oldflags,rcuflags),sizeof(flagbuf));
 
   CUSetOwner(requester);
+  requester->changetime=time(NULL);
   cs_log(sender,"REQUESTOWNER %s #%s (%s -> %s)",cip->name->content,requester->user->username,flagbuf,printflags(requester->flags,rcuflags));
   csdb_chanlevhistory_insert(rcp, sender, requester->user, oldflags, requester->flags);
   csdb_updatechanuser(requester);

@@ -274,15 +274,14 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	
 	/* Everyone can change their own flags (except +dqb), and control (and see) personal flags */
 	if (rcup==rcuplist) {
-	  changemask = (rcup->flags | QCUFLAGS_PERSONAL) & 
-	              ~(QCUFLAG_BANNED | QCUFLAG_DENY | QCUFLAG_QUIET);
+	  changemask = (rcup->flags | QCUFLAGS_PERSONAL) & ~(QCUFLAGS_PUNISH);
 	  flagmask |= QCUFLAGS_PERSONAL;
 	}
 	
 	/* Masters are allowed to manipulate +ovagtbqdpk */
 	if (CUHasMasterPriv(rcup))
 	  changemask |= ( QCUFLAG_KNOWN | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | 
-			  QCUFLAG_TOPIC | QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY | QCUFLAG_PROTECT);
+			  QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAGS_PUNISH);
 	
 	/* Owners are allowed to manipulate +ms as well.
 	 * We allow +n to be given initially, but we check later to see if the flag has been added.
@@ -356,6 +355,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       rcp->status |= QCSTAT_OPCHECK;
       cs_timerfunc(cip);
     } else {
+      if (rcuplist == rcup)
+        flagmask |= QCUFLAGS_PERSONAL;
       if (rcuplist && (rcuplist->flags & flagmask)) {
         chanservstdmessage(sender, QM_CHANUSERFLAGS, cargv[1], cip->name->content, 
                            printflags(rcuplist->flags & flagmask, rcuflags));

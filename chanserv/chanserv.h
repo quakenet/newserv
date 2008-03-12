@@ -313,7 +313,7 @@
 
 
 /* User flags */
-/* SPARE FLAG                  0x0001 */
+#define   QUFLAG_NOINFO        0x0001  /* +s */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
 /* SPARE FLAG                  0x0008 */
@@ -328,8 +328,9 @@
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdff6
+#define   QUFLAG_ALL           0xdff7
 
+#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
 #define UIsNotice(x)        ((x)->flags & QUFLAG_NOTICE)
 #define UIsSuspended(x)     ((x)->flags & QUFLAG_SUSPENDED)
@@ -401,6 +402,7 @@
 #define   QCFLAG_JOINED       0x0080  /* +j */
 #define   QCFLAG_KNOWNONLY    0x0100  /* +k */
 #define   QCFLAG_PROTECT      0x0200  /* +p */
+#define   QCFLAG_NOINFO       0x0400  /* +s */
 #define   QCFLAG_TOPICSAVE    0x0800  /* +t */
 #define   QCFLAG_VOICEALL     0x1000  /* +v */
 #define   QCFLAG_WELCOME      0x2000  /* +w */
@@ -420,6 +422,7 @@
 #define CIsWelcome(x)       ((x)->flags & QCFLAG_WELCOME)
 #define CIsSuspended(x)     ((x)->flags & QCFLAG_SUSPENDED)
 #define CIsInfo(x)          ((x)->flags & QCFLAG_INFO)
+#define CIsNoInfo(x)        ((x)->flags & QCFLAG_NOINFO)
 
 #define CSetAutoOp(x)        ((x)->flags |= QCFLAG_AUTOOP)
 #define CSetBitch(x)         ((x)->flags |= QCFLAG_BITCH)
@@ -452,9 +455,9 @@
 #define   QCFLAG_USERCONTROL (QCFLAG_AUTOOP|QCFLAG_BITCH|QCFLAG_AUTOLIMIT| \
 			       QCFLAG_ENFORCE|QCFLAG_FORCETOPIC|QCFLAG_AUTOVOICE| \
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
-			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
+			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY|QCFLAG_INFO)
 
-#define   QCFLAG_ALL          0x7bff
+#define   QCFLAG_ALL          0x7fff
 
 
 /* Channel user ("chanlev") flags */
@@ -469,10 +472,11 @@
 #define   QCUFLAG_DENY        0x0004  /* +d */
 #define   QCUFLAG_AUTOVOICE   0x0008  /* +g */
 #define   QCUFLAG_QUIET       0x0010  /* +q */
+#define   QCUFLAG_NOINFO      0x0020  /* +s */
 #define   QCUFLAG_TOPIC       0x0040  /* +t */
 #define   QCUFLAG_HIDEWELCOME 0x0080  /* +w */
 #define   QCUFLAG_PROTECT     0x0100  /* +p */
-#define   QCUFLAG_HIDEINFO    0x0200  /* +i */
+#define   QCUFLAG_INFO        0x0200  /* +i */
 #define   QCUFLAG_KNOWN       0x0400  /* +k */
 #define   QCUFLAG_AUTOINVITE  0x0800  /* +j */
 
@@ -483,11 +487,12 @@
 			     QCUFLAG_VOICE|QCUFLAG_PROTECT)
 
 #define   QCUFLAG_SELFCON   (QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | \
-                             QCUFLAG_TOPIC | QCUFLAG_HIDEINFO)
+                             QCUFLAG_TOPIC | QCUFLAG_INFO)
 
-#define   QCUFLAGS_PERSONAL (QCUFLAG_HIDEINFO | QCUFLAG_HIDEWELCOME | QCUFLAG_AUTOINVITE)
+#define   QCUFLAGS_PUNISH   (QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY | QCUFLAG_NOINFO)
+#define   QCUFLAGS_PERSONAL (QCUFLAG_INFO | QCUFLAG_HIDEWELCOME | QCUFLAG_AUTOINVITE)
 
-#define   QCUFLAG_ALL         0xffdf
+#define   QCUFLAG_ALL         0xffff
 
 #define   CUIsOwner(x)        ((x)->flags & QCUFLAG_OWNER)
 #define   CUIsMaster(x)       ((x)->flags & QCUFLAG_MASTER)
@@ -498,10 +503,11 @@
 #define   CUIsDeny(x)         ((x)->flags & QCUFLAG_DENY)
 #define   CUIsAutoVoice(x)    ((x)->flags & QCUFLAG_AUTOVOICE)
 #define   CUIsQuiet(x)        ((x)->flags & QCUFLAG_QUIET)
+#define   CUIsNoInfo(x)       ((x)->flags & QCUFLAG_NOINFO)
 #define   CUIsTopic(x)        ((x)->flags & QCUFLAG_TOPIC)
 #define   CUIsHideWelcome(x)  ((x)->flags & QCUFLAG_HIDEWELCOME)
 #define   CUIsProtect(x)      ((x)->flags & QCUFLAG_PROTECT)
-#define   CUIsHideInfo(x)     ((x)->flags & QCUFLAG_HIDEINFO)
+#define   CUIsInfo(x)         ((x)->flags & QCUFLAG_INFO)
 #define   CUIsKnown(x)        ((x)->flags & QCUFLAG_KNOWN)
 #define   CUIsAutoInvite(x)   ((x)->flags & QCUFLAG_AUTOINVITE)
 

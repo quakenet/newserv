@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: info
- * CMDLEVEL: QCMD_OPER | QCMD_AUTHED
+ * CMDLEVEL: QCMD_AUTHED
  * CMDARGS: 2
  * CMDDESC: Shows or changes info line.
  * CMDFUNC: csu_doinfo
@@ -60,7 +60,7 @@ int csu_doinfo(void *source, int cargc, char **cargv) {
       csdb_updateuser(rup);
     }
     
-    chanservstdmessage(sender, QM_GLOBALINFO, rup->info?rup->info->content:"(none)");
+    chanservstdmessage(sender, QM_GLOBALINFO, (rup->info && *rup->info->content)?rup->info->content:"(none)");
   } else {
     /* Channel info line */
 
@@ -89,7 +89,7 @@ int csu_doinfo(void *source, int cargc, char **cargv) {
     }
 
     chanservstdmessage(sender, QM_CHANNELINFO, cip->name->content, 
-		       rcup->info?rcup->info->content:"(none)");
+		       (rcup->info && *rcup->info->content)?rcup->info->content:"(none)");
   }
 
   return CMD_OK;

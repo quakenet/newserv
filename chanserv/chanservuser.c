@@ -1024,7 +1024,7 @@ int cs_removechannelifempty(nick *sender, regchan *rcp) {
   
   for (i=0;i<REGCHANUSERHASHSIZE;i++) {
     for (rcup=rcp->regusers[i];rcup;rcup=rcup->nextbychan) {
-      if (rcup->flags & ~(QCUFLAG_BANNED | QCUFLAG_DENY | QCUFLAG_QUIET))
+      if (rcup->flags & ~(QCUFLAGS_PUNISH))
         return 0;
     }
   }
@@ -1176,7 +1176,7 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
 flag_t cs_sanitisechanlev(flag_t flags) {
   /* +m or +n cannot have any "punishment" flags */
   if (flags & (QCUFLAG_MASTER | QCUFLAG_OWNER))
-    flags &= ~(QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY);
+    flags &= ~(QCUFLAGS_PUNISH);
   
   /* +d can't be +o */
   if (flags & QCUFLAG_DENY)

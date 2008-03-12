@@ -66,7 +66,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     /* Warning, policy ahead */
 
     if (UHasOperPriv(rup))
-      changemask |= QUFLAG_GLINE | QUFLAG_DELAYEDGLINE | QUFLAG_PROTECT | QUFLAG_TRUST;
+      changemask |= QUFLAG_GLINE | QUFLAG_DELAYEDGLINE | QUFLAG_PROTECT | QUFLAG_TRUST | QCFLAG_NOINFO;
 
     if (UHasAdminPriv(rup))
       changemask |= (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_CLEANUPEXEMPT);

@@ -70,6 +70,8 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
   int lang;
   char *message;
   cmdsummary *summary;
+  char cmdbuf[50];
+  char *ct;
   
   n=getcommandlist(cscommands, cmdlist, 200);
   rup=getreguserfromnick(sender);
@@ -82,7 +84,6 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
   chanservstdmessage(sender, QM_COMMANDLIST);
 
   for (i=0;i<n;i++) {
-    char cmdbuf[50];
     
     if (cargc>0 && !match2strings(cargv[0],cmdlist[i]->command->content))
       continue;
@@ -116,16 +117,21 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
     
     summary=(cmdsummary *)cmdlist[i]->ext;
     
-    if (cmdlist[i]->level & QCMD_DEV) {
-      sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
-    } else if(cmdlist[i]->level & QCMD_ADMIN) {
-      sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
-    } else if(cmdlist[i]->level & QCMD_OPER) {
-      sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
-    } else if(cmdlist[i]->level & QCMD_HELPER) {
-      sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
+    if (rup && UHasHelperPriv(rup)) {
+      if (cmdlist[i]->level & QCMD_DEV) {
+        sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_ADMIN) {
+        sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_OPER) {
+        sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_HELPER) {
+        sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
+      } else {
+        sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
+      }
+      ct=cmdbuf;
     } else {
-      sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
+      ct=cmdlist[i]->command->content;
     }
     
     if (summary->bylang[lang]) {
@@ -136,7 +142,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
       message=summary->def->content;
     }
     
-    chanservsendmessage(sender, "%-20s %s",UHasHelperPriv(rup)?cmdbuf:cmdlist[i]->command->content, message);
+    chanservsendmessage(sender, "%-20s %s",ct, message);
   }
 
   chanservstdmessage(sender, QM_ENDOFLIST);
