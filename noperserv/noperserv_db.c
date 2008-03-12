@@ -38,8 +38,10 @@ void noperserv_quit_account(int hooknum, void *arg);
 void nopserserv_delete_from_autheduser(nick *np, no_autheduser *au);
 
 int noperserv_load_db(void) {
-  if(!pqconnected())
+  if(!pqconnected()) {
+    Error("noperserv", ERR_STOP, "Could not connect to database.");
     return 0;
+  }
 
   if(db_loaded)
     noperserv_cleanup_db();
