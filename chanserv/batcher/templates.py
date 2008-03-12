@@ -18,6 +18,10 @@ def generate_url(config, obj):
   obj["url"] = "%s?m=%s&h=%s&u=%s&r=%s" % (config["url"], a.encode("hex"), b, obj["user.username"].encode("hex"), s.encode("hex"))
 
 def generate_resetcode(config, obj):
+  if obj["user.lockuntil"] == 0:
+    obj["resetline"] = "LOCK UNTIL NOT SET. STAFF ACCOUNT'S CAN'T USE RESET"
+    return
+
   if not config.has_key("__codegensecret"):
     config["__codegenhmac"] = hmac.HMAC(key=sha256(sha256("%s:codegenerator" % config["q9secret"]).digest()).hexdigest(), digestmod=sha256m)
 
@@ -25,8 +29,8 @@ def generate_resetcode(config, obj):
   h.update(sha256("%s:%d" % (obj["user.username"], obj["user.lockuntil"])).hexdigest())
 
   obj["resetcode"] = h.hexdigest()
-  print obj
   obj["lockuntil"] = time.ctime(obj["user.lockuntil"])
+  obj["resetline"] = "/MSG %(config.bot)s RESET #%(user.username)s %(resetcode)s" % obj
 
 MAILTEMPLATES = {
   "mutators": {
@@ -76,7 +80,7 @@ To auth yourself to %(config.bot)s, type the following command
       3: { "subject": "%(config.bot)s password change", "body": """
 Your password has recently changed. If this was not requested by you,
 please use:
-/MSG %(config.bot)s RESET #%(user.username)s %(resetcode)s
+%(resetline)s
 
 You have until %(lockuntil)s to perform this command.
 """, },
@@ -91,7 +95,7 @@ Make sure you read the %(config.bot)s security FAQ at %(config.securityurl)s.
 Your email address has been changed on %(config.bot)s from %(prevemail)s to %(user.email)s.
 
 If you did not request this please use:
-/MSG %(config.bot)s RESET #%(user.username)s %(resetcode)s
+%(resetline)s
 
 You have until %(lockuntil)s to perform this command.
 """, },
