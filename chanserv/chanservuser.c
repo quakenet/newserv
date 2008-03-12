@@ -1035,7 +1035,6 @@ void cs_removeuser(reguser *rup) {
   /* Remove the user from all its channels */
   for (rcup=rup->knownon;rcup;rcup=nrcup) {
     nrcup=rcup->nextbyuser;
-    freesstring(rcup->info);
     rcp=rcup->chan;
 
     delreguserfromchannel(rcp, rup);

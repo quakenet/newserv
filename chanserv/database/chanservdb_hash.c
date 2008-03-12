@@ -315,7 +315,7 @@ void addregusertomaildomain(reguser *rup, maildomain *mdp) {
 }
 
 void delreguserfrommaildomain(reguser *rup, maildomain *mdp) {
-  maildomain *smdp;
+  maildomain *smdp, *nmdp;
   reguser *ruh, *pruh=NULL;
   int found=0;
 
@@ -341,16 +341,21 @@ void delreguserfrommaildomain(reguser *rup, maildomain *mdp) {
     return;
   }
 
-  for(smdp=mdp;smdp;smdp=smdp->parent) {
-    smdp->count--;
+  /* Free it from all the parent domains, cleaning up as we go.. */
+  for(smdp=mdp;smdp;smdp=nmdp) {
+    nmdp=smdp->parent;
+
+    /* Keep it if there are users left or we're remembering something about it. */    
+    if (--smdp->count || (smdp->flags != MDFLAG_DEFAULT) || (smdp->actlimit != MD_DEFAULTACTLIMIT))
+      continue;
+    
+    removemaildomainfromhash(smdp);
+    freesstring(smdp->name);
+    freemaildomain(smdp);
   }
+
   rup->domain=NULL;
   freesstring(rup->localpart);
   rup->localpart=NULL;
-
-  if (!mdp->count && !MDHasLimit(mdp)) {
-    removemaildomainfromhash(mdp);
-    freemaildomain(mdp);
-  }
 }
 
