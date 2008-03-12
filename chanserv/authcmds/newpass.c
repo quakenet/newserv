@@ -72,14 +72,16 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  t=time(NULL);
-  if(rup->lockuntil && rup->lockuntil > t) {
-    char buf[100];
-    strftime(buf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lockuntil)));
-    chanservstdmessage(sender, QM_ACCOUNTLOCKED, buf);
-    return CMD_ERROR;
+  if(!UHasHelperPriv(rup)) {
+    t=time(NULL);
+    if(rup->lockuntil && rup->lockuntil > t) {
+      char buf[100];
+      strftime(buf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lockuntil)));
+      chanservstdmessage(sender, QM_ACCOUNTLOCKED, buf);
+      return CMD_ERROR;
+    }
+    rup->lockuntil=t+7*24*3600;
   }
-  rup->lockuntil=t+7*24*3600;
 
   if(rup->lastemail) {
     freesstring(rup->lastemail);

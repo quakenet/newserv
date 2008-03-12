@@ -32,7 +32,7 @@ int csa_doreset(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(!rup->lockuntil || rup->lockuntil <= time(NULL)) {
+  if(UHasHelperPriv(rup) || (!rup->lockuntil || rup->lockuntil <= time(NULL))) {
     chanservstdmessage(sender, QM_ACCOUNTNOTLOCKED);
     return CMD_ERROR;
   }
