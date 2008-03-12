@@ -56,7 +56,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     strcpy(flagbuf,printflags(target->flags, ruflags));
     oldflags=target->flags;
 
-    changemask=QUFLAG_NOTICE | QUFLAG_INFO;
+    changemask=QUFLAG_NOTICE;
 
     if (target==rup) {
       /* If you're changing yourself, you can give up the "status" flags and add/remove notice */

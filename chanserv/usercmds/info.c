@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: info
- * CMDLEVEL: QCMD_AUTHED
+ * CMDLEVEL: QCMD_AUTHED | QCMD_OPER
  * CMDARGS: 2
  * CMDDESC: Shows or changes info line.
  * CMDFUNC: csu_doinfo
