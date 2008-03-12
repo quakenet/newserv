@@ -80,7 +80,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 	       QUFLAG_ADMIN | QUFLAG_INFO | QUFLAG_NOTICE);
 
   if (flagmask & target->flags)
-    chanservstdmessage(sender, QM_WHOIS_FLAGS, printflags(flagmask & target->flags, ruflags));
+    chanservstdmessage(sender, QM_WHOIS_FLAGS, printflagsornone(flagmask & target->flags, ruflags));
 
   if (!(anp=findauthname(target->ID)) || !anp->nicks) {
     chanservstdmessage(sender, QM_WHOIS_USERS, "(none)");

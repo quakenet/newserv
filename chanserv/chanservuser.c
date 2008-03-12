@@ -275,8 +275,14 @@ void chanservjoinchan(channel *cp) {
    * up later.  For modes we use the forced modes, plus the default channel
    * modes (unless any of those are explicitly denied) */
     
-  /* By default, we set the forcemodes and the default modes, but never denymodes */
-  themodes = (CHANMODE_DEFAULT | rcp->forcemodes) & ~rcp->denymodes;
+  /* By default, we set the forcemodes and the default modes, but never denymodes..
+   * OK, actually we should only set the default modes if our timestamp is older.*/
+  if (cp->timestamp > rcp->ltimestamp)
+    themodes |= CHANMODE_DEFAULT;
+  else
+    themodes=0;
+    
+  themodes = (themodes | rcp->forcemodes) & ~rcp->denymodes;
   
   /* Now, if someone has just created a channel and we are going to set +i
    * or +k on it, this will kick them off.  This could be construed as a
