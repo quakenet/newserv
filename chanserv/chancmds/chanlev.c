@@ -298,8 +298,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	return CMD_ERROR;
       }
 
-      /* check to see if +n has been given */
-      if (!(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
+      /* check to see if +n has been given.  Opers can bypass this. */
+      if (!cs_privcheck(QPRIV_CHANGECHANLEV, sender) && !(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
         rcuplist->flags=oldflags;
 	chanservstdmessage(sender, QM_USEGIVEOWNER);
 	return CMD_ERROR;
@@ -313,10 +313,13 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	rcuplist->changetime=time(NULL);
 
       if(rcuplist->flags == oldflags) {
-        chanservstdmessage(sender, QM_DONE);
+        chanservstdmessage(sender, QM_CHANLEVNOCHANGE);
+        if (newuser) {
+          freeregchanuser(rcuplist);
+          rcuplist=NULL;
+        }
         return CMD_OK;
       }
-
 
       strcpy(flagbuf,printflags(oldflags,rcuflags));
       cs_log(sender,"CHANLEV %s #%s %s (%s -> %s)",cip->name->content,rcuplist->user->username,cargv[2],
@@ -332,9 +335,12 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	} else {
 	  csdb_updatechanuser(rcuplist);
 	}
+	chanservstdmessage(sender, QM_CHANLEVCHANGED, cargv[1], cip->name->content, 
+                           printflags(rcuplist->flags & flagmask, rcuflags));
       } else {
 	/* User has no flags: delete */
 	if (!newuser) {
+	  chanservstdmessage(sender, QM_CHANLEVREMOVED, cargv[1], cip->name->content);
 	  csdb_deletechanuser(rcuplist);
 	  delreguserfromchannel(rcp, target);
 	}
@@ -345,18 +351,17 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
           return CMD_OK;
         }
       }
-
-      /* Say we've done it */
-      chanservstdmessage(sender, QM_DONE);
+      
+      /* Update the channel if needed */
       rcp->status |= QCSTAT_OPCHECK;
       cs_timerfunc(cip);
-    }
-    
-    if (rcuplist && (rcuplist->flags & flagmask)) {
-      chanservstdmessage(sender, QM_CHANUSERFLAGS, cargv[1], cip->name->content, 
-			 printflags(rcuplist->flags & flagmask, rcuflags));
     } else {
-      chanservstdmessage(sender, QM_CHANUSERUNKNOWN, cargv[1], cip->name->content);
+      if (rcuplist && (rcuplist->flags & flagmask)) {
+        chanservstdmessage(sender, QM_CHANUSERFLAGS, cargv[1], cip->name->content, 
+                           printflags(rcuplist->flags & flagmask, rcuflags));
+      } else {
+        chanservstdmessage(sender, QM_CHANUSERUNKNOWN, cargv[1], cip->name->content);
+      }
     }
   }
   

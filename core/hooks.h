@@ -13,6 +13,7 @@
 #define HOOK_CORE_ENDOFHOOKSQUEUE    3
 #define HOOK_CORE_STOPERROR          4
 #define HOOK_CORE_ERROR	             5	/* Argument is a struct error_event * */
+#define HOOK_CORE_SIGUSR1            6 
 
 #define HOOK_IRC_CONNECTED         100
 #define HOOK_IRC_DISCON            101

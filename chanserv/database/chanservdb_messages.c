@@ -148,13 +148,13 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 137*/ "Password too weak - You need to avoid repeating characters, and have different character types (e.g. 1 number and 1 letter)",
   /* 138*/ "User %s is not a master on %s - you must promote user to master status first.",
   /* 139*/ "User %s is already an owner on %s.",
-  /* 140*/ "WARNING: This command will give COMPLETE control over %s to %s, including the ability to remove you as owner.\nIf you are sure you want to do this, type /msg Q GIVEOWNER %s #%s %s",
+  /* 140*/ "WARNING: This command will give COMPLETE control over %s to %s,\nincluding the ability to remove you as owner.  If you are sure you want to\ndo this, type: GIVEOWNER %s #%s %s",
   /* 141*/ "Hash value incorrect, try again.",
   /* 142*/ "Showing %s for last %s.",
   /* 143*/ "Change your nickname to something with none of the following characters: `~^[]{}|_\\",
   /* 144*/ "Invalid digest algorithm.",
   /* 145*/ "Challenge has either not been requested or has expired.",
-  /* 146*/ "To give the +n flag use GIVEOWNER. Change aborted.",
+  /* 146*/ "For security reasons it is not possible to give the owner flag to other users\nusing CHANLEV.  Use GIVEOWNER if you really wanted to do this.",
   /* 147*/ "You must specify at least one valid flag to add.",
   /* 148*/ "New ban is already contained within existing ban: %s",
   /* 149*/ "New ban would replace at least one existing ban (%s), use UNBANMASK %s first if you want to set this ban.",
@@ -189,7 +189,10 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 178*/ "Warning: %s (%s@%s) attempted to auth with your password but you already had %d users authed to your account.",
   /* 179*/ "Warning: %s (%s@%s) authed with your password.",
   /* 180*/ "Resettable statistics reset for %s.",
-  /* 181*/ "The channel has been deleted since the last known user was removed."
+  /* 181*/ "The channel has been deleted since the last known user was removed.",
+  /* 182*/ "Done.  Flags for %s on %s are now: %s.",
+  /* 183*/ "Done.  User %s is no longer known on %s.",
+  /* 184*/ "No change - check that you didn't specify an impossible flag combination."
 };
 
 void initmessages() {

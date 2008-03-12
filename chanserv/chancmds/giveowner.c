@@ -48,7 +48,7 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
 
   /* You need to either be +n or have the relevant override... */
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_OWNERPRIV,
-			   NULL, "chanlev", QPRIV_CHANGECHANLEV, 0)))
+			   NULL, "giveowner", QPRIV_CHANGECHANLEV, 0)))
     return CMD_ERROR;
   
   rcp=cip->exts[chanservext];

@@ -11,13 +11,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define CSG_BUFSIZE    512
+#define CSG_BUFSIZE    1024
 
 pcre           *csg_curpat;        /* Compiled pattern from pcre */
 int             csg_curfile;       /* Which logfile is being searched */
 unsigned long   csg_curnum;        /* What numeric is doing a search */
 int             csg_matches;       /* How many lines have been returned so far */
 int             csg_maxmatches=0;  /* How many matches are allowed */
+int		csg_bytesread;
 
 char            csg_readbuf[CSG_BUFSIZE];  /* Buffer */
 int             csg_bytesleft;     /* How much valid data there is in the buffer */
@@ -58,7 +59,7 @@ int csg_dogrep(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if ((fd=open("chanservlog.0",O_RDONLY))<0) {
+  if ((fd=open("chanservlog",O_RDONLY))<0) {
     chanservsendmessage(sender, "Unable to open logfile.");
     free(csg_curpat);    
     return CMD_ERROR;
@@ -70,6 +71,7 @@ int csg_dogrep(void *source, int cargc, char **cargv) {
   csg_curnum=sender->numeric;
   csg_curfile=0;
   csg_bytesleft=0;
+  csg_bytesread=0;
 
   registerhandler(fd, POLLIN, csg_handleevents);
   chanservsendmessage(sender, "Started grep for %s...",cargv[0]);
@@ -96,6 +98,7 @@ retry:
   res=read(fd, csg_readbuf+csg_bytesleft, CSG_BUFSIZE-csg_bytesleft);
   
   if (res<=0) {
+/*    chanservsendmessage(np, "Closing file: res=%d, errno=%d(%s), bytes read=%d",res,errno,sys_errlist[errno],csg_bytesread); */
     /* End of file (or error) */
     deregisterhandler(fd, 1);
     sprintf(filename,"chanservlog.%d",++csg_curfile);
@@ -110,6 +113,8 @@ retry:
 
     return;
   }
+
+  csg_bytesread+=res;
 
   linestart=chp=csg_readbuf;
   csg_bytesleft+=res;

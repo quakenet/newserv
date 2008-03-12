@@ -96,7 +96,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   else
     flagmask=QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_DEV | QUFLAG_ADMIN;
   
-  chanservstdmessage(sender, QM_CURUSERFLAGS, target->username, printflags(target->flags & flagmask, ruflags));
+  chanservstdmessage(sender, QM_CURUSERFLAGS, target->username, printflagsornone(target->flags & flagmask, ruflags));
 
   return CMD_OK;
 }

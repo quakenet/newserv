@@ -14,10 +14,12 @@
 #include <signal.h>
 
 int newserv_shutdown_pending;
+int newserv_sigusr1_pending;
 
 void initseed();
 void init_logfile();
 void siginthandler(int sig);
+void sigusr1handler(int sig);
 
 int main(int argc, char **argv) {
   initseed();
@@ -38,6 +40,7 @@ int main(int argc, char **argv) {
   /* Loading the modules will bring in the bulk of the code */
   initmodules();
   signal(SIGINT, siginthandler);
+  signal(SIGUSR1, sigusr1handler);
 
   /* Main loop */
   for(;;) {
@@ -46,6 +49,11 @@ int main(int argc, char **argv) {
     if (newserv_shutdown_pending) {
       newserv_shutdown();
       break;
+    }
+
+    if (newserv_sigusr1_pending) {
+      triggerhook(HOOK_CORE_SIGUSR1, NULL);
+      newserv_sigusr1_pending=0;
     }
   }  
 
@@ -67,4 +75,8 @@ void initseed() {
 
 void siginthandler(int sig) {
   newserv_shutdown_pending = 1;
+}
+
+void sigusr1handler(int sig) {
+  newserv_sigusr1_pending = 1;
 }

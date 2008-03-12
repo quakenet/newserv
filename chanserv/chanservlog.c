@@ -5,16 +5,30 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "chanserv.h"
+#include "../core/hooks.h"
+#include "../core/error.h"
 
 int logfd;
 
+/* When we get a sigusr1, reopen the logfile */
+void cs_usr1handler(int hooknum, void *arg) {
+  Error("chanserv",ERR_INFO,"Reopening logfile.");
+
+  if (logfd>=0)
+    close(logfd);
+
+  logfd=open("chanservlog",O_WRONLY|O_CREAT|O_APPEND,S_IRUSR|S_IWUSR);
+}
+
 void cs_initlog() {
-  logfd=open("chanservlog.0",O_WRONLY|O_CREAT|O_APPEND,S_IRUSR|S_IWUSR);
+  logfd=open("chanservlog",O_WRONLY|O_CREAT|O_APPEND,S_IRUSR|S_IWUSR);
+  registerhook(HOOK_CORE_SIGUSR1, cs_usr1handler);
 }
 
 void cs_closelog() {
   if (logfd>=0)
     close(logfd);
+  deregisterhook(HOOK_CORE_SIGUSR1, cs_usr1handler);
 }
 
 void cs_log(nick *np, char *event, ... ) {

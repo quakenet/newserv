@@ -17,6 +17,7 @@ typedef struct {
 
 int setflags(flag_t *inflags, flag_t flagmask, char *flagstr, const flag *flagslist, short reject);
 char *printflags(flag_t inflags, const flag *flaglist);
+char *printflagsornone(flag_t inflags, const flag *flaglist);
 char *printflags_noprefix(flag_t inflags, const flag *flaglist);
 char *printflagdiff(flag_t oldflags, flag_t newflags, const flag *flaglist);
 
