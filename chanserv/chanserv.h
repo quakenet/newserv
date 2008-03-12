@@ -58,6 +58,11 @@
 /* Maximum number of accounts that may share an email address */
 #define   MD_DEFAULTACTLIMIT  2
 
+/* Cleanup options */
+#define CLEANUP_ACCOUNT_INACTIVE  80
+#define CLEANUP_ACCOUNT_UNUSED    10
+#define CLEANUP_CHANNEL_INACTIVE  30
+
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
 #define   MAILDOMAINHASHSIZE  60000
