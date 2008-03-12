@@ -159,7 +159,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           if (UHasSuspension(vrup))
             continue;
           
-          if (UHasHelperPriv(vrup) && !UHasAdminPriv(rup))
+          if (UHasHelperPriv(vrup))
             continue;
           
           hitcount++;
@@ -186,7 +186,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
           if (UHasSuspension(vrup))
             continue;
           
-          if (UHasHelperPriv(vrup) && !UHasAdminPriv(rup))
+          if (UHasHelperPriv(vrup))
             continue;
           
           hitcount++;
@@ -218,7 +218,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       return CMD_ERROR;
     }
     
-    if (UHasOperPriv(vrup) && !UHasAdminPriv(rup)) {
+    if (UHasHelperPriv(vrup)) {
       snprintf(buf, 199, "suspenduser on %s", vrup->username);
       chanservstdmessage(sender, QM_NOACCESS, buf);
       chanservwallmessage("%s (%s) FAILED to suspend %s", sender->nick, rup->username, vrup->username);
