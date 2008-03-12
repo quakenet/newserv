@@ -262,6 +262,9 @@
 #define QM_OTHERUSERAUTHED         179
 #define QM_STATSRESET              180
 #define QM_CHANLEVEMPTIEDCHANNEL   181
+#define QM_CHANLEVCHANGED          182
+#define QM_CHANLEVREMOVED          183
+#define QM_CHANLEVNOCHANGE         184
 
 /* List of privileged operations */
 

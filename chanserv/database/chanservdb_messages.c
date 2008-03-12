@@ -189,7 +189,10 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 178*/ "Warning: %s (%s@%s) attempted to auth with your password but you already had %d users authed to your account.",
   /* 179*/ "Warning: %s (%s@%s) authed with your password.",
   /* 180*/ "Resettable statistics reset for %s.",
-  /* 181*/ "The channel has been deleted since the last known user was removed."
+  /* 181*/ "The channel has been deleted since the last known user was removed.",
+  /* 182*/ "Done.  Flags for %s on %s are now: %s.",
+  /* 183*/ "Done.  User %s is no longer known on %s.",
+  /* 184*/ "No change - check that you didn't specify an impossible flag combination."
 };
 
 void initmessages() {
