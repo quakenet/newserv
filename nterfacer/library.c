@@ -52,6 +52,7 @@ FILE *random_fd = NULL;
 int getcopyconfigitemint(char *section, char *key, int def, int *value) {
   char buf[50];
   sstring *ini;
+  int r;
 
   snprintf(buf, sizeof(buf), "%d", def);
   ini = getcopyconfigitem(section, key, buf, 6);
@@ -59,7 +60,9 @@ int getcopyconfigitemint(char *section, char *key, int def, int *value) {
   if(!ini)
     return 0;
 
-  if(!protectedatoi(ini->content, value))
+  r = protectedatoi(ini->content, value);
+  freesstring(ini);
+  if(!r)
     return 0;
   
   return 1;

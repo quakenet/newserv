@@ -143,6 +143,8 @@ void _fini() {
   deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
   deregistercontrolcmd("userflags", &noperserv_userflags);
   deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
+  deregistercontrolcmd("hello", &noperserv_hello);
+  deregistercontrolcmd("deluser", &noperserv_deluser);
 
   noperserv_cleanup_hooks();
 
