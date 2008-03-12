@@ -87,6 +87,29 @@ char *printflags(flag_t inflags, const flag *flaglist) {
   return buf;
 }
 
+/*
+ * printflagsornone:
+ *  Prints out which flags are currently set in a flag block, or return "none"
+ */
+char *printflagsornone(flag_t inflags, const flag *flaglist) {
+  static char buf[18];
+  int i;
+  char *ch=buf;
+  
+  *ch++='+';
+  
+  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+    if (inflags&flaglist[i].flagbit) {
+      *ch++=flaglist[i].flagchar;
+    }
+  }
+  
+  *ch='\0';
+  if (ch==(buf+1)) /* No flags set */
+    return "none";
+    
+  return buf;
+}
 /* ugh */
 
 char *printflags_noprefix(flag_t inflags, const flag *flaglist) {
