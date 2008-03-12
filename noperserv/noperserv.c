@@ -36,6 +36,7 @@ const flag no_commandflags[] = {
     { 'O', __NO_OPERED },
     { 'r', __NO_AUTHED },
     { 'R', __NO_ACCOUNT },
+    { 'Y', __NO_RELAY },
     { '\0', 0 }
   }; 
 
@@ -45,6 +46,7 @@ const flag no_userflags[] = {
     { 's', __NO_STAFF },
     { 'S', __NO_SEC },
     { 'd', __NO_DEVELOPER },
+    { 'Y', __NO_RELAY },
     { '\0', 0 }
   }; 
 
@@ -95,6 +97,7 @@ void _init() {
     "  +S: Security team member\n"
     "  +d: NOperserv developer\n"
     "  +t: Trust queue worker\n"
+    "  +Y: Relay\n"
     " Additional flags may show up in SHOWCOMMANDS but are not userflags as such:\n"
     "  +r: Authed user\n"
     "  +R: Registered NOperserv user\n"

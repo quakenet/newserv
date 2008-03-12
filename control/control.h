@@ -45,6 +45,7 @@ struct specialsched {
 #define __NO_OPER        0x040 /* +O */
 #define __NO_SEC         0x080 /* +w */
 #define __NO_DEVELOPER   0x100 /* +d */
+#define __NO_RELAY       0x200 /* +Y */
 
 /* These are dangerous, they don't include requiring /OPER or STAFF status, be careful */
 #define NOD_ACCOUNT   __NO_ACCOUNT | NO_AUTHED /* must contain authed else account won't be checked */
@@ -53,6 +54,7 @@ struct specialsched {
 #define NOD_OPER      __NO_OPER | NOD_ACCOUNT
 #define NOD_SEC       __NO_SEC | NOD_ACCOUNT
 #define NOD_DEVELOPER __NO_DEVELOPER | NOD_ACCOUNT
+#define NOD_RELAY     __NO_RELAY | NOD_ACCOUNT
 
 /* These ones are safe to use */
 #define NO_ANYONE       __NO_ANYONE                /* don't have to be authed to Q, or us, or opered or anything */
@@ -66,8 +68,9 @@ struct specialsched {
 #define NO_TRUST_OPER   NO_OPER | NOD_TRUST        /* must be authed to Q, /opered, and have trust and oper levels on bot */
 #define NO_SEC_STAFF    NO_STAFF | NOD_SEC         /* must be authed to Q, and have staff and sec level on bot */
 #define NO_SEC_OPER     NO_OPER | NOD_SEC          /* must be authed to Q, /opered, and have sec and oper levels on bot */
+#define NO_RELAY        NO_OPERED | NOD_RELAY      /* must be authed to Q, /opered, and have the relay level on bot */
 
-#define NO_ALL_FLAGS    __NO_STAFF | __NO_TRUST | __NO_OPER | __NO_SEC | __NO_DEVELOPER
+#define NO_ALL_FLAGS    __NO_STAFF | __NO_TRUST | __NO_OPER | __NO_SEC | __NO_DEVELOPER | __NO_RELAY
 #define NO_OPER_FLAGS   __NO_STAFF
 #define NO_DEV_FLAGS    NO_ALL_FLAGS
 

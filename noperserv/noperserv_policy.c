@@ -27,6 +27,8 @@ int noperserv_policy_command_permitted(flag_t level, nick *user) {
         return 0;
       if ((level & __NO_TRUST) && !NOIsLeastTrust(au))
         return 0;
+      if ((level & __NO_RELAY) && !NOIsLeastRelay(au))
+        return 0;
     }
   }
 

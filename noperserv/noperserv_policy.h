@@ -16,11 +16,13 @@ flag_t noperserv_policy_permitted_modifications(no_autheduser *au, no_autheduser
 #define NOIsSec(user)          (NOGetAuthLevel(user) & __NO_SEC)
 #define NOIsOper(user)         (NOGetAuthLevel(user) & __NO_OPER)
 #define NOIsDeveloper(user)    (NOGetAuthLevel(user) & __NO_DEVELOPER)
+#define NOIsRelay(user)        (NOGetAuthLevel(user) & __NO_RELAY)
 
 #define NOIsLeastStaff(user)   (NOGetAuthLevel(user) & (__NO_DEVELOPER | __NO_OPER | __NO_STAFF))
 #define NOIsLeastOper(user)    (NOGetAuthLevel(user) & (__NO_OPER | __NO_DEVELOPER))
 #define NOIsLeastTrust(user)   (NOGetAuthLevel(user) & (__NO_DEVELOPER | __NO_TRUST))
 #define NOIsLeastSec(user)     (NOGetAuthLevel(user) & (__NO_DEVELOPER | __NO_SEC))
+#define NOIsLeastRelay(user)   (NOGetAuthLevel(user) & (__NO_DEVELOPER | __NO_RELAY))
 
 #define NL_PEONIC_FLAGS NL_NOTICES
 #define NL_ALL          NL_MANAGEMENT | NL_TRUSTS | NL_KICKKILLS | NL_MISC | NL_GLINES | NL_HITS | NL_CLONING | NL_CLEARCHAN | NL_FAKEUSERS | NL_BROADCASTS | NL_OPERATIONS | NL_OPERING | NL_ALL_COMMANDS
