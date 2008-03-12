@@ -298,8 +298,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	return CMD_ERROR;
       }
 
-      /* check to see if +n has been given */
-      if (!(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
+      /* check to see if +n has been given.  Opers can bypass this. */
+      if (!cs_privcheck(QPRIV_CHANGECHANLEV, sender) && !(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
         rcuplist->flags=oldflags;
 	chanservstdmessage(sender, QM_USEGIVEOWNER);
 	return CMD_ERROR;
