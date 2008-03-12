@@ -31,7 +31,7 @@ CommandTree *csctcpcommands;
 void chanservuserhandler(nick *target, int message, void **params);
 
 void chanservreguser(void *arg) {
-  sstring *csnick,*csuser,*cshost,*csrealname;
+  sstring *csnick,*csuser,*cshost,*csrealname,*csaccount;
   chanindex *cip;
   regchan   *rcp;
   int i;
@@ -40,19 +40,21 @@ void chanservreguser(void *arg) {
   csuser=getcopyconfigitem("chanserv","user","TheQBot",USERLEN);
   cshost=getcopyconfigitem("chanserv","host","some.host",HOSTLEN);
   csrealname=getcopyconfigitem("chanserv","realname","ChannelService",REALLEN);
+  csaccount=getcopyconfigitem("chanserv","account",csnick&&csnick->content&&csnick->content[0]?csnick->content:"Q",ACCOUNTLEN);
 
   Error("chanserv",ERR_INFO,"Connecting %s...",csnick->content);
 
   chanservnick=registerlocaluser(csnick->content,csuser->content,cshost->content,
-				 csrealname->content,NULL,
-				 UMODE_INV|UMODE_SERVICE|UMODE_DEAF|UMODE_OPER,
+				 csrealname->content,csaccount->content,
+				 UMODE_INV|UMODE_SERVICE|UMODE_DEAF|UMODE_OPER|UMODE_ACCOUNT,
 				 &chanservuserhandler);
 
   freesstring(csnick);
   freesstring(csuser);
   freesstring(cshost);
   freesstring(csrealname);
-  
+  freesstring(csaccount);
+
   /* Now join channels */
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=cip->next) {
