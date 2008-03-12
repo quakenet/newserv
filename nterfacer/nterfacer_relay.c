@@ -49,6 +49,7 @@ regex onickname;
 int number = 1;
 char started = 0;
 char nickprefix[NICKLEN - 5 + 1];
+static unsigned long userid;
 
 int stats_handler(struct rline *ri, int argc, char **argv);
 
@@ -75,6 +76,12 @@ int load_config(void) {
   regex newregex;
 
   memset(&newregex, 0, sizeof(newregex));
+
+  userid = getcopyconfigitemintpositive("nterfacer", "serviceuserid", 0);
+  if(!userid) {
+    Error("nterfacer_relay", ERR_WARNING, "No user id specified (serviceuserid)!");
+    return 0;
+  }
 
   opr = getcopyconfigitem("nterfacer", "nickprefix", DEFAULT_NICK_PREFIX, sizeof(nickprefix) - 1); /* the terminator is included in nickprefix */
   strlcpy(nickprefix, (opr&&opr->content)?opr->content:DEFAULT_NICK_PREFIX, sizeof(nickprefix));
@@ -176,7 +183,7 @@ nick *relay_getnick(void) {
       number = 1;
 
     if(!getnickbynick(ournick))
-       return registerlocaluser(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
+       return registerlocaluserwithuserid(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", userid, UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
 
     attempts--;
   } while(attempts > 0);
