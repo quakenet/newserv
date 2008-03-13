@@ -58,7 +58,7 @@ int csc_dousers(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (!(cip=cs_checkaccess(sender, cargv[0], CA_OPPRIV,
+  if (!(cip=cs_checkaccess(sender, cargv[0], CA_KNOWN,
 			   NULL, "users", QPRIV_VIEWFULLCHANLEV, 0)))
     return CMD_ERROR;
   
@@ -103,7 +103,7 @@ int csc_dousers(void *source, int cargc, char **cargv) {
   
   qsort(theusers, j, sizeof(struct chanuserrec), comparetheflags);
   
-  chanservstdmessage(sender,QM_USERSHEADER, cip->name->content);
+  chanservstdmessage(sender, QM_USERSHEADER, cip->name->content);
   
   flagmask=QCUFLAGS_PUBLIC;
   ops=voices=users=flags=qops=masters=0;
