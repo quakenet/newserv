@@ -24,7 +24,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 15 */ "User %s is not authed.",
   /* 16 */ "Known users on %s:",
   /* 17 */ "Username        Flags",
-  /* 18 */ "Username        Flags         Last join       Last changed    Info",
+  /* 18 */ "Username        Flags         Last join       Last changed    ",
   /* 19 */ "No known users found on %s.",
   /* 20 */ "Flags for %s on %s: %s",
   /* 21 */ "User %s is not known on %s.",

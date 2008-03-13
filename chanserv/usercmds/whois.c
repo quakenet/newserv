@@ -129,7 +129,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_WHOIS_EMAILSET, buf);    
   }
 
-  if (target->info) {
+  if (target->info && *target->info->content) {
     chanservstdmessage(sender, QM_WHOIS_INFO, target->info->content);
   }
 
