@@ -318,6 +318,19 @@ void releasenickext(int index) {
  */
 
 char *visiblehostmask(nick *np, char *buf) {
+  char uhbuf[USERLEN+HOSTLEN+2];
+  
+  visibleuserhost(np, uhbuf);
+  sprintf(buf,"%s!%s",np->nick,uhbuf);
+
+  return buf;
+}
+
+/* visibleuserhost
+ *  As above without nick
+ */
+
+char *visibleuserhost(nick *np, char *buf) {
   char hostbuf[HOSTLEN+1];
   char *ident, *host;
 
@@ -336,7 +349,7 @@ char *visiblehostmask(nick *np, char *buf) {
     host=hostbuf;
   }
 
-  sprintf(buf,"%s!%s@%s",np->nick,ident,host);
+  sprintf(buf,"%s@%s",ident,host);
 
   return buf;
 }
