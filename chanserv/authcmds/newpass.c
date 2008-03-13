@@ -94,8 +94,8 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
   cs_log(sender,"NEWPASS OK username %s", rup->username);
 
 #ifdef AUTHGATE_WARNINGS
-  if(UHasHelperPriv(rup))
-    chanservsendmessage(sender, "You MUST go to https://auth.quakenet.org and login successfully to update the cache.");
+  if(UHasOperPriv(rup))
+    chanservsendmessage(sender, "WARNING FOR PRIVILEGED USERS: you MUST go to https://auth.quakenet.org and login successfully to update the cache, if you do not your old password will still be usable in certain circumstances.");
 #endif
 
   csdb_updateuser(rup);

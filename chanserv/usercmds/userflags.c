@@ -88,8 +88,8 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       chanservwallmessage("%s (%s) just used USERFLAGS on %s %s (%s -> %s)",sender->nick,rup->username,target->username,cargv[arg],flagbuf,printflags(target->flags,ruflags));
 
 #ifdef AUTHGATE_WARNINGS
-      if(UHasHelperPriv(target))
-        chanservsendmessage(sender, "You MUST go to https://auth.quakenet.org and attempt to login as %s (with any password) to update the cache.",target->username);
+    if(UHasOperPriv(target))
+      chanservsendmessage(sender, "WARNING FOR PRIVILEGED USERS: you MUST go to https://auth.quakenet.org and attempt to login as %s (with any password) to update the cache, otherwise their old credentials will be preserved in certain circumstances.",target->username);
 #endif
     }
     csdb_updateuser(target);
