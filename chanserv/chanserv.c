@@ -150,12 +150,14 @@ void chanservfinishinit(int hooknum, void *arg) {
   
 void chanserv_finalinit() {
   int i;
-  nick *np;
+  nick *np, *nnp;
 
   /* Scan for users */
   for (i=0;i<NICKHASHSIZE;i++)
-    for (np=nicktable[i];np;np=np->next)
+    for (np=nicktable[i];np;np=nnp) {
+      nnp=np->next;
       cs_checknick(np);
+    }
   
   /* Register core hooks */
   registerhook(HOOK_NICK_NEWNICK, cs_handlenick);
