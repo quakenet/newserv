@@ -64,8 +64,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 55 */ "You're already voiced on %s.",
   /* 56 */ "You're not voiced on %s.",
   /* 57 */ "%s is already voiced on %s.",
-  /* 58 */ "Registered bans on %s:\n"
-  /* .. */ "ID  Hostmask                      Expires            Set by           Reason",
+  /* 58 */ "Registered bans on %s:\nID  Hostmask                      Expires            Set by           Reason",
   /* 59 */ "No bans on %s.",
   /* 60 */ "Removed channel ban %s from %s.",
   /* 61 */ "You need the master flag to remove registered ban %s from %s.",
@@ -82,8 +81,7 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 72 */ "Staff comment  : %s",
   /* 73 */ "User flags     : %s",
   /* 74 */ "User created   : %s",
-  /* 75 */ "Known on the following channels:\n"
-  /* .. */ "Channel                        Flags", 
+  /* 75 */ "Known on the following channels:\nChannel                        Flags", 
   /* 76 */ "Email address  : %s",
   /* 77 */ "Email last set : %s",
   /* 78 */ "Staff comment for %s: %s.",
