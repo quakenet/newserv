@@ -192,7 +192,10 @@ char *defaultmessages[MAXMESSAGES] = {
   /* 181*/ "The channel has been deleted since the last known user was removed.",
   /* 182*/ "Done.  Flags for %s on %s are now: %s.",
   /* 183*/ "Done.  User %s is no longer known on %s.",
-  /* 184*/ "No change - check that you didn't specify an impossible flag combination."
+  /* 184*/ "No change - check that you didn't specify an impossible flag combination.",
+  /* 185*/ "Users currently on %s:\nNick            Username        Flags        Host",
+  /* 186*/ "Channel %s is currently empty.",
+  /* 187*/ "Total %d users: %d opped, %d voiced, %d others, %d with flags (%d ops, %d masters)"
 };
 
 void initmessages() {

@@ -42,6 +42,7 @@ int csc_dounbanall(void *source, int cargc, char **cargv);
 int csc_dounbanmask(void *source, int cargc, char **cargv);
 int csc_dounbanme(void *source, int cargc, char **cargv);
 int csc_dounsuspendchan(void *source, int cargc, char **cargv);
+int csc_dousers(void *source, int cargc, char **cargv);
 int csc_dovoice(void *source, int cargc, char **cargv);
 int csc_dowelcome(void *source, int cargc, char **cargv);
 void chancmds_init(void);
@@ -89,6 +90,7 @@ void _init() {
   chanservaddcommand("unbanmask", QCMD_AUTHED, 2, csc_dounbanmask, "Removes bans matching a particular mask from a channel.", "Usage: UNBANMASK <channel> <mask>\nRemoves any bans on the channel which are overlapped by the named mask.  Can\nremove both channel bans and registered bans.  Where:\nchannel - channel to use\nmask    - mask to remove.  Any ban subsumed by this mask will be removed.  For\n          example, UNBANMASK *!*@*.isp.net would remove *!*@host1.isp.net and \n          *!*@host2.isp.net and *!user@*.isp.net.\nUNBANMASK requires operator (+o) access on the named channel.\nRemoving registered bans requires master (+m) access on the named channel.\n");
   chanservaddcommand("unbanme", QCMD_AUTHED, 1, csc_dounbanme, "Removes any bans affecting you from a channel.", "Usage: UNBANME <channel>\nThis command removes any channel bans which affect you from a channel.  It does\nnot affect persistent bans set by PERMBAN and TEMPBAN.  Where:\nchannel - channel to use\nUNBANME requires operator (+o) access on the named channel.\n");
   chanservaddcommand("unsuspendchan", QCMD_OPER, 1, csc_dounsuspendchan, "Unsuspends a channel from the bot.", "Usage: unsuspendchan <channel>\nUnsuspends specified channel.\n");
+  chanservaddcommand("users", QCMD_AUTHED, 1, csc_dousers, "Displays a list of users on the channel.", "Usage: USERS <channel>\nDisplays a list of users on the named channel along with their usernames and flags\non the channel, where:\nchannel - channel to use\nUSERS requires operator (+o) access on the named channel.\n");
   chanservaddcommand("voice", QCMD_AUTHED, 20, csc_dovoice, "Voices you or other users on channel(s).", "Usage: VOICE [<channel> [<user1> [<user2> [...]]]\nGrants voice to you on one or more channels, or grants voice to one or more\nother users on a particular channel.  This command cannot be used to grant\nvoice to users who would otherwise be prevented from obtaining voice, e.g.\nthe quiet (+q) chanlev flag.  Where:\nchannel - channel to use.  If no channel is specified, you will be granted voice\n          on every channel where you have appropriate access and are not already \n          voiced.\nuser<n> - other users to grant voice to.  Must be specified as the nickname\n          of users who are on the named channel.\nVoicing yourself requires voice (+v) access on the relevant channels.\nVoicing other users requires operator (+o) access on the named channel.  If this \ncommand is used to voice other users, a notice will be sent to channel operators\non the channel identifying you, unless you have master (+m) access.\n");
   chanservaddcommand("welcome", QCMD_AUTHED, 2, csc_dowelcome, "Shows or changes the welcome message on a channel.", "Usage: WELCOME <channel> [<message>]\nThis shows the current welcome message set on a channel and allows it to be\nchanged.  In order to be displayed to users, the feature must be enabled\nby the +w chanflag (see CHANFLAGS).  Where:\nchannel - channel to use\nmessage - welcome message to set.  If this is not provided the existing welcome\n          message is displayed.\nDisplaying the message requires operator (+o) access on the named channel.\nChanging the message requires master (+m) access on the named channel.\n");
 }
@@ -134,6 +136,7 @@ void _fini() {
   chanservremovecommand("unbanmask", csc_dounbanmask);
   chanservremovecommand("unbanme", csc_dounbanme);
   chanservremovecommand("unsuspendchan", csc_dounsuspendchan);
+  chanservremovecommand("users", csc_dousers);
   chanservremovecommand("voice", csc_dovoice);
   chanservremovecommand("welcome", csc_dowelcome);
 }

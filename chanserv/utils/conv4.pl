@@ -315,12 +315,17 @@ sub loadusers {
       if ($_ eq "end") {
 #	print "Got user $username [$userid]\n";
 	$uflags=4;
+	# 10-900 get +h, 900+ get +o
 	if ($globalauth >= 900) {
 	  $uflags |= 0x20;
 	} 
 	if ($globalauth > 10 and $globalauth < 900) {
 	  $uflags |= 0x100;
 	}
+	# 997-999 get +a, 1000 gets +d
+	if ($globalauth >= 997 and $globalauth < 1000) {
+	  $uflags |= 0x200;
+        }
 	if ($globalauth >= 1000) {
 	  $uflags |= 0x40;
 	}

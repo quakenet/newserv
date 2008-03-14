@@ -268,6 +268,9 @@
 #define QM_CHANLEVCHANGED          182
 #define QM_CHANLEVREMOVED          183
 #define QM_CHANLEVNOCHANGE         184
+#define QM_USERSHEADER             185
+#define QM_EMPTYCHAN               186
+#define QM_USERSSUMMARY            187
 
 /* List of privileged operations */
 
@@ -489,6 +492,10 @@
 #define   QCUFLAG_SELFCON   (QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | \
                              QCUFLAG_TOPIC | QCUFLAG_INFO)
 
+#define   QCUFLAGS_PUBLIC   (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | \
+                             QCUFLAG_KNOWN | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | QCUFLAG_TOPIC | \
+                             QCUFLAG_PROTECT)
+                                                         
 #define   QCUFLAGS_PUNISH   (QCUFLAG_BANNED | QCUFLAG_QUIET | QCUFLAG_DENY)
 #define   QCUFLAGS_PERSONAL (QCUFLAG_HIDEWELCOME | QCUFLAG_AUTOINVITE)
 

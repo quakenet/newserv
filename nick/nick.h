@@ -180,6 +180,7 @@ int registernickext(const char *name);
 int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
+char *visibleuserhost(nick *np, char *buf);
 int registernodeext(const char *name);
 int findnodeext(const char *name);
 void releasenodeext(int index);
