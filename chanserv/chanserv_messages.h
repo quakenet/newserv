@@ -201,6 +201,7 @@ BeginMessages() {
   msg(QM_USERSHEADER, "Users currently on $0:\nNick            Username        Flags        Host", "s"),
   msg(QM_EMPTYCHAN, "Channel $0 is currently empty.", "s"),
   msg(QM_USERSSUMMARY, "Total $0 users: $1 opped, $2 voiced, $3 others, $4 with flags ($5 ops, $6 masters)", "ddddddd"),
+  msg(QM_OPERONCHAN, "You cannot use $0 on $1 since an oper is on the channel.","ss"),
 } 
 EndMessages()
 #endif
