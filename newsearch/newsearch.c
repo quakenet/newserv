@@ -101,6 +101,9 @@ void _init() {
   /* Kill / gline parameters */
   registersearchterm("kill",kill_parse);
   registersearchterm("gline",gline_parse);
+
+  /* Notice functionality */
+  registersearchterm("notice",notice_parse);
   
   /* Nick output filters */
   regnickdisp("default",printnick);

@@ -18,6 +18,7 @@
 #define    NSGLINE_DURATION       3600
 
 #define    NSMAX_REASON_LEN       120
+#define    NSMAX_NOTICE_LEN       250
 
 
 #define    RETURNTYPE_BOOL        0x01
@@ -55,6 +56,9 @@ struct searchNode *length_parse(int type, int argc, char **argv);
 /* kill/gline actions (BOOL) */
 struct searchNode *kill_parse(int type, int argc, char **argv);
 struct searchNode *gline_parse(int type, int argc, char **argv);
+
+/* notice action (BOOL) */
+struct searchNode *notice_parse(int type, int argc, char **argv);
 
 /* Nick/Channel functions (various types) */
 struct searchNode *nick_parse(int type, int argc, char **argv);
