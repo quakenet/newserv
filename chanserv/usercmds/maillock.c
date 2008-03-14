@@ -42,7 +42,7 @@ int csu_domaillock(void *source, int cargc, char **cargv) {
       rup=findreguserbyID(mlp->createdby);
       strftime(timebuf,15,"%d/%m/%y %H:%M",gmtime(&mlp->created));
 
-      chanservstdmessage(sender, QM_MAILLOCKLINE, mlp->pattern->content, rup?rup->username:"??", mlp->reason?mlp->reason->content:"(none)", timebuf);
+      chanservsendmessage(sender, "%-50s %-15s %-25s %s", mlp->pattern->content, rup?rup->username:"??", mlp->reason?mlp->reason->content:"(none)", timebuf);
     }
   } else if(!strcasecmp(cargv[0], "-del")) {
     maillock *pmlp = NULL;

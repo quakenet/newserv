@@ -16,3 +16,4 @@ ktrace.out
 newserv.core
 *.log
 *.dump
+chanservlog

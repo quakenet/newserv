@@ -12,7 +12,7 @@ clean:
 	rm -f */*.o */*.so
 
 chanserv.so: chanservdb_updates.o chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chanservlog.o chanservstdcmds.o \
-		chanservdump.o chanservschedule.o chanservcrypto.o authlib.o
+		chanservdump.o chanservschedule.o chanservcrypto.o authlib.o q9snprintf.o
 	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
 
 chanserv_protect.so: chanserv_protect.o

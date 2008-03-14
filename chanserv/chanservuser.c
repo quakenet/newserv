@@ -327,7 +327,7 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
   reguser *rup;
   int language;
   va_list va, va2;
-  char *message;
+  char *message, *messageargs;
   char *bp2,*bp;
   int len;
 
@@ -349,12 +349,14 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
   } else if (csmessages[0][messageid]) {
     message=csmessages[0][messageid]->content;
   } else {
-    message=defaultmessages[messageid];
+    message=defaultmessages[messageid*2];
   }
+
+  messageargs=defaultmessages[messageid*2+1];
 
   va_start(va,messageid);
   va_copy(va2, va);
-  vsnprintf(buf,5000,message,va);
+  q9vsnprintf(buf,5000,message,messageargs,va);
   va_end(va);
 
   len=0;
@@ -474,7 +476,7 @@ void chanservwallmessage(char *message, ... ) {
 void chanservkillstdmessage(nick *target, int messageid, ... ) {
   char buf[512];
   int language;
-  char* message;
+  char *message, *messageargs;
   va_list va;
   reguser *rup;
   
@@ -488,10 +490,11 @@ void chanservkillstdmessage(nick *target, int messageid, ... ) {
   else if (csmessages[0][messageid])
     message=csmessages[0][messageid]->content;
   else
-    message=defaultmessages[messageid];
+    message=defaultmessages[messageid*2];
 
+  messageargs=defaultmessages[messageid*2+1];
   va_start(va, messageid);
-  vsnprintf(buf, 511, message, va);
+  q9vsnprintf(buf, 511, message, messageargs, va);
   va_end(va);
   killuser(chanservnick, target, buf);
 }

@@ -10,6 +10,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 #include "../lib/sstring.h"
 #include "../core/schedule.h"
 #include "../lib/flags.h"
@@ -72,7 +73,6 @@
 
 /* Number of languages and messages */
 #define MAXLANG      50
-#define MAXMESSAGES  200
 
 /* Maximum number of user chanlevs and bans */
 #define MAXCHANLEVS  250
@@ -82,195 +82,7 @@
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
 
-/* The list of messages */
-#define QM_PROTECTED                 0
-#define QM_UNKNOWNCMD                1
-#define QM_SECUREONLY                2
-#define QM_AUTHEDONLY                3
-#define QM_UNAUTHEDONLY              4
-#define QM_COMMANDLIST               5
-#define QM_ENDOFLIST                 6
-#define QM_DONE                      7
-#define QM_NOTENOUGHPARAMS           8
-#define QM_UNKNOWNCHAN               9
-#define QM_NOACCESSONCHAN           10
-#define QM_CURCHANFLAGS             11
-#define QM_CURFORCEMODES            12
-#define QM_NOACCESS                 13
-#define QM_UNKNOWNUSER              14
-#define QM_USERNOTAUTHED            15
-#define QM_CHANLEVHEADER            16
-#define QM_CHANLEVCOLSHORT          17
-#define QM_CHANLEVCOLFULL           18
-#define QM_NOUSERSONCHANLEV         19
-#define QM_CHANUSERFLAGS            20
-#define QM_CHANUSERUNKNOWN          21
-#define QM_INVALIDCHANLEVCHANGE     22
-#define QM_USERISAUTHEDAS           23
-#define QM_USERISHELPER             24
-#define QM_USERISOPER               25
-#define QM_USERISADMIN              26
-#define QM_USERISDEV                27
-#define QM_WHOISHEADER              28
-#define QM_WHOISCOLS                29
-#define QM_USERONNOCHANS            30
-#define QM_CHANAUTOLIMIT            31
-#define QM_CHANBANAUTOREMOVE        32
-#define QM_NOCHANBANAUTOREMOVE      33
-#define QM_INVALIDCHANNAME          34
-#define QM_ALREADYREGISTERED        35
-#define QM_CURUSERFLAGS             36
-#define QM_WELCOMEMESSAGEIS         37
-#define QM_GLOBALINFO               38
-#define QM_CHANNELINFO              39
-#define QM_PROTECTEDNICK            40
-#define QM_NICKWASFAKED             41
-#define QM_NOTPROTECTED             42
-#define QM_SAMEAUTH                 43
-#define QM_AUTHFAIL                 44
-#define QM_AUTHOK                   45
-#define QM_NEWACCOUNT               46
-#define QM_AUTHNAMEINUSE            47
-#define QM_ALREADYONCHAN            48
-#define QM_NOTONCHAN                49
-#define QM_ALREADYOPPED             50
-#define QM_USERNOTONCHAN            51
-#define QM_USEROPPEDONCHAN          52
-#define QM_CANTOP                   53
-#define QM_NOTOPPED                 54
-#define QM_ALREADYVOICED            55
-#define QM_NOTVOICED                56
-#define QM_USERVOICEDONCHAN         57
-#define QM_REGBANHEADER             58
-#define QM_NOBANS                   59
-#define QM_REMOVEDCHANBAN           60
-#define QM_NOTREMOVEDPERMBAN        61
-#define QM_REMOVEDPERMBAN           62
-#define QM_CANTVOICE                63
-#define QM_NOHELP                   64
-#define QM_WHOISHEADER_NICK         65
-#define QM_WHOISHEADER_AUTH         66
-#define QM_WHOIS_USERS              67
-#define QM_WHOIS_LASTAUTH           68
-#define QM_WHOIS_LASTUSERHOST       69
-#define QM_WHOIS_USERID             70
-#define QM_WHOIS_INFO               71
-#define QM_WHOIS_COMMENT            72
-#define QM_WHOIS_FLAGS              73
-#define QM_WHOIS_CREATED            74
-#define QM_WHOIS_CHANHEADER         75
-#define QM_WHOIS_EMAIL              76
-#define QM_WHOIS_EMAILSET           77
-#define QM_COMMENT                  78
-#define QM_NOCOMMENT                79
-#define QM_BADAUTH                  80
-#define QM_USERHASBADAUTH           81
-#define QM_BADEMAIL                 82
-#define QM_MAILTHROTTLED            83
-#define QM_MAILQUEUED               84
-#define QM_PWDONTMATCH              85
-#define QM_PWTOSHORT                86
-#define QM_PWCHANGED                87
-#define QM_INVALIDDURATION2         88
-#define QM_EMAILCHANGED             89
-#define QM_EMAILDONTMATCH           90
-#define QM_INVALIDEMAIL             91
-#define QM_EMAILTOOSHORT            92
-#define QM_NOTYOUREMAIL             93
-#define QM_EMAILNOAT                94
-#define QM_EMAILATEND               95
-#define QM_EMAILINVCHR              96
-#define QM_CHANNELNOTSUSPENDED      97
-#define QM_CHANNELALREADYSUSPENDED  98
-#define QM_CHANTYPE                 99
-#define QM_UNKNOWNCHANTYPE         100
-#define QM_FOUNDER                 101
-#define QM_ADDEDBY                 102
-#define QM_ALREADYKNOWNONCHAN      103
-#define QM_CANNOTREMOVEOWNER       104
-#define QM_CANNOTREMOVEMASTER      105
-#define QM_UNKNOWNBAN              106
-#define QM_YOURLANGUAGE            107
-#define QM_LANGUAGELIST            108
-#define QM_UNKNOWNLANGUAGE         109
-#define QM_WHOIS_USERLANG          110
-#define QM_CHANTYPEIS              111
-#define QM_STATSHEADER             112
-#define QM_STATSADDED              113
-#define QM_STATSJOINS              114
-#define QM_STATSLASTACTIVE         115
-#define QM_AUTHSUSPENDED           116
-#define QM_REASON                  117
-#define QM_EXPIRES                 118
-#define QM_TOOMANYAUTHS            119
-#define QM_INVALIDDURATION         120
-#define QM_DISCONNECTINGUSER       121
-#define QM_USERALREADYSUSPENDED    122
-#define QM_USERNOTSUSPENDED        123
-#define QM_SPEWHEADER              124
-#define QM_TOOMANYRESULTS          125
-#define QM_RESULTCOUNT             126
-#define QM_SUSPENDKILL             127
-#define QM_LISTFLAGSHEADER         128
-#define QM_SUSPENDUSERLISTHEADER   129
-#define QM_SUSPENDCHANLISTHEADER   130
-#define QM_NOREQUESTOWNER          131
-#define QM_GRANTEDOWNER            132
-#define QM_AUTHHISTORYHEADER       133
-#define QM_CURDOMAINMODES          134
-#define QM_SPEWDOMAINHEADER        135
-#define QM_DOMAINLIMIT             136
-#define QM_PWTOWEAK                137
-#define QM_GIVEOWNERNOTMASTER      138
-#define QM_GIVEOWNERALREADYOWNER   139
-#define QM_GIVEOWNERNEEDHASH       140
-#define QM_GIVEOWNERWRONGHASH      141
-#define QM_SHOWINGDURATION         142
-#define QM_INVALIDACCOUNTNAME      143
-#define QM_CHALLENGEBADALGORITHM   144
-#define QM_NOCHALLENGE             145
-#define QM_USEGIVEOWNER            146
-#define QM_NOFLAGSPECIFIED         147
-#define QM_NEWBANALREADYBANNED     148
-#define QM_NEWBANOVERLAPS          149
-#define QM_REPLACINGTEMPBAN        150
-#define QM_PERMBANALREADYSET       151
-#define QM_NOTREPLACINGBANLDURATION 152
-#define QM_REPLACINGBANSDURATION   153
-#define QM_TOOMANYCHANLEVS         154
-#define QM_TOOMANYBANS             155
-#define QM_WARNNOTREMOVEDPERMBAN   156
-#define QM_MAXHELLOLIMIT           157
-#define QM_ADDRESSLIMIT            158
-#define QM_DOMAINBANNED            159
-#define QM_TYPEHELPFORHELP         160
-#define QM_REQUESTPASSPRIVUSER     161
-#define QM_EMAILMATCHESOLD         162
-#define QM_INVALIDLIMIT            163
-#define QM_ACCOUNTLOCKED           164
-#define QM_ACCOUNTNOTLOCKED        165
-#define QM_RESETOK                 166
-#define QM_BADRESETCODE            167
-#define QM_CHALLENGEDDEPRECATED    168
-#define QM_CHANLEVSUMMARY          169
-#define QM_MAILLOCKHEADER          170
-#define QM_MAILLOCKLINE            171
-#define QM_MAILLOCKDOESNTEXIST     172
-#define QM_MAILLOCKALREADYEXISTS   173
-#define QM_MAILLOCKED              174
-#define QM_NOACCESSONUSER          175
-#define QM_NOCHANOPHISTORY         176
-#define QM_CHANOPHISTORYHEADER     177
-#define QM_OTHERUSERAUTHEDLIMIT    178
-#define QM_OTHERUSERAUTHED         179
-#define QM_STATSRESET              180
-#define QM_CHANLEVEMPTIEDCHANNEL   181
-#define QM_CHANLEVCHANGED          182
-#define QM_CHANLEVREMOVED          183
-#define QM_CHANLEVNOCHANGE         184
-#define QM_USERSHEADER             185
-#define QM_EMPTYCHAN               186
-#define QM_USERSSUMMARY            187
+#include "chanserv_messages.h"
 
 /* List of privileged operations */
 
@@ -849,7 +661,6 @@ extern cslang *cslanguages[MAXLANG];
 extern unsigned int cslangcount;
 
 extern sstring *csmessages[MAXLANG][MAXMESSAGES];
-extern char *defaultmessages[MAXMESSAGES];
 
 extern const flag rcflags[];
 extern const flag rcuflags[];
@@ -1071,4 +882,7 @@ void csdb_deletemaillock(maillock *mlp);
 void csdb_createmaillock(maillock *mlp);
 void csdb_updatemaillock(maillock *mlp);
 
+/* q9snprintf.c */
+void q9snprintf(char *buf, size_t size, const char *format, const char *args, ...);
+void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap);
 #endif
