@@ -448,7 +448,7 @@ typedef struct regchan {
   flag_t              forcemodes;      /* Forced modes */
   flag_t              denymodes;       /* Denied modes */
 
-  short               limit;           /* Limit to enforce if +l is set */
+  unsigned short      limit;           /* Limit to enforce if +l is set */
   short               autolimit;       /* How many slots to leave when autolimiting */
   short               banstyle;        /* Ban style for +b type bans */
 
