@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
     }
 
     if (newserv_sigusr1_pending) {
+      signal(SIGUSR1, sigusr1handler);
       triggerhook(HOOK_CORE_SIGUSR1, NULL);
       newserv_sigusr1_pending=0;
     }
