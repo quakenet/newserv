@@ -79,7 +79,7 @@ void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
 
 void csdb_retreiveaccounthistory(nick *np, reguser *rup, int limit) {
   q9u_asyncquery(csdb_doaccounthistory_real, (void *)np->numeric,
-    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
+    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from chanserv.accounthistory where "
     "userID=%u order by changetime desc limit %d", rup->ID, limit);
 }
 

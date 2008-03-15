@@ -80,7 +80,8 @@ void csdb_freestuff();
 static void setuptables() {
   /* Set up the tables */
   /* User table */
-  pqcreatequery("CREATE TABLE users ("
+  pqcreatequery("CREATE SCHEMA chanserv");
+  pqcreatequery("CREATE TABLE chanserv.users ("
                "ID            INT               NOT NULL,"
                "username      VARCHAR(16)          NOT NULL,"
                "created       INT               NOT NULL,"
@@ -101,10 +102,10 @@ static void setuptables() {
                "info          VARCHAR(100),"
                "PRIMARY KEY (ID))");
 
-  pqcreatequery("CREATE INDEX user_username_index ON users (username)");
+  pqcreatequery("CREATE INDEX user_username_index ON chanserv.users (username)");
   
   /* Channel table */
-  pqcreatequery("CREATE TABLE channels ("
+  pqcreatequery("CREATE TABLE chanserv.channels ("
                  "ID            INT               NOT NULL,"
                  "name          VARCHAR(250)         NOT NULL,"
                  "flags         INT               NOT NULL,"
@@ -135,7 +136,7 @@ static void setuptables() {
                  "PRIMARY KEY (ID))");
 
   /* Chanuser table */
-  pqcreatequery("CREATE TABLE chanusers ("
+  pqcreatequery("CREATE TABLE chanserv.chanusers ("
                  "userID        INT               NOT NULL,"
                  "channelID     INT               NOT NULL,"
                  "flags         INT               NOT NULL,"
@@ -144,10 +145,10 @@ static void setuptables() {
                  "info          VARCHAR(100)         NOT NULL,"
                  "PRIMARY KEY (userID, channelID))");
 
-  pqcreatequery("CREATE INDEX chanusers_userID_index on chanusers (userID)");
-  pqcreatequery("CREATE INDEX chanusers_channelID_index on chanusers (channelID)");
+  pqcreatequery("CREATE INDEX chanusers_userID_index on chanserv.chanusers (userID)");
+  pqcreatequery("CREATE INDEX chanusers_channelID_index on chanserv.chanusers (channelID)");
   
-  pqcreatequery("CREATE TABLE bans ("
+  pqcreatequery("CREATE TABLE chanserv.bans ("
                  "banID         INT               NOT NULL," /* Unique number for the ban to make 
                                                              DELETEs process in finite time.. */
                  "channelID     INT               NOT NULL,"
@@ -157,20 +158,20 @@ static void setuptables() {
                  "reason        VARCHAR(200),"
                  "PRIMARY KEY(banID))");
 
-  pqcreatequery("CREATE INDEX bans_channelID_index on bans (channelID)");
+  pqcreatequery("CREATE INDEX bans_channelID_index on chanserv.bans (channelID)");
   
-  pqcreatequery("CREATE TABLE languages ("
+  pqcreatequery("CREATE TABLE chanserv.languages ("
                  "languageID    INT               NOT NULL,"
                  "code          VARCHAR(2)           NOT NULL,"
                  "name          VARCHAR(30)          NOT NULL)");
   
-  pqcreatequery("CREATE TABLE messages ("
+  pqcreatequery("CREATE TABLE chanserv.messages ("
                  "languageID    INT               NOT NULL,"
                  "messageID     INT               NOT NULL,"
                  "message       VARCHAR(250)      NOT NULL,"
                  "PRIMARY KEY (languageID, messageID))");
 
-  pqcreatequery("CREATE TABLE help ("
+  pqcreatequery("CREATE TABLE chanserv.help ("
                  "commandID     INT               NOT NULL,"
                  "command       VARCHAR(30)          NOT NULL,"
                  "languageID    INT               NOT NULL,"
@@ -178,14 +179,14 @@ static void setuptables() {
                  "fullinfo      TEXT              NOT NULL,"
                  "PRIMARY KEY (commandID, languageID))");
 
-  pqcreatequery("CREATE TABLE email ("
+  pqcreatequery("CREATE TABLE chanserv.email ("
                  "userID       INT               NOT NULL,"
                  "emailtype    INT               NOT NULL,"
                  "prevEmail    VARCHAR(100),"
                  "mailID       SERIAL,"
 		 "PRIMARY KEY (mailID))");
 
-  pqcreatequery("CREATE TABLE maildomain ("
+  pqcreatequery("CREATE TABLE chanserv.maildomain ("
                  "ID           INT               NOT NULL,"
                  "name         VARCHAR           NOT NULL,"
                  "domainlimit  INT               NOT NULL,"
@@ -193,7 +194,7 @@ static void setuptables() {
                  "flags         INT              NOT NULL,"
                  "PRIMARY KEY (ID))");
 
-   pqcreatequery("CREATE TABLE authhistory ("
+   pqcreatequery("CREATE TABLE chanserv.authhistory ("
                   "userID         INT         NOT NULL,"
                   "nick           VARCHAR(15) NOT NULL,"
                   "username       VARCHAR(10) NOT NULL,"
@@ -204,8 +205,8 @@ static void setuptables() {
                   "quitreason	  VARCHAR(100) ,"
                   "PRIMARY KEY (userID, authtime))");
 
-   pqcreatequery("CREATE INDEX authhistory_userID_index on authhistory(userID)");
-   pqcreatequery("CREATE TABLE chanlevhistory ("
+   pqcreatequery("CREATE INDEX authhistory_userID_index on chanserv.authhistory(userID)");
+   pqcreatequery("CREATE TABLE chanserv.chanlevhistory ("
                   "userID         INT         NOT NULL,"
                   "channelID      INT         NOT NULL,"
                   "targetID       INT         NOT NULL,"
@@ -214,11 +215,11 @@ static void setuptables() {
                   "oldflags       INT         NOT NULL,"
                   "newflags       INT         NOT NULL)");
 
-   pqcreatequery("CREATE INDEX chanlevhistory_userID_index on chanlevhistory(userID)");
-   pqcreatequery("CREATE INDEX chanlevhistory_channelID_index on chanlevhistory(channelID)");
-   pqcreatequery("CREATE INDEX chanlevhistory_targetID_index on chanlevhistory(targetID)");
+   pqcreatequery("CREATE INDEX chanlevhistory_userID_index on chanserv.chanlevhistory(userID)");
+   pqcreatequery("CREATE INDEX chanlevhistory_channelID_index on chanserv.chanlevhistory(channelID)");
+   pqcreatequery("CREATE INDEX chanlevhistory_targetID_index on chanserv.chanlevhistory(targetID)");
 
-   pqcreatequery("CREATE TABLE accounthistory ("
+   pqcreatequery("CREATE TABLE chanserv.accounthistory ("
                   "userID INT NOT NULL,"
                   "changetime INT NOT NULL,"
                   "authtime INT NOT NULL,"
@@ -228,9 +229,9 @@ static void setuptables() {
                   "newemail VARCHAR(100),"
                   "PRIMARY KEY (userID, changetime))");
 
-   pqcreatequery("CREATE INDEX accounthistory_userID_index on accounthistory(userID)");
+   pqcreatequery("CREATE INDEX accounthistory_userID_index on chanserv.accounthistory(userID)");
 
-   pqcreatequery("CREATE TABLE maillocks ("
+   pqcreatequery("CREATE TABLE chanserv.maillocks ("
                  "ID           INT               NOT NULL,"
                  "pattern      VARCHAR           NOT NULL,"
                  "reason       VARCHAR           NOT NULL,"
@@ -257,12 +258,12 @@ void _init() {
 
     lastuserID=lastchannelID=lastdomainID=0;
 
-    loadall("users",NULL,loadsomeusers,loadusersdone);
-    loadall("channels",NULL,loadsomechannels,loadchannelsdone);
-    loadall("chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
-    loadall("bans",NULL,loadsomechanbans,loadchanbansdone);
-    loadall("maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
-    loadall("maillocks",NULL, loadsomemaillocks,loadmaillocksdone);
+    loadall("chanserv.users",NULL,loadsomeusers,loadusersdone);
+    loadall("chanserv.channels",NULL,loadsomechannels,loadchannelsdone);
+    loadall("chanserv.chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
+    loadall("chanserv.bans",NULL,loadsomechanbans,loadchanbansdone);
+    loadall("chanserv.maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
+    loadall("chanserv.maillocks",NULL, loadsomemaillocks,loadmaillocksdone);
     
     loadmessages(); 
   }
@@ -666,7 +667,7 @@ void loadchanbansdone(PGconn *dbconn, void *arg) {
 }
 
 void loadmessages() {
-  pqasyncquery(loadmessages_part1, NULL, "SELECT * from languages");
+  pqasyncquery(loadmessages_part1, NULL, "SELECT * from chanserv.languages");
 }
 
 void loadmessages_part1(PGconn *dbconn, void *arg) {
@@ -717,7 +718,7 @@ void loadmessages_part1(PGconn *dbconn, void *arg) {
   if (i>MAXLANG)
     Error("chanserv",ERR_ERROR,"Found too many languages (%d > %d)",i,MAXLANG); 
 
-  pqasyncquery(loadmessages_part2, NULL, "SELECT * from messages");
+  pqasyncquery(loadmessages_part2, NULL, "SELECT * from chanserv.messages");
 }
 
 void loadmessages_part2(PGconn *dbconn, void *arg) {
@@ -760,7 +761,7 @@ void loadmessages_part2(PGconn *dbconn, void *arg) {
 
 void loadcommandsummary(Command *cmd) {
   pqasyncquery(loadcommandsummary_real, (void *)cmd, 
-		  "SELECT languageID,summary from help where lower(command) = lower('%s')",cmd->command->content);
+		  "SELECT languageID,summary from chanserv.help where lower(command) = lower('%s')",cmd->command->content);
 }
 
 void loadcommandsummary_real(PGconn *dbconn, void *arg) {

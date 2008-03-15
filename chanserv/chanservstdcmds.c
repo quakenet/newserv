@@ -248,7 +248,7 @@ void csdb_dohelp(nick *np, Command *cmd) {
   hip->cmd=cmd;
 
   q9asyncquery(csdb_dohelp_real, (void *)hip, 
-		  "SELECT languageID, fullinfo from help where lower(command)=lower('%s')",cmd->command->content);
+		  "SELECT languageID, fullinfo from chanserv.help where lower(command)=lower('%s')",cmd->command->content);
 }
 
 void csdb_dohelp_real(PGconn *dbconn, void *arg) {

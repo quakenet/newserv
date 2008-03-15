@@ -90,7 +90,7 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
 
 void csdb_retreivechanlevhistory(nick *np, regchan *rcp, time_t starttime) {
   q9c_asyncquery(csdb_dochanlevhistory_real, (void *)np->numeric,
-    "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanlevhistory where "
+    "SELECT userID, channelID, targetID, changetime, authtime, oldflags, newflags from chanserv.chanlevhistory where "
     "channelID=%u and changetime>%lu order by changetime desc limit 1000", rcp->ID, starttime);
 }
 

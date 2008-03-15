@@ -23,14 +23,14 @@ open CHANUSERS, ">chanusers-000.csv";
 open ORPHANS, ">orphanlist";
 open SQL, ">load.sql";
 
-print SQL "TRUNCATE TABLE channels;\n";
-print SQL "TRUNCATE TABLE users;\n";
-print SQL "TRUNCATE TABLE bans;\n";
-print SQL "TRUNCATE TABLE chanusers;\n";
-print SQL "COPY users FROM '${pathname}users-000.csv' DELIMITER ',';\n";
-print SQL "COPY channels FROM '${pathname}chans-000.csv' DELIMITER ',';\n";
-print SQL "COPY chanusers FROM '${pathname}chanusers-000.csv' DELIMITER ',';\n";
-print SQL "COPY bans FROM '${pathname}bans.csv' DELIMITER ',';\n";
+print SQL "TRUNCATE TABLE chanserv.channels;\n";
+print SQL "TRUNCATE TABLE chanserv.users;\n";
+print SQL "TRUNCATE TABLE chanserv.bans;\n";
+print SQL "TRUNCATE TABLE chanserv.chanusers;\n";
+print SQL "COPY chanserv.users FROM '${pathname}users-000.csv' DELIMITER ',';\n";
+print SQL "COPY chanserv.channels FROM '${pathname}chans-000.csv' DELIMITER ',';\n";
+print SQL "COPY chanserv.chanusers FROM '${pathname}chanusers-000.csv' DELIMITER ',';\n";
+print SQL "COPY chanserv.bans FROM '${pathname}bans.csv' DELIMITER ',';\n";
 
 print "Converting Q channels..";
 loadchans();
@@ -182,7 +182,7 @@ sub loadchans {
 	  close BANS;
 	  my $fname=sprintf("bans-%03d.csv",$banid/1000);
 	  open BANS, ">$fname";
-          print SQL "COPY bans FROM '${pathname}${fname}' DELIMITER ',';\n";
+          print SQL "COPY chanserv.bans FROM '${pathname}${fname}' DELIMITER ',';\n";
 	}
       } else {
 	($forcemodes, $realflags)=map_chanflags($flags);
@@ -196,7 +196,7 @@ sub loadchans {
 	  close CHANS;
 	  my $fname=sprintf("chans-%03d.csv",$chanid/1000);
 	  open CHANS, ">$fname";
-          print SQL "COPY channels FROM '${pathname}${fname}' DELIMITER ',';\n";
+          print SQL "COPY chanserv.channels FROM '${pathname}${fname}' DELIMITER ',';\n";
 	}
 	$chans{irc_lc($cname)}=$chanid;
 	$state=-1;
@@ -374,7 +374,7 @@ sub loadusers {
 	  close USERS;
 	  my $fname=sprintf("users-%03d.csv",$usercount/1000);
 	  open USERS, ">$fname";
-          print SQL "COPY users FROM '${pathname}${fname}' DELIMITER ',';\n";
+          print SQL "COPY chanserv.users FROM '${pathname}${fname}' DELIMITER ',';\n";
 	}
       } else {
 	if (not defined $chans{irc_lc($_)}) {
@@ -396,7 +396,7 @@ sub loadusers {
   	    close CHANUSERS;
   	    my $fname=sprintf("chanusers-%03d.csv",$chanusercount/10000);
   	    open CHANUSERS, ">$fname";
-  	    print SQL "COPY chanusers FROM '${pathname}${fname}' DELIMITER ',';\n";
+  	    print SQL "COPY chanserv.chanusers FROM '${pathname}${fname}' DELIMITER ',';\n";
           }
   	  $chanusers{$idstr}=1;
         }
@@ -546,7 +546,7 @@ sub loadldb {
             close CHANS;
             my $fname=sprintf("chans-%03d.csv",$chanid/1000);
             open CHANS, ">$fname";
-            print SQL "COPY channels FROM '${pathname}${fname}' DELIMITER ',';\n";
+            print SQL "COPY chanserv.channels FROM '${pathname}${fname}' DELIMITER ',';\n";
           }
 	}
 	$state=1;
@@ -585,7 +585,7 @@ sub loadldb {
               close CHANUSERS;
               my $fname=sprintf("chanusers-%03d.csv",$chanusercount/10000);
               open CHANUSERS, ">$fname";
-              print SQL "COPY chanusers FROM '${pathname}${fname}' DELIMITER ',';\n";
+              print SQL "COPY chanserv.chanusers FROM '${pathname}${fname}' DELIMITER ',';\n";
             }
           } else {
             print "Suppressing duplicate chanuser: $idstr\n";

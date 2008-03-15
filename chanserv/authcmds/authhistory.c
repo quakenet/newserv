@@ -104,7 +104,7 @@ void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit) {
   ahi->numeric=np->numeric;
   ahi->userID=rup->ID;
   q9a_asyncquery(csdb_doauthhistory_real, (void *)ahi,
-    "SELECT userID, nick, username, host, authtime, disconnecttime, quitreason from authhistory where "
+    "SELECT userID, nick, username, host, authtime, disconnecttime, quitreason from chanserv.authhistory where "
     "userID=%u order by authtime desc limit %d", rup->ID, limit);
 }
 
