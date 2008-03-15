@@ -79,7 +79,7 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
   char buf1[60];
   int carg=2,limdone=0;
   sstring *newkey=NULL;
-  unsigned int newlim=0;
+  int newlim=0;
 
   if (cargc<1) {
     chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
@@ -150,6 +150,9 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
       forceflags |= CHANMODE_LIMIT;
       denyflags &= ~CHANMODE_LIMIT;
       newlim=rcp->limit;
+    } else if ((forceflags & CHANMODE_LIMIT) && (newlim <= 0 || newlim >= 65535)) {
+      newlim=0;
+      forceflags &= ~CHANMODE_LIMIT;
     }
 
     /* It parsed OK, so update the structure.. */

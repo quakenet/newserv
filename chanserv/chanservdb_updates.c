@@ -20,12 +20,12 @@ void csdb_updateauthinfo(reguser *rup) {
   char eschost[2*HOSTLEN+1];
 
   PQescapeString(eschost,rup->lastuserhost->content,rup->lastuserhost->length);
-  pqquery("UPDATE users SET lastauth=%lu,lastuserhost='%s' WHERE ID=%u",
+  pqquery("UPDATE chanserv.users SET lastauth=%lu,lastuserhost='%s' WHERE ID=%u",
 		  rup->lastauth,eschost,rup->ID);
 }
 
 void csdb_updatelastjoin(regchanuser *rcup) {
-  pqquery("UPDATE chanusers SET usetime=%lu WHERE userID=%u and channelID=%u",
+  pqquery("UPDATE chanserv.chanusers SET usetime=%lu WHERE userID=%u and channelID=%u",
 	  rcup->usetime, rcup->user->ID, rcup->chan->ID);
 }
 
@@ -37,7 +37,7 @@ void csdb_updatetopic(regchan *rcp) {
   } else {
     esctopic[0]='\0';
   }
-  pqquery("UPDATE channels SET topic='%s' WHERE ID=%u",esctopic,rcp->ID);
+  pqquery("UPDATE chanserv.channels SET topic='%s' WHERE ID=%u",esctopic,rcp->ID);
 }
 
 void csdb_updatechannel(regchan *rcp) {
@@ -78,7 +78,7 @@ void csdb_updatechannel(regchan *rcp) {
   else
     esccomment[0]='\0';
 
-  pqquery("UPDATE channels SET name='%s', flags=%d, forcemodes=%d,"
+  pqquery("UPDATE chanserv.channels SET name='%s', flags=%d, forcemodes=%d,"
 		  "denymodes=%d, chanlimit=%d, autolimit=%d, banstyle=%d,"
 		  "lastactive=%lu,statsreset=%lu, banduration=%lu, founder=%u,"
 		  "addedby=%u, suspendby=%u, suspendtime=%lu, chantype=%d, totaljoins=%u,"
@@ -94,7 +94,7 @@ void csdb_updatechannel(regchan *rcp) {
 }
 
 void csdb_updatechannelcounters(regchan *rcp) {
-  pqquery("UPDATE channels SET "
+  pqquery("UPDATE chanserv.channels SET "
 		  "lastactive=%lu, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u "
 		  "WHERE ID=%u",
@@ -105,7 +105,7 @@ void csdb_updatechannelcounters(regchan *rcp) {
 }
 
 void csdb_updatechanneltimestamp(regchan *rcp) {
-  pqquery("UPDATE channels SET "
+  pqquery("UPDATE chanserv.channels SET "
 		  "lasttimestamp=%u WHERE ID=%u",
 		  rcp->ltimestamp, rcp->ID);
 }
@@ -148,7 +148,7 @@ void csdb_createchannel(regchan *rcp) {
   else
     esccomment[0]='\0';
 
-  pqquery("INSERT INTO channels (ID, name, flags, forcemodes, denymodes,"
+  pqquery("INSERT INTO chanserv.channels (ID, name, flags, forcemodes, denymodes,"
 		  "chanlimit, autolimit, banstyle, created, lastactive, statsreset, "
 		  "banduration, founder, addedby, suspendby, suspendtime, chantype, totaljoins, tripjoins,"
 		  "maxusers, tripusers, welcome, topic, chankey, suspendreason, "
@@ -164,14 +164,14 @@ void csdb_createchannel(regchan *rcp) {
 }
 
 void csdb_deletechannel(regchan *rcp) {
-  pqquery("DELETE FROM channels WHERE ID=%u",rcp->ID);
-  pqquery("DELETE FROM chanusers WHERE channelID=%u",rcp->ID);
-  pqquery("DELETE FROM bans WHERE channelID=%u",rcp->ID);
+  pqquery("DELETE FROM chanserv.channels WHERE ID=%u",rcp->ID);
+  pqquery("DELETE FROM chanserv.chanusers WHERE channelID=%u",rcp->ID);
+  pqquery("DELETE FROM chanserv.bans WHERE channelID=%u",rcp->ID);
 }
 
 void csdb_deleteuser(reguser *rup) {
-  pqquery("DELETE FROM users WHERE ID=%u",rup->ID);
-  pqquery("DELETE FROM chanusers WHERE userID=%u",rup->ID);
+  pqquery("DELETE FROM chanserv.users WHERE ID=%u",rup->ID);
+  pqquery("DELETE FROM chanserv.chanusers WHERE userID=%u",rup->ID);
 }
 
 void csdb_updateuser(reguser *rup) {
@@ -215,7 +215,7 @@ void csdb_updateuser(reguser *rup) {
   else
     escinfo[0]='\0';
 
-  pqquery("UPDATE users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
+  pqquery("UPDATE chanserv.users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
 		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, lockuntil=%lu, password='%s', email='%s',"
 		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s', lastemail='%s' WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
@@ -266,7 +266,7 @@ void csdb_createuser(reguser *rup) {
   else
     escinfo[0]='\0';
 
-  pqquery("INSERT INTO users (ID, username, created, lastauth, lastemailchng, "
+  pqquery("INSERT INTO chanserv.users (ID, username, created, lastauth, lastemailchng, "
 		  "flags, language, suspendby, suspendexp, suspendtime, lockuntil, password, email, lastuserhost, "
 		  "suspendreason, comment, info, lastemail) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
 		  "'%s','%s','%s','%s','%s')",
@@ -284,7 +284,7 @@ void csdb_updatechanuser(regchanuser *rcup) {
   else
     escinfo[0]='\0';
 
-  pqquery("UPDATE chanusers SET flags=%u, changetime=%lu, "
+  pqquery("UPDATE chanserv.chanusers SET flags=%u, changetime=%lu, "
 		  "usetime=%lu, info='%s' WHERE channelID=%u and userID=%u",
 		  rcup->flags, rcup->changetime, rcup->usetime, escinfo, rcup->chan->ID,rcup->user->ID);
 }
@@ -297,13 +297,13 @@ void csdb_createchanuser(regchanuser *rcup) {
   else
     escinfo[0]='\0';
   
-  pqquery("INSERT INTO chanusers VALUES(%u, %u, %u, %lu, %lu, '%s')",
+  pqquery("INSERT INTO chanserv.chanusers VALUES(%u, %u, %u, %lu, %lu, '%s')",
 		  rcup->user->ID, rcup->chan->ID, rcup->flags, rcup->changetime, 
 		  rcup->usetime, escinfo);
 }
 
 void csdb_deletechanuser(regchanuser *rcup) {
-  pqquery("DELETE FROM chanusers WHERE channelid=%u AND userID=%u",
+  pqquery("DELETE FROM chanserv.chanusers WHERE channelid=%u AND userID=%u",
 		  rcup->chan->ID, rcup->user->ID);
 }
 
@@ -320,7 +320,7 @@ void csdb_createban(regchan *rcp, regban *rbp) {
   else
     escreason[0]='\0';
 
-  pqquery("INSERT INTO bans (banID, channelID, userID, hostmask, "
+  pqquery("INSERT INTO chanserv.bans (banID, channelID, userID, hostmask, "
 		  "expiry, reason) VALUES (%u,%u,%u,'%s',%lu,'%s')", rbp->ID, rcp->ID, 
 		  rbp->setby, escban, rbp->expiry, escreason);
 }
@@ -338,12 +338,12 @@ void csdb_updateban(regchan *rcp, regban *rbp) {
   else
     escreason[0]='\0';
 
-  pqquery("UPDATE bans set channelID=%u, userID=%u, hostmask='%s', expiry=%lu, reason='%s' "
+  pqquery("UPDATE chanserv.bans set channelID=%u, userID=%u, hostmask='%s', expiry=%lu, reason='%s' "
                   "WHERE banID=%u", rcp->ID, rbp->setby, escban, rbp->expiry, escreason, rbp->ID);
 }
 
 void csdb_deleteban(regban *rbp) {
-  pqquery("DELETE FROM bans WHERE banID=%u", rbp->ID);
+  pqquery("DELETE FROM chanserv.bans WHERE banID=%u", rbp->ID);
 }
 
 void csdb_createmail(reguser *rup, int type) {
@@ -353,38 +353,38 @@ void csdb_createmail(reguser *rup, int type) {
   if (type == QMAIL_NEWEMAIL) {
     if (rup->email) {
       PQescapeString(escemail, rup->email->content, rup->email->length);
-      sprintf(sqlquery, "INSERT INTO email (userID, emailType, prevEmail) "
+      sprintf(sqlquery, "INSERT INTO chanserv.email (userID, emailType, prevEmail) "
 	      "VALUES (%u,%u,'%s')", rup->ID, type, escemail);
     }
   } else {
-    sprintf(sqlquery, "INSERT INTO email (userID, emailType) VALUES (%u,%u)", rup->ID, type);
+    sprintf(sqlquery, "INSERT INTO chanserv.email (userID, emailType) VALUES (%u,%u)", rup->ID, type);
   }
 
   pqquery("%s", sqlquery);
 }
 
 void csdb_deletemaildomain(maildomain *mdp) {
-  pqquery("DELETE FROM maildomain WHERE ID=%u", mdp->ID);
+  pqquery("DELETE FROM chanserv.maildomain WHERE ID=%u", mdp->ID);
 }
 
 void csdb_createmaildomain(maildomain *mdp) {
   char escdomain[210];
   PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
-  pqquery("INSERT INTO maildomain (id, name, domainlimit, actlimit, flags) VALUES(%u, '%s', %u, %u, %u)", mdp->ID,escdomain,mdp->limit,mdp->actlimit,mdp->flags);
+  pqquery("INSERT INTO chanserv.maildomain (id, name, domainlimit, actlimit, flags) VALUES(%u, '%s', %u, %u, %u)", mdp->ID,escdomain,mdp->limit,mdp->actlimit,mdp->flags);
 }
 
 void csdb_updatemaildomain(maildomain *mdp) {
   char escdomain[210];
   PQescapeString(escdomain, mdp->name->content, mdp->name->length);
 
-  pqquery("UPDATE maildomain SET domainlimit=%u, actlimit=%u, flags=%u, name='%s' WHERE ID=%u", mdp->limit,mdp->actlimit,mdp->flags,escdomain,mdp->ID);
+  pqquery("UPDATE chanserv.maildomain SET domainlimit=%u, actlimit=%u, flags=%u, name='%s' WHERE ID=%u", mdp->limit,mdp->actlimit,mdp->flags,escdomain,mdp->ID);
 }
 
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags) {
   reguser *rup=getreguserfromnick(np);
 
-  pqquery("INSERT INTO chanlevhistory (userID, channelID, targetID, changetime, authtime, "
+  pqquery("INSERT INTO chanserv.chanlevhistory (userID, channelID, targetID, changetime, authtime, "
     "oldflags, newflags) VALUES (%u, %u, %u, %lu, %lu, %u, %u)",  rup->ID, rcp->ID, trup->ID, getnettime(), np->accountts,
     oldflags, newflags);
 }
@@ -418,7 +418,7 @@ void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring 
   else
     escnewemail[0]='\0';
 
-  pqquery("INSERT INTO accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, "
+  pqquery("INSERT INTO chanserv.accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, "
     "newemail) VALUES (%u, %lu, %lu, '%s', '%s', '%s', '%s')", rup->ID, getnettime(), np->accountts, escoldpass, escnewpass,
     escoldemail, escnewemail);
 
@@ -430,13 +430,13 @@ void csdb_cleanuphistories() {
   time_t expire_time=getnettime()-604800;
 
   Error("chanserv", ERR_INFO, "Cleaning histories.");
-  pqquery("DELETE FROM authhistory WHERE authtime < %lu", expire_time);
-  pqquery("DELETE FROM chanlevhistory WHERE changetime < %lu", expire_time);
-  pqquery("DELETE FROM accounthistory WHERE changetime < %lu", expire_time);
+  pqquery("DELETE FROM chanserv.authhistory WHERE authtime < %lu", expire_time);
+  pqquery("DELETE FROM chanserv.chanlevhistory WHERE changetime < %lu", expire_time);
+  pqquery("DELETE FROM chanserv.accounthistory WHERE changetime < %lu", expire_time);
 }
 
 void csdb_deletemaillock(maillock *mlp) {
-  pqquery("DELETE FROM maillocks WHERE ID=%u", mlp->id);
+  pqquery("DELETE FROM chanserv.maillocks WHERE ID=%u", mlp->id);
 }
 
 void csdb_createmaillock(maillock *mlp) {
@@ -449,7 +449,7 @@ void csdb_createmaillock(maillock *mlp) {
   else
     escreason[0]='\0';
 
-  pqquery("INSERT INTO maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %u)",
+  pqquery("INSERT INTO chanserv.maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %u)",
           mlp->id,escpattern,escreason,mlp->createdby,mlp->created);
 }
 
@@ -463,6 +463,6 @@ void csdb_updatemaillock(maillock *mlp) {
   else
     escreason[0]='\0';
 
-  pqquery("UPDATE maillocks SET pattern='%s', reason='%s', createdby=%u, created=%u WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
+  pqquery("UPDATE chanserv.maillocks SET pattern='%s', reason='%s', createdby=%u, created=%u WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
 }
 

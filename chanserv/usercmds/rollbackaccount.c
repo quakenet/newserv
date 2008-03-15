@@ -86,7 +86,7 @@ void csdb_dorollbackaccount_real(PGconn *dbconn, void *arg) {
 
 void csdb_rollbackaccounthistory(nick *np, reguser* rup, time_t starttime) {
   q9u_asyncquery(csdb_dorollbackaccount_real, (void *)np->numeric,
-    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from accounthistory where "
+    "SELECT userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail from chanserv.accounthistory where "
     "userID=%u and changetime>%lu order by changetime desc limit 10", rup->ID, starttime);
 }
 

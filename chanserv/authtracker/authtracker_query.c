@@ -18,7 +18,7 @@ void at_logquit(unsigned long userid, time_t accountts, time_t when, char *reaso
 
   PQescapeString(escreason, lreason, strlen(lreason));
 
-  pqquery("UPDATE authhistory SET disconnecttime=%lu, quitreason='%s' WHERE userID=%lu AND authtime=%lu",
+  pqquery("UPDATE chanserv.authhistory SET disconnecttime=%lu, quitreason='%s' WHERE userID=%lu AND authtime=%lu",
               when, escreason, userid, accountts);
 }
 
@@ -31,7 +31,7 @@ void at_lognewsession(unsigned int userid, nick *np) {
   PQescapeString(escuser, np->ident, strlen(np->ident));
   PQescapeString(eschost, np->host->name->content, np->host->name->length);
 
-  pqquery("INSERT INTO authhistory (userID, nick, username, host, authtime, disconnecttime, numeric) "
+  pqquery("INSERT INTO chanserv.authhistory (userID, nick, username, host, authtime, disconnecttime, numeric) "
     "VALUES (%lu, '%s', '%s', '%s', %lu, %lu, %u)",
     userid, escnick, escuser, eschost, np->accountts, 0UL, np->numeric);
 }
@@ -75,6 +75,6 @@ static void real_at_finddanglingsessions(PGconn *dbconn, void *arg) {
 
 void at_finddanglingsessions() {
   pqasyncqueryi(authtrackerpq, real_at_finddanglingsessions, NULL, 
-	"SELECT numeric,userID,authtime FROM authhistory WHERE disconnecttime=0");
+	"SELECT numeric,userID,authtime FROM chanserv.authhistory WHERE disconnecttime=0");
 
 }
