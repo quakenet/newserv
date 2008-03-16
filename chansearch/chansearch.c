@@ -63,6 +63,22 @@ void _init() {
 }
 
 void _fini() {
+  unregchansearchfunc("name", cs_name);
+  unregchansearchfunc("exists", cs_exists);
+  unregchansearchfunc("services", cs_services);
+  unregchansearchfunc("nick", cs_nick);
+  unregchansearchfunc("size", cs_size);
+  unregchansearchfunc("namelen", cs_namelen);
+  unregchansearchfunc("modes", cs_modes);
+  unregchansearchfunc("topic", cs_topic);
+  unregchansearchfunc("oppercent", cs_oppct);
+  unregchansearchfunc("uniquehostpct", cs_hostpct);
+  unregchansearchfunc("authedpct", cs_authedpct);
+
+  unregchansearchdisp("default", cs_describe);
+  unregchansearchdisp("topic", cs_desctopic);
+  unregchansearchdisp("services", cs_descservices);
+
   deregistercontrolcmd("chansearch",&dochansearch);
   destroycommandtree(searchfilters);
   destroycommandtree(outputfilters);
