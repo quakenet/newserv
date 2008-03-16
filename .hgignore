@@ -3,7 +3,9 @@ syntax: glob
 */*~
 *.o
 *.so
-local.in
+local.mk
+build.mk
+configure.mk
 newserv
 modules/
 newserv.conf
