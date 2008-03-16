@@ -19,3 +19,4 @@ newserv.core
 *.log
 *.dump
 chanservlog
+Makefile
