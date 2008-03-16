@@ -1,0 +1,5 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: parser.o
+

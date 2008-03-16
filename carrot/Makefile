@@ -1,6 +1,0 @@
-
-.PHONY: all
-all: carrot.so
-
-carrot.so: carrot.o
-	ld -shared -Bdynamic -o $@ $^

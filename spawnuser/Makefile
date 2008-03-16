@@ -1,6 +1,0 @@
-
-.PHONY: all
-all: spawnuser.so
-
-spawnuser.so: spawnuser.o
-	ld -shared -Bdynamic -o $@ $^

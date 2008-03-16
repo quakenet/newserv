@@ -1,6 +1,0 @@
-.PHONY: all
-all: chanserv_authtracker.so
-
-chanserv_authtracker.so: authtracker.o authtracker_hooks.o authtracker_query.o authtracker_db.o
-	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
-        

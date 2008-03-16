@@ -1,6 +1,0 @@
-
-.PHONY: all
-all: clonehistogram.so
-
-clonehistogram.so: clonehistogram.o
-	ld -shared -Bdynamic -o $@ $^

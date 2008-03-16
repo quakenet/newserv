@@ -1,6 +1,0 @@
-
-.PHONY: all
-all: chanprofile.so
-
-chanprofile.so: chanprofile.o
-	ld -shared -Bdynamic -o $@ $^

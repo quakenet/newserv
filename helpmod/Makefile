@@ -1,6 +1,0 @@
-
-.PHONY: all
-all: helpmod.so
-
-helpmod.so: helpmod.o helpmod_user.o helpmod_entries.o helpmod_alias.o
-	ld -shared -warn-common -Bdynamic -o helpmod.so helpmod.o helpmod_user.o helpmod_entries.o helpmod_alias.o
