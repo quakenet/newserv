@@ -36,7 +36,7 @@ def processtemplate(emailtype, lang, obj):
 
 def email(userid, emailtype, prevemail):
   cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-  cur.execute("SELECT users.*, code FROM users LEFT JOIN languages ON language = languageid WHERE id = %d" % userid)
+  cur.execute("SELECT users.*, code FROM chanserv.users LEFT JOIN chanserv.languages ON language = languageid WHERE id = %d" % userid)
 
   unifieddict = {}
   for key, value in cur.fetchone().items():
@@ -64,7 +64,7 @@ def main():
   ignoring = {}
   while True:
     cur = conn.cursor()
-    cur.execute("SELECT mailid, userid, emailtype, prevemail FROM email")
+    cur.execute("SELECT mailid, userid, emailtype, prevemail FROM chanserv.email")
 
     deleting = []
     while True:
@@ -94,7 +94,7 @@ def main():
     if len(deleting) > 0:
       cur.execute("BEGIN TRANSACTION")
       for x in deleting:
-        cur.execute("DELETE FROM email WHERE mailid = %d" % x)
+        cur.execute("DELETE FROM chanserv.email WHERE mailid = %d" % x)
       cur.execute("COMMIT")
 
     time.sleep(1)
