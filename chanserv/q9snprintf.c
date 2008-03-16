@@ -3,8 +3,10 @@
 #include <stdarg.h>
 #include <string.h>
 #include "../lib/sstring.h"
+#include "../core/error.h"
 
 #define MAXARGS 10
+#define CONVBUF 512
 
 struct bufs {
   char *buf;
@@ -39,39 +41,45 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
   struct bufs b;
   const char *p;
   char *c;
-  char convbuf[MAXARGS][512];
+  char convbuf[MAXARGS][CONVBUF];
 
   if(size == 0)
     return;
 
   {
-    int argno = 0;
-    int d, i;
+    int argno = 0, i;
+
+    int d;
     char *s;
-    sstring *ss;
-    double f;
+    double g;
+    unsigned int u;
 
     for(i=0;i<MAXARGS;i++)
       convbuf[i][0] = '\0';
 
-    while(*args) {
-      switch(*args++) {
+    for(;*args;args++) {
+      char *cb = convbuf[argno++];
+
+      switch(*args) {
         case 's':
           s = va_arg(ap, char *);
-          snprintf(convbuf[argno++], sizeof(convbuf[0]), "%s", s);
-          break;
-        case 'S':
-          ss = va_arg(ap, sstring *);
-          snprintf(convbuf[argno++], sizeof(convbuf[0]), "%s", s?"(null)":ss->content);
+          snprintf(cb, CONVBUF, "%s", s);
           break;
         case 'd':
           d = va_arg(ap, int);
-          snprintf(convbuf[argno++], sizeof(convbuf[0]), "%d", d);
+          snprintf(cb, CONVBUF, "%d", d);
+          break;
+        case 'u':
+          u = va_arg(ap, unsigned int);
+          snprintf(cb, CONVBUF, "%u", u);
           break;
         case 'g':
-          f = va_arg(ap, double);
-          snprintf(convbuf[argno++], sizeof(convbuf[0]), "%.1f", f);
+          g = va_arg(ap, double);
+          snprintf(cb, CONVBUF, "%.1f", g);
           break;
+        default:
+          /* calls exit(0) */
+          Error("chanserv", ERR_STOP, "Bad format specifier '%c' supplied in q9vsnprintf, format: '%s'", *args, format);
       }
     }
   }
