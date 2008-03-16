@@ -1,16 +1,13 @@
-ifeq ($(INCPATH),)
+@ifndef@ INCPATH
 INCPATH=../
-endif
+@endif@
 
 @include@ @includel@$(INCPATH)configure.mk@includel@
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 
-ifeq ($(BUILDID),)
-BUILDID := \"$(shell (hg id || echo "unknown") | sed -e "s/ /-/;s/+-/-/")\"
-export BUILDID
-endif
+@ifndef@ BUILDID
+BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/" @shellend@
+@endif@
 
 CC=gcc
-CFLAGS+=-Wall -g -fPIC -export-dynamic -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=${BUILDID}
-
-export CC CFLAGS
+CFLAGS+=-Wall -g -fPIC -export-dynamic -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
