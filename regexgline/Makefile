@@ -1,3 +1,4 @@
+CFLAGS+=$(INCMYSQL) $(INCPCRE)
 
 .PHONY: all
 all: regexgline.so

@@ -1,3 +1,4 @@
+CFLAGS+=$(INCPGSQL)
 
 .PHONY: all
 all: noperserv.so noperserv_commands.so noperserv_fakeuser.so

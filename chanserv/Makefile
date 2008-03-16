@@ -1,3 +1,4 @@
+CFLAGS+=${INCPGSQL} ${INCPCRE}
 
 CSDIRS=database chancmds usercmds authcmds authtracker newsearch
 

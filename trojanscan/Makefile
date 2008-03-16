@@ -1,3 +1,5 @@
+CFLAGS+=$(INCMYSQL) $(INCPCRE)
+
 .PHONY: all
 all: trojanscan.so
 

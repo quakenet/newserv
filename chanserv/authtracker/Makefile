@@ -1,4 +1,3 @@
-
 .PHONY: all
 all: chanserv_authtracker.so
 

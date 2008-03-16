@@ -1,3 +1,4 @@
+CFLAGS+=$(INCMYSQL)
 
 .PHONY: all
 all: lameisp.so

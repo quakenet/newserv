@@ -1,3 +1,4 @@
+CFLAGS+=$(INCPCRE)
 
 .PHONY: all
 all: nterfacer.so nterfacer_control.so nterfacer_relay.so nterfacer_chanstats.so nterfacer_country.so nterfacer_spamscan2.so

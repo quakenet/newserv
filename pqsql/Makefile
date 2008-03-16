@@ -1,3 +1,4 @@
+CFLAGS+=$(INCPGSQL)
 
 .PHONY: all
 all: pqsql.so

@@ -1,3 +1,4 @@
+CFLAGS+=$(INCPCRE)
 
 .PHONY: all
 all: newsearch.so
