@@ -14,7 +14,6 @@
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
-#include "../authhash/authhash.h"
 
 #include "library.h"
 #include "nterfacer_control.h"
