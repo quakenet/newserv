@@ -1,5 +1,9 @@
 #include "lua.h"
 #include "luabot.h"
+
+#include "../config.h"
+
+#ifdef HAVE_PGSQL
 #include "../pqsql/pqsql.h"
 
 static int lua_dbcreatequery(lua_State *ps) {
@@ -144,3 +148,10 @@ void lua_registerdbcommands(lua_State *l) {
   lua_register(l, "db_numrows", lua_dbnumrows);
   lua_register(l, "db_getvalue", lua_dbgetvalue);
 }
+
+#else
+
+void lua_registerdbcommands(lua_State *l) {
+}
+
+#endif
