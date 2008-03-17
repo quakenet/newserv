@@ -41,7 +41,7 @@ int handle_scriptcommand(struct rline *li, int argc, char **argv) {
   lua_State *l;
   int top;
   int iresult = 0;
-  int ret, i;
+  int ret = 0, i;
   char *cresult = NULL;
 
   if(!l2)

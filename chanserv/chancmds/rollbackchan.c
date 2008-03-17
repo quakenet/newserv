@@ -29,7 +29,7 @@
 void csc_dorollbackchan_real(PGconn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
-  chanindex *cip;
+  chanindex *cip = NULL;
   regchan *rcp=NULL;
   regchanuser *rcup;
   unsigned int userID, channelID, targetID;

@@ -352,7 +352,7 @@ static int lua_localprivmsg(lua_State *ps) {
 static int lua_localovmode(lua_State *l) {
   nick *source;
   channel *chan;
-  int state = 0, add, realmode, ignoring = 0;
+  int state = 0, add = 0, realmode = 0, ignoring = 0;
   modechanges changes;
 
   if(!lua_islong(l, 1) || !lua_isstring(l, 2) || !lua_istable(l, 3))

@@ -37,15 +37,14 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
   struct tm *tmp;
   char tbuf[15], fbuf[18];
 
-  if(!dbconn) {
-    PQclear(pgres);
+  if(!dbconn)
     return;
-  }
 
   pgres=PQgetResult(dbconn);
 
   if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
     Error("chanserv", ERR_ERROR, "Error loading chanlev history data.");
+    PQclear(pgres);
     return;
   }
 

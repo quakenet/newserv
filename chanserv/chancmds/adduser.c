@@ -72,8 +72,6 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
       chanservstdmessage(sender, QM_NOFLAGSPECIFIED);
       return CMD_ERROR;
     }
-    
-    i++;
   } else {
     addflags=QCUFLAG_OP | QCUFLAG_AUTOOP | QCUFLAG_TOPIC;
   }

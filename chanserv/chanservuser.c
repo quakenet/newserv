@@ -243,7 +243,7 @@ void chanservjoinchan(channel *cp) {
   nick *np;
   reguser *rup;
   regchanuser *rcup;
-  flag_t themodes;
+  flag_t themodes = 0;
 
   /* Skip unregistered channels */
   if (!(rcp=cp->index->exts[chanservext]))
