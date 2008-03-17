@@ -4,7 +4,6 @@ INCPATH=../
 
 CFLAGS=
 
-@include@ @includel@$(INCPATH)configure.mk@includel@
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 
 @ifndef@ BUILDID
