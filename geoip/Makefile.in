@@ -6,4 +6,6 @@ all: geoip.so
 clean:
 	rm -f *.o *.so libGeoIP/*.o
 
+distclean:
+	
 geoip.so: geoip.o libGeoIP.o
