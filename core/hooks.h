@@ -66,6 +66,23 @@
 #define HOOK_CONTROL_WHOISREQUEST  601 /* Argument is nick* */
 #define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
 
+#define HOOK_USERDB_DBLOADED       700 /* No argument */
+
+#define HOOK_USERDB_CREATELANG     710 /* Argument is userdb_language* */
+#define HOOK_USERDB_PREMODIFYLANG  711 /* Argument is userdb_language* */
+#define HOOK_USERDB_POSTMODIFYLANG 712 /* Argument is userdb_language* */
+#define HOOK_USERDB_DELETELANG     713 /* Argument is userdb_language* */
+
+#define HOOK_USERDB_CREATEUSER     720 /* Argument is userdb_user* */
+#define HOOK_USERDB_PREMODIFYUSER  721 /* Argument is userdb_user* */
+#define HOOK_USERDB_POSTMODIFYUSER 722 /* Argument is userdb_user* */
+#define HOOK_USERDB_DELETEUSER     723 /* Argument is userdb_user* */
+
+#define HOOK_USERDB_CREATEMDC      730 /* Argument is userdb_maildomainconfig* */
+#define HOOK_USERDB_PREMODIFYMDC   731 /* Argument is userdb_maildomainconfig* */
+#define HOOK_USERDB_POSTMODIFYMDC  732 /* Argument is userdb_maildomainconfig* */
+#define HOOK_USERDB_DELETEMDC      733 /* Argument is userdb_maildomainconfig* */
+
 typedef void (*HookCallback)(int, void *);
 
 extern unsigned int hookqueuelength;
