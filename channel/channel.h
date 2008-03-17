@@ -138,6 +138,7 @@ void removechannelfromhash(channel *cp);
 void addordelnick(int hooknum, void *arg);
 void onconnect(int hooknum, void *arg);
 unsigned int countuniquehosts(channel *cp);
+void clean_key(char *s);
 
 /* functions from channelhandlers.c */
 int handleburstmsg(void *source, int cargc, char **cargv);
