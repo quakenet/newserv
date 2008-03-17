@@ -134,7 +134,14 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
 	chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
 	return CMD_ERROR;
       }
-      newkey=getsstring(cargv[carg++], KEYLEN);
+      /* Sanitise the key.  If this eliminates it then drop the +k altogether. */
+      clean_key(cargv[carg]);
+      if (!*cargv[carg]) {
+        carg++;
+        forceflags &= ~CHANMODE_KEY;
+      } else {
+        newkey=getsstring(cargv[carg++], KEYLEN);
+      }
     }
 
     if ((forceflags & CHANMODE_LIMIT) && !limdone) {
