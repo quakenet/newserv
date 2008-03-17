@@ -432,3 +432,18 @@ unsigned int countuniquehosts(channel *cp) {
   return count;
 }
 
+/*
+ * clean_key: returns a "cleaned" version of the key like ircu does.
+ *
+ * Note that s is a signed char, so we are basically allowing everything from 33-127 except : or ,
+ *
+ * Unlike ircu we don't check against KEYLEN here, this is done elsewhere.
+ */
+void clean_key(char *key) {
+  while (*key) {
+    if (*key<=32 || *key==':' || *key==',') {
+      *key=0;
+      return;
+    }
+  }
+}
