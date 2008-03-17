@@ -16,7 +16,7 @@
  * CMDHELP:            setting will be displayed.  If +k or +l modes are included, the actual
  * CMDHELP:            key or limit to be enforced must also be specified, for example 
  * CMDHELP:            \"-il+ntk mykey\", or \"+nstl-Cc 20\".  If you do not want any modes
- * CMDHELP:            enforced, \"CHANMODE <channel> +\" will clear the list.
+ * CMDHELP:            enforced, \"CHANMODE <channel> none\" will clear the list.
  * CMDHELP: Viewing the enforced modes requires operator (+o) access on the named channel.
  * CMDHELP: Updating the enforced modes requires master (+m) access on the named channel.
  * CMDHELP: Note: unlike similar commands that work on flags, specifying modes REPLACES
@@ -100,59 +100,70 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
     /* Save the current modes.. */
     strcpy(buf1,getchanmode(rcp));
 
-    /* Pick out the + flags: start from 0 */
-    forceflags=0;
-    setflags(&forceflags, CHANMODE_ALL, cargv[1], cmodeflags, REJECT_NONE);    
+    /* Allow "none" as a magic word for simplicity. */
+    if (!ircd_strcmp(cargv[1],"none")) {
+      rcp->forcemodes=0;
+      rcp->denymodes=0;
+    } else {
+      /* Pick out the + flags: start from 0 */
+      forceflags=0;
+      setflags(&forceflags, CHANMODE_ALL, cargv[1], cmodeflags, REJECT_NONE);    
 
-    /* Pick out the - flags: start from everything and invert afterwards.. */
-    denyflags=CHANMODE_ALL;
-    setflags(&denyflags, CHANMODE_ALL, cargv[1], cmodeflags, REJECT_NONE);
-    denyflags = (~denyflags) & CHANMODE_ALL;
+      /* Pick out the - flags: start from everything and invert afterwards.. */
+      denyflags=CHANMODE_ALL;
+      setflags(&denyflags, CHANMODE_ALL, cargv[1], cmodeflags, REJECT_NONE);
+      denyflags = (~denyflags) & CHANMODE_ALL;
 
-    forceflags &= ~denyflags; /* Can't force and deny the same mode (shouldn't be possible anyway) */
-    if (forceflags & CHANMODE_SECRET) {
-      forceflags &= ~CHANMODE_PRIVATE;
-      denyflags |= CHANMODE_PRIVATE;
-    }
-    if (forceflags & CHANMODE_PRIVATE) {
-      forceflags &= ~CHANMODE_SECRET;
-      denyflags |= CHANMODE_SECRET;
-    }
-
-    if ((forceflags & CHANMODE_LIMIT) && 
-	(!(forceflags & CHANMODE_KEY) || strrchr(cargv[1],'l') < strrchr(cargv[1],'k'))) {
-      if (cargc<=carg) {
-	chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
-	return CMD_ERROR;
+      forceflags &= ~denyflags; /* Can't force and deny the same mode (shouldn't be possible anyway) */
+      
+      /* Don't allow +ps.  Set the appropriate denyflag as well so that we will revert this properly if needed. */
+      if (forceflags & CHANMODE_SECRET) {
+        forceflags &= ~CHANMODE_PRIVATE;
+        denyflags |= CHANMODE_PRIVATE;
       }
-      newlim=strtol(cargv[carg++],NULL,10);
-      limdone=1;
+      if (forceflags & CHANMODE_PRIVATE) {
+        forceflags &= ~CHANMODE_SECRET;
+        denyflags |= CHANMODE_SECRET;
+      }
+
+      /* Cope with +kl in either order.  This will actually trip up if someone does something like "-l+kl" 
+       * but that would be their own fault... */
+      if ((forceflags & CHANMODE_LIMIT) && 
+          (!(forceflags & CHANMODE_KEY) || strrchr(cargv[1],'l') < strrchr(cargv[1],'k'))) {
+        if (cargc<=carg) {
+          chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
+          return CMD_ERROR;
+        }
+        newlim=strtol(cargv[carg++],NULL,10);
+        limdone=1;
+      }
+
+      if (forceflags & CHANMODE_KEY) {
+        if (cargc<=carg) {
+          chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
+          return CMD_ERROR;
+        }
+        /* Sanitise the key.  If this eliminates it then drop the +k altogether. */
+        clean_key(cargv[carg]);
+        if (!*cargv[carg]) {
+          carg++;
+          forceflags &= ~CHANMODE_KEY;
+        } else {
+          newkey=getsstring(cargv[carg++], KEYLEN);
+        }
+      }
+
+      if ((forceflags & CHANMODE_LIMIT) && !limdone) {
+        if (cargc<=carg) {
+          chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
+          return CMD_ERROR;
+        }
+        newlim=strtol(cargv[carg++],NULL,10);
+        limdone=1;
+      }
     }
 
-    if (forceflags & CHANMODE_KEY) {
-      if (cargc<=carg) {
-	chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
-	return CMD_ERROR;
-      }
-      /* Sanitise the key.  If this eliminates it then drop the +k altogether. */
-      clean_key(cargv[carg]);
-      if (!*cargv[carg]) {
-        carg++;
-        forceflags &= ~CHANMODE_KEY;
-      } else {
-        newkey=getsstring(cargv[carg++], KEYLEN);
-      }
-    }
-
-    if ((forceflags & CHANMODE_LIMIT) && !limdone) {
-      if (cargc<=carg) {
-	chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"chanmode");
-	return CMD_ERROR;
-      }
-      newlim=strtol(cargv[carg++],NULL,10);
-      limdone=1;
-    }
-
+    /* Check if chanflag +c is set and if so preserve the limit */
     if (CIsAutoLimit(rcp)) {
       forceflags |= CHANMODE_LIMIT;
       denyflags &= ~CHANMODE_LIMIT;
