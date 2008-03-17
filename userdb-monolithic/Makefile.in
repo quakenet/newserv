@@ -1,0 +1,13 @@
+@include@ @includel@../build.mk@includel@
+
+CFLAGS+=$(INCPGSQL) $(INCPCRE)
+LDFLAGS+=$(LIBPGSQL) $(LIBPCRE)
+
+.PHONY: all
+all: userdb.so userdb_testmodule.so userdb_convertmodule.so
+
+userdb.so: userdb.o userdb_authext.o userdb_db.o userdb_hash.o userdb_interaction.o userdb_languages.o userdb_lib.o userdb_maildomains.o userdb_policy.o userdb_replication.o userdb_users.o userdb_usertags.o
+
+userdb_testmodule.so: userdb_testmodule.o
+
+userdb_convertmodule.so: userdb_convertmodule.o
