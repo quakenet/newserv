@@ -23,9 +23,9 @@ chanserv.so: chanservdb_updates.o chanserv.o chanservuser.o chanservnetevents.o 
 
 chanserv_protect.so: chanserv_protect.o
 
-chanserv_grep.so: chanservgrep.o
+chanserv_grep.so: chanserv_grep.o
 
-chanserv_chansearch.so: chanserv-chansearch.o
+chanserv_chansearch.so: chanserv_chansearch.o
 
 chanserv_relay.so: chanserv_relay.o
 
