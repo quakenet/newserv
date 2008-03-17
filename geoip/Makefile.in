@@ -3,4 +3,7 @@
 .PHONY: all
 all: geoip.so
 
-geoip.so: geoip.o libGeoIP/GeoIP.o
+clean:
+	rm -f *.o *.so libGeoIP/*.o
+
+geoip.so: geoip.o libGeoIP.o

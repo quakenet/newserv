@@ -12,7 +12,7 @@
 
 #include <strings.h>
 
-#include "libGeoIP/GeoIP.h"
+#include "libGeoIP.h"
 #include "geoip.h"
 
 #warning This module is GPLed. Load/link at your peril.
