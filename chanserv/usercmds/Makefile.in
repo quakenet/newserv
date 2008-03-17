@@ -1,11 +1,11 @@
+INCPATH=../../
+@include@ @includel@../../build.mk@includel@
 @include@ @includel@../build.mk@includel@
-# Automatically generated Makefile, do not edit.
 
-.PHONY: all Makefile
-all: Makefile chanserv_usercmds.so
+.PHONY: all
+all: autobuild.mk chanserv_usercmds.so
 
-Makefile:
+autobuild.mk: *.c
 	../mkcommandlist.pl chanserv_usercmds.so
 
-chanserv_usercmds.so: accounthistory.o cleanupdb.o deluser.o domainmode.o info.o language.o listflags.o maillock.o rollbackaccount.o spewdb.o spewdomain.o spewemail.o spewpass.o suspenduser.o suspenduserlist.o unsuspenduser.o usercomment.o userflags.o whoami.o whois.o commandlist.o init.o 
-	 ld -shared -Bdynamic -o $@ $^ 
+@sinclude@ @includel@autobuild.mk@includel@

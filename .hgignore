@@ -20,4 +20,5 @@ newserv.core
 *.dump
 chanservlog
 Makefile
-*/Makefile
+autobuild.mk
+chanserv/*/commandlist.c

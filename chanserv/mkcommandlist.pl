@@ -24,12 +24,16 @@ unless (@ARGV) {
 
 my $smallname;
 $smallname=$modname;
-$smallname=~s/^chanserv_//;
 $smallname=~s/\.so$//;
+
+my $cname;
+$cname=$smallname . ".c";
+$smallname=~s/^chanserv_//;
+
 
 for (@filelist) {
   next if (/commandlist.c/);
-  next if (/init.c/);
+  next if ($_ eq $cname);
   
   my $fname = $_;
   my ($cn, $cl, $ca, $cd, $cf, $cp, $ch);
@@ -127,21 +131,15 @@ print CL "}\n";
 
 close CL;
 
-open MF,">Makefile";
+open MF,">autobuild.mk";
 
-print MF "# Automatically generated Makefile, do not edit.\n\n";
-
-print MF ".PHONY: all Makefile\n";
-
-print MF "all: Makefile $modname\n\n";
-
-print MF "Makefile:\n";
-print MF "\t../mkcommandlist.pl $modname\n";
+print MF "# Automatically generated Makefile, do not edit.\n";
 
 print MF "\n$modname: ";
 
 push @files,"commandlist.c";
-push @files,"init.c";
+
+push @files,$cname;
 
 foreach (@files) {
   s/.c$/.o/;
@@ -149,6 +147,5 @@ foreach (@files) {
 }
 
 print MF "\n";
-print MF "\t ld -shared -Bdynamic -o \$\@ \$\^ \n";
 
 close MF;

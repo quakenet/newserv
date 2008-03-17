@@ -1,9 +1,10 @@
 @include@ @includel@../build.mk@includel@
+
 CFLAGS+=$(INCPGSQL)
+LDFLAGS+=$(LIBPGSQL)
 
 .PHONY: all
 all: pqsql.so
 
 pqsql.so: pqsql.o
-	ld -shared -Bdynamic ${LIBPGSQL} -o $@ $^
 
