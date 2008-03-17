@@ -7,7 +7,7 @@ CFLAGS=
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 
 @ifndef@ BUILDID
-BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/" @shellend@
+BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 @endif@
 
 .SUFFIXES: .so
