@@ -22,4 +22,5 @@ Makefile
 autobuild.mk
 chanserv/*/commandlist.c
 configure.ac.local
+config.h
 
