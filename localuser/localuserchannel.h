@@ -46,7 +46,7 @@ void localinvite(nick *source, channel *cp, nick *target);
 void localsetmodeinit (modechanges *changes, channel *cp, nick *np);
 void localdosetmode_nick (modechanges *changes, nick *target, short modes);
 void localdosetmode_ban (modechanges *changes, const char *ban, short dir);
-void localdosetmode_key (modechanges *changes, const char *key, short dir);
+void localdosetmode_key (modechanges *changes, char *key, short dir);
 void localdosetmode_limit (modechanges *changes, unsigned int limit, short dir);
 void localdosetmode_simple (modechanges *changes, flag_t addmodes, flag_t delmodes);
 void localsetmodeflush (modechanges *changes, int force);

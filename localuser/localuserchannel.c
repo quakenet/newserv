@@ -236,7 +236,11 @@ int localburstontochannel(channel *cp, nick *np, time_t timestamp, flag_t modes,
     /* deal with key - if we need one use the provided one if set, otherwise
      * the existing one, but if there is no existing one clear +k */
     if (IsKey(cp)) {
-      if (key) {
+      /* Sanitise the provided key - this might invalidate it.. */
+      if (key)
+        clean_key(key);
+        
+      if (key && *key) {
         /* Free old key, if any */
         if (cp->key)
           freesstring(cp->key);
@@ -510,7 +514,7 @@ void localdosetmode_ban (modechanges *changes, const char *ban, short dir) {
  *  Set or clear a key on the channel
  */
 
-void localdosetmode_key (modechanges *changes, const char *key, short dir) {
+void localdosetmode_key (modechanges *changes, char *key, short dir) {
   int i,j;
   sstring *keysstr;
 
@@ -519,6 +523,11 @@ void localdosetmode_key (modechanges *changes, const char *key, short dir) {
     localsetmodeflush(changes,0);
 
   if (dir==MCB_ADD) {
+    /* Sanitise the key.  If this nullifies it then we give up */
+    clean_key(key);
+    if (!*key)
+      return;
+
     /* Get a copy of the key for use later */
     keysstr=getsstring(key, KEYLEN);
     
@@ -535,6 +544,7 @@ void localdosetmode_key (modechanges *changes, const char *key, short dir) {
 	  freesstring(changes->cp->key);
 	  changes->cp->key=getsstring(key, KEYLEN);
 	  /* That's it, we're done */
+	  freesstring(keysstr);
 	  return;
 	} else {
 	  /* There was a command to delete key.. we need to flush 
