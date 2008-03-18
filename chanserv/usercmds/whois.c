@@ -60,14 +60,19 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
 
   if (cs_privcheck(QPRIV_VIEWUSERFLAGS, sender)) {
-    flagmask=QUFLAG_ALL;
+    flagmask=QUFLAG_ALL & ~(QUFLAG_SUSPENDED | QUFLAG_GLINE | QUFLAG_DELAYEDGLINE);
+    if (UIsDev(rup))
+      flagmask=QUFLAG_ALL;
   } else {  
+    /* Incidentally none of the QM_USERIS* mesages take parameters.  Just thought I'd mention it.. */
     if (UIsAdmin(target))
       chanservstdmessage(sender, QM_USERISADMIN, target->username);
     else if (UIsOper(target))
       chanservstdmessage(sender, QM_USERISOPER, target->username);
     else if (UIsHelper(target))
       chanservstdmessage(sender, QM_USERISHELPER, target->username);
+    else if (UIsStaff(target))
+      chanservstdmessage(sender, QM_USERISSTAFF, target->username);
     
     if (UIsDev(target))
       chanservstdmessage(sender, QM_USERISDEV, target->username);
@@ -77,7 +82,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 
   if (rup==target)
     flagmask|=(QUFLAG_OPER | QUFLAG_DEV | QUFLAG_HELPER | 
-	       QUFLAG_ADMIN | QUFLAG_INFO | QUFLAG_NOTICE);
+	       QUFLAG_ADMIN | QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_STAFF);
 
   if (flagmask & target->flags)
     chanservstdmessage(sender, QM_WHOIS_FLAGS, printflagsornone(flagmask & target->flags, ruflags));
