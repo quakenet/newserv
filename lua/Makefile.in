@@ -1,12 +1,13 @@
 @include@ @includel@../build.mk@includel@
 
 CFLAGS+=$(INCLUA) $(INCPGSQL)
-LDFLAGS+=$(LIBLUA) $(LIBPGSQL)
+LDFLAGS+=$(LIBLUA) $(LIBPGSQL) $(STATICLUA)
 
 .PHONY: all
 all: lua.so nterfacer_lua.so
 
 lua.so: lua.o luacommands.o luacontrol.o luabot.o lualocal.o luadebug.o luadb.o luasocket.o luacrypto.o
-	@-ldline-@ $(STATICLUA)
+	@-ldline-@ $(LDFLAGS)
 
 nterfacer_lua.so: nterfacer_lua.o
+	@-ldline-@

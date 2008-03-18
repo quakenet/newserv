@@ -13,7 +13,7 @@ BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 .SUFFIXES: .so
 
 .o.so:
-	ld -shared -Bdynamic -o $@ @srcs@ $(LDFLAGS)
+	@-ldline-@ $(LDFLAGS)
 
 CC=gcc
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
