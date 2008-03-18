@@ -131,7 +131,7 @@
 #define   QUFLAG_NOINFO        0x0001  /* +s */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
-/* SPARE FLAG                  0x0008 */
+#define   QUFLAG_STAFF         0x0008  /* +q */
 #define   QUFLAG_SUSPENDED     0x0010  /* +z */
 #define   QUFLAG_OPER          0x0020  /* +o */
 #define   QUFLAG_DEV           0x0040  /* +d */
@@ -143,7 +143,7 @@
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdff7
+#define   QUFLAG_ALL           0xdfff
 
 #define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
@@ -158,9 +158,11 @@
 #define UIsDelayedGline(x)  ((x)->flags & QUFLAG_DELAYEDGLINE)
 #define UIsNoAuthLimit(x)   ((x)->flags & QUFLAG_NOAUTHLIMIT)
 #define UIsCleanupExempt(x) ((x)->flags & QUFLAG_CLEANUPEXEMPT)
+#define UIsStaff(x)         ((x)->flags & QUFLAG_STAFF)
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
+#define UHasStaffPriv(x)    ((x)->flags * (QUFLAG_STAFF | QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasHelperPriv(x)   ((x)->flags & (QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))

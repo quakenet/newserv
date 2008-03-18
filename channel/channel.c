@@ -440,7 +440,7 @@ unsigned int countuniquehosts(channel *cp) {
  * Unlike ircu we don't check against KEYLEN here, this is done elsewhere.
  */
 void clean_key(char *key) {
-  while (*key) {
+  for (;*key;key++) {
     if (*key<=32 || *key==':' || *key==',') {
       *key=0;
       return;

@@ -60,7 +60,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
 
     if (target==rup) {
       /* If you're changing yourself, you can give up the "status" flags and add/remove notice */
-      changemask|=(target->flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_PROTECT | QUFLAG_HELPER | QUFLAG_ADMIN));
+      changemask|=(target->flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_PROTECT | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF));
     }
 
     /* Warning, policy ahead */
@@ -69,7 +69,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       changemask |= QUFLAG_PROTECT | QUFLAG_TRUST | QCFLAG_NOINFO;
 
     if (UHasAdminPriv(rup))
-      changemask |= (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_CLEANUPEXEMPT);
+      changemask |= (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_CLEANUPEXEMPT | QUFLAG_STAFF);
     
     if (UIsDev(rup))
       changemask=QUFLAG_ALL;
@@ -99,7 +99,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   if (cs_privcheck(QPRIV_VIEWUSERFLAGS, sender))
     flagmask=QUFLAG_ALL;
   else
-    flagmask=QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_DEV | QUFLAG_ADMIN;
+    flagmask=QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_DEV | QUFLAG_ADMIN | QUFLAG_STAFF;
   
   chanservstdmessage(sender, QM_CURUSERFLAGS, target->username, printflagsornone(target->flags & flagmask, ruflags));
 
