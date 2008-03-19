@@ -20,6 +20,8 @@
 #include <sys/poll.h>
 #include <stdarg.h>
 #include <string.h>
+#define __USE_POSIX199309
+#include <time.h>
 
 MODULE_VERSION("");
 
@@ -60,13 +62,34 @@ void _fini(void) {
   nscheckfreeall(POOL_SQLITE);
 }
 
+int sqlitestep(sqlite3_stmt *s) {
+  int rc;
+  struct timespec t;
+
+  t.tv_sec = 0;
+
+  for(;;) {
+    rc = sqlite3_step(s);
+    if((rc == SQLITE_ROW) || (rc == SQLITE_OK) || (rc == SQLITE_DONE))
+      return 1;
+    if(rc == SQLITE_BUSY) {
+      t.tv_nsec = rand() % 50 + 50;
+      Error("sqlite", ERR_WARNING, "SQLite is busy, retrying in %dns...", t.tv_nsec);
+      nanosleep(&t, NULL);
+    } else {
+      Error("sqlite", ERR_WARNING, "SQL error %d: %s", rc, sqlite3_errmsg(conn));
+      return 0;
+    }
+  }
+}
+
 void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
   char querybuf[8192];
   va_list va;
   int len;
   int rc;
   sqlite3_stmt *s;
-
+  
   if(!sqliteconnected())
     return;
 
@@ -86,8 +109,9 @@ void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, in
   if(handler) {
     handler(s, tag);
   } else {
-    rc = sqlite3_step(s);
-    if(rc != SQLITE_DONE)
+    rc = sqlitestep(s);
+    sqlite3_finalize(s);
+    if(!rc)
       Error("sqlite", ERR_WARNING, "SQL error %d: %s (query: %s)", rc, sqlite3_errmsg(conn), querybuf);
   }
 }
@@ -119,8 +143,7 @@ SQLiteResult *sqlitegetresult(SQLiteConn *r) {
 }
 
 int sqlitefetchrow(SQLiteResult *r) {
-  int rc = sqlite3_step(r->r);
-  if(rc != SQLITE_ROW)
+  if(!sqlitestep(r->r))
     return 0;
 
   return 1;
@@ -152,14 +175,14 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
     return;
 
   snprintf(buf, sizeof(buf), "SELECT COUNT(*) FROM %s", tablename);
+
   rc = sqlite3_prepare(conn, buf, -1, &s, NULL);
   if(rc != SQLITE_OK) {
     Error("sqlite", ERR_ERROR, "Error getting row count for %s.", tablename);
     return;
   }
 
-  rc = sqlite3_step(s);
-  if(rc != SQLITE_ROW) {
+  if(!sqlitestep(s)) {
     Error("sqlite", ERR_ERROR, "Error getting row count for %s.", tablename);
     sqlite3_finalize(s);
     return;
@@ -169,10 +192,10 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
   sqlite3_finalize(s);
 
   snprintf(buf, sizeof(buf), "SELECT * FROM %s", tablename);
-  rc = sqlite3_prepare(conn, buf, -1, &s, NULL);
 
+  rc = sqlite3_prepare(conn, buf, -1, &s, NULL);
   if(rc != SQLITE_OK) {
-    Error("sqlite", ERR_WARNING, "SQL error %d: %s", rc, sqlite3_errmsg(conn));
+    Error("sqlite", ERR_ERROR, "Error loading table %s.", tablename);
     return;
   }
 
