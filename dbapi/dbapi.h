@@ -6,7 +6,14 @@
 #define DB_NULLIDENTIFIER 0
 #define DB_CREATE 1
 
-#if defined(HAVE_PGSQL) && !defined(USE_SQLITE3)
+#ifdef DBAPI_OVERRIDE
+#undef USE_DBAPI_PGSQL
+#undef USE_DBAPI_SQLITE3
+#endif
+
+#ifndef BUILDING_DBAPI
+
+#if defined(USE_DBAPI_PGSQL) || defined(DBAPI_OVERRIDE_PGSQL)
 
 #include "../pqsql/pqsql.h"
 
@@ -33,8 +40,9 @@ typedef PQResult DBResult;
 
 #define dbclear(result) pqclear(result)
 
-#else
-#if defined(HAVE_SQLITE3)
+#endif /* DBAPI_PGSQL */
+
+#if defined(USE_DBAPI_SQLITE3) || defined(DBAPI_OVERRIDE_SQLITE3)
 
 #include "../sqlite/sqlite.h"
 
@@ -61,14 +69,13 @@ typedef SQLiteResult DBResult;
 
 #define dbclear(result) sqliteclear(result)
 
-#else
-#error No DB API available.
-#endif
-#endif
+#endif /* DBAPI_SQLITE3 */
+
+#endif /* BUILDING_DBAPI */
 
 #define dbasyncqueryi(identifier, handler, tag, format, ...) dbasyncqueryf(identifier, handler, tag, 0, format , ##__VA_ARGS__)
 #define dbasyncquery(handler, tag, format, ...) dbasyncqueryf(DB_NULLIDENTIFIER, handler, tag, 0, format , ##__VA_ARGS__)
 #define dbcreatequery(format, ...) dbasyncqueryf(DB_NULLIDENTIFIER, NULL, NULL, DB_CREATE, format , ##__VA_ARGS__)
 #define dbquery(format, ...) dbasyncqueryf(DB_NULLIDENTIFIER, NULL, NULL, 0, format , ##__VA_ARGS__)
 
-#endif
+#endif /* __DBAPI_H */

@@ -1,7 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
-CFLAGS+=$(INCPGSQL)
-LDFLAGS+=$(LIBPGSQL)
+CFLAGS+=$(INCDBAPI)
+LDFLAGS+=$(LIBDBAPI)
 
 .PHONY: all
 all: noperserv.so noperserv_commands.so noperserv_fakeuser.so

@@ -12,8 +12,10 @@
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
 #include "../lib/strlfunc.h"
-#include "../dbapi/dbapi.h"
 #include "pqsql.h"
+
+#define BUILDING_DBAPI
+#include "../dbapi/dbapi.h"
 
 #include <stdlib.h>
 #include <sys/poll.h>

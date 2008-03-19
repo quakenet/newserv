@@ -11,6 +11,8 @@
 #include "../lib/version.h"
 #include "../lib/strlfunc.h"
 #include "sqlite.h"
+
+#define BUILDING_DBAPI
 #include "../dbapi/dbapi.h"
 
 #include <stdlib.h>
@@ -160,7 +162,7 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
     return;
   }
 
-  Error("sqlite", ERR_INFO, "Found %s entries in table %s, loading...", (char *)sqlite3_column_text(s, 0));
+  Error("sqlite", ERR_INFO, "Found %s entries in table %s, loading...", (char *)sqlite3_column_text(s, 0), tablename);
   sqlite3_finalize(s);
 
   snprintf(buf, sizeof(buf), "SELECT * FROM %s", tablename);
