@@ -169,6 +169,8 @@ int clearban(channel *cp, const char *ban, int optional);
 void clearallbans(channel *cp);
 int nickmatchban(nick *np, chanban *bp);
 int nickbanned(nick *np, channel *cp);
+int nickmatchban_visible(nick *np, chanban *bp);
+int nickbanned_visible(nick *np, channel *cp);
 
 /* functions from channelindex.c */
 void initchannelindex();
