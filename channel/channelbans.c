@@ -31,7 +31,7 @@ int nickmatchban_visible(nick *np, chanban *bp) {
   /* nick/ident section: return 0 (no match) if they don't match */
 
   /* Determine the visible ident for sethost users.  Don't test the real one. */  
-  if (IsSetHost(np) && np->shident && *np->shident)
+  if (IsSetHost(np) && np->shident && *np->shident->content)
     visibleident=np->shident->content;
   else
     visibleident=np->ident;
