@@ -799,8 +799,8 @@ void cs_checkbans(channel *cp) {
 
     for (rbp=rcp->bans;rbp;rbp=rbp->next) {
       if (((!rbp->expiry) || (rbp->expiry <= now)) &&
-	  nickmatchban(np, rbp->cbp)) {
-	if (!nickbanned(np, cp)) {
+	  nickmatchban_visible(np, rbp->cbp)) {
+	if (!nickbanned_visible(np, cp)) {
 	  localdosetmode_ban(&changes, bantostring(rbp->cbp), MCB_ADD);
 	}
 	localkickuser(chanservnick,cp,np,rbp->reason?rbp->reason->content:"Banned.");
@@ -813,7 +813,7 @@ void cs_checkbans(channel *cp) {
 
     if (CIsEnforce(rcp)) {
       for (cbp=cp->bans;cbp;cbp=cbp->next) {
-	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban(np, cbp))
+	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban_visible(np, cbp))
 	  localkickuser(chanservnick,cp,np,"Banned.");
       }
       rcp->lastbancheck=time(NULL);
@@ -1092,7 +1092,7 @@ int cs_bancheck(nick *np, channel *cp) {
       freesstring(rbp->reason);
       freechanban(rbp->cbp);
       freeregban(rbp);
-    } else if (nickmatchban(np,(*rbh)->cbp)) {
+    } else if (nickmatchban_visible(np,(*rbh)->cbp)) {
       /* This user matches this ban.. */
       if (!nickbanned(np,cp)) {
 	/* Only bother putting the ban on the channel if they're not banned already */
@@ -1128,7 +1128,7 @@ void cs_setregban(chanindex *cip, regban *rbp) {
     if (cip->channel->users->content[i]!=nouser &&
 	(np=getnickbynumeric(cip->channel->users->content[i])) &&
 	!IsService(np) &&
-	nickmatchban(np, rbp->cbp))
+	nickmatchban_visible(np, rbp->cbp))
       localkickuser(chanservnick, cip->channel, np, rbp->reason ? rbp->reason->content : "Banned.");
   }
 

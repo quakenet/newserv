@@ -402,7 +402,7 @@ void cs_handlenewban(int hooknum, void *arg) {
 	  Error("chanserv",ERR_WARNING,"Found user on channel %s who doesn't exist!",cp->index->name->content);
 	  continue;
 	}
-	if (!IsService(np) && nickmatchban(np,cbp)) {
+	if (!IsService(np) && nickmatchban_visible(np,cbp)) {
 	  localkickuser(chanservnick,cp,np,"Banned.");
 	}
       }
