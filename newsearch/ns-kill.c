@@ -96,7 +96,7 @@ void *kill_exe(struct searchNode *thenode, void *theinput) {
 void kill_free(struct searchNode *thenode) {
   struct kill_localdata *localdata;
   nick *np, *nnp;
-  chanindex *cip, *ncip;
+  chanindex *cip;
   int i, j, safe=0;
   unsigned int nickmarker;
   char msgbuf[512];
@@ -111,52 +111,47 @@ void kill_free(struct searchNode *thenode) {
     return;
   }
 
+  /* For channel searches, mark up all the nicks in the relevant channels first */
   if (localdata->type == SEARCHTYPE_CHANNEL) {
     nickmarker=nextnickmarker();
     for (i=0;i<CHANNELHASHSIZE;i++) {
-      for (cip=chantable[i];cip;cip=ncip) {
-        ncip = cip->next;
-        if (cip != NULL && cip->channel != NULL && cip->marker == localdata->marker) {
-          for (j=0;j<cip->channel->users->hashsize;j++) {
-            if (cip->channel->users->content[j]==nouser)
-              continue;
-    
-            if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
-              if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-                np->marker=nickmarker;
-              }
-              else
-                safe++;
-            }
-          }
+      for (cip=chantable[i];cip;cip=cip->next) {
+        /* Skip empty and non-matching channels */
+        if (!cip->channel || cip->marker != localdata->marker)
+          continue;
+
+        for (j=0;j<cip->channel->users->hashsize;j++) {
+          if (cip->channel->users->content[j]==nouser)
+            continue;
+  
+          if ((np=getnickbynumeric(cip->channel->users->content[j])))
+            np->marker=nickmarker;
         }
       }
     }
-    for (i=0;i<NICKHASHSIZE;i++) {
-      for(np=nicktable[i];np;np=nnp) {
-        nnp = np->next;
-        if (np->marker == nickmarker) {
-          nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-          killuser(NULL, np, "%s", msgbuf);
-        }
+  } else {
+    /* For nick searches they're already marked, pick up the saved value */
+    nickmarker=localdata->marker;
+  }
+
+  /* Now do the actual kills */
+  for (i=0;i<NICKHASHSIZE;i++) {
+    for (np=nicktable[i];np;np=nnp) {
+      nnp = np->next;
+
+      if (np->marker != nickmarker)
+        continue;
+
+      if (IsOper(np) || IsService(np) || IsXOper(np)) {
+        safe++;
+        continue;
       }
+
+      nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
+      killuser(NULL, np, "%s", msgbuf);
     }
   }
-  else {
-    for (i=0;i<NICKHASHSIZE;i++) {
-      for (np=nicktable[i];np;np=nnp) {
-        nnp = np->next;
-        if (np->marker == localdata->marker) {
-          if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-            nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-            killuser(NULL, np, "%s", msgbuf);
-          }
-          else
-              safe++;
-        }
-      }
-    }
-  }
+
   if (safe)
     controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
