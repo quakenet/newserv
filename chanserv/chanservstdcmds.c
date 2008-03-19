@@ -5,9 +5,10 @@
 #include "chanserv.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
-#include "../pqsql/pqsql.h"
+#include "../dbapi/dbapi.h"
 
 #include <string.h>
+#include <stdio.h>
 
 int cs_dorehash(void *source, int cargc, char **cargv) {
   nick *sender=source;
@@ -229,7 +230,7 @@ int cs_doctcpgender(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-void csdb_dohelp_real(PGconn *, void *);
+void csdb_dohelp_real(DBConn *, void *);
 
 struct helpinfo {
   unsigned int numeric;
@@ -251,13 +252,13 @@ void csdb_dohelp(nick *np, Command *cmd) {
 		  "SELECT languageID, fullinfo from chanserv.help where lower(command)=lower('%s')",cmd->command->content);
 }
 
-void csdb_dohelp_real(PGconn *dbconn, void *arg) {
+void csdb_dohelp_real(DBConn *dbconn, void *arg) {
   struct helpinfo *hip=arg;
   nick *np=getnickbynumeric(hip->numeric);
   reguser *rup;
   char *result;
-  PGresult *pgres;
-  int i,j,num,lang=0;
+  DBResult *pgres;
+  int j,lang=0;
   
   if(!dbconn) {
     freesstring(hip->commandname);
@@ -265,27 +266,25 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
     return; 
   }
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading help text.");
     freesstring(hip->commandname);
     free(hip);
     return; 
   }
 
-  if (PQnfields(pgres)!=2) {
+  if (dbnumfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Help text format error.");
-    PQclear(pgres);
+    dbclear(pgres);
     freesstring(hip->commandname);
     free(hip);
     return;
   }
   
-  num=PQntuples(pgres);
-  
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     freesstring(hip->commandname);
     free(hip);
     return;
@@ -296,10 +295,10 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
 
   result=NULL;
   
-  for (i=0;i<num;i++) {
-    j=strtoul(PQgetvalue(pgres,i,0),NULL,10);
+  while(dbfetchrow(pgres)) {
+    j=strtoul(dbgetvalue(pgres,0),NULL,10);
     if ((j==0 && result==NULL) || (j==lang)) {
-      result=PQgetvalue(pgres,i,1);
+      result=dbgetvalue(pgres,1);
       if(strlen(result)==0)
 	result=NULL;
     }
@@ -318,4 +317,5 @@ void csdb_dohelp_real(PGconn *dbconn, void *arg) {
   
   freesstring(hip->commandname);
   free(hip);
+  dbclear(pgres);
 }

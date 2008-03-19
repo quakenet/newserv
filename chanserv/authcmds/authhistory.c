@@ -15,25 +15,24 @@
 #include "../chanserv.h"
 #include "../authlib.h"
 #include "../../lib/irc_string.h"
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <libpq-fe.h>
 
 struct authhistoryinfo {
   unsigned int numeric;
   unsigned int userID;
 };
 
-void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
+void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
   struct authhistoryinfo *ahi=(struct authhistoryinfo*)arg;
   nick *np=getnickbynumeric(ahi->numeric);
   reguser *rup;
   char *ahnick, *ahuser, *ahhost;
   time_t ahauthtime, ahdisconnecttime;
-  PGresult *pgres;
-  int i, num, count=0;
+  DBResult *pgres;
+  int count=0;
   struct tm *tmp;
   char tbuf1[15], tbuf2[15], uhbuf[51];
 
@@ -42,46 +41,44 @@ void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
     return;
   }
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv", ERR_ERROR, "Error loading auth history data.");
     free(ahi);
     return;
   }
 
-  if (PQnfields(pgres) != 7) {
+  if (dbnumfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Auth history data format error.");
-    PQclear(pgres);
+    dbclear(pgres);
     free(ahi);
     return;
   }
 
-  num=PQntuples(pgres);
-
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     free(ahi);
     return;
   }
 
   if (!(rup=getreguserfromnick(np))) {
-    PQclear(pgres);
+    dbclear(pgres);
     free(ahi);
     return;
   }
   chanservstdmessage(np, QM_AUTHHISTORYHEADER);
-  for (i=0; i<num; i++) {
-    if (!UHasHelperPriv(rup) && (strtoul(PQgetvalue(pgres, i, 0), NULL, 10) != rup->ID)) {
-      PQclear(pgres);
+  while(dbfetchrow(pgres)) {
+    if (!UHasHelperPriv(rup) && (strtoul(dbgetvalue(pgres, 0), NULL, 10) != rup->ID)) {
+      dbclear(pgres);
       free(ahi);
       return;
     }
-    ahnick=PQgetvalue(pgres, i, 1);
-    ahuser=PQgetvalue(pgres, i, 2);
-    ahhost=PQgetvalue(pgres, i, 3);
-    ahauthtime=strtoul(PQgetvalue(pgres, i, 4), NULL, 10);
-    ahdisconnecttime=strtoul(PQgetvalue(pgres, i, 5), NULL, 10);
+    ahnick=dbgetvalue(pgres, 1);
+    ahuser=dbgetvalue(pgres, 2);
+    ahhost=dbgetvalue(pgres, 3);
+    ahauthtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
+    ahdisconnecttime=strtoul(dbgetvalue(pgres, 5), NULL, 10);
     tmp=localtime(&ahauthtime);
     strftime(tbuf1, 15, "%d/%m/%y %H:%M", tmp);
     if (ahdisconnecttime) {
@@ -89,11 +86,11 @@ void csdb_doauthhistory_real(PGconn *dbconn, void *arg) {
       strftime(tbuf2, 15, "%d/%m/%y %H:%M", tmp);
     }
     snprintf(uhbuf,50,"%s!%s@%s", ahnick, ahuser, ahhost);
-    chanservsendmessage(np, "#%-2d %-50s %-15s %-15s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", PQgetvalue(pgres,i,6));
+    chanservsendmessage(np, "#%-2d %-50s %-15s %-15s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", dbgetvalue(pgres,6));
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 
-  PQclear(pgres);
+  dbclear(pgres);
   free(ahi);
 }
 

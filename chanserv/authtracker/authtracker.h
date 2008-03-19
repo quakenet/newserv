@@ -2,11 +2,11 @@
 #define AUTHTRACKER_H
 
 #include "../../nick/nick.h"
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
 #include <time.h>
 
-extern PQModuleIdentifier authtrackerpq;
+extern DBModuleIdentifier authtrackerdb;
 
 #define AT_NETSPLIT	0	/* User lost in netsplit */
 #define AT_RESTART	1	/* Dangling session found at restart */

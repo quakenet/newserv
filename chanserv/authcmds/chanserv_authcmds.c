@@ -1,11 +1,11 @@
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
-PQModuleIdentifier q9apqid;
+DBModuleIdentifier q9adbid;
 
 void authcmds_init(void) {
-  q9apqid = pqgetid();
+  q9adbid = dbgetid();
 }
 
 void authcmds_fini(void) {
-  pqfreeid(q9apqid);
+  dbfreeid(q9adbid);
 }

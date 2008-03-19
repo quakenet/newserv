@@ -4,28 +4,20 @@
  */
 
 #include "../chanserv.h"
-#include "../../pqsql/pqsql.h"
 #include "../../core/config.h"
 #include "../../lib/sstring.h"
 #include "../../parser/parser.h"
 #include "../../core/events.h"
 #include "../../core/nsmalloc.h"
 #include "../../lib/strlfunc.h"
+#include "../../dbapi/dbapi.h"
 
 #include <string.h>
-#include <libpq-fe.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <stdarg.h>
 
 int chanservdb_ready;
-
-typedef struct tabledesc {
-  sstring *tablename; /* Name of table */
-  PQQueryHandler init; /* Function to be called when transaction opens */
-  PQQueryHandler data; /* Function to be called to load data */
-  PQQueryHandler fini; /* Function to be called to clean up */
-} tabledesc;
 
 regchan **allchans;
 maillock *maillocks;
@@ -41,38 +33,34 @@ unsigned int lastmaillockID;
 
 /* Local prototypes */
 void csdb_handlestats(int hooknum, void *arg);
-void loadmessages_part1(PGconn *, void *);
-void loadmessages_part2(PGconn *, void *);
-void loadcommandsummary_real(PGconn *, void *);
-
-/* Generic loading functions */
-void loadall(char *, PQQueryHandler, PQQueryHandler, PQQueryHandler);
-void doloadall(PGconn *, void *);  
+void loadmessages_part1(DBConn *, void *);
+void loadmessages_part2(DBConn *, void *);
+void loadcommandsummary_real(DBConn *, void *);
 
 /* User loading functions */
-void loadsomeusers(PGconn *, void *);
-void loadusersdone(PGconn *, void *);
+void loadsomeusers(DBConn *, void *);
+void loadusersdone(DBConn *, void *);
 
 /* Channel loading functions */
-void loadsomechannels(PGconn *, void *);
-void loadchannelsdone(PGconn *, void *);
+void loadsomechannels(DBConn *, void *);
+void loadchannelsdone(DBConn *, void *);
 
 /* Chanuser loading functions */
-void loadchanusersinit(PGconn *, void *);
-void loadsomechanusers(PGconn *, void *);
-void loadchanusersdone(PGconn *, void *);
+void loadchanusersinit(DBConn *, void *);
+void loadsomechanusers(DBConn *, void *);
+void loadchanusersdone(DBConn *, void *);
 
 /* Chanban loading functions */
-void loadsomechanbans(PGconn *, void *);
-void loadchanbansdone(PGconn *, void *);
+void loadsomechanbans(DBConn *, void *);
+void loadchanbansdone(DBConn *, void *);
 
 /* Mail Domain loading functions */
-void loadsomemaildomains(PGconn *, void *);
-void loadmaildomainsdone(PGconn *, void *);
+void loadsomemaildomains(DBConn *, void *);
+void loadmaildomainsdone(DBConn *, void *);
 
 /* Mail lock loading functions */
-void loadsomemaillocks(PGconn *, void *);
-void loadmaillocksdone(PGconn *, void *);
+void loadsomemaillocks(DBConn *, void *);
+void loadmaillocksdone(DBConn *, void *);
 
 /* Free sstrings in the structures */
 void csdb_freestuff();
@@ -80,8 +68,8 @@ void csdb_freestuff();
 static void setuptables() {
   /* Set up the tables */
   /* User table */
-  pqcreatequery("CREATE SCHEMA chanserv");
-  pqcreatequery("CREATE TABLE chanserv.users ("
+  dbcreateschema("chanserv");
+  dbcreatequery("CREATE TABLE chanserv.users ("
                "ID            INT               NOT NULL,"
                "username      VARCHAR(16)          NOT NULL,"
                "created       INT               NOT NULL,"
@@ -102,10 +90,10 @@ static void setuptables() {
                "info          VARCHAR(100),"
                "PRIMARY KEY (ID))");
 
-  pqcreatequery("CREATE INDEX user_username_index ON chanserv.users (username)");
+  dbcreatequery("CREATE INDEX user_username_index ON chanserv.users (username)");
   
   /* Channel table */
-  pqcreatequery("CREATE TABLE chanserv.channels ("
+  dbcreatequery("CREATE TABLE chanserv.channels ("
                  "ID            INT               NOT NULL,"
                  "name          VARCHAR(250)         NOT NULL,"
                  "flags         INT               NOT NULL,"
@@ -136,7 +124,7 @@ static void setuptables() {
                  "PRIMARY KEY (ID))");
 
   /* Chanuser table */
-  pqcreatequery("CREATE TABLE chanserv.chanusers ("
+  dbcreatequery("CREATE TABLE chanserv.chanusers ("
                  "userID        INT               NOT NULL,"
                  "channelID     INT               NOT NULL,"
                  "flags         INT               NOT NULL,"
@@ -145,10 +133,10 @@ static void setuptables() {
                  "info          VARCHAR(100)         NOT NULL,"
                  "PRIMARY KEY (userID, channelID))");
 
-  pqcreatequery("CREATE INDEX chanusers_userID_index on chanserv.chanusers (userID)");
-  pqcreatequery("CREATE INDEX chanusers_channelID_index on chanserv.chanusers (channelID)");
+  dbcreatequery("CREATE INDEX chanusers_userID_index on chanserv.chanusers (userID)");
+  dbcreatequery("CREATE INDEX chanusers_channelID_index on chanserv.chanusers (channelID)");
   
-  pqcreatequery("CREATE TABLE chanserv.bans ("
+  dbcreatequery("CREATE TABLE chanserv.bans ("
                  "banID         INT               NOT NULL," /* Unique number for the ban to make 
                                                              DELETEs process in finite time.. */
                  "channelID     INT               NOT NULL,"
@@ -158,20 +146,20 @@ static void setuptables() {
                  "reason        VARCHAR(200),"
                  "PRIMARY KEY(banID))");
 
-  pqcreatequery("CREATE INDEX bans_channelID_index on chanserv.bans (channelID)");
+  dbcreatequery("CREATE INDEX bans_channelID_index on chanserv.bans (channelID)");
   
-  pqcreatequery("CREATE TABLE chanserv.languages ("
+  dbcreatequery("CREATE TABLE chanserv.languages ("
                  "languageID    INT               NOT NULL,"
                  "code          VARCHAR(2)           NOT NULL,"
                  "name          VARCHAR(30)          NOT NULL)");
   
-  pqcreatequery("CREATE TABLE chanserv.messages ("
+  dbcreatequery("CREATE TABLE chanserv.messages ("
                  "languageID    INT               NOT NULL,"
                  "messageID     INT               NOT NULL,"
                  "message       VARCHAR(250)      NOT NULL,"
                  "PRIMARY KEY (languageID, messageID))");
 
-  pqcreatequery("CREATE TABLE chanserv.help ("
+  dbcreatequery("CREATE TABLE chanserv.help ("
                  "commandID     INT               NOT NULL,"
                  "command       VARCHAR(30)          NOT NULL,"
                  "languageID    INT               NOT NULL,"
@@ -179,14 +167,14 @@ static void setuptables() {
                  "fullinfo      TEXT              NOT NULL,"
                  "PRIMARY KEY (commandID, languageID))");
 
-  pqcreatequery("CREATE TABLE chanserv.email ("
+  dbcreatequery("CREATE TABLE chanserv.email ("
                  "userID       INT               NOT NULL,"
                  "emailtype    INT               NOT NULL,"
                  "prevEmail    VARCHAR(100),"
                  "mailID       SERIAL,"
 		 "PRIMARY KEY (mailID))");
 
-  pqcreatequery("CREATE TABLE chanserv.maildomain ("
+  dbcreatequery("CREATE TABLE chanserv.maildomain ("
                  "ID           INT               NOT NULL,"
                  "name         VARCHAR           NOT NULL,"
                  "domainlimit  INT               NOT NULL,"
@@ -194,7 +182,7 @@ static void setuptables() {
                  "flags         INT              NOT NULL,"
                  "PRIMARY KEY (ID))");
 
-   pqcreatequery("CREATE TABLE chanserv.authhistory ("
+   dbcreatequery("CREATE TABLE chanserv.authhistory ("
                   "userID         INT         NOT NULL,"
                   "nick           VARCHAR(15) NOT NULL,"
                   "username       VARCHAR(10) NOT NULL,"
@@ -205,8 +193,8 @@ static void setuptables() {
                   "quitreason	  VARCHAR(100) ,"
                   "PRIMARY KEY (userID, authtime))");
 
-   pqcreatequery("CREATE INDEX authhistory_userID_index on chanserv.authhistory(userID)");
-   pqcreatequery("CREATE TABLE chanserv.chanlevhistory ("
+   dbcreatequery("CREATE INDEX authhistory_userID_index on chanserv.authhistory(userID)");
+   dbcreatequery("CREATE TABLE chanserv.chanlevhistory ("
                   "userID         INT         NOT NULL,"
                   "channelID      INT         NOT NULL,"
                   "targetID       INT         NOT NULL,"
@@ -215,11 +203,11 @@ static void setuptables() {
                   "oldflags       INT         NOT NULL,"
                   "newflags       INT         NOT NULL)");
 
-   pqcreatequery("CREATE INDEX chanlevhistory_userID_index on chanserv.chanlevhistory(userID)");
-   pqcreatequery("CREATE INDEX chanlevhistory_channelID_index on chanserv.chanlevhistory(channelID)");
-   pqcreatequery("CREATE INDEX chanlevhistory_targetID_index on chanserv.chanlevhistory(targetID)");
+   dbcreatequery("CREATE INDEX chanlevhistory_userID_index on chanserv.chanlevhistory(userID)");
+   dbcreatequery("CREATE INDEX chanlevhistory_channelID_index on chanserv.chanlevhistory(channelID)");
+   dbcreatequery("CREATE INDEX chanlevhistory_targetID_index on chanserv.chanlevhistory(targetID)");
 
-   pqcreatequery("CREATE TABLE chanserv.accounthistory ("
+   dbcreatequery("CREATE TABLE chanserv.accounthistory ("
                   "userID INT NOT NULL,"
                   "changetime INT NOT NULL,"
                   "authtime INT NOT NULL,"
@@ -229,9 +217,9 @@ static void setuptables() {
                   "newemail VARCHAR(100),"
                   "PRIMARY KEY (userID, changetime))");
 
-   pqcreatequery("CREATE INDEX accounthistory_userID_index on chanserv.accounthistory(userID)");
+   dbcreatequery("CREATE INDEX accounthistory_userID_index on chanserv.accounthistory(userID)");
 
-   pqcreatequery("CREATE TABLE chanserv.maillocks ("
+   dbcreatequery("CREATE TABLE chanserv.maillocks ("
                  "ID           INT               NOT NULL,"
                  "pattern      VARCHAR           NOT NULL,"
                  "reason       VARCHAR           NOT NULL,"
@@ -251,19 +239,19 @@ void _init() {
   /* And the messages */
   initmessages();
   
-  if (pqconnected() && (chanservext!=-1) && (chanservaext!=-1)) {
+  if (dbconnected() && (chanservext!=-1) && (chanservaext!=-1)) {
     registerhook(HOOK_CORE_STATSREQUEST, csdb_handlestats);
 
     setuptables();
 
     lastuserID=lastchannelID=lastdomainID=0;
 
-    loadall("chanserv.users",NULL,loadsomeusers,loadusersdone);
-    loadall("chanserv.channels",NULL,loadsomechannels,loadchannelsdone);
-    loadall("chanserv.chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
-    loadall("chanserv.bans",NULL,loadsomechanbans,loadchanbansdone);
-    loadall("chanserv.maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
-    loadall("chanserv.maillocks",NULL, loadsomemaillocks,loadmaillocksdone);
+    dbloadtable("chanserv.users",NULL,loadsomeusers,loadusersdone);
+    dbloadtable("chanserv.channels",NULL,loadsomechannels,loadchannelsdone);
+    dbloadtable("chanserv.chanusers",loadchanusersinit,loadsomechanusers,loadchanusersdone);
+    dbloadtable("chanserv.bans",NULL,loadsomechanbans,loadchanbansdone);
+    dbloadtable("chanserv.maildomain",NULL, loadsomemaildomains,loadmaildomainsdone);
+    dbloadtable("chanserv.maillocks",NULL, loadsomemaillocks,loadmaillocksdone);
     
     loadmessages(); 
   }
@@ -296,107 +284,44 @@ void chanservdbclose() {
 }
 
 /*
- * loadall():
- *  Generic function to handle load of an entire table..
- */
-
-void loadall(char *table, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini) {
-  tabledesc *thedesc;
-  
-  thedesc=malloc(sizeof(tabledesc));
-
-  thedesc->tablename=getsstring(table,100);
-  thedesc->init=init;
-  thedesc->data=data;
-  thedesc->fini=fini;
-
-  pqasyncquery(doloadall, thedesc, "SELECT count(*) FROM %s",thedesc->tablename->content);
-}
-
-void doloadall(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
-  int i,count;
-  tabledesc *thedesc=arg;
-
-  pgres=PQgetResult(dbconn);
-
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
-    Error("chanserv",ERR_ERROR,"Error getting row count for %s.",thedesc->tablename->content);
-    return;
-  }
-
-  if (PQnfields(pgres)!=1) {
-    Error("chanserv",ERR_ERROR,"Count query format error for %s.",thedesc->tablename->content);
-    return;
-  }
-
-  count=strtoul(PQgetvalue(pgres,0,0),NULL,10);
-
-  PQclear(pgres);
-
-  Error("chanserv",ERR_INFO,"Found %d entries in table %s, scheduling load.",count,
-	thedesc->tablename->content);
-  
-  pqasyncquery(thedesc->init, NULL, "BEGIN");
-  pqquery("DECLARE mycurs CURSOR FOR SELECT * from %s",
-		  thedesc->tablename->content);
-
-  for (i=0;(count-i)>1000;i+=1000) {
-    pqasyncquery(thedesc->data, NULL, "FETCH 1000 FROM mycurs");
-  }
-
-  pqasyncquery(thedesc->data, NULL, "FETCH ALL FROM mycurs");
-  
-  pqquery("CLOSE mycurs");
-  pqasyncquery(thedesc->fini, NULL, "COMMIT");
-
-  /* Free structures.. */
-  freesstring(thedesc->tablename);
-  free(thedesc);
-}
-
-/*
  * loadsomeusers():
  *  Loads some users in from the SQL DB
  */
 
-void loadsomeusers(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
+void loadsomeusers(DBConn *dbconn, void *arg) {
+  DBResult *pgres;
   reguser *rup;
-  unsigned int i,num;
   char *local;
   char mailbuf[1024];
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading user DB");
     return;
   }
 
-  if (PQnfields(pgres)!=18) {
+  if (dbnumfields(pgres)!=18) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
 
-  num=PQntuples(pgres);
-
-  for(i=0;i<num;i++) {
+  while(dbfetchrow(pgres)) {
     rup=getreguser();
     rup->status=0;
-    rup->ID=strtoul(PQgetvalue(pgres,i,0),NULL,10);
-    strncpy(rup->username,PQgetvalue(pgres,i,1),NICKLEN); rup->username[NICKLEN]='\0';
-    rup->created=strtoul(PQgetvalue(pgres,i,2),NULL,10);
-    rup->lastauth=strtoul(PQgetvalue(pgres,i,3),NULL,10);
-    rup->lastemailchange=strtoul(PQgetvalue(pgres,i,4),NULL,10);
-    rup->flags=strtoul(PQgetvalue(pgres,i,5),NULL,10);
-    rup->languageid=strtoul(PQgetvalue(pgres,i,6),NULL,10);
-    rup->suspendby=strtoul(PQgetvalue(pgres,i,7),NULL,10);
-    rup->suspendexp=strtoul(PQgetvalue(pgres,i,8),NULL,10);
-    rup->suspendtime=strtoul(PQgetvalue(pgres,i,9),NULL,10);
-    rup->lockuntil=strtoul(PQgetvalue(pgres,i,10),NULL,10);
-    strncpy(rup->password,PQgetvalue(pgres,i,11),PASSLEN); rup->password[PASSLEN]='\0';
-    rup->email=getsstring(PQgetvalue(pgres,i,12),100);
+    rup->ID=strtoul(dbgetvalue(pgres,0),NULL,10);
+    strncpy(rup->username,dbgetvalue(pgres,1),NICKLEN); rup->username[NICKLEN]='\0';
+    rup->created=strtoul(dbgetvalue(pgres,2),NULL,10);
+    rup->lastauth=strtoul(dbgetvalue(pgres,3),NULL,10);
+    rup->lastemailchange=strtoul(dbgetvalue(pgres,4),NULL,10);
+    rup->flags=strtoul(dbgetvalue(pgres,5),NULL,10);
+    rup->languageid=strtoul(dbgetvalue(pgres,6),NULL,10);
+    rup->suspendby=strtoul(dbgetvalue(pgres,7),NULL,10);
+    rup->suspendexp=strtoul(dbgetvalue(pgres,8),NULL,10);
+    rup->suspendtime=strtoul(dbgetvalue(pgres,9),NULL,10);
+    rup->lockuntil=strtoul(dbgetvalue(pgres,10),NULL,10);
+    strncpy(rup->password,dbgetvalue(pgres,11),PASSLEN); rup->password[PASSLEN]='\0';
+    rup->email=getsstring(dbgetvalue(pgres,12),100);
     if (rup->email) {
       rup->domain=findorcreatemaildomain(rup->email->content);
       addregusertomaildomain(rup, rup->domain);
@@ -412,11 +337,11 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
       rup->domain=NULL;
       rup->localpart=NULL;
     }
-    rup->lastemail=getsstring(PQgetvalue(pgres,i,13),100);
-    rup->lastuserhost=getsstring(PQgetvalue(pgres,i,14),75);
-    rup->suspendreason=getsstring(PQgetvalue(pgres,i,15),250);
-    rup->comment=getsstring(PQgetvalue(pgres,i,16),250);
-    rup->info=getsstring(PQgetvalue(pgres,i,17),100);
+    rup->lastemail=getsstring(dbgetvalue(pgres,13),100);
+    rup->lastuserhost=getsstring(dbgetvalue(pgres,14),75);
+    rup->suspendreason=getsstring(dbgetvalue(pgres,15),250);
+    rup->comment=getsstring(dbgetvalue(pgres,16),250);
+    rup->info=getsstring(dbgetvalue(pgres,17),100);
     rup->knownon=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;
@@ -428,10 +353,10 @@ void loadsomeusers(PGconn *dbconn, void *arg) {
     }
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadusersdone(PGconn *conn, void *arg) {
+void loadusersdone(DBConn *conn, void *arg) {
   Error("chanserv",ERR_INFO,"Load users done (highest ID was %d)",lastuserID);
 }
 
@@ -439,29 +364,27 @@ void loadusersdone(PGconn *conn, void *arg) {
  * Channel loading functions
  */
 
-void loadsomechannels(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
+void loadsomechannels(DBConn *dbconn, void *arg) {
+  DBResult *pgres;
   regchan *rcp;
-  int i,j,num;
+  int j;
   chanindex *cip;
   time_t now=time(NULL);
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
    
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading channel DB");
     return;
   }
 
-  if (PQnfields(pgres)!=27) {
+  if (dbnumfields(pgres)!=27) {
     Error("chanserv",ERR_ERROR,"Channel DB format error");
     return;
   }
 
-  num=PQntuples(pgres);
-  
-  for(i=0;i<num;i++) {
-    cip=findorcreatechanindex(PQgetvalue(pgres,i,1));
+  while(dbfetchrow(pgres)) {
+    cip=findorcreatechanindex(dbgetvalue(pgres,1));
     if (cip->exts[chanservext]) {
       Error("chanserv",ERR_WARNING,"%s in database twice - this WILL cause problems later.",cip->name->content);
       continue;
@@ -469,39 +392,39 @@ void loadsomechannels(PGconn *dbconn, void *arg) {
     rcp=getregchan();
     cip->exts[chanservext]=rcp;
     
-    rcp->ID=strtoul(PQgetvalue(pgres,i,0),NULL,10);
+    rcp->ID=strtoul(dbgetvalue(pgres,0),NULL,10);
     rcp->index=cip;
-    rcp->flags=strtoul(PQgetvalue(pgres,i,2),NULL,10);
+    rcp->flags=strtoul(dbgetvalue(pgres,2),NULL,10);
     rcp->status=0; /* Non-DB field */
     rcp->lastbancheck=0;
     rcp->lastcountersync=now;
     rcp->lastpart=0;
     rcp->bans=NULL;
-    rcp->forcemodes=strtoul(PQgetvalue(pgres,i,3),NULL,10);
-    rcp->denymodes=strtoul(PQgetvalue(pgres,i,4),NULL,10);
-    rcp->limit=strtoul(PQgetvalue(pgres,i,5),NULL,10);
-    rcp->autolimit=strtoul(PQgetvalue(pgres,i,6),NULL,10);
-    rcp->banstyle=strtoul(PQgetvalue(pgres,i,7),NULL,10);
-    rcp->created=strtoul(PQgetvalue(pgres,i,8),NULL,10);
-    rcp->lastactive=strtoul(PQgetvalue(pgres,i,9),NULL,10);
-    rcp->statsreset=strtoul(PQgetvalue(pgres,i,10),NULL,10);
-    rcp->banduration=strtoul(PQgetvalue(pgres,i,11),NULL,10);
-    rcp->founder=strtol(PQgetvalue(pgres,i,12),NULL,10);
-    rcp->addedby=strtol(PQgetvalue(pgres,i,13),NULL,10);
-    rcp->suspendby=strtol(PQgetvalue(pgres,i,14),NULL,10);
-    rcp->suspendtime=strtol(PQgetvalue(pgres,i,15),NULL,10);
-    rcp->chantype=strtoul(PQgetvalue(pgres,i,16),NULL,10);
-    rcp->totaljoins=strtoul(PQgetvalue(pgres,i,17),NULL,10);
-    rcp->tripjoins=strtoul(PQgetvalue(pgres,i,18),NULL,10);
-    rcp->maxusers=strtoul(PQgetvalue(pgres,i,19),NULL,10);
-    rcp->tripusers=strtoul(PQgetvalue(pgres,i,20),NULL,10);
-    rcp->welcome=getsstring(PQgetvalue(pgres,i,21),500);
-    rcp->topic=getsstring(PQgetvalue(pgres,i,22),TOPICLEN);
-    rcp->key=getsstring(PQgetvalue(pgres,i,23),KEYLEN);
-    rcp->suspendreason=getsstring(PQgetvalue(pgres,i,24),250);
-    rcp->comment=getsstring(PQgetvalue(pgres,i,25),250);
+    rcp->forcemodes=strtoul(dbgetvalue(pgres,3),NULL,10);
+    rcp->denymodes=strtoul(dbgetvalue(pgres,4),NULL,10);
+    rcp->limit=strtoul(dbgetvalue(pgres,5),NULL,10);
+    rcp->autolimit=strtoul(dbgetvalue(pgres,6),NULL,10);
+    rcp->banstyle=strtoul(dbgetvalue(pgres,7),NULL,10);
+    rcp->created=strtoul(dbgetvalue(pgres,8),NULL,10);
+    rcp->lastactive=strtoul(dbgetvalue(pgres,9),NULL,10);
+    rcp->statsreset=strtoul(dbgetvalue(pgres,10),NULL,10);
+    rcp->banduration=strtoul(dbgetvalue(pgres,11),NULL,10);
+    rcp->founder=strtol(dbgetvalue(pgres,12),NULL,10);
+    rcp->addedby=strtol(dbgetvalue(pgres,13),NULL,10);
+    rcp->suspendby=strtol(dbgetvalue(pgres,14),NULL,10);
+    rcp->suspendtime=strtol(dbgetvalue(pgres,15),NULL,10);
+    rcp->chantype=strtoul(dbgetvalue(pgres,16),NULL,10);
+    rcp->totaljoins=strtoul(dbgetvalue(pgres,17),NULL,10);
+    rcp->tripjoins=strtoul(dbgetvalue(pgres,18),NULL,10);
+    rcp->maxusers=strtoul(dbgetvalue(pgres,19),NULL,10);
+    rcp->tripusers=strtoul(dbgetvalue(pgres,20),NULL,10);
+    rcp->welcome=getsstring(dbgetvalue(pgres,21),500);
+    rcp->topic=getsstring(dbgetvalue(pgres,22),TOPICLEN);
+    rcp->key=getsstring(dbgetvalue(pgres,23),KEYLEN);
+    rcp->suspendreason=getsstring(dbgetvalue(pgres,24),250);
+    rcp->comment=getsstring(dbgetvalue(pgres,25),250);
     rcp->checksched=NULL;
-    rcp->ltimestamp=strtoul(PQgetvalue(pgres,i,26),NULL,10);
+    rcp->ltimestamp=strtoul(dbgetvalue(pgres,26),NULL,10);
     memset(rcp->regusers,0,REGCHANUSERHASHSIZE*sizeof(reguser *));
 
     if (rcp->ID > lastchannelID)
@@ -517,14 +440,14 @@ void loadsomechannels(PGconn *dbconn, void *arg) {
     rcp->chanoppos=0;
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadchannelsdone(PGconn *dbconn, void *arg) {
+void loadchannelsdone(DBConn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Channel load done (highest ID was %d)",lastchannelID);
 }
 
-void loadchanusersinit(PGconn *dbconn, void *arg) {
+void loadchanusersinit(DBConn *dbconn, void *arg) {
   int i;
   chanindex *cip;
   regchan *rcp;
@@ -541,10 +464,9 @@ void loadchanusersinit(PGconn *dbconn, void *arg) {
   }
 }
 
-void loadsomechanusers(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
+void loadsomechanusers(DBConn *dbconn, void *arg) {
+  DBResult *pgres;
   regchanuser *rcup;
-  int i,num;
   regchan *rcp;
   reguser *rup;
   authname *anp;
@@ -552,23 +474,21 @@ void loadsomechanusers(PGconn *dbconn, void *arg) {
   int total=0;
 
   /* Set up the allchans array */
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading chanusers.");
     return; 
   }
 
-  if (PQnfields(pgres)!=6) {
+  if (dbnumfields(pgres)!=6) {
     Error("chanserv",ERR_ERROR,"Chanusers format error");
     return;
   }
 
-  num=PQntuples(pgres);
-  
-  for(i=0;i<num;i++) {
-    uid=strtol(PQgetvalue(pgres,i,0),NULL,10);
-    cid=strtol(PQgetvalue(pgres,i,1),NULL,10);
+  while(dbfetchrow(pgres)) {
+    uid=strtol(dbgetvalue(pgres,0),NULL,10);
+    cid=strtol(dbgetvalue(pgres,1),NULL,10);
 
     if (!(anp=findauthname(uid)) || !(rup=anp->exts[chanservaext])) {
       Error("chanserv",ERR_WARNING,"Skipping channeluser for unknown user %d",uid);
@@ -582,57 +502,54 @@ void loadsomechanusers(PGconn *dbconn, void *arg) {
     
     if (rup==NULL || rcp==NULL) {
       Error("chanserv",ERR_ERROR,"Can't add user %s on channel %s",
-	    PQgetvalue(pgres,i,0),PQgetvalue(pgres,i,1));
+	    dbgetvalue(pgres,0),dbgetvalue(pgres,1));
     } else {
       rcup=getregchanuser();
       rcup->user=rup;
       rcup->chan=rcp;
-      rcup->flags=strtol(PQgetvalue(pgres,i,2),NULL,10);
-      rcup->changetime=strtol(PQgetvalue(pgres,i,3),NULL,10);
-      rcup->usetime=strtol(PQgetvalue(pgres,i,4),NULL,10);
-      rcup->info=getsstring(PQgetvalue(pgres,i,5),100);
+      rcup->flags=strtol(dbgetvalue(pgres,2),NULL,10);
+      rcup->changetime=strtol(dbgetvalue(pgres,3),NULL,10);
+      rcup->usetime=strtol(dbgetvalue(pgres,4),NULL,10);
+      rcup->info=getsstring(dbgetvalue(pgres,5),100);
       addregusertochannel(rcup);
       total++;
     }
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadchanusersdone(PGconn *dbconn, void *arg) {
+void loadchanusersdone(DBConn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Channel user load done.");
 }
 
-void loadsomechanbans(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
+void loadsomechanbans(DBConn *dbconn, void *arg) {
+  DBResult *pgres;
   regban  *rbp;
-  int i,num;
   regchan *rcp;
   int uid,cid,bid;
   time_t expiry,now;
   int total=0;
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading bans.");
     return; 
   }
 
-  if (PQnfields(pgres)!=6) {
+  if (dbnumfields(pgres)!=6) {
     Error("chanserv",ERR_ERROR,"Ban format error");
     return;
   }
 
-  num=PQntuples(pgres);
-
   now=time(NULL);
 
-  for(i=0;i<num;i++) {
-    bid=strtoul(PQgetvalue(pgres,i,0),NULL,10);
-    cid=strtoul(PQgetvalue(pgres,i,1),NULL,10);
-    uid=strtoul(PQgetvalue(pgres,i,2),NULL,10);
-    expiry=strtoul(PQgetvalue(pgres,i,4),NULL,10);
+  while(dbfetchrow(pgres)) {
+    bid=strtoul(dbgetvalue(pgres,0),NULL,10);
+    cid=strtoul(dbgetvalue(pgres,1),NULL,10);
+    uid=strtoul(dbgetvalue(pgres,2),NULL,10);
+    expiry=strtoul(dbgetvalue(pgres,4),NULL,10);
 
     if (cid>lastchannelID || !(rcp=allchans[cid])) {
       Error("chanserv",ERR_WARNING,"Skipping ban for unknown chan %d",cid);
@@ -643,8 +560,8 @@ void loadsomechanbans(PGconn *dbconn, void *arg) {
     rbp->setby=uid;
     rbp->ID=bid;
     rbp->expiry=expiry;
-    rbp->reason=getsstring(PQgetvalue(pgres,i,5),200);
-    rbp->cbp=makeban(PQgetvalue(pgres,i,3));
+    rbp->reason=getsstring(dbgetvalue(pgres,5),200);
+    rbp->cbp=makeban(dbgetvalue(pgres,3));
     rbp->next=rcp->bans;
     rcp->bans=rbp;
    
@@ -654,10 +571,10 @@ void loadsomechanbans(PGconn *dbconn, void *arg) {
       lastbanID=bid;
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadchanbansdone(PGconn *dbconn, void *arg) {
+void loadchanbansdone(DBConn *dbconn, void *arg) {
   free(allchans);
   
   Error("chanserv",ERR_INFO,"Channel ban load done, highest ID was %d",lastbanID);
@@ -667,13 +584,12 @@ void loadchanbansdone(PGconn *dbconn, void *arg) {
 }
 
 void loadmessages() {
-  pqasyncquery(loadmessages_part1, NULL, "SELECT * from chanserv.languages");
+  dbasyncquery(loadmessages_part1, NULL, "SELECT * from chanserv.languages");
 }
 
-void loadmessages_part1(PGconn *dbconn, void *arg) {
+void loadmessages_part1(DBConn *dbconn, void *arg) {
   int i,j;
-  PGresult *pgres;
-  int num;
+  DBResult *pgres;
       
   /* Firstly, clear up any stale messages */
   for (i=0;i<MAXLANG;i++) {
@@ -689,59 +605,55 @@ void loadmessages_part1(PGconn *dbconn, void *arg) {
     }
   }    
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading language list.");
     return; 
   }
 
-  if (PQnfields(pgres)!=3) {
+  if (dbnumfields(pgres)!=3) {
     Error("chanserv",ERR_ERROR,"Language list format error.");
     return;
   }
 
-  num=PQntuples(pgres);
-
-  for (i=0;i<num;i++) {
-    j=strtol(PQgetvalue(pgres,i,0),NULL,10);
+  while(dbfetchrow(pgres)) {
+    j=strtol(dbgetvalue(pgres,0),NULL,10);
     if (j<MAXLANG && j>=0) {
       cslanguages[j]=(cslang *)malloc(sizeof(cslang));
 
-      strncpy(cslanguages[j]->code,PQgetvalue(pgres,i,1),2); cslanguages[j]->code[2]='\0';
-      cslanguages[j]->name=getsstring(PQgetvalue(pgres,i,2),30);
+      strncpy(cslanguages[j]->code,dbgetvalue(pgres,1),2); cslanguages[j]->code[2]='\0';
+      cslanguages[j]->name=getsstring(dbgetvalue(pgres,2),30);
     }
   }
    
-  PQclear(pgres);
+  dbclear(pgres);
 
   if (i>MAXLANG)
     Error("chanserv",ERR_ERROR,"Found too many languages (%d > %d)",i,MAXLANG); 
 
-  pqasyncquery(loadmessages_part2, NULL, "SELECT * from chanserv.messages");
+  dbasyncquery(loadmessages_part2, NULL, "SELECT * from chanserv.messages");
 }
 
-void loadmessages_part2(PGconn *dbconn, void *arg) {
-  PGresult *pgres;
-  int i,j,k,num;
+void loadmessages_part2(DBConn *dbconn, void *arg) {
+  DBResult *pgres;
+  int j,k;
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading message list.");
     return; 
   }
 
-  if (PQnfields(pgres)!=3) {
+  if (dbnumfields(pgres)!=3) {
     Error("chanserv",ERR_ERROR,"Message list format error.");
     return;
   }
   
-  num=PQntuples(pgres);
-
-  for (i=0;i<num;i++) {
-    k=strtol(PQgetvalue(pgres,i,0),NULL,10);
-    j=strtol(PQgetvalue(pgres,i,1),NULL,10);
+  while(dbfetchrow(pgres)) {
+    k=strtol(dbgetvalue(pgres,0),NULL,10);
+    j=strtol(dbgetvalue(pgres,1),NULL,10);
     
     if (k<0 || k >= MAXLANG) {
       Error("chanserv",ERR_WARNING,"Language ID out of range on message: %d",k);
@@ -753,20 +665,20 @@ void loadmessages_part2(PGconn *dbconn, void *arg) {
       continue;
     }
     
-    csmessages[k][j]=getsstring(PQgetvalue(pgres,i,2),250);
+    csmessages[k][j]=getsstring(dbgetvalue(pgres,2),250);
   } 
                           
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
 void loadcommandsummary(Command *cmd) {
-  pqasyncquery(loadcommandsummary_real, (void *)cmd, 
+  dbasyncquery(loadcommandsummary_real, (void *)cmd, 
 		  "SELECT languageID,summary from chanserv.help where lower(command) = lower('%s')",cmd->command->content);
 }
 
-void loadcommandsummary_real(PGconn *dbconn, void *arg) {
-  int i,j,num;
-  PGresult *pgres;
+void loadcommandsummary_real(DBConn *dbconn, void *arg) {
+  int i,j;
+  DBResult *pgres;
   cmdsummary *cs;
   Command *cmd=arg;
 
@@ -777,29 +689,27 @@ void loadcommandsummary_real(PGconn *dbconn, void *arg) {
       freesstring(cs->bylang[i]);
   }
   
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading command summary.");
     return; 
   }
 
-  if (PQnfields(pgres)!=2) {
+  if (dbnumfields(pgres)!=2) {
     Error("chanserv",ERR_ERROR,"Command summary format error.");
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
-  num=PQntuples(pgres);
-
-  for (i=0;i<num;i++) {
-    j=strtol(PQgetvalue(pgres,i,0),NULL,10);
+  while(dbfetchrow(pgres)) {
+    j=strtol(dbgetvalue(pgres,0),NULL,10);
     if (j<MAXLANG && j>=0) {
-      cs->bylang[j]=getsstring(PQgetvalue(pgres,i,1),200);
+      cs->bylang[j]=getsstring(dbgetvalue(pgres,1),200);
     }
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
 void csdb_freestuff() {
@@ -858,71 +768,69 @@ void csdb_freestuff() {
   maillocks=NULL;
 }
 
-void loadsomemaildomains(PGconn *dbconn,void *arg) {
-  PGresult *pgres;
+void loadsomemaildomains(DBConn *dbconn,void *arg) {
+  DBResult *pgres;
   maildomain *mdp;
-  unsigned int i,num;
   char *domain;
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading maildomain DB");
     return;
- }
+  }
 
-  if (PQnfields(pgres)!=5) {
+  if (dbnumfields(pgres)!=5) {
     Error("chanserv",ERR_ERROR,"Mail Domain DB format error");
+    dbclear(pgres);
     return;
   }
-  num=PQntuples(pgres);
   lastdomainID=0;
 
-  for(i=0;i<num;i++) {
-    domain=PQgetvalue(pgres,i,1);
+  while(dbfetchrow(pgres)) {
+    domain=dbgetvalue(pgres,1);
     mdp=findorcreatemaildomain(domain); //@@@ LEN
 
-    mdp->ID=strtoul(PQgetvalue(pgres,i,0),NULL,10);
-    mdp->limit=strtoul(PQgetvalue(pgres,i,2),NULL,10);
-    mdp->actlimit=strtoul(PQgetvalue(pgres,i,3),NULL,10);
-    mdp->flags=strtoul(PQgetvalue(pgres,i,4),NULL,10);
+    mdp->ID=strtoul(dbgetvalue(pgres,0),NULL,10);
+    mdp->limit=strtoul(dbgetvalue(pgres,2),NULL,10);
+    mdp->actlimit=strtoul(dbgetvalue(pgres,3),NULL,10);
+    mdp->flags=strtoul(dbgetvalue(pgres,4),NULL,10);
 
     if (mdp->ID > lastdomainID) {
       lastdomainID=mdp->ID;
     }
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadmaildomainsdone(PGconn *dbconn, void *arg) {
+void loadmaildomainsdone(DBConn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Load Mail Domains done (highest ID was %d)",lastdomainID);
 }
 
-void loadsomemaillocks(PGconn *dbconn,void *arg) {
-  PGresult *pgres;
+void loadsomemaillocks(DBConn *dbconn,void *arg) {
+  DBResult *pgres;
   maillock *mlp;
-  unsigned int i,num;
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv",ERR_ERROR,"Error loading maillock DB");
     return;
- }
+  }
 
-  if (PQnfields(pgres)!=5) {
+  if (dbnumfields(pgres)!=5) {
     Error("chanserv",ERR_ERROR,"Maillock DB format error");
+    dbclear(pgres);
     return;
   }
-  num=PQntuples(pgres);
   lastmaillockID=0;
 
-  for(i=0;i<num;i++) {
+  while(dbfetchrow(pgres)) {
     mlp=getmaillock();
-    mlp->id=strtoul(PQgetvalue(pgres,i,0),NULL,10);
-    mlp->pattern=getsstring(PQgetvalue(pgres,i,1), 300);
-    mlp->reason=getsstring(PQgetvalue(pgres,i,2), 300);
-    mlp->createdby=strtoul(PQgetvalue(pgres,i,3),NULL,10);
-    mlp->created=strtoul(PQgetvalue(pgres,i,4),NULL,10);
+    mlp->id=strtoul(dbgetvalue(pgres,0),NULL,10);
+    mlp->pattern=getsstring(dbgetvalue(pgres,1), 300);
+    mlp->reason=getsstring(dbgetvalue(pgres,2), 300);
+    mlp->createdby=strtoul(dbgetvalue(pgres,3),NULL,10);
+    mlp->created=strtoul(dbgetvalue(pgres,4),NULL,10);
     mlp->next=maillocks;
     maillocks=mlp;
 
@@ -930,10 +838,10 @@ void loadsomemaillocks(PGconn *dbconn,void *arg) {
       lastmaillockID=mlp->id;
   }
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
-void loadmaillocksdone(PGconn *dbconn, void *arg) {
+void loadmaillocksdone(DBConn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Load Mail Locks done (highest ID was %d)",lastmaillockID);
 }
 

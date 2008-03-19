@@ -20,60 +20,58 @@
 #include "../../parser/parser.h"
 #include "../../irc/irc.h"
 #include "../../localuser/localuserchannel.h"
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
-#include <libpq-fe.h>
 #include <string.h>
 #include <stdio.h>
 
-void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
+void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
   unsigned int userID, channelID, targetID;
   time_t changetime, authtime;
   flag_t oldflags, newflags;
-  PGresult *pgres;
-  int i, num, count=0;
+  DBResult *pgres;
+  int count=0;
   struct tm *tmp;
   char tbuf[15], fbuf[18];
 
   if(!dbconn)
     return;
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv", ERR_ERROR, "Error loading chanlev history data.");
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
-  if (PQnfields(pgres) != 7) {
+  if (dbnumfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Chanlev history data format error.");
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
-  num=PQntuples(pgres);
 
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   if (!(rup=getreguserfromnick(np)) || !UHasHelperPriv(rup)) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   chanservsendmessage(np, "Number: Time:           Changing user:  Changed user:   Old flags:      New flags:");
-  for (i=0; i<num; i++) {
-    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
-    channelID=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
-    targetID=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
-    changetime=strtoul(PQgetvalue(pgres, i, 3), NULL, 10);
-    authtime=strtoul(PQgetvalue(pgres, i, 4), NULL, 10);
-    oldflags=strtoul(PQgetvalue(pgres, i, 5), NULL, 10);
-    newflags=strtoul(PQgetvalue(pgres, i, 6), NULL, 10);
+  while(dbfetchrow(pgres)) {
+    userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
+    channelID=strtoul(dbgetvalue(pgres, 1), NULL, 10);
+    targetID=strtoul(dbgetvalue(pgres, 2), NULL, 10);
+    changetime=strtoul(dbgetvalue(pgres, 3), NULL, 10);
+    authtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
+    oldflags=strtoul(dbgetvalue(pgres, 5), NULL, 10);
+    newflags=strtoul(dbgetvalue(pgres, 6), NULL, 10);
     tmp=localtime(&changetime);
     strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
     strncpy(fbuf, printflags(oldflags, rcuflags), 17);
@@ -84,7 +82,7 @@ void csdb_dochanlevhistory_real(PGconn *dbconn, void *arg) {
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
 void csdb_retreivechanlevhistory(nick *np, regchan *rcp, time_t starttime) {

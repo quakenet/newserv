@@ -6,7 +6,7 @@
 
 #include "proxyscan.h"
 
-#include "../pqsql/pqsql.h"
+#include "../dbapi/dbapi.h"
 #include "../core/config.h"
 #include "../lib/sstring.h"
 #include "../irc/irc_config.h"
@@ -16,13 +16,12 @@
 #include "../localuser/localuser.h"
 #include <string.h>
 #include <stdio.h>
-#include <libpq-fe.h>
 
 unsigned int lastid;
 int sqlconnected = 0;
 extern nick *proxyscannick;
 
-void proxyscan_get_last_id(PGconn *dbconn, void *arg);
+void proxyscan_get_last_id(DBConn *dbconn, void *arg);
 
 /*
  * proxyscandbinit():
@@ -30,13 +29,13 @@ void proxyscan_get_last_id(PGconn *dbconn, void *arg);
  */
 
 int proxyscandbinit() {
-  if(!pqconnected())
+  if(!dbconnected())
     return 1;
 
   sqlconnected=1;
 
   /* Set up the table */
-  pqcreatequery("CREATE TABLE openproxies ("
+  dbcreatequery("CREATE TABLE openproxies ("
                 "ID int8 not null,"
 		"IP inet not null,"
 		"PM int4 not null,"
@@ -44,30 +43,29 @@ int proxyscandbinit() {
 		"RH varchar not null,"
 		"PRIMARY KEY (ID))");
 
-  pqcreatequery("CREATE INDEX openproxies_id_index ON openproxies (ID)");
+  dbcreatequery("CREATE INDEX openproxies_id_index ON openproxies (ID)");
 
-  pqasyncquery(proxyscan_get_last_id, NULL,
+  dbasyncquery(proxyscan_get_last_id, NULL,
       "SELECT ID FROM openproxies ORDER BY id DESC LIMIT 1");
 
   return 0;
 }
 
-void proxyscan_get_last_id(PGconn *dbconn, void *arg) {
-  PGresult *pgres = PQgetResult(dbconn);
-  unsigned int numrows;
+void proxyscan_get_last_id(DBConn *dbconn, void *arg) {
+  DBResult *pgres = dbgetresult(dbconn);
 
-  if(PQresultStatus(pgres) != PGRES_TUPLES_OK) {
-    Error("proxyscan", ERR_ERROR, "Error loading last id.");
+  if(!dbquerysuccessful(pgres)) {
+    Error("proxyscan", ERR_STOP, "Error loading last id.");
+    return;
   }
 
-  numrows = PQntuples(pgres);
-  if ( numrows )
-    lastid = atoi(PQgetvalue(pgres, 0, 0));
+  if (dbfetchrow(pgres)) 
+    lastid = atoi(dbgetvalue(pgres, 0));
   else 
     lastid = 0;
 
-  PQclear(pgres);
-   Error("proxyscan",ERR_INFO,"Retrieved lastid %d from database.",lastid);
+  dbclear(pgres);
+  Error("proxyscan",ERR_INFO,"Retrieved lastid %d from database.",lastid);
 }
 /*
  * scantostr:
@@ -144,12 +142,12 @@ void loggline(cachehost *chp, patricia_node_t *node) {
   if (chp->glineid==0) {
     chp->glineid=++lastid;
 
-    PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
-    pqquery("INSERT INTO openproxies VALUES(%u,'%s',%d,%ld,'%s')",chp->glineid,
+    dbescapestring(reasonesc,reasonlist,strlen(reasonlist));
+    dbquery("INSERT INTO openproxies VALUES(%u,'%s',%d,%ld,'%s')",chp->glineid,
 	    IPtostr(((patricia_node_t *)node)->prefix->sin),reasonmask,getnettime(),reasonesc);
   } else {
-    PQescapeString(reasonesc,reasonlist,strlen(reasonlist));
-    pqquery("UPDATE openproxies SET PM=%d,RH='%s' where ID=%u",
+    dbescapestring(reasonesc,reasonlist,strlen(reasonlist));
+    dbquery("UPDATE openproxies SET PM=%d,RH='%s' where ID=%u",
 	    reasonmask,reasonesc,chp->glineid);
   }
 }
@@ -167,40 +165,40 @@ void proxyscandbclose() {
  *  Lists all the open proxies found since <since> to user usernick.
  */
 
-void proxyscandolistopen_real(PGconn *dbconn, void *arg) {
+void proxyscandolistopen_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
-  PGresult *pgres;
-  int i, num;
+  DBResult *pgres;
 
-  pgres=PQgetResult(dbconn);
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  pgres=dbgetresult(dbconn);
+  if (!dbquerysuccessful(pgres)) {
     Error("proxyscan", ERR_ERROR, "Error loading data.");
     return;
   }
   
-  if (PQnfields(pgres) != 3) {
+  if (dbnumfields(pgres) != 3) {
     Error("proxyscan", ERR_ERROR, "data format error.");
+    dbclear(pgres);
+    return;
   }
 
-  num=PQntuples(pgres);
-
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   sendnoticetouser(proxyscannick,np,"%-20s %-22s %s","IP","Found at","What was open");
-  for (i=0; i<num; i++) {
-    sendnoticetouser(proxyscannick,np, "%-20s %-22s %s",PQgetvalue(pgres, i, 0),
-                                                        PQgetvalue(pgres, i, 1),
-							PQgetvalue(pgres, i, 2));
+  while(dbfetchrow(pgres)) {
+    sendnoticetouser(proxyscannick,np, "%-20s %-22s %s",dbgetvalue(pgres, 0),
+                                                        dbgetvalue(pgres, 1),
+							dbgetvalue(pgres, 2));
   }
+  dbclear(pgres);
   sendnoticetouser(proxyscannick,np,"--- End of list ---");
 }
 
 void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
 
-  pqasyncquery(proxyscandolistopen_real,(void *)usernick->numeric, 
+  dbasyncquery(proxyscandolistopen_real,(void *)usernick->numeric, 
                "SELECT IP,TS,RH FROM openproxies WHERE TS>'%lu' ORDER BY TS",snce);
 }
 
@@ -209,40 +207,40 @@ void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
  *  Check db for open proxies matching the given IP, send to user usernick.
  */
 
-void proxyscanspewip_real(PGconn *dbconn, void *arg) {
+void proxyscanspewip_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
-  PGresult *pgres;
-  int i, num;
+  DBResult *pgres;
 
-  pgres=PQgetResult(dbconn);
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  pgres=dbgetresult(dbconn);
+  if (!dbquerysuccessful(pgres)) {
     Error("proxyscan", ERR_ERROR, "Error loading data.");
     return;
   }
 
-  if (PQnfields(pgres) != 4) {
+  if (dbnumfields(pgres) != 4) {
     Error("proxyscan", ERR_ERROR, "data format error.");
+    dbclear(pgres);
+    return;
   }
 
-  num=PQntuples(pgres);
-
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   sendnoticetouser(proxyscannick,np,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
-  for (i=0; i<num; i++) {
-    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",PQgetvalue(pgres, i, 0),
-                                                             PQgetvalue(pgres, i, 1),
-                                                             PQgetvalue(pgres, i, 2),
-							     PQgetvalue(pgres, i, 3));
+  while(dbfetchrow(pgres)) {
+    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",dbgetvalue(pgres, 0),
+                                                             dbgetvalue(pgres, 1),
+                                                             dbgetvalue(pgres, 2),
+							     dbgetvalue(pgres, 3));
   }
+  dbclear(pgres);
   sendnoticetouser(proxyscannick,np,"--- End of list ---");
 }
 
 void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned long b, unsigned long c, unsigned long d) {
-  pqasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
+  dbasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
                "SELECT ID,IP,TS,RH FROM openproxies WHERE IP='%lu.%lu.%lu.%lu' ORDER BY TS DESC LIMIT 10",a,b,c,d);
 
 }
@@ -252,40 +250,40 @@ void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned lon
  *  Check db for open proxies matching the given kill/gline ID, send to user usernick.
  */
 
-void proxyscanshowkill_real(PGconn *dbconn, void *arg) {
+void proxyscanshowkill_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
-  PGresult *pgres;
-  int i, num;
+  DBResult *pgres;
 
-  pgres=PQgetResult(dbconn);
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  pgres=dbgetresult(dbconn);
+  if (!dbquerysuccessful(pgres)) {
     Error("proxyscan", ERR_ERROR, "Error loading data.");
     return;
   }
 
-  if (PQnfields(pgres) != 4) {
+  if (dbnumfields(pgres) != 4) {
     Error("proxyscan", ERR_ERROR, "data format error.");
+    dbclear(pgres);
+    return;
   }
 
-  num=PQntuples(pgres);
-
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   sendnoticetouser(proxyscannick,np,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
-  for (i=0; i<num; i++) {
-    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",PQgetvalue(pgres, i, 0),
-                                                             PQgetvalue(pgres, i, 1),
-                                                             PQgetvalue(pgres, i, 2),
-							     PQgetvalue(pgres, i, 3));
+  while(dbfetchrow(pgres)) {
+    sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",dbgetvalue(pgres, 0),
+                                                             dbgetvalue(pgres, 1),
+                                                             dbgetvalue(pgres, 2),
+							     dbgetvalue(pgres, 3));
   }
+  dbclear(pgres);
   sendnoticetouser(proxyscannick,np,"--- End of list ---");
 }
 
 
 void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a) {
-  pqasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
+  dbasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
                "SELECT ID,IP,TS,RH FROM openproxies WHERE ID='%lu'",a);
 }

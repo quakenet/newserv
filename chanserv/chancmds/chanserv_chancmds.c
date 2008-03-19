@@ -1,12 +1,12 @@
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
-PQModuleIdentifier q9cpqid;
+DBModuleIdentifier q9cdbid;
 
 void chancmds_init(void) {
-  q9cpqid = pqgetid();
+  q9cdbid = dbgetid();
 }
 
 void chancmds_fini(void) {
-  pqfreeid(q9cpqid);
+  dbfreeid(q9cdbid);
 }
 

@@ -12,6 +12,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
 #include "../lib/strlfunc.h"
+#include "../dbapi/dbapi.h"
 #include "pqsql.h"
 
 #include <stdlib.h>
@@ -51,15 +52,16 @@ typedef struct pqtableloaderinfo_s
 
 pqasyncquery_s *queryhead = NULL, *querytail = NULL;
 
-int dbconnected = 0;
+static int dbconnected = 0;
 static PQModuleIdentifier moduleid = 0;
-PGconn *dbconn;
+static PGconn *dbconn;
 
 void dbhandler(int fd, short revents);
 void pqstartloadtable(PGconn *dbconn, void *arg);
 void dbstatus(int hooknum, void *arg);
 void disconnectdb(void);
 void connectdb(void);
+char* pqlasterror(PGconn * pgconn);
 
 void _init(void) {
   connectdb();
@@ -186,7 +188,7 @@ void dbhandler(int fd, short revents) {
             case PGRES_NONFATAL_ERROR:
             case PGRES_FATAL_ERROR:
               /* if a create query returns an error assume it went ok, paul will winge about this */
-              if(!(queryhead->flags & QH_CREATE))
+              if(!(queryhead->flags & DB_CREATE))
                 Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
               break;
 	  
@@ -383,4 +385,40 @@ char* pqlasterror(PGconn * pgconn) {
     
   }
   return errormsg;
+}
+
+PQResult *pqgetresult(PGconn *c) {
+  PQResult *r;
+  if(!c)
+    return NULL;
+
+  r = (PQResult *)malloc(sizeof(PQResult));
+  r->row = -1;
+  r->result = PQgetResult(c);
+  r->rows = PQntuples(r->result);
+
+  return r;
+}
+
+int pqfetchrow(PQResult *res) {
+  if(res->row + 1 == res->rows)
+    return 0;
+
+  res->row++;
+
+  return 1;
+}
+
+char *pqgetvalue(PQResult *res, int column) {
+  return PQgetvalue(res->result, res->row, column);
+}
+
+void pqclear(PQResult *res) {
+  if(!res)
+    return;
+
+  if(res->result)
+    PQclear(res->result);
+
+  free(res);
 }

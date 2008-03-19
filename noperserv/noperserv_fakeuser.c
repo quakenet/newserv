@@ -13,12 +13,11 @@
 #include "../lib/irc_string.h"
 #include "../control/control.h"
 #include "../channel/channel.h"
-#include "../pqsql/pqsql.h"
+#include "../dbapi/dbapi.h"
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 #include <string.h>
 #include <stdlib.h>
-#include <libpq-fe.h>
 
 MODULE_VERSION("");
 
@@ -49,7 +48,7 @@ int killedusercount = 0;
 
 void fakeuser_cleanup();
 int fakeuser_loaddb();
-void fakeusers_load(PGconn *dbconn, void *tag);
+void fakeusers_load(DBConn *dbconn, void *tag);
 void fakeuser_handler(nick *user, int command, void **params);
 int fakeadd(void *sender, int cargc, char **cargv);
 int fakelist(void *sender, int cargc, char **cargv);
@@ -100,43 +99,41 @@ void fakeuser_cleanup()
 int fakeuser_loaddb()
 // Called from _init
 {
-  if (!pqconnected())
+  if (!dbconnected())
     return 0;
   fakeuser_cleanup();
-  pqcreatequery("CREATE TABLE noperserv.fakeusers ("
+  dbcreatequery("CREATE TABLE noperserv.fakeusers ("
     "nick      VARCHAR(%d)  NOT NULL,"
     "ident     VARCHAR(%d)  NOT NULL,"
     "host      VARCHAR(%d)  NOT NULL,"
     "realname  VARCHAR(%d)  NOT NULL,"
     "PRIMARY KEY (nick))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
-  pqasyncquery(&fakeusers_load, NULL, "SELECT nick, ident, host, realname FROM noperserv.fakeusers");
+  dbasyncquery(&fakeusers_load, NULL, "SELECT nick, ident, host, realname FROM noperserv.fakeusers");
   return 1;
 }
 
-void fakeusers_load(PGconn *dbconn, void *tag)
+void fakeusers_load(DBConn *dbconn, void *tag)
 // Called automatically when the async database query finishes
 {
-  PGresult *pgres = PQgetResult(dbconn);
+  DBResult *pgres = dbgetresult(dbconn);
   user_details details;
-  int i, rowcount;
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
-    Error("noperserv_fakeuser", ERR_FATAL, "Error loading fakeuser list (%d)", PQresultStatus(pgres));
+  if (!dbquerysuccessful(pgres)) {
+    Error("noperserv_fakeuser", ERR_FATAL, "Error loading fakeuser list.");
+    dbclear(pgres);
     return;
   }
-  rowcount = PQntuples(pgres);
-  Error("noperserv_fakeuser", ERR_INFO, "Loading %d users", rowcount);
 
   details.lastkill = 0;
   details.schedule = NULL;
-  for (i = 0; i < rowcount; i++)
-  {
-    strlcpy(details.nick, PQgetvalue(pgres, i, 0), NICKLEN + 1);
-    strlcpy(details.ident, PQgetvalue(pgres, i, 1), USERLEN + 1);
-    strlcpy(details.host, PQgetvalue(pgres, i, 2), HOSTLEN + 1);
-    strlcpy(details.realname, PQgetvalue(pgres, i, 3), REALLEN + 1);
+  while(dbfetchrow(pgres)) {
+    strlcpy(details.nick, dbgetvalue(pgres, 0), NICKLEN + 1);
+    strlcpy(details.ident, dbgetvalue(pgres, 1), USERLEN + 1);
+    strlcpy(details.host, dbgetvalue(pgres, 2), HOSTLEN + 1);
+    strlcpy(details.realname, dbgetvalue(pgres, 3), REALLEN + 1);
     reconnectfake(&details);
   }
+  dbclear(pgres);
 }
 
 user_details *getdetails(nick *user)
@@ -385,8 +382,8 @@ void fakeuser_handler(nick *user, int command, void **params)
     if (timenow - details->lastkill < KILL_TIME) {
       char escnick[NICKLEN * 2 + 1];
       controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) KILL'ed twice under in %d seconds. Removing.", details->nick, details->ident, details->host, details->realname, KILL_TIME);
-      PQescapeString(escnick, details->nick, strlen(details->nick));
-      pqquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
+      dbescapestring(escnick, details->nick, strlen(details->nick));
+      dbquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
       return;
     }
     details->lastkill = timenow;
@@ -455,19 +452,19 @@ int fakeadd(void *sender, int cargc, char **cargv)
     return CMD_ERROR;
   }
   newnick = newfake->user;
-  PQescapeString(escnick, newnick->nick, strlen(newnick->nick));
-  PQescapeString(escident, newnick->ident, strlen(newnick->ident));
-  PQescapeString(eschost, newnick->host->name->content, newnick->host->name->length);
-  PQescapeString(escreal, newnick->realname->name->content, newnick->realname->name->length);  
+  dbescapestring(escnick, newnick->nick, strlen(newnick->nick));
+  dbescapestring(escident, newnick->ident, strlen(newnick->ident));
+  dbescapestring(eschost, newnick->host->name->content, newnick->host->name->length);
+  dbescapestring(escreal, newnick->realname->name->content, newnick->realname->name->length);  
   if ((killed = kll_remove(newnick->nick)))  //Is this nickname scheduled to reconnect?
   {
     deleteschedule(killed->schedule, &reconnectfake, killed);
     free(killed);
-    pqquery("UPDATE noperserv.fakeusers SET ident = '%s', host = '%s', realname = '%s' WHERE nick = '%s'", 
+    dbquery("UPDATE noperserv.fakeusers SET ident = '%s', host = '%s', realname = '%s' WHERE nick = '%s'", 
              escident, eschost, escreal, escnick);
   }
   else
-    pqquery("INSERT INTO noperserv.fakeusers (nick, ident, host, realname) VALUES ('%s', '%s', '%s', '%s')",
+    dbquery("INSERT INTO noperserv.fakeusers (nick, ident, host, realname) VALUES ('%s', '%s', '%s', '%s')",
             escnick, escident, eschost, escreal);
   controlreply(sender, "Added fake user %s", newnick->nick);
   controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) added by %s/%s", newnick->nick, newnick->ident,
@@ -517,8 +514,8 @@ int fakekill(void *sender, int cargc, char **cargv)
     return CMD_USAGE;
   if ((fake = ll_remove(cargv[0])))
   {
-    PQescapeString(escnick, fake->user->nick, strlen(fake->user->nick));
-    pqquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
+    dbescapestring(escnick, fake->user->nick, strlen(fake->user->nick));
+    dbquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
     controlreply(sender, "Killed fake user %s", fake->user->nick);
     controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) removed by %s/%s", fake->user->nick, fake->user->ident,
                 fake->user->host->name->content, fake->user->realname->name->content, ((nick*)sender)->nick, ((nick*)sender)->authname);
@@ -531,8 +528,8 @@ int fakekill(void *sender, int cargc, char **cargv)
   }
   if ((k_fake = kll_remove(cargv[0])))  //Fakeuser might be waiting to rejoin
   {
-    PQescapeString(escnick, k_fake->nick, strlen(k_fake->nick));
-    pqquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
+    dbescapestring(escnick, k_fake->nick, strlen(k_fake->nick));
+    dbquery("DELETE FROM noperserv.fakeusers WHERE nick = '%s'", escnick);
     controlreply(sender, "Killed fake user %s", k_fake->nick);
     controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) removed by %s/%s", k_fake->nick,
                 k_fake->ident, k_fake->host, k_fake->realname, ((nick*)sender)->nick, ((nick*)sender)->authname);

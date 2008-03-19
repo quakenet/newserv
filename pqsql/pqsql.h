@@ -3,11 +3,15 @@
 
 #include <libpq-fe.h>
 
-#define QH_CREATE 0x01
 #define PQ_ERRORMSG_LENGTH 1024
 
-#define QH_NULLIDENTIFIER 0
 #define QH_ALREADYFIRED 1
+
+typedef struct PQResult {
+  PGresult *result;
+  int row;
+  int rows;
+} PQResult;
 
 typedef int PQModuleIdentifier;
 typedef void (*PQQueryHandler)(PGconn *, void *);
@@ -16,14 +20,22 @@ void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQu
 
 void pqasyncqueryf(PQModuleIdentifier identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...);
 #define pqasyncqueryi(identifier, handler, tag, format, ...) pqasyncqueryf(identifier, handler, tag, 0, format , ##__VA_ARGS__)
-#define pqasyncquery(handler, tag, format, ...) pqasyncqueryf(QH_NULLIDENTIFIER, handler, tag, 0, format , ##__VA_ARGS__)
-#define pqcreatequery(format, ...) pqasyncqueryf(QH_NULLIDENTIFIER, NULL, NULL, QH_CREATE, format , ##__VA_ARGS__)
-#define pqquery(format, ...) pqasyncqueryf(QH_NULLIDENTIFIER, NULL, NULL, 0, format , ##__VA_ARGS__)
+#define pqasyncquery(handler, tag, format, ...) pqasyncqueryf(DB_NULLIDENTIFIER, handler, tag, 0, format , ##__VA_ARGS__)
+#define pqcreatequery(format, ...) pqasyncqueryf(DB_NULLIDENTIFIER, NULL, NULL, DB_CREATE, format , ##__VA_ARGS__)
+#define pqquery(format, ...) pqasyncqueryf(DB_NULLIDENTIFIER, NULL, NULL, 0, format , ##__VA_ARGS__)
 
 int pqconnected(void);
-char* pqlasterror(PGconn *pgconn);
 
 PQModuleIdentifier pqgetid(void);
 void pqfreeid(PQModuleIdentifier identifier);
+
+#define pqquerysuccessful(x) (x && (PQresultStatus(x->result) == PGRES_TUPLES_OK))
+
+PQResult *pqgetresult(PGconn *c);
+int pqfetchrow(PQResult *res);
+char *pqgetvalue(PQResult *res, int column);
+void pqclear(PQResult *res);
+
+#define pqcreateschema(schema) pqcreatequery("CREATE SCHEMA %s;", schema)
 
 #endif

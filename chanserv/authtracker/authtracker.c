@@ -6,10 +6,10 @@
 #include "../../core/error.h"
 
 void at_newnick(int, void *);
-PQModuleIdentifier authtrackerpq;
+DBModuleIdentifier authtrackerdb;
 
 void _init() {
-  authtrackerpq = pqgetid();
+  authtrackerdb = dbgetid();
 
   at_finddanglingsessions();
 }
@@ -18,7 +18,7 @@ void _fini() {
   at_hookfini();
   nsfreeall(POOL_AUTHTRACKER);
 
-  pqfreeid(authtrackerpq);
+  dbfreeid(authtrackerdb);
 }
 
 void at_dbloaded(int hooknum, void *arg) {

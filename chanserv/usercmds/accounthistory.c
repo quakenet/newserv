@@ -13,68 +13,65 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
-#include "../../pqsql/pqsql.h"
+#include "../../dbapi/dbapi.h"
 
-#include <libpq-fe.h>
 #include <stdio.h>
 #include <string.h>
 
-void csdb_doaccounthistory_real(PGconn *dbconn, void *arg) {
+void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup;
   unsigned int userID;
   char *oldpass, *newpass, *oldemail, *newemail;
   time_t changetime, authtime;
-  PGresult *pgres;
-  int i, num, count=0;
+  DBResult *pgres;
+  int count=0;
   struct tm *tmp;
   char tbuf[15];
 
   if(!dbconn)
     return;
 
-  pgres=PQgetResult(dbconn);
+  pgres=dbgetresult(dbconn);
 
-  if (PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if (!dbquerysuccessful(pgres)) {
     Error("chanserv", ERR_ERROR, "Error loading account history data.");
     return;
   }
 
-  if (PQnfields(pgres) != 7) {
+  if (dbnumfields(pgres) != 7) {
     Error("chanserv", ERR_ERROR, "Account history data format error.");
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
-  num=PQntuples(pgres);
-
   if (!np) {
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   if (!(rup=getreguserfromnick(np)) || !UHasOperPriv(rup)) {
     Error("chanserv", ERR_ERROR, "No reguser pointer or oper privs in account history.");
-    PQclear(pgres);
+    dbclear(pgres);
     return;
   }
 
   chanservsendmessage(np, "Number: Time:           Old password:  New password:  Old email:                     New email:");
-  for (i=0; i<num; i++) {
-    userID=strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
-    changetime=strtoul(PQgetvalue(pgres, i, 1), NULL, 10);
-    authtime=strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
-    oldpass=PQgetvalue(pgres, i, 3);
-    newpass=PQgetvalue(pgres, i, 4);
-    oldemail=PQgetvalue(pgres, i, 5);
-    newemail=PQgetvalue(pgres, i, 6);
+  while(dbfetchrow(pgres)) {
+    userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
+    changetime=strtoul(dbgetvalue(pgres, 1), NULL, 10);
+    authtime=strtoul(dbgetvalue(pgres, 2), NULL, 10);
+    oldpass=dbgetvalue(pgres, 3);
+    newpass=dbgetvalue(pgres, 4);
+    oldemail=dbgetvalue(pgres, 5);
+    newemail=dbgetvalue(pgres, 6);
     tmp=localtime(&changetime);
     strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
     chanservsendmessage(np, "#%-6d %-15s %-14s %-14s %-30s %s", ++count, tbuf, oldpass, newpass, oldemail, newemail);
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 
-  PQclear(pgres);
+  dbclear(pgres);
 }
 
 void csdb_retreiveaccounthistory(nick *np, reguser *rup, int limit) {

@@ -11,12 +11,11 @@
 #include "../core/error.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
-#include "../pqsql/pqsql.h"
+#include "../dbapi/dbapi.h"
 
 #include "noperserv.h"
 #include "noperserv_db.h"
 
-#include <libpq-fe.h>
 #include <stdlib.h>
 
 int db_loaded = 0;
@@ -29,7 +28,7 @@ no_autheduser *authedusers = NULL;
 void noperserv_create_tables(void);
 
 void noperserv_free_user(no_autheduser *au);
-void noperserv_load_users(PGconn *dbconn, void *arg);
+void noperserv_load_users(DBConn *dbconn, void *arg);
 
 void noperserv_check_nick(nick *np);
 void noperserv_nick_account(int hooknum, void *arg);
@@ -38,7 +37,7 @@ void noperserv_quit_account(int hooknum, void *arg);
 void nopserserv_delete_from_autheduser(nick *np, no_autheduser *au);
 
 int noperserv_load_db(void) {
-  if(!pqconnected()) {
+  if(!dbconnected()) {
     Error("noperserv", ERR_STOP, "Could not connect to database.");
     return 0;
   }
@@ -52,34 +51,34 @@ int noperserv_load_db(void) {
 
   noperserv_create_tables();
 
-  pqasyncquery(noperserv_load_users, NULL,
+  dbasyncquery(noperserv_load_users, NULL,
     "SELECT ID, authname, flags, noticelevel FROM noperserv.users");
 
   return 1;
 }
 
-void noperserv_load_users(PGconn *dbconn, void *arg) {
-  PGresult *pgres = PQgetResult(dbconn);
-  int rows, i;
+void noperserv_load_users(DBConn *dbconn, void *arg) {
+  DBResult *pgres = dbgetresult(dbconn);
   no_autheduser *nu;
   nick *np;
+  int i;
 
-  if(PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if(!dbquerysuccessful(pgres)) {
     Error("noperserv", ERR_ERROR, "Error loading user list.");
+    dbclear(pgres);
     return; 
   }
 
-  rows = PQntuples(pgres);
   lastuserid = 0;
 
-  for(i=0;i<rows;i++) {
-    nu = noperserv_new_autheduser(PQgetvalue(pgres, i, 1));
+  while(dbfetchrow(pgres)) {
+    nu = noperserv_new_autheduser(dbgetvalue(pgres, 1));
     if(!nu)
       continue;
 
-    nu->id = strtoul(PQgetvalue(pgres, i, 0), NULL, 10);
-    nu->authlevel = strtoul(PQgetvalue(pgres, i, 2), NULL, 10);
-    nu->noticelevel = strtoul(PQgetvalue(pgres, i, 3), NULL, 10);
+    nu->id = strtoul(dbgetvalue(pgres, 0), NULL, 10);
+    nu->authlevel = strtoul(dbgetvalue(pgres, 2), NULL, 10);
+    nu->noticelevel = strtoul(dbgetvalue(pgres, 3), NULL, 10);
     nu->newuser = 0;
     if(nu->id > lastuserid)
       lastuserid = nu->id;
@@ -95,11 +94,13 @@ void noperserv_load_users(PGconn *dbconn, void *arg) {
   registerhook(HOOK_NICK_ACCOUNT, &noperserv_nick_account);
   registerhook(HOOK_NICK_NEWNICK, &noperserv_nick_account);
   registerhook(HOOK_NICK_LOSTNICK, &noperserv_quit_account);
+
+  dbclear(pgres);
 }
 
 void noperserv_create_tables(void) {
-  pqcreatequery("CREATE SCHEMA noperserv");
-  pqcreatequery(
+  dbcreateschema("noperserv");
+  dbcreatequery(
     "CREATE TABLE noperserv.users ("
       "ID            INT               NOT NULL,"
       "authname      VARCHAR(%d)       NOT NULL,"
@@ -148,7 +149,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    pqquery("DELETE FROM noperserv.users WHERE id = %d", au->id);
+    dbquery("DELETE FROM noperserv.users WHERE id = %d", au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {
@@ -166,11 +167,11 @@ void noperserv_delete_autheduser(no_autheduser *au) {
 void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
-    PQescapeString(escapedauthname, au->authname->content, au->authname->length);
-    pqquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    dbescapestring(escapedauthname, au->authname->content, au->authname->length);
+    dbquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    pqquery("UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    dbquery("UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 

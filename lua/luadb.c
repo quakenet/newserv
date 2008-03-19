@@ -4,7 +4,9 @@
 #include "../config.h"
 
 #ifdef HAVE_PGSQL
-#include "../pqsql/pqsql.h"
+#include "../dbapi/dbapi.h"
+
+#warning Needs testing with new db API.
 
 static int lua_dbcreatequery(lua_State *ps) {
   char *s = (char *)lua_tostring(ps, 1);
@@ -12,7 +14,7 @@ static int lua_dbcreatequery(lua_State *ps) {
   if(!s)
     LUA_RETURN(ps, LUA_FAIL);
 
-  pqcreatequery(s);
+  dbcreatequery(s);
   LUA_RETURN(ps, LUA_OK);
 }
 
@@ -32,40 +34,31 @@ typedef struct lua_callback {
 } lua_callback;
 
 /* hack */
-PGresult *pgres;
+DBResult *pgres;
 
 static int lua_dbnumfields(lua_State *ps) {
-  lua_pushint(ps, PQnfields(pgres));
+  lua_pushint(ps, dbnumfields(pgres));
 
   return 1;
 }
 
-static int lua_dbnumrows(lua_State *ps) {
-  lua_pushint(ps, PQntuples(pgres));
-
-  return 1;
-}
-
-static int lua_dbgetvalue(lua_State *ps) {
+/* TODO */
+/*
+static int lua_dbgetrow(lua_State *ps) {
   char *r;
   int tuple, field, len;
 
-  if(!lua_isint(ps, 1) || !lua_isint(ps, 2))
+  if(!lua_isint(ps, 1))
     return 0;
 
-  tuple = lua_toint(ps, 1);
-  field = lua_toint(ps, 2);
-
-  r = PQgetvalue(pgres, lua_toint(ps, 1), lua_toint(ps, 2));
-  len = PQgetlength(pgres, tuple, field);
-
-  lua_pushlstring(ps, r, len); /* safe?! */
+  lua_pushstring(ps, dbgetvalue(pgres, lua_toint(ps, 1)), len);
 
   return 1;
 }
+*/
 
-void lua_dbcallback(PGconn *dbconn, void *arg) {
-  pgres = PQgetResult(dbconn);
+void lua_dbcallback(DBConn *dbconn, void *arg) {
+  pgres = dbgetresult(dbconn);
   lua_callback *c = (lua_callback *)arg;
 
   if(!lua_listexists(c->l)) {
@@ -73,7 +66,7 @@ void lua_dbcallback(PGconn *dbconn, void *arg) {
     return;
   }
 
-  if(PQresultStatus(pgres) != PGRES_TUPLES_OK) {
+  if(!dbquerysuccessful(pgres)) {
     _lua_vpcall(c->l->l, (void *)c->handler, LUA_POINTERMODE, "bR", 0, c->args);
 
     luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->handler);
@@ -87,7 +80,7 @@ void lua_dbcallback(PGconn *dbconn, void *arg) {
   luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->handler);
   luaL_unref(c->l->l, LUA_REGISTRYINDEX, c->args);
   luafree(c);
-  PQclear(pgres);
+  dbclear(pgres);
   pgres = NULL;
 }
 
@@ -101,7 +94,7 @@ static int lua_dbquery(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   if(!lua_isfunction(ps, 2)) {
-    pqquery(q);
+    dbquery(q);
     LUA_RETURN(ps, LUA_OK);
   }
 
@@ -113,16 +106,15 @@ static int lua_dbquery(lua_State *ps) {
   cb->args = luaL_ref(ps, LUA_REGISTRYINDEX);
   cb->handler = luaL_ref(ps, LUA_REGISTRYINDEX);
 
-  pqasyncquery(lua_dbcallback, cb, q);
+  dbasyncquery(lua_dbcallback, cb, q);
 
   LUA_RETURN(ps, LUA_OK);
 }
 
 static int lua_dbescape(lua_State *ps) {
-  char ebuf[8192 * 2];
+  char ebuf[8192 * 2 + 1];
   char *s = (char *)lua_tostring(ps, 1);
   int len;
-  size_t elen;
 
   if(!s)
     return 0;
@@ -131,8 +123,8 @@ static int lua_dbescape(lua_State *ps) {
   if(len > sizeof(ebuf) / 2 - 5)
     return 0;
 
-  elen = PQescapeString(ebuf, s, len);
-  lua_pushlstring(ps, ebuf, elen);
+  dbescapestring(ebuf, s, len);
+  lua_pushstring(ps, ebuf);
 
   return 1;
 }
@@ -145,8 +137,7 @@ void lua_registerdbcommands(lua_State *l) {
   lua_register(l, "db_query", lua_dbquery);
   lua_register(l, "db_escape", lua_dbescape);
   lua_register(l, "db_numfields", lua_dbnumfields);
-  lua_register(l, "db_numrows", lua_dbnumrows);
-  lua_register(l, "db_getvalue", lua_dbgetvalue);
+/*  lua_register(l, "db_getvalue", lua_dbgetvalue);*/
 }
 
 #else
