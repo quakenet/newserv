@@ -673,7 +673,7 @@ void cs_docheckopvoice(channel *cp, modechanges *changes) {
 
     /* chanflag +k checks; kick them if they "obviously" can't rejoin without a ban */
     if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
-      if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np)) || nickbanned_visible(np, cp)) {
+      if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
         localkickuser(chanservnick,cp,np,"Authorised users only.");
       } else {
         cs_banuser(NULL, cp->index, np, "Authorised users only.");

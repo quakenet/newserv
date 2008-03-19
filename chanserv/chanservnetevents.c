@@ -193,7 +193,7 @@ void cs_handlejoin(int hooknum, void *arg) {
   /* Check for +k chan flag */
   if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
     /* Don't ban if they are already "visibly" banned for some reason. */
-    if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np)) || nickbanned_visible(np, cp)) {
+    if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
       localkickuser(chanservnick,cp,np,"Authorised users only.");
     } else {      
       cs_banuser(NULL, cip, np, "Authorised users only.");
