@@ -57,6 +57,8 @@ beginpools() {
   pool(LUA),
   pool(TROJANSCAN),
   pool(NTERFACER),
+  pool(SQLITE),
+  pool(PQSQL),
 } endpools()
 
 #undef pool

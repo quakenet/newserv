@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <strings.h>
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"

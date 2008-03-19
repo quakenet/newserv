@@ -28,7 +28,7 @@ int sqlitequerysuccessful(SQLiteResult *);
 
 #define sqlitegetvalue(result, column) (char *)sqlite3_column_text(result->r, column)
 
-#define sqlitecreateschema(schema) dbcreatequery("ATTACH DATABASE '%s.db' AS %s", schema, schema)
+void sqlitecreateschema(char *schema);
 void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini);
 
 #endif

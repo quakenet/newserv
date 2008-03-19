@@ -9,6 +9,7 @@
 #include "../irc/irc_config.h"
 #include "../core/events.h"
 #include "../core/hooks.h"
+#include "../core/nsmalloc.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
 #include "../lib/strlfunc.h"
@@ -71,6 +72,8 @@ void _init(void) {
 
 void _fini(void) {
   disconnectdb();
+
+  nscheckfreeall(POOL_PQSQL);
 }
 
 PQModuleIdentifier pqgetid(void) {
@@ -100,9 +103,9 @@ void pqfreeid(PQModuleIdentifier identifier) {
       if (q->query_ss) {
         freesstring(q->query_ss);
       } else {
-        free(q->query);
+        nsfree(POOL_PQSQL, q->query);
       }
-      free(q);
+      nsfree(POOL_PQSQL, q);
       q = p->next;
     } else {
       p = q;
@@ -214,10 +217,10 @@ void dbhandler(int fd, short revents) {
         qqp->query_ss=NULL;
         qqp->query=NULL;
       } else if (qqp->query) {
-        free(qqp->query);
+        nsfree(POOL_PQSQL, qqp->query);
         qqp->query=NULL;
       }
-      free(qqp);
+      nsfree(POOL_PQSQL, qqp);
 
       if(queryhead) { /* Submit the next query */	      
         PQsendQuery(dbconn, queryhead->query);
@@ -242,14 +245,14 @@ void pqasyncqueryf(int identifier, PQQueryHandler handler, void *tag, int flags,
   va_end(va);
 
   /* PPA: no check here... */
-  qp = (pqasyncquery_s *)malloc(sizeof(pqasyncquery_s));
+  qp = (pqasyncquery_s *)nsmalloc(POOL_PQSQL, sizeof(pqasyncquery_s));
 
   if(!qp)
     Error("pqsql",ERR_STOP,"malloc() failed in pqsql.c");
 
   /* Use sstring or allocate (see above rant) */
   if (len > SSTRING_MAX) {
-    qp->query = (char *)malloc(len+1);
+    qp->query = (char *)nsmalloc(POOL_PQSQL, len+1);
     strcpy(qp->query,querybuf);
     qp->query_ss=NULL;
   } else {
@@ -276,7 +279,7 @@ void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQu
 {
   pqtableloaderinfo_s *tli;
 
-  tli=(pqtableloaderinfo_s *)malloc(sizeof(pqtableloaderinfo_s));
+  tli=(pqtableloaderinfo_s *)nsmalloc(POOL_PQSQL, sizeof(pqtableloaderinfo_s));
   tli->tablename=getsstring(tablename, 100);
   tli->init=init;
   tli->data=data;
@@ -320,7 +323,7 @@ void pqstartloadtable(PGconn *dbconn, void *arg)
   pqasyncquery(tli->fini, NULL, "COMMIT");
 
   freesstring(tli->tablename);
-  free(tli);
+  nsfree(POOL_PQSQL, tli);
 }
 
 void disconnectdb(void) {
@@ -340,10 +343,10 @@ void disconnectdb(void) {
       qqp->query_ss=NULL;
       qqp->query=NULL;
     } else if (qqp->query) {
-      free(qqp->query);
+      nsfree(POOL_PQSQL, qqp->query);
       qqp->query=NULL;
     }
-    free(qqp);
+    nsfree(POOL_PQSQL, qqp);
     qqp = nqqp;
   }
 
@@ -394,7 +397,7 @@ PQResult *pqgetresult(PGconn *c) {
   if(!c)
     return NULL;
 
-  r = (PQResult *)malloc(sizeof(PQResult));
+  r = (PQResult *)nsmalloc(POOL_PQSQL, sizeof(PQResult));
   r->row = -1;
   r->result = PQgetResult(c);
   r->rows = PQntuples(r->result);
@@ -422,5 +425,5 @@ void pqclear(PQResult *res) {
   if(res->result)
     PQclear(res->result);
 
-  free(res);
+  nsfree(POOL_PQSQL, res);
 }

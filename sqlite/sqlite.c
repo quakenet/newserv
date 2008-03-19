@@ -10,6 +10,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
 #include "../lib/strlfunc.h"
+#include "../core/nsmalloc.h"
 #include "sqlite.h"
 
 #define BUILDING_DBAPI
@@ -24,6 +25,8 @@ MODULE_VERSION("");
 
 static int dbconnected = 0;
 static struct sqlite3 *conn;
+
+#define SYNC_MODE "OFF"
 
 void _init(void) {
   sstring *dbfile;
@@ -44,8 +47,7 @@ void _init(void) {
 
   dbconnected = 1;
 
-  sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA synchronous=OFF;");
-
+  sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA synchronous=" SYNC_MODE ";");
 }
 
 void _fini(void) {
@@ -55,6 +57,7 @@ void _fini(void) {
   sqlite3_close(conn);
 
   dbconnected = 0;
+  nscheckfreeall(POOL_SQLITE);
 }
 
 void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
@@ -110,7 +113,7 @@ SQLiteResult *sqlitegetresult(SQLiteConn *r) {
   if(!r)
     return NULL;
 
-  r2 = (SQLiteResult *)malloc(sizeof(SQLiteResult));
+  r2 = (SQLiteResult *)nsmalloc(POOL_SQLITE, sizeof(SQLiteResult));
   r2->r = r;
   return r2;
 }
@@ -130,7 +133,7 @@ void sqliteclear(SQLiteResult *r) {
   if(r->r)
     sqlite3_finalize(r->r);
 
-  free(r);
+  nsfree(POOL_SQLITE, r);
 }
 
 int sqlitequerysuccessful(SQLiteResult *r) {
@@ -178,4 +181,9 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
   data(s, NULL);
   if(fini)
     fini(s, NULL);
+}
+
+void sqlitecreateschema(char *schema) {
+  sqliteasyncqueryf(0, NULL, NULL, 0, "ATTACH DATABASE '%s.db' AS %s", schema, schema);
+  sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA %s.synchronous=" SYNC_MODE ";", schema);
 }
