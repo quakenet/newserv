@@ -178,7 +178,7 @@ void cs_handlejoin(int hooknum, void *arg) {
   }
 
   /* Check for other ban lurking on channel which we are enforcing */
-  if (!IsService(np) && CIsEnforce(rcp) && nickbanned(np,cp)) {
+  if (!IsService(np) && CIsEnforce(rcp) && nickbanned_visible(np,cp)) {
     localkickuser(chanservnick,cp,np,"Banned.");
     return;
   }
@@ -192,7 +192,8 @@ void cs_handlejoin(int hooknum, void *arg) {
 
   /* Check for +k chan flag */
   if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
-    if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
+    /* Don't ban if they are already "visibly" banned for some reason. */
+    if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np)) || nickbanned_visible(np, cp)) {
       localkickuser(chanservnick,cp,np,"Authorised users only.");
     } else {      
       cs_banuser(NULL, cip, np, "Authorised users only.");

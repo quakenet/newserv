@@ -635,6 +635,9 @@ void cs_docheckchanmodes(channel *cp, modechanges *changes) {
   }
 }
 
+/* Slightly misnamed function that checks each USER on the channel against channel
+ * settings.  Possible actions are opping/deopping, voicing/devoicing, and banning
+ * for chanflag +k or chanlev flag +b */
 void cs_docheckopvoice(channel *cp, modechanges *changes) {
   regchan *rcp;
   reguser *rup;
@@ -668,11 +671,16 @@ void cs_docheckopvoice(channel *cp, modechanges *changes) {
       continue;
     }
 
+    /* chanflag +k checks; kick them if they "obviously" can't rejoin without a ban */
     if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
-      cs_banuser(changes, cp->index, np, "Authorised users only.");
+      if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np)) || nickbanned_visible(np, cp)) {
+        localkickuser(chanservnick,cp,np,"Authorised users only.");
+      } else {
+        cs_banuser(NULL, cp->index, np, "Authorised users only.");
+      }
       continue;
     }
-    
+                                      
     if ((cp->users->content[i] & CUMODE_OP) && !IsService(np)) {
       if ((CIsBitch(rcp) && (!rcup || !CUHasOpPriv(rcup))) ||
            (rcup && CUIsDeny(rcup)))
@@ -758,7 +766,7 @@ void cs_checknickbans(nick *np) {
 
   for (j=0;j<i;j++) {
     if ((rcp=ca[j]->index->exts[chanservext]) && !CIsSuspended(rcp) && 
-	CIsEnforce(rcp) && nickbanned(np, ca[j]))
+	CIsEnforce(rcp) && nickbanned_visible(np, ca[j]))
       localkickuser(chanservnick, ca[j], np, "Banned.");
   }
 
@@ -1094,7 +1102,7 @@ int cs_bancheck(nick *np, channel *cp) {
       freeregban(rbp);
     } else if (nickmatchban_visible(np,(*rbh)->cbp)) {
       /* This user matches this ban.. */
-      if (!nickbanned(np,cp)) {
+      if (!nickbanned_visible(np,cp)) {
 	/* Only bother putting the ban on the channel if they're not banned already */
 	/* (might be covered by this ban or a different one.. doesn't really matter */
 	localsetmodeinit(&changes, cp, chanservnick);
@@ -1142,7 +1150,7 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
   if (!cip->channel)
     return;
 
-  if (nickbanned(np, cip->channel)) {
+  if (nickbanned_visible(np, cip->channel)) {
     localkickuser(chanservnick, cip->channel, np, reason?reason:"Banned.");
     return;
   }
