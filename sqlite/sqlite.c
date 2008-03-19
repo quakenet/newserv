@@ -71,7 +71,7 @@ int sqlitestep(sqlite3_stmt *s) {
   for(;;) {
     rc = sqlite3_step(s);
     if((rc == SQLITE_ROW) || (rc == SQLITE_OK) || (rc == SQLITE_DONE))
-      return 1;
+      return rc;
     if(rc == SQLITE_BUSY) {
       t.tv_nsec = rand() % 50 + 50;
       Error("sqlite", ERR_WARNING, "SQLite is busy, retrying in %dns...", t.tv_nsec);
@@ -143,7 +143,7 @@ SQLiteResult *sqlitegetresult(SQLiteConn *r) {
 }
 
 int sqlitefetchrow(SQLiteResult *r) {
-  if(!sqlitestep(r->r))
+  if(sqlitestep(r->r) != SQLITE_ROW)
     return 0;
 
   return 1;
@@ -182,7 +182,7 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
     return;
   }
 
-  if(!sqlitestep(s)) {
+  if(sqlitestep(s) != SQLITE_ROW) {
     Error("sqlite", ERR_ERROR, "Error getting row count for %s.", tablename);
     sqlite3_finalize(s);
     return;
