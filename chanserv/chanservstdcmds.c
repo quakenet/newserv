@@ -212,15 +212,15 @@ int cs_doctcpping(void *source, int cargc, char **cargv) {
 }
   
 int cs_doctcpversion(void *source, int cargc, char **cargv) {
-  sendnoticetouser(chanservnick, source, "\01VERSION Q9 version %s (Compiled on " __DATE__ ")  (C) 2002-3 David Mansell (splidge)\01", QVERSION);
-  sendnoticetouser(chanservnick, source, "\01VERSION Built on newserv version 1.00.  (C) 2002-3 David Mansell (splidge)\01");
+  sendnoticetouser(chanservnick, source, "\01VERSION Q9 version %s (Compiled on " __DATE__ ")  (C) 2002-8 David Mansell (splidge) and others.\01", QVERSION);
+  sendnoticetouser(chanservnick, source, "\01VERSION Built on newserv.  (C) 2002-8 David Mansell (splidge) and others.\01");
 
   return CMD_OK;
 }
 
 int cs_doversion(void *source, int cargc, char **cargv) {
-  chanservsendmessage((nick *)source, "Q9 version %s (Compiled on " __DATE__ ") (C) 2002-3 David Mansell (splidge)", QVERSION);
-  chanservsendmessage((nick *)source, "Built on newserv version 1.00.  (C) 2002-3 David Mansell (splidge)");
+  chanservsendmessage((nick *)source, "Q9 version %s (Compiled on " __DATE__ ") (C) 2002-8 David Mansell (splidge) and others.", QVERSION);
+  chanservsendmessage((nick *)source, "Built on newserv.  (C) 2002-8 David Mansell (splidge) and others.");
   return CMD_OK;
 }
 
