@@ -56,7 +56,7 @@ int csc_dochannelcomment(void *source, int cargc, char **cargv) {
 	} else {
 	  bufpos=0;
 	}
-	strncpy(buf+bufpos, cargv[1]+1, 250-bufpos);
+	strncpy(buf+bufpos, cargv[1]+1, 280-bufpos);
       } else {
 	strncpy(buf, cargv[1], 250);
       }
