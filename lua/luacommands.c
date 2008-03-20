@@ -822,6 +822,21 @@ static int lua_sethost(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_getvisiblehostmask(lua_State *l) {
+  nick *np;
+  char buf[HOSTLEN+USERLEN+NICKLEN+REALLEN+10];
+
+  if(!lua_islong(l, 1))
+    return 0;
+
+  np = getnickbynumeric(lua_tolong(l, 1));
+  if(!np)
+    return 0;
+
+  lua_pushstring(l, visiblehostmask(np, buf));
+  return 1;
+}
+
 void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_smsg", lua_smsg);
   lua_register(l, "irc_skill", lua_skill);
@@ -871,6 +886,8 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_fastgetnickbynumeric", lua_fastgetnickbynumeric);
   lua_register(l, "irc_fastgetnickbynick", lua_fastgetnickbynick);
   lua_register(l, "irc_fastgetchaninfo", lua_fastgetchaninfo);
+
+  lua_register(l, "irc_getvisiblehostmask", lua_getvisiblehostmask);
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
   lua_register(l, "irc_sethost", lua_sethost);
