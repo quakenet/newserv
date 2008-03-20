@@ -27,6 +27,7 @@ MODULE_VERSION("");
 
 static int dbconnected = 0;
 static struct sqlite3 *conn;
+static SQLiteModuleIdentifier modid;
 
 #define SYNC_MODE "OFF"
 
@@ -166,47 +167,87 @@ int sqlitequerysuccessful(SQLiteResult *r) {
   return 0;
 }
 
-void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini) {
-  int rc;
-  sqlite3_stmt *s;
-  char buf[1024];
+struct sqlitetableloader {
+  SQLiteQueryHandler init, data, fini;
+  char tablename[];
+};
+
+static void loadtablerows(SQLiteConn *c, void *tag) {
+  struct sqlitetableloader *t = (struct sqlitetableloader *)tag;
+
+  if(!c) { /* pqsql doesnt call the handlers so we don't either */
+    free(t);
+    return;
+  }
+
+  /* the handlers do all the checking and cleanup */
+  if(t->init)
+    (t->init)(c, NULL);
+
+  (t->data)(c, NULL);
+
+  if(t->fini)
+    (t->fini)(c, NULL);
+
+  free(t);
+}
+
+static void loadtablecount(SQLiteConn *c, void *tag) {
+  struct sqlitetableloader *t = (struct sqlitetableloader *)tag;
+  SQLiteResult *r = NULL;
+
+  if(!c) { /* unloaded */
+    free(t);
+    return;
+  } 
+
+  if(!(r = sqlitegetresult(c)) || !sqlitefetchrow(r)) {
+    Error("sqlite", ERR_ERROR, "Error getting row count for %s.", t->tablename);
+    free(t);
+
+    if(r)
+      sqliteclear(r);
+    return;
+  }
+
+  Error("sqlite", ERR_INFO, "Found %s entries in table %s, loading...", (char *)sqlite3_column_text(r->r, 0), t->tablename);
+  sqliteclear(r);
   
+  sqliteasyncqueryf(0, loadtablerows, t, 0, "SELECT * FROM %s", t->tablename);
+}
+
+void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini) {
+  struct sqlitetableloader *t;
+  int len;
+
   if(!sqliteconnected())
     return;
 
-  snprintf(buf, sizeof(buf), "SELECT COUNT(*) FROM %s", tablename);
+  len = strlen(tablename);
 
-  rc = sqlite3_prepare(conn, buf, -1, &s, NULL);
-  if(rc != SQLITE_OK) {
-    Error("sqlite", ERR_ERROR, "Error getting row count for %s.", tablename);
-    return;
-  }
+  t = (struct sqlitetableloader *)malloc(sizeof(struct sqlitetableloader) + len + 1);
+  memcpy(t->tablename, tablename, len + 1);
+  t->init = init;
+  t->data = data;
+  t->fini = fini;
 
-  if(sqlitestep(s) != SQLITE_ROW) {
-    Error("sqlite", ERR_ERROR, "Error getting row count for %s.", tablename);
-    sqlite3_finalize(s);
-    return;
-  }
-
-  Error("sqlite", ERR_INFO, "Found %s entries in table %s, loading...", (char *)sqlite3_column_text(s, 0), tablename);
-  sqlite3_finalize(s);
-
-  snprintf(buf, sizeof(buf), "SELECT * FROM %s", tablename);
-
-  rc = sqlite3_prepare(conn, buf, -1, &s, NULL);
-  if(rc != SQLITE_OK) {
-    Error("sqlite", ERR_ERROR, "Error loading table %s.", tablename);
-    return;
-  }
-
-  if(init)
-    init(s, NULL);
-  data(s, NULL);
-  if(fini)
-    fini(s, NULL);
+  sqliteasyncqueryf(0, loadtablecount, t, 0, "SELECT COUNT(*) FROM %s", tablename);
 }
 
 void sqlitecreateschema(char *schema) {
   sqliteasyncqueryf(0, NULL, NULL, 0, "ATTACH DATABASE '%s.db' AS %s", schema, schema);
   sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA %s.synchronous=" SYNC_MODE ";", schema);
 }
+
+int sqlitegetid(void) {
+  modid++; 
+  if(modid == 0)
+    modid = 1;
+
+  return modid;
+}
+
+void sqlitefreeid(int id) {
+
+}
+

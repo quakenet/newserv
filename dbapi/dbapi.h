@@ -52,8 +52,8 @@ typedef SQLiteQueryHandler DBQueryHandler;
 typedef SQLiteResult DBResult;
 
 #define dbconnected() sqliteconnected()
-#define dbgetid() sqliteconnected()
-#define dbfreeid(x) sqlitefreeid()
+#define dbgetid() sqlitegetid()
+#define dbfreeid(x) sqlitefreeid(x)
 
 #define dbcreateschema(schema) sqlitecreateschema(schema)
 #define dbescapestring(buf, src, len) sqliteescapestring(buf, src, len)

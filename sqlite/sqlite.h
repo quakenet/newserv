@@ -15,8 +15,8 @@ void sqliteasyncqueryf(SQLiteModuleIdentifier identifier, SQLiteQueryHandler han
 
 int sqliteconnected(void);
 
-#define sqlitelitegetid(void) 0
-#define sqlitefreeid(x)
+int sqlitegetid(void);
+void sqlitefreeid(int);
 
 void sqliteescapestring(char *, char *, unsigned int);
 
