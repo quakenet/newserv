@@ -3,17 +3,18 @@
  *
  * CMDNAME: addchan
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 4
+ * CMDARGS: 5
  * CMDDESC: Adds a new channel to the bot.
  * CMDFUNC: csc_doaddchan
  * CMDPROTO: int csc_doaddchan(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: addchan <channel> [<owner> [<flags> [<type>]]]
+ * CMDHELP: Usage: addchan <channel> [<owner> [<flags> [<type> [<msguser>]]]]
  * CMDHELP: Adds the given channel to the bot, where:
- * CMDHELP: owner - can be either nickname on the network or #authname.  If not supplied,
- * CMDHELP:         the channel will belong to the user issuing the ADDCHAN command.
- * CMDHELP: flags - can be any valid chanflags (see CHANFLAGS).  If not specified this 
- * CMDHELP:         defaults to +j.
- * CMDHELP: type  - is a channel type as per old Q and is now obsolete.
+ * CMDHELP: owner   - can be either nickname on the network or #authname.  If not supplied,
+ * CMDHELP:           the channel will belong to the user issuing the ADDCHAN command.
+ * CMDHELP: flags   - can be any valid chanflags (see CHANFLAGS).  If not specified this 
+ * CMDHELP:           defaults to +j.
+ * CMDHELP: type    - is a channel type as per old Q and is now obsolete.
+ * CMDHELP: msguser - send a notification to this user (for service use)
  */
 
 #include "../chanserv.h"
@@ -28,7 +29,7 @@
 #include <stdio.h>
 
 int csc_doaddchan(void *source, int cargc, char **cargv) {
-  nick *sender=source;
+  nick *sender=source, *notify=NULL;
   reguser *rup=getreguserfromnick(sender);
   chanindex *cip;
   regchan *rcp;
@@ -50,6 +51,11 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_INVALIDCHANNAME, cargv[0]);
     return CMD_ERROR;
   } 
+  
+  /* If a 5th argument is supplied, it's a nick to send the reply messages to. */
+  if (cargc>4) {
+    notify=getnickbynick(cargv[4]);
+  }
   
   if (cargc>1) {
     if (!(founder=findreguser(sender, cargv[1])))
@@ -79,11 +85,15 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   
   if (!(cip=findorcreatechanindex(cargv[0]))) {
     chanservstdmessage(sender, QM_INVALIDCHANNAME, cargv[0]);
+    if (notify)
+      chanservstdmessage(notify, QM_INVALIDCHANNAME, cargv[0]);
     return CMD_ERROR;
   }
   
   if (cip->exts[chanservext]) {
     chanservstdmessage(sender, QM_ALREADYREGISTERED, cip->name->content);
+    if (notify)
+      chanservstdmessage(notify, QM_ALREADYREGISTERED, cip->name->content);
     return CMD_ERROR;
   }
   
@@ -166,5 +176,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
 
   cs_log(sender, "ADDCHAN %s #%s %s %s",cip->name->content,founder->username,printflags(rcp->flags,rcflags), chantypes[type]->content);
   chanservstdmessage(sender, QM_DONE);
+  if (notify)
+    chanservstdmessage(notify, QM_DONE);
   return CMD_OK;
 }
