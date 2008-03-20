@@ -198,7 +198,7 @@ BeginMessages() {
   msg(QM_CHANLEVEMPTIEDCHANNEL, "The channel has been deleted since the last known user was removed.", ""),
   msg(QM_CHANLEVCHANGED, "Done.  Flags for $0 on $1 are now: $2.", "sss"),
   msg(QM_CHANLEVREMOVED, "Done.  User $0 is no longer known on $1.", "ss"),
-  msg(QM_CHANLEVNOCHANGE, "No change - check that you didn't specify an impossible flag combination.", ""),
+  msg(QM_CHANLEVNOCHANGE, "Nothing changed.  This could be because you specified an impossible flag combination or don't have enough access.", ""),
   msg(QM_USERSHEADER, "Users currently on $0:\nNick            Username        Flags        Host", "s"),
   msg(QM_EMPTYCHAN, "Channel $0 is currently empty.", "s"),
   msg(QM_USERSSUMMARY, "Total $0 users: $1 opped, $2 voiced, $3 others, $4 with flags ($5 ops, $6 masters)", "ddddddd"),

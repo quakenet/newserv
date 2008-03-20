@@ -119,6 +119,12 @@ int csc_dochanflags(void *source, int cargc, char **cargv) {
         cs_checkchanmodes(cip->channel);
     }
 
+    /* If nothing has changed, say so and don't do anything else */
+    if (rcp->flags == oldflags) {
+      chanservstdmessage(sender, QM_CHANLEVNOCHANGE);
+      return CMD_OK;
+    }
+    
     strcpy(flagbuf,printflags(oldflags, rcflags));
     cs_log(sender,"CHANFLAGS %s %s (%s -> %s)",cip->name->content,cargv[1],flagbuf,printflags(rcp->flags,rcflags));
     chanservstdmessage(sender, QM_DONE);
