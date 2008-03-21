@@ -546,10 +546,21 @@ void cs_checknick(nick *np) {
   if (IsAccount(np) && np->auth) {
     if (np->auth->exts[chanservaext]) {
       rup=getreguserfromnick(np);
+
       /* safe? */
-      if(rup && UHasSuspension(rup)) {
-        chanservkillstdmessage(np, QM_SUSPENDKILL);
-        return;
+      if(rup) {
+        if (UIsDelayedGline(rup)) {
+          /* delayed-gline - schedule the user's squelching */
+          deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
+          scheduleoneshot(time(NULL)+rand()%900, &chanservdgline, (void*)rup);
+        } else if (UIsGline(rup)) {
+          /* instant-gline - lets be lazy and set a schedule expiring now :) */
+          deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
+          scheduleoneshot(time(NULL), &chanservdgline, (void*)rup);
+        } else if(UHasSuspension(rup)) {
+          chanservkillstdmessage(np, QM_SUSPENDKILL);
+          return;
+        }
       }
       cs_doallautomodes(np);
     } else {

@@ -117,15 +117,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   
   csdb_updateuser(rup);
   
-  if (UIsDelayedGline(rup)) {
-    /* delayed-gline - schedule the user's squelching */
-    deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
-    scheduleoneshot(time(NULL)+rand()%900, &chanservdgline, (void*)rup);
-  } else if (UIsGline(rup)) {
-    /* instant-gline - lets be lazy and set a schedule expiring now :) */
-    deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
-    scheduleoneshot(time(NULL), &chanservdgline, (void*)rup);
-  } else if (UIsSuspended(rup)) {
+  if (UIsSuspended(rup)) {
     /* plain suspend */
     chanservstdmessage(sender, QM_AUTHSUSPENDED);
     if(rup->suspendreason)
