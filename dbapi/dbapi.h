@@ -26,7 +26,8 @@ typedef PQResult DBResult;
 #define dbgetid() pqconnected()
 #define dbfreeid(x) pqfreeid(x)
 
-#define dbcreateschema(schema) pqcreateschema(schema)
+#define dbattach(schema) pqcreateschema(schema)
+#define dbdetach(schema)
 #define dbescapestring(buf, src, len)  PQescapeString(buf, src, len)
 #define dbloadtable(tablename, init, data, fini) pqloadtable(tablename, init, data, fini);
 
@@ -55,7 +56,8 @@ typedef SQLiteResult DBResult;
 #define dbgetid() sqlitegetid()
 #define dbfreeid(x) sqlitefreeid(x)
 
-#define dbcreateschema(schema) sqlitecreateschema(schema)
+#define dbattach(schema) sqliteattach(schema)
+#define dbdetach(schema) sqlitedetach(schema)
 #define dbescapestring(buf, src, len) sqliteescapestring(buf, src, len)
 #define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini);
 

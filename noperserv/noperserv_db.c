@@ -99,7 +99,7 @@ void noperserv_load_users(DBConn *dbconn, void *arg) {
 }
 
 void noperserv_create_tables(void) {
-  dbcreateschema("noperserv");
+  dbattach("noperserv");
   dbcreatequery(
     "CREATE TABLE noperserv.users ("
       "ID            INT               NOT NULL,"
@@ -122,6 +122,8 @@ void noperserv_cleanup_db(void) {
     noperserv_free_user(ap);
     ap = np;
   }
+
+  dbdetach("noperserv");
 }
 
 no_autheduser *noperserv_new_autheduser(char *authname) {

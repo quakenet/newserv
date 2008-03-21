@@ -3,13 +3,18 @@
 
 #include <sqlite3.h>
 
-typedef sqlite3_stmt SQLiteConn;
-typedef int SQLiteModuleIdentifier;
-typedef void (*SQLiteQueryHandler)(SQLiteConn *, void *);
+#ifdef SQLITE_THREADSAFE
+#error cannot use thread safe sqlite, recompile with --enable-threadsafe=no
+#endif
 
 typedef struct SQLiteResult {
-  SQLiteConn *r;
+  sqlite3_stmt *r;
+  char first, final;
 } SQLiteResult;
+
+typedef SQLiteResult SQLiteConn;
+typedef int SQLiteModuleIdentifier;
+typedef void (*SQLiteQueryHandler)(SQLiteConn *, void *);
 
 void sqliteasyncqueryf(SQLiteModuleIdentifier identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...);
 
@@ -28,7 +33,8 @@ int sqlitequerysuccessful(SQLiteResult *);
 
 #define sqlitegetvalue(result, column) (char *)sqlite3_column_text(result->r, column)
 
-void sqlitecreateschema(char *schema);
+void sqliteattach(char *schema);
+void sqlitedetach(char *schema);
 void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini);
 
 #endif
