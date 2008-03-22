@@ -203,6 +203,12 @@ BeginMessages() {
   msg(QM_EMPTYCHAN, "Channel $0 is currently empty.", "s"),
   msg(QM_USERSSUMMARY, "Total $0 users: $1 opped, $2 voiced, $3 others, $4 with flags ($5 ops, $6 masters)", "ddddddd"),
   msg(QM_OPERONCHAN, "You cannot use $0 on $1 since an oper is on the channel.","ss"),
+  msg(QM_USERSUSPENDEDTYPE,   "Suspend type   : $0", "s"),
+  msg(QM_USERSUSPENDEDBY,     "Suspended by   : $0", "s"),
+  msg(QM_USERSUSPENDEDREASON, "Suspend reason : $0", "s"),
+  msg(QM_USERSUSPENDEDAT,     "Suspended at   : $0", "s"),
+  msg(QM_USERSUSPENDEDEXPIRY, "Suspend expiry : $0", "s"),
+
 } 
 EndMessages()
 #endif
