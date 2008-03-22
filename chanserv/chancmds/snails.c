@@ -3,7 +3,7 @@
  *
  * CMDNAME: snails
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 2
+ * CMDARGS: 3
  * CMDDESC: Sets the snails on an unsuspecting target.
  * CMDFUNC: csc_dosnails
  * CMDPROTO: int csc_dosnails(void *source, int cargc, char **cargv);
@@ -17,6 +17,8 @@ int csc_dosnails(void *source, int cargc, char **cargv) {
   nick *sender = (nick *)source;
   reguser *rup=getreguserfromnick(sender);
   chanindex *cip;
+  char *cc, *cn;
+  int giant = 0;
 
   if (!rup)
     return CMD_ERROR;
@@ -25,14 +27,35 @@ int csc_dosnails(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "snails");
     return CMD_ERROR;
   }
+  if(cargc == 2) {
+    cc = cargv[0];
+    cn = cargv[1];
+  } else { /* be careful adding more args! */
+    if(!strcasecmp(cargv[0], "-giant"))
+      giant = 1;
 
-  if (!(cip=findchanindex(cargv[0])) || !cip->channel) {
-    chanservstdmessage(sender, QM_UNKNOWNCHAN, cargv[0]);
+    cc = cargv[1];
+    cn = cargv[2];
+  }
+
+  if (!(cip=findchanindex(cc)) || !cip->channel) {
+    chanservstdmessage(sender, QM_UNKNOWNCHAN, cc);
     return CMD_ERROR;
   }
 
-  sendmessagetochannel(chanservnick, cip->channel, "\001ACTION sets the snails on %s _@\" _@\" _@\"", cargv[1]);
+  if(!giant) {
+    sendmessagetochannel(chanservnick, cip->channel, "\001ACTION sets the snails on %s _@\" _@\" _@\"\001", cn);
+  } else {
+    sendmessagetochannel(chanservnick, cip->channel, "\001ACTION sets the GIANT snails on %s:\001", cn);
+    sendmessagetochannel(chanservnick, cip->channel, "       ____  _ _         ____  _ _         ____  _ _");
+    sendmessagetochannel(chanservnick, cip->channel, "      / __ \\( | )       / __ \\( | )       / __ \\( | )");
+    sendmessagetochannel(chanservnick, cip->channel, "     / / _` |V V       / / _` |V V       / / _` |V V");
+    sendmessagetochannel(chanservnick, cip->channel, "    | | (_| |         | | (_| |         | | (_| |");
+    sendmessagetochannel(chanservnick, cip->channel, " ____\\ \\__,_|      ____\\ \\__,_|      ____\\ \\__,_|");
+    sendmessagetochannel(chanservnick, cip->channel, "|_____\\____/      |_____\\____/      |_____\\____/");
+  }
 
+  cs_log(sender,"SNAILS %s %s%s", cc, cn, giant?" (giant)":"");
   chanservstdmessage(sender, QM_DONE);
   return CMD_OK;
 }
