@@ -40,7 +40,7 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
   char *flagbuf;
   unsigned int count=0;
   int added=0;
-  int i;
+  int i, foundflags=0;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
@@ -54,6 +54,8 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
 
   /* See if there are flags defined */
   if (*cargv[1] == '+') {
+    foundflags=1;
+    
     /* If there are we now need at least 3 parameters */
     if (cargc<3) {
       chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
@@ -83,7 +85,8 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
     for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
       count++;
 
-  for (i=1;i<cargc;i++) {
+  /* If we found flags don't try to add them as a user as well.. */
+  for (i=1+foundflags;i<cargc;i++) {
     if (!(rup=findreguser(sender, cargv[i])))
       continue;
 
