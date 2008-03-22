@@ -7,7 +7,7 @@
  * CMDDESC: Voices you or other users on channel(s).
  * CMDFUNC: csc_dovoice
  * CMDPROTO: int csc_dovoice(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: VOICE [<channel> [<user1> [<user2> [...]]]
+ * CMDHELP: Usage: VOICE [<channel> [<user1> [<user2> [...]]]]
  * CMDHELP: Grants voice to you on one or more channels, or grants voice to one or more
  * CMDHELP: other users on a particular channel.  This command cannot be used to grant
  * CMDHELP: voice to users who would otherwise be prevented from obtaining voice, e.g.
