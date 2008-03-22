@@ -139,7 +139,7 @@ BeginMessages() {
   msg(QM_DISCONNECTINGUSER, "Disconnecting $0 (authed as $1)", "ss"),
   msg(QM_USERALREADYSUSPENDED, "User is already suspended.", ""),
   msg(QM_USERNOTSUSPENDED, "User $0 is not suspended.", "s"),
-  msg(QM_SPEWHEADER, "Username:       Suspended: Email:                         Last user@host:", ""),
+  msg(QM_SPEWHEADER, "Username:       Suspended: Email:                         Last auth:      Last user@host:", ""),
   msg(QM_TOOMANYRESULTS, "Found over $0 $1, truncating list.", "ds"),
   msg(QM_RESULTCOUNT, "Found $0 $1$2.", "uss"),
   msg(QM_SUSPENDKILL, "Attention: Your Q account has been suspended. You are being disconnected.", ""),
