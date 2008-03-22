@@ -102,8 +102,8 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
 
     /* Allow "none" as a magic word for simplicity. */
     if (!ircd_strcmp(cargv[1],"none")) {
-      rcp->forcemodes=0;
-      rcp->denymodes=0;
+      forceflags=0;
+      denyflags=0;
     } else {
       /* Pick out the + flags: start from 0 */
       forceflags=0;
