@@ -81,6 +81,12 @@ int csc_doop(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
 
   rcp=cip->exts[chanservext];
+  
+  /* If the channel doesn't currently exist, forget it. */
+  if (!cip->channel) {	
+    chanservstdmessage(sender, QM_EMPTYCHAN, cip->name->content);  
+    return CMD_ERROR;
+  }
 
   if (cargc==1) {
     /* Only one arg: "op me" */

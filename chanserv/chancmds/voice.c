@@ -82,6 +82,11 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_VOICEPRIV, NULL, "voice", 0, 0)))
     return CMD_ERROR;
 
+  if (!cip->channel) {
+    chanservstdmessage(sender, QM_EMPTYCHAN, cip->name->content);
+    return CMD_ERROR;
+  }
+
   if (cargc==1) {
     /* Only one arg: "voice me" */
     if (!cs_checkaccess(sender, NULL, CA_VOICEPRIV | CA_DEVOICED, cip,
