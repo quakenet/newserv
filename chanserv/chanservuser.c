@@ -916,9 +916,14 @@ void cs_timerfunc(void *arg) {
   
   if (CIsAutoLimit(rcp)) {
     if (!rcp->limit || rcp->autoupdate <= now) {
-      /* Update limit.. */
-      rcp->limit=cp->users->totalusers+rcp->autolimit;
-      rcp->status |= QCSTAT_MODECHECK;
+      /* Only update the limit if there are <= (autolimit/2) or 
+       * >= (autolimit * 1.5) slots free */
+      
+      if ((cp->users->totalusers >= (rcp->limit - rcp->autolimit/2)) ||
+          (cp->users->totalusers <= (rcp->limit - (3 * rcp->autolimit)/2))) {
+        rcp->limit=cp->users->totalusers+rcp->autolimit;
+        rcp->status |= QCSTAT_MODECHECK;
+      }
       
       /* And set the schedule for the next update */
       rcp->autoupdate = now + AUTOLIMIT_INTERVAL;
