@@ -5,5 +5,5 @@ INCPATH=../../
 .PHONY: all
 all: chanserv_newsearch.so
 
-chanserv_newsearch.so: cs-newsearch.o formats.o 
+chanserv_newsearch.so: cs-newsearch.o formats.o chanserv_newsearch.o csns-qusers.o
         

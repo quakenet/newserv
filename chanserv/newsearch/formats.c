@@ -4,6 +4,35 @@
 #include "../../newsearch/newsearch.h"
 #include "../../control/control.h"
 
+void printchannel_qusers(nick *sender, chanindex *cip) {
+  regchanuser *rcup;
+  regchan *rcp;
+  int i;
+  int own=0,mas=0,op=0,voi=0,kno=0,ban=0,tot=0;
+  
+  if (!(rcp=cip->exts[chanservext])) {
+    controlreply(sender,"[              - not registered -                 ] %s",cip->name->content);
+    return;
+  }
+  
+  for (i=0;i<REGCHANUSERHASHSIZE;i++) {
+    for (rcup=rcp->regusers[i];rcup;rcup=rcup->nextbychan) {
+      tot++;
+      
+      if (CUIsOwner(rcup)) own++; else
+      if (CUIsMaster(rcup)) mas++; else
+      if (CUIsOp(rcup)) op++; else
+      if (CUIsVoice(rcup)) voi++; else
+      if (CUIsKnown(rcup)) kno++;
+      
+      if (CUIsBanned(rcup)) ban++;
+    }
+  }
+  
+  controlreply(sender,"[%4dn %4dm %4do %4dv %4dk %4db - %4d total ] %s",own,mas,op,voi,kno,ban,tot,cip->name->content);
+}
+  
+
 void printnick_auth(nick *sender, nick *np) {
   struct reguser *rup;
   
