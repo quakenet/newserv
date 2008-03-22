@@ -90,7 +90,6 @@ patricia_node_t *refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bit
 void derefnode(patricia_tree_t *tree, patricia_node_t *node);
 
 #define PATRICIA_MAXBITS 128
-#define PATRICIA_NBIT(x)        (0x80 >> ((x) & 0x7f))
 #define PATRICIA_NBYTE(x)       ((x) >> 3)
 
 /*#define PATRICIA_DATA_GET(node, type) (type *)((node)->data)

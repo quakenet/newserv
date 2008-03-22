@@ -27,8 +27,6 @@ char patricia_copyright[] =
 
 #include "patricia.h"
 
-/* { from prefix.c */
-
 /* prefix_tochar
  * convert prefix information to bytes
  */
@@ -78,7 +76,6 @@ patricia_ref_prefix (prefix_t * prefix)
         return (patricia_new_prefix (&prefix->sin, prefix->bitlen));
     }
     prefix->ref_count++;
-/* fprintf(stderr, "[A %s, %d]\n", prefix_toa (prefix), prefix->ref_count); */
     return (prefix);
 }
 
@@ -91,16 +88,11 @@ patricia_deref_prefix (prefix_t * prefix)
     assert (prefix->ref_count > 0);
 
     prefix->ref_count--;
-    assert (prefix->ref_count >= 0);
     if (prefix->ref_count <= 0) {
 	free(prefix);
 	return;
     }
 }
-
-/* } */
-
-/* #define PATRICIA_DEBUG 1 */
 
 /* these routines support continuous mask only */
 
@@ -156,7 +148,6 @@ patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func)
     assert (patricia->num_active_node == 0);
     /* free(patricia); */
 }
-
 
 void
 patricia_destroy_tree (patricia_tree_t *patricia, void_fn_t func)
@@ -557,7 +548,6 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
     }
 }
 
-/* } */
 
 patricia_node_t *
 refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
