@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../control/control.h" /* controlreply() */
+#include "../control/control.h"
 #include "../localuser/localuser.h" /* killuser() */
 #include "../lib/irc_string.h" /* IPtostr() */
 #include "../lib/strlfunc.h"
@@ -105,7 +105,7 @@ void kill_free(searchCtx *ctx, struct searchNode *thenode) {
 
   if (localdata->count > NSMAX_KILL_LIMIT) {
     /* need to warn the user that they have just tried to twat half the network ... */
-    controlreply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
+    ctx->reply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
     free(localdata);
     free(thenode);
     return;
@@ -153,9 +153,9 @@ void kill_free(searchCtx *ctx, struct searchNode *thenode) {
   }
 
   if (safe)
-    controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
+    ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+  ctx->wall(NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
     (localdata->count - safe) != 1 ? "users" : "user", (localdata->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", safe);
   free(localdata);
   free(thenode);

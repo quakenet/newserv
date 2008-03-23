@@ -1,5 +1,5 @@
-
 #include <stdio.h>
+#include <stdarg.h>
 #include "newsearch.h"
 
 #include "../irc/irc_config.h"
@@ -133,7 +133,17 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
   deletecommandfromtree(searchTree, term, (CommandHandler) parsefunc);
 }
 
-int do_nicksearch(void *source, int cargc, char **cargv) {
+static void controlwallwrapper(int level, char *format, ...) {
+  char buf[1024];
+  va_list ap;
+
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  controlwall(NO_OPER, level, "%s", buf);
+  va_end(ap);
+}
+
+int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source;
   struct searchNode *search;
   int limit=500;
@@ -154,7 +164,7 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
       switch(*ch) {
       case 'l':
 	if (cargc<arg) {
-	  controlreply(sender,"Error: -l switch requires an argument");
+	  reply(sender,"Error: -l switch requires an argument");
 	  return CMD_USAGE;
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
@@ -162,12 +172,12 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 	
       case 'd':
         if (cargc<arg) {
-          controlreply(sender,"Error: -d switch requires an argument");
+          reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
         cmd=findcommandintree(nickOutputTree, cargv[arg], 1);
         if (!cmd) {
-          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          reply(sender,"Error: unknown output format %s",cargv[arg]);
           return CMD_USAGE;
         }
         display=(NickDisplayFunc)cmd->handler;
@@ -175,13 +185,13 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
         break;
         
       default:
-	controlreply(sender,"Unrecognised flag -%c.",*ch);
+	reply(sender,"Unrecognised flag -%c.",*ch);
       }
     }
   }
 
   if (arg>=cargc) {
-    controlreply(sender,"No search terms - aborting.");
+    reply(sender,"No search terms - aborting.");
     return CMD_ERROR;
   }
 
@@ -190,10 +200,11 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
   }
 
   ctx.parser = search_parse;
-  ctx.reply = controlreply;
+  ctx.reply = reply;
+  ctx.wall = wall;
 
   if (!(search = ctx.parser(&ctx, SEARCHTYPE_NICK, cargv[arg]))) {
-    controlreply(sender,"Parse error: %s",parseError);
+    reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
@@ -202,6 +213,10 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
   (search->free)(&ctx, search);
 
   return CMD_OK;
+}
+
+int do_nicksearch(void *source, int cargc, char **cargv) {
+  return do_nicksearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
 void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, NickDisplayFunc display, int limit) {
@@ -247,7 +262,7 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Nic
                 matches, tchans, uchans, (float)tchans/uchans);
 }  
 
-int do_chansearch(void *source, int cargc, char **cargv) {
+int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source;
   struct searchNode *search;
   int limit=500;
@@ -268,7 +283,7 @@ int do_chansearch(void *source, int cargc, char **cargv) {
       switch(*ch) {
       case 'l':
 	if (cargc<arg) {
-	  controlreply(sender,"Error: -l switch requires an argument");
+	  reply(sender,"Error: -l switch requires an argument");
 	  return CMD_USAGE;
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
@@ -276,12 +291,12 @@ int do_chansearch(void *source, int cargc, char **cargv) {
 
       case 'd':
         if (cargc<arg) {
-          controlreply(sender,"Error: -d switch requires an argument");
+          reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
         cmd=findcommandintree(chanOutputTree, cargv[arg], 1);
         if (!cmd) {
-          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          reply(sender,"Error: unknown output format %s",cargv[arg]);
           return CMD_USAGE;
         }
         display=(ChanDisplayFunc)cmd->handler;
@@ -289,13 +304,13 @@ int do_chansearch(void *source, int cargc, char **cargv) {
         break;
 	
       default:
-	controlreply(sender,"Unrecognised flag -%c.",*ch);
+	reply(sender,"Unrecognised flag -%c.",*ch);
       }
     }
   }
 
   if (arg>=cargc) {
-    controlreply(sender,"No search terms - aborting.");
+    reply(sender,"No search terms - aborting.");
     return CMD_ERROR;
   }
 
@@ -304,10 +319,11 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   }
 
   ctx.parser = search_parse;
-  ctx.reply = controlreply;
+  ctx.reply = reply;
+  ctx.wall = wall;
 
   if (!(search = ctx.parser(&ctx, SEARCHTYPE_CHANNEL, cargv[arg]))) {
-    controlreply(sender,"Parse error: %s",parseError);
+    reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
@@ -316,6 +332,10 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   (search->free)(&ctx, search);
 
   return CMD_OK;
+}
+
+int do_chansearch(void *source, int cargc, char **cargv) {
+  return do_chansearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
 void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, ChanDisplayFunc display, int limit) {  

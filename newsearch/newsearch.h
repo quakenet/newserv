@@ -32,10 +32,12 @@ struct searchCtx;
 
 typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, int type, char *input);
 typedef void (*replyFunc)(nick *np, char *format, ...);
+typedef void (*wallFunc)(int level, char *format, ...);
 
 typedef struct searchCtx {
   searchParseFunc parser;
   replyFunc reply;
+  wallFunc wall;
 } searchCtx;
 
 typedef struct searchNode *(*parseFunc)(searchCtx *, int, int, char **);

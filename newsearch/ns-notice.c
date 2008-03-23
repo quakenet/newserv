@@ -139,7 +139,7 @@ void notice_free(searchCtx *ctx, struct searchNode *thenode) {
     }
   }
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent the following message to %d %s: %s", senderNSExtern->nick, senderNSExtern->authname, localdata->count, localdata->count != 1 ? "users" : "user", localdata->message);
+  ctx->wall(NL_BROADCASTS, "%s/%s sent the following message to %d %s: %s", senderNSExtern->nick, senderNSExtern->authname, localdata->count, localdata->count != 1 ? "users" : "user", localdata->message);
   free(localdata);
   free(thenode);
 }
