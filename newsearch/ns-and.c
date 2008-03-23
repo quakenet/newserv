@@ -7,15 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void and_free(struct searchNode *thenode);
-void *and_exe(struct searchNode *thenode, void *theinput);
+void and_free(searchCtx *ctx, struct searchNode *thenode);
+void *and_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
 struct and_localdata {
   int count;
   searchNode **nodes;
 };
 
-struct searchNode *and_parse(int type, int argc, char **argv) {
+struct searchNode *and_parse(searchCtx *ctx, int type, int argc, char **argv) {
   searchNode *thenode, *subnode;
   struct and_localdata *localdata;
   int i;
@@ -48,12 +48,12 @@ struct searchNode *and_parse(int type, int argc, char **argv) {
   thenode->free         = and_free;
 
   for (i=0;i<argc;i++) {
-    subnode=search_parse(type, argv[i]); /* Propogate the search type */
-    subnode=coerceNode(subnode, RETURNTYPE_BOOL); /* Needs to return BOOL */
+    subnode=ctx->parser(ctx, type, argv[i]); /* Propogate the search type */
+    subnode=coerceNode(ctx, subnode, RETURNTYPE_BOOL); /* Needs to return BOOL */
     if (subnode) {
       localdata->nodes[localdata->count++] = subnode;
     } else {
-      and_free(thenode);
+      and_free(ctx, thenode); /* ?? */
       return NULL;
     }
   }
@@ -61,13 +61,13 @@ struct searchNode *and_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void and_free(struct searchNode *thenode) {
+void and_free(searchCtx *ctx, struct searchNode *thenode) {
   struct and_localdata *localdata;
   int i;
 
   localdata=thenode->localdata;
   for (i=0;i<localdata->count;i++) {
-    (localdata->nodes[i]->free)(localdata->nodes[i]);
+    (localdata->nodes[i]->free)(ctx, localdata->nodes[i]);
   }
   
   free(localdata->nodes);
@@ -75,14 +75,14 @@ void and_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *and_exe(struct searchNode *thenode, void *theinput) {
+void *and_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   int i;
   struct and_localdata *localdata;
   
   localdata=thenode->localdata;
 
   for (i=0;i<localdata->count;i++) {
-    if (!(localdata->nodes[i]->exe)(localdata->nodes[i], theinput))
+    if (!(localdata->nodes[i]->exe)(ctx, localdata->nodes[i], theinput))
       return NULL;
   }
   return (void *)1;

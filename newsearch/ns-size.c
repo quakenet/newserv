@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *size_exe(struct searchNode *thenode, void *theinput);
-void size_free(struct searchNode *thenode);
+void *size_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void size_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *size_parse(int type, int argc, char **argv) {
+struct searchNode *size_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -32,7 +32,7 @@ struct searchNode *size_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *size_exe(struct searchNode *thenode, void *theinput) {
+void *size_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
   
   if (cip->channel==NULL)
@@ -41,6 +41,6 @@ void *size_exe(struct searchNode *thenode, void *theinput) {
   return (void *)((unsigned long)cip->channel->users->totalusers);
 }
 
-void size_free(struct searchNode *thenode) {
+void size_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }

@@ -18,8 +18,8 @@
 extern nick *senderNSExtern;
 static const char *defaultreason = "You (%u) have been g-lined for violating our terms of service";
 
-void *gline_exe(struct searchNode *thenode, void *theinput);
-void gline_free(struct searchNode *thenode);
+void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void gline_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct gline_localdata {
   unsigned int marker;
@@ -29,7 +29,7 @@ struct gline_localdata {
   char reason[NSMAX_REASON_LEN];
 };
 
-struct searchNode *gline_parse(int type, int argc, char **argv) {
+struct searchNode *gline_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -113,7 +113,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *gline_exe(struct searchNode *thenode, void *theinput) {
+void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct gline_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -134,7 +134,7 @@ void *gline_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void gline_free(struct searchNode *thenode) {
+void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;

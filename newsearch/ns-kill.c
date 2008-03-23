@@ -16,8 +16,8 @@
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
 extern nick *senderNSExtern;
 
-void *kill_exe(struct searchNode *thenode, void *theinput);
-void kill_free(struct searchNode *thenode);
+void *kill_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void kill_free(searchCtx *ctx, struct searchNode *thenode);
 static const char *defaultreason = "You (%n) have been disconnected for violating our terms of service";
 
 struct kill_localdata {
@@ -27,7 +27,7 @@ struct kill_localdata {
   char reason[NSMAX_REASON_LEN];
 };
 
-struct searchNode *kill_parse(int type, int argc, char **argv) {
+struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -72,7 +72,7 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *kill_exe(struct searchNode *thenode, void *theinput) {
+void *kill_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct kill_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -93,7 +93,7 @@ void *kill_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void kill_free(struct searchNode *thenode) {
+void kill_free(searchCtx *ctx, struct searchNode *thenode) {
   struct kill_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip;

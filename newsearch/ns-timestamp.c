@@ -10,10 +10,10 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *timestamp_exe(struct searchNode *thenode, void *theinput);
-void timestamp_free(struct searchNode *thenode);
+void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void timestamp_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *timestamp_parse(int type, int argc, char **argv) {
+struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -34,12 +34,12 @@ struct searchNode *timestamp_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *timestamp_exe(struct searchNode *thenode, void *theinput) {
+void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return (void *)np->timestamp;
 }
 
-void timestamp_free(struct searchNode *thenode) {
+void timestamp_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }

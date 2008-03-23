@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *authedpct_exe(struct searchNode *thenode, void *theinput);
-void authedpct_free(struct searchNode *thenode);
+void *authedpct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void authedpct_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *authedpct_parse(int type, int argc, char **argv) {
+struct searchNode *authedpct_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -32,7 +32,7 @@ struct searchNode *authedpct_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *authedpct_exe(struct searchNode *thenode, void *theinput) {
+void *authedpct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   int i;
   int j=0;
   nick *np;
@@ -55,7 +55,7 @@ void *authedpct_exe(struct searchNode *thenode, void *theinput) {
   return (void *)(long)((j * 100) / cip->channel->users->totalusers);
 }  
 
-void authedpct_free(struct searchNode *thenode) {
+void authedpct_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

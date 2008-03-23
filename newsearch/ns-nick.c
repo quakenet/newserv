@@ -12,10 +12,10 @@ struct nick_localdata {
   int type;
 };
 
-void *nick_exe(struct searchNode *thenode, void *theinput);
-void nick_free(struct searchNode *thenode);
+void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void nick_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *nick_parse(int type, int argc, char **argv) {
+struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct nick_localdata *localdata;
   struct searchNode *thenode;
 
@@ -73,7 +73,7 @@ struct searchNode *nick_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *nick_exe(struct searchNode *thenode, void *theinput) {
+void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct nick_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -97,7 +97,7 @@ void *nick_exe(struct searchNode *thenode, void *theinput) {
   }
 }
 
-void nick_free(struct searchNode *thenode) {
+void nick_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode->localdata);
   free(thenode);
 }

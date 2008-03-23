@@ -13,10 +13,10 @@ struct modes_localdata {
   flag_t      clearmodes;
 }; 
 
-void *modes_exe(struct searchNode *thenode, void *theinput);
-void modes_free(struct searchNode *thenode);
+void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void modes_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *modes_parse(int type, int argc, char **argv) {
+struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct modes_localdata *localdata;
   struct searchNode *thenode;
   const flag *flaglist;
@@ -69,7 +69,7 @@ struct searchNode *modes_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *modes_exe(struct searchNode *thenode, void *value) {
+void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
   struct modes_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -103,7 +103,7 @@ void *modes_exe(struct searchNode *thenode, void *value) {
   return (void *)1;
 }
 
-void modes_free(struct searchNode *thenode) {
+void modes_free(searchCtx *ctx, struct searchNode *thenode) {
   free (thenode->localdata);
   free (thenode);
 }

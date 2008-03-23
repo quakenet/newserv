@@ -10,11 +10,11 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *hostmask_exe(struct searchNode *thenode, void *theinput);
-void *hostmask_exe_real(struct searchNode *thenode, void *theinput);
-void hostmask_free(struct searchNode *thenode);
+void *hostmask_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void *hostmask_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void hostmask_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *hostmask_parse(int type, int argc, char **argv) {
+struct searchNode *hostmask_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -46,14 +46,14 @@ struct searchNode *hostmask_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *hostmask_exe(struct searchNode *thenode, void *theinput) {
+void *hostmask_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
 
   return visiblehostmask(np, buf);
 }
 
-void *hostmask_exe_real(struct searchNode *thenode, void *theinput) {
+void *hostmask_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
 
@@ -62,7 +62,7 @@ void *hostmask_exe_real(struct searchNode *thenode, void *theinput) {
   return buf;
 }
 
-void hostmask_free(struct searchNode *thenode) {
+void hostmask_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode->localdata);
   free(thenode);
 }

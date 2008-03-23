@@ -12,12 +12,12 @@
 #include "../geoip/geoip.h"
 #include "../core/modules.h"
 
-void *country_exe(struct searchNode *thenode, void *theinput);
-void country_free(struct searchNode *thenode);
+void *country_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void country_free(searchCtx *ctx, struct searchNode *thenode);
 
 int ext;
 
-struct searchNode *country_parse(int type, int argc, char **argv) {
+struct searchNode *country_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
   GeoIP_LookupCode l;
   long target;
@@ -58,7 +58,7 @@ struct searchNode *country_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *country_exe(struct searchNode *thenode, void *theinput) {
+void *country_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   long country = (long)thenode->localdata, rc = (long)np->exts[ext];
 
@@ -68,6 +68,6 @@ void *country_exe(struct searchNode *thenode, void *theinput) {
   return (void *)0;
 }
 
-void country_free(struct searchNode *thenode) {
+void country_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
