@@ -41,8 +41,8 @@ typedef struct searchCtx {
 typedef struct searchNode *(*parseFunc)(searchCtx *, int, int, char **);
 typedef void (*freeFunc)(searchCtx *, struct searchNode *);
 typedef void *(*exeFunc)(searchCtx *, struct searchNode *, void *);
-typedef void (*ChanDisplayFunc)(nick *, chanindex *);
-typedef void (*NickDisplayFunc)(nick *, nick *);
+typedef void (*ChanDisplayFunc)(searchCtx *, nick *, chanindex *);
+typedef void (*NickDisplayFunc)(searchCtx *, nick *, nick *);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -125,7 +125,7 @@ typedef struct searchNode {
 
 extern const char *parseError;
 
-void printnick(nick *, nick *);
+void printnick(searchCtx *, nick *, nick *);
 
 void nicksearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, NickDisplayFunc display, int limit);
 void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, ChanDisplayFunc display, int limit);

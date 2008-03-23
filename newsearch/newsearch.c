@@ -18,10 +18,10 @@ CommandTree *nickOutputTree;
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
 
-void printnick_channels(nick *, nick *);
-void printchannel(nick *, chanindex *);
-void printchannel_topic(nick *, chanindex *);
-void printchannel_services(nick *, chanindex *);
+void printnick_channels(searchCtx *, nick *, nick *);
+void printchannel(searchCtx *, nick *, chanindex *);
+void printchannel_topic(searchCtx *, nick *, chanindex *);
+void printchannel_services(searchCtx *, nick *, chanindex *);
 
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
@@ -234,7 +234,7 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Nic
         }
           
 	if (matches<limit)
-	  display(sender, np);
+	  display(ctx, sender, np);
 	  
 	if (matches==limit)
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
@@ -329,7 +329,7 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Cha
     for (cip=chantable[i];cip;cip=cip->next) {
       if ((search->exe)(ctx, search, cip)) {
 	if (matches<limit)
-	  display(sender, cip);
+	  display(ctx, sender, cip);
 	if (matches==limit)
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
