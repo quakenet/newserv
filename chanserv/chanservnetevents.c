@@ -149,6 +149,10 @@ void cs_handlejoin(int hooknum, void *arg) {
   
   if (rup && (rcup=findreguseronchannel(rcp,rup)) && CUKnown(rcup) && cp->users->totalusers >= 3)
     rcp->lastactive=time(NULL);
+
+  /* Update last use time */
+  if (rcup)
+    rcup->usetime=getnettime();
   
   if (rcp->lastcountersync < (time(NULL) - COUNTERSYNCINTERVAL)) {
     csdb_updatechannelcounters(rcp);
@@ -217,8 +221,6 @@ void cs_handlejoin(int hooknum, void *arg) {
       dowelcome=2;  /* Send a generic warning */
     }
   } else {
-    /* Update last use time */
-    rcup->usetime=getnettime();
 
     /* DB update removed for efficiency..
      * csdb_updatelastjoin(rcup); */
