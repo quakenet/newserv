@@ -2,11 +2,11 @@
 #include "../chanserv.h"
 
 /* formats.c */
-void printnick_auth(nick *, nick *);
-void printnick_authchans(nick *, nick *);
-void printchannel_qusers(nick *, chanindex *);
+void printnick_auth(searchCtx *, nick *, nick *);
+void printnick_authchans(searchCtx *, nick *, nick *);
+void printchannel_qusers(searchCtx *, nick *, chanindex *);
 
-struct searchNode *qusers_parse(int type, int argc, char **argv);
+struct searchNode *qusers_parse(searchCtx *, int type, int argc, char **argv);
 
 void _init() {
   regnickdisp("auth", printnick_auth);

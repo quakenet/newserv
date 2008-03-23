@@ -9,15 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *qusers_exe(struct searchNode *thenode, void *theinput);
-void qusers_free(struct searchNode *thenode);
+void *qusers_exe(searchCtx *, struct searchNode *thenode, void *theinput);
+void qusers_free(searchCtx *, struct searchNode *thenode);
 
 struct qusers_localdata {
   flag_t setmodes;
   flag_t clearmodes;
 };
 
-struct searchNode *qusers_parse(int type, int argc, char **argv) {
+struct searchNode *qusers_parse(searchCtx *, int type, int argc, char **argv) {
   struct searchNode *thenode;
   struct qusers_localdata *localdata;
 
@@ -52,7 +52,7 @@ struct searchNode *qusers_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *qusers_exe(struct searchNode *thenode, void *theinput) {
+void *qusers_exe(searchCtx *, struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
   regchan *rcp;
   regchanuser *rcup;
@@ -77,7 +77,7 @@ void *qusers_exe(struct searchNode *thenode, void *theinput) {
   return (void *)count;
 }
 
-void qusers_free(struct searchNode *thenode) {
+void qusers_free(searchCtx *, struct searchNode *thenode) {
   free(thenode->localdata);
   free(thenode);
 }
