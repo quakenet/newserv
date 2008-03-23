@@ -131,3 +131,6 @@ void printnick(searchCtx *, nick *, nick *);
 
 void nicksearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, NickDisplayFunc display, int limit);
 void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, ChanDisplayFunc display, int limit);
+
+int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
+int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
