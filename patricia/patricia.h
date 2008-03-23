@@ -15,7 +15,7 @@
 #ifndef _PATRICIA_H
 #define _PATRICIA_H
 
-#include "irc_ipv6.h"
+#include "../lib/irc_ipv6.h"
 
 typedef unsigned short u_short;
 typedef unsigned int u_int;
@@ -45,11 +45,17 @@ typedef void (*void_fn_t)();
 
 #define PATRICIA_MAXSLOTS 5
 
+
 typedef struct _prefix_t {
     u_short bitlen;		/* same as mask? */
     int ref_count;		/* reference count */
     struct irc_in_addr sin;
 } prefix_t;
+
+union prefixes {
+  struct _prefix_t prefix;
+  union prefixes *next;
+};
 
 /* } */
 
@@ -68,6 +74,7 @@ typedef struct _patricia_tree_t {
    int num_active_node;		/* for debug purpose */
 } patricia_tree_t;
 
+extern patricia_tree_t *iptree;
 
 prefix_t *patricia_new_prefix (struct irc_in_addr *dest, int bitlen);
 prefix_t * patricia_ref_prefix (prefix_t * prefix);
@@ -84,6 +91,18 @@ void patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func);
 void patricia_destroy_tree (patricia_tree_t *patricia, void_fn_t func);
 void patricia_process (patricia_tree_t *patricia, void_fn_t func);
 
+patricia_node_t *patricia_new_node(patricia_tree_t *patricia, unsigned char bit,prefix_t *prefix); 
+
+int registernodeext(const char *name);
+int findnodeext(const char *name);
+void releasenodeext(int index);
+
+/* alloc */
+void freeprefix (prefix_t *prefix);
+prefix_t *newprefix();
+patricia_node_t *newnode();
+void freenode (patricia_node_t *node);
+
 /* } */
 
 patricia_node_t *refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen);
@@ -91,9 +110,6 @@ void derefnode(patricia_tree_t *tree, patricia_node_t *node);
 
 #define PATRICIA_MAXBITS 128
 #define PATRICIA_NBYTE(x)       ((x) >> 3)
-
-/*#define PATRICIA_DATA_GET(node, type) (type *)((node)->data)
-#define PATRICIA_DATA_SET(node, value) ((node)->data = (void *)(value))*/
 
 #define PATRICIA_WALK(Xhead, Xnode) \
     do { \
