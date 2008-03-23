@@ -135,17 +135,13 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
 }
 
 int do_nicksearch(void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source, *np;
-  int i,j;
+  nick *sender = senderNSExtern = source;
   struct searchNode *search;
-  int limit=500,matches=0;
+  int limit=500;
   char *ch;
   int arg=0;
   struct Command *cmd;
   NickDisplayFunc display=printnick;
-  unsigned int cmarker;
-  unsigned int tchans=0,uchans=0;
-  struct channel **cs;
   
   if (cargc<1)
     return CMD_USAGE;
@@ -197,7 +193,21 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
     controlreply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
-  
+
+  nicksearch_exe(search, controlreply, sender, display, limit);
+  (search->free)(search);
+
+  return CMD_OK;
+}
+
+void nicksearch_exe(struct searchNode *search, replyFunc reply, nick *sender, NickDisplayFunc display, int limit) {
+  int i, j;
+  int matches = 0;
+  unsigned int cmarker;
+  unsigned int tchans=0,uchans=0;
+  struct channel **cs;
+  nick *np;
+
   /* Get a marker value to mark "seen" channels for unique count */
   cmarker=nextchanmarker();
   
@@ -223,26 +233,20 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 	  display(sender, np);
 	  
 	if (matches==limit)
-	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
+	  reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
     }
   }
 
-  (search->free)(search);
-
-  controlreply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
+  reply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
                 matches, tchans, uchans, (float)tchans/uchans);
-
-  return CMD_OK;
 }  
 
 int do_chansearch(void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source;
-  chanindex *cip;
-  int i;
   struct searchNode *search;
-  int limit=500,matches=0;
+  int limit=500;
   char *ch;
   int arg=0;
   struct Command *cmd;
@@ -293,12 +297,24 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   if (arg<(cargc-1)) {
     rejoinline(cargv[arg],cargc-arg);
   }
-  
+
   if (!(search = search_parse(SEARCHTYPE_CHANNEL, cargv[arg]))) {
     controlreply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
+  chansearch_exe(search, controlreply, sender, display, limit);
+
+  (search->free)(search);
+
+  return CMD_OK;
+}
+
+void chansearch_exe(struct searchNode *search, replyFunc reply, nick *sender, ChanDisplayFunc display, int limit) {  
+  int i;
+  chanindex *cip;
+  int matches = 0;
+  
   search=coerceNode(search, RETURNTYPE_BOOL);
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
@@ -307,17 +323,13 @@ int do_chansearch(void *source, int cargc, char **cargv) {
 	if (matches<limit)
 	  display(sender, cip);
 	if (matches==limit)
-	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
+	  reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
     }
   }
 
-  (search->free)(search);
-
-  controlreply(sender,"--- End of list: %d matches", matches);
-
-  return CMD_OK;
+  reply(sender,"--- End of list: %d matches", matches);
 }
 
 struct coercedata {

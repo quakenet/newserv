@@ -118,3 +118,6 @@ extern const char *parseError;
 
 void printnick(nick *, nick *);
 
+typedef void (*replyFunc)(nick *np, char *format, ...);
+void nicksearch_exe(struct searchNode *search, replyFunc reply, nick *sender, NickDisplayFunc display, int limit);
+void chansearch_exe(struct searchNode *search, replyFunc reply, nick *sender, ChanDisplayFunc display, int limit);
