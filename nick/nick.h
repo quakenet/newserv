@@ -10,7 +10,7 @@
 #include "../server/server.h"
 #include "../lib/base64.h"
 #include "../lib/irc_ipv6.h"
-#include "../lib/patricia.h"
+#include "../patricia/patricia.h"
 
 #include "../authext/authext.h"
 
@@ -147,7 +147,6 @@ extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
 extern const flag umodeflags[];
 extern const flag accountflags[];
-extern patricia_tree_t *iptree;
 
 #define MAXNUMERIC 0x3FFFFFFF
 
@@ -181,9 +180,6 @@ int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
 char *visibleuserhost(nick *np, char *buf);
-int registernodeext(const char *name);
-int findnodeext(const char *name);
-void releasenodeext(int index);
 
 /* nickhandlers.c functions */
 int handlenickmsg(void *source, int cargc, char **cargv);

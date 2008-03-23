@@ -59,6 +59,7 @@ beginpools() {
   pool(NTERFACER),
   pool(SQLITE),
   pool(PQSQL),
+  pool(PATRICIA),
 } endpools()
 
 #undef pool
