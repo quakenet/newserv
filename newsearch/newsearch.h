@@ -2,9 +2,11 @@
 #include "../parser/parser.h"
 #include "../channel/channel.h"
 #include "../lib/flags.h"
+#include "../authext/authext.h"
 
 #define    SEARCHTYPE_CHANNEL     1
 #define    SEARCHTYPE_NICK        2
+#define    SEARCHTYPE_USER        3
 
 
 #define    NSMAX_KILL_LIMIT       500
@@ -46,6 +48,7 @@ typedef void (*freeFunc)(searchCtx *, struct searchNode *);
 typedef void *(*exeFunc)(searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(searchCtx *, nick *, chanindex *);
 typedef void (*NickDisplayFunc)(searchCtx *, nick *, nick *);
+typedef void (*UserDisplayFunc)(searchCtx *, nick *, authname *);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -129,12 +132,15 @@ typedef struct searchNode {
 extern const char *parseError;
 
 void printnick(searchCtx *, nick *, nick *);
+void printuser(searchCtx *, nick *, authname *);
 
 void nicksearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, NickDisplayFunc display, int limit);
 void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, ChanDisplayFunc display, int limit);
+void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, UserDisplayFunc display, int limit);
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
+int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 
 void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void literal_free(searchCtx *ctx, struct searchNode *thenode);
