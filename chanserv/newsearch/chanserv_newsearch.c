@@ -17,8 +17,8 @@ void _init() {
   regchandisp("qusers", printchannel_qusers);
   registersearchterm("qusers", qusers_parse);
 
-  chanservaddcommand("nicksearch", QCMD_OPER, 1, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
-  chanservaddcommand("chansearch", QCMD_OPER, 1, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
+  chanservaddcommand("nicksearch", QCMD_OPER, 5, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
+  chanservaddcommand("chansearch", QCMD_OPER, 5, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
 }
 
 void _fini() {
