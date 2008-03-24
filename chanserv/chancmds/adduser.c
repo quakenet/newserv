@@ -4,7 +4,7 @@
  * CMDNAME: adduser
  * CMDLEVEL: QCMD_AUTHED
  * CMDARGS: 20
- * CMDDESC: Adds one or more users to a channel as +aot.
+ * CMDDESC: Adds one or more users to a channel.
  * CMDFUNC: csc_doadduser
  * CMDPROTO: int csc_doadduser(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: ADDUSER <channel> [<flags>] <user1> [<user2> [<user3> [...]]]
