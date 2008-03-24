@@ -169,7 +169,7 @@ typedef struct searchASTNode {
  * MUHAHAHHAHAHAHAHAHAAH
  *
  */
-#define __NSASTExpr(x, y, ...) &(searchASTExpr){.type = x, .u.y = __VA_ARGS__, .next = NULL}
+#define __NSASTExpr(x, y, ...) &(searchASTExpr){.type = x, .u.y = __VA_ARGS__}
 #define __NSASTList(...) (searchASTExpr *[]){__VA_ARGS__}
 #define __NSASTNode(x, ...) &(searchASTNode){.fn = x, .argc = sizeof(__NSASTList(__VA_ARGS__)) / sizeof(__NSASTList(__VA_ARGS__)[0]), .argv = __NSASTList(__VA_ARGS__)}
 #define __NSASTChild(...) __NSASTExpr(AST_NODE_CHILD, child, __VA_ARGS__)
