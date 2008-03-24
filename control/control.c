@@ -599,3 +599,14 @@ void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format
         controlnotice(np, "%s", broadcast);
 }
 
+void controlnswall(int noticelevel, char *format, ...) {
+  char broadcast[512];
+  va_list va;
+
+  va_start(va, format);
+  vsnprintf(broadcast, sizeof(broadcast), format, va);
+  va_end(va);
+
+  controlwall(NO_OPER, noticelevel, "%s", broadcast);
+}
+

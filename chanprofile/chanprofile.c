@@ -109,7 +109,8 @@ void reportprofile(nick *sender, struct chanprofile *cpp) {
   char buf[1024];
   unsigned int repwidth=80;
   unsigned int bufpos;
-  
+  searchCtx ctx;
+
   controlreply(sender,"============================================================");
 
   if (cpp->ccount==0) {
@@ -136,9 +137,10 @@ void reportprofile(nick *sender, struct chanprofile *cpp) {
     controlreply(sender," %s",buf);
     
   controlreply(sender,"Users (%u):",cpp->clones);
-  
+
+  ctx.reply = controlreply;
   for (i=0;i<cpp->clones;i++) {
-    printnick(sender,cpp->nicks[i]);
+    printnick(&ctx, sender,cpp->nicks[i]);
   }
 }
 

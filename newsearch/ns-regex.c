@@ -16,10 +16,10 @@ struct regex_localdata {
   pcre_extra *pcre_extra;
 };
 
-void *regex_exe(struct searchNode *thenode, void *theinput);
-void regex_free(struct searchNode *thenode);
+void *regex_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void regex_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *regex_parse(int type, int argc, char **argv) {
+struct searchNode *regex_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct regex_localdata *localdata;
   struct searchNode *thenode;
   struct searchNode *targnode, *patnode;
@@ -33,24 +33,24 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  targnode=search_parse(type, argv[0]);
-  if (!(targnode = coerceNode(targnode, RETURNTYPE_STRING)))
+  targnode=ctx->parser(ctx, type, argv[0]);
+  if (!(targnode = coerceNode(ctx,targnode, RETURNTYPE_STRING)))
     return NULL;
 
-  patnode=search_parse(type, argv[1]);
-  if (!(patnode = coerceNode(patnode, RETURNTYPE_STRING))) {
-    (targnode->free)(targnode);
+  patnode=ctx->parser(ctx, type, argv[1]);
+  if (!(patnode = coerceNode(ctx,patnode, RETURNTYPE_STRING))) {
+    (targnode->free)(ctx, targnode);
     return NULL;
   }
 
   if (!(patnode->returntype & RETURNTYPE_CONST)) {
     parseError="regex: only constant regexes allowed";
-    (targnode->free)(targnode);
-    (patnode->free)(patnode);
+    (targnode->free)(ctx, targnode);
+    (patnode->free)(ctx, patnode);
     return NULL;
   }
 
-  if (!(pcre=pcre_compile((char *)(patnode->exe)(patnode,NULL),
+  if (!(pcre=pcre_compile((char *)(patnode->exe)(ctx, patnode,NULL),
 			  PCRE_CASELESS, &err, &erroffset, NULL))) {
     parseError=err;
     return NULL;
@@ -95,13 +95,13 @@ struct searchNode *regex_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *regex_exe(struct searchNode *thenode, void *theinput) {
+void *regex_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct regex_localdata *localdata;
   char *target;
 
   localdata = thenode->localdata;
   
-  target  = (char *)((localdata->targnode->exe)(localdata->targnode,theinput));
+  target  = (char *)((localdata->targnode->exe)(ctx, localdata->targnode,theinput));
 
   if (pcre_exec(localdata->pcre, localdata->pcre_extra,target,strlen(target),0,
 		0,NULL,0)) {
@@ -112,7 +112,7 @@ void *regex_exe(struct searchNode *thenode, void *theinput) {
   }
 }
 
-void regex_free(struct searchNode *thenode) {
+void regex_free(searchCtx *ctx, struct searchNode *thenode) {
   struct regex_localdata *localdata;
 
   localdata=thenode->localdata;
@@ -123,8 +123,8 @@ void regex_free(struct searchNode *thenode) {
   if (localdata->pcre)
     pcre_free(localdata->pcre);
 
-  (localdata->patnode->free)(localdata->patnode);
-  (localdata->targnode->free)(localdata->targnode);
+  (localdata->patnode->free)(ctx, localdata->patnode);
+  (localdata->targnode->free)(ctx, localdata->targnode);
   free(localdata);
   free(thenode);
 }

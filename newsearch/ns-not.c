@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void not_free(struct searchNode *thenode);
-void *not_exe(struct searchNode *thenode, void *theinput);
+void not_free(searchCtx *ctx, struct searchNode *thenode);
+void *not_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *not_parse(int type, int argc, char **argv) {
+struct searchNode *not_parse(searchCtx *ctx, int type, int argc, char **argv) {
   searchNode *thenode, *subnode;
 
   if (argc!=1) {
@@ -28,7 +28,7 @@ struct searchNode *not_parse(int type, int argc, char **argv) {
   thenode->exe          = not_exe;
   thenode->free         = not_free;
 
-  subnode=search_parse(type, argv[0]); /* Propogate the search type */
+  subnode=ctx->parser(ctx, type, argv[0]); /* Propogate the search type */
 
   if (!subnode) {
     free(thenode);
@@ -36,27 +36,27 @@ struct searchNode *not_parse(int type, int argc, char **argv) {
   }
 
   /* Our subnode needs to return a BOOL */  
-  subnode=coerceNode(subnode, RETURNTYPE_BOOL);
+  subnode=coerceNode(ctx, subnode, RETURNTYPE_BOOL);
 
   thenode->localdata=(void *)subnode;
       
   return thenode;
 }
 
-void not_free(struct searchNode *thenode) {
+void not_free(searchCtx *ctx, struct searchNode *thenode) {
   struct searchNode *subnode;
   subnode=thenode->localdata;
 
-  (subnode->free)(subnode);
+  (subnode->free)(ctx, subnode);
   free(thenode);
 }
 
-void *not_exe(struct searchNode *thenode, void *theinput) {
+void *not_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct searchNode *subnode;
 
   subnode=thenode->localdata;
 
-  if ((subnode->exe)(subnode, theinput)) {
+  if ((subnode->exe)(ctx, subnode, theinput)) {
     return (void *)0;
   } else {
     return (void *)1;

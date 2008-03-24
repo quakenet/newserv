@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *name_exe(struct searchNode *thenode, void *theinput);
-void name_free(struct searchNode *thenode);
+void *name_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void name_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *name_parse(int type, int argc, char **argv) {
+struct searchNode *name_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -32,13 +32,13 @@ struct searchNode *name_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *name_exe(struct searchNode *thenode, void *theinput) {
+void *name_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
 
   return cip->name->content;
 }
 
-void name_free(struct searchNode *thenode) {
+void name_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

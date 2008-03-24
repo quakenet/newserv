@@ -1,5 +1,5 @@
-
 #include <stdio.h>
+#include <stdarg.h>
 #include "newsearch.h"
 
 #include "../irc/irc_config.h"
@@ -17,12 +17,11 @@ CommandTree *nickOutputTree;
 
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
-struct searchNode *search_parse(int type, char *input);
 
-void printnick_channels(nick *, nick *);
-void printchannel(nick *, chanindex *);
-void printchannel_topic(nick *, chanindex *);
-void printchannel_services(nick *, chanindex *);
+void printnick_channels(searchCtx *, nick *, nick *);
+void printchannel(searchCtx *, nick *, chanindex *);
+void printchannel_topic(searchCtx *, nick *, chanindex *);
+void printchannel_services(searchCtx *, nick *, chanindex *);
 
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
@@ -134,19 +133,26 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
   deletecommandfromtree(searchTree, term, (CommandHandler) parsefunc);
 }
 
-int do_nicksearch(void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source, *np;
-  int i,j;
+static void controlwallwrapper(int level, char *format, ...) {
+  char buf[1024];
+  va_list ap;
+
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  controlwall(NO_OPER, level, "%s", buf);
+  va_end(ap);
+}
+
+int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
+  nick *sender = senderNSExtern = source;
   struct searchNode *search;
-  int limit=500,matches=0;
+  int limit=500;
   char *ch;
   int arg=0;
   struct Command *cmd;
   NickDisplayFunc display=printnick;
-  unsigned int cmarker;
-  unsigned int tchans=0,uchans=0;
-  struct channel **cs;
-  
+  searchCtx ctx;
+
   if (cargc<1)
     return CMD_USAGE;
   
@@ -158,7 +164,7 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
       switch(*ch) {
       case 'l':
 	if (cargc<arg) {
-	  controlreply(sender,"Error: -l switch requires an argument");
+	  reply(sender,"Error: -l switch requires an argument");
 	  return CMD_USAGE;
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
@@ -166,12 +172,12 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 	
       case 'd':
         if (cargc<arg) {
-          controlreply(sender,"Error: -d switch requires an argument");
+          reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
         cmd=findcommandintree(nickOutputTree, cargv[arg], 1);
         if (!cmd) {
-          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          reply(sender,"Error: unknown output format %s",cargv[arg]);
           return CMD_USAGE;
         }
         display=(NickDisplayFunc)cmd->handler;
@@ -179,34 +185,57 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
         break;
         
       default:
-	controlreply(sender,"Unrecognised flag -%c.",*ch);
+	reply(sender,"Unrecognised flag -%c.",*ch);
       }
     }
   }
 
   if (arg>=cargc) {
-    controlreply(sender,"No search terms - aborting.");
+    reply(sender,"No search terms - aborting.");
     return CMD_ERROR;
   }
 
   if (arg<(cargc-1)) {
     rejoinline(cargv[arg],cargc-arg);
   }
-  
-  if (!(search = search_parse(SEARCHTYPE_NICK, cargv[arg]))) {
-    controlreply(sender,"Parse error: %s",parseError);
+
+  ctx.parser = search_parse;
+  ctx.reply = reply;
+  ctx.wall = wall;
+
+  if (!(search = ctx.parser(&ctx, SEARCHTYPE_NICK, cargv[arg]))) {
+    reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
-  
+
+  nicksearch_exe(search, &ctx, sender, display, limit);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
+int do_nicksearch(void *source, int cargc, char **cargv) {
+  return do_nicksearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
+}
+
+void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, NickDisplayFunc display, int limit) {
+  int i, j;
+  int matches = 0;
+  unsigned int cmarker;
+  unsigned int tchans=0,uchans=0;
+  struct channel **cs;
+  nick *np;
+
   /* Get a marker value to mark "seen" channels for unique count */
   cmarker=nextchanmarker();
   
   /* The top-level node needs to return a BOOL */
-  search=coerceNode(search, RETURNTYPE_BOOL);
+  search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
     for (np=nicktable[i];np;np=np->next) {
-      if ((search->exe)(search, np)) {
+      if ((search->exe)(ctx, search, np)) {
         /* Add total channels */
         tchans += np->channels->cursi;
         
@@ -220,33 +249,28 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
         }
           
 	if (matches<limit)
-	  display(sender, np);
+	  display(ctx, sender, np);
 	  
 	if (matches==limit)
-	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
+	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
     }
   }
 
-  (search->free)(search);
-
-  controlreply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
+  ctx->reply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
                 matches, tchans, uchans, (float)tchans/uchans);
-
-  return CMD_OK;
 }  
 
-int do_chansearch(void *source, int cargc, char **cargv) {
+int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source;
-  chanindex *cip;
-  int i;
   struct searchNode *search;
-  int limit=500,matches=0;
+  int limit=500;
   char *ch;
   int arg=0;
   struct Command *cmd;
   ChanDisplayFunc display=printchannel;
+  searchCtx ctx;
 
   if (cargc<1)
     return CMD_USAGE;
@@ -259,7 +283,7 @@ int do_chansearch(void *source, int cargc, char **cargv) {
       switch(*ch) {
       case 'l':
 	if (cargc<arg) {
-	  controlreply(sender,"Error: -l switch requires an argument");
+	  reply(sender,"Error: -l switch requires an argument");
 	  return CMD_USAGE;
 	}
 	limit=strtoul(cargv[arg++],NULL,10);
@@ -267,12 +291,12 @@ int do_chansearch(void *source, int cargc, char **cargv) {
 
       case 'd':
         if (cargc<arg) {
-          controlreply(sender,"Error: -d switch requires an argument");
+          reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
         cmd=findcommandintree(chanOutputTree, cargv[arg], 1);
         if (!cmd) {
-          controlreply(sender,"Error: unknown output format %s",cargv[arg]);
+          reply(sender,"Error: unknown output format %s",cargv[arg]);
           return CMD_USAGE;
         }
         display=(ChanDisplayFunc)cmd->handler;
@@ -280,44 +304,60 @@ int do_chansearch(void *source, int cargc, char **cargv) {
         break;
 	
       default:
-	controlreply(sender,"Unrecognised flag -%c.",*ch);
+	reply(sender,"Unrecognised flag -%c.",*ch);
       }
     }
   }
 
   if (arg>=cargc) {
-    controlreply(sender,"No search terms - aborting.");
+    reply(sender,"No search terms - aborting.");
     return CMD_ERROR;
   }
 
   if (arg<(cargc-1)) {
     rejoinline(cargv[arg],cargc-arg);
   }
-  
-  if (!(search = search_parse(SEARCHTYPE_CHANNEL, cargv[arg]))) {
-    controlreply(sender,"Parse error: %s",parseError);
+
+  ctx.parser = search_parse;
+  ctx.reply = reply;
+  ctx.wall = wall;
+
+  if (!(search = ctx.parser(&ctx, SEARCHTYPE_CHANNEL, cargv[arg]))) {
+    reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
-  search=coerceNode(search, RETURNTYPE_BOOL);
+  chansearch_exe(search, &ctx, sender, display, limit);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
+int do_chansearch(void *source, int cargc, char **cargv) {
+  return do_chansearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
+}
+
+void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, ChanDisplayFunc display, int limit) {  
+  int i;
+  chanindex *cip;
+  int matches = 0;
+  
+  search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=cip->next) {
-      if ((search->exe)(search, cip)) {
+      if ((search->exe)(ctx, search, cip)) {
 	if (matches<limit)
-	  display(sender, cip);
+	  display(ctx, sender, cip);
 	if (matches==limit)
-	  controlreply(sender, "--- More than %d matches, skipping the rest",limit);
+	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
     }
   }
 
-  (search->free)(search);
-
-  controlreply(sender,"--- End of list: %d matches", matches);
-
-  return CMD_OK;
+  ctx->reply(sender,"--- End of list: %d matches", matches);
 }
 
 struct coercedata {
@@ -329,47 +369,47 @@ struct coercedata {
 };
 
 /* Free a coerce node */
-void free_coerce(struct searchNode *thenode) {
+void free_coerce(searchCtx *ctx, struct searchNode *thenode) {
   struct coercedata *cd=thenode->localdata;
   
-  cd->child->free(cd->child);
+  cd->child->free(ctx, cd->child);
   free(thenode->localdata);
   free(thenode);
 }
 
 /* Free a coerce node with a stringbuf allocated */
-void free_coercestring(struct searchNode *thenode) {
+void free_coercestring(searchCtx *ctx, struct searchNode *thenode) {
   free(((struct coercedata *)thenode->localdata)->u.stringbuf);
-  free_coerce(thenode);
+  free_coerce(ctx, thenode);
 }
 
 /* exe_tostr_null: return the constant string */
-void *exe_tostr_null(struct searchNode *thenode, void *theinput) {
+void *exe_tostr_null(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
   return cd->u.stringbuf;
 }
 
 /* exe_val_null: return the constant value */
-void *exe_val_null(struct searchNode *thenode, void *theinput) {
+void *exe_val_null(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
   return (void *)cd->u.val;
 }
 
 /* Lots of very dull type conversion functions */
-void *exe_inttostr(struct searchNode *thenode, void *theinput) {
+void *exe_inttostr(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
-  sprintf(cd->u.stringbuf, "%lu", (unsigned long)(cd->child->exe)(cd->child, theinput));
+  sprintf(cd->u.stringbuf, "%lu", (unsigned long)(cd->child->exe)(ctx, cd->child, theinput));
   
   return cd->u.stringbuf;
 }
 
-void *exe_booltostr(struct searchNode *thenode, void *theinput) {
+void *exe_booltostr(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
-  if ((cd->child->exe)(cd->child, theinput)) {
+  if ((cd->child->exe)(ctx, cd->child, theinput)) {
     sprintf(cd->u.stringbuf,"1");
   } else {
     cd->u.stringbuf[0]='\0';
@@ -378,22 +418,22 @@ void *exe_booltostr(struct searchNode *thenode, void *theinput) {
   return cd->u.stringbuf;
 }
 
-void *exe_strtoint(struct searchNode *thenode, void *theinput) {
+void *exe_strtoint(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
-  return (void *)strtoul((cd->child->exe)(cd->child,theinput),NULL,10);
+  return (void *)strtoul((cd->child->exe)(ctx,cd->child,theinput),NULL,10);
 }
 
-void *exe_booltoint(struct searchNode *thenode, void *theinput) {
+void *exe_booltoint(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
   /* Don't need to do anything */
-  return (cd->child->exe)(cd->child, theinput); 
+  return (cd->child->exe)(ctx, cd->child, theinput); 
 }
 
-void *exe_strtobool(struct searchNode *thenode, void *theinput) {
+void *exe_strtobool(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
-  char *ch=(cd->child->exe)(cd->child, theinput);
+  char *ch=(cd->child->exe)(ctx, cd->child, theinput);
   
   if (!ch || *ch=='\0' || (*ch=='0' && ch[1]=='\0')) {
     return (void *)0;
@@ -402,17 +442,17 @@ void *exe_strtobool(struct searchNode *thenode, void *theinput) {
   }
 }
 
-void *exe_inttobool(struct searchNode *thenode, void *theinput) {
+void *exe_inttobool(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct coercedata *cd=thenode->localdata;
   
-  if ((cd->child->exe)(cd->child, theinput)) {
+  if ((cd->child->exe)(ctx, cd->child, theinput)) {
     return (void *)1;
   } else {
     return (void *)0;
   }
 }
 
-struct searchNode *coerceNode(struct searchNode *thenode, int type) {
+struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int type) {
   struct searchNode *anode;
   struct coercedata *cd;
 
@@ -442,7 +482,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
         case RETURNTYPE_INT:
           if (thenode->returntype & RETURNTYPE_CONST) {
             /* Constant node: sort it out now */
-            sprintf(cd->u.stringbuf, "%lu", (unsigned long)thenode->exe(thenode, NULL));
+            sprintf(cd->u.stringbuf, "%lu", (unsigned long)thenode->exe(ctx, thenode, NULL));
             anode->exe=exe_tostr_null;
             anode->returntype |= RETURNTYPE_CONST;
           } else {
@@ -454,7 +494,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
         case RETURNTYPE_BOOL:
           if (thenode->returntype & RETURNTYPE_CONST) {
             /* Constant bool value */
-            if (thenode->exe(thenode,NULL)) {
+            if (thenode->exe(ctx, thenode,NULL)) {
               /* True! */
               sprintf(cd->u.stringbuf, "1");
             } else {
@@ -475,7 +515,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
       switch (thenode->returntype & RETURNTYPE_TYPE) {
         case RETURNTYPE_STRING:
           if (thenode->returntype & RETURNTYPE_CONST) {
-            cd->u.val=strtoul((thenode->exe)(thenode, NULL), NULL, 10);
+            cd->u.val=strtoul((thenode->exe)(ctx, thenode, NULL), NULL, 10);
             anode->exe=exe_val_null;
             anode->returntype |= RETURNTYPE_CONST;
           } else {
@@ -486,7 +526,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
         default:
         case RETURNTYPE_BOOL:
           if (thenode->returntype & RETURNTYPE_CONST) {
-            if ((thenode->exe)(thenode,NULL))
+            if ((thenode->exe)(ctx, thenode,NULL))
               cd->u.val=1;
             else
               cd->u.val=0;
@@ -506,7 +546,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
       switch (thenode->returntype & RETURNTYPE_TYPE) {
         case RETURNTYPE_STRING:
           if (thenode->returntype & RETURNTYPE_CONST) {
-            char *rv=(char *)((thenode->exe)(thenode, NULL));
+            char *rv=(char *)((thenode->exe)(ctx, thenode, NULL));
             if (!rv || *rv=='\0' || (*rv=='0' && rv[1]=='\0'))
               cd->u.val=0;
             else
@@ -522,7 +562,7 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
         default:
         case RETURNTYPE_INT:
           if (thenode->returntype & RETURNTYPE_CONST) {
-            if ((thenode->exe)(thenode,NULL))
+            if ((thenode->exe)(ctx, thenode,NULL))
               cd->u.val=1;
             else
               cd->u.val=0;
@@ -541,14 +581,14 @@ struct searchNode *coerceNode(struct searchNode *thenode, int type) {
 }
 
 /* Literals always return constant strings... */
-void *literal_exe(struct searchNode *thenode, void *theinput) {
+void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   if (thenode->localdata) 
     return ((sstring *)thenode->localdata)->content;
   else
     return "";
 }
 
-void literal_free(struct searchNode *thenode) {
+void literal_free(searchCtx *ctx, struct searchNode *thenode) {
   freesstring(thenode->localdata);
   free(thenode);
 }
@@ -557,7 +597,7 @@ void literal_free(struct searchNode *thenode) {
  *  Given an input string, return a searchNode.
  */
 
-struct searchNode *search_parse(int type, char *input) {
+struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */
   char *argvector[100];
   char thestring[500];
@@ -640,7 +680,7 @@ struct searchNode *search_parse(int type, char *input) {
       parseError = "Unknown command";
       return NULL;
     } else {
-      return ((parseFunc)cmd->handler)(type, j, argvector+1);
+      return ((parseFunc)cmd->handler)(ctx, type, j, argvector+1);
     }
   } else {
     /* Literal */

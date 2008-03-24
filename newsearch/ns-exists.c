@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *exists_exe(struct searchNode *thenode, void *theinput);
-void exists_free(struct searchNode *thenode);
+void *exists_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void exists_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *exists_parse(int type, int argc, char **argv) {
+struct searchNode *exists_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -31,7 +31,7 @@ struct searchNode *exists_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *exists_exe(struct searchNode *thenode, void *theinput) {
+void *exists_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
 
   if (cip->channel == NULL)
@@ -40,7 +40,7 @@ void *exists_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void exists_free(struct searchNode *thenode) {
+void exists_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

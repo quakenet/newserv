@@ -9,10 +9,10 @@
 
 #include "../channel/channel.h"
 
-void *channel_exe(struct searchNode *thenode, void *theinput);
-void channel_free(struct searchNode *thenode);
+void *channel_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void channel_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *channel_parse(int type, int argc, char **argv) {
+struct searchNode *channel_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
   channel *cp;
 
@@ -44,7 +44,7 @@ struct searchNode *channel_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *channel_exe(struct searchNode *thenode, void *theinput) {
+void *channel_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   channel *cp = thenode->localdata;
 
@@ -55,7 +55,7 @@ void *channel_exe(struct searchNode *thenode, void *theinput) {
   }
 }
 
-void channel_free(struct searchNode *thenode) {
+void channel_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *realname_exe(struct searchNode *thenode, void *theinput);
-void realname_free(struct searchNode *thenode);
+void *realname_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void realname_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *realname_parse(int type, int argc, char **argv) {
+struct searchNode *realname_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -31,13 +31,13 @@ struct searchNode *realname_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *realname_exe(struct searchNode *thenode, void *theinput) {
+void *realname_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return np->realname->name->content;
 }
 
-void realname_free(struct searchNode *thenode) {
+void realname_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

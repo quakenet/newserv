@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *authid_exe(struct searchNode *thenode, void *theinput);
-void authid_free(struct searchNode *thenode);
+void *authid_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void authid_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *authid_parse(int type, int argc, char **argv) {
+struct searchNode *authid_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -31,7 +31,7 @@ struct searchNode *authid_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *authid_exe(struct searchNode *thenode, void *theinput) {
+void *authid_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   if (IsAccount(np) && np->auth)
@@ -41,6 +41,6 @@ void *authid_exe(struct searchNode *thenode, void *theinput) {
 
 }
 
-void authid_free(struct searchNode *thenode) {
+void authid_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }

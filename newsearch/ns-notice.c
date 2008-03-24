@@ -16,8 +16,8 @@
 
 extern nick *senderNSExtern;
 
-void *notice_exe(struct searchNode *thenode, void *theinput);
-void notice_free(struct searchNode *thenode);
+void *notice_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void notice_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct notice_localdata {
   unsigned int marker;
@@ -26,7 +26,7 @@ struct notice_localdata {
   char message[NSMAX_NOTICE_LEN];
 };
 
-struct searchNode *notice_parse(int type, int argc, char **argv) {
+struct searchNode *notice_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct notice_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -75,7 +75,7 @@ struct searchNode *notice_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *notice_exe(struct searchNode *thenode, void *theinput) {
+void *notice_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct notice_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -96,7 +96,7 @@ void *notice_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void notice_free(struct searchNode *thenode) {
+void notice_free(searchCtx *ctx, struct searchNode *thenode) {
   struct notice_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
@@ -139,7 +139,7 @@ void notice_free(struct searchNode *thenode) {
     }
   }
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent the following message to %d %s: %s", senderNSExtern->nick, senderNSExtern->authname, localdata->count, localdata->count != 1 ? "users" : "user", localdata->message);
+  ctx->wall(NL_BROADCASTS, "%s/%s sent the following message to %d %s: %s", senderNSExtern->nick, senderNSExtern->authname, localdata->count, localdata->count != 1 ? "users" : "user", localdata->message);
   free(localdata);
   free(thenode);
 }

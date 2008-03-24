@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ident_exe(struct searchNode *thenode, void *theinput);
-void ident_free(struct searchNode *thenode);
+void *ident_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void ident_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *ident_parse(int type, int argc, char **argv) {
+struct searchNode *ident_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -31,13 +31,13 @@ struct searchNode *ident_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *ident_exe(struct searchNode *thenode, void *theinput) {
+void *ident_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return np->ident;
 }
 
-void ident_free(struct searchNode *thenode) {
+void ident_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

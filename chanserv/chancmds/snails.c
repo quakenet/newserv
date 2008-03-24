@@ -31,7 +31,7 @@ int csc_dosnails(void *source, int cargc, char **cargv) {
     cc = cargv[0];
     cn = cargv[1];
   } else { /* be careful adding more args! */
-    if(!strcasecmp(cargv[0], "-giant"))
+    if(!strcmp(cargv[0], "-gggGIANT")) /* please don't leak me! :( else I'll have to write more code and put it in the config file */
       giant = 1;
 
     cc = cargv[1];
