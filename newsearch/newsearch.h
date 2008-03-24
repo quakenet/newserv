@@ -38,6 +38,7 @@ typedef struct searchCtx {
   searchParseFunc parser;
   replyFunc reply;
   wallFunc wall;
+  void *arg;
 } searchCtx;
 
 typedef struct searchNode *(*parseFunc)(searchCtx *, int, int, char **);
@@ -134,3 +135,55 @@ void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, Ch
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
+
+void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void literal_free(searchCtx *ctx, struct searchNode *thenode);
+
+/* AST functions */
+
+struct searchASTNode;
+
+#define AST_NODE_CHILD 1
+#define AST_NODE_LITERAL 2
+
+/* items to store in the ast lookup cache */
+#define AST_RECENT 10
+
+typedef struct searchASTExpr {
+  int type;
+  union {
+    char *literal;
+    struct searchASTNode *child;
+  } u;
+} searchASTExpr;
+
+typedef struct searchASTNode {
+  parseFunc fn;
+  int argc;
+  struct searchASTExpr **argv;
+} searchASTNode;
+
+/*
+ *
+ * FEAR THE COMPOUND LITERALS
+ * MUHAHAHHAHAHAHAHAHAAH
+ *
+ */
+#define __NSASTExpr(x, y, ...) &(searchASTExpr){.type = x, .u.y = __VA_ARGS__}
+#define __NSASTList(...) (searchASTExpr *[]){__VA_ARGS__}
+#define __NSASTNode(x, ...) &(searchASTNode){.fn = x, .argc = sizeof(__NSASTList(__VA_ARGS__)) / sizeof(__NSASTList(__VA_ARGS__)[0]), .argv = __NSASTList(__VA_ARGS__)}
+#define __NSASTChild(...) __NSASTExpr(AST_NODE_CHILD, child, __VA_ARGS__)
+
+#define NSASTLiteral(data) __NSASTExpr(AST_NODE_LITERAL, literal, data)
+#define NSASTNode(fn, ...) __NSASTChild(__NSASTNode(fn, __VA_ARGS__))
+
+searchNode *search_astparse(searchCtx *, int, char *);
+
+int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, int limit);
+int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, int limit);
+
+char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr);
+
+/* erk */
+extern CommandTree *searchTree;
+
