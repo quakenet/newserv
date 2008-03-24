@@ -16,6 +16,7 @@ int controlrmmod(void *sender, int cargc, char **cargv);
 void controlspecialrmmod(void *arg);
 void controlspecialreloadmod(void *arg);
 void controlhelp(nick *np, Command *cmd);
+void controlnswall(int noticelevel, char *format, ...);
 
 #define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
 
