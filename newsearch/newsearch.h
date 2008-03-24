@@ -155,7 +155,6 @@ typedef struct searchASTExpr {
     char *literal;
     struct searchASTNode *child;
   } u;
-  struct searchASTExpr *next;
 } searchASTExpr;
 
 typedef struct searchASTNode {
