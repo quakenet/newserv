@@ -68,7 +68,7 @@
 /* Cleanup options */
 #define CLEANUP_ACCOUNT_INACTIVE  80
 #define CLEANUP_ACCOUNT_UNUSED    10
-#define CLEANUP_CHANNEL_INACTIVE  30
+#define CLEANUP_CHANNEL_INACTIVE  40
 
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
