@@ -678,6 +678,8 @@ extern sstring **chantypes;
 
 extern maillock *maillocks;
 
+extern sstring *cs_quitreason;
+
 /* Function prototypes */
 
 /* chanserv.c */
@@ -813,6 +815,7 @@ void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 int cs_doshowcommands(void *source, int cargc, char **cargv);
 int cs_dohelp(void *source, int cargc, char **cargv);
 int cs_doquit(void *source, int cargc, char **cargv);
+int cs_dosetquitreason(void *source, int cargc, char **cargv);
 int cs_dorename(void *source, int cargc, char **cargv);
 int cs_dorehash(void *source, int cargc, char **cargv);
 int cs_doversion(void *source, int cargc, char **cargv);
