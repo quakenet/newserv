@@ -26,6 +26,10 @@ void printchannel(searchCtx *, nick *, chanindex *);
 void printchannel_topic(searchCtx *, nick *, chanindex *);
 void printchannel_services(searchCtx *, nick *, chanindex *);
 
+UserDisplayFunc defaultuserfn = printuser;
+NickDisplayFunc defaultnickfn = printnick;
+ChanDisplayFunc defaultchanfn = printchannel;
+
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
 
@@ -207,7 +211,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  NickDisplayFunc display=printnick;
+  NickDisplayFunc display=defaultnickfn;
   searchCtx ctx;
   int ret;
 
@@ -295,7 +299,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  ChanDisplayFunc display=printchannel;
+  ChanDisplayFunc display=defaultchanfn;
   searchCtx ctx;
   int ret;
 
@@ -362,7 +366,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  UserDisplayFunc display=printuser;
+  UserDisplayFunc display=defaultuserfn;
   searchCtx ctx;
   int ret;
 
