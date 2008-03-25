@@ -45,6 +45,24 @@ int cs_doquit(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+int cs_dosetquitreason(void *source, int cargc, char **cargv) {
+  nick *sender=(nick *)source;
+
+  if (cargc<0) {
+    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setquitreason");
+    return CMD_ERROR;
+  }
+  
+  if (cs_quitreason)
+    freesstring(cs_quitreason);
+ 
+  cs_quitreason=getsstring(cargv[0], 250);
+
+  chanservstdmessage(sender, QM_DONE);
+
+  return CMD_OK;
+}
+
 int cs_dorename(void *source, int cargc, char **cargv) {
   char newnick[NICKLEN+1];
   nick *sender=source;

@@ -16,6 +16,7 @@ int chanservnext;
 int chanserv_init_status;
 
 sstring **chantypes;
+sstring *cs_quitreason;
 
 const flag rcflags[] = {
   { 'a', QCFLAG_AUTOOP },
@@ -115,6 +116,7 @@ void _init() {
     chanservcommandinit();
     chanservaddcommand("showcommands", 0, 1, cs_doshowcommands, "Lists available commands.","Usage: SHOWCOMMANDS [<mask>]\nPrints a list of commands currently available to you, where:\nmask - Mask of commands to list (* or ? are wildcards).  If no mask is specified,\n       all available commands are displayed.");
     chanservaddcommand("quit", QCMD_DEV, 1, cs_doquit, "Makes the bot QUIT and \"reconnect\".","");
+    chanservaddcommand("setquitreason", QCMD_DEV, 1, cs_doquit, "Sets the reason to be sent when quitting due to an unload.","");
     chanservaddcommand("rename", QCMD_DEV, 1, cs_dorename, "Changes the bot's name.","");
     chanservaddcommand("rehash", QCMD_DEV, 0, cs_dorehash, "Reloads all text from database.","");
     /* Make "HELP" take 2 arguments so things like "HELP chanflags #channel" work.  Any junk after the command will go into arg 2 and be ignored. */
@@ -201,7 +203,9 @@ void _fini() {
   }
 
   if (chanservnick)
-    deregisterlocaluser(chanservnick, "Leaving");
+    deregisterlocaluser(chanservnick, cs_quitreason?cs_quitreason->content:"Leaving");
+
+  freesstring(cs_quitreason);
 
   deregisterhook(HOOK_NICK_NEWNICK, cs_handlenick);
   deregisterhook(HOOK_NICK_ACCOUNT, cs_handlenick);

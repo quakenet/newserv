@@ -728,6 +728,17 @@ void cs_doallautomodes(nick *np) {
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
         /* User is on channel.. */
 
+        if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
+          /* This meets the channel use criteria, update. */
+          rcup->chan->lastactive=time(NULL);
+          
+          /* Don't spam the DB though for channels with lots of joins */
+          if (rcup->chan->lastcountersync < (time(NULL) - COUNTERSYNCINTERVAL)) {
+            csdb_updatechannelcounters(rcup->chan);
+            rcup->chan->lastcountersync=time(NULL);
+          }
+        }
+
         /* Update last use time */
         rcup->usetime=getnettime();
 
