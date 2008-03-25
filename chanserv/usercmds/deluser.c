@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: deluser
- * CMDLEVEL: QCMD_OPER
+ * CMDLEVEL: QCMD_DEV
  * CMDARGS: 2
  * CMDDESC: Removes a user from the bot.
  * CMDFUNC: csu_dodeluser
