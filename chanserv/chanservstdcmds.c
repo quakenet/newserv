@@ -56,7 +56,7 @@ int cs_dosetquitreason(void *source, int cargc, char **cargv) {
   if (cs_quitreason)
     freesstring(cs_quitreason);
  
-  cs_quitreason=getsstring(cargv[0]);
+  cs_quitreason=getsstring(cargv[0], 250);
 
   chanservstdmessage(sender, QM_DONE);
 
