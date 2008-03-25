@@ -189,6 +189,7 @@ searchNode *search_astparse(searchCtx *, int, char *);
 
 int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, int limit);
 int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, int limit);
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, int limit);
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr);
 

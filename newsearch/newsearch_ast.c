@@ -189,6 +189,36 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, int limit) {
+  searchCtx ctx;
+  searchASTCache cache;
+  searchNode *search;
+  char buf[1024];
+
+  memset(&cache, 0, sizeof(cache));
+  cache.tree = tree;
+
+  ctx.reply = reply;
+  ctx.wall = wall;
+  ctx.parser = search_astparse;
+  ctx.arg = (void *)&cache;
+
+  buf[0] = '\0';
+  reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree));
+  search = ctx.parser(&ctx, SEARCHTYPE_USER, (char *)tree);
+  if(!search) {
+    reply(sender, "Parse error: %s", parseError);
+    return CMD_ERROR;
+  }
+
+  reply(sender, "Executing...");
+  usersearch_exe(search, &ctx, sender, display, limit);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
 /* horribly, horribly inefficient -- don't call me very often! */
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr) {
   char lbuf[256];
