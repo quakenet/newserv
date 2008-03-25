@@ -25,3 +25,10 @@ int sbaddstr(StringBuf *buf, char *c) {
   return 1;
 }
 
+int sbterminate(StringBuf *buf) {
+  if(buf->capacity - buf->len > 0) {
+    buf->buf[buf->len] = '\0';
+    return 1;
+  }
+  return 0;
+}

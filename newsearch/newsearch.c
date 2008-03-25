@@ -843,7 +843,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
         break;
   }
 
-  buf[b.len] = '\0';
+  sbterminate(&b);
 
   /* not required */
   /*

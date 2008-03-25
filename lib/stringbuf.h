@@ -9,5 +9,6 @@ typedef struct StringBuf {
 
 int sbaddchar(StringBuf *buf, char c);
 int sbaddstr(StringBuf *buf, char *c);
+int sbterminate(StringBuf *buf);
 
 #endif

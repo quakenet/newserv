@@ -102,7 +102,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
         break;
   }
 
-  buf[b.len] = '\0';
+  sbterminate(&b);
 
   /* not required */
   /*
