@@ -8,6 +8,7 @@
 #include "../control/control.h"
 #include "../lib/splitline.h"
 #include "../lib/version.h"
+#include "../lib/stringbuf.h"
 
 MODULE_VERSION("");
 
@@ -786,37 +787,8 @@ struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
   }    
 }
 
-struct bufs {
-  char *buf;
-  int capacity;
-  int len;
-};
-
-static int addchar(struct bufs *buf, char c) {
-  if(buf->len >= buf->capacity - 1)
-    return 0;
-
-  buf->buf[buf->len++] = c;
-
-  return 1;
-}
-
-static int addstr(struct bufs *buf, char *c) {
-  int remaining = buf->capacity - buf->len - 1;
-  char *p;
-
-  for(p=c;*p;p++) {
-    if(remaining-- <= 0)
-      return 0;
-
-    buf->buf[buf->len++] = *p;
-  }
-
-  return 1;
-}
-
 void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
-  struct bufs b;
+  StringBuf b;
   const char *p;
   char *c;
   char hostbuf[512];
@@ -830,7 +802,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
 
   for(p=format;*p;p++) {
     if(*p != '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -838,7 +810,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
     if(*p == '\0')
       break;
     if(*p == '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -863,7 +835,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
         c = "(bad format specifier)";
     }
     if(c)
-      if(!addstr(&b, c))
+      if(!sbaddstr(&b, c))
         break;
   }
 

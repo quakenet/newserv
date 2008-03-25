@@ -3,42 +3,14 @@
 #include <stdarg.h>
 #include <string.h>
 #include "../lib/sstring.h"
+#include "../lib/stringbuf.h"
 #include "../core/error.h"
 
 #define MAXARGS 10
 #define CONVBUF 512
 
-struct bufs {
-  char *buf;
-  int capacity;
-  int len;
-};
-
-static int addchar(struct bufs *buf, char c) {
-  if(buf->len >= buf->capacity - 1)
-    return 0;
-
-  buf->buf[buf->len++] = c;
-
-  return 1;
-}
-
-static int addstr(struct bufs *buf, char *c) {
-  int remaining = buf->capacity - buf->len - 1;
-  char *p;
-
-  for(p=c;*p;p++) {
-    if(remaining-- <= 0)
-      return 0;
-
-    buf->buf[buf->len++] = *p;
-  }
-
-  return 1;
-}
-
 void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap) {
-  struct bufs b;
+  StringBuf b;
   const char *p;
   char *c;
   char convbuf[MAXARGS][CONVBUF];
@@ -90,7 +62,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
 
   for(p=format;*p;p++) {
     if(*p != '$') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -98,7 +70,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
     if(*p == '\0')
       break;
     if(*p == '$') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -126,7 +98,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
         c = "(bad format specifier)";
     }
     if(c)
-      if(!addstr(&b, c))
+      if(!sbaddstr(&b, c))
         break;
   }
 
