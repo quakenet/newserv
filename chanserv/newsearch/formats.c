@@ -3,6 +3,7 @@
 #include "../chanserv.h"
 #include "../../newsearch/newsearch.h"
 #include "../../control/control.h"
+#include "../../lib/stringbuf.h"
 
 void printchannel_qusers(searchCtx *ctx, nick *sender, chanindex *cip) {
   regchanuser *rcup;
@@ -86,4 +87,32 @@ void printnick_authchans(searchCtx *ctx, nick *sender, nick *np) {
     if (bufpos)
       ctx->reply(sender," %s", thebuf);
   }
+}
+
+void printauth(searchCtx *ctx, nick *sender, authname *anp) {
+  reguser *rup;
+  StringBuf b;
+  char output[1024];
+  nick *tnp;
+  int space = 0;
+
+  if (!(rup=anp->exts[chanservaext]))
+    return;
+
+  output[0] = '\0';
+
+  b.capacity = sizeof(output);
+  b.len = 0;
+  b.buf = output;
+
+  for(tnp=anp->nicks;tnp;tnp=tnp->next) {
+    if(space)
+      sbaddchar(&b, ' ');
+    space = 1;
+    sbaddstr(&b, tnp->nick);
+  }
+  sbterminate(&b);
+
+  ctx->reply(sender, " %s%s%s%s", rup->username, *output?" (":"", output, *output?")":"");
+  ctx->reply(sender, "  %-10s %-30s %s", UHasSuspension(rup)?"yes":"no", rup->email?rup->email->content:"(no email)", rup->lastuserhost?rup->lastuserhost->content:"(no last host)");
 }

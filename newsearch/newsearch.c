@@ -8,6 +8,7 @@
 #include "../control/control.h"
 #include "../lib/splitline.h"
 #include "../lib/version.h"
+#include "../lib/stringbuf.h"
 
 MODULE_VERSION("");
 
@@ -24,6 +25,10 @@ void printnick_channels(searchCtx *, nick *, nick *);
 void printchannel(searchCtx *, nick *, chanindex *);
 void printchannel_topic(searchCtx *, nick *, chanindex *);
 void printchannel_services(searchCtx *, nick *, chanindex *);
+
+UserDisplayFunc defaultuserfn = printuser;
+NickDisplayFunc defaultnickfn = printnick;
+ChanDisplayFunc defaultchanfn = printchannel;
 
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
@@ -206,7 +211,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  NickDisplayFunc display=printnick;
+  NickDisplayFunc display=defaultnickfn;
   searchCtx ctx;
   int ret;
 
@@ -294,7 +299,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  ChanDisplayFunc display=printchannel;
+  ChanDisplayFunc display=defaultchanfn;
   searchCtx ctx;
   int ret;
 
@@ -361,7 +366,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   struct searchNode *search;
   int limit=500;
   int arg=0;
-  UserDisplayFunc display=printuser;
+  UserDisplayFunc display=defaultuserfn;
   searchCtx ctx;
   int ret;
 
@@ -786,37 +791,8 @@ struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
   }    
 }
 
-struct bufs {
-  char *buf;
-  int capacity;
-  int len;
-};
-
-static int addchar(struct bufs *buf, char c) {
-  if(buf->len >= buf->capacity - 1)
-    return 0;
-
-  buf->buf[buf->len++] = c;
-
-  return 1;
-}
-
-static int addstr(struct bufs *buf, char *c) {
-  int remaining = buf->capacity - buf->len - 1;
-  char *p;
-
-  for(p=c;*p;p++) {
-    if(remaining-- <= 0)
-      return 0;
-
-    buf->buf[buf->len++] = *p;
-  }
-
-  return 1;
-}
-
 void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
-  struct bufs b;
+  StringBuf b;
   const char *p;
   char *c;
   char hostbuf[512];
@@ -830,7 +806,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
 
   for(p=format;*p;p++) {
     if(*p != '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -838,7 +814,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
     if(*p == '\0')
       break;
     if(*p == '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -863,11 +839,11 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
         c = "(bad format specifier)";
     }
     if(c)
-      if(!addstr(&b, c))
+      if(!sbaddstr(&b, c))
         break;
   }
 
-  buf[b.len] = '\0';
+  sbterminate(&b);
 
   /* not required */
   /*

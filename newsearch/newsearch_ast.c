@@ -1,6 +1,7 @@
 #include "newsearch.h"
 #include "../lib/sstring.h"
 #include "../lib/strlfunc.h"
+#include "../lib/stringbuf.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -189,31 +190,76 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
-/* horribly, horribly inefficient -- don't call me very often! */
-char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr) {
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, int limit) {
+  searchCtx ctx;
+  searchASTCache cache;
+  searchNode *search;
+  char buf[1024];
+
+  memset(&cache, 0, sizeof(cache));
+  cache.tree = tree;
+
+  ctx.reply = reply;
+  ctx.wall = wall;
+  ctx.parser = search_astparse;
+  ctx.arg = (void *)&cache;
+
+  buf[0] = '\0';
+  reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree));
+  search = ctx.parser(&ctx, SEARCHTYPE_USER, (char *)tree);
+  if(!search) {
+    reply(sender, "Parse error: %s", parseError);
+    return CMD_ERROR;
+  }
+
+  reply(sender, "Executing...");
+  usersearch_exe(search, &ctx, sender, display, limit);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
+
+/* horribly inefficient -- don't call me very often! */
+static char *ast_printtree_real(StringBuf *buf, searchASTExpr *expr) {
   char lbuf[256];
   if(expr->type == AST_NODE_CHILD) {    
     int i;
     sstring *command = getcommandname(searchTree, (void *)expr->u.child->fn);
-    char *space = expr->u.child->argc>0?" ":"";
 
     if(command) {
-      snprintf(lbuf, sizeof(lbuf), "(%s%s", command->content, space);
+      snprintf(lbuf, sizeof(lbuf), "(%s", command->content);
     } else {
-      snprintf(lbuf, sizeof(lbuf), "(%p%s", expr->u.child->fn, space);
+      snprintf(lbuf, sizeof(lbuf), "(%p", expr->u.child->fn);
     }
-    strlcat(buf, lbuf, bufsize);
+    sbaddstr(buf, lbuf);
 
-    for(i=0;i<expr->u.child->argc;i++)
-      ast_printtree(buf, bufsize, expr->u.child->argv[i]);
+    for(i=0;i<expr->u.child->argc;i++) {
+      sbaddchar(buf, ' ');
+      ast_printtree_real(buf, expr->u.child->argv[i]);
+    }
+    sbaddchar(buf, ')');
 
-    strlcat(buf, ")", bufsize);
   } else if(expr->type == AST_NODE_LITERAL) {
-    snprintf(lbuf, sizeof(lbuf), " %s", expr->u.literal);
-    strlcat(buf, lbuf, bufsize);
+    sbaddstr(buf, expr->u.literal);
   } else {
-    strlcat(buf, " ??? ", bufsize);
+    sbaddstr(buf, "???");
   }
 
-  return buf;
+  return buf->buf;
+}
+
+char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr) {
+  StringBuf b;
+  char *p;
+
+  b.capacity = bufsize;
+  b.len = 0;
+  b.buf = buf;
+
+  p = ast_printtree_real(&b, expr);
+ 
+  sbterminate(&b);
+  return p;
 }
