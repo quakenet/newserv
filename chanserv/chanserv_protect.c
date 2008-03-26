@@ -21,8 +21,7 @@ void _init() {
   registerhook(HOOK_NICK_NEWNICK, csp_freenick);
   registerhook(HOOK_NICK_ACCOUNT, csp_freenick);
   
-  chanservaddcommand("claimnick", QCMD_HELPER, 0, csp_doclaimnick, 
-		     "Reclaims your nickname if it has been stolen.","");
+  chanservaddcommand("claimnick", QCMD_HELPER, 0, csp_doclaimnick, "Reclaims your nickname if it has been stolen.","");
 }
 
 void _fini() {
