@@ -78,7 +78,7 @@
 #define MAXLANG      50
 
 /* Maximum number of user chanlevs and bans */
-#define MAXCHANLEVS  250
+#define MAXCHANLEVS  500
 #define MAXBANS      50
 
 /* Sources of entropy and standard length defines */
