@@ -8,20 +8,27 @@
 #include "../control/control.h"
 #include "../lib/splitline.h"
 #include "../lib/version.h"
+#include "../lib/stringbuf.h"
 
 MODULE_VERSION("");
 
 CommandTree *searchTree;
 CommandTree *chanOutputTree;
 CommandTree *nickOutputTree;
+CommandTree *userOutputTree;
 
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
+int do_usersearch(void *source, int cargc, char **cargv);
 
 void printnick_channels(searchCtx *, nick *, nick *);
 void printchannel(searchCtx *, nick *, chanindex *);
 void printchannel_topic(searchCtx *, nick *, chanindex *);
 void printchannel_services(searchCtx *, nick *, chanindex *);
+
+UserDisplayFunc defaultuserfn = printuser;
+NickDisplayFunc defaultnickfn = printnick;
+ChanDisplayFunc defaultchanfn = printchannel;
 
 void registersearchterm(char *term, parseFunc parsefunc);
 void deregistersearchterm(char *term, parseFunc parsefunc);
@@ -42,6 +49,14 @@ void unregnickdisp(const char *name, NickDisplayFunc handler) {
   deletecommandfromtree(nickOutputTree, name, (CommandHandler)handler);
 }
 
+void reguserdisp(const char *name, UserDisplayFunc handler) {
+  addcommandtotree(userOutputTree, name, 0, 0, (CommandHandler)handler);
+}
+
+void unreguserdisp(const char *name, UserDisplayFunc handler) {
+  deletecommandfromtree(userOutputTree, name, (CommandHandler)handler);
+}
+
 const char *parseError;
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) */
@@ -51,6 +66,7 @@ void _init() {
   searchTree=newcommandtree();
   chanOutputTree=newcommandtree();
   nickOutputTree=newcommandtree();
+  userOutputTree=newcommandtree();
 
   /* Boolean operations */
   registersearchterm("and",and_parse);
@@ -113,16 +129,22 @@ void _init() {
   regchandisp("topic",printchannel_topic);
   regchandisp("services",printchannel_services);
 
+  /* Nick output filters */
+  reguserdisp("default",printuser);
+    
   registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
   registercontrolhelpcmd("chansearch",NO_OPER,4,do_chansearch, "Usage: chansearch <criteria>\nSearches for channels with the given criteria.");
+  registercontrolhelpcmd("usersearch",NO_OPER,4,do_usersearch, "Usage: usersearch <criteria>\nSearches for users with the given criteria.");
 }
 
 void _fini() {
   destroycommandtree(searchTree);
   destroycommandtree(chanOutputTree);
   destroycommandtree(nickOutputTree);
+  destroycommandtree(userOutputTree);
   deregistercontrolcmd("nicksearch", do_nicksearch);
   deregistercontrolcmd("chansearch", do_chansearch);
+  deregistercontrolcmd("usersearch", do_usersearch);
 }
 
 void registersearchterm(char *term, parseFunc parsefunc) {
@@ -143,45 +165,36 @@ static void controlwallwrapper(int level, char *format, ...) {
   va_end(ap);
 }
 
-int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source;
-  struct searchNode *search;
-  int limit=500;
+static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **display, CommandTree *tree, replyFunc reply, void *sender) {
   char *ch;
-  int arg=0;
   struct Command *cmd;
-  NickDisplayFunc display=printnick;
-  searchCtx ctx;
 
-  if (cargc<1)
-    return CMD_USAGE;
-  
   if (*cargv[0] == '-') {
     /* options */
-    arg++;
+    (*arg)++;
     
     for (ch=cargv[0]+1;*ch;ch++) {
       switch(*ch) {
       case 'l':
-	if (cargc<arg) {
+	if (cargc<*arg) {
 	  reply(sender,"Error: -l switch requires an argument");
 	  return CMD_USAGE;
 	}
-	limit=strtoul(cargv[arg++],NULL,10);
+	*limit=strtoul(cargv[(*arg)++],NULL,10);
 	break;
 	
       case 'd':
-        if (cargc<arg) {
+        if (cargc<*arg) {
           reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
-        cmd=findcommandintree(nickOutputTree, cargv[arg], 1);
+        cmd=findcommandintree(tree, cargv[*arg], 1);
         if (!cmd) {
-          reply(sender,"Error: unknown output format %s",cargv[arg]);
+          reply(sender,"Error: unknown output format %s",cargv[*arg]);
           return CMD_USAGE;
         }
-        display=(NickDisplayFunc)cmd->handler;
-        arg++;
+        *display=(void *)cmd->handler;
+        (*arg)++;
         break;
         
       default:
@@ -189,6 +202,25 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
       }
     }
   }
+
+  return CMD_OK;
+}
+
+int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
+  nick *sender = senderNSExtern = source;
+  struct searchNode *search;
+  int limit=500;
+  int arg=0;
+  NickDisplayFunc display=defaultnickfn;
+  searchCtx ctx;
+  int ret;
+
+  if (cargc<1)
+    return CMD_USAGE;
+  
+  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, nickOutputTree, reply, sender);
+  if(ret != CMD_OK)
+    return ret;
 
   if (arg>=cargc) {
     reply(sender,"No search terms - aborting.");
@@ -266,48 +298,17 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   nick *sender = senderNSExtern = source;
   struct searchNode *search;
   int limit=500;
-  char *ch;
   int arg=0;
-  struct Command *cmd;
-  ChanDisplayFunc display=printchannel;
+  ChanDisplayFunc display=defaultchanfn;
   searchCtx ctx;
+  int ret;
 
   if (cargc<1)
     return CMD_USAGE;
   
-  if (*cargv[0] == '-') {
-    /* options */
-    arg++;
-    
-    for (ch=cargv[0]+1;*ch;ch++) {
-      switch(*ch) {
-      case 'l':
-	if (cargc<arg) {
-	  reply(sender,"Error: -l switch requires an argument");
-	  return CMD_USAGE;
-	}
-	limit=strtoul(cargv[arg++],NULL,10);
-	break;
-
-      case 'd':
-        if (cargc<arg) {
-          reply(sender,"Error: -d switch requires an argument");
-          return CMD_USAGE;
-        }
-        cmd=findcommandintree(chanOutputTree, cargv[arg], 1);
-        if (!cmd) {
-          reply(sender,"Error: unknown output format %s",cargv[arg]);
-          return CMD_USAGE;
-        }
-        display=(ChanDisplayFunc)cmd->handler;
-        arg++;
-        break;
-	
-      default:
-	reply(sender,"Unrecognised flag -%c.",*ch);
-      }
-    }
-  }
+  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, chanOutputTree, reply, sender);
+  if(ret != CMD_OK)
+    return ret;
 
   if (arg>=cargc) {
     reply(sender,"No search terms - aborting.");
@@ -350,6 +351,73 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Cha
       if ((search->exe)(ctx, search, cip)) {
 	if (matches<limit)
 	  display(ctx, sender, cip);
+	if (matches==limit)
+	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
+	matches++;
+      }
+    }
+  }
+
+  ctx->reply(sender,"--- End of list: %d matches", matches);
+}
+
+int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
+  nick *sender = senderNSExtern = source;
+  struct searchNode *search;
+  int limit=500;
+  int arg=0;
+  UserDisplayFunc display=defaultuserfn;
+  searchCtx ctx;
+  int ret;
+
+  if (cargc<1)
+    return CMD_USAGE;
+  
+  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, userOutputTree, reply, sender);
+  if(ret != CMD_OK)
+    return ret;
+
+  if (arg>=cargc) {
+    reply(sender,"No search terms - aborting.");
+    return CMD_ERROR;
+  }
+
+  if (arg<(cargc-1)) {
+    rejoinline(cargv[arg],cargc-arg);
+  }
+
+  ctx.parser = search_parse;
+  ctx.reply = reply;
+  ctx.wall = wall;
+
+  if (!(search = ctx.parser(&ctx, SEARCHTYPE_USER, cargv[arg]))) {
+    reply(sender,"Parse error: %s",parseError);
+    return CMD_ERROR;
+  }
+
+  usersearch_exe(search, &ctx, sender, display, limit);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
+int do_usersearch(void *source, int cargc, char **cargv) {
+  return do_usersearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
+}
+
+void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, UserDisplayFunc display, int limit) {  
+  int i;
+  authname *aup;
+  int matches = 0;
+  
+  search=coerceNode(ctx, search, RETURNTYPE_BOOL);
+  
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (aup=authnametable[i];aup;aup=aup->next) {
+      if ((search->exe)(ctx, search, aup)) {
+	if (matches<limit)
+	  display(ctx, sender, aup);
 	if (matches==limit)
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
@@ -723,37 +791,8 @@ struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
   }    
 }
 
-struct bufs {
-  char *buf;
-  int capacity;
-  int len;
-};
-
-static int addchar(struct bufs *buf, char c) {
-  if(buf->len >= buf->capacity - 1)
-    return 0;
-
-  buf->buf[buf->len++] = c;
-
-  return 1;
-}
-
-static int addstr(struct bufs *buf, char *c) {
-  int remaining = buf->capacity - buf->len - 1;
-  char *p;
-
-  for(p=c;*p;p++) {
-    if(remaining-- <= 0)
-      return 0;
-
-    buf->buf[buf->len++] = *p;
-  }
-
-  return 1;
-}
-
 void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
-  struct bufs b;
+  StringBuf b;
   const char *p;
   char *c;
   char hostbuf[512];
@@ -767,7 +806,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
 
   for(p=format;*p;p++) {
     if(*p != '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -775,7 +814,7 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
     if(*p == '\0')
       break;
     if(*p == '%') {
-      if(!addchar(&b, *p))
+      if(!sbaddchar(&b, *p))
         break;
       continue;
     }
@@ -800,11 +839,11 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
         c = "(bad format specifier)";
     }
     if(c)
-      if(!addstr(&b, c))
+      if(!sbaddstr(&b, c))
         break;
   }
 
-  buf[b.len] = '\0';
+  sbterminate(&b);
 
   /* not required */
   /*

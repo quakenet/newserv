@@ -146,3 +146,7 @@ void printchannel_services(searchCtx *ctx, nick *sender, chanindex *cip) {
   }
 }
 
+void printuser(searchCtx *ctx, nick *sender, authname *aup) {
+  ctx->reply(sender,"%d", aup->userid);
+}
+

@@ -1,5 +1,5 @@
 #include "../chanserv.h"
-#include "../../newsearch/newsearch.h"
+#include "chanserv_newsearch.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -51,5 +51,45 @@ int cs_dochansearch(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_DONE);  
   return CMD_OK;
+}
+
+int cs_dousersearch(void *source, int cargc, char **cargv) {
+  nick *sender=source;
+  
+  if (cargc < 1) {
+    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "usersearch");
+    return CMD_ERROR;
+  }
+
+  do_usersearch_real(chanservmessagewrapper, chanservwallwrapper, source, cargc, cargv);
+
+  chanservstdmessage(sender, QM_DONE);  
+  return CMD_OK;
+}
+
+int cs_dospewemailtwo(void *source, int cargc, char **cargv) {
+  searchASTExpr *tree;
+
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  tree = NSASTNode(match_parse, NSASTNode(qemail_parse), NSASTLiteral(cargv[0]));
+  return ast_usersearch(tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, 500);
+}
+
+int cs_dospewdbtwo(void *source, int cargc, char **cargv) {
+  searchASTExpr *tree;
+
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  tree =
+    NSASTNode(or_parse,
+      NSASTNode(match_parse, NSASTNode(qusername_parse), NSASTLiteral(cargv[0])),
+      NSASTNode(match_parse, NSASTNode(qsuspendreason_parse), NSASTLiteral(cargv[0])),
+      NSASTNode(match_parse, NSASTNode(qemail_parse), NSASTLiteral(cargv[0])),
+      NSASTNode(match_parse, NSASTNode(qlasthost_parse), NSASTLiteral(cargv[0])),
+    );
+  return ast_usersearch(tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, 500);
 }
 

@@ -53,6 +53,7 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
 int deletecommandfromtree(CommandTree *ct, const char *cmdname, CommandHandler handler);
 Command *findcommandintree(CommandTree *ct, const char *cmdname, int strictcheck);
 int getcommandlist(CommandTree *ct, Command **commandlist, int maxcommands);
+sstring *getcommandname(CommandTree *ct, CommandHandler handler);
 
 #define addcommandtotree(a, b, c, d, e) addcommandhelptotree(a, b, c, d, e, NULL)
 

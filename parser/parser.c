@@ -347,3 +347,23 @@ int getcommandlist(CommandTree *ct, Command **commandlist, int maxcommands) {
   
   return count;
 }
+
+/* Returns the command name given a handler */
+sstring *getcommandname(CommandTree *ct, CommandHandler handler) {
+  int i;
+  sstring *s;
+
+  if(ct->cmd && ct->cmd->handler == handler) {
+    return ct->cmd->command;
+  }
+
+  for (i=0;i<26;i++) {
+    if(ct->next[i]) {
+      s=getcommandname(ct->next[i], handler);
+      if(s)
+        return s;
+    }
+  }
+
+  return NULL;
+}
