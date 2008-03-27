@@ -1,6 +1,7 @@
 
 #include "chanserv.h"
 #include "../core/events.h"
+#include "../lib/irc_string.h"
 #include <pcre.h>
 #include <sys/poll.h>
 #include <sys/types.h>
@@ -12,12 +13,14 @@
 #include <unistd.h>
 
 #define CSG_BUFSIZE    1024
+#define CSG_MAXSTARTPOINT    21
 
 pcre           *csg_curpat;        /* Compiled pattern from pcre */
 int             csg_curfile;       /* Which logfile is being searched */
 unsigned long   csg_curnum;        /* What numeric is doing a search */
 int             csg_matches;       /* How many lines have been returned so far */
 int             csg_maxmatches=0;  /* How many matches are allowed */
+int		csg_direction;     /* Log direction (0 = forward, 1 = reverse) */
 int		csg_bytesread;
 
 char            csg_readbuf[CSG_BUFSIZE];  /* Buffer */
@@ -25,6 +28,8 @@ int             csg_bytesleft;     /* How much valid data there is in the buffer
 
 void csg_handleevents(int fd, short revents);
 int csg_dogrep(void *source, int cargc, char **cargv);
+int csg_dorgrep(void *source, int cargc, char **cargv);
+int csg_execgrep(nick *sender, char *pattern);
 
 #if !defined(pread)
 extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
@@ -32,49 +37,96 @@ extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 void _init() {
   chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.","");
+  chanservaddcommand("rgrep",  QCMD_OPER, 1, csg_dorgrep,  "Searches the logs in reverse order.","");
 }
 
 void _fini() {
   chanservremovecommand("grep", csg_dogrep);
+  chanservremovecommand("rgrep", csg_dorgrep);
 }
 
 int csg_dogrep(void *source, int cargc, char **cargv) {
   nick *sender=source;
-  const char *errptr;
-  int erroffset;
-  int fd;
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "grep");
     return CMD_ERROR;
   }
 
-  if (csg_maxmatches>0) {
-    chanservsendmessage(sender, "Sorry, grep is currently busy - try later.");
+  csg_curfile=0;
+  csg_direction=0;
+  return csg_execgrep(sender, cargv[0]);
+}
+
+int csg_dorgrep(void *source, int cargc, char **cargv) {
+  int startpoint;
+  nick *sender=source;
+
+  if (cargc<2) {
+    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "rgrep");
     return CMD_ERROR;
   }
 
-  if (!(csg_curpat=pcre_compile(cargv[0], 0, &errptr, &erroffset, NULL))) {
+  if (!protectedatoi(cargv[0], &startpoint)) {
+    chanservsendmessage(sender, "Error in starting day number.");
+    return CMD_ERROR;
+  }
+
+  if (startpoint<0) {
+    chanservsendmessage(sender, "Invalid starting day number.");
+    return CMD_ERROR;
+  }
+
+  if (startpoint>CSG_MAXSTARTPOINT) {
+    chanservsendmessage(sender, "Sorry, the maximum starting day is %d days.", CSG_MAXSTARTPOINT);
+    return CMD_ERROR;
+  }
+
+  csg_curfile=startpoint;
+  csg_direction=1;
+  return csg_execgrep(sender, cargv[1]);
+}
+
+int csg_execgrep(nick *sender, char *pattern) {
+  const char *errptr;
+  int erroffset;
+  int fd;
+  char filename[50];
+
+  if (csg_maxmatches>0) {
+    chanservsendmessage(sender, "Sorry, the grepper is currently busy - try later.");
+    return CMD_ERROR;
+  }
+
+  if (!(csg_curpat=pcre_compile(pattern, 0, &errptr, &erroffset, NULL))) {
     chanservsendmessage(sender, "Error in pattern at character %d: %s",erroffset,errptr);
     return CMD_ERROR;
   }
 
-  if ((fd=open("chanservlog",O_RDONLY))<0) {
-    chanservsendmessage(sender, "Unable to open logfile.");
-    free(csg_curpat);    
-    return CMD_ERROR;
+  if (csg_direction==0 || csg_curfile==0) {
+    if ((fd=open("chanservlog",O_RDONLY))<0) {
+      chanservsendmessage(sender, "Unable to open logfile.");
+      free(csg_curpat);    
+      return CMD_ERROR;
+    }
+  } else {
+    sprintf(filename,"chanservlog.%d",csg_curfile);
+    if ((fd=open(filename,O_RDONLY))<0) {
+      chanservsendmessage(sender, "Unable to open logfile.");
+      free(csg_curpat);    
+      return CMD_ERROR;
+    }
   }
 
   /* Initialise stuff for the match */
   csg_maxmatches=500;
   csg_matches=0;
   csg_curnum=sender->numeric;
-  csg_curfile=0;
   csg_bytesleft=0;
   csg_bytesread=0;
 
   registerhandler(fd, POLLIN, csg_handleevents);
-  chanservsendmessage(sender, "Started grep for %s...",cargv[0]);
+  chanservsendmessage(sender, "Started grep for %s...",pattern);
 
   return CMD_OK;
 }
@@ -101,7 +153,19 @@ retry:
 /*    chanservsendmessage(np, "Closing file: res=%d, errno=%d(%s), bytes read=%d",res,errno,sys_errlist[errno],csg_bytesread); */
     /* End of file (or error) */
     deregisterhandler(fd, 1);
-    sprintf(filename,"chanservlog.%d",++csg_curfile);
+    if (csg_direction==0) {
+      sprintf(filename,"chanservlog.%d",++csg_curfile);
+    } else {
+      csg_curfile--;
+      if (csg_curfile<0) {
+        chanservstdmessage(np, QM_ENDOFLIST);
+        return;
+      } else if (csg_curfile==0) {
+        sprintf(filename,"chanservlog");
+      } else {
+        sprintf(filename,"chanservlog.%d",csg_curfile);
+      }
+    }
     if ((fd=open(filename,O_RDONLY))>=0) {
       /* Found the next file */
       registerhandler(fd, POLLIN, csg_handleevents);
