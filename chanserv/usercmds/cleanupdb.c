@@ -19,8 +19,9 @@
 int csu_docleanupdb(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *vrup, *srup, *founder;
+  regchanuser *rcup, *nrcup;
   authname *anp;
-  int i;
+  int i,j;
   time_t t;
   long to_age, unused_age, maxchan_age;
   int expired = 0, unauthed = 0, chansvaped = 0;
@@ -73,6 +74,19 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
         cs_log(sender, "CLEANUPDB inactive channel %s", cip->name?cip->name->content:"??");
         cs_removechannel(rcp);
         chansvaped++;
+      }
+      
+      /* Get rid of any dead chanlev entries */
+      for (j=0;j<REGCHANUSERHASHSIZE;j++) {
+        for (rcup=rcp->regusers[j];rcup;rcup=nrcup) {
+          nrcup=rcup->nextbychan;
+          
+          if (!rcup->flags) {
+            chanservsendmessage(sender, "Removing user %s from channel %s (no flags)",rcup->user->username,rcp->index->name->content);
+            csdb_deletechanuser(rcup);
+            delreguserfromchannel(rcp, rcup->user);
+          }
+        }
       }
     }
   }
