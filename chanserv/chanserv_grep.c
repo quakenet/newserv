@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 #define CSG_BUFSIZE    1024
-#define CSG_MAXSTARTPOINT    21
+#define CSG_MAXSTARTPOINT    30
 
 pcre           *csg_curpat;        /* Compiled pattern from pcre */
 int             csg_curfile;       /* Which logfile is being searched */
@@ -36,8 +36,8 @@ extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 #endif
 
 void _init() {
-  chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.","");
-  chanservaddcommand("rgrep",  QCMD_OPER, 1, csg_dorgrep,  "Searches the logs in reverse order.","");
+  chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.","Usage: GREP <regex>\nSearches the logs.  The current logfile will be specified first, followed by\nall older logfiles found.  This will shuffle the order of results slightly.  Where:\nregex  - regular expression to search for.\nNote: For a case insensitive search, prepend (?i) to the regex.");
+  chanservaddcommand("rgrep",  QCMD_OPER, 2, csg_dorgrep,  "Searches the logs in reverse order.","Usage: GREP <days> <regex>\nSearches the logs.  The oldest specified log will be specified first meaning\nthat all events returned will be in strict chronological order. Where:\ndays  - number of days of history to search\nregex - regex to search for\nNote: For a case insensitive search, prepend (?i) to the regex.");
 }
 
 void _fini() {
