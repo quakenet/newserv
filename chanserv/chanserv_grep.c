@@ -37,7 +37,7 @@ extern ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 void _init() {
   chanservaddcommand("grep",   QCMD_OPER, 1, csg_dogrep,   "Searches the logs.","Usage: GREP <regex>\nSearches the logs.  The current logfile will be specified first, followed by\nall older logfiles found.  This will shuffle the order of results slightly.  Where:\nregex  - regular expression to search for.\nNote: For a case insensitive search, prepend (?i) to the regex.");
-  chanservaddcommand("rgrep",  QCMD_OPER, 2, csg_dorgrep,  "Searches the logs in reverse order.","Usage: GREP <days> <regex>\nSearches the logs.  The oldest specified log will be specified first meaning\nthat all events returned will be in strict chronological order. Where:\ndays  - number of days of history to search\nregex - regex to search for\nNote: For a case insensitive search, prepend (?i) to the regex.");
+  chanservaddcommand("rgrep",  QCMD_OPER, 2, csg_dorgrep,  "Searches the logs in reverse order.","Usage: RGREP <days> <regex>\nSearches the logs.  The oldest specified log will be specified first meaning\nthat all events returned will be in strict chronological order. Where:\ndays  - number of days of history to search\nregex - regex to search for\nNote: For a case insensitive search, prepend (?i) to the regex.");
 }
 
 void _fini() {
@@ -159,6 +159,8 @@ retry:
       csg_curfile--;
       if (csg_curfile<0) {
         chanservstdmessage(np, QM_ENDOFLIST);
+        free(csg_curpat);
+        csg_maxmatches=0;
         return;
       } else if (csg_curfile==0) {
         sprintf(filename,"chanservlog");
