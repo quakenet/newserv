@@ -553,7 +553,7 @@ void checkpendingkills(int hooknum, void *arg) {
 }
 
 /* Auth user */
-void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long accid, flag_t accountflags) {
+void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
@@ -562,7 +562,7 @@ void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long a
   SetAccount(np);
   strncpy(np->authname, accname, ACCOUNTLEN);
   np->authname[ACCOUNTLEN]='\0';
-  np->accountts=getnettime();
+  np->accountts=authTS?authTS:getnettime();
   np->accountflags=accountflags;
 
   if (accid) {
