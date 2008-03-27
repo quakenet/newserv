@@ -5,7 +5,7 @@
 #include "chanserv.h"
 #include "../core/schedule.h"
 #include "../localuser/localuser.h"
-
+#include "../lib/irc_string.h"
 
 #define PROTECTTIME    60 /* How long you have to renick if you encroach.. */
 
