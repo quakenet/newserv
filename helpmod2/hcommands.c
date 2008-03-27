@@ -3846,6 +3846,10 @@ void helpmod_command(huser *sender, channel* returntype, char *args)
 
 	if (hcom == NULL)
 	{
+            controlwall(NO_DEVELOPER, NL_ALL_COMMANDS, "(G) From: %s!%s@%s%s%s: %s",
+                        sender->real_user->nick, sender->real_user->ident,
+                        sender->real_user->host->name->content, IsAccount(sender->real_user)?"/":"",
+                        IsAccount(sender->real_user)?sender->real_user->authname:"", args);            
 	    if ((returntype == NULL) ||
 		(sender->account != NULL && !(sender->account->flags & H_NO_CMD_ERROR)))
 		helpmod_reply(sender, returntype, "Unknown command '%s', please see showcommands for a list of all commands available to you", parsed_args[0]);
