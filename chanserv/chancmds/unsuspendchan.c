@@ -48,7 +48,7 @@ int csc_dounsuspendchan(void *source, int cargc, char **cargv) {
   }
 
   CClearSuspended(rcp);
-  cs_log(sender,"UNSUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason->content);
+  cs_log(sender,"UNSUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
   freesstring(rcp->suspendreason);
   rcp->suspendreason = NULL;
   rcp->suspendby = 0;
