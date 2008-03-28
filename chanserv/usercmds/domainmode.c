@@ -52,12 +52,12 @@ char *getdomainmode(maildomain *mdp) {
 }
 
 int checkdomain(char *dom) {
-  const char validchars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
+  const char *validchars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
   int hypok=0;
   char lastch;
-  char *chp;
+  char *ch;
   
-  for (chp=dom;*chp;chp++) {
+  for (ch=dom;*ch;ch++) {
     if (*ch=='.') {
       if (hypok==0) {
         /* This is two dots in a row - bad */
