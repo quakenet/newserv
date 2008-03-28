@@ -51,6 +51,44 @@ char *getdomainmode(maildomain *mdp) {
   return buf1;
 }
 
+int checkdomain(char *dom) {
+  const char validchars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
+  int hypok=0;
+  char lastch;
+  char *chp;
+  
+  for (chp=dom;*chp;chp++) {
+    if (*ch=='.') {
+      if (hypok==0) {
+        /* This is two dots in a row - bad */
+        return 1;
+      }
+      hypok=0;
+    } else if (*ch=='-') {
+      if (hypok==0) {
+        /* either .- or - at the start - bad */
+        return 1;
+      }
+    } else {
+      if (!strchr(validchars, *ch)) {
+        /* Unrecognized char */
+        return 1;
+      }
+     
+      /* We encountered some random valid characters, so hyphens (and dots) are now OK until the next dot */ 
+      hypok=1;
+    }
+    lastch=*ch;
+  }
+  
+  if (lastch=='.') {
+    /* Can't end on a dot */
+    return 1;
+  }
+  
+  return 0;
+}
+
 int csu_dodomainmode(void *source, int cargc, char **cargv) {
   maildomain *mdp; 
   nick *sender=source;
@@ -62,6 +100,11 @@ int csu_dodomainmode(void *source, int cargc, char **cargv) {
 
   if (cargc<1) {
     chanservstdmessage(sender,QM_NOTENOUGHPARAMS,"domainmode");
+    return CMD_ERROR;
+  }
+
+  if (checkdomain(cargv[0])) {
+    chanservstdmessage(sender,QM_INVALIDDOMAIN,cargv[0]);
     return CMD_ERROR;
   }
 
