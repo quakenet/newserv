@@ -36,6 +36,11 @@ int csc_dorejoin(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_UNKNOWNCHAN, cargv[0]);
     return CMD_ERROR;
   }
+  
+  if (!cip->channel) {
+    chanservstdmessage(sender, QM_EMPTYCHAN, cip->name->content);
+    return CMD_ERROR;
+  }
 
   if (CIsJoined(rcp) && !CIsSuspended(rcp)) {
     CSetSuspended(rcp);
