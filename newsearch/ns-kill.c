@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../control/control.h" /* controlreply() */
+#include "../control/control.h"
 #include "../localuser/localuser.h" /* killuser() */
 #include "../lib/irc_string.h" /* IPtostr() */
 #include "../lib/strlfunc.h"
@@ -16,8 +16,8 @@
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
 extern nick *senderNSExtern;
 
-void *kill_exe(struct searchNode *thenode, void *theinput);
-void kill_free(struct searchNode *thenode);
+void *kill_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void kill_free(searchCtx *ctx, struct searchNode *thenode);
 static const char *defaultreason = "You (%n) have been disconnected for violating our terms of service";
 
 struct kill_localdata {
@@ -27,7 +27,7 @@ struct kill_localdata {
   char reason[NSMAX_REASON_LEN];
 };
 
-struct searchNode *kill_parse(int type, int argc, char **argv) {
+struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -72,7 +72,7 @@ struct searchNode *kill_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *kill_exe(struct searchNode *thenode, void *theinput) {
+void *kill_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct kill_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -93,7 +93,7 @@ void *kill_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void kill_free(struct searchNode *thenode) {
+void kill_free(searchCtx *ctx, struct searchNode *thenode) {
   struct kill_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip;
@@ -105,7 +105,7 @@ void kill_free(struct searchNode *thenode) {
 
   if (localdata->count > NSMAX_KILL_LIMIT) {
     /* need to warn the user that they have just tried to twat half the network ... */
-    controlreply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
+    ctx->reply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
     free(localdata);
     free(thenode);
     return;
@@ -153,9 +153,9 @@ void kill_free(struct searchNode *thenode) {
   }
 
   if (safe)
-    controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
+    ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+  ctx->wall(NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
     (localdata->count - safe) != 1 ? "users" : "user", (localdata->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", safe);
   free(localdata);
   free(thenode);

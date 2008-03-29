@@ -22,6 +22,9 @@ int csu_dospewdb(void *source, int cargc, char **cargv) {
   reguser *dbrup;
   int i;
   unsigned int count=0;
+  char timebuf[30];
+  struct tm *tmp;
+  char *la;
   
   if (!rup)
     return CMD_ERROR;
@@ -34,8 +37,19 @@ int csu_dospewdb(void *source, int cargc, char **cargv) {
   chanservstdmessage(sender, QM_SPEWHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (dbrup=regusernicktable[i]; dbrup; dbrup=dbrup->nextbyname) {
-      if (!match(cargv[0], dbrup->username)) {
-        chanservsendmessage(sender, "%-15s %-10s %-30s %s", dbrup->username, UHasSuspension(dbrup)?"yes":"no", dbrup->email?dbrup->email->content:"none set", dbrup->lastuserhost?dbrup->lastuserhost->content:"none");
+      if ((!match(cargv[0], dbrup->username)) ||
+          (dbrup->email && !match(cargv[0], dbrup->email->content)) ||
+          (dbrup->lastuserhost && !match(cargv[0], dbrup->lastuserhost->content)) ||
+          (dbrup->suspendreason && !match(cargv[0], dbrup->suspendreason->content))) {
+        if (dbrup->lastauth) {
+          tmp=gmtime(&(dbrup->lastauth));
+          strftime(timebuf,15,"%d/%m/%y %H:%M",tmp);
+          la=timebuf;
+        } else {
+          la="(never)";
+        }
+        
+        chanservsendmessage(sender, "%-15s %-10s %-30s %-15s %s", dbrup->username, UHasSuspension(dbrup)?"yes":"no", dbrup->email?dbrup->email->content:"none set", la, dbrup->lastuserhost?dbrup->lastuserhost->content:"none");
         count++;
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "users");

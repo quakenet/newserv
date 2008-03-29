@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *services_exe(struct searchNode *thenode, void *theinput);
-void services_free(struct searchNode *thenode);
+void *services_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void services_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *services_parse(int type, int argc, char **argv) {
+struct searchNode *services_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -32,7 +32,7 @@ struct searchNode *services_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *services_exe(struct searchNode *thenode, void *theinput) {
+void *services_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   chanindex *cip = (chanindex *)theinput;
   nick *np;
   int i;
@@ -55,7 +55,7 @@ void *services_exe(struct searchNode *thenode, void *theinput) {
   return (void *)count;
 }
 
-void services_free(struct searchNode *thenode) {
+void services_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

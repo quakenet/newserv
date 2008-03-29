@@ -9,14 +9,14 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 
-void printnick(nick *sender, nick *np) {
+void printnick(searchCtx *ctx, nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
 
-  controlreply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
+  ctx->reply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
 	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
-void printnick_channels(nick *sender, nick *np) {
+void printnick_channels(searchCtx *ctx, nick *sender, nick *np) {
   char chanlistbuf[512];
   unsigned int bufpos=0, overflow=0;
   channel **cs, *cp;
@@ -24,7 +24,7 @@ void printnick_channels(nick *sender, nick *np) {
   unsigned long *lp;
   
   /* Include the default format too */
-  printnick(sender,np);
+  printnick(ctx, sender,np);
   
   /* Now add the channels.. */
   cs=(channel **)(np->channels->content);
@@ -50,13 +50,13 @@ void printnick_channels(nick *sender, nick *np) {
   }
   
   if (!bufpos) {
-    controlreply(sender,"  Not an any channels.");
+    ctx->reply(sender,"  Not an any channels.");
   } else {
-    controlreply(sender,"  On channel%s: %s%s",np->channels->cursi>1?"s":"", chanlistbuf, overflow?"[...]":"");
+    ctx->reply(sender,"  On channel%s: %s%s",np->channels->cursi>1?"s":"", chanlistbuf, overflow?"[...]":"");
   }
 }
 
-void printchannel(nick *sender, chanindex *cip) {
+void printchannel(searchCtx *ctx, nick *sender, chanindex *cip) {
   /* shamelessly stolen from (now defunct) chansearch.c */
   int i;
   int op,voice,peon;
@@ -69,7 +69,7 @@ void printchannel(nick *sender, chanindex *cip) {
   marker=nexthostmarker();
   
   if (cip->channel==NULL) {
-    controlreply(sender,"[         Channel currently empty          ] %s",cip->name->content);
+    ctx->reply(sender,"[         Channel currently empty          ] %s",cip->name->content);
   } else {
     cuhp=cip->channel->users;
     for (i=0;i<cuhp->hashsize;i++) {
@@ -95,21 +95,21 @@ void printchannel(nick *sender, chanindex *cip) {
         }
       }
     }
-    controlreply(sender,"[ %4dU %4d@ %4d+ %4d %4d* %4dk %4dH ] %s (%s)",cuhp->totalusers,op,voice,peon,oper,
+    ctx->reply(sender,"[ %4dU %4d@ %4d+ %4d %4d* %4dk %4dH ] %s (%s)",cuhp->totalusers,op,voice,peon,oper,
       service,hosts,cip->name->content, printflags(cip->channel->flags, cmodeflags));
   }
 }
 
 
-void printchannel_topic(nick *sender, chanindex *cip) {
+void printchannel_topic(searchCtx *ctx, nick *sender, chanindex *cip) {
   if (cip->channel==NULL) {
-    controlreply(sender,"[   empty  ] %-30s",cip->name->content);
+    ctx->reply(sender,"[   empty  ] %-30s",cip->name->content);
   } else {
-    controlreply(sender,"[%4u users] %s (%s)",cip->channel->users->totalusers,cip->name->content,cip->channel->topic?cip->channel->topic->content:"no topic");
+    ctx->reply(sender,"[%4u users] %s (%s)",cip->channel->users->totalusers,cip->name->content,cip->channel->topic?cip->channel->topic->content:"no topic");
   }
 }
 
-void printchannel_services(nick *sender, chanindex *cip) {
+void printchannel_services(searchCtx *ctx, nick *sender, chanindex *cip) {
   int i;
   chanuserhash *cuhp;
   char servlist[300];
@@ -118,7 +118,7 @@ void printchannel_services(nick *sender, chanindex *cip) {
   int servs=0;
   
   if (cip->channel==NULL) {
-    controlreply(sender,"%-30s empty",cip->name->content);
+    ctx->reply(sender,"%-30s empty",cip->name->content);
   } else {
     cuhp=cip->channel->users;
     for (i=0;i<cuhp->hashsize;i++) {
@@ -141,8 +141,12 @@ void printchannel_services(nick *sender, chanindex *cip) {
       }
     }  
      
-    controlreply(sender,"%-30s %5d user%c %2d service%c %s%s%s",cip->name->content,cuhp->totalusers,
+    ctx->reply(sender,"%-30s %5d user%c %2d service%c %s%s%s",cip->name->content,cuhp->totalusers,
                          cuhp->totalusers>1?'s':' ',servs,(servs==1)?' ':'s',servs?"(":"",slpos?servlist:"",servs?")":"");
   }
+}
+
+void printuser(searchCtx *ctx, nick *sender, authname *aup) {
+  ctx->reply(sender,"%d", aup->userid);
 }
 

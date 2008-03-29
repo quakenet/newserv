@@ -15,6 +15,7 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
+#include "../../lib/strlfunc.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -63,6 +64,55 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     flagmask=QUFLAG_ALL & ~(QUFLAG_SUSPENDED | QUFLAG_GLINE | QUFLAG_DELAYEDGLINE);
     if (UIsDev(rup))
       flagmask=QUFLAG_ALL;
+
+    if (UHasSuspension(target)) {
+      char expiresbuf[100], timebuf[100];
+      char *reason, *suspendtype, *whom;
+
+      if(UIsDelayedGline(target)) {
+        suspendtype = "delayed gline";
+      } else if(UIsGline(target)) {
+        suspendtype = "gline";
+      } else if(UIsSuspended(target)) {
+        suspendtype = "suspended";
+      } else {
+        suspendtype = "???";
+      }
+
+      if(target->suspendexp) {
+        if(time(NULL) >= target->suspendexp) {
+          strlcpy(expiresbuf, "(next auth)", sizeof(expiresbuf));
+        } else {
+          strftime(expiresbuf, 15, "%d/%m/%y %H:%M", gmtime(&(target->suspendexp)));
+        }
+      } else {
+        strlcpy(expiresbuf, "(never)", sizeof(expiresbuf));
+      }
+      strftime(timebuf, 15, "%d/%m/%y %H:%M", gmtime(&(target->suspendtime)));
+
+      if(UHasOperPriv(rup)) {
+        reguser *trup = findreguserbyID(target->suspendby);
+        if(trup) {
+          whom = trup->username;
+        } else {
+          whom = "(unknown)";
+        }
+      } else {
+        whom = "(hidden)";
+      }
+
+      if(target->suspendreason && target->suspendreason->content) {
+        reason = target->suspendreason->content;
+      } else {
+        reason = "(none)";
+      }
+
+      chanservstdmessage(sender, QM_USERSUSPENDEDTYPE, suspendtype);
+      chanservstdmessage(sender, QM_USERSUSPENDEDBY, whom);
+      chanservstdmessage(sender, QM_USERSUSPENDEDREASON, reason);
+      chanservstdmessage(sender, QM_USERSUSPENDEDAT, timebuf);
+      chanservstdmessage(sender, QM_USERSUSPENDEDEXPIRY, expiresbuf);
+    }
   } else {  
     /* Incidentally none of the QM_USERIS* mesages take parameters.  Just thought I'd mention it.. */
     if (UIsAdmin(target))

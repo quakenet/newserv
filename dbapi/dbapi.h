@@ -23,7 +23,7 @@ typedef PQQueryHandler DBQueryHandler;
 typedef PQResult DBResult;
 
 #define dbconnected() pqconnected()
-#define dbgetid() pqconnected()
+#define dbgetid() pqgetid()
 #define dbfreeid(x) pqfreeid(x)
 
 #define dbattach(schema) pqcreateschema(schema)

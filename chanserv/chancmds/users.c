@@ -8,8 +8,9 @@
  * CMDHELP: Usage: USERS <channel>
  * CMDHELP: Displays a list of users on the named channel along with their usernames and flags
  * CMDHELP: on the channel, where:
- * CMDHELP: channel - channel to use
- * CMDHELP: USERS requires operator (+o) access on the named channel.
+ * CMDHELP: channel - channel to list
+ * CMDHELP: USERS requires you to be known (+k) on the named channel. You must also be on the 
+ * CMDHELP: channel yourself.
  */
 
 #include "../chanserv.h"

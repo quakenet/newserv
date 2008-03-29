@@ -13,10 +13,10 @@ struct match_localdata {
   struct searchNode *patnode;
 };
 
-void *match_exe(struct searchNode *thenode, void *theinput);
-void match_free(struct searchNode *thenode);
+void *match_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void match_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *match_parse(int type, int argc, char **argv) {
+struct searchNode *match_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct match_localdata *localdata;
   struct searchNode *thenode;
   struct searchNode *targnode, *patnode;
@@ -26,13 +26,14 @@ struct searchNode *match_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  targnode = search_parse(type, argv[0]);
-  if (!(targnode = coerceNode(targnode, RETURNTYPE_STRING)))
+  /* @fixme check this works with new parsing semantics */
+  targnode = ctx->parser(ctx, type, argv[0]);
+  if (!(targnode = coerceNode(ctx,targnode, RETURNTYPE_STRING)))
     return NULL;
 
-  patnode = search_parse(type, argv[1]);
-  if (!(patnode = coerceNode(patnode, RETURNTYPE_STRING))) {
-    (targnode->free)(targnode);
+  patnode = ctx->parser(ctx, type, argv[1]);
+  if (!(patnode = coerceNode(ctx,patnode, RETURNTYPE_STRING))) {
+    (targnode->free)(ctx, targnode);
     return NULL;
   }
 
@@ -59,25 +60,25 @@ struct searchNode *match_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *match_exe(struct searchNode *thenode, void *theinput) {
+void *match_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct match_localdata *localdata;
   char *pattern, *target;
 
   localdata = thenode->localdata;
   
-  pattern = (char *)(localdata->patnode->exe) (localdata->patnode, theinput);
-  target  = (char *)(localdata->targnode->exe)(localdata->targnode,theinput);
+  pattern = (char *)(localdata->patnode->exe) (ctx, localdata->patnode, theinput);
+  target  = (char *)(localdata->targnode->exe)(ctx, localdata->targnode,theinput);
 
   return (void *)(long)match2strings(pattern, target);
 }
 
-void match_free(struct searchNode *thenode) {
+void match_free(searchCtx *ctx, struct searchNode *thenode) {
   struct match_localdata *localdata;
 
   localdata=thenode->localdata;
 
-  (localdata->patnode->free)(localdata->patnode);
-  (localdata->targnode->free)(localdata->targnode);
+  (localdata->patnode->free)(ctx, localdata->patnode);
+  (localdata->targnode->free)(ctx, localdata->targnode);
   free(localdata);
   free(thenode);
 }

@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *kick_exe(struct searchNode *thenode, void *theinput);
-void kick_free(struct searchNode *thenode);
+void *kick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void kick_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *kick_parse(int type, int argc, char **argv) {
+struct searchNode *kick_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
   nick *np;
   
@@ -48,7 +48,7 @@ struct searchNode *kick_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *kick_exe(struct searchNode *thenode, void *theinput) {
+void *kick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np;
   chanindex *cip;
 
@@ -62,6 +62,6 @@ void *kick_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void kick_free(struct searchNode *thenode) {
+void kick_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }

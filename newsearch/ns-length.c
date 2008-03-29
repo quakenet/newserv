@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void length_free(struct searchNode *thenode);
-void *length_exe(struct searchNode *thenode, void *theinput);
+void length_free(searchCtx *ctx, struct searchNode *thenode);
+void *length_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *length_parse(int type, int argc, char **argv) {
+struct searchNode *length_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode, *childnode;
 
   if (!(thenode = (struct searchNode *)malloc(sizeof(struct searchNode)))) {
@@ -31,29 +31,29 @@ struct searchNode *length_parse(int type, int argc, char **argv) {
     return NULL;
   }
 
-  childnode = search_parse(type, argv[0]);
-  if (!(thenode->localdata = coerceNode(childnode, RETURNTYPE_STRING))) {
-    length_free(thenode);
+  childnode = ctx->parser(ctx, type, argv[0]);
+  if (!(thenode->localdata = coerceNode(ctx, childnode, RETURNTYPE_STRING))) {
+    length_free(ctx, thenode);
     return NULL;
   }
 
   return thenode;
 }
 
-void length_free(struct searchNode *thenode) {
+void length_free(searchCtx *ctx, struct searchNode *thenode) {
   struct searchNode *anode;
   
   if ((anode=thenode->localdata))
-    (anode->free)(anode);
+    (anode->free)(ctx, anode);
   
   free(thenode);
 }
 
-void *length_exe(struct searchNode *thenode, void *theinput) {
+void *length_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   char *strval;
   struct searchNode *anode=thenode->localdata;  
 
-  strval=(char *)(anode->exe)(anode, theinput);
+  strval=(char *)(anode->exe)(ctx, anode, theinput);
   
   return (void *)strlen(strval);
 }
