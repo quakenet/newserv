@@ -366,10 +366,9 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     }
 
     if (differ_bit == bitlen && node->bit == bitlen) {
-	if (node->prefix) {
-	    return (node);
-	}
-	node->prefix = patricia_ref_prefix (prefix);
+	if (!node->prefix) {
+	    node->prefix = patricia_ref_prefix (prefix);
+        }
 	return (node);
     }
 
