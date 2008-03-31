@@ -212,7 +212,7 @@ patricia_search_exact (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
     addr = (u_char *)sin;
 
     while (node->bit < bitlen) {
-	if (BIT_TEST (addr[node->bit >> 3], 0x80 >> (node->bit & 0x07)))
+        if (is_bit_set(addr,node->bit))
 	    node = node->r;
 	else
 	    node = node->l;
@@ -257,7 +257,7 @@ patricia_search_best2 (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
 	    stack[cnt++] = node;
 	}
 
-	if (BIT_TEST (addr[node->bit >> 3], 0x80 >> (node->bit & 0x07))) {
+        if (is_bit_set(addr,node->bit)) {
 	    node = node->r;
 	}
 	else {
@@ -320,7 +320,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     while (node->bit < bitlen || node->prefix == NULL) {
         /* check that we're not at the lowest leaf i.e. node->bit is less than max bits */
 	if (node->bit < patricia->maxbits &&
-	    (addr[node->bit >> 3]) & (0x80 >> (node->bit & 0x07))) {
+            (is_bit_set(addr,node->bit))) {
 	    if (node->r == NULL)
 		break;
 	    node = node->r;
@@ -377,7 +377,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     if (node->bit == differ_bit) {
 	new_node->parent = node;
 	if (node->bit < patricia->maxbits &&
-	    (addr[node->bit >> 3]) & (0x80 >> (node->bit & 0x07))) {
+	    (is_bit_set(addr, node->bit))) {
 	    assert (node->r == NULL);
 	    node->r = new_node;
 	}
@@ -390,7 +390,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 
     if (bitlen == differ_bit) {
 	if (bitlen < patricia->maxbits &&
-	    (test_addr[bitlen >> 3]) & (0x80 >> (bitlen & 0x07))) {
+	    (is_bit_set(addr,bitlen))) {
 	    new_node->r = node;
 	}
 	else {
@@ -414,7 +414,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
         glue->parent = node->parent;
         
 	if (differ_bit < patricia->maxbits &&
-	    (addr[differ_bit >> 3]) & (0x80 >> (differ_bit & 0x07))) {
+	    (is_bit_set(addr, differ_bit))) {
 	    glue->r = new_node;
 	    glue->l = node;
 	}

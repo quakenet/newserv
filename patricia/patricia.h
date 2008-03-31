@@ -26,7 +26,6 @@ typedef void (*void_fn_t)();
 /* { from defs.h */
 #define prefix_touchar(prefix) ((u_char *)&(prefix)->sin)
 #define MAXLINE 1024
-#define BIT_TEST(f, b)  ((f) & (b))
 /* } */
 
 #include <sys/types.h> /* for u_* definitions (on FreeBSD 5) */
@@ -108,8 +107,11 @@ void freenode (patricia_node_t *node);
 patricia_node_t *refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen);
 void derefnode(patricia_tree_t *tree, patricia_node_t *node);
 
+#define get_byte_for_bit(base, nr) (base)[(nr) >> 3]
+#define bigendian_bitfor(nr) (0x80 >> ((nr) & 0x07))
+#define is_bit_set(base, nr) (get_byte_for_bit(base, nr) & bigendian_bitfor(nr))
+
 #define PATRICIA_MAXBITS 128
-#define PATRICIA_NBYTE(x)       ((x) >> 3)
 
 #define PATRICIA_WALK(Xhead, Xnode) \
     do { \
