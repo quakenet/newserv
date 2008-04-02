@@ -66,7 +66,9 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   
   if (cargc>2) {
     flags=0;
-    setflags(&flags, QCFLAG_ALL, cargv[2], rcflags, REJECT_NONE);    
+    setflags(&flags, QCFLAG_ALL, cargv[2], rcflags, REJECT_NONE);
+    if (!UIsDev(rup))
+      flags |= QCFLAG_JOINED;
   } else {
     flags = (QCFLAG_JOINED);
   }
