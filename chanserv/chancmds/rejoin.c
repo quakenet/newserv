@@ -41,7 +41,9 @@ int csc_dorejoin(void *source, int cargc, char **cargv) {
     CSetSuspended(rcp);
     chanservjoinchan(cip->channel);
     CClearSuspended(rcp);
-    chanservjoinchan(cip->channel);
+    /* Parting the channel may have destroyed it.  In that case, don't bother rejoining. */
+    if (cip->channel)
+      chanservjoinchan(cip->channel);
   }
 
   chanservstdmessage(sender, QM_DONE);
