@@ -13,5 +13,6 @@ struct searchNode *qlasthost_parse(searchCtx *, int type, int argc, char **argv)
 struct searchNode *qemail_parse(searchCtx *, int type, int argc, char **argv);
 struct searchNode *qsuspendreason_parse(searchCtx *, int type, int argc, char **argv);
 struct searchNode *qusername_parse(searchCtx *, int type, int argc, char **argv);
+struct searchNode *qchanflags_parse(searchCtx *, int type, int argc, char **argv);
 
 #endif

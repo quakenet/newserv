@@ -20,6 +20,7 @@ void _init() {
   registersearchterm("qemail", qemail_parse);
   registersearchterm("qsuspendreason", qsuspendreason_parse);
   registersearchterm("qusername", qusername_parse);
+  registersearchterm("qchanflags", qchanflags_parse);
 
   chanservaddcommand("nicksearch", QCMD_OPER, 5, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
   chanservaddcommand("chansearch", QCMD_OPER, 5, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
@@ -42,6 +43,7 @@ void _fini() {
   deregistersearchterm("qemail", qemail_parse);
   deregistersearchterm("qsuspendreason", qsuspendreason_parse);
   deregistersearchterm("qusername", qusername_parse);
+  deregistersearchterm("qchanflags", qchanflags_parse);
 
   chanservremovecommand("nicksearch", cs_donicksearch);
   chanservremovecommand("chansearch", cs_dochansearch);
