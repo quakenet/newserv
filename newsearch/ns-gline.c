@@ -164,9 +164,9 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
               if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
                 nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
                 if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-                  irc_send("%s GL * +*@%s %u %u :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration +  time(NULL), time(NULL), localdata->duration);
+                  irc_send("%s GL * +*@%s %u :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
                 else
-                  irc_send("%s GL * +%s@%s %u %u :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration + time(NULL), time(NULL), msgbuf);
+                  irc_send("%s GL * +%s@%s %u :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, msgbuf);
               }
               else
                 safe++;
