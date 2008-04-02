@@ -91,14 +91,17 @@ void printnick_authchans(searchCtx *ctx, nick *sender, nick *np) {
 
 void printauth(searchCtx *ctx, nick *sender, authname *anp) {
   reguser *rup;
-  StringBuf b;
+  char *la;
+/*  StringBuf b;
   char output[1024];
   nick *tnp;
   int space = 0;
+*/
 
   if (!(rup=anp->exts[chanservaext]))
     return;
 
+/*
   output[0] = '\0';
 
   b.capacity = sizeof(output);
@@ -114,5 +117,15 @@ void printauth(searchCtx *ctx, nick *sender, authname *anp) {
   sbterminate(&b);
 
   ctx->reply(sender, " %s%s%s%s", rup->username, *output?" (":"", output, *output?")":"");
-  ctx->reply(sender, "  %-10s %-30s %s", UHasSuspension(rup)?"yes":"no", rup->email?rup->email->content:"(no email)", rup->lastuserhost?rup->lastuserhost->content:"(no last host)");
+*/
+
+  if (rup->lastauth) {
+    char timebuf[20];
+    strftime(timebuf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lastauth)));
+    la = timebuf;
+  } else {
+    la = "(never)";
+  }
+
+  ctx->reply(sender, "%-15s %-10s %-30s %-15s %s", rup->username, UHasSuspension(rup)?"yes":"no", rup->email?rup->email->content:"(no email)", la, rup->lastuserhost?rup->lastuserhost->content:"(no last host)");
 }

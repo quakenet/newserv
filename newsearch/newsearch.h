@@ -49,6 +49,7 @@ typedef void *(*exeFunc)(searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(searchCtx *, nick *, chanindex *);
 typedef void (*NickDisplayFunc)(searchCtx *, nick *, nick *);
 typedef void (*UserDisplayFunc)(searchCtx *, nick *, authname *);
+typedef void (*HeaderFunc)(void *sender, void *arg);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -187,9 +188,9 @@ typedef struct searchASTNode {
 
 searchNode *search_astparse(searchCtx *, int, char *);
 
-int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, int limit);
-int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, int limit);
-int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, int limit);
+int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
+int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr);
 
