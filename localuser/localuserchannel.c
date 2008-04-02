@@ -909,11 +909,11 @@ void localsettopic(nick *np, channel *cp, char *topic) {
 
   cp->topic=getsstring(topic,TOPICLEN);
 
-  /* Guarantee that the topic timestamp is greater than the old one. */
-  if (cp->topictime >= now) {
-    cp->topictime++;
-  } else {
-    cp->topictime=getnettime();
+  /* Update the topic time iff the old time was in the past.  This 
+   * means if we are bouncing a topic with a TS 1sec newer than ours 
+   * we won't use an old timestamp */
+  if (cp->topictime < now) {
+    cp->topictime=now;
   }
   
   if (connected) {
