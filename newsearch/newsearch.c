@@ -155,6 +155,54 @@ void deregistersearchterm(char *term, parseFunc parsefunc) {
   deletecommandfromtree(searchTree, term, (CommandHandler) parsefunc);
 }
 
+#define SHOWFUNCLIST_MAXCMDS 	300
+
+void printcmdlist(replyFunc reply, void *source, struct Command **thecmds, int numcmds) {
+  unsigned int i;
+  char buf[512];
+  int bufpos=0;
+  
+  for (i=0;i<numcmds;i++) {
+    if (bufpos+thecmds[i]->command->length > 300) {
+      reply(source, "%s", buf);
+      bufpos=0;
+    }
+    
+    bufpos+=sprintf(buf+bufpos, "%s%s", bufpos?", ":"", thecmds[i]->command->content);
+  }
+  
+  reply(source, "%s", buf);
+}
+
+/* showfunclist: dump a list of valid functions and output formats */
+void showfunclist(replyFunc reply, void *source, CommandTree *outputs) {
+  struct Command *thecmds[SHOWFUNCLIST_MAXCMDS];
+  int ncmds;
+
+  reply(source, "Usage: *SEARCH <opts> <search terms>");
+  reply(source, "Valid options:");
+  reply(source, " -l <num>     Limits output to <num> matches");
+  reply(source, " -d <format>  Selects named output format");
+  reply(source, "<search terms> is a lisp-style string describing what you want to match.  Function calls");
+  reply(source, "consist of parentheses with a space separated list of arguments, the function name");
+  reply(source, "being the first argument.  For example:");
+  reply(source, "*search (match (name) *trout*)  will return the list of objects named *trout*");
+  reply(source, "*search (and (match (name) *trout*) (modes +r)) will return the list of objects");
+  reply(source, "     named *trout* with mode +r set");
+  
+  ncmds=getcommandlist(searchTree, thecmds, SHOWFUNCLIST_MAXCMDS);
+  if (ncmds) {
+    reply(source, "Valid search functions:");
+    printcmdlist(reply, source, thecmds, ncmds);
+  }
+  
+  ncmds=getcommandlist(outputs, thecmds, SHOWFUNCLIST_MAXCMDS);
+  if (ncmds) {
+    reply(source, "Valid output functions for this search type:");
+    printcmdlist(reply, source, thecmds, ncmds);
+  }
+}
+
 static void controlwallwrapper(int level, char *format, ...) {
   char buf[1024];
   va_list ap;
@@ -223,7 +271,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return ret;
 
   if (arg>=cargc) {
-    reply(sender,"No search terms - aborting.");
+    showfunclist(reply, source, nickOutputTree);
     return CMD_ERROR;
   }
 
@@ -311,7 +359,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return ret;
 
   if (arg>=cargc) {
-    reply(sender,"No search terms - aborting.");
+    showfunclist(reply, source, chanOutputTree);
     return CMD_ERROR;
   }
 
@@ -378,7 +426,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return ret;
 
   if (arg>=cargc) {
-    reply(sender,"No search terms - aborting.");
+    showfunclist(reply, source, userOutputTree);
     return CMD_ERROR;
   }
 
