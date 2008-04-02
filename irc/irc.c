@@ -30,6 +30,8 @@ MODULE_VERSION("");
 #define MIN_NUMERIC          100
 #define MAX_NUMERIC          999
 
+#define IRC_DUMP
+
 void irc_connect(void *arg);
 
 CommandTree *servercommands;
@@ -215,7 +217,12 @@ void irc_send(char *format, ... ) {
   
   buf[len++]='\r';
   buf[len++]='\n';
-  
+
+#ifdef IRC_DUMP
+  buf[len]='\0';
+  printf(">> %s",buf);
+#endif
+
   write(serverfd,buf,len);
 }
 
@@ -294,6 +301,10 @@ int parseline() {
   
   /* OK, currentline points at a valid NULL-terminated line */
   /* and nextline points at where we are going next */      
+
+#ifdef IRC_DUMP
+  printf("<< %s\n",currentline);
+#endif
   
   linesreceived++;
 

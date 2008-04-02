@@ -43,8 +43,8 @@ struct searchNode *qchanflags_parse(searchCtx *ctx, int type, int argc, char **a
     localdata->setmodes=0;
     localdata->clearmodes=~0;
     
-    setflags(&(localdata->setmodes), QCFLAG_ALL, argv[0], rcuflags, REJECT_NONE);
-    setflags(&(localdata->clearmodes), QCFLAG_ALL, argv[0], rcuflags, REJECT_NONE);
+    setflags(&(localdata->setmodes), QCFLAG_ALL, argv[0], rcflags, REJECT_NONE);
+    setflags(&(localdata->clearmodes), QCFLAG_ALL, argv[0], rcflags, REJECT_NONE);
     
     localdata->clearmodes = ~localdata->clearmodes;
   }
