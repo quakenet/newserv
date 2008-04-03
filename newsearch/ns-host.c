@@ -10,11 +10,11 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *host_exe(struct searchNode *thenode, void *theinput);
-void *host_exe_real(struct searchNode *thenode, void *theinput);
-void host_free(struct searchNode *thenode);
+void *host_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void *host_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void host_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *host_parse(int type, int argc, char **argv) {
+struct searchNode *host_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -46,7 +46,7 @@ struct searchNode *host_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *host_exe(struct searchNode *thenode, void *theinput) {
+void *host_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   char *buf = thenode->localdata;
 
@@ -60,13 +60,13 @@ void *host_exe(struct searchNode *thenode, void *theinput) {
   }
 }
 
-void *host_exe_real(struct searchNode *thenode, void *theinput) {
+void *host_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return np->host->name->content;
 }
 
-void host_free(struct searchNode *thenode) {
+void host_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode->localdata);
   free(thenode);
 }

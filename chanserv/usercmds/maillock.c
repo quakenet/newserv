@@ -36,7 +36,7 @@ int csu_domaillock(void *source, int cargc, char **cargv) {
 
     chanservstdmessage(sender, QM_MAILLOCKHEADER);
     for(mlp=maillocks;mlp;mlp=mlp->next) {
-      if(!match(mlp->pattern->content, pattern))
+      if(match(pattern, mlp->pattern->content))
         continue;
 
       rup=findreguserbyID(mlp->createdby);

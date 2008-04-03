@@ -5,7 +5,7 @@
 #include "chanserv.h"
 #include "../core/schedule.h"
 #include "../localuser/localuser.h"
-
+#include "../lib/irc_string.h"
 
 #define PROTECTTIME    60 /* How long you have to renick if you encroach.. */
 
@@ -21,8 +21,7 @@ void _init() {
   registerhook(HOOK_NICK_NEWNICK, csp_freenick);
   registerhook(HOOK_NICK_ACCOUNT, csp_freenick);
   
-  chanservaddcommand("claimnick", QCMD_HELPER, 0, csp_doclaimnick, 
-		     "Reclaims your nickname if it has been stolen.","");
+  chanservaddcommand("claimnick", QCMD_HELPER, 0, csp_doclaimnick, "Reclaims your nickname if it has been stolen.","");
 }
 
 void _fini() {
@@ -52,6 +51,7 @@ void _fini() {
 void csp_handlenick(int hooknum, void *arg) {
   nick *np=arg;
   reguser *rup;
+  char userhostbuf[USERLEN+HOSTLEN+2];
 
   /* Check that it's a protected nick */
   if (!(rup=findreguserbynick(np->nick)) || !UIsProtect(rup))
@@ -70,6 +70,12 @@ void csp_handlenick(int hooknum, void *arg) {
   if (getreguserfromnick(np)==rup) {
     rup->stealcount=0;
     return;
+  }
+  
+  if (rup->lastuserhost) {
+    sprintf(userhostbuf,"%s@%s",np->ident,np->host->name->content);
+    if (!ircd_strcmp(userhostbuf, rup->lastuserhost->content))
+      return;
   }
 
   if (IsOper(np) || homeserver(np->numeric)==mylongnum)

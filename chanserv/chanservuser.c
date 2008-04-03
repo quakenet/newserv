@@ -546,10 +546,21 @@ void cs_checknick(nick *np) {
   if (IsAccount(np) && np->auth) {
     if (np->auth->exts[chanservaext]) {
       rup=getreguserfromnick(np);
+
       /* safe? */
-      if(rup && UHasSuspension(rup)) {
-        chanservkillstdmessage(np, QM_SUSPENDKILL);
-        return;
+      if(rup) {
+        if (UIsDelayedGline(rup)) {
+          /* delayed-gline - schedule the user's squelching */
+          deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
+          scheduleoneshot(time(NULL)+rand()%900, &chanservdgline, (void*)rup);
+        } else if (UIsGline(rup)) {
+          /* instant-gline - lets be lazy and set a schedule expiring now :) */
+          deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
+          scheduleoneshot(time(NULL), &chanservdgline, (void*)rup);
+        } else if(UHasSuspension(rup)) {
+          chanservkillstdmessage(np, QM_SUSPENDKILL);
+          return;
+        }
       }
       cs_doallautomodes(np);
     } else {
@@ -716,6 +727,17 @@ void cs_doallautomodes(nick *np) {
       /* Channel exists */
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
         /* User is on channel.. */
+
+        if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
+          /* This meets the channel use criteria, update. */
+          rcup->chan->lastactive=time(NULL);
+          
+          /* Don't spam the DB though for channels with lots of joins */
+          if (rcup->chan->lastcountersync < (time(NULL) - COUNTERSYNCINTERVAL)) {
+            csdb_updatechannelcounters(rcup->chan);
+            rcup->chan->lastcountersync=time(NULL);
+          }
+        }
 
         /* Update last use time */
         rcup->usetime=getnettime();
@@ -905,9 +927,14 @@ void cs_timerfunc(void *arg) {
   
   if (CIsAutoLimit(rcp)) {
     if (!rcp->limit || rcp->autoupdate <= now) {
-      /* Update limit.. */
-      rcp->limit=cp->users->totalusers+rcp->autolimit;
-      rcp->status |= QCSTAT_MODECHECK;
+      /* Only update the limit if there are <= (autolimit/2) or 
+       * >= (autolimit * 1.5) slots free */
+      
+      if ((cp->users->totalusers >= (rcp->limit - rcp->autolimit/2)) ||
+          (cp->users->totalusers <= (rcp->limit - (3 * rcp->autolimit)/2))) {
+        rcp->limit=cp->users->totalusers+rcp->autolimit;
+        rcp->status |= QCSTAT_MODECHECK;
+      }
       
       /* And set the schedule for the next update */
       rcp->autoupdate = now + AUTOLIMIT_INTERVAL;

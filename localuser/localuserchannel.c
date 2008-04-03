@@ -887,6 +887,7 @@ void localusermodechange(nick *np, channel *cp, char *modes) {
 void localsettopic(nick *np, channel *cp, char *topic) {
   unsigned long *lp;
   char source[10];
+  time_t now=getnettime();
 
   if (np==NULL || (lp=getnumerichandlefromchanhash(cp->users,np->numeric))==NULL) {
     /* User isn't on channel, hack mode */
@@ -907,7 +908,13 @@ void localsettopic(nick *np, channel *cp, char *topic) {
   }
 
   cp->topic=getsstring(topic,TOPICLEN);
-  cp->topictime=getnettime();
+
+  /* Update the topic time iff the old time was in the past.  This 
+   * means if we are bouncing a topic with a TS 1sec newer than ours 
+   * we won't use an old timestamp */
+  if (cp->topictime < now) {
+    cp->topictime=now;
+  }
   
   if (connected) {
     irc_send("%s T %s %u %u :%s",source,cp->index->name->content,cp->timestamp,cp->topictime,(cp->topic)?cp->topic->content:"");

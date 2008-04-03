@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../control/control.h" /* controlreply() */
+#include "../control/control.h"
 #include "../irc/irc.h" /* irc_send() */
 #include "../lib/irc_string.h" /* IPtostr(), longtoduration(), durationtolong() */
 #include "../lib/strlfunc.h"
@@ -18,8 +18,8 @@
 extern nick *senderNSExtern;
 static const char *defaultreason = "You (%u) have been g-lined for violating our terms of service";
 
-void *gline_exe(struct searchNode *thenode, void *theinput);
-void gline_free(struct searchNode *thenode);
+void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void gline_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct gline_localdata {
   unsigned int marker;
@@ -29,7 +29,7 @@ struct gline_localdata {
   char reason[NSMAX_REASON_LEN];
 };
 
-struct searchNode *gline_parse(int type, int argc, char **argv) {
+struct searchNode *gline_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -113,7 +113,7 @@ struct searchNode *gline_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *gline_exe(struct searchNode *thenode, void *theinput) {
+void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct gline_localdata *localdata;
   nick *np;
   chanindex *cip;
@@ -134,7 +134,7 @@ void *gline_exe(struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
-void gline_free(struct searchNode *thenode) {
+void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
@@ -145,7 +145,7 @@ void gline_free(struct searchNode *thenode) {
 
   if (localdata->count > NSMAX_GLINE_LIMIT) {
     /* need to warn the user that they have just tried to twat half the network ... */
-    controlreply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
+    ctx->reply(senderNSExtern, "Warning: your pattern matches too many users (%d) - nothing done.", localdata->count);
     free(localdata);
     free(thenode);
     return;
@@ -195,9 +195,9 @@ void gline_free(struct searchNode *thenode) {
     }
   }
   if (safe)
-    controlreply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
+    ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
-  controlwall(NO_OPER, NL_GLINES, "%s/%s glined %d %s via %s for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
+  ctx->wall(NL_GLINES, "%s/%s glined %d %s via %s for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
     (localdata->count - safe) != 1 ? "users" : "user", (localdata->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", longtoduration(localdata->duration, 1), safe);
   free(localdata);
   free(thenode);

@@ -65,7 +65,7 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
       tmp=gmtime(&(rcp->suspendtime));
       strftime(buf,15,"%d/%m/%y %H:%M",tmp);
 
-      chanservsendmessage(sender, "%-30s %-15s %-15s %s", cip->name->content, bywhom, buf, rcp->suspendreason->content);
+      chanservsendmessage(sender, "%-30s %-15s %-15s %s", cip->name->content, bywhom, buf, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
       if (count >= 2000) {
         chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "channels");
         return CMD_ERROR;

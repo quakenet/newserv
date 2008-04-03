@@ -14,10 +14,10 @@ struct gt_localdata {
   struct searchNode **nodes;
 };
 
-void gt_free(struct searchNode *thenode);
-void *gt_exe(struct searchNode *thenode, void *theinput);
+void gt_free(searchCtx *ctx, struct searchNode *thenode);
+void *gt_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *gt_parse(int type, int argc, char **argv) {
+struct searchNode *gt_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct gt_localdata *localdata;
   struct searchNode *thenode;
   int i;
@@ -49,15 +49,15 @@ struct searchNode *gt_parse(int type, int argc, char **argv) {
   
   for (i=0;i<argc;i++) {
     /* Parse the node.. */
-    localdata->nodes[i] = search_parse(type, argv[i]);
+    localdata->nodes[i] = ctx->parser(ctx, type, argv[i]);
     
     /* Subsequent nodes get coerced to match the type of the first node */
     if (i)
-      localdata->nodes[i]=coerceNode(localdata->nodes[i],localdata->type);
+      localdata->nodes[i]=coerceNode(ctx,localdata->nodes[i],localdata->type);
 
     /* If a node didn't parse, give up */    
     if (!localdata->nodes[i]) {
-      gt_free(thenode);
+      gt_free(ctx, thenode);
       return NULL;
     }
     
@@ -72,7 +72,7 @@ struct searchNode *gt_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void gt_free(struct searchNode *thenode) {
+void gt_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gt_localdata *localdata;
   int i;
 
@@ -80,7 +80,7 @@ void gt_free(struct searchNode *thenode) {
   
   for (i=0;i<localdata->count;i++) {
     if (localdata->nodes[i])
-      (localdata->nodes[i]->free)(localdata->nodes[i]);
+      (localdata->nodes[i]->free)(ctx, localdata->nodes[i]);
   }
   
   free(localdata->nodes);
@@ -88,7 +88,7 @@ void gt_free(struct searchNode *thenode) {
   free(thenode);
 }
 
-void *gt_exe(struct searchNode *thenode, void *theinput) {
+void *gt_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   int i;
   char *strval;
   int intval;
@@ -102,17 +102,17 @@ void *gt_exe(struct searchNode *thenode, void *theinput) {
   switch (localdata->type) {
   case RETURNTYPE_INT:
   case RETURNTYPE_BOOL:
-    intval = (int)((long)(localdata->nodes[0]->exe)(localdata->nodes[0], theinput));
+    intval = (int)((long)(localdata->nodes[0]->exe)(ctx, localdata->nodes[0], theinput));
     for (i=1;i<localdata->count;i++) {
-      if ((int)((long)(localdata->nodes[i]->exe)(localdata->nodes[i], theinput) >= intval))
+      if ((int)((long)(localdata->nodes[i]->exe)(ctx, localdata->nodes[i], theinput) >= intval))
 	return (void *)0;
     }
     return (void *)1;
     
   case RETURNTYPE_STRING:
-    strval = (char *)(localdata->nodes[0]->exe)(localdata->nodes[0], theinput);
+    strval = (char *)(localdata->nodes[0]->exe)(ctx, localdata->nodes[0], theinput);
     for (i=1;i<localdata->count;i++) {
-      if (ircd_strcmp(strval, (char *)(localdata->nodes[i]->exe)(localdata->nodes[i], theinput)) <= 0)
+      if (ircd_strcmp(strval, (char *)(localdata->nodes[i]->exe)(ctx, localdata->nodes[i], theinput)) <= 0)
 	return (void *)0;
     }
     return (void *)1;

@@ -10,10 +10,10 @@
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
 
-void *channels_exe(struct searchNode *thenode, void *theinput);
-void channels_free(struct searchNode *thenode);
+void *channels_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void channels_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *channels_parse(int type, int argc, char **argv) {
+struct searchNode *channels_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -34,12 +34,12 @@ struct searchNode *channels_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *channels_exe(struct searchNode *thenode, void *theinput) {
+void *channels_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return (void *)(long)np->channels->cursi;
 }
 
-void channels_free(struct searchNode *thenode) {
+void channels_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }

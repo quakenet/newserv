@@ -61,7 +61,7 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
       continue;
     }
 
-    if (CUIsOwner(rcup)) {
+    if (CUIsOwner(rcup) && !cs_privcheck(QPRIV_CHANGECHANLEV, sender)) {
       chanservstdmessage(sender, QM_CANNOTREMOVEOWNER, cargv[i], cip->name->content);
       continue;
     }

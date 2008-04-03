@@ -9,7 +9,7 @@ void chanservdgline(void* arg) {
   int i;
   unsigned int ucount;
   
-  if (!rup)
+  if (!rup || (!UIsDelayedGline(rup) && !UIsGline(rup)))
     return;
   
   if (!(anp=findauthname(rup->ID)))
@@ -18,17 +18,21 @@ void chanservdgline(void* arg) {
   for (nl=anp->nicks;nl;nl=nl->nextbyauthname) {
     for (i=0, ucount=0; i<NICKHASHSIZE; i++)
       for (np=nicktable[i];np;np=np->next)
-        if (!ircd_strcmp(np->ident, nl->ident) && np->ipnode==nl->ipnode)
+        if (np->ipnode==nl->ipnode && !ircd_strcmp(np->ident, nl->ident))
           ucount++;
     
     if (ucount >= MAXGLINEUSERS) {
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (account %s) would hit %d users, aborting.", 
         nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount);
     } else {
+      char *reason = "Network abuse";
+      if(rup->suspendreason)
+        reason = rup->suspendreason->content;
+
       irc_send("%s GL * +*!%s@%s 3600 :%s\r\n", mynumeric->content, nl->ident, 
-        IPtostr(nl->p_ipaddr), rup->suspendreason->content);
+        IPtostr(nl->p_ipaddr), reason);
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (authed as %s) expires in 60 minute/s (hit %d user%s) (reason: %s)", 
-        nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount, ucount==1?"":"s", rup->suspendreason->content);
+        nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount, ucount==1?"":"s", reason);
     }
   }
 }

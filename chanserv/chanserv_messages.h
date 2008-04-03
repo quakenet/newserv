@@ -139,7 +139,7 @@ BeginMessages() {
   msg(QM_DISCONNECTINGUSER, "Disconnecting $0 (authed as $1)", "ss"),
   msg(QM_USERALREADYSUSPENDED, "User is already suspended.", ""),
   msg(QM_USERNOTSUSPENDED, "User $0 is not suspended.", "s"),
-  msg(QM_SPEWHEADER, "Username:       Suspended: Email:                         Last user@host:", ""),
+  msg(QM_SPEWHEADER, "Username:       Suspended: Email:                         Last auth:      Last user@host:", ""),
   msg(QM_TOOMANYRESULTS, "Found over $0 $1, truncating list.", "ds"),
   msg(QM_RESULTCOUNT, "Found $0 $1$2.", "uss"),
   msg(QM_SUSPENDKILL, "Attention: Your Q account has been suspended. You are being disconnected.", ""),
@@ -203,6 +203,13 @@ BeginMessages() {
   msg(QM_EMPTYCHAN, "Channel $0 is currently empty.", "s"),
   msg(QM_USERSSUMMARY, "Total $0 users: $1 opped, $2 voiced, $3 others, $4 with flags ($5 ops, $6 masters)", "ddddddd"),
   msg(QM_OPERONCHAN, "You cannot use $0 on $1 since an oper is on the channel.","ss"),
+  msg(QM_USERSUSPENDEDTYPE,   "Suspend type   : $0", "s"),
+  msg(QM_USERSUSPENDEDBY,     "Suspended by   : $0", "s"),
+  msg(QM_USERSUSPENDEDREASON, "Suspend reason : $0", "s"),
+  msg(QM_USERSUSPENDEDAT,     "Suspended at   : $0", "s"),
+  msg(QM_USERSUSPENDEDEXPIRY, "Suspend expiry : $0", "s"),
+  msg(QM_INVALIDDOMAIN, "$0 is not a valid domain.", "s"),
+
 } 
 EndMessages()
 #endif

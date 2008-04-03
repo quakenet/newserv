@@ -14,7 +14,7 @@
  * CMDHELP: where HMAC is the hash message authentication code as described in
  * CMDHELP: RFC 2104, k is HEXDIGEST(<lower case username>:HEXDIGEST(<password>))
  * CMDHELP: and HEXDIGEST is the hash function used in the MAC construction.
- * CMDHELP: For example code see the website.
+ * CMDHELP: For example code see " CHALLENGEAUTHSITE ".
  */
 
 #include "../chanserv.h"

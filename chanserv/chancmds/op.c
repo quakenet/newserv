@@ -7,7 +7,7 @@
  * CMDDESC: Ops you or other users on channel(s).
  * CMDFUNC: csc_doop
  * CMDPROTO: int csc_doop(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: OP [<channel> [<user1> [<user2> [...]]]
+ * CMDHELP: Usage: OP [<channel> [<user1> [<user2> [...]]]]
  * CMDHELP: Ops you on one or more channels, or ops other named users on a given channel.
  * CMDHELP: This command cannot be used to op users who are otherwise prevented from getting
  * CMDHELP: ops, e.g. via the +d chanlev flag (see CHANLEV) or bitch mode (see CHANFLAGS).
@@ -81,6 +81,12 @@ int csc_doop(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
 
   rcp=cip->exts[chanservext];
+  
+  /* If the channel doesn't currently exist, forget it. */
+  if (!cip->channel) {	
+    chanservstdmessage(sender, QM_EMPTYCHAN, cip->name->content);  
+    return CMD_ERROR;
+  }
 
   if (cargc==1) {
     /* Only one arg: "op me" */

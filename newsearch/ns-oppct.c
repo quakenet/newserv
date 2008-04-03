@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *oppct_exe(struct searchNode *thenode, void *theinput);
-void oppct_free(struct searchNode *thenode);
+void *oppct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void oppct_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *oppct_parse(int type, int argc, char **argv) {
+struct searchNode *oppct_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_CHANNEL) {
@@ -32,7 +32,7 @@ struct searchNode *oppct_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *oppct_exe(struct searchNode *thenode, void *theinput) {
+void *oppct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   int i;
   int ops;
   chanindex *cip = (chanindex *)theinput;
@@ -53,7 +53,7 @@ void *oppct_exe(struct searchNode *thenode, void *theinput) {
   return (void *)(long)((ops * 100) / cip->channel->users->totalusers);
 }
 
-void oppct_free(struct searchNode *thenode) {
+void oppct_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

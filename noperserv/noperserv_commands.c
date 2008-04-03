@@ -7,6 +7,7 @@
 
 #include "../control/control.h"
 #include "../nick/nick.h"
+#include "../newsearch/newsearch.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../localuser/localuserchannel.h"
@@ -34,7 +35,7 @@ void _init() {
 
   registercontrolhelpcmd("spewchan", NO_OPER, 1, &controlspewchan, "Usage: spewchan <pattern>\nShows all channels which are matched by the given pattern");
 
-/*  registercontrolhelpcmd("spew", NO_OPER, 1, &controlspew, "Usage: spewchan <pattern>\nShows all userss which are matched by the given pattern"); */
+  registercontrolhelpcmd("spew", NO_OPER, 1, &controlspew, "Usage: spewchan <pattern>\nShows all userss which are matched by the given pattern");
 
   registercontrolhelpcmd("resync", NO_OPER, 1, &controlresync, "Usage: resync <channel>\nResyncs a desynched channel");
 
@@ -52,7 +53,7 @@ void _fini() {
   deregistercontrolcmd("broadcast", controlbroadcast);
 
   deregistercontrolcmd("resync", controlresync);
-/*   deregistercontrolcmd("spew", controlspew); */
+  deregistercontrolcmd("spew", controlspew);
   deregistercontrolcmd("spewchan", controlspewchan);
 
 /*  deregistercontrolcmd("kill", controlkill); */
@@ -150,11 +151,16 @@ int controlresync(void *sender, int cargc, char **cargv) {
 }
 
 int controlspew(void *sender, int cargc, char **cargv) {
-/*  nick *np = (nick *)sender; */
+  searchASTExpr *tree;
 
-  return CMD_OK;
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  tree = NSASTNode(match_parse, NSASTNode(hostmask_parse), NSASTLiteral(cargv[0]));
+  return ast_nicksearch(tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500);
 }
 
+/* this function is the definition of horrible */
 int controlspewchan(void *sender, int cargc, char **cargv) {
   nick *np = (nick*)sender;
   nick *np2;

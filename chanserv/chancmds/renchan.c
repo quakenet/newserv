@@ -3,7 +3,7 @@
  *
  * CMDNAME: renchan
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 2
+ * CMDARGS: 3
  * CMDDESC: Renames a channel on the bot.
  * CMDFUNC: csc_dorenchan
  * CMDPROTO: int csc_dorenchan(void *source, int cargc, char **cargv);

@@ -27,7 +27,7 @@
 #endif
 
 /* Q9 Version */
-#define QVERSION "1.00-RC3"
+#define QVERSION "1.00"
 
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */
@@ -62,10 +62,13 @@
 /* If set will issue warnings when authgate cached stuff changes */
 #define   AUTHGATE_WARNINGS
 
+/* Challenge auth faq site */
+#define   CHALLENGEAUTHSITE "http://www.quakenet.org/development/challengeauth/"
+
 /* Cleanup options */
 #define CLEANUP_ACCOUNT_INACTIVE  80
 #define CLEANUP_ACCOUNT_UNUSED    10
-#define CLEANUP_CHANNEL_INACTIVE  30
+#define CLEANUP_CHANNEL_INACTIVE  40
 
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
@@ -75,7 +78,7 @@
 #define MAXLANG      50
 
 /* Maximum number of user chanlevs and bans */
-#define MAXCHANLEVS  250
+#define MAXCHANLEVS  500
 #define MAXBANS      50
 
 /* Sources of entropy and standard length defines */
@@ -675,6 +678,8 @@ extern sstring **chantypes;
 
 extern maillock *maillocks;
 
+extern sstring *cs_quitreason;
+
 /* Function prototypes */
 
 /* chanserv.c */
@@ -810,6 +815,7 @@ void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 int cs_doshowcommands(void *source, int cargc, char **cargv);
 int cs_dohelp(void *source, int cargc, char **cargv);
 int cs_doquit(void *source, int cargc, char **cargv);
+int cs_dosetquitreason(void *source, int cargc, char **cargv);
 int cs_dorename(void *source, int cargc, char **cargv);
 int cs_dorehash(void *source, int cargc, char **cargv);
 int cs_doversion(void *source, int cargc, char **cargv);

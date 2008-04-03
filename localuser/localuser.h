@@ -40,7 +40,9 @@ void sendnoticetouser(nick *source, nick *target, char *format, ... );
 void killuser(nick *source, nick *target, char *format, ... );
 #define localusersetaccount(np, accname) localusersetaccountwithuserid(np, accname, 0)
 #define localusersetaccountwithuserid(np, accname, userid) localusersetaccountwithuseridflags(np, accname, userid, 0)
-void localusersetaccountwithuseridflags(nick *np, char *accname, unsigned long accid, flag_t accountflags);
+#define localusersetaccountwithuseridflags(np, accname, accid, accountflags) localusersetaccountwithuseridflagsts(np, accname, accid, accountflags, 0)
+#define localusersetaccountwithuseridts(np, accname, userid, authts) localusersetaccountwithuseridflagsts(np, accname, userid, 0, authts)
+void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS);
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
 

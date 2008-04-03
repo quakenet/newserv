@@ -329,7 +329,10 @@ void rg_nick(int hooknum, void *arg) {
   rg_initglinelist(&gll);
 
   hostlen = RGBuildHostname(hostname, np);
-  
+
+  if(IsOper(np) || IsService(np) || IsXOper(np))
+    return;
+
   for(rp=rg_list;rp;rp=rp->next) {
     if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
       rg_dogline(&gll, np, rp, hostname);
@@ -430,6 +433,9 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(tnp=nicktable[j];tnp;tnp=tnp->next) {
+      if(IsOper(tnp) || IsService(tnp) || IsXOper(tnp))
+        continue;
+
       hostlen = RGBuildHostname(hostname, tnp);
       if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0)
         rg_dogline(&gll, tnp, rp, hostname);
@@ -743,6 +749,8 @@ void rg_startup(void) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
+      if(IsOper(np) || IsService(np) || IsXOper(np))
+        continue;
       hostlen = RGBuildHostname(hostname, np);
       for(rp=rg_list;rp;rp=rp->next) {
         if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {

@@ -32,6 +32,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   char *authtype = "AUTH";
   authname *anp;
   int toomanyauths=0;
+  time_t now;
 
   if (alg) {
     challenge=1;
@@ -48,7 +49,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   if (aup->authattempts > MAXAUTHATTEMPT) {
     if ((aup->authattempts % 100) == 0)
       chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: %s %s %s",
-        sender->nick, sender->ident, sender->host->name->content, authtype, cargv[0], cargv[1]);
+        sender->nick, sender->ident, sender->host->name->content, aup->authattempts, authtype, cargv[0], cargv[1]);
     chanservstdmessage(sender, QM_AUTHFAIL);
     cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
     return CMD_ERROR;
@@ -100,7 +101,13 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   if (toomanyauths)
     return CMD_ERROR;
 
-  rup->lastauth=time(NULL);
+  /* Guarantee a unique auth timestamp for each account */
+  now=time(NULL);
+  if (rup->lastauth < now) 
+    rup->lastauth=now;
+  else
+    rup->lastauth++;
+
   sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
   if (rup->lastuserhost)
     freesstring(rup->lastuserhost);
@@ -117,15 +124,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   
   csdb_updateuser(rup);
   
-  if (UIsDelayedGline(rup)) {
-    /* delayed-gline - schedule the user's squelching */
-    deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
-    scheduleoneshot(time(NULL)+rand()%900, &chanservdgline, (void*)rup);
-  } else if (UIsGline(rup)) {
-    /* instant-gline - lets be lazy and set a schedule expiring now :) */
-    deleteschedule(NULL, &chanservdgline, (void*)rup); /* icky, but necessary unless we stick more stuff in reguser structure */
-    scheduleoneshot(time(NULL), &chanservdgline, (void*)rup);
-  } else if (UIsSuspended(rup)) {
+  if (UIsSuspended(rup)) {
     /* plain suspend */
     chanservstdmessage(sender, QM_AUTHSUSPENDED);
     if(rup->suspendreason)
@@ -145,7 +144,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
 
   cs_log(sender,"%s OK username %s", authtype,rup->username);
-  localusersetaccountwithuserid(sender, rup->username, rup->ID);;
+  localusersetaccountwithuseridts(sender, rup->username, rup->ID, rup->lastauth);
 
   return CMD_OK;
 }

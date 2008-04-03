@@ -68,7 +68,7 @@ void csdb_freestuff();
 static void setuptables() {
   /* Set up the tables */
   /* User table */
-  dbcreateschema("chanserv");
+  dbattach("chanserv");
   dbcreatequery("CREATE TABLE chanserv.users ("
                "ID            INT               NOT NULL,"
                "username      VARCHAR(16)          NOT NULL,"
@@ -269,6 +269,7 @@ void _fini() {
     releaseauthnameext(chanservaext);
     
   nsfreeall(POOL_CHANSERVDB);
+  dbdetach("chanserv");
 }
 
 void csdb_handlestats(int hooknum, void *arg) {

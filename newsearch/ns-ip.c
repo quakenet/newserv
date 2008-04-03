@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ip_exe(struct searchNode *thenode, void *theinput);
-void ip_free(struct searchNode *thenode);
+void *ip_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void ip_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *ip_parse(int type, int argc, char **argv) {
+struct searchNode *ip_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
   if (type != SEARCHTYPE_NICK) {
@@ -31,13 +31,13 @@ struct searchNode *ip_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *ip_exe(struct searchNode *thenode, void *theinput) {
+void *ip_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
   return (void *)IPtostr(np->p_ipaddr);
 }
 
-void ip_free(struct searchNode *thenode) {
+void ip_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 

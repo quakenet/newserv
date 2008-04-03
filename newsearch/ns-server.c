@@ -13,13 +13,13 @@
 #include "../core/modules.h"
 #include "../server/server.h"
 
-void *server_exe_bool(struct searchNode *thenode, void *theinput);
-void *server_exe_str(struct searchNode *thenode, void *theinput);
-void server_free(struct searchNode *thenode);
+void *server_exe_bool(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void *server_exe_str(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void server_free(searchCtx *ctx, struct searchNode *thenode);
 
 int ext;
 
-struct searchNode *server_parse(int type, int argc, char **argv) {
+struct searchNode *server_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
   int i;
   long numeric;
@@ -65,7 +65,7 @@ struct searchNode *server_parse(int type, int argc, char **argv) {
   return thenode;
 }
 
-void *server_exe_bool(struct searchNode *thenode, void *theinput) {
+void *server_exe_bool(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   long server = (long)thenode->localdata;
 
@@ -75,7 +75,7 @@ void *server_exe_bool(struct searchNode *thenode, void *theinput) {
   return (void *)0;
 }
 
-void *server_exe_str(struct searchNode *thenode, void *theinput) {
+void *server_exe_str(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   sstring *n = serverlist[homeserver(np->numeric)].name;
 
@@ -85,6 +85,6 @@ void *server_exe_str(struct searchNode *thenode, void *theinput) {
   return n->content;
 }
 
-void server_free(struct searchNode *thenode) {
+void server_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
