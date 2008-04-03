@@ -53,6 +53,7 @@ comp_with_mask (void *addr, void *dest, u_int mask)
     return (0);
 }
 
+
 prefix_t *
 patricia_new_prefix (struct irc_in_addr *dest, int bitlen)
 {
@@ -225,7 +226,7 @@ patricia_search_exact (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
 	return (NULL);
     assert (node->bit == bitlen);
     assert (node->bit == node->prefix->bitlen);
-    if (comp_with_mask (prefix_tochar (node->prefix), addr,	bitlen)) {
+    if (comp_with_mask (prefix_tochar (node->prefix), addr, bitlen)) {
 	return (node);
     }
     return (NULL);
@@ -346,7 +347,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    continue;
 	}
 	/* I know the better way, but for now */
-	for (j = 0; j < 8; j++) {
+        for (j = 0; j < 8; j++) {
 	    if ((r) & ((0x80 >> j)))
 		break;
 	}
