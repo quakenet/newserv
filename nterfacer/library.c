@@ -55,7 +55,7 @@ int getcopyconfigitemint(char *section, char *key, int def, int *value) {
   int r;
 
   snprintf(buf, sizeof(buf), "%d", def);
-  ini = getcopyconfigitem(section, key, buf, 6);
+  ini = getcopyconfigitem(section, key, buf, 15);
 
   if(!ini)
     return 0;
