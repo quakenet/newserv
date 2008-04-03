@@ -223,8 +223,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     chanservsendmessage(sender, " %-30s %s",rcup->chan->index->name->content,printflags(flags, rcuflags));
   }
 
-  if (doneheader)
-    chanservstdmessage(sender, QM_ENDOFLIST);
+  chanservstdmessage(sender, QM_ENDOFLIST);
 
   return CMD_OK;
 }
