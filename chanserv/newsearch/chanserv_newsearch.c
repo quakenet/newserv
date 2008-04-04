@@ -4,8 +4,8 @@
 int cs_donicksearch(void *source, int cargc, char **cargv);
 int cs_dochansearch(void *source, int cargc, char **cargv);
 int cs_dousersearch(void *source, int cargc, char **cargv);
-int cs_dospewemailtwo(void *source, int cargc, char **cargv);
-int cs_dospewdbtwo(void *source, int cargc, char **cargv);
+int cs_dospewemail(void *source, int cargc, char **cargv);
+int cs_dospewdb(void *source, int cargc, char **cargv);
 
 UserDisplayFunc previousdefault;
 
@@ -20,12 +20,13 @@ void _init() {
   registersearchterm("qemail", qemail_parse);
   registersearchterm("qsuspendreason", qsuspendreason_parse);
   registersearchterm("qusername", qusername_parse);
+  registersearchterm("qchanflags", qchanflags_parse);
 
   chanservaddcommand("nicksearch", QCMD_OPER, 5, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
   chanservaddcommand("chansearch", QCMD_OPER, 5, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
   chanservaddcommand("usersearch", QCMD_OPER, 5, cs_dousersearch, "Wrapper for standard newserv usersearch command.", "");
-  chanservaddcommand("spewemailtwo", QCMD_OPER, 1, cs_dospewemailtwo, "Spews email...", "");
-  chanservaddcommand("spewdbtwo", QCMD_OPER, 1, cs_dospewdbtwo, "Spews db...", "");
+  chanservaddcommand("spewemail", QCMD_OPER, 1, cs_dospewemail, "Search for an e-mail in the database.", "Usage: spewemail <pattern>\nDisplays all users with email addresses that match the supplied pattern.");
+  chanservaddcommand("spewdb", QCMD_OPER, 1, cs_dospewdb, "Search for a user in the database.", "Usage: spewdb <pattern>\nDisplays all users with usernames that match the specified pattern.");
 
   previousdefault = defaultuserfn;
   defaultuserfn = printauth;
@@ -42,12 +43,13 @@ void _fini() {
   deregistersearchterm("qemail", qemail_parse);
   deregistersearchterm("qsuspendreason", qsuspendreason_parse);
   deregistersearchterm("qusername", qusername_parse);
+  deregistersearchterm("qchanflags", qchanflags_parse);
 
   chanservremovecommand("nicksearch", cs_donicksearch);
   chanservremovecommand("chansearch", cs_dochansearch);
   chanservremovecommand("usersearch", cs_dousersearch);
-  chanservremovecommand("spewemailtwo", cs_dospewemailtwo);
-  chanservremovecommand("spewdbtwo", cs_dospewdbtwo);
+  chanservremovecommand("spewemail", cs_dospewemail);
+  chanservremovecommand("spewdb", cs_dospewdb);
 
   defaultuserfn = previousdefault;
 }

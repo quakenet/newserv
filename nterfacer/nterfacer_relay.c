@@ -89,7 +89,7 @@ int load_config(void) {
 
   ou = getcopyconfigitem("nterfacer", "serviceusername", "nterfacer", 100);
   op = getcopyconfigitem("nterfacer", "servicepassword", "setme", 100);
-  on = getcopyconfigitem("nterfacer", "servicenickname", "^(O|S)$", 100);
+  on = getcopyconfigitem("nterfacer", "servicenickname", "^O$", 100);
 
   if(on) {
     int erroroffset;

@@ -660,7 +660,7 @@ void nterfacer_disconnect_event(struct esocket *sock) {
 
   /* not tested */
   for(li=rlines;li;li=li->next)
-    if(li->socket->tag == socket)
+    if(li->socket && (li->socket->tag == socket))
       li->socket = NULL;
 
   ntfree(socket);

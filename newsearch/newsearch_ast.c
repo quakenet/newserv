@@ -133,7 +133,7 @@ searchNode *search_astparse(searchCtx *ctx, int type, char *loc) {
   }
 }
 
-int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, int limit) {
+int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -156,6 +156,8 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   }
 
   reply(sender, "Executing...");
+  if(header)  
+    header(sender, headerarg);
   nicksearch_exe(search, &ctx, sender, display, limit);
 
   (search->free)(&ctx, search);
@@ -163,7 +165,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
-int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, int limit) {
+int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -183,6 +185,8 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   }
 
   reply(sender, "Executing...");
+  if(header)  
+    header(sender, headerarg);
   chansearch_exe(search, &ctx, sender, display, limit);
 
   (search->free)(&ctx, search);
@@ -190,7 +194,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
-int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, int limit) {
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -213,6 +217,8 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   }
 
   reply(sender, "Executing...");
+  if(header)  
+    header(sender, headerarg);
   usersearch_exe(search, &ctx, sender, display, limit);
 
   (search->free)(&ctx, search);

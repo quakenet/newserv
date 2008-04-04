@@ -157,7 +157,7 @@ int controlspew(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
 
   tree = NSASTNode(match_parse, NSASTNode(hostmask_parse), NSASTLiteral(cargv[0]));
-  return ast_nicksearch(tree, controlreply, sender, controlnswall, printnick, 500);
+  return ast_nicksearch(tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500);
 }
 
 /* this function is the definition of horrible */
