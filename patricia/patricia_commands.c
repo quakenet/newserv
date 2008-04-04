@@ -121,7 +121,7 @@ int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
     PATRICIA_WALK_END;
   }
   derefnode(iptree, head);
-
+  return CMD_OK;
 }
 
 int nc_cmd_nodecount(void *source, int cargc, char **cargv) {

@@ -54,7 +54,7 @@ patricia_node_t *newnode() {
 }
 
 void freenode (patricia_node_t *node) {
- node->parent=(struct patricia_node_t *)node_freelist;
+ node->parent=(patricia_node_t *)node_freelist;
  node_freelist=node;
 }
 
