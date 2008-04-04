@@ -155,7 +155,7 @@ static void trojanscan_connect_nick(void *arg) {
 
   mnick = getcopyconfigitem("trojanscan", "nick", "T", NICKLEN);
   myident = getcopyconfigitem("trojanscan", "ident", "trojanscan", NICKLEN);
-  myhost = getcopyconfigitem("trojanscan", "hostname", "trojanscan.slug.netsplit.net", HOSTLEN);
+  myhost = getcopyconfigitem("trojanscan", "hostname", "trojanscan.quakenet.org", HOSTLEN);
   myrealname = getcopyconfigitem("trojanscan", "realname", "Trojanscan v" TROJANSCAN_VERSION, REALLEN);
   myauthname = getcopyconfigitem("trojanscan", "authname", "T", ACCOUNTLEN);
 
