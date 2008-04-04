@@ -500,6 +500,9 @@ void chanservkillstdmessage(nick *target, int messageid, ... ) {
 }
 
 int checkpassword(reguser *rup, const char *pass) {
+  if (!(*rup->password))
+    return 0;
+
   if (!strncmp(rup->password, pass, PASSLEN))
     return 1;
   return 0;
@@ -507,6 +510,9 @@ int checkpassword(reguser *rup, const char *pass) {
 
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm) {
   char usernamel[NICKLEN+1], *dp, *up;
+
+  if (!(*rup->password))
+    return 0;
 
   for(up=rup->username,dp=usernamel;*up;)
     *dp++ = ToLower(*up++);
@@ -677,19 +683,22 @@ void cs_docheckopvoice(channel *cp, modechanges *changes) {
     else
       rcup=NULL;
     
-    if (rcup && CUIsBanned(rcup) && !IsService(np)) {
-      cs_banuser(changes, cp->index, np, NULL);
-      continue;
-    }
-
-    /* chanflag +k checks; kick them if they "obviously" can't rejoin without a ban */
-    if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
-      if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
-        localkickuser(chanservnick,cp,np,"Authorised users only.");
-      } else {
-        cs_banuser(NULL, cp->index, np, "Authorised users only.");
+    /* Various things that might ban the user - don't apply these to +o, +k or +X users */
+    if (!IsService(np) && !IsXOper(np) && !IsOper(np)) {
+      if (rcup && CUIsBanned(rcup)) {
+        cs_banuser(changes, cp->index, np, NULL);
+        continue;
       }
-      continue;
+      
+      /* chanflag +k checks; kick them if they "obviously" can't rejoin without a ban */
+      if (!CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
+        if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
+          localkickuser(chanservnick,cp,np,"Authorised users only.");
+        } else {
+          cs_banuser(NULL, cp->index, np, "Authorised users only.");
+        }
+        continue;
+      }
     }
                                       
     if ((cp->users->content[i] & CUMODE_OP) && !IsService(np)) {
@@ -778,7 +787,7 @@ void cs_checknickbans(nick *np) {
   regchan *rcp;
   int i,j;
 
-  if (IsService(np))
+  if (IsService(np) || IsOper(np) || IsXOper(np))
     return;
 
   /* Avoid races: memcpy the channel array */
@@ -824,7 +833,7 @@ void cs_checkbans(channel *cp) {
       continue;
     }
     
-    if (IsService(np))
+    if (IsService(np) || IsOper(np) || IsXOper(np))
       continue;
 
     for (rbp=rcp->bans;rbp;rbp=rbp->next) {
@@ -1162,7 +1171,7 @@ void cs_setregban(chanindex *cip, regban *rbp) {
   for (i=0;(cip->channel) && i<cip->channel->users->hashsize;i++) {
     if (cip->channel->users->content[i]!=nouser &&
 	(np=getnickbynumeric(cip->channel->users->content[i])) &&
-	!IsService(np) &&
+	!IsService(np) && !IsOper(np) && !IsXOper(np) &&
 	nickmatchban_visible(np, rbp->cbp))
       localkickuser(chanservnick, cip->channel, np, rbp->reason ? rbp->reason->content : "Banned.");
   }
