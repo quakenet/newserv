@@ -79,7 +79,7 @@ int countcommandtree(CommandTree *ct) {
  * 
  * Returns 1 if bad chars were found
  */
-static int sanitisecommandname(char *cmdname, char *cmdbuf) {
+static int sanitisecommandname(const char *cmdname, char *cmdbuf) {
   int len,i;
 
   strncpy(cmdbuf,cmdname,MAX_COMMAND_LEN);
@@ -110,7 +110,6 @@ static int sanitisecommandname(char *cmdname, char *cmdbuf) {
  
 Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help) {
   Command *nc, *c;
-  int i;
   char cmdbuf[MAX_COMMAND_LEN];
 
   if (sanitisecommandname(cmdname, cmdbuf))
