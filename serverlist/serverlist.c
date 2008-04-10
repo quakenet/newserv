@@ -74,7 +74,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
     if (serverlist[i].linkstate == LS_LINKED && (cargc < 1 || match2strings(cargv[0], serverlist[i].name->content))) {
       ucount = 0;
 
-      for (a = 0; a < serverlist[i].maxusernum; a++)
+      for (a = 0; a <= serverlist[i].maxusernum; a++)
         if (servernicks[i][a] != NULL)
           ucount++;
 
