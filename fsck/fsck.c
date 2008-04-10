@@ -22,6 +22,7 @@ int dofsck(void *source, int cargc, char **cargv) {
   realname *rnp;
   unsigned int nickmarker;
   int errors=0;
+  unsigned int nummask,mnum;
 
   /* Start off with strict nick consistency checks.. */
 
@@ -41,6 +42,11 @@ int dofsck(void *source, int cargc, char **cargv) {
   
   for (i=0;i<NICKHASHSIZE;i++) {
     for(np=nicktable[i];np;np=np->next) {
+      if (np->marker==nickmarker) {
+        controlreply(sender, "ERROR: bumped into the same nick %s/%s twice in hash table.",longtonumeric(np->numeric,5),np->nick);
+        errors++;
+      }
+      
       /* Mark this nick so we can check we found them all */
       np->marker=nickmarker;
 
@@ -129,13 +135,20 @@ int dofsck(void *source, int cargc, char **cargv) {
       
   for(i=0;i<MAXSERVERS;i++) {
     if (serverlist[i].linkstate != LS_INVALID) {
+      nummask=((MAXSERVERS-1)<<18) | serverlist[i].maxusernum;
       for (j=0;j<=serverlist[i].maxusernum;j++) {
 	if ((np=servernicks[i][j])) {
+	  mnum=(i<<18) | j;
+	  if ((np->numeric & nummask) != mnum) {
+	    controlreply(sender, "ERROR: nick %s/%s has wrong masked numeric.",longtonumeric(np->numeric,5),np->nick);
+	    errors++;
+          }
 	  if (np->marker != nickmarker) {
 	    controlreply(sender, "ERROR: nick %s/%s in server user table but not hash!",
 			 longtonumeric(np->numeric,5),np->nick);
 	    errors++;
 	  }
+	  np->marker=0;
 	}
       }
     }
