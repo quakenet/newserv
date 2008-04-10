@@ -372,7 +372,9 @@ void trojanscan_free_database(void) {
   trojanscan_database.total_channels = 0;
   trojanscan_database.total_phrases = 0;
   trojanscan_database.total_worms = 0;
-  
+  trojanscan_database.channels = NULL;
+  trojanscan_database.phrases = NULL;
+  trojanscan_database.worms = NULL;  
 }
 
 char *trojanscan_sanitise(char *input) {
