@@ -41,6 +41,11 @@ int dofsck(void *source, int cargc, char **cargv) {
   
   for (i=0;i<NICKHASHSIZE;i++) {
     for(np=nicktable[i];np;np=np->next) {
+      if (np->marker==nickmarker) {
+        controlreply(sender, "ERROR: bumped into the same nick %s/%s twice in hash table.",longtonumeric(np->numeric,5),np->nick);
+        errors++;
+      }
+      
       /* Mark this nick so we can check we found them all */
       np->marker=nickmarker;
 
@@ -136,6 +141,7 @@ int dofsck(void *source, int cargc, char **cargv) {
 			 longtonumeric(np->numeric,5),np->nick);
 	    errors++;
 	  }
+	  np->marker=0;
 	}
       }
     }
