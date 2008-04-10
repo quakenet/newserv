@@ -22,6 +22,7 @@ int dofsck(void *source, int cargc, char **cargv) {
   realname *rnp;
   unsigned int nickmarker;
   int errors=0;
+  unsigned int nummask,mnum;
 
   /* Start off with strict nick consistency checks.. */
 
@@ -134,8 +135,14 @@ int dofsck(void *source, int cargc, char **cargv) {
       
   for(i=0;i<MAXSERVERS;i++) {
     if (serverlist[i].linkstate != LS_INVALID) {
+      nummask=((MAXSERVERS-1)<<18) | serverlist[i].maxusernum;
       for (j=0;j<=serverlist[i].maxusernum;j++) {
 	if ((np=servernicks[i][j])) {
+	  mnum=(i<<18) | j;
+	  if ((np->numeric & nummask) != mnum) {
+	    controlreply(sender, "ERROR: nick %s/%s has wrong masked numeric.",longtonumeric(np->numeric,5),np->nick);
+	    errors++;
+          }
 	  if (np->marker != nickmarker) {
 	    controlreply(sender, "ERROR: nick %s/%s in server user table but not hash!",
 			 longtonumeric(np->numeric,5),np->nick);
