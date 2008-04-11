@@ -1,6 +1,11 @@
 @include@ @includel@../build.mk@includel@
 
 .PHONY: all
-all: graphing.so
+all: graphing.so nterfacer_graphing.so dump
 
 graphing.so: graphing.o fsample.o
+
+nterfacer_graphing.so: nterfacer_graphing.o
+
+dump: dump.o fsample.o
+	$(CC) $(CFLAGS) -o $@ $(.ALLSRC)

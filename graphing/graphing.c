@@ -5,25 +5,20 @@
 #include "../core/config.h"
 #include "../usercount/usercount.h"
 #include "../lib/sstring.h"
-#include "../server/server.h"
 #include "../core/schedule.h"
 #include "../core/error.h"
 #include "../lib/sha1.h"
 #include "../lib/hmac.h"
 
-#include "fsample.h"
-
-#define RESOLUTION 5
-#define SAMPLES (60 / RESOLUTION) * 60 * 24 * 7 * 4 * 12
+#include "graphing.h"
 
 static void gr_newserver(int hook, void *arg);
 static void gr_lostserver(int hook, void *arg);
 static void tick(void *arg);
 static void openserver(int servernum);
 static void closeserver(int servernum);
-static inline int servermonitored(int servernum);
 
-static fsample_m *servergraphs[MAXSERVERS];
+fsample_m *servergraphs[MAXSERVERS];
 static void *sched;
 
 static sstring *path;
@@ -63,7 +58,7 @@ void _fini(void) {
   deregisterhook(HOOK_SERVER_LOSTSERVER, gr_lostserver);
 }
 
-static inline int servermonitored(int servernum) {
+int servermonitored(int servernum) {
   return servergraphs[servernum] != NULL;
 }
 
@@ -80,6 +75,7 @@ static void openserver(int servernum) {
   char filename[512], hexdigest[sizeof(digest)*2 + 1];
   FILE *f;
   SHA1_CTX sha;
+  fsample_m *m;
 
   if(servermonitored(servernum))
     return;
@@ -94,8 +90,10 @@ static void openserver(int servernum) {
   snprintf(filename, sizeof(filename), "%s/%s", path->content, hmac_printhex(digest, hexdigest, sizeof(digest)));
 
   f = fopen(appendsuffix(filename, ".name"), "w");
-  if(!f)
+  if(!f) {
+    Error("graphing", ERR_WARNING, "Unable to create name file for %s (%s.name)", serverlist[servernum].name->content, filename);
     return;
+  }
 
   fprintf(f, "%s\n", serverlist[servernum].name->content);
   fclose(f);
@@ -108,7 +106,24 @@ static void openserver(int servernum) {
      5: months
    */
 
-  servergraphs[servernum] = fsopen_m(5, appendsuffix(filename, ".0"), SAMPLES);
+  m = fsopen_m(GRAPHING_DATASETS, appendsuffix(filename, ".0"), SAMPLES);
+  if(!m) {
+    Error("graphing", ERR_WARNING, "Unable to create main backing store for %s (%s.0)", serverlist[servernum].name->content, filename);
+    return;
+  }
+/*
+  if(!fsadd_m(m, appendsuffix(filename, ".1"), PERMINUTE, fsapmean, (void *)PERMINUTE) ||
+     !fsadd_m(m, appendsuffix(filename, ".2"), PERMINUTE * 24, fsapmean, (void *)(PERMINUTE * 24)) ||
+     !fsadd_m(m, appendsuffix(filename, ".3"), PERMINUTE * 24 * 7, fsapmean, (void *)(PERMINUTE * 24 * 7)) ||
+     !fsadd_m(m, appendsuffix(filename, ".4"), PERMINUTE * 24 * 7 * 4, fsapmean, (void *)(PERMINUTE * 24 * 7 * 4)) ||
+     !fsadd_m(m, appendsuffix(filename, ".5"), PERMINUTE * 24 * 7 * 4 * 12, fsapmean, (void *)(PERMINUTE * 24 * 7 * 4 * 12)))
+  {
+    Error("graphing", ERR_WARNING, "Unable to create main side store for %s (%s.X)", serverlist[servernum].name->content, filename);
+    fsclose_m(m);
+    return;
+  }
+*/
+  servergraphs[servernum] = m;
 }
 
 static void closeserver(int servernum) {
@@ -135,12 +150,12 @@ static void tick(void *arg) {
   time_t t = time(NULL);
   int i;
 
-  if(t % RESOLUTION != 0)
+  if(t % GRAPHING_RESOLUTION != 0)
     return;
 
   for(i=0;i<MAXSERVERS;i++)
     if(servermonitored(i))
-      fsset_m(servergraphs[i], t / RESOLUTION, servercount[i]);
+      fsset_m(servergraphs[i], t / GRAPHING_RESOLUTION, servercount[i]);
 }
 
 

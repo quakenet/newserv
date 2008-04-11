@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct fsample_p {
   fsample_t v;
@@ -13,6 +14,8 @@ struct fsample_p {
 };
 
 struct fsample_header {
+  char magic[4];
+  fsample_t version;
   unsigned char iteration;
   fsample_t lastpos;
 };
@@ -24,13 +27,19 @@ struct fsample {
   struct fsample_header *header;
 };
 
+static fsample_t version = 1;
+
 fsample *fsopen(char *filename, size_t samples) {
+  int new = 0;
   fsample *f = (fsample *)malloc(sizeof(fsample));
   if(!f)
     return NULL;
 
   f->len = samples * sizeof(struct fsample_p) + sizeof(struct fsample_header);
   f->fd = open(filename, O_RDWR|O_CREAT, 0600);
+
+  if(!lseek(f->fd, 0, SEEK_END))
+    new = 1;
 
   if((f->fd == -1) || (lseek(f->fd, f->len - 1, SEEK_SET) == -1)) {
     free(f);
@@ -39,14 +48,23 @@ fsample *fsopen(char *filename, size_t samples) {
   write(f->fd, "", 1);
 
   f->header = mmap(NULL, f->len, PROT_READ|PROT_WRITE, MAP_NOCORE|MAP_SHARED, f->fd, 0);
-  f->m = (struct fsample_p *)(f->header + 1);
 
-  if(f->m == MAP_FAILED) {
+  if(f->header == MAP_FAILED) {
     close(f->fd);
     free(f);
     return NULL;
   }
 
+  if(!new && (memcmp(f->header->magic, "FSAMP", sizeof(f->header->magic)) || (version != f->header->version))) {
+    close(f->fd);
+    free(f);
+    return NULL;
+  }
+
+  memcpy(f->header->magic, "FSAMP", sizeof(f->header->magic));
+  f->header->version = version;
+
+  f->m = (struct fsample_p *)(f->header + 1);
   f->samples = samples;
 
   if(f->header->iteration == 0)

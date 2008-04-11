@@ -16,7 +16,8 @@ inline fsample_t fsget_r(fsample *f, fsample_t pos, fsample_t *t);
 
 struct fsample_m;
 typedef fsample_t (*DeriveValueFn)(struct fsample_m *v, int entry, fsample_t pos, void *tag);
-struct fsample_m_entry {
+
+typedef struct fsample_m_entry {
   size_t freq;
   fsample *f;
   void *tag;
@@ -24,7 +25,7 @@ struct fsample_m_entry {
 } fsample_m_entry;
 
 typedef struct fsample_m {
-  size_t count, pos, samples;
+  size_t pos, samples;
   struct fsample_m_entry entry[];
 } fsample_m;
 
