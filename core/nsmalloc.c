@@ -43,7 +43,7 @@ void *nsmalloc(unsigned int poolid, size_t size) {
 void nsfree(unsigned int poolid, void *ptr) {
   struct nsminfo *nsmp;
   
-  if (poolid >= MAXPOOL)
+  if (!ptr || poolid >= MAXPOOL)
     return;
 
   /* evil */
@@ -141,7 +141,8 @@ void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
 }
 
 void nsfree(unsigned int poolid, void *ptr) {
-  free(ptr);
+  if(ptr)
+    free(ptr);
 }
 
 void nsfreeall(unsigned int poolid) {

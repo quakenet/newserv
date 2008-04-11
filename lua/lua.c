@@ -260,6 +260,14 @@ lua_State *lua_loadscript(char *file) {
     Error("lua", ERR_ERROR, "Error pcalling: %s.", file);
     lua_close(l);
     freesstring(n->name);
+
+    if(lua_head == n)
+      lua_head = NULL;
+
+    lua_tail = n->prev;
+    if(lua_tail)
+      lua_tail->next = NULL;
+
     luafree(n);
     return NULL;
   }

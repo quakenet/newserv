@@ -175,37 +175,41 @@ void cs_handlejoin(int hooknum, void *arg) {
     isopped=iscreate=0;
   }  
 
-  /* Check for "Q ban" */
-  if (!IsService(np) && cs_bancheck(np,cp)) {
-    /* They got kicked.. */
-    return;
-  }
-
-  /* Check for other ban lurking on channel which we are enforcing */
-  if (!IsService(np) && CIsEnforce(rcp) && nickbanned_visible(np,cp)) {
-    localkickuser(chanservnick,cp,np,"Banned.");
-    return;
-  }
-
-  /* Check for +b chanlev flag */
-  if (!IsService(np) && rcup && CUIsBanned(rcup)) {
-    cs_banuser(NULL, cip, np, NULL);
-    cs_timerfunc(cip);
-    return;
-  } 
-
-  /* Check for +k chan flag */
-  if (!IsService(np) && CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
-    /* Don't ban if they are already "visibly" banned for some reason. */
-    if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
-      localkickuser(chanservnick,cp,np,"Authorised users only.");
-    } else {      
-      cs_banuser(NULL, cip, np, "Authorised users only.");
-      cs_timerfunc(cip);
+  /* Various things that can ban the user on join.  Don't apply these to anyone
+   * with one of +k, +X, +o */
+  if (!IsService(np) && !IsOper(np) && !IsXOper(np)) {
+    /* Check for "Q ban" */
+    if (cs_bancheck(np,cp)) {
+      /* They got kicked.. */
+      return;
     }
-    return;
-  }
 
+    /* Check for other ban lurking on channel which we are enforcing */
+    if (CIsEnforce(rcp) && nickbanned_visible(np,cp)) {
+      localkickuser(chanservnick,cp,np,"Banned.");
+      return;
+    }
+
+    /* Check for +b chanlev flag */
+    if (rcup && CUIsBanned(rcup)) {
+      cs_banuser(NULL, cip, np, NULL);
+      cs_timerfunc(cip);
+      return;
+    } 
+
+    /* Check for +k chan flag */
+    if (CIsKnownOnly(rcp) && !(rcup && CUKnown(rcup))) {
+      /* Don't ban if they are already "visibly" banned for some reason. */
+      if (IsInviteOnly(cp) || (IsRegOnly(cp) && !IsAccount(np))) {
+        localkickuser(chanservnick,cp,np,"Authorised users only.");
+      } else {      
+        cs_banuser(NULL, cip, np, "Authorised users only.");
+        cs_timerfunc(cip);
+      }
+      return;
+    }
+  }
+  
   if (!rup || !rcup) {
     /* They're not a registered user, so deop if it is a create */
     if (isopped && !IsService(np)) {

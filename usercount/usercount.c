@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "../nick/nick.h"
 #include "../core/hooks.h"
 #include "usercount.h"
@@ -9,6 +11,15 @@ static void uc_newnick(int hook, void *arg);
 static void uc_lostnick(int hook, void *arg);
 
 void _init(void) {
+  nick *np;
+  int i;
+
+  memset(servercount, 0, sizeof(servercount));
+
+  for(i=0;i<NICKHASHSIZE;i++)
+    for(np=nicktable[i];np;np=np->next)
+      servercount[homeserver(np->numeric)]++;
+
   registerhook(HOOK_SERVER_NEWSERVER, uc_newserver);
   registerhook(HOOK_NICK_NEWNICK, uc_newnick);
   registerhook(HOOK_NICK_LOSTNICK, uc_lostnick);
