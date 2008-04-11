@@ -30,6 +30,7 @@ struct fsample {
 static fsample_t version = 1;
 
 fsample *fsopen(char *filename, size_t samples) {
+  int flags = 0;
   int new = 0;
   fsample *f = (fsample *)malloc(sizeof(fsample));
   if(!f)
@@ -47,7 +48,12 @@ fsample *fsopen(char *filename, size_t samples) {
   }
   write(f->fd, "", 1);
 
-  f->header = mmap(NULL, f->len, PROT_READ|PROT_WRITE, MAP_NOCORE|MAP_SHARED, f->fd, 0);
+  flags = MAP_SHARED;
+#ifdef MAP_NOCORE
+  flags|=MAP_NOCORE;
+#endif
+
+  f->header = mmap(NULL, f->len, PROT_READ|PROT_WRITE, flags, f->fd, 0);
 
   if(f->header == MAP_FAILED) {
     close(f->fd);

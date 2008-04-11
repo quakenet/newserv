@@ -66,7 +66,6 @@ int handle_serverdata(struct rline *li, int argc, char **argv) {
       if(ri_append(li, "-1", v) == BF_OVER)
         return ri_error(li, BF_OVER, "Buffer overflow");
     }
-    printf("%d\n", v);
   }
 
   return ri_final(li);

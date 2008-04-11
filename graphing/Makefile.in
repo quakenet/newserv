@@ -8,4 +8,4 @@ graphing.so: graphing.o fsample.o
 nterfacer_graphing.so: nterfacer_graphing.o
 
 dump: dump.o fsample.o
-	$(CC) $(CFLAGS) -o $@ $(.ALLSRC)
+	$(CC) $(CFLAGS) -o $@ @srcs@
