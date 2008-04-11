@@ -23,6 +23,8 @@ void sigusr1handler(int sig);
 void sigsegvhandler(int sig);
 void handlecore(void);
 
+static void (*oldsegv)(int);
+
 int main(int argc, char **argv) {
   initseed();
   inithooks();
@@ -43,7 +45,7 @@ int main(int argc, char **argv) {
   initmodules();
   signal(SIGINT, siginthandler);
   signal(SIGUSR1, sigusr1handler);
-  signal(SIGSEGV, sigsegvhandler);
+  oldsegv = signal(SIGSEGV, sigsegvhandler);
 
   /* Main loop */
   for(;;) {
@@ -87,5 +89,7 @@ void sigusr1handler(int sig) {
 
 void sigsegvhandler(int sig) {
   handlecore();
+
+  oldsegv(sig);
 }
 
