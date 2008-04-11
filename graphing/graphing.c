@@ -106,7 +106,7 @@ static void openserver(int servernum) {
      5: months
    */
 
-  m = fsopen_m(GRAPHING_DATASETS, appendsuffix(filename, ".0"), SAMPLES);
+  m = fsopen_m(GRAPHING_DATASETS, appendsuffix(filename, ".0"), SAMPLES, (CoreHandlerAddFn)registercorehandler, (CoreHandlerDelFn)deregistercorehandler);
   if(!m) {
     Error("graphing", ERR_WARNING, "Unable to create main backing store for %s (%s.0)", serverlist[servernum].name->content, filename);
     return;

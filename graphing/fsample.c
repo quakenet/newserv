@@ -25,11 +25,18 @@ struct fsample {
   int fd;
   size_t samples, len;
   struct fsample_header *header;
+  void *corehandler;
+  CoreHandlerDelFn corehandlerdel;
 };
 
 static fsample_t version = 1;
 
-fsample *fsopen(char *filename, size_t samples) {
+static void fscorefree(void *arg) {
+  fsample *f = (fsample *)arg;
+  munmap(f->header, f->len);
+}
+
+fsample *fsopen(char *filename, size_t samples, CoreHandlerAddFn chafn, CoreHandlerDelFn chdfn) {
   int flags = 0;
   int new = 0;
   fsample *f = (fsample *)malloc(sizeof(fsample));
@@ -54,7 +61,6 @@ fsample *fsopen(char *filename, size_t samples) {
 #endif
 
   f->header = mmap(NULL, f->len, PROT_READ|PROT_WRITE, flags, f->fd, 0);
-
   if(f->header == MAP_FAILED) {
     close(f->fd);
     free(f);
@@ -62,9 +68,18 @@ fsample *fsopen(char *filename, size_t samples) {
   }
 
   if(!new && (memcmp(f->header->magic, "FSAMP", sizeof(f->header->magic)) || (version != f->header->version))) {
+    munmap(f->header, f->len);
     close(f->fd);
     free(f);
     return NULL;
+  }
+
+  if(chafn) {
+    f->corehandler = chafn(fscorefree, f);
+    f->corehandlerdel = chdfn;
+  } else {
+    f->corehandler = NULL;
+    f->corehandlerdel = NULL;
   }
 
   memcpy(f->header->magic, "FSAMP", sizeof(f->header->magic));
@@ -80,8 +95,12 @@ fsample *fsopen(char *filename, size_t samples) {
 }
 
 void fsclose(fsample *f) {
-  munmap(f->m, f->len);
+  munmap(f->header, f->len);
   close(f->fd);
+
+  if(f->corehandlerdel && f->corehandler)
+    (f->corehandlerdel)(f->corehandler);
+
   free(f);
 }
 
@@ -150,25 +169,28 @@ inline fsample_t fsget(fsample *f, fsample_t pos, fsample_t *t) {
 }
 
 int fsadd_m(fsample_m *f, char *filename, size_t freq, DeriveValueFn derive, void *tag) {
-  f->entry[f->pos].freq = freq;
+  fsample_m_entry *p = &f->entry[f->pos];
+  p->freq = freq;
 
-  f->entry[f->pos].f = fsopen(filename, f->samples / freq);
-  if(!f->entry[f->pos].f)
+  p->f = fsopen(filename, f->samples / freq, f->chafn, f->chdfn);
+  if(!p->f)
     return 0;
 
-  f->entry[f->pos].derive = derive;
-  f->entry[f->pos].tag = tag;
+  p->derive = derive;
+  p->tag = tag;
   f->pos++;
   return 1;
 }
 
-fsample_m *fsopen_m(size_t count, char *filename, size_t samples) {
+fsample_m *fsopen_m(size_t count, char *filename, size_t samples, CoreHandlerAddFn chafn, CoreHandlerDelFn chdfn) {
   fsample_m *n = (fsample_m *)malloc(sizeof(fsample_m) + (count + 1) * sizeof(fsample_m_entry));
   if(!n)
     return NULL;
 
   n->samples = samples;
   n->pos = 0;
+  n->chafn = chafn;
+  n->chdfn = chdfn;
 
   if(!fsadd_m(n, filename, 1, NULL, 0)) {
     free(n);

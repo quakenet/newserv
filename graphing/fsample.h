@@ -7,8 +7,12 @@ typedef u_int32_t fsample_t;
 
 typedef struct fsample fsample;
 
+/* nice loss of type safety here... */
+typedef void *(*CoreHandlerAddFn)(void *handler, void *arg);
+typedef void (*CoreHandlerDelFn)(void *);
+
 /* single sample functions */
-fsample *fsopen(char *filename, size_t samples);
+fsample *fsopen(char *filename, size_t samples, CoreHandlerAddFn chafn, CoreHandlerDelFn chdfn);
 void fsclose(fsample *f);
 inline void fsset(fsample *f, fsample_t pos, fsample_t value);
 inline fsample_t fsget(fsample *f, fsample_t pos, fsample_t *t);
@@ -26,11 +30,13 @@ typedef struct fsample_m_entry {
 
 typedef struct fsample_m {
   size_t pos, samples;
+  CoreHandlerAddFn chafn;
+  CoreHandlerDelFn chdfn;
   struct fsample_m_entry entry[];
 } fsample_m;
 
 /* multiple sample functions */
-fsample_m *fsopen_m(size_t count, char *filename, size_t samples);
+fsample_m *fsopen_m(size_t count, char *filename, size_t samples, CoreHandlerAddFn chafn, CoreHandlerDelFn chdfn);
 void fsclose_m(fsample_m *f);
 int fsadd_m(fsample_m *f, char *filename, size_t freq, DeriveValueFn derive, void *tag);
 void fsset_m(fsample_m *f, fsample_t pos, fsample_t value);
