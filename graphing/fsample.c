@@ -74,7 +74,7 @@ fsample *fsopen(char *filename, size_t samples, CoreHandlerAddFn chafn, CoreHand
     return NULL;
   }
 
-  if(chafn) {
+  if(chafn && chdfn) {
     f->corehandler = chafn(fscorefree, f);
     f->corehandlerdel = chdfn;
   } else {
