@@ -7,8 +7,10 @@
  * CMDDESC: Shows or changes staff comment for a user.
  * CMDFUNC: csu_dousercomment
  * CMDPROTO: int csu_dousercomment(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: usercomment <username> [<comment>]
+ * CMDHELP: Usage: usercomment <username> [[+]<comment>]
  * CMDHELP: Shows or changes the staff comment for the specified user.
+ * CMDHELP: Comments can be appended to by prefixing <comment> with +.
+ * CMDHELP: Use 'none' for <comment> to unset.
  */
 
 #include "../chanserv.h"
