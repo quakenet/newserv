@@ -11,7 +11,7 @@
  * CMDHELP: Displays a list of persistent and channel bans on the named channel.  Each ban
  * CMDHELP: is identified by a number which can be passed to a subsequent BANDEL command.
  * CMDHELP: Note that the numbers can change if bans are added to or removed from the 
- * CMDHELP: chennel. Where:
+ * CMDHELP: channel. Where:
  * CMDHELP: channel - the channel to use
  * CMDHELP: BANLIST requires operator (+o) access on the named channel.
  */
