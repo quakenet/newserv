@@ -146,6 +146,9 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       }
     }
 
+    if (rcp->comment && (cs_privcheck(QPRIV_VIEWCOMMENTS, sender)))
+      chanservstdmessage(sender, QM_SHORT_COMMENT, rcp->comment->content);
+
     /* Count users */
     for (i=0,usercount=0;i<REGCHANUSERHASHSIZE;i++)
       for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)

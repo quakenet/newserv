@@ -4,6 +4,7 @@
 #include "../lib/irc_string.h"
 #include "../localuser/localuserchannel.h"
 #include "../control/control.h"
+#include "../usercount/usercount.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +66,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
   nick *np = (nick*)sender;
   int a, i, ucount, acount, scount;
 
-  controlreply(np, "%-7s %-30s %5s/%-5s %-15s %-20s", "Numeric", "Hostname", "Clients", "MaxCl", "Connected for", "Version");
+  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-15s %-20s", "Numeric", "Hostname", "EClients", "Clients", "MaxCl", "Connected for", "Version");
 
   scount = acount = 0;
 
@@ -73,15 +74,15 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
     if (serverlist[i].linkstate == LS_LINKED && (cargc < 1 || match2strings(cargv[0], serverlist[i].name->content))) {
       ucount = 0;
 
-      for (a = 0; a < serverlist[i].maxusernum; a++)
+      for (a = 0; a <= serverlist[i].maxusernum; a++)
         if (servernicks[i][a] != NULL)
           ucount++;
 
       acount += ucount;
       scount++;
 
-      controlreply(np, "%-7d %-30s %5d/%-5d %-15s %-20s - %s", i, serverlist[i].name->content,
-            ucount, serverlist[i].maxusernum, longtoduration(getnettime() - serverinfo[i].ts, 0),
+      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-15s %-20s - %s", i, serverlist[i].name->content,
+            servercount[i], ucount, serverlist[i].maxusernum, longtoduration(getnettime() - serverinfo[i].ts, 0),
             serverinfo[i].version1 ? serverinfo[i].version1->content : "Unknown",
             serverinfo[i].version2 ? serverinfo[i].version2->content : "Unknown");
     }
@@ -134,7 +135,7 @@ void serverlist_doversion(void) {
 
 void serverlist_hook_newserver(int hook, void *arg) {
   char *num1, *numeric;
-  int num = (int)arg;
+  long num = (long)arg;
 
   if (mynick == NULL)
     return;
@@ -154,7 +155,7 @@ void serverlist_hook_newserver(int hook, void *arg) {
 }
 
 void serverlist_hook_lostserver(int hook, void *arg) {
-  int num = (int)arg;
+  long num = (long)arg;
 
   serverinfo[num].used = 0;
   freesstring(serverinfo[num].version1);
