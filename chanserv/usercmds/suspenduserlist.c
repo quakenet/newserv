@@ -48,9 +48,6 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
       if (!match(cargv[0], dbrup->username)) {
         char suspendtype[100];
         
-        if ((UIsGline(dbrup) || UIsDelayedGline(dbrup)) && !UHasOperPriv(rup))
-          continue;
-        
         if (UIsDelayedGline(dbrup))
           strcpy(suspendtype, "delayed gline");
         else if (UIsGline(dbrup))
