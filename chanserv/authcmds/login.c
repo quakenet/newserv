@@ -129,14 +129,8 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     chanservstdmessage(sender, QM_AUTHSUSPENDED);
     if(rup->suspendreason)
       chanservstdmessage(sender, QM_REASON, rup->suspendreason->content);
-    if (rup->suspendexp) {
-      struct tm* tmp;
-      char buf[200];
-      
-      tmp=gmtime(&(rup->suspendexp));
-      strftime(buf, 15, "%d/%m/%y %H:%M", tmp);
-      chanservstdmessage(sender, QM_EXPIRES, buf);
-    }
+    if (rup->suspendexp)
+      chanservstdmessage(sender, QM_EXPIRES, rup->suspendexp);
     return CMD_ERROR;
   }
   

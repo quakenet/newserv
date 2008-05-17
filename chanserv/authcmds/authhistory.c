@@ -79,11 +79,11 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
     ahhost=dbgetvalue(pgres, 3);
     ahauthtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
     ahdisconnecttime=strtoul(dbgetvalue(pgres, 5), NULL, 10);
-    tmp=localtime(&ahauthtime);
-    strftime(tbuf1, 15, "%d/%m/%y %H:%M", tmp);
+    tmp=gmtime(&ahauthtime);
+    strftime(tbuf1, sizeof(tbuf1), Q9_FORMAT_TIME, tmp);
     if (ahdisconnecttime) {
-      tmp=localtime(&ahdisconnecttime);
-      strftime(tbuf2, 15, "%d/%m/%y %H:%M", tmp);
+      tmp=gmtime(&ahdisconnecttime);
+      strftime(tbuf2, sizeof(tbuf2), Q9_FORMAT_TIME, tmp);
     }
     snprintf(uhbuf,50,"%s!%s@%s", ahnick, ahuser, ahhost);
     chanservsendmessage(np, "#%-2d %-50s %-15s %-15s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", dbgetvalue(pgres,6));

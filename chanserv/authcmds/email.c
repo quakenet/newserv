@@ -53,9 +53,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   }
 
   if(!UHasHelperPriv(rup) && (rup->lockuntil && rup->lockuntil > t)) {
-    char buf[100];
-    strftime(buf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lockuntil)));
-    chanservstdmessage(sender, QM_ACCOUNTLOCKED, buf);
+    chanservstdmessage(sender, QM_ACCOUNTLOCKED, rup->lockuntil);
     return CMD_ERROR;
   }
 

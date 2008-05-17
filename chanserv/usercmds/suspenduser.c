@@ -147,7 +147,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
   
   if (expires) {
     tmp=gmtime(&expires);
-    strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+    strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
   }
   
   if (email) {

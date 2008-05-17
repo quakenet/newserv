@@ -27,7 +27,7 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender);
   chanindex *cip;
   regchan *rcp;
-  int i;
+  int i, seewhom;
   char *bywhom, buf[200];
   unsigned int count=0;
   struct tm *tmp;
@@ -39,6 +39,10 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
+  seewhom = cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender);
+  if(!seewhom)
+    bywhom = "(hidden)";
+
   chanservstdmessage(sender, QM_SUSPENDCHANLISTHEADER);
   for (i=0; i<CHANNELHASHSIZE; i++) {
     for (cip=chantable[i]; cip; cip=cip->next) {
@@ -50,20 +54,22 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
       
       if ((rcp->suspendby != rup->ID) && match(cargv[0], cip->name->content))
         continue;
-      
-      if (rcp->suspendby == rup->ID)
-        bywhom=rup->username;
-      else {
-        reguser *trup=findreguserbyID(rcp->suspendby);
-        if (trup)
-          bywhom=trup->username;
-        else
-          bywhom="unknown";
+
+      if(seewhom) {      
+        if (rcp->suspendby == rup->ID)
+          bywhom=rup->username;
+        else {
+          reguser *trup=findreguserbyID(rcp->suspendby);
+          if (trup)
+            bywhom=trup->username;
+          else
+            bywhom="(unknown)";
+        }
       }
       count++;
 
       tmp=gmtime(&(rcp->suspendtime));
-      strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+      strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
 
       chanservsendmessage(sender, "%-30s %-15s %-15s %s", cip->name->content, bywhom, buf, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
       if (count >= 2000) {

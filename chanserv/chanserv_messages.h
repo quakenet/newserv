@@ -1,6 +1,8 @@
 #ifndef __CHANSERV_MESSAGES_H
 #define __CHANSERV_MESSAGES_H
 
+#define Q9_FORMAT_TIME "%d/%m/%y %H:%M"
+
 #define MAXMESSAGES  200
 
 #ifdef COMPILING_MESSAGES
@@ -89,10 +91,10 @@ BeginMessages() {
   msg(QM_WHOIS_INFO, "Info           : $0", "s"),
   msg(QM_WHOIS_COMMENT, "Staff comment  : $0", "s"),
   msg(QM_WHOIS_FLAGS, "User flags     : $0", "s"),
-  msg(QM_WHOIS_CREATED, "User created   : $0", "s"),
+  msg(QM_WHOIS_CREATED, "User created   : $0", "T"),
   msg(QM_WHOIS_CHANHEADER, "Known on the following channels:\nChannel                        Flags", ""),
   msg(QM_WHOIS_EMAIL, "Email address  : $0", "s"),
-  msg(QM_WHOIS_EMAILSET, "Email last set : $0", "s"),
+  msg(QM_WHOIS_EMAILSET, "Email last set : $0", "T"),
   msg(QM_COMMENT, "Staff comment for $0: $1.", "ss"),
   msg(QM_NOCOMMENT, "No staff comment for $0.", "s"),
   msg(QM_BADAUTH, "$0: Your account has been deleted or suspended.", "s"),
@@ -128,12 +130,12 @@ BeginMessages() {
   msg(QM_WHOIS_USERLANG, "Language       : $0", "s"),
   msg(QM_CHANTYPEIS, "Channel type for $0 is: $1", "ss"),
   msg(QM_STATSHEADER, "Statistics for $0:", "s"),
-  msg(QM_STATSADDED, "Date added: $0", "s"),
-  msg(QM_STATSJOINS, "Since $0: maximum size $1, $2 joins ($3 joins/day).", "sddg"),
-  msg(QM_STATSLASTACTIVE, "Last active: $0", "s"),
+  msg(QM_STATSADDED, "Date added: $0", "T"),
+  msg(QM_STATSJOINS, "Since $0: maximum size $1, $2 joins ($3 joins/day).", "Tddg"),
+  msg(QM_STATSLASTACTIVE, "Last active: $0", "T"),
   msg(QM_AUTHSUSPENDED, "Your Q account is suspended.", ""),
   msg(QM_REASON, "Reason: $0", "s"),
-  msg(QM_EXPIRES, "Expires: $0", "s"),
+  msg(QM_EXPIRES, "Expires: $0", "T"),
   msg(QM_TOOMANYAUTHS, "Too many users AUTH'd to this account.", ""),
   msg(QM_INVALIDDURATION, "Duration must be between 1d and 1M.", ""),
   msg(QM_DISCONNECTINGUSER, "Disconnecting $0 (authed as $1)", "ss"),
@@ -179,7 +181,7 @@ BeginMessages() {
   msg(QM_REQUESTPASSPRIVUSER, "Cannot send password for that account.", ""),
   msg(QM_EMAILMATCHESOLD, "The new email address is the same as current one.", ""),
   msg(QM_INVALIDLIMIT, "Supplied autolimit is invalid: $0", "s"),
-  msg(QM_ACCOUNTLOCKED, "This account has recently been modified. It will be unlocked on $0.", "s"),
+  msg(QM_ACCOUNTLOCKED, "This account has recently been modified. It will be unlocked on $0.", "T"),
   msg(QM_ACCOUNTNOTLOCKED, "That account is not locked.", ""),
   msg(QM_RESETOK, "Your old account settings have been restored, please check your email.", ""),
   msg(QM_BADRESETCODE, "Bad reset code.", ""),
@@ -206,10 +208,13 @@ BeginMessages() {
   msg(QM_USERSUSPENDEDTYPE,   "Suspend type   : $0", "s"),
   msg(QM_USERSUSPENDEDBY,     "Suspended by   : $0", "s"),
   msg(QM_USERSUSPENDEDREASON, "Suspend reason : $0", "s"),
-  msg(QM_USERSUSPENDEDAT,     "Suspended at   : $0", "s"),
+  msg(QM_USERSUSPENDEDAT,     "Suspended at   : $0", "T"),
   msg(QM_USERSUSPENDEDEXPIRY, "Suspend expiry : $0", "s"),
   msg(QM_INVALIDDOMAIN, "$0 is not a valid domain.", "s"),
   msg(QM_SHORT_COMMENT, "Staff comment: $0", "s"),
+  msg(QM_CHANLEV_SUSPENDREASON, "Suspended: $0", "s"),
+  msg(QM_CHANLEV_SUSPENDSINCE, "Suspended since: $0", "T"),
+  msg(QM_CHANLEV_SUSPENDBY, "Suspended by: $0", "s"),
 } 
 EndMessages()
 #endif
