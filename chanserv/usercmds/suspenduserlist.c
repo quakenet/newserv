@@ -21,10 +21,10 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender);
   reguser *dbrup, *trup;
-  int i;
+  int i, seewhom;
   unsigned int count=0;
   struct tm *tmp;
-  char buf[200], buf2[200];
+  char buf[200], buf2[200], *bywhom;
   time_t now=time(NULL);
   
   if (!rup)
@@ -35,6 +35,10 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
+  seewhom = cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender);
+  if(!seewhom)
+    bywhom = "(hidden)";
+
   chanservstdmessage(sender, QM_SUSPENDUSERLISTHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (dbrup=regusernicktable[i]; dbrup; dbrup=dbrup->nextbyname) {
@@ -43,7 +47,6 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
       
       if (!match(cargv[0], dbrup->username)) {
         char suspendtype[100];
-        char *bywhom=0;
         
         if ((UIsGline(dbrup) || UIsDelayedGline(dbrup)) && !UHasOperPriv(rup))
           continue;
@@ -57,12 +60,14 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
         else
           strcpy(suspendtype, "not used");
         
-        trup=findreguserbyID(dbrup->suspendby);
-        if (trup)
-          bywhom=trup->username;
-        else
-          bywhom="(unknown)";
-        
+        if(seewhom) {
+          trup=findreguserbyID(dbrup->suspendby);
+          if (trup)
+            bywhom=trup->username;
+          else
+            bywhom="(unknown)";
+        }
+
         if (dbrup->suspendexp) {
           tmp=gmtime(&(dbrup->suspendexp));
           strftime(buf,15,"%d/%m/%y %H:%M",tmp);
@@ -72,7 +77,7 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
         strftime(buf2,15,"%d/%m/%y %H:%M",tmp);
 
         count++;
-        chanservsendmessage(sender, "%-15s %-13s %-15s %-15s %-15s %s", dbrup->username, suspendtype, UHasOperPriv(rup)?bywhom:"not shown", buf2, (dbrup->suspendexp)?((now >= dbrup->suspendexp)?"next auth":buf):"never", dbrup->suspendreason?dbrup->suspendreason->content:"(none)");
+        chanservsendmessage(sender, "%-15s %-13s %-15s %-15s %-15s %s", dbrup->username, suspendtype, bywhom, buf2, (dbrup->suspendexp)?((now >= dbrup->suspendexp)?"next auth":buf):"never", dbrup->suspendreason?dbrup->suspendreason->content:"(none)");
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "users");
           return CMD_ERROR;

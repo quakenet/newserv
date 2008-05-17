@@ -90,7 +90,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
       }
       strftime(timebuf, 15, "%d/%m/%y %H:%M", gmtime(&(target->suspendtime)));
 
-      if(UHasOperPriv(rup)) {
+      if(cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender)) {
         reguser *trup = findreguserbyID(target->suspendby);
         if(trup) {
           whom = trup->username;
