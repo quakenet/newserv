@@ -72,8 +72,8 @@ void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
     authtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
     oldflags=strtoul(dbgetvalue(pgres, 5), NULL, 10);
     newflags=strtoul(dbgetvalue(pgres, 6), NULL, 10);
-    tmp=localtime(&changetime);
-    strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
+    tmp=gmtime(&changetime);
+    strftime(tbuf, sizeof(tbuf), Q9_FORMAT_TIME, tmp);
     strncpy(fbuf, printflags(oldflags, rcuflags), 17);
     fbuf[17]='\0';
     chanservsendmessage(np, "#%-6d %-15s %-15s %-15s %-15s %s", ++count, tbuf,

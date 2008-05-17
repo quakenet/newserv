@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 #include "../lib/sstring.h"
 #include "../lib/stringbuf.h"
 #include "../core/error.h"
@@ -25,6 +26,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
     char *s;
     double g;
     unsigned int u;
+    time_t t;
 
     for(i=0;i<MAXARGS;i++)
       convbuf[i][0] = '\0';
@@ -48,6 +50,10 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
         case 'g':
           g = va_arg(ap, double);
           snprintf(cb, CONVBUF, "%.1f", g);
+          break;
+        case 'T':
+          t = va_arg(ap, time_t);
+          strftime(cb, 15, "%d/%m/%y %H:%M", gmtime(&t));
           break;
         default:
           /* calls exit(0) */

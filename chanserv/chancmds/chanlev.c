@@ -147,7 +147,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     }
 
     if (CIsSuspended(rcp) && cs_privcheck(QPRIV_VIEWCHANSUSPENSION, sender)) {
-      char tbuf[30], *bywhom;
+      char *bywhom;
 
       if(cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender)) {
         reguser *trup = findreguserbyID(rcp->suspendby);
@@ -160,11 +160,9 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
         bywhom = "(hidden)";
       }
 
-      strftime(tbuf,15,"%d/%m/%y %H:%M",gmtime(&(rcp->suspendtime)));
-
       chanservstdmessage(sender, QM_CHANLEV_SUSPENDREASON, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
       chanservstdmessage(sender, QM_CHANLEV_SUSPENDBY, bywhom);
-      chanservstdmessage(sender, QM_CHANLEV_SUSPENDSINCE, tbuf);
+      chanservstdmessage(sender, QM_CHANLEV_SUSPENDSINCE, rcp->suspendtime);
     }
 
     if (rcp->comment && (cs_privcheck(QPRIV_VIEWCOMMENTS, sender)))
@@ -226,14 +224,14 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	if (!rcuplist->usetime) {
 	  strcpy(time1,"Never");
 	} else {
-	  tmp=localtime(&(rcuplist->usetime));
-	  strftime(time1,15,"%d/%m/%y %H:%M",tmp);
+	  tmp=gmtime(&(rcuplist->usetime));
+	  strftime(time1,sizeof(time1),Q9_FORMAT_TIME,tmp);
 	}
 	if (!rcuplist->changetime) {
 	  strcpy(time2, "Unknown");
 	} else {
-	  tmp=localtime(&(rcuplist->changetime));
-	  strftime(time2,15,"%d/%m/%y %H:%M",tmp);
+	  tmp=gmtime(&(rcuplist->changetime));
+	  strftime(time2,sizeof(time2),Q9_FORMAT_TIME,tmp);
 	}
 	chanservsendmessage(sender, " %-15s %-13s %-14s  %-14s  %s", rcuplist->user->username, 
 			    printflags(flags, rcuflags), time1, time2, rcuplist->info?rcuplist->info->content:"");

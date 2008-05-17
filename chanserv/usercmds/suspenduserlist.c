@@ -70,11 +70,11 @@ int csu_dosuspenduserlist(void *source, int cargc, char **cargv) {
 
         if (dbrup->suspendexp) {
           tmp=gmtime(&(dbrup->suspendexp));
-          strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+          strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
         }
         
         tmp=gmtime(&(dbrup->suspendtime));
-        strftime(buf2,15,"%d/%m/%y %H:%M",tmp);
+        strftime(buf2,sizeof(buf2),Q9_FORMAT_TIME,tmp);
 
         count++;
         chanservsendmessage(sender, "%-15s %-13s %-15s %-15s %-15s %s", dbrup->username, suspendtype, bywhom, buf2, (dbrup->suspendexp)?((now >= dbrup->suspendexp)?"next auth":buf):"never", dbrup->suspendreason?dbrup->suspendreason->content:"(none)");

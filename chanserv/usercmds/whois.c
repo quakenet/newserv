@@ -66,7 +66,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
       flagmask=QUFLAG_ALL;
 
     if (UHasSuspension(target)) {
-      char expiresbuf[100], timebuf[100];
+      char expiresbuf[100];
       char *reason, *suspendtype, *whom;
 
       if(UIsDelayedGline(target)) {
@@ -83,12 +83,11 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
         if(time(NULL) >= target->suspendexp) {
           strlcpy(expiresbuf, "(next auth)", sizeof(expiresbuf));
         } else {
-          strftime(expiresbuf, 15, "%d/%m/%y %H:%M", gmtime(&(target->suspendexp)));
+          strftime(expiresbuf, sizeof(expiresbuf), Q9_FORMAT_TIME, gmtime(&(target->suspendexp)));
         }
       } else {
         strlcpy(expiresbuf, "(never)", sizeof(expiresbuf));
       }
-      strftime(timebuf, 15, "%d/%m/%y %H:%M", gmtime(&(target->suspendtime)));
 
       if(cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender)) {
         reguser *trup = findreguserbyID(target->suspendby);
@@ -110,7 +109,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
       chanservstdmessage(sender, QM_USERSUSPENDEDTYPE, suspendtype);
       chanservstdmessage(sender, QM_USERSUSPENDEDBY, whom);
       chanservstdmessage(sender, QM_USERSUSPENDEDREASON, reason);
-      chanservstdmessage(sender, QM_USERSUSPENDEDAT, timebuf);
+      chanservstdmessage(sender, QM_USERSUSPENDEDAT, target->suspendtime);
       chanservstdmessage(sender, QM_USERSUSPENDEDEXPIRY, expiresbuf);
     }
   } else {  
@@ -153,18 +152,14 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (target->created) {
-    tmp=gmtime(&(target->created));
-    strftime(buf,15,"%d/%m/%y %H:%M",tmp);
-    
-    chanservstdmessage(sender, QM_WHOIS_CREATED, buf);
-  }
+  if (target->created)
+    chanservstdmessage(sender, QM_WHOIS_CREATED, target->created);
 
   if (target->lastauth == 0) {
     snprintf(buf,sizeof(buf),"(never)");
   } else {
     tmp=gmtime(&(target->lastauth));
-    strftime(buf,15,"%d/%m/%y %H:%M",tmp);
+    strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
   }
   chanservstdmessage(sender, QM_WHOIS_LASTAUTH, buf);
   
@@ -177,11 +172,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 
   if (target->email && (rup==target || cs_privcheck(QPRIV_VIEWEMAIL, sender))) {
     chanservstdmessage(sender, QM_WHOIS_EMAIL, target->email->content);
-
-    tmp=gmtime(&(target->lastemailchange));
-    strftime(buf,15,"%d/%m/%y %H:%M",tmp);
-    
-    chanservstdmessage(sender, QM_WHOIS_EMAILSET, buf);    
+    chanservstdmessage(sender, QM_WHOIS_EMAILSET, target->lastemailchange);
   }
 
   if (target->info && *target->info->content) {
