@@ -146,6 +146,27 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       }
     }
 
+    if (CIsSuspended(rcp) && cs_privcheck(QPRIV_VIEWCHANSUSPENSION, sender)) {
+      char tbuf[30], *bywhom;
+
+      if(cs_privcheck(QPRIV_VIEWSUSPENDEDBY, sender)) {
+        reguser *trup = findreguserbyID(rcp->suspendby);
+        if(trup) {
+          bywhom = trup->username;
+        } else {
+         bywhom = "(unknown)";
+        }
+      } else {
+        bywhom = "(hidden)";
+      }
+
+      strftime(tbuf,15,"%d/%m/%y %H:%M",gmtime(&(rcp->suspendtime)));
+
+      chanservstdmessage(sender, QM_CHANLEV_SUSPENDREASON, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
+      chanservstdmessage(sender, QM_CHANLEV_SUSPENDBY, bywhom);
+      chanservstdmessage(sender, QM_CHANLEV_SUSPENDSINCE, tbuf);
+    }
+
     if (rcp->comment && (cs_privcheck(QPRIV_VIEWCOMMENTS, sender)))
       chanservstdmessage(sender, QM_SHORT_COMMENT, rcp->comment->content);
 

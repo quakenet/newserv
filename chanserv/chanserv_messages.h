@@ -210,6 +210,9 @@ BeginMessages() {
   msg(QM_USERSUSPENDEDEXPIRY, "Suspend expiry : $0", "s"),
   msg(QM_INVALIDDOMAIN, "$0 is not a valid domain.", "s"),
   msg(QM_SHORT_COMMENT, "Staff comment: $0", "s"),
+  msg(QM_CHANLEV_SUSPENDREASON, "Suspended: $0", "s"),
+  msg(QM_CHANLEV_SUSPENDSINCE, "Suspended since: $0", "s"),
+  msg(QM_CHANLEV_SUSPENDBY, "Suspended by: $0", "s"),
 } 
 EndMessages()
 #endif
