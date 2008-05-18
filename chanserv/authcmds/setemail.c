@@ -18,8 +18,8 @@
 #include <string.h>
 
 int csa_dosetmail(void *source, int cargc, char **cargv) {
-  reguser *rup;
   nick *sender=source;
+  reguser *rup, *vrup = getreguserfromnick(sender);
   char *dupemail;
   char *local;
 
@@ -38,6 +38,13 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
 
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
+
+  if(UHasHelperPriv(rup)) {
+    cs_log(sender,"SETEMAIL FAILED username %s",rup->username);
+    chanservwallmessage("%s (%s) just FAILED using SETEMAIL on %s: %s", sender->nick, vrup->username, rup->username, cargv[1]);
+    chanservsendmessage(sender, "Sorry, that user is privileged.");
+    return CMD_ERROR;
+  }
 
   csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
   delreguserfrommaildomain(rup,rup->domain);
@@ -62,6 +69,8 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_EMAILCHANGED, cargv[1]);
   cs_log(sender,"SETEMAIL OK username %s <%s>",rup->username,rup->email->content);
+  chanservwallmessage("%s (%s) just used SETEMAIL on %s: %s", sender->nick, vrup->username, rup->username, rup->email->content);
+
   csdb_updateuser(rup);
 
   return CMD_OK;

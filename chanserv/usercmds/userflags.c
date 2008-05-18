@@ -23,7 +23,7 @@
 int csu_douserflags(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender), *target;
-  int arg=0;
+  int arg=0, wasorisoper;
   flag_t flagmask, changemask, oldflags;
   char flagbuf[30];
 
@@ -74,8 +74,10 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     if (UIsDev(rup))
       changemask=QUFLAG_ALL;
     
+    wasorisoper = UHasOperPriv(target);
     setflags(&target->flags, changemask, cargv[arg], ruflags, REJECT_NONE);
-    
+    wasorisoper |= UHasOperPriv(target);
+
     /* More policy */
     if (!UHasHelperPriv(target)) {
       target->flags &= ~QUFLAG_PROTECT;
@@ -88,8 +90,8 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       chanservwallmessage("%s (%s) just used USERFLAGS on %s %s (%s -> %s)",sender->nick,rup->username,target->username,cargv[arg],flagbuf,printflags(target->flags,ruflags));
 
 #ifdef AUTHGATE_WARNINGS
-    if(UHasOperPriv(target))
-      chanservsendmessage(sender, "WARNING FOR PRIVILEGED USERS: you MUST go to https://auth.quakenet.org and attempt to login as %s (with any password) to update the cache, otherwise their old credentials will be preserved in certain circumstances.",target->username);
+      if(wasorisoper)
+        chanservsendmessage(sender, "WARNING FOR PRIVILEGED USERS: you MUST go to https://auth.quakenet.org and attempt to login as %s (with any password) to update the cache, otherwise their old credentials will be preserved in certain circumstances.",target->username);
 #endif
     }
     csdb_updateuser(target);

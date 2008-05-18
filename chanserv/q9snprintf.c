@@ -62,9 +62,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
     }
   }
 
-  b.buf = buf;
-  b.capacity = size;
-  b.len = 0;
+  sbinit(&b, buf, size);
 
   for(p=format;*p;p++) {
     if(*p != '$') {

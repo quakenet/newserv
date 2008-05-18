@@ -1,5 +1,11 @@
 #include "stringbuf.h"
 
+void sbinit(StringBuf *buf, char *c, int capacity) {
+  buf->buf = c;
+  buf->capacity = capacity;
+  buf->len = 0;
+}
+
 int sbaddchar(StringBuf *buf, char c) {
   if(buf->len >= buf->capacity - 1)
     return 0;

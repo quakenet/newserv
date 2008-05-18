@@ -1,7 +1,23 @@
 #include "../chanserv.h"
+#include "../../lib/stringbuf.h"
 #include "chanserv_newsearch.h"
 #include <stdio.h>
 #include <stdarg.h>
+
+static char *concatargs(int cargc, char **cargv) {
+  static char bigbuf[1024];
+  StringBuf b;
+  int i;
+
+  sbinit(&b, bigbuf, sizeof(bigbuf));
+  for(i=0;i<cargc;i++) {
+    sbaddstr(&b, cargv[i]);
+    sbaddchar(&b, ' ');
+  }
+  sbterminate(&b);
+
+  return bigbuf;
+}
 
 static void chanservmessagewrapper(nick *np, char *format, ...) {
   char buf[1024];
@@ -33,6 +49,7 @@ int cs_donicksearch(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  cs_log(source, "NICKSEARCH %s", concatargs(cargc, cargv));
   do_nicksearch_real(chanservmessagewrapper, chanservwallwrapper, source, cargc, cargv);
 
   chanservstdmessage(sender, QM_DONE);  
@@ -47,6 +64,7 @@ int cs_dochansearch(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  cs_log(source, "CHANSEARCH %s", concatargs(cargc, cargv));
   do_chansearch_real(chanservmessagewrapper, chanservwallwrapper, source, cargc, cargv);
 
   chanservstdmessage(sender, QM_DONE);  
@@ -61,6 +79,7 @@ int cs_dousersearch(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  cs_log(source, "USERSEARCH %s", concatargs(cargc, cargv));
   do_usersearch_real(chanservmessagewrapper, chanservwallwrapper, source, cargc, cargv);
 
   chanservstdmessage(sender, QM_DONE);  
@@ -79,6 +98,8 @@ int cs_dospewemail(void *source, int cargc, char **cargv) {
   if(cargc < 1)
     return CMD_USAGE;
 
+  cs_log(source, "SPEWEMAIL %s", cargv[0]);
+
   tree = NSASTNode(match_parse, NSASTNode(qemail_parse), NSASTLiteral(cargv[0]));
   return ast_usersearch(tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, showheader, (void *)QM_SPEWHEADER, 2000);
 }
@@ -88,6 +109,8 @@ int cs_dospewdb(void *source, int cargc, char **cargv) {
 
   if(cargc < 1)
     return CMD_USAGE;
+
+  cs_log(source, "SPEWDB %s", cargv[0]);
 
   tree =
     NSASTNode(or_parse,
