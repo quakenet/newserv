@@ -244,7 +244,7 @@ void rg_dodelay(void *arg) {
     }
   }
   
-  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -968,7 +968,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     }
   }
   
-  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
 
