@@ -399,13 +399,18 @@ int rg_gline(void *source, int cargc, char **cargv) {
   rg_sqlescape_string(eereason, cargv[3], strlen(cargv[3]));
   
   rg_sqlquery("INSERT INTO regexglines (gline, setby, reason, expires, type) VALUES ('%s', '%s', '%s', %d, %s)", eemask, eesetby, eereason, realexpiry, cargv[2]);
-  if (!rg_sqlquery("SELECT id FROM regexglines WHERE gline = '%s' AND setby = '%s' AND reason = '%s' AND expires = %d AND type = %s ORDER BY ID DESC LIMIT 1", eemask, eesetby, eereason, realexpiry, cargv[2])) {
+  if (!rg_sqlquery("SELECT LAST_INSERT_ID()")) {
     rg_sqlresult res;
     if((res = rg_sqlstoreresult())) {
       rg_sqlrow row;
       row = rg_sqlgetrow(res);
       if (row) {
-        rp = rg_newsstruct(row[0], cargv[0], np->nick, cargv[3], "", cargv[2], realexpiry, 0);
+        int id = atoi(row[0]);
+        if(id == 0) {
+          rp = NULL;
+        } else {
+          rp = rg_newsstruct(row[0], cargv[0], np->nick, cargv[3], "", cargv[2], realexpiry, 0);
+        }
         rg_sqlfree(res);
         if(!rp) {
           rg_sqlquery("DELETE FROM regexglines WHERE gline = '%s' AND setby = '%s' AND reason = '%s' AND expires = %d AND type = %s ORDER BY ID DESC LIMIT 1", eemask, eesetby, eereason, realexpiry, cargv[2]);
