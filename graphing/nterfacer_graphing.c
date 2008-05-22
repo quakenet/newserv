@@ -46,7 +46,7 @@ int handle_serverdata(struct rline *li, int argc, char **argv) {
   unsigned int entry = atoi(argv[1]);
   fsample_t count = atoi(argv[2]);
   time_t t = time(NULL) / GRAPHING_RESOLUTION;
-  int i;
+  int i, ret;
   fsample_m *m;
 
   if(!servermonitored(servernum))
@@ -60,12 +60,12 @@ int handle_serverdata(struct rline *li, int argc, char **argv) {
   for(i=0;i<count;i++) {
     fsample_t v;
     if(fsget_m(m, entry, t - m->entry[entry].freq * i, &v)) {
-      if(ri_append(li, "%d", v) == BF_OVER)
-        return ri_error(li, BF_OVER, "Buffer overflow");
+      ret = ri_append(li, "%d", v);
     } else {
-      if(ri_append(li, "-1", v) == BF_OVER)
-        return ri_error(li, BF_OVER, "Buffer overflow");
+      ret = ri_append(li, "-1", v);
     }
+    if(ret == BF_OVER)
+      return ri_error(li, BF_OVER, "Buffer overflow");
   }
 
   return ri_final(li);

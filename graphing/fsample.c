@@ -170,12 +170,12 @@ inline fsample_t fsget(fsample *f, fsample_t pos, fsample_t *t) {
 
 int fsadd_m(fsample_m *f, char *filename, size_t freq, DeriveValueFn derive, void *tag) {
   fsample_m_entry *p = &f->entry[f->pos];
-  p->freq = freq;
 
   p->f = fsopen(filename, f->samples / freq, f->chafn, f->chdfn);
   if(!p->f)
     return 0;
 
+  p->freq = freq;
   p->derive = derive;
   p->tag = tag;
   f->pos++;

@@ -1,6 +1,8 @@
 #include "graphing.h"
 #include <stdio.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 int dump(fsample_m *f, fsample_t start, fsample_t stop) {
   int i, j;
@@ -28,13 +30,21 @@ int dump(fsample_m *f, fsample_t start, fsample_t stop) {
 int main(int cargc, char **cargv) {
   fsample_m *f;
   int stop = time(NULL) / GRAPHING_RESOLUTION;
+  struct stat sb;
 
-  if(cargc < 2)
+  if(cargc < 2) {
+    puts("insufficient args");
     return 1;
+  }
 
-  f = fsopen_m(0, cargv[1], SAMPLES);
-  if(!f)
+  if(stat(cargv[1], &sb) == -1) {
+    puts("file doesn't exist");
     return 2;
+  }
+
+  f = fsopen_m(0, cargv[1], SAMPLES, NULL, NULL);
+  if(!f)
+    return 3;
 
   dump(f, stop - 100, stop);
 

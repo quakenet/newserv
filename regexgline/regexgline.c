@@ -986,14 +986,15 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   if(t > floodprotection) {
     floodprotection = t;
   } else if((floodprotection - t) / 8 > RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC) {
-    if(t > lastfloodspam + 1800) {
+    if(t > lastfloodspam + 3600) {
       channel *cp = findchannel("#twilightzone");
       if(cp)
         controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!: %d exceeded %d", (floodprotection - t) / 8, RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC);
       controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
       lastfloodspam = t;
+      floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
     }
-    floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
+    return;
   }
 
   floodprotection+=__rg_dogline(gll, np, rp, matched);
