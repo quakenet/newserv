@@ -30,7 +30,7 @@
 #define RG_MINIMUM_DELAY_TIME     5
 #define RG_MAXIMUM_RAND_TIME      15
 #define RG_EXPIRY_TIME_DEFAULT    1800
-#define RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC 625 /* 5000 / 8 */
+#define RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC 625*8 /* 5000 / 8 */
 
 #define RGStringise(x)            #x
 #define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);

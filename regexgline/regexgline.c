@@ -717,7 +717,7 @@ void rg_sqlescape_string(char *dest, char *source, size_t length) {
   if(length >= RG_QUERY_BUF_SIZE)
     length = RG_QUERY_BUF_SIZE - 1;
 
-  mysql_escape_string(dest, source, length);
+  mysql_real_escape_string(&rg_sql, dest, source, length);
 }
 
 int rg_sqlquery(char *format, ...) {
@@ -977,7 +977,8 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   return usercount;
 }
 
-int floodprotection = 0;
+static int floodprotection = 0;
+static int lastfloodspam = 0;
 
 void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) {
   int t = time(NULL);
@@ -985,10 +986,13 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   if(t > floodprotection) {
     floodprotection = t;
   } else if((floodprotection - t) / 8 > RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC) {
-    channel *cp = findchannel("#twilightzone");
-    if(cp)
-      controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
-    controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
+    if(t > lastfloodspam + 1800) {
+      channel *cp = findchannel("#twilightzone");
+      if(cp)
+        controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!: %d exceeded %d", (floodprotection - t) / 8, RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC);
+      controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
+      lastfloodspam = t;
+    }
     floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
   }
 
