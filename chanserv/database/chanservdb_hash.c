@@ -215,7 +215,7 @@ maildomain *findnearestmaildomain(char *domain) {
   if(!m && (p=strchr(domain, '.')))
     return findnearestmaildomain(++p);
 
-  return NULL;
+  return m;
 }
 
 maildomain *findmaildomainbyemail(char *email) {
