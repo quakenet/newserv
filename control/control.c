@@ -386,10 +386,10 @@ int controlchannel(void *sender, int cargc, char **cargv) {
         break;
     }
     if (cp->users->content[j]!=nouser) {      
-      if (cp->users->content[j]&CUMODE_VOICE)
-        voice++;
-      else if (cp->users->content[j]&CUMODE_OP) 
+      if (cp->users->content[j]&CUMODE_OP)
         ops++;
+      else if (cp->users->content[j]&CUMODE_VOICE) 
+        voice++;
       np=getnickbynumeric(cp->users->content[j]);
       sprintf(&buf[i*18],"%c%c%-15s ",cp->users->content[j]&CUMODE_VOICE?'+':' ',
         cp->users->content[j]&CUMODE_OP?'@':' ', np?np->nick:"!BUG-NONICK!");
