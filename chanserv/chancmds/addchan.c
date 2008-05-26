@@ -47,7 +47,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
-  if (*cargv[0] != '#') {
+  if (*cargv[0] != '#' || strlen(cargv[0]) > CHANNELLEN) {
     chanservstdmessage(sender, QM_INVALIDCHANNAME, cargv[0]);
     return CMD_ERROR;
   } 
