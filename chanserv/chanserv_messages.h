@@ -176,7 +176,7 @@ BeginMessages() {
   msg(QM_WARNNOTREMOVEDPERMBAN, "Warning: not removing registered ban $0 from $1.", "ss"),
   msg(QM_MAXHELLOLIMIT, "Sorry, the registration service is unavailable to you at this time. Please try again later.", ""),
   msg(QM_ADDRESSLIMIT, "Too many accounts exist from this email address.", ""),
-  msg(QM_DOMAINBANNED, "That email address has been blocked.", ""),
+  msg(UNUSED_1, "", ""),
   msg(QM_TYPEHELPFORHELP, "For more information, type HELP $0.", "s"),
   msg(QM_REQUESTPASSPRIVUSER, "Cannot send password for that account.", ""),
   msg(QM_EMAILMATCHESOLD, "The new email address is the same as current one.", ""),

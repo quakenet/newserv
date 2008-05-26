@@ -83,7 +83,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
     for(smdp=mdp; smdp; smdp=smdp->parent) {
       if(MDIsBanned(smdp)) {
         free(dupemail);
-        chanservstdmessage(sender, QM_DOMAINBANNED);
+        chanservstdmessage(sender, QM_MAILLOCKED);
         return CMD_ERROR;
       }
       if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {

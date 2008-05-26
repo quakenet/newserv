@@ -6,6 +6,7 @@
 #include "../lib/sstring.h"
 #include "../lib/stringbuf.h"
 #include "../core/error.h"
+#include "chanserv_messages.h"
 
 #define MAXARGS 10
 #define CONVBUF 512
@@ -53,7 +54,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
           break;
         case 'T':
           t = va_arg(ap, time_t);
-          strftime(cb, 15, "%d/%m/%y %H:%M", gmtime(&t));
+          strftime(cb, 15, Q9_FORMAT_TIME, gmtime(&t));
           break;
         default:
           /* calls exit(0) */
