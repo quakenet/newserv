@@ -36,7 +36,7 @@ void patriciastats(int hooknum, void *arg) {
   patricia_node_t *head, *node;
   int i,j,k,l;
 
-  if (level < 5) 
+  if (level <= 5) 
     return; 
 
   sprintf(buf, "Patricia: %6d Active Nodes (%d bits)", iptree->num_active_node, iptree->maxbits);
