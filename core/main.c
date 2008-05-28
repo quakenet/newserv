@@ -20,6 +20,10 @@ void initseed();
 void init_logfile();
 void siginthandler(int sig);
 void sigusr1handler(int sig);
+void sigsegvhandler(int sig);
+void handlecore(void);
+
+static void (*oldsegv)(int);
 
 int main(int argc, char **argv) {
   initseed();
@@ -41,6 +45,7 @@ int main(int argc, char **argv) {
   initmodules();
   signal(SIGINT, siginthandler);
   signal(SIGUSR1, sigusr1handler);
+  oldsegv = signal(SIGSEGV, sigsegvhandler);
 
   /* Main loop */
   for(;;) {
@@ -81,3 +86,10 @@ void siginthandler(int sig) {
 void sigusr1handler(int sig) {
   newserv_sigusr1_pending = 1;
 }
+
+void sigsegvhandler(int sig) {
+  handlecore();
+
+  oldsegv(sig);
+}
+

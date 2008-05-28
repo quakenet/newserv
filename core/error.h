@@ -47,6 +47,17 @@ struct error_event {
   char *source;
 };
 
+typedef void (*CoreHandlerFn)(void *arg);
+
+typedef struct corehandler {
+  void *arg;
+  CoreHandlerFn fn;
+  struct corehandler *prev, *next;
+} corehandler;
+
 void Error(char *source, int severity, char *reason, ... );
+
+corehandler *registercorehandler(CoreHandlerFn fn, void *arg);
+void deregistercorehandler(corehandler *c);
 
 #endif

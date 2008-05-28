@@ -244,7 +244,7 @@ void rg_dodelay(void *arg) {
     }
   }
   
-  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -399,13 +399,18 @@ int rg_gline(void *source, int cargc, char **cargv) {
   rg_sqlescape_string(eereason, cargv[3], strlen(cargv[3]));
   
   rg_sqlquery("INSERT INTO regexglines (gline, setby, reason, expires, type) VALUES ('%s', '%s', '%s', %d, %s)", eemask, eesetby, eereason, realexpiry, cargv[2]);
-  if (!rg_sqlquery("SELECT id FROM regexglines WHERE gline = '%s' AND setby = '%s' AND reason = '%s' AND expires = %d AND type = %s ORDER BY ID DESC LIMIT 1", eemask, eesetby, eereason, realexpiry, cargv[2])) {
+  if (!rg_sqlquery("SELECT LAST_INSERT_ID()")) {
     rg_sqlresult res;
     if((res = rg_sqlstoreresult())) {
       rg_sqlrow row;
       row = rg_sqlgetrow(res);
       if (row) {
-        rp = rg_newsstruct(row[0], cargv[0], np->nick, cargv[3], "", cargv[2], realexpiry, 0);
+        int id = atoi(row[0]);
+        if(id == 0) {
+          rp = NULL;
+        } else {
+          rp = rg_newsstruct(row[0], cargv[0], np->nick, cargv[3], "", cargv[2], realexpiry, 0);
+        }
         rg_sqlfree(res);
         if(!rp) {
           rg_sqlquery("DELETE FROM regexglines WHERE gline = '%s' AND setby = '%s' AND reason = '%s' AND expires = %d AND type = %s ORDER BY ID DESC LIMIT 1", eemask, eesetby, eereason, realexpiry, cargv[2]);
@@ -712,7 +717,7 @@ void rg_sqlescape_string(char *dest, char *source, size_t length) {
   if(length >= RG_QUERY_BUF_SIZE)
     length = RG_QUERY_BUF_SIZE - 1;
 
-  mysql_escape_string(dest, source, length);
+  mysql_real_escape_string(&rg_sql, dest, source, length);
 }
 
 int rg_sqlquery(char *format, ...) {
@@ -968,11 +973,12 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     }
   }
   
-  irc_send("%s GL * +%s %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
 
-int floodprotection = 0;
+static int floodprotection = 0;
+static int lastfloodspam = 0;
 
 void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) {
   int t = time(NULL);
@@ -980,11 +986,15 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
   if(t > floodprotection) {
     floodprotection = t;
   } else if((floodprotection - t) / 8 > RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC) {
-    channel *cp = findchannel("#twilightzone");
-    if(cp)
-      controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
-    controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
-    floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
+    if(t > lastfloodspam + 3600) {
+      channel *cp = findchannel("#twilightzone");
+      if(cp)
+        controlchanmsg(cp, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!: %d exceeded %d", (floodprotection - t) / 8, RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC);
+      controlwall(NO_OPER, NL_MANAGEMENT, "WARNING! REGEXGLINE DISABLED FOR AN HOUR DUE TO NETWORK WIDE LOOKING GLINE!");
+      lastfloodspam = t;
+      floodprotection = t + RG_NETWORK_WIDE_MAX_GLINES_PER_8_SEC * 3600 * 8;
+    }
+    return;
   }
 
   floodprotection+=__rg_dogline(gll, np, rp, matched);
