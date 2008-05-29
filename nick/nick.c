@@ -190,7 +190,7 @@ void deletenick(nick *np) {
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
 
-  np->ipnode->usercount--;
+  node_decrement_usercount(np->ipnode);
   derefnode(iptree, np->ipnode);
   
   /* TODO: figure out how to cleanly remove nodes without affecting other modules */

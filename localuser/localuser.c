@@ -109,7 +109,7 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
   ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
 
   newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
-  newuser->ipnode->usercount++;
+  node_increment_usercount(newuser->ipnode);
 
   newuser->timestamp=getnettime();
   newuser->shident=NULL;

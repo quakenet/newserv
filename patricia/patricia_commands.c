@@ -71,7 +71,7 @@ int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
           controlreply(np,"%p: bit: %d, usercount: %d, IP: %s", node, node->bit, node->usercount, IPtostr(node->prefix->sin));
           break;
         case 3: 
-          controlreply(np,"%p: L: %p, R: %p", node, node->l, node->r);
+          controlreply(np,"%p: L: %p, R: %p P: %p", node, node->l, node->r, node->parent);
           break;
         case 4: 
           controlreply(np,"%p: 0: %p, 1: %p, 2: %p, 3: %p, 4: %p", node, 
@@ -104,7 +104,7 @@ int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
           controlreply(np,"%p: bit: %d, usercount: %d, IP: %s", node, node->bit, node->usercount, node->prefix?IPtostr(node->prefix->sin):"");
           break;
         case 13:
-          controlreply(np,"%p: L: %p, R: %p", node, node->l, node->r);
+          controlreply(np,"%p: L: %p, R: %p P: %p", node, node->l, node->r, node->parent);
           break;
         case 14:
           controlreply(np,"%p%s 0: %p, 1: %p, 2: %p, 3: %p, 4: %p", node, node->prefix?"-":":",
@@ -144,11 +144,7 @@ int nc_cmd_nodecount(void *source, int cargc, char **cargv) {
 
   head = refnode(iptree, &sin, bits);
 
-  count = 0;
-
-  PATRICIA_WALK(head, node) {
-    count += node->usercount;
-  } PATRICIA_WALK_END;
+  count = head->usercount;
 
   derefnode(iptree, head);
 

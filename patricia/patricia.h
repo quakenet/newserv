@@ -96,6 +96,9 @@ int registernodeext(const char *name);
 int findnodeext(const char *name);
 void releasenodeext(int index);
 
+void node_increment_usercount( patricia_node_t *node);
+void node_decrement_usercount( patricia_node_t *node);
+
 /* alloc */
 void freeprefix (prefix_t *prefix);
 prefix_t *newprefix();

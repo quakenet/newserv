@@ -374,7 +374,6 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     }
 
     new_node = patricia_new_node(patricia, prefix->bitlen, patricia_ref_prefix (prefix));
-
     if (node->bit == differ_bit) {
 	new_node->parent = node;
 	if (node->bit < patricia->maxbits &&
@@ -391,7 +390,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 
     if (bitlen == differ_bit) {
 	if (bitlen < patricia->maxbits &&
-	    (is_bit_set(addr,bitlen))) {
+	    (is_bit_set(test_addr,bitlen))) {
 	    new_node->r = node;
 	}
 	else {
@@ -409,11 +408,11 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    node->parent->l = new_node;
 	}
 	node->parent = new_node;
+        new_node->usercount = node->usercount;
     }
     else {
         glue = patricia_new_node(patricia, differ_bit, NULL);
         glue->parent = node->parent;
-        
 	if (differ_bit < patricia->maxbits &&
 	    (is_bit_set(addr, differ_bit))) {
 	    glue->r = new_node;
@@ -436,7 +435,9 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    node->parent->l = glue;
 	}
 	node->parent = glue;
+        glue->usercount = node->usercount;
     }
+
     return (new_node);
 }
 
@@ -572,3 +573,16 @@ patricia_node_t *patricia_new_node(patricia_tree_t *patricia, unsigned char bit,
   return new_node;  
 }
 
+void node_increment_usercount( patricia_node_t *node) {
+  while(node) {
+    node->usercount++;
+    node=node->parent;
+  }
+}
+
+void node_decrement_usercount( patricia_node_t *node) {
+  while(node) {
+    node->usercount--;
+    node=node->parent;
+  }
+}
