@@ -20,6 +20,8 @@ struct irc_sockaddr
   unsigned short port;     /**< Port number, host-endian. */
 };
 
+#define irc_bitlen(ADDR, BITS) (irc_in_addr_is_ipv4(ADDR) ? (BITS) - 96 : (BITS))
+
 /** Evaluate to non-zero if \a ADDR is a valid address (not all 0s and not all 1s). */
 #define irc_in_addr_valid(ADDR) (((ADDR)->in6_16[0] && ~(ADDR)->in6_16[0]) \
                                  || (ADDR)->in6_16[1] != (ADDR)->in6_16[0] \

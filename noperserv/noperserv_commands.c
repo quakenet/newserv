@@ -35,9 +35,10 @@ void _init() {
 
   registercontrolhelpcmd("spewchan", NO_OPER, 1, &controlspewchan, "Usage: spewchan <pattern>\nShows all channels which are matched by the given pattern");
 
-  registercontrolhelpcmd("spew", NO_OPER, 1, &controlspew, "Usage: spewchan <pattern>\nShows all userss which are matched by the given pattern");
+  registercontrolhelpcmd("spew", NO_OPER, 1, &controlspew, "Usage: spew <pattern>\nShows all userss which are matched by the given pattern");
 
-  registercontrolhelpcmd("resync", NO_OPER, 1, &controlresync, "Usage: resync <channel>\nResyncs a desynched channel");
+  /* doesnt seem to work for me + pointless command?(paul) 
+  registercontrolhelpcmd("resync", NO_OPER, 1, &controlresync, "Usage: resync <channel>\nResyncs a desynched channel"); */
 
   registercontrolhelpcmd("broadcast", NO_OPER, 1, &controlbroadcast, "Usage: broadcast <text>\nSends a message to all users.");
   registercontrolhelpcmd("obroadcast", NO_OPER, 1, &controlobroadcast, "Usage: obroadcast <text>\nSends a message to all IRC operators.");
@@ -52,7 +53,7 @@ void _fini() {
   deregistercontrolcmd("mbroadcast", controlmbroadcast);
   deregistercontrolcmd("broadcast", controlbroadcast);
 
-  deregistercontrolcmd("resync", controlresync);
+  /* deregistercontrolcmd("resync", controlresync); */
   deregistercontrolcmd("spew", controlspew);
   deregistercontrolcmd("spewchan", controlspewchan);
 

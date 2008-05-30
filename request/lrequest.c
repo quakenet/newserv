@@ -15,7 +15,7 @@ int lr_floodattempts = 0;
 
 #define min(a,b) ((a > b) ? b : a)
 
-int lr_requestl(nick *svc, nick *np, channel *cp, nick *lnick) {
+int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   chanfix *cf;
   regop *rolist[LR_TOPX], *ro;
   int i, rocount;
@@ -70,26 +70,27 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *lnick) {
     }
 
     sendnoticetouser(svc, np, "Sorry You do not meet the "
-          "requirements to request L. Please Try again in an hour. "
-          "(see http://www.quakenet.org/faq/faq.php?c=3&f=112 )");
+          "requirements to request %s. Please Try again in an hour. "
+          "(see http://www.quakenet.org/faq/faq.php?c=1&f=239#239 )", RQ_QNICK);
 
     lr_scoretoolow++;
 
     return RQ_ERROR;
   }
 
-  sendmessagetouser(svc, lnick, "addchan %s #%s %s", cp->index->name->content,
+  
+  sendmessagetouser(svc, qnick, "addchan %s #%s +jp upgrade %s", cp->index->name->content,
         np->authname, np->nick);
 
-  sendnoticetouser(svc, np, "Requirements met, L should be added. Contact #help"
-        " should further assistance be required.");
+  sendnoticetouser(svc, np, "Requirements met, %s should be added. Contact #help"
+        " should further assistance be required.", RQ_QNICK);
 
   return RQ_OK;
 }
 
 void lr_requeststats(nick *rqnick, nick *np) {
-  sendnoticetouser(rqnick, np, "- No registered ops (L):          %d", lr_noregops);
-  sendnoticetouser(rqnick, np, "- Score too low (L):              %d", lr_scoretoolow);
-  sendnoticetouser(rqnick, np, "- Not in top%d (L):                %d", LR_TOPX, lr_top5);
-  sendnoticetouser(rqnick, np, "- Floods (L):                     %d", lr_floodattempts);
+  sendnoticetouser(rqnick, np, "- No registered ops (Q):          %d", lr_noregops);
+  sendnoticetouser(rqnick, np, "- Score too low (Q):              %d", lr_scoretoolow);
+  sendnoticetouser(rqnick, np, "- Not in top%d (Q):                %d", LR_TOPX, lr_top5);
+  sendnoticetouser(rqnick, np, "- Floods (Q):                     %d", lr_floodattempts);
 }

@@ -11,6 +11,7 @@
 #include "../lib/base64.h"
 #include "../lib/splitline.h"
 #include "../lib/version.h"
+#include "../lib/irc_string.h"
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -31,6 +32,7 @@ MODULE_VERSION("");
 #define MAX_NUMERIC          999
 
 void irc_connect(void *arg);
+void ircstats(int hooknum, void *arg);
 
 CommandTree *servercommands;
 Command *numericcommands[MAX_NUMERIC-MIN_NUMERIC];
@@ -70,6 +72,8 @@ void _init() {
   registerserverhandler("SE",&handlesettime,1);
   registerserverhandler("Z",&handlepingreply,1);
   registerserverhandler("SERVER",&irc_handleserver,8);
+
+  registerhook(HOOK_CORE_STATSREQUEST,&ircstats);
 }
 
 void _fini() {
@@ -82,6 +86,8 @@ void _fini() {
   deregisterserverhandler("SE",&handlesettime);
   deregisterserverhandler("Z",&handlepingreply);
   deregisterserverhandler("SERVER",&irc_handleserver);
+
+  deregisterhook(HOOK_CORE_STATSREQUEST,&ircstats);
  
   deleteschedule(NULL,&sendping,NULL);
   deleteschedule(NULL,&irc_connect,NULL);
@@ -144,7 +150,7 @@ void irc_connect(void *arg) {
   Error("irc",ERR_INFO,"Connecting to %s:%s",conto->content,conport->content);
 
   irc_send("PASS :%s",conpass->content);
-  irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
+  irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh6 :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
 
   registerhandler(serverfd, POLLIN|POLLPRI|POLLERR|POLLHUP|POLLNVAL, &handledata);
 
@@ -448,4 +454,17 @@ void sendping(void *arg) {
 int handlepingreply(void *sender, int cargc, char **cargv) {
   awaitingping=0;
   return CMD_OK;
+}
+
+
+void ircstats(int hooknum, void *arg) {
+  long level=(long)arg;
+  char buf[100];
+
+  if (level>5) {
+    sprintf(buf,"irc     : start time %lu (running %s)", starttime,longtoduration(time(NULL)-starttime,0));
+    triggerhook(HOOK_CORE_STATSREPLY,buf);
+    sprintf(buf,"Time    : %lu (current time is %lu, offset %ld)",getnettime(),time(NULL),timeoffset);
+    triggerhook(HOOK_CORE_STATSREPLY,buf);
+  }
 }

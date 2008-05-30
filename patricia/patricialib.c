@@ -27,8 +27,6 @@ char patricia_copyright[] =
 
 #include "patricia.h"
 
-/* { from prefix.c */
-
 /* prefix_tochar
  * convert prefix information to bytes
  */
@@ -55,16 +53,17 @@ comp_with_mask (void *addr, void *dest, u_int mask)
     return (0);
 }
 
+
 prefix_t *
 patricia_new_prefix (struct irc_in_addr *dest, int bitlen)
 {
-    prefix_t *prefix = NULL;
+    prefix_t *prefix = newprefix();
+    assert (0 != prefix);
 
-    prefix = malloc(sizeof (prefix_t));
     memcpy (&prefix->sin, dest, 16);
-
     prefix->bitlen = (bitlen >= 0)? bitlen: 128;    
     prefix->ref_count = 1;
+
     return prefix;
 }
 
@@ -78,7 +77,6 @@ patricia_ref_prefix (prefix_t * prefix)
         return (patricia_new_prefix (&prefix->sin, prefix->bitlen));
     }
     prefix->ref_count++;
-/* fprintf(stderr, "[A %s, %d]\n", prefix_toa (prefix), prefix->ref_count); */
     return (prefix);
 }
 
@@ -91,16 +89,11 @@ patricia_deref_prefix (prefix_t * prefix)
     assert (prefix->ref_count > 0);
 
     prefix->ref_count--;
-    assert (prefix->ref_count >= 0);
     if (prefix->ref_count <= 0) {
-	free(prefix);
+	freeprefix(prefix);
 	return;
     }
 }
-
-/* } */
-
-/* #define PATRICIA_DEBUG 1 */
 
 /* these routines support continuous mask only */
 
@@ -136,7 +129,7 @@ patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func)
 			func(Xrn->exts);
 		patricia_deref_prefix (Xrn->prefix);
 	    }
-    	    free(Xrn);
+    	    freenode(Xrn);
 	    patricia->num_active_node--;
 
             if (l) {
@@ -154,15 +147,14 @@ patricia_clear_tree (patricia_tree_t *patricia, void_fn_t func)
         }
     }
     assert (patricia->num_active_node == 0);
-    /* free(patricia); */
 }
-
 
 void
 patricia_destroy_tree (patricia_tree_t *patricia, void_fn_t func)
 {
     patricia_clear_tree (patricia, func);
     free(patricia);
+    /*TODO: EXTENSIONS!*/
 }
 
 
@@ -221,7 +213,7 @@ patricia_search_exact (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
     addr = (u_char *)sin;
 
     while (node->bit < bitlen) {
-	if (BIT_TEST (addr[node->bit >> 3], 0x80 >> (node->bit & 0x07)))
+        if (is_bit_set(addr,node->bit))
 	    node = node->r;
 	else
 	    node = node->l;
@@ -234,7 +226,7 @@ patricia_search_exact (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
 	return (NULL);
     assert (node->bit == bitlen);
     assert (node->bit == node->prefix->bitlen);
-    if (comp_with_mask (prefix_tochar (node->prefix), addr,	bitlen)) {
+    if (comp_with_mask (prefix_tochar (node->prefix), addr, bitlen)) {
 	return (node);
     }
     return (NULL);
@@ -266,7 +258,7 @@ patricia_search_best2 (patricia_tree_t *patricia, struct irc_in_addr *sin, unsig
 	    stack[cnt++] = node;
 	}
 
-	if (BIT_TEST (addr[node->bit >> 3], 0x80 >> (node->bit & 0x07))) {
+        if (is_bit_set(addr,node->bit)) {
 	    node = node->r;
 	}
 	else {
@@ -316,15 +308,8 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 
     /* if new trie, create the first node */
     if (patricia->head == NULL) {
-	node = malloc(sizeof *node);
-	memset(node->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
-	node->bit = prefix->bitlen;
-	node->prefix = patricia_ref_prefix (prefix);
-	node->parent = NULL;
-	node->l = node->r = NULL;
-	node->usercount = 0;
+	node = patricia_new_node(patricia, prefix->bitlen, patricia_ref_prefix (prefix)); 
 	patricia->head = node;
-	patricia->num_active_node++;
 	return (node);
     }
 
@@ -336,7 +321,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     while (node->bit < bitlen || node->prefix == NULL) {
         /* check that we're not at the lowest leaf i.e. node->bit is less than max bits */
 	if (node->bit < patricia->maxbits &&
-	    (addr[node->bit >> 3]) & (0x80 >> (node->bit & 0x07))) {
+            (is_bit_set(addr,node->bit))) {
 	    if (node->r == NULL)
 		break;
 	    node = node->r;
@@ -362,7 +347,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    continue;
 	}
 	/* I know the better way, but for now */
-	for (j = 0; j < 8; j++) {
+        for (j = 0; j < 8; j++) {
 	    if ((r) & ((0x80 >> j)))
 		break;
 	}
@@ -382,26 +367,17 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
     }
 
     if (differ_bit == bitlen && node->bit == bitlen) {
-	if (node->prefix) {
-	    return (node);
-	}
-	node->prefix = patricia_ref_prefix (prefix);
+	if (!node->prefix) {
+	    node->prefix = patricia_ref_prefix (prefix);
+        }
 	return (node);
     }
 
-    new_node = malloc(sizeof *new_node);
-    memset(new_node->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
-    new_node->bit = prefix->bitlen;
-    new_node->prefix = patricia_ref_prefix (prefix);
-    new_node->parent = NULL;
-    new_node->l = new_node->r = NULL;
-    new_node->usercount = 0;
-    patricia->num_active_node++;
-
+    new_node = patricia_new_node(patricia, prefix->bitlen, patricia_ref_prefix (prefix));
     if (node->bit == differ_bit) {
 	new_node->parent = node;
 	if (node->bit < patricia->maxbits &&
-	    (addr[node->bit >> 3]) & (0x80 >> (node->bit & 0x07))) {
+	    (is_bit_set(addr, node->bit))) {
 	    assert (node->r == NULL);
 	    node->r = new_node;
 	}
@@ -414,7 +390,7 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 
     if (bitlen == differ_bit) {
 	if (bitlen < patricia->maxbits &&
-	    (test_addr[bitlen >> 3]) & (0x80 >> (bitlen & 0x07))) {
+	    (is_bit_set(test_addr,bitlen))) {
 	    new_node->r = node;
 	}
 	else {
@@ -432,17 +408,13 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    node->parent->l = new_node;
 	}
 	node->parent = new_node;
+        new_node->usercount = node->usercount;
     }
     else {
-        glue = malloc(sizeof *glue);
-	memset(glue->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
-        glue->bit = differ_bit;
-        glue->prefix = NULL;
+        glue = patricia_new_node(patricia, differ_bit, NULL);
         glue->parent = node->parent;
-        glue->usercount = 0;
-        patricia->num_active_node++;
 	if (differ_bit < patricia->maxbits &&
-	    (addr[differ_bit >> 3]) & (0x80 >> (differ_bit & 0x07))) {
+	    (is_bit_set(addr, differ_bit))) {
 	    glue->r = new_node;
 	    glue->l = node;
 	}
@@ -463,7 +435,9 @@ patricia_lookup (patricia_tree_t *patricia, prefix_t *prefix)
 	    node->parent->l = glue;
 	}
 	node->parent = glue;
+        glue->usercount = node->usercount;
     }
+
     return (new_node);
 }
 
@@ -487,7 +461,7 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
     if (node->r == NULL && node->l == NULL) {
 	parent = node->parent;
 	patricia_deref_prefix (node->prefix);
-	free(node);
+	freenode(node);
         patricia->num_active_node--;
 
 	if (parent == NULL) {
@@ -523,7 +497,7 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
 	    parent->parent->l = child;
 	}
 	child->parent = parent->parent;
-	free(parent);
+	freenode(parent);
         patricia->num_active_node--;
 	return;
     }
@@ -539,7 +513,7 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
     child->parent = parent;
 
     patricia_deref_prefix (node->prefix);
-    free(node);
+    freenode(node);
     patricia->num_active_node--;
 
     if (parent == NULL) {
@@ -557,7 +531,6 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
     }
 }
 
-/* } */
 
 patricia_node_t *
 refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
@@ -586,4 +559,30 @@ derefnode(patricia_tree_t *tree, patricia_node_t *node) {
     patricia_remove(tree, node);
   } else
     patricia_deref_prefix(node->prefix);
+}
+
+patricia_node_t *patricia_new_node(patricia_tree_t *patricia, unsigned char bit,prefix_t *prefix ) {
+  patricia_node_t *new_node = newnode();
+  memset(new_node->exts, 0, PATRICIA_MAXSLOTS * sizeof(void *));
+  new_node->bit = bit;
+  new_node->prefix = prefix;
+  new_node->usercount = 0;
+  new_node->parent = NULL;
+  new_node->l = new_node->r = NULL;
+  patricia->num_active_node++;
+  return new_node;  
+}
+
+void node_increment_usercount( patricia_node_t *node) {
+  while(node) {
+    node->usercount++;
+    node=node->parent;
+  }
+}
+
+void node_decrement_usercount( patricia_node_t *node) {
+  while(node) {
+    node->usercount--;
+    node=node->parent;
+  }
 }

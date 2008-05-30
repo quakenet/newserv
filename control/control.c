@@ -342,7 +342,7 @@ int controlchannel(void *sender, int cargc, char **cargv) {
   chanban *cbp;
   char buf[BUFSIZE];
   char buf2[12];
-  int i,j;
+  int i,j, ops=0, voice=0;
   char timebuf[30];
 
   if (cargc<1)
@@ -364,6 +364,8 @@ int controlchannel(void *sender, int cargc, char **cargv) {
     controlreply((nick *)sender,"Topic   : %s",cp->topic->content);
     strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(cp->topictime)));
     controlreply((nick *)sender,"T-time  : %ld [%s]",cp->topictime,timebuf);
+  } else { 
+    controlreply((nick *)sender,"Topic   : (none)");
   }
   controlreply((nick *)sender,"Mode(s) : %s %s%s%s",printflags(cp->flags,cmodeflags),IsLimit(cp)?buf2:"",
     IsLimit(cp)?" ":"",IsKey(cp)?cp->key->content:"");
@@ -384,6 +386,10 @@ int controlchannel(void *sender, int cargc, char **cargv) {
         break;
     }
     if (cp->users->content[j]!=nouser) {      
+      if (cp->users->content[j]&CUMODE_OP)
+        ops++;
+      else if (cp->users->content[j]&CUMODE_VOICE) 
+        voice++;
       np=getnickbynumeric(cp->users->content[j]);
       sprintf(&buf[i*18],"%c%c%-15s ",cp->users->content[j]&CUMODE_VOICE?'+':' ',
         cp->users->content[j]&CUMODE_OP?'@':' ', np?np->nick:"!BUG-NONICK!");
@@ -392,7 +398,7 @@ int controlchannel(void *sender, int cargc, char **cargv) {
         buf[i*18]=' ';
     }
   }
-
+  controlreply((nick *)sender, "Users   : Opped: %d, Voiced: %d", ops,voice);
   for (cbp=cp->bans;cbp;cbp=cbp->next) {
     controlreply((nick *)sender,"Ban     : %s",bantostringdebug(cbp));
   }

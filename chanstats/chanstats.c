@@ -32,6 +32,7 @@ void updatechanstats(chanindex *cip, time_t now);
 void rotatechanstats();
 void savechanstats();
 void loadchanstats();
+int dochanstatssave(void *source, int argc, char **argv);
 int dochanstats(void *source, int argc, char **argv);
 int doexpirecheck(void *source, int cargc, char **cargv);
 int douserhistogram(void *source, int cargc, char **cargv);
@@ -80,6 +81,7 @@ void _init() {
     registercontrolcmd("channelhistogram",10,13,&dochanhistogram);
     registercontrolcmd("userhistogram",10,1,&douserhistogram);
     registercontrolcmd("expirecheck",10,1,&doexpirecheck);
+    registercontrolhelpcmd("chanstatssave",NO_DEVELOPER,1, &dochanstatssave, "Usage: chanstatssave\nForce a save of chanstats data");
     schedulerecurring(when,0,SAMPLEINTERVAL,&doupdate,NULL);  
   }
 }
@@ -92,6 +94,7 @@ void _fini() {
     deregistercontrolcmd("channelhistogram",&dochanhistogram);
     deregistercontrolcmd("userhistogram",&douserhistogram);
     deregistercontrolcmd("expirecheck",&doexpirecheck);
+    deregistercontrolcmd("chanstatssave",&dochanstatssave);
     releasechanext(csext);
     cstsfreeall();
   }
@@ -244,7 +247,7 @@ void savechanstats() {
   chanindex *cip;
   chanstats *chp;
   
-  if ((fp=fopen("chanstats","w"))==NULL) {
+  if ((fp=fopen("data/chanstats","w"))==NULL) {
     return;
   }
   
@@ -283,7 +286,7 @@ void loadchanstats() {
   chanstats *chp;
   chanindex *cip;
   
-  if ((fp=fopen("chanstats","r"))==NULL) {
+  if ((fp=fopen("data/chanstats","r"))==NULL) {
     Error("chanstats",ERR_ERROR,"Unable to load channel stats file");
     return;
   }
@@ -710,4 +713,13 @@ void dohist_namelen(int *data, float *bounds, int cats) {
       }
     }
   }
+}
+
+int dochanstatssave(void *source, int cargc, char **cargv) {
+  nick *sender=(nick *)source;
+
+  controlreply(sender,"Saving Chanstats..");
+  savechanstats();   
+  controlreply(sender,"Chanstats saved"); 
+  return CMD_OK;
 }
