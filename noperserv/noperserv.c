@@ -165,7 +165,7 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
     newaccount = np->authname;
   } else {
     if(cargv[0][0] == '#') {
-      authname *a = getauthbynick(cargv[0] + 1);
+      authname *a = getauthbyname(cargv[0] + 1);
       if(!a) {
         controlreply(np, "Cannot find anyone with that authname on the network.");
         return CMD_ERROR;
