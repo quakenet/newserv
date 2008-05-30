@@ -174,15 +174,15 @@ void releaseauthname(authname *anp) {
       return;
     }
 
-    for(manp=&(authnametable[anp->namebucket]);*manp;manp=(authname **)&((*manp)->next)) {
+    for(manp=&(authnametablebyname[anp->namebucket]);*manp;manp=(authname **)&((*manp)->nextbyname)) {
       if ((*manp)==anp) {
-        (*manp)=(authname *)anp->next;
+        (*manp)=(authname *)anp->nextbyname;
         freeauthname(anp);
         return;
       }
     }
 
-    Error("nick",ERR_FATAL,"Unable to remove authname %lu from byname hashtable, TABLES ARE INCONSISTENT -- DYING",anp->userid);
+    Error("nick",ERR_STOP,"Unable to remove authname %lu from byname hashtable, TABLES ARE INCONSISTENT -- DYING",anp->userid);
   }
 }
 
