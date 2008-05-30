@@ -121,7 +121,7 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
     strncpy(newuser->authname,authname,ACCOUNTLEN);
     newuser->accountts=newuser->timestamp;
     if (authid) {
-      newuser->auth=findorcreateauthname(authid);
+      newuser->auth=findorcreateauthname(authid, newuser->authname);
       newuser->auth->usercount++;
       newuser->nextbyauthname=newuser->auth->nicks;
       newuser->auth->nicks=newuser;
@@ -566,7 +566,7 @@ void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long
   np->accountflags=accountflags;
 
   if (accid) {
-    np->auth=findorcreateauthname(accid);
+    np->auth=findorcreateauthname(accid, accname);
     np->auth->usercount++;
     np->nextbyauthname=np->auth->nicks;
     np->auth->nicks=np;

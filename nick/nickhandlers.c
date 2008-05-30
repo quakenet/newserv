@@ -162,7 +162,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
             if(!userid) {
               np->auth=NULL;
             } else {
-              np->auth=findorcreateauthname(userid);
+              np->auth=findorcreateauthname(userid, np->authname);
               np->auth->usercount++;
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
@@ -395,7 +395,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
       if(!userid) {
         target->auth=NULL;
       } else {
-        target->auth=findorcreateauthname(userid);
+        target->auth=findorcreateauthname(userid, target->authname);
         target->auth->usercount++;
         target->nextbyauthname = target->auth->nicks;
         target->auth->nicks = target;

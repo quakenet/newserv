@@ -10,7 +10,8 @@ typedef struct authname {
   int usercount;
   unsigned int marker;
   struct nick *nicks;
-  struct authname *next;
+  struct authname *next, *nextbyname;
+  unsigned int namebucket;
   /* These are extensions only used by other modules */
   void *exts[MAXAUTHNAMEEXTS];
 } authname;
@@ -20,7 +21,7 @@ typedef struct authname {
 extern authname *authnametable[AUTHNAMEHASHSIZE];
 
 /* Allocators */
-authname *newauthname();
+authname *newauthname(void);
 void freeauthname (authname *hp);
 
 /* EXT management */
@@ -30,10 +31,11 @@ void releaseauthnameext(int index);
 
 /* Actual user commands */
 authname *findauthname(unsigned long userid);
-authname *findorcreateauthname(unsigned long userid);
+authname *findauthnamebyname(const char *name);
+authname *findorcreateauthname(unsigned long userid, const char *name);
 void releaseauthname(authname *anp);
 
 /* Marker */
-unsigned int nextauthnamemarker();
+unsigned int nextauthnamemarker(void);
 
 #endif

@@ -35,7 +35,7 @@ void addregusertohash(reguser *rup) {
   rup->nextbyname=regusernicktable[hash];
   regusernicktable[hash]=rup;
 
-  anp=findorcreateauthname(rup->ID);
+  anp=findorcreateauthname(rup->ID, rup->username);
   anp->exts[chanservaext]=rup;
 }
 

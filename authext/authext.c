@@ -3,28 +3,34 @@
 #include "../core/error.h"
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
+#include "../nick/nick.h"
 
 #include <string.h>
 
 #define ALLOCUNIT 100
 
 #define authnamehash(x)   ((x)%AUTHNAMEHASHSIZE)
+#define authnamehashbyname(x) (crc32i(x)%AUTHNAMEHASHSIZE)
 
 authname *freeauthnames;
 authname *authnametable[AUTHNAMEHASHSIZE];
 
+/* internal access only */
+static authname *authnametablebyname[AUTHNAMEHASHSIZE];
+
 sstring *authnameextnames[MAXAUTHNAMEEXTS];
 
-void _init() {
+void _init(void) {
   freeauthnames=NULL;
   memset(authnametable,0,sizeof(authnametable));
+  memset(authnametablebyname,0,sizeof(authnametablebyname));
 }
 
-void _fini() {
+void _fini(void) {
   nsfreeall(POOL_AUTHEXT);
 }
 
-authname *newauthname() {
+authname *newauthname(void) {
   authname *anp;
   int i;
 
@@ -90,6 +96,8 @@ void releaseauthnameext(int index) {
       anp->exts[index]=NULL;
     }
   }
+
+  /* the contents of authnametablebyname should be identical */
 }
 
 authname *findauthname(unsigned long userid) {
@@ -105,11 +113,24 @@ authname *findauthname(unsigned long userid) {
   return NULL;
 }
 
-authname *findorcreateauthname(unsigned long userid) {
+authname *findauthnamebyname(const char *name) {
   authname *anp;
-  unsigned int thehash=authnamehash(userid);
 
-  if(!userid)
+  if(!name)
+    return NULL;
+
+  for (anp=authnametable[authnamehashbyname(name)];anp;anp=(authname *)anp->nextbyname)
+    if (!ircd_strcmp(anp->nicks->authname, name))
+      return anp;
+
+  return NULL;
+}
+
+authname *findorcreateauthname(unsigned long userid, const char *name) {
+  authname *anp;
+  unsigned int thehash=authnamehash(userid), secondhash = authnamehashbyname(name);
+
+  if(!userid || !name)
     return NULL;
 
   for (anp=authnametable[thehash];anp;anp=(authname *)anp->next)
@@ -125,29 +146,47 @@ authname *findorcreateauthname(unsigned long userid) {
   anp->next=(struct authname *)authnametable[thehash];
   authnametable[thehash]=anp;
 
+  anp->namebucket=secondhash;
+  anp->nextbyname=(struct authname *)authnametablebyname[secondhash];
+  authnametablebyname[secondhash]=anp;
+
   return anp;
 }
 
 void releaseauthname(authname *anp) {
   authname **manp;
-  int i;
+  int i, found;
   if (anp->usercount==0) {
     for(i=0;i<MAXAUTHNAMEEXTS;i++)
       if(anp->exts[i]!=NULL)
         return;
 
+    found = 0;
     for(manp=&(authnametable[authnamehash(anp->userid)]);*manp;manp=(authname **)&((*manp)->next)) {
+      if ((*manp)==anp) {
+        (*manp)=(authname *)anp->next;
+        found = 1;
+        break;
+      }
+    }
+    if(!found) {
+      Error("nick",ERR_ERROR,"Unable to remove authname %lu from hashtable",anp->userid);
+      return;
+    }
+
+    for(manp=&(authnametable[anp->namebucket]);*manp;manp=(authname **)&((*manp)->next)) {
       if ((*manp)==anp) {
         (*manp)=(authname *)anp->next;
         freeauthname(anp);
         return;
       }
     }
-    Error("nick",ERR_ERROR,"Unable to remove authname %lu from hashtable",anp->userid);
+
+    Error("nick",ERR_FATAL,"Unable to remove authname %lu from byname hashtable, TABLES ARE INCONSISTENT -- DYING",anp->userid);
   }
 }
 
-unsigned int nextauthnamemarker() {
+unsigned int nextauthnamemarker(void) {
   int i;
   authname *anp;
   static unsigned int authnamemarker=0;
