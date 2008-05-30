@@ -69,7 +69,7 @@ int handle_ison(struct rline *li, int argc, char **argv) {
 int handle_isaccounton(struct rline *li, int argc, char **argv) {
   int i;
   for(i=0;i<argc;i++)
-    if(ri_append(li, "%d", findauthnamebyname(argv[i])?1:0) == BF_OVER)
+    if(ri_append(li, "%d", getauthbyname(argv[i])?1:0) == BF_OVER)
       return ri_error(li, BF_OVER, "Buffer overflow");
 
   return ri_final(li);

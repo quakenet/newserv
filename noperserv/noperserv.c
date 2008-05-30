@@ -10,6 +10,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
+#include "../authext/authext.h"
 #include "noperserv.h"
 #include "noperserv_db.h"
 #include "noperserv_hooks.h"
@@ -164,18 +165,12 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
     newaccount = np->authname;
   } else {
     if(cargv[0][0] == '#') {
-      nick *np2;
-      for(i=0;i<NICKHASHSIZE;i++)
-        for(np2=nicktable[i];np2;np2=np2->next)
-          if(IsAccount(np2) && !ircd_strcmp(cargv[0] + 1, np2->authname)) {
-            target = np2;
-            newaccount = target->authname;
-            break;
-          }
-      if(!target) {
+      authname *a = getauthbynick(cargv[0] + 1);
+      if(!a) {
         controlreply(np, "Cannot find anyone with that authname on the network.");
         return CMD_ERROR;
       }
+      target = a->nicks;
     } else {
       target = getnickbynick(cargv[0]);
       if(!target) {
