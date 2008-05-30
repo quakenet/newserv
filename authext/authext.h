@@ -38,4 +38,6 @@ void releaseauthname(authname *anp);
 /* Marker */
 unsigned int nextauthnamemarker(void);
 
+authname *getauthbyname(const char *name);
+
 #endif

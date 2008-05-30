@@ -157,6 +157,8 @@ void releaseauthname(authname *anp) {
   authname **manp;
   int i, found;
   if (anp->usercount==0) {
+    anp->nicks = NULL;
+
     for(i=0;i<MAXAUTHNAMEEXTS;i++)
       if(anp->exts[i]!=NULL)
         return;
@@ -202,3 +204,12 @@ unsigned int nextauthnamemarker(void) {
 
   return authnamemarker;
 }
+
+authname *getauthbyname(const char *name) {
+  authname *a = findauthnamebyname(name);
+  if(!a || !a->nicks)
+    return NULL;
+
+  return a;
+}
+
