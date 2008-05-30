@@ -109,7 +109,7 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
   requestrec **rh;
   char msgbuf[512];
   va_list va;
-  nick *lnp, *qnp, *np, *tnp, *snp;
+  nick *np, *tnp, *snp;
   char now[50];
   time_t now_ts;
   unsigned int unique, total;
