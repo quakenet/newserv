@@ -14,6 +14,7 @@
 #include "../lib/flags.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
+#include "../authext/authext.h"
 
 #include "library.h"
 #include "nterfacer_control.h"
@@ -40,7 +41,7 @@ void _init(void) {
     return;
 
   register_handler(n_node, "ison", 1, handle_ison);
-/*  register_handler(n_node, "isaccounton", 1, handle_isaccounton); */
+  register_handler(n_node, "isaccounton", 1, handle_isaccounton);
   register_handler(n_node, "whois", 1, handle_whois);
   register_handler(n_node, "msg", 2, handle_message);
   register_handler(n_node, "notice", 2, handle_notice);
@@ -64,16 +65,16 @@ int handle_ison(struct rline *li, int argc, char **argv) {
 
   return ri_final(li);
 }
-/*
+
 int handle_isaccounton(struct rline *li, int argc, char **argv) {
   int i;
   for(i=0;i<argc;i++)
-    if(ri_append(li, "%d", getnickbyauth(argv[i])?1:0) == BF_OVER)
+    if(ri_append(li, "%d", findauthnamebyname(argv[i])?1:0) == BF_OVER)
       return ri_error(li, BF_OVER, "Buffer overflow");
 
   return ri_final(li);
 }
-*/
+
 int handle_whois(struct rline *li, int argc, char **argv) {
   nick *np = getnickbynick(argv[0]);
   channel **channels;
