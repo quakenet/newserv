@@ -4,8 +4,10 @@
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
 #include "../nick/nick.h"
+#include "../core/hooks.h"
 
 #include <string.h>
+#include <stdio.h>
 
 #define ALLOCUNIT 100
 
@@ -20,13 +22,17 @@ static authname *authnametablebyname[AUTHNAMEHASHSIZE];
 
 sstring *authnameextnames[MAXAUTHNAMEEXTS];
 
+static void authextstats(int hooknum, void *arg);
+
 void _init(void) {
   freeauthnames=NULL;
   memset(authnametable,0,sizeof(authnametable));
   memset(authnametablebyname,0,sizeof(authnametablebyname));
+  registerhook(HOOK_CORE_STATSREQUEST, &authextstats);
 }
 
 void _fini(void) {
+  deregisterhook(HOOK_CORE_STATSREQUEST, &authextstats);
   nsfreeall(POOL_AUTHEXT);
 }
 
@@ -119,7 +125,7 @@ authname *findauthnamebyname(const char *name) {
   if(!name)
     return NULL;
 
-  for (anp=authnametable[authnamehashbyname(name)];anp;anp=(authname *)anp->nextbyname)
+  for (anp=authnametablebyname[authnamehashbyname(name)];anp;anp=(authname *)anp->nextbyname)
     if (!ircd_strcmp(anp->nicks->authname, name))
       return anp;
 
@@ -211,5 +217,42 @@ authname *getauthbyname(const char *name) {
     return NULL;
 
   return a;
+}
+
+static char *genstats(authname **hashtable) {
+  int i,curchain,maxchain=0,total=0,buckets=0;
+  authname *ap;
+  static char buf[100];
+
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    if (hashtable[i]!=NULL) {
+      buckets++;
+      curchain=0;
+      for (ap=hashtable[i];ap;ap=ap->next) {
+        total++;
+        curchain++;
+      }
+      if (curchain>maxchain) {
+        maxchain=curchain;
+      }
+    }
+  }
+
+  snprintf(buf, sizeof(buf), "%6d authexts (HASH: %6d/%6d, chain %3d)",total,buckets,AUTHNAMEHASHSIZE,maxchain);
+  return buf;
+}
+
+static void authextstats(int hooknum, void *arg) {
+  long level=(long)arg;
+  char buf[100];
+
+  if (level>5) {
+    /* Full stats */
+    snprintf(buf,sizeof(buf),"Authext : by id:   %s", genstats(authnametable));
+    triggerhook(HOOK_CORE_STATSREPLY,buf);
+
+    snprintf(buf,sizeof(buf),"Authext : by name: %s", genstats(authnametablebyname));
+    triggerhook(HOOK_CORE_STATSREPLY,buf);
+  }
 }
 
