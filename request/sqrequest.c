@@ -175,31 +175,7 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
   }
   
   if (outcome==QR_OK) {
-    if (req->what == QR_CSERVE) {
-      /* Delete L, add Q.  Check that they both exist first, though. */
-
-      if (!(lnp=getnickbynick(RQ_LNICK)) || !(qnp=getnickbynick(RQ_QNICK))) {
-        sendnoticetouser(rqnick, tnp,
-                         "Error: Cannot find %s and %s on the network. "
-                         "Please request again later.", RQ_LNICK, RQ_QNICK);
-        free(req);
-        return;
-      }
-
-      if ( !IsAccount(lnp) ) {
-        sendnoticetouser(rqnick, tnp, "Internal Error Occured: L is not authed. Contact #help");
-        free(req);
-        return;
-      } 
- 
-      /* /msg Q ADDCHAN <channel> <flags> <owners nick> <channeltype> */
-      sendmessagetouser(rqnick, qnp, "ADDCHAN %s +ap #%s upgrade",
-                        req->cip->name->content,
-                        np->authname);
-  
-      sendnoticetouser(rqnick, tnp, "Adding %s to channel, please wait...",
-                        RQ_QNICK);
-    } else if (req->what == QR_SPAMSCAN) {
+    if (req->what == QR_SPAMSCAN) {
       /* Add S */
 
       if (!(snp=getnickbynick(RQ_SNICK))) {
@@ -423,41 +399,17 @@ void qr_handle_notice(nick *sender, char *message) {
   int delrequest = 0, state, who;
   requestrec *nextreq;
 
-/*  logcp = findchannel("#qnet.request");
-  
-  if (logcp)
-    sendmessagetochannel(rqnick, logcp, "%s: %s - %d %d %x %x", sender->nick, message, rlstate, rqstate, nextreql, nextreqq);
-*/
   if (!ircd_strcmp(sender->nick, RQ_QNICK) && nextqreq) {
     /* Message from Q */
     if (!ircd_strcmp(message,"Done.")) {
       /* Q added the channel: delete from L and tell the user. */
       /* If L has conspired to vanish between the request and the outcome,
        * we have a chan with Q and L... too bad. */
-
-      if ((np=getnickbynick(RQ_LNICK))) {
-        sendmessagetouser(rqnick, np, "SENDCHANLEV %s %s",
-                          nextqreq->cip->name->content, RQ_QNICK);
-
-        sendmessagetouser(rqnick, np, "DELCHAN %s",
-                          nextqreq->cip->name->content);
-      }
-
-      if ((np=getnickbynumeric(nextqreq->reqnumeric))) {
-        sendnoticetouser(rqnick, np, "Request completed. %s added.", RQ_QNICK);
-      }
       
       delrequest = 1;
     } else if (!ircd_strcmp(message,"That channel already exists.")) {
-      if ((np=getnickbynumeric(nextqreq->reqnumeric))) {
-        sendnoticetouser(rqnick, np,
-                         "Your channel '%s' appears to have %s already "
-                         "(it may be suspended).", nextqreq->cip->name->content, RQ_QNICK);
-
-        qr_suspended++;
         
         delrequest = 1;
-      }
     }
 
     /* For either of the two messages above we want to delete the request
@@ -473,8 +425,8 @@ void qr_handle_notice(nick *sender, char *message) {
     }
   }
 
-  if (!ircd_strcmp(sender->nick, RQ_LNICK) || !ircd_strcmp(sender->nick, RQ_QNICK)) {
-    who = !ircd_strcmp(sender->nick, RQ_LNICK) ? QR_L : QR_Q;
+  if (!ircd_strcmp(sender->nick, RQ_QNICK)) {
+    who = QR_Q;
     state = (who == QR_Q) ? rqstate : rlstate;
     nextreq = (who == QR_Q) ? nextreqq : nextreql;
 
@@ -490,7 +442,6 @@ void qr_handle_notice(nick *sender, char *message) {
           (!ircd_strncmp(message,"Known users on",14) && who == QR_Q)
         ) {
           /* Looks like the right message.  Let's find a channel name */
-
           for (ch=message;*ch;ch++)
             if (*ch=='#')
               break;
@@ -504,12 +455,11 @@ void qr_handle_notice(nick *sender, char *message) {
           /* chop off any remaining words */
           chop = ch;
           while (*(chop++)) {
-            if (*chop == ' ') {
+            if (*chop == ' ' || *chop == ':') {
               *chop = '\0';
               break;
             }
           }
-
           if (!(cip=findchanindex(ch))) {
             Error("qrequest",ERR_WARNING,
                   "Unable to find channel from L/Q message: %s",ch);
@@ -523,7 +473,6 @@ void qr_handle_notice(nick *sender, char *message) {
               rlstate = QRLstate_AWAITINGUSER;
             else
               rqstate = QRLstate_AWAITINGUSER;
-
             return;
           } else {
             /* Uh-oh, not the channel we wanted.  Something is fucked
@@ -587,7 +536,6 @@ void qr_handle_notice(nick *sender, char *message) {
           /* Oh dear, we got to the end of the chanlev in this state.
            * This means that we didn't find the user.
            */
-
           qr_result(nextreq, QR_FAILED, 'X', 
                     "Error: You are not known on %s.",
                     nextreq->cip->name->content);
@@ -632,13 +580,28 @@ void qr_handle_notice(nick *sender, char *message) {
             /* This is not the user you are looking for */
             return;
           }
-
           /* Check for owner flag.  Both branches of this if will
            * take the request off the list, one way or the other. */
-          if (strchr(ch, 'n')) {
+
+         /* chop off any remaining words */
+         chop = ch;
+         while (*(chop++)) {
+           if (*chop != ' ' ) {
+             break;
+           }
+	 }
+         /* chop off any remaining words */
+         ch = chop;
+         while (*(chop++)) {
+           if (*chop == ' ' || *chop == ':') {
+             *chop = '\0';
+             break;
+           }
+         }
+
+         if (strchr(ch, 'n')) {
             char failcode;
             /* They iz teh +n! */
-            
             /* Note: We're checking for blocks kind of late, so the request
                system gets a chance to send other error messages first (like
               'no chanstats', 'not known on channel', etc.). This is required
@@ -646,15 +609,9 @@ void qr_handle_notice(nick *sender, char *message) {
             if (qr_checksize(nextreq->cip, nextreq->what, &failcode) && !qr_blockcheck(nextreq)) {
               qr_result(nextreq, QR_OK, '-', "OK");
             } else {
-              if (nextreq->what == QR_CSERVE) {
-                qr_result(nextreq, QR_FAILED, failcode,
-                          "Error: Sorry, Your channel '%s' does not meet the requirements "
-                          "for %s. Please continue to use %s.", nextreq->cip->name->content, RQ_QNICK, RQ_LNICK);                          
-              } else {
                 qr_result(nextreq, QR_FAILED, failcode,
                           "Error: Sorry, Your channel '%s' does not require %s. Please try again in a few days.", nextreq->cip->name->content, RQ_SNICK);
-              }
-
+       
               qr_toosmall++;
             }
           } else {
@@ -706,57 +663,6 @@ void qr_handle_notice(nick *sender, char *message) {
  */
 
 int qr_requestq(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnick) {
-  chanindex *cip = cp->index;
-
-  /* Check:
-   *  - we have some form of channel stats for the channel
-   *
-   * Note that the actual channel stats will not be checked
-   * until we're sure the user has +n on the channel.
-   */
-
-  if (rq_isspam(sender)) {
-      sendnoticetouser(rqnick, sender, "Error: Do not flood the request system."
-            " Try again in %s.", rq_longtoduration(rq_blocktime(sender)));
-    
-      return RQ_ERROR;
-  }
-
-  if (!cip->exts[csext]) {
-    sendnoticetouser(rqnick, sender,
-                     "Error: No historical record exists for %s.",
-                     cip->name->content);
-
-    qr_nohist++;
-
-    return RQ_ERROR;
-  }
-
-  /* Request stats from L */
-  sendmessagetouser(rqnick, lnick, "CHANLEV %s", cip->name->content);
-
-  /* Sort out a request record */
-  if (lastreql) {
-    lastreql->next = (requestrec *)malloc(sizeof(requestrec));
-    lastreql=lastreql->next;
-  } else {
-    lastreql=nextreql=(requestrec *)malloc(sizeof(requestrec));
-  }
-
-  lastreql->next = NULL;
-  lastreql->cip = cip;
-  lastreql->what = QR_CSERVE;
-  lastreql->who = QR_L;
-  lastreql->reqnumeric = sender->numeric;
-
-  if (rlstate == QRLstate_IDLE)
-    rlstate = QRLstate_AWAITINGCHAN;
-
-  sendnoticetouser(rqnick, sender,
-                   "Checking your %s access. "
-                   "This may take a while, please be patient...", RQ_LNICK);
-                   
-  /* we don't know yet whether the request was successful */
   return RQ_UNKNOWN;
 }
 
@@ -816,7 +722,7 @@ int qr_instantrequestq(nick *sender, channel *cp) {
   return RQ_OK;
 }
 
-int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnick) {
+int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   chanindex *cip = cp->index;
   int who = 0;
   requestrec *nextreq, *lastreq;
@@ -829,16 +735,7 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnic
   }
 
   /* check which service is on the channel */
-  if (getnumerichandlefromchanhash(cp->users, lnick->numeric) != NULL) {
-    /* we've found L */
-    who = QR_L;
-
-    /* Request stats from L */
-    sendmessagetouser(rqnick, lnick, "CHANLEV %s", cip->name->content);
-
-    if (rlstate == QRLstate_IDLE)
-      rlstate = QRLstate_AWAITINGCHAN;
-  } else if (getnumerichandlefromchanhash(cp->users, qnick->numeric) != NULL) {
+  if (getnumerichandlefromchanhash(cp->users, qnick->numeric) != NULL) {
     /* we've found Q */
     who = QR_Q;
 
@@ -849,8 +746,8 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnic
       rqstate = QRLstate_AWAITINGCHAN;
   } /* 'else' cannot happen as R has already checked whether the user has L or Q */
 
-  lastreq = (who == QR_Q) ? lastreqq : lastreql;
-  nextreq = (who == QR_Q) ? nextreqq : nextreql;
+  lastreq = lastreqq;
+  nextreq = nextreqq;
 
   /* Sort out a request record */
   if (lastreq) {
@@ -865,18 +762,13 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *lnick, nick *qnic
   lastreq->what = QR_SPAMSCAN;
   lastreq->reqnumeric = sender->numeric;
 
-  if (who == QR_Q) {
-    nextreqq = nextreq;
-    lastreqq = lastreq;
-  } else {
-    nextreql = nextreq;
-    lastreql = lastreq;
-  }
+  nextreqq = nextreq;
+  lastreqq = lastreq;
 
-   sendnoticetouser(rqnick, sender,
+  sendnoticetouser(rqnick, sender,
                    "Checking your %s access. "
                    "This may take a while, please be patient...",
-                   who == QR_Q ? RQ_QNICK : RQ_LNICK);
+                   RQ_QNICK);
 
   return RQ_UNKNOWN;
 }
@@ -910,11 +802,11 @@ void qr_finirequest(void) {
 }
 
 void qr_requeststats(nick *rqnick, nick *np) {
-  sendnoticetouser(rqnick, np, "- Suspended (Q):                  %d", qr_suspended);
-  sendnoticetouser(rqnick, np, "- No chanstats (Q/S):             %d", qr_nohist);
-  sendnoticetouser(rqnick, np, "- Too small (Q/S):                %d", qr_toosmall);
-  sendnoticetouser(rqnick, np, "- User was not on chanlev (Q/S):  %d", qr_nochanlev);
-  sendnoticetouser(rqnick, np, "- User was not the owner (Q/S):   %d", qr_notowner);
+  sendnoticetouser(rqnick, np, "- Suspended (S):                  %d", qr_suspended);
+  sendnoticetouser(rqnick, np, "- No chanstats (S):             %d", qr_nohist);
+  sendnoticetouser(rqnick, np, "- Too small (S):                %d", qr_toosmall);
+  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):  %d", qr_nochanlev);
+  sendnoticetouser(rqnick, np, "- User was not the owner (S):   %d", qr_notowner);
   sendnoticetouser(rqnick, np, "- A:                              %d", qr_a);
   sendnoticetouser(rqnick, np, "- B:                              %d", qr_b);
   sendnoticetouser(rqnick, np, "- C:                              %d", qr_c);

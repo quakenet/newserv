@@ -118,8 +118,8 @@ void _fini(void) {
 void rq_registeruser(void) {
   channel *cp;
 
-  rqnick = registerlocaluser(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
-                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH,
+  rqnick = registerlocaluserwithuserid(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
+                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH, 1780711,
                              UMODE_ACCOUNT | UMODE_SERVICE | UMODE_OPER,
                              rq_handler);
 
@@ -225,7 +225,7 @@ int rqcmd_showcommands(void *user, int cargc, char **cargv) {
   return 0;
 }
 
-int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **lnick, nick **qnick) {
+int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qnick) {
   unsigned long *userhand;
   rq_block *block;
 
@@ -240,15 +240,6 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **lni
   if (*cp == NULL) {
     sendnoticetouser(rqnick, np, "Error: Channel %s does not exist.",
           channelname);
-
-    return RQ_ERROR;
-  }
-
-  *lnick = getnickbynick(RQ_LNICK);
-
-  if (*lnick == NULL || findserver(RQ_LSERVER) < 0) {
-    sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-          "Try again later.", RQ_LNICK);
 
     return RQ_ERROR;
   }
@@ -325,8 +316,8 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **lni
 
 int rqcmd_request(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
-  nick *lnick, *qnick;
-  unsigned long *lhand, *qhand;
+  nick *qnick;
+  unsigned long *qhand;
   channel *cp;
   int retval;
   time_t now_ts;
@@ -340,13 +331,11 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
 
   rq_count++;
 
-  if (rq_genericrequestcheck(np, cargv[0], &cp, &lnick, &qnick) == RQ_ERROR) {
+  if (rq_genericrequestcheck(np, cargv[0], &cp, &qnick) == RQ_ERROR) {
     rq_failed++;
 
     return RQ_ERROR;
   }
-
-  lhand = getnumerichandlefromchanhash(cp->users, lnick->numeric);
 
   qhand = getnumerichandlefromchanhash(cp->users, qnick->numeric);
 
@@ -360,30 +349,15 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
 
   retval = RQ_ERROR;
 
-  if (lhand == NULL && qhand == NULL) {
-    /* try 'instant' Q request */
-    retval = qr_instantrequestq(np, cp);
-  }
+  retval = lr_requestl(rqnick, np, cp, qnick);
 
-  if (retval == RQ_ERROR) {
-    if (lhand == NULL) {
-      /* user 'wants' L */
+  if (rq_logfd != NULL) {
+    now[0] = '\0';
+    now_ts = time(NULL);
+    strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
-      retval = lr_requestl(rqnick, np, cp, lnick);
-
-      if (rq_logfd != NULL) {
-        now[0] = '\0';
-        now_ts = time(NULL);
-        strftime(now, sizeof(now), "%c", localtime(&now_ts));
-
-        fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_LNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
-        fflush(rq_logfd);
-      }
-    } else {
-      /* user 'wants' Q */
-
-      retval = qr_requestq(rqnick, np, cp, lnick, qnick);
-    }
+    fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_QNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+    fflush(rq_logfd);
   }
 
   if (retval == RQ_ERROR)
@@ -397,8 +371,8 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
 int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
   channel *cp;
-  nick *lnick, *qnick, *snick;
-  unsigned long *lhand, *qhand, *shand;
+  nick *qnick, *snick;
+  unsigned long *qhand, *shand;
   int retval;
 
   if (cargc < 1) {
@@ -409,7 +383,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
 
   rq_count++;
 
-  if (rq_genericrequestcheck(np, cargv[0], &cp, &lnick, &qnick) == RQ_ERROR) {
+  if (rq_genericrequestcheck(np, cargv[0], &cp, &qnick) == RQ_ERROR) {
     rq_failed++;
 
     return RQ_ERROR;
@@ -437,13 +411,12 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
     return RQ_ERROR;
   }
 
-  /* we need either L or Q */
-  lhand = getnumerichandlefromchanhash(cp->users, lnick->numeric);
+  /* we need Q */
   qhand = getnumerichandlefromchanhash(cp->users, qnick->numeric);
 
-  if (lhand || qhand) {
+  if (qhand) {
     /* great, now try to request */
-    retval = qr_requests(rqnick, np, cp, lnick, qnick);
+    retval = qr_requests(rqnick, np, cp, qnick);
     
     if (retval == RQ_OK)
       rq_success++;
@@ -452,10 +425,10 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
       
       return retval;
   } else {
-    /* channel apparently doesn't have L or Q */
+    /* channel apparently doesn't have Q */
     
-   sendnoticetouser(rqnick, np, "Error: You need %s or %s in order to be "
-        "able to request %s.", RQ_LNICK, RQ_QNICK, RQ_SNICK);
+   sendnoticetouser(rqnick, np, "Error: You need %s in order to be "
+        "able to request %s.", RQ_QNICK, RQ_SNICK);
 
     rq_failed++;
 
