@@ -219,7 +219,7 @@ authname *getauthbyname(const char *name) {
   return a;
 }
 
-static char *genstats(authname **hashtable) {
+static char *genstats(authname **hashtable, authname *(nextfn)(authname *)) {
   int i,curchain,maxchain=0,total=0,buckets=0;
   authname *ap;
   static char buf[100];
@@ -228,7 +228,7 @@ static char *genstats(authname **hashtable) {
     if (hashtable[i]!=NULL) {
       buckets++;
       curchain=0;
-      for (ap=hashtable[i];ap;ap=ap->next) {
+      for (ap=hashtable[i];ap;ap=nextfn(ap)) {
         total++;
         curchain++;
       }
@@ -242,16 +242,24 @@ static char *genstats(authname **hashtable) {
   return buf;
 }
 
+static authname *nextbynext(authname *in) {
+  return in->next;
+}
+
+static authname *nextbyname(authname *in) {
+  return in->nextbyname;
+}
+
 static void authextstats(int hooknum, void *arg) {
   long level=(long)arg;
   char buf[100];
 
   if (level>5) {
     /* Full stats */
-    snprintf(buf,sizeof(buf),"Authext : by id:   %s", genstats(authnametable));
+    snprintf(buf,sizeof(buf),"Authext : by id:   %s", genstats(authnametable, nextbynext));
     triggerhook(HOOK_CORE_STATSREPLY,buf);
 
-    snprintf(buf,sizeof(buf),"Authext : by name: %s", genstats(authnametablebyname));
+    snprintf(buf,sizeof(buf),"Authext : by name: %s", genstats(authnametablebyname, nextbyname));
     triggerhook(HOOK_CORE_STATSREPLY,buf);
   }
 }
