@@ -12,12 +12,15 @@ typedef struct lua_socket {
   long tag;
   unsigned long identifier;
   struct lua_list *l;
+  struct lua_socket *parent;
+
   struct lua_socket *next;
 } lua_socket;
 
 #define SOCKET_CONNECTING 0x00
 #define SOCKET_CONNECTED  0x01
 #define SOCKET_CLOSED     0x02
+#define SOCKET_LISTENING  0x03
 
 #endif
 

@@ -23,8 +23,51 @@
 static long nextidentifier = 0;
 static void lua_socket_poll_event(int fd, short events);
 
+static int getunixsocket(char *path, struct sockaddr_un *r) {
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  int ret;
+
+  if(fd <= -1)
+    return -1;
+
+  memset(r, 0, sizeof(struct sockaddr_un));
+  r->sun_family = AF_UNIX;
+  strlcpy(r->sun_path, path, sizeof(r->sun_path));
+
+  /* WTB exceptions */
+  ret = fcntl(fd, F_GETFL, 0);
+  if(ret < 0) {
+    close(fd);
+    return -1;
+  }
+
+  ret = fcntl(fd, F_SETFL, ret | O_NONBLOCK);
+  if(ret < 0) {
+    close(fd);
+    return -1;
+  }
+
+  return fd;
+}
+
+static void registerluasocket(lua_list *ll, lua_socket *ls, int mask, int settag) {
+  /* this whole identifier thing should probably use userdata stuff */
+  ls->identifier = nextidentifier++;
+
+  if(settag) {
+    ls->tag = luaL_ref(ll->l, LUA_REGISTRYINDEX);
+    ls->handler = luaL_ref(ll->l, LUA_REGISTRYINDEX);
+  }
+  ls->l = ll;
+
+  ls->next = ll->sockets;
+  ll->sockets = ls;
+
+  registerhandler(ls->fd, mask, lua_socket_poll_event);
+}
+
 static int lua_socket_unix_connect(lua_State *l) {
-  int len, ret;
+  int ret;
   struct sockaddr_un r;
   char *path;
   lua_socket *ls;
@@ -45,35 +88,13 @@ static int lua_socket_unix_connect(lua_State *l) {
   if(!ls)
     return 0;
 
-  ls->fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if(ls->fd <= -1) {
+  ls->fd = getunixsocket(path, &r);
+  if(ls->fd < 0) {
     luafree(ls);
     return 0;
   }
 
-  memset(&r, 0, sizeof(r));
-  r.sun_family = AF_UNIX;
-  strlcpy(r.sun_path, path, sizeof(r.sun_path));
-
-  /* don't really like this, there's a macro in sys/un.h but it's not there under FreeBSD */
-  len = sizeof(r.sun_family) + strlen(r.sun_path) + 1;
-
-  /* WTB exceptions */
-  ret = fcntl(ls->fd, F_GETFL, 0);
-  if(ret < 0) {
-    luafree(ls);
-    close(ls->fd);
-    return 0;
-  }
-
-  ret = fcntl(ls->fd, F_SETFL, ret | O_NONBLOCK);
-  if(ret < 0) {
-    luafree(ls);
-    close(ls->fd);
-    return 0;
-  }
-
-  ret = connect(ls->fd, (struct sockaddr *)&r, len);
+  ret = connect(ls->fd, (struct sockaddr *)&r, sizeof(r.sun_family) + strlen(r.sun_path));
   if(ret == 0) {
     ls->state = SOCKET_CONNECTED;
   } else if(ret == -1 && (errno == EINPROGRESS)) {
@@ -84,21 +105,59 @@ static int lua_socket_unix_connect(lua_State *l) {
     return 0;
   }
 
-  /* this whole identifier thing should probably use userdata stuff */
-  ls->identifier = nextidentifier++;
-  ls->tag = luaL_ref(l, LUA_REGISTRYINDEX);
-  ls->handler = luaL_ref(l, LUA_REGISTRYINDEX);
-
-  ls->l = ll;
-
-  ls->next = ll->sockets;
-  ll->sockets = ls;
-
-  registerhandler(ls->fd, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, lua_socket_poll_event);
+  ls->parent = NULL;
+  registerluasocket(ll, ls, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, 1);
 
   lua_pushboolean(l, ls->state==SOCKET_CONNECTED?1:0);
   lua_pushlong(l, ls->identifier);
   return 2;
+}
+
+static int lua_socket_unix_bind(lua_State *l) {
+  lua_list *ll;
+  char *path;
+  lua_socket *ls;
+  struct sockaddr_un r;
+
+  ll = lua_listfromstate(l);
+  if(!ll)
+    return 0;
+
+  if(!lua_isfunction(l, 2))
+    return 0;
+
+  path = (char *)lua_tostring(l, 1);
+  if(!path)
+    return 0;
+
+  ls = (lua_socket *)luamalloc(sizeof(lua_socket));
+  if(!ls)
+    return 0;
+
+  ls->fd = getunixsocket(path, &r);
+  if(ls->fd <= -1) {
+    luafree(ls);
+    return 0;
+  }
+
+  unlink(path);
+
+  if(
+    (bind(ls->fd, (struct sockaddr *)&r, strlen(r.sun_path) + sizeof(r.sun_family)) == -1) ||
+    (listen(ls->fd, 5) == -1)
+  ) {
+    close(ls->fd);
+    luafree(ls);
+    return 0;
+  }
+
+  ls->state = SOCKET_LISTENING;
+  ls->parent = NULL;
+
+  registerluasocket(ll, ls, POLLIN, 1);
+
+  lua_pushlong(l, ls->identifier);
+  return 1;
 }
 
 static lua_socket *socketbyfd(int fd) {
@@ -128,6 +187,12 @@ static lua_socket *socketbyidentifier(long identifier) {
 static void lua_socket_call_close(lua_socket *ls) {
   lua_socket *p, *c;
 
+  for(c=ls->l->sockets;c;c=p) {
+    p = c->next;
+    if(c->parent == ls)
+      lua_socket_call_close(c);
+  }
+
   for(c=ls->l->sockets,p=NULL;c;p=c,c=c->next) {
     if(c == ls) {
       if(ls->state == SOCKET_CLOSED)
@@ -144,14 +209,15 @@ static void lua_socket_call_close(lua_socket *ls) {
         p->next = ls->next;
       }
 
-      luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->tag);
-      luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->handler);
+      if(!ls->parent) {
+        luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->tag);
+        luaL_unref(ls->l->l, LUA_REGISTRYINDEX, ls->handler);
+      }
 
       luafree(ls);
       return;
     }
   }
-
 }
 
 static int lua_socket_write(lua_State *l) {
@@ -253,6 +319,32 @@ static void lua_socket_poll_event(int fd, short events) {
         lua_vnpcall(ls, "read", "L", buf, (long)bytesread);
       }
       break;
+    case SOCKET_LISTENING:
+      if(events & POLLIN) {
+        struct sockaddr_un r;
+        lua_socket *ls2;
+        unsigned int len = sizeof(r);
+
+        int fd2 = accept(fd, (struct sockaddr *)&r, &len);
+        if(fd2 == -1)
+          return;
+
+        ls2 = (lua_socket *)luamalloc(sizeof(lua_socket));
+        if(!ls2) {
+          close(fd2);
+          return;
+        }
+
+        ls2->fd = fd2;
+        ls2->state = SOCKET_CONNECTED;
+        ls2->tag = ls->tag;
+        ls2->handler = ls->handler;
+        ls2->parent = ls;
+
+        registerluasocket(ls->l, ls2, POLLIN | POLLERR | POLLHUP, 0);
+        lua_vnpcall(ls, "accept", "l", ls2->identifier);
+      }
+      break;
   }
 }
 
@@ -263,6 +355,7 @@ void lua_socket_closeall(lua_list *l) {
 
 void lua_registersocketcommands(lua_State *l) {
   lua_register(l, "socket_unix_connect", lua_socket_unix_connect);
+  lua_register(l, "socket_unix_bind", lua_socket_unix_bind);
   lua_register(l, "socket_close", lua_socket_close);
   lua_register(l, "socket_write", lua_socket_write);
 }
