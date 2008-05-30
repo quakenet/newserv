@@ -1,6 +1,8 @@
 #include "../control/control.h"
 #include "../nick/nick.h"
 #include "../channel/channel.h"
+#include "../lib/irc_string.h"
+#include "../irc/irc.h"
 #include "jupe.h"
 
 int ju_addjupe(void *source, int cargc, char **cargv) {
@@ -22,7 +24,7 @@ int ju_addjupe(void *source, int cargc, char **cargv) {
 	duration = durationtolong(cargv[1]);
 	
 	if (duration > JUPE_MAX_EXPIRE) {
-		controlreply(np, "A jupe's maximum duration is %s. Could not create jupe.", longtoduration(JUPE_MAX_EXPIRE));
+		controlreply(np, "A jupe's maximum duration is %s. Could not create jupe.", longtoduration(JUPE_MAX_EXPIRE, 0));
 
 		return CMD_OK;
 	}
@@ -110,7 +112,7 @@ int ju_jupelist(void *source, int cargc, char **cargv) {
 	controlreply(np, "Server Reason Expires Status");
 
 	while (jupe) {
-		controlreply(np, "%s %s %s %s", JupeServer(jupe), JupeReason(jupe), longtoduration(jupe->ju_expire - getnettime()), (jupe->ju_flags & JUPE_ACTIVE) ? "activated" : "deactivated");
+		controlreply(np, "%s %s %s %s", JupeServer(jupe), JupeReason(jupe), longtoduration(jupe->ju_expire - getnettime(), 0), (jupe->ju_flags & JUPE_ACTIVE) ? "activated" : "deactivated");
 		
 		jupe = jupe->ju_next;
 	}

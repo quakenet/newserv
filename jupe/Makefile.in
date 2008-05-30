@@ -1,8 +1,7 @@
 @include@ @includel@../build.mk@includel@
-CFLAGS=-g
 
 .PHONY: all
-all: jupe.so jupe_commands.so
+all: jupe.o jupe_commands.so
 
 jupe.so: jupe.o
 

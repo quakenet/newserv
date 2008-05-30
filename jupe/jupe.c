@@ -41,7 +41,7 @@ void _fini() {
 
 int handlejupe(void *source, int cargc, char **cargv) {
 	char *target, *server, *expire, *modtime, *reason;
-	jupe_t *jupe, *last_jupe;
+	jupe_t *jupe;
 	unsigned int flags;
 
 	if (cargc < 5)
@@ -54,7 +54,7 @@ int handlejupe(void *source, int cargc, char **cargv) {
 	reason = cargv[4];
 
 	if (atoi(expire) > JUPE_MAX_EXPIRE || atoi(expire) <= 0)
-		return; /* jupe's expiry date is not valid */
+		return CMD_ERROR; /* jupe's expiry date is not valid */
 	
 	if (server[0] != '+' && server[0] != '-')
 		return CMD_OK; /* not a valid jupe either */
@@ -164,7 +164,6 @@ jupe_t *jupe_find(char *server) {
 }
 
 void jupe_free(jupe_t *jupe) {
-	jupe_t *next = jupe->ju_next;
 	jupe_t *trav = jupes;
 
 	if (jupe == jupes)
