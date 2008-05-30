@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+#include "../lib/sstring.h"
+
 #include "esockets.h"
 #include "library.h"
 

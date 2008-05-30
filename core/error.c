@@ -9,6 +9,8 @@
 
 FILE *logfile;
 
+static corehandler *coreh, *coret;
+
 char *sevtostring(int severity) {
   switch(severity) {
     case ERR_DEBUG:
@@ -78,3 +80,44 @@ void Error(char *source, int severity, char *reason, ... ) {
     exit(0);
   }
 }
+
+void handlecore(void) { 
+  corehandler *n;
+
+  /* no attempt is made to clean these up */
+  for(n=coreh;coreh;n=coreh->next)
+    (n->fn)(n->arg);
+}
+
+corehandler *registercorehandler(CoreHandlerFn fn, void *arg) {
+  corehandler *c = (corehandler *)malloc(sizeof(corehandler));
+  /* core if we can't allocate!! */
+
+  c->fn = fn;
+  c->arg = arg;
+  c->next = NULL;
+  c->prev = coret;
+  coret = c->prev;
+
+  if(!coreh)
+    coreh = c;
+
+  return c;
+}
+
+void deregistercorehandler(corehandler *c) {
+  if(!c->prev) {
+    coreh = c->next;
+  } else {
+    c->prev->next = c->next;
+  }
+
+  if(!c->next) {
+    coret = c->prev;
+  } else {
+    c->next->prev = c->prev;
+  }
+
+  free(c);
+}
+

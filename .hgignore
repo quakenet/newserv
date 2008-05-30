@@ -25,3 +25,4 @@ chanserv/*/commandlist.c
 configure.ac.local
 config.h
 settings.mk
+graphing/dump
