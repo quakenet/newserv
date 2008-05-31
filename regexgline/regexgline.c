@@ -130,6 +130,7 @@ void rg_checkexpiry(void *arg) {
   
   while(rp) {
     if (current >= rp->expires) {
+      rg_sqlquery("DELETE FROM regexglines WHERE id = %d", rp->id);
       if (lp) {
         lp->next = rp->next;
         rg_freestruct(rp);
