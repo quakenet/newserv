@@ -45,10 +45,10 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
       if(!anp->nicks && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
         if(vrup->lastauth && (vrup->lastauth < to_age)) {
           expired++;
-          cs_log(sender, "CLEANUPDB inactive user %s", vrup->username);
+          cs_log(sender, "CLEANUPDB inactive user %s %u", vrup->username, vrup->ID);
         } else if(!vrup->lastauth && (vrup->created < unused_age)) {
           unauthed++;
-          cs_log(sender, "CLEANUPDB unused user %s", vrup->username);
+          cs_log(sender, "CLEANUPDB unused user %s %u", vrup->username, vrup->ID);
         } else {
           continue;
         }
