@@ -45,6 +45,7 @@ typedef struct rg_struct {
   pcre             *regex;    /* pcre expression */
   pcre_extra       *hint;     /* pcre hint       */
   long             glineid;   /* gline ID */
+  const char       *class;    /* class of gline */
   struct rg_struct *next;     /* ... pointer to next item */
 } rg_struct;
 
@@ -69,7 +70,7 @@ void rg_dbload(void);
 
 void rg_freestruct(struct rg_struct *rp);
 struct rg_struct *rg_newstruct(time_t expires);
-struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires);
+struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class);
 
 void rg_displaygline(nick *np, struct rg_struct *rp);
 

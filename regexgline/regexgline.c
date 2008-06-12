@@ -11,6 +11,7 @@
 #include "regexgline.h"
 #include "../lib/version.h"
 #include "../dbapi/dbapi.h"
+#include "../lib/stringbuf.h"
 
 #define INSTANT_IDENT_GLINE  1
 #define INSTANT_HOST_GLINE   2
@@ -52,6 +53,8 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
 static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
 static int attached = 0, started = 0;
+
+static const char *classes[] = { "drone", "proxy", "spam", "fakeauth", "other", (char *)0 };
 
 void _init(void) {
   sstring *max_casualties, *max_spew, *expiry_time, *max_per_gline;
@@ -226,9 +229,9 @@ void rg_dodelay(void *arg) {
   
   if ((delay->reason->type == DELAYED_KILL) || (usercount > rg_max_per_gline)) {
     if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed kill regex %08lx", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid);
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed kill regex %08lx (class: %s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class);
     } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed kill regex %08lx", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid);
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed kill regex %08lx (class: %s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class);
     }
     killuser(NULL, delay->np, "%s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
     return;
@@ -236,15 +239,15 @@ void rg_dodelay(void *arg) {
   
   if (delay->reason->type == DELAYED_IDENT_GLINE) {
     if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed user@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed user@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
     } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed user@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed user@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
     }
   } else if (delay->reason->type == DELAYED_HOST_GLINE) {
     if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed *@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed *@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
     } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed *@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed *@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
     }
   } else {
     return;
@@ -265,9 +268,9 @@ void rg_flushglines(struct rg_glinelist *gll) {
     pn = nn->next;
     if(nn->punish == 3) {
       if ( IsAccount(nn->np) ) {
-        controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched kill regex %08lx", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->np->authname, nn->reason->glineid);
+        controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->np->authname, nn->reason->glineid, nn->reason->class);
       } else {
-        controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched kill regex %08lx", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->reason->glineid);
+        controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->reason->glineid, nn->reason->class);
       }
       
       killuser(NULL, nn->np, "%s (ID: %08lx)", nn->reason->reason->content, nn->reason->glineid);
@@ -288,14 +291,14 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
     return;
   }
 
-  if (dbnumfields(dbres) != 6) {
+  if (dbnumfields(dbres) != 7) {
     Error("regexgline", ERR_ERROR, "DB format error");
     return;
   }
 
   while(dbfetchrow(dbres)) {
     unsigned long id;
-    char *gline, *setby, *reason, *expires, *type;
+    char *gline, *setby, *reason, *expires, *type, *class;
 
     id = strtoul(dbgetvalue(dbres, 0), NULL, 10);
     if(id > highestid)
@@ -306,8 +309,9 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
     reason = dbgetvalue(dbres, 3);
     expires = dbgetvalue(dbres, 4);
     type = dbgetvalue(dbres, 5);
+    class = dbgetvalue(dbres, 6);
 
-    if (!rg_newsstruct(id, gline, setby, reason, expires, type, 0))
+    if (!rg_newsstruct(id, gline, setby, reason, expires, type, 0, class))
       dbquery("DELETE FROM regexgline.glines WHERE id = %u", id);
   }
 
@@ -316,18 +320,32 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
 
 static void dbloadfini(DBConn *dbconn, void *arg) {
   started = 1;
+  StringBuf b;
+  const char **p;
+  char helpbuf[8192 * 2], allclasses[8192];
 
-  registercontrolhelpcmd("regexgline", NO_OPER, 4, &rg_gline,
-                         "Usage: regexgline <regex> <duration> <type> <reason>\n"
+  sbinit(&b, (char *)allclasses, sizeof(allclasses));
+  for(p=classes;*p;p++) {
+    sbaddstr(&b, (char *)*p);
+    sbaddchar(&b, ' ');
+  }
+  sbterminate(&b);
+
+  snprintf(helpbuf, sizeof(helpbuf),   
+                         "Usage: regexgline <regex> <duration> <type> <class> <reason>\n"
                          "Adds a new regular expression pattern.\n"
                          "Duration is represented as 3d, 3M etc.\n"
+                         "Class is one of the following: %s\n"
                          "Type is an integer which represents the following:\n"
                          "1 - Instant USER@IP GLINE\n"
                          "2 - Instant *@IP GLINE\n"
                          "3 - Instant KILL\n"
                          "4 - Delayed USER@IP GLINE\n"
                          "5 - Delayed *@IP GLINE\n"
-                         "6 - Delayed KILL");
+                         "6 - Delayed KILL",
+                         allclasses);
+
+  registercontrolhelpcmd("regexgline", NO_OPER, 5, &rg_gline, helpbuf);
   registercontrolhelpcmd("regexdelgline", NO_OPER, 1, &rg_delgline, "Usage: regexdelgline <pattern>\nDeletes a regular expression pattern.");
   registercontrolhelpcmd("regexglist", NO_OPER, 1, &rg_glist, "Usage: regexglist <pattern>\nLists regular expression patterns.");
   registercontrolhelpcmd("regexspew", NO_OPER, 1, &rg_spew, "Usage: regexspew <pattern>\nLists users currently on the network which match the given pattern.");
@@ -343,7 +361,7 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
 
 void rg_dbload(void) {
   dbattach("regexgline");
-  dbcreatequery("CREATE TABLE regexgline.glines (id INT NOT NULL PRIMARY KEY, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires INT NOT NULL, type INT NOT NULL DEFAULT 1)", ACCOUNTLEN, RG_REASON_MAX);
+  dbcreatequery("CREATE TABLE regexgline.glines (id INT NOT NULL PRIMARY KEY, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires INT NOT NULL, type INT NOT NULL DEFAULT 1, class TEXT NOT NULL)", ACCOUNTLEN, RG_REASON_MAX);
   dbcreatequery("CREATE TABLE regexgline.clog (host VARCHAR(%d) NOT NULL, account VARCHAR(%d) NOT NULL, event TEXT NOT NULL, arg TEXT NOT NULL, ts TIMESTAMP)", RG_MASKLEN - 1, ACCOUNTLEN);
   dbcreatequery("CREATE TABLE regexgline.glog (glineid INT NOT NULL, ts TIMESTAMP, nickname VARCHAR(%d) NOT NULL, username VARCHAR(%d) NOT NULL, hostname VARCHAR(%d) NOT NULL, realname VARCHAR(%d))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
 
@@ -391,15 +409,30 @@ int rg_gline(void *source, int cargc, char **cargv) {
   int expiry, count, j, hostlen;
   struct rg_struct *rp;
   struct rg_glinelist gll;
+  const char **p;
   
-  char eemask[RG_QUERY_BUF_SIZE], eesetby[RG_QUERY_BUF_SIZE], eereason[RG_QUERY_BUF_SIZE];
-  char hostname[RG_MASKLEN];
+  char eemask[RG_QUERY_BUF_SIZE], eesetby[RG_QUERY_BUF_SIZE], eereason[RG_QUERY_BUF_SIZE], eeclass[RG_QUERY_BUF_SIZE];
+  char hostname[RG_MASKLEN], *class, *reason, *regex, type;
 
-  if(cargc < 4)
+  if(cargc < 5)
     return CMD_USAGE;
-  
-  if ((strlen(cargv[2]) != 1) || ((cargv[2][0] != '1') && (cargv[2][0] != '2') && (cargv[2][0] != '3') && (cargv[2][0] != '4') && (cargv[2][0] != '5') && (cargv[2][0] != '6'))) {
+
+  type = cargv[2][0];
+  if ((strlen(cargv[2]) != 1) || ((type != '1') && (type != '2') && (type != '3') && (type != '4') && (type != '5') && (type != '6'))) {
     controlreply(np, "Invalid type specified!");
+    return CMD_USAGE;
+  }
+
+  regex = cargv[0];
+  class = cargv[3];
+  reason = cargv[4];
+
+  for(p=classes;*p;p++)
+    if(!strcasecmp(class, *p))
+      break;
+
+  if(!*p) {
+    controlreply(np, "Bad class supplied.");
     return CMD_USAGE;
   }
 
@@ -409,13 +442,13 @@ int rg_gline(void *source, int cargc, char **cargv) {
   }
   
   for(rp=rg_list;rp;rp=rp->next) {
-    if (RGMasksEqual(rp->mask->content, cargv[0])) {
-      controlreply(np, "That regexp gline already exists!");
+    if (RGMasksEqual(rp->mask->content, regex)) {
+      controlreply(np, "That regexgline already exists!");
       return CMD_ERROR;
     }
   }
   
-  if (rg_sanitycheck(cargv[0], &count)) {
+  if (rg_sanitycheck(regex, &count)) {
     controlreply(np, "Error in expression.");
     return CMD_ERROR;
   } else if (count < 0) {
@@ -425,13 +458,14 @@ int rg_gline(void *source, int cargc, char **cargv) {
   
   realexpiry = expiry + time(NULL);
   
-  dbescapestring(eemask, cargv[0], strlen(cargv[0]));
+  dbescapestring(eemask, regex, strlen(regex));
   dbescapestring(eesetby, np->nick, strlen(np->nick));
-  dbescapestring(eereason, cargv[3], strlen(cargv[3]));
+  dbescapestring(eeclass, class, strlen(class));
+  dbescapestring(eereason, reason, strlen(reason));
   
   highestid = highestid + 1;
-  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type) VALUES (%d, '%s', '%s', '%s', %d, %s)", highestid, eemask, eesetby, eereason, realexpiry, cargv[2]);
-  rp = rg_newsstruct(highestid, cargv[0], np->nick, cargv[3], "", cargv[2], realexpiry);
+  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type, class) VALUES (%d, '%s', '%s', '%s', %d, %c, '%s')", highestid, eemask, eesetby, eereason, realexpiry, type, eeclass);
+  rp = rg_newsstruct(highestid, regex, np->nick, reason, "", cargv[2], realexpiry, class);
   
   rg_initglinelist(&gll);
 
@@ -450,10 +484,10 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   expirybuf = longtoduration(expiry, 0);
 
-  rg_logevent(np, "regexgline", "%s %d %d %s", cargv[0], expiry, count, cargv[3]);
-  controlreply(np, "Added regexgline: %s (expires in: %s, hit %d user%s): %s", cargv[0], expirybuf, count, (count!=1)?"s":"", cargv[3]);
+  rg_logevent(np, "regexgline", "%s %d %d %s %s", regex, expiry, count, class, reason);
+  controlreply(np, "Added regexgline: %s (class: %s, expires in: %s, hit %d user%s): %s", regex, class, expirybuf, count, (count!=1)?"s":"", reason);
   /* If we are using NO, can we safely assume the user is authed here and use ->authname? */
-  controlwall(NO_OPER, NL_GLINES, "%s!%s@%s/%s added regexgline: %s (expires in: %s, hit %d user%s): %s", np->nick, np->ident, np->host->name->content, np->authname, cargv[0], expirybuf, count, (count!=1)?"s":"", cargv[3]);
+  controlwall(NO_OPER, NL_GLINES, "%s!%s@%s/%s added regexgline: %s (class: %s, expires in: %s, hit %d user%s): %s", np->nick, np->ident, np->host->name->content, np->authname, regex, class, expirybuf, count, (count!=1)?"s":"", reason);
 
   return CMD_OK;
 }
@@ -600,7 +634,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
     }
     
     rg_logevent(np, "regexglist", "%s", cargv[0]);
-    controlreply(np, "Mask                      Expires              Set by          Type Reason");
+    controlreply(np, "Mask                      Expires              Set by          Class    Type Reason");
     for(rp=rg_list;rp;rp=rp->next)
       if(pcre_exec(regex, hint, rp->mask->content, rp->mask->length, 0, 0, NULL, 0) >= 0)
         rg_displaygline(np, rp);
@@ -611,7 +645,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
     
   } else {
     rg_logevent(np, "regexglist", "");
-    controlreply(np, "Mask                      Expires              Set by          Type Reason");
+    controlreply(np, "Mask                      Expires              Set by          Class    Type Reason");
     for(rp=rg_list;rp;rp=rp->next)
       rg_displaygline(np, rp);
   }
@@ -621,7 +655,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
 }
 
 void rg_displaygline(nick *np, struct rg_struct *rp) { /* could be a macro? I'll assume the C compiler inlines it */
-  controlreply(np, "%-25s %-20s %-15s %-4d %s", rp->mask->content, longtoduration(rp->expires - time(NULL), 0), rp->setby->content, rp->type, rp->reason->content);
+  controlreply(np, "%-25s %-20s %-15s %-8s %-4d %s", rp->mask->content, longtoduration(rp->expires - time(NULL), 0), rp->setby->content, rp->class, rp->type, rp->reason->content);
 }
 
 int rg_spew(void *source, int cargc, char **cargv) {
@@ -746,14 +780,9 @@ struct rg_struct *rg_newstruct(time_t expires) {
   rp = (struct rg_struct*)malloc(sizeof(struct rg_struct));
   if(rp) {
     struct rg_struct *tp, *lp;
-    rp->id = 0;
-    rp->mask = NULL;
-    rp->setby = NULL;
-    rp->reason = NULL;
+
+    memset(rp, 0, sizeof(rp));
     rp->expires = expires;
-    rp->type = 0;
-    rp->regex = NULL;
-    rp->hint = NULL;
 
     for(lp=NULL,tp=rg_list;tp;lp=tp,tp=tp->next) {
       if (expires <= tp->expires) { /* <= possible, slight speed increase */
@@ -779,10 +808,12 @@ struct rg_struct *rg_newstruct(time_t expires) {
   return rp;
 }
 
-struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires) {
+struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class) {
   struct rg_struct *newrow, *lp, *cp;
   time_t rexpires;
   char glineiddata[1024];
+  const char **p;
+
   if (iexpires == 0) {
     int qexpires;
     if(!protectedatoi(expires, &qexpires))
@@ -798,6 +829,16 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
     const char *error;
     int erroroffset;
     
+    for(p=classes;*p;p++) {
+      if(!strcasecmp(class, *p)) {
+        newrow->class = *p;
+        break;
+      }
+    }
+
+    if(!*p)
+      newrow->class = "unknown";
+
     if(!(newrow->regex = pcre_compile(mask, RG_PCREFLAGS, &error, &erroroffset, NULL))) {
       Error("regexgline", ERR_WARNING, "Error compiling expression %s at offset %d: %s", mask, erroroffset, error);
       goto dispose;
@@ -811,7 +852,7 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
     }
     
     newrow->id = id;
-    
+
     newrow->mask = getsstring(mask, RG_REGEXGLINE_MAX);
     if(!newrow->mask) {
       Error("regexgline", ERR_WARNING, "Error allocating memory for mask!");
@@ -913,15 +954,15 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   
   if (rp->type == INSTANT_IDENT_GLINE) {
     if (IsAccount(np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched user@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched user@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
     } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched user@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched user@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
     }
   } else if(rp->type == INSTANT_HOST_GLINE) {
     if (IsAccount(np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched *@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched *@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
     } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched *@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, usercount, (usercount!=1)?"s":"");
+      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched *@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
     }
   } else {
     return 0;
