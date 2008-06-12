@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <mysql/mysql.h>
 #include <errno.h>
 #include <pcre.h>
 #include <string.h>
@@ -36,10 +35,6 @@
 #define RGBuildHostname(buf, np)  snprintf(buf, sizeof(buf), "%s!%s@%s\r%s", np->nick, np->ident, np->host->name->content, np->realname->name->content);
 #define RGMasksEqual(a, b)        !strcasecmp(a, b)
 
-typedef MYSQL_RES *rg_sqlresult;
-typedef MYSQL_ROW rg_sqlrow;
-typedef MYSQL rg_sqlconnection;
-
 typedef struct rg_struct {
   int              id;        /* database id */
   sstring          *mask;     /* gline mask */
@@ -53,11 +48,9 @@ typedef struct rg_struct {
   struct rg_struct *next;     /* ... pointer to next item */
 } rg_struct;
 
-rg_sqlconnection rg_sql;
 struct rg_struct *rg_list = NULL;
 
 int rg_max_casualties, rg_max_spew, rg_expiry_time, rg_max_per_gline;
-int rg_sqlconnected = 0;
 void *rg_schedule = NULL;
 
 void rg_nick(int hooknum, void *arg);
@@ -72,19 +65,11 @@ int rg_spew(void *source, int cargc, char **cargv);
 int rg_sanitycheck(char *mask, int *count);
 
 int rg_dbconnect(void);
-int rg_dbload(void);
-
-int rg_sqlconnect(char *dbhost, char *dbuser, char *dbpass, char *db, unsigned int port);
-void rg_sqldisconnect(void);
-void rg_sqlescape_string(char *dest, char *source, size_t length);
-int rg_sqlquery(char *format, ...);
-rg_sqlresult rg_sqlstoreresult(void);
-rg_sqlrow rg_sqlgetrow(rg_sqlresult res);
-void rg_sqlfree(rg_sqlresult res);
+void rg_dbload(void);
 
 void rg_freestruct(struct rg_struct *rp);
 struct rg_struct *rg_newstruct(time_t expires);
-struct rg_struct *rg_newsstruct(char *id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, int iid);
+struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires);
 
 void rg_displaygline(nick *np, struct rg_struct *rp);
 
