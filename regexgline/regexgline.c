@@ -12,6 +12,8 @@
 #include "../lib/version.h"
 #include "../dbapi/dbapi.h"
 #include "../lib/stringbuf.h"
+#include "../core/hooks.h"
+#include "../server/server.h"
 
 #define INSTANT_IDENT_GLINE  1
 #define INSTANT_HOST_GLINE   2
@@ -175,6 +177,13 @@ void rg_setdelay(nick *np, rg_struct *reason, short punish) {
   delay->sch = scheduleoneshot(time(NULL) + (RG_MINIMUM_DELAY_TIME + (rand() % RG_MAXIMUM_RAND_TIME)), rg_dodelay, delay);
 }
 
+static void rg_shadowserver(nick *np, struct rg_struct *reason, int type) {
+  char buf[1024];
+  snprintf(buf, sizeof(buf), "regex-ban %lu %s!%s@%s %s %s", time(NULL), np->nick, np->ident, np->host->name->content, reason->mask->content, serverlist[homeserver(np->numeric)].name->content);
+
+  triggerhook(HOOK_SHADOW_SERVER, (void *)buf);
+}
+
 void rg_deletedelay(rg_delay *delay) {
   rg_delay *temp, *prev;
   prev = NULL;
@@ -233,6 +242,8 @@ void rg_dodelay(void *arg) {
     } else {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed kill regex %08lx (class: %s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class);
     }
+
+    rg_shadowserver(delay->np, delay->reason, DELAYED_KILL);
     killuser(NULL, delay->np, "%s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
     return;
   }
@@ -253,6 +264,7 @@ void rg_dodelay(void *arg) {
     return;
   }
   
+  rg_shadowserver(delay->np, delay->reason, delay->reason->type);
   irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
@@ -266,15 +278,16 @@ void rg_flushglines(struct rg_glinelist *gll) {
   struct rg_glinenode *nn, *pn;
   for(nn=gll->start;nn;nn=pn) {
     pn = nn->next;
-    if(nn->punish == 3) {
+    if(nn->punish == INSTANT_KILL) {
       if ( IsAccount(nn->np) ) {
         controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->np->authname, nn->reason->glineid, nn->reason->class);
       } else {
         controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->reason->glineid, nn->reason->class);
       }
-      
+
+      rg_shadowserver(nn->np, nn->reason, nn->punish);
       killuser(NULL, nn->np, "%s (ID: %08lx)", nn->reason->reason->content, nn->reason->glineid);
-    } else if ((nn->punish == 4) || (nn->punish == 5) || (nn->punish == 6)) {
+    } else if ((nn->punish == DELAYED_IDENT_GLINE) || (nn->punish == DELAYED_HOST_GLINE) || (nn->punish == DELAYED_KILL)) {
       rg_setdelay(nn->np, nn->reason, nn->punish);
     }
     free(nn);
@@ -968,6 +981,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     return 0;
   }
   
+  rg_shadowserver(np, rp, rp->type);
   irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
