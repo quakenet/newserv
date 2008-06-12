@@ -12,6 +12,13 @@
 #include "../lib/version.h"
 #include "../dbapi/dbapi.h"
 
+#define INSTANT_IDENT_GLINE  1
+#define INSTANT_HOST_GLINE   2
+#define INSTANT_KILL         3
+#define DELAYED_IDENT_GLINE  4
+#define DELAYED_HOST_GLINE   5
+#define DELAYED_KILL         6
+
 MODULE_VERSION("");
 
 typedef struct rg_glinenode {
@@ -202,12 +209,12 @@ void rg_dodelay(void *arg) {
     return;
   }
   
-  if (delay->reason->type == 5) {
+  if (delay->reason->type == DELAYED_HOST_GLINE) {
     usercount = delay->np->host->clonecount;
     snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(delay->np->p_ipaddr));
   }
   
-  if((delay->reason->type == 4) || (usercount > rg_max_per_gline)) {
+  if((delay->reason->type == DELAYED_IDENT_GLINE) || (usercount > rg_max_per_gline)) {
     nick *tnp;
 
     for(usercount=0,tnp=delay->np->host->nicks;tnp;tnp=tnp->nextbyhost)
@@ -217,7 +224,7 @@ void rg_dodelay(void *arg) {
     snprintf(hostname, sizeof(hostname), "%s@%s", delay->np->ident, IPtostr(delay->np->p_ipaddr));
   }
   
-  if ((delay->reason->type == 6) || (usercount > rg_max_per_gline)) {
+  if ((delay->reason->type == DELAYED_KILL) || (usercount > rg_max_per_gline)) {
     if (IsAccount(delay->np)) {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed kill regex %08lx", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid);
     } else {
@@ -227,21 +234,20 @@ void rg_dodelay(void *arg) {
     return;
   }
   
-  if ((delay->reason->type <= 3) || (delay->reason->type >= 6))
-    return;
-  
-  if (delay->reason->type == 4) {
+  if (delay->reason->type == DELAYED_IDENT_GLINE) {
     if (IsAccount(delay->np)) {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed user@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
     } else {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed user@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
     }
-  } else {
+  } else if (delay->reason->type == DELAYED_HOST_GLINE) {
     if (IsAccount(delay->np)) {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed *@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
     } else {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed *@host gline regex %08lx (hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, usercount, (usercount!=1)?"s":"");
     }
+  } else {
+    return;
   }
   
   irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
@@ -862,15 +868,16 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
 int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) { /* PPA: if multiple users match the same user@host or *@host it'll send multiple glines?! */
   char hostname[RG_MASKLEN];
   int usercount = 0;
+  int validdelay;
 
   rg_loggline(rp, np);
 
-  if (rp->type == 2) {
+  if (rp->type == INSTANT_HOST_GLINE) {
     usercount = np->host->clonecount;
     snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(np->p_ipaddr));
   }
   
-  if ((rp->type == 1) || (usercount > rg_max_per_gline)) {
+  if ((rp->type == INSTANT_IDENT_GLINE) || (usercount > rg_max_per_gline)) {
     nick *tnp;
 
     for(usercount=0,tnp=np->host->nicks;tnp;tnp=tnp->nextbyhost)
@@ -880,7 +887,8 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     snprintf(hostname, sizeof(hostname), "%s@%s", np->ident, IPtostr(np->p_ipaddr));
   }
 
-  if ((rp->type >= 3) || (usercount > rg_max_per_gline)) {
+  validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
+  if (validdelay || (usercount > rg_max_per_gline)) {
     struct rg_glinenode *nn = (struct rg_glinenode *)malloc(sizeof(struct rg_glinenode));
     if(nn) {
       nn->next = NULL;
@@ -891,11 +899,11 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
         gll->start = nn;
         gll->end = nn;
       }
+
       nn->np = np;
       nn->reason = rp;
-      
-      if (rp->type <= 3) {
-        nn->punish = 3;
+      if(!validdelay) {
+        nn->punish = INSTANT_KILL;
       } else {
         nn->punish = rp->type;
       }
@@ -903,21 +911,20 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     return usercount;
   }
   
-  if ((rp->type <= 0) || (rp->type >= 3))
-    return 0;
-  
-  if (rp->type == 1) {
+  if (rp->type == INSTANT_IDENT_GLINE) {
     if (IsAccount(np)) {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched user@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, usercount, (usercount!=1)?"s":"");
     } else {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched user@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, usercount, (usercount!=1)?"s":"");
     }
-  } else {
+  } else if(rp->type == INSTANT_HOST_GLINE) {
     if (IsAccount(np)) {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched *@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, usercount, (usercount!=1)?"s":"");
     } else {
       controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched *@host gline regex %08lx (hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, usercount, (usercount!=1)?"s":"");
     }
+  } else {
+    return 0;
   }
   
   irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);

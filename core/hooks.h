@@ -66,6 +66,8 @@
 #define HOOK_CONTROL_WHOISREQUEST  601 /* Argument is nick* */
 #define HOOK_CONTROL_WHOISREPLY    602 /* Argument is char* */
 
+#define HOOK_SHADOW_SERVER         701 /* Argument is char* */
+
 typedef void (*HookCallback)(int, void *);
 
 extern unsigned int hookqueuelength;
