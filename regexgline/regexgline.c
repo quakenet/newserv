@@ -310,17 +310,28 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
 
 static void dbloadfini(DBConn *dbconn, void *arg) {
   started = 1;
-  registercontrolhelpcmd("regexgline", NO_OPER, 4, &rg_gline, "Usage: regexgline <text>\nAdds a new regular expression pattern.");
+
+  registercontrolhelpcmd("regexgline", NO_OPER, 4, &rg_gline,
+                         "Usage: regexgline <regex> <duration> <type> <reason>\n"
+                         "Adds a new regular expression pattern.\n"
+                         "Duration is represented as 3d, 3M etc.\n"
+                         "Type is an integer which represents the following:\n"
+                         "1 - Instant USER@IP GLINE\n"
+                         "2 - Instant *@IP GLINE\n"
+                         "3 - Instant KILL\n"
+                         "4 - Delayed USER@IP GLINE\n"
+                         "5 - Delayed *@IP GLINE\n"
+                         "6 - Delayed KILL");
   registercontrolhelpcmd("regexdelgline", NO_OPER, 1, &rg_delgline, "Usage: regexdelgline <pattern>\nDeletes a regular expression pattern.");
   registercontrolhelpcmd("regexglist", NO_OPER, 1, &rg_glist, "Usage: regexglist <pattern>\nLists regular expression patterns.");
   registercontrolhelpcmd("regexspew", NO_OPER, 1, &rg_spew, "Usage: regexspew <pattern>\nLists users currently on the network which match the given pattern.");
   registercontrolhelpcmd("regexidlookup", NO_OPER, 1, &rg_idlist, "Usage: regexidlookup <id>\nFinds a regular expression pattern by it's ID number.");
-   
+
   registerhook(HOOK_NICK_NEWNICK, &rg_nick);
   registerhook(HOOK_NICK_RENAME, &rg_nick);
   registerhook(HOOK_NICK_LOSTNICK, &rg_lostnick);
   rg_startup();
-    
+
   rg_schedule = schedulerecurring(time(NULL) + 1, 0, 1, rg_checkexpiry, NULL);
 }
 
