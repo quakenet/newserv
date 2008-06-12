@@ -327,10 +327,10 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
 void rg_dbload(void) {
   dbattach("regexgline");
   dbcreatequery("CREATE TABLE regexgline.glines (id INT NOT NULL PRIMARY KEY, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires INT NOT NULL, type INT NOT NULL DEFAULT 1)", ACCOUNTLEN, RG_REASON_MAX);
-  dbcreatequery("CREATE TABLE regexgline.glog (host VARCHAR(%d) NOT NULL, account VARCHAR(%d) NOT NULL, event TEXT NOT NULL, arg TEXT NOT NULL, ts TIMESTAMP)", RG_MASKLEN - 1, ACCOUNTLEN);
-  dbcreatequery("CREATE TABLE regexgline.clog (glineid INT NOT NULL, ts TIMESTAMP, nickname VARCHAR(%d) NOT NULL, username VARCHAR(%d) NOT NULL, hostname VARCHAR(%d) NOT NULL, realname VARCHAR(%d))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
+  dbcreatequery("CREATE TABLE regexgline.clog (host VARCHAR(%d) NOT NULL, account VARCHAR(%d) NOT NULL, event TEXT NOT NULL, arg TEXT NOT NULL, ts TIMESTAMP)", RG_MASKLEN - 1, ACCOUNTLEN);
+  dbcreatequery("CREATE TABLE regexgline.glog (glineid INT NOT NULL, ts TIMESTAMP, nickname VARCHAR(%d) NOT NULL, username VARCHAR(%d) NOT NULL, hostname VARCHAR(%d) NOT NULL, realname VARCHAR(%d))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
 
-  dbloadtable("regexglines", NULL, dbloaddata, dbloadfini);
+  dbloadtable("regexgline.glines", NULL, dbloaddata, dbloadfini);
 }
 
 void rg_nick(int hooknum, void *arg) {
@@ -941,9 +941,6 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
   char buf[513], account[ACCOUNTLEN + 1], mask[RG_MASKLEN];
   int masklen;
 
-  /* @paul: disabled */
-
-  return;
   va_list va;
     
   va_start(va, details);
@@ -965,10 +962,10 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
   
   dbescapestring(eeevent, event, strlen(event));
   dbescapestring(eedetails, buf, strlen(buf));
-  dbescapestring(eeaccount, event, strlen(account));
+  dbescapestring(eeaccount, account, strlen(account));
   dbescapestring(eemask, mask, masklen);
   
-  dbquery("INSERT INTO regexgline.clog (host, account, event, arg) VALUES ('%s', '%s', '%s', '%s')", eemask, eeaccount, eeevent, eedetails);
+  dbquery("INSERT INTO regexgline.clog (host, account, event, arg, ts) VALUES ('%s', '%s', '%s', '%s', NOW())", eemask, eeaccount, eeevent, eedetails);
 }
 
 void rg_loggline(struct rg_struct *rg, nick *np) {
@@ -982,5 +979,5 @@ void rg_loggline(struct rg_struct *rg, nick *np) {
   dbescapestring(eehost, np->host->name->content, strlen(np->host->name->content));
   dbescapestring(eereal, np->realname->name->content, strlen(np->realname->name->content));
 
-  dbquery("INSERT INTO regexgline.glog (glineid, nickname, username, hostname, realname) VALUES (%d, '%s', '%s', '%s', '%s')", rg->id, eenick, eeuser, eehost, eereal);
+  dbquery("INSERT INTO regexgline.glog (glineid, nickname, username, hostname, realname, ts) VALUES (%d, '%s', '%s', '%s', '%s', NOW())", rg->id, eenick, eeuser, eehost, eereal);
 }
