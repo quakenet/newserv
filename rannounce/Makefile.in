@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: rannounce.so
-
-rannounce.so: rannounce.o

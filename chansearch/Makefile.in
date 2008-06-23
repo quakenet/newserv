@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: chansearch.so
-
-chansearch.so: chansearch.o
