@@ -1,7 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
-CFLAGS+=$(INCMYSQL) $(INCPCRE)
-LDFLAGS+=$(LIBMYSQL) $(LIBPCRE)
+CFLAGS+=$(INCDBAPI) $(INCPCRE)
+LDFLAGS+=$(LIBDBAPI) $(LIBPCRE)
 
 .PHONY: all
 all: regexgline.so

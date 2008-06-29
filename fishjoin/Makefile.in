@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: fishjoin.so
-
-fishjoin.so: fishjoin.o
