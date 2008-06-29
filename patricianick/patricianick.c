@@ -17,7 +17,7 @@ patricianick_t *freepatricianicks;
 int pnode_ext;
 int pnick_ext;
 
-int pn_cmd_dumpnodenicks(void *source, int cargc, char **cargv);
+int pn_cmd_nodeuserlist(void *source, int cargc, char **cargv);
 
 void _init() {
   nick *np, *nnp;
@@ -44,7 +44,7 @@ void _init() {
   registerhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
 
-  registercontrolcmd("dumpnodenicks", NO_DEVELOPER, 1, &pn_cmd_dumpnodenicks);
+  registercontrolcmd("nodeuserlist", NO_OPER, 1, &pn_cmd_nodeuserlist);
 }
 
 void _fini() {
@@ -61,7 +61,7 @@ void _fini() {
   deregisterhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   deregisterhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
 
-  deregistercontrolcmd("dumpnodenicks", &pn_cmd_dumpnodenicks);
+  deregistercontrolcmd("nodeuserlist", &pn_cmd_nodeuserlist);
 }
 
 patricianick_t *getpatricianick() {
@@ -141,7 +141,7 @@ void pn_hook_lostuser(int hook, void *arg) {
   deletenickfromnode(np->ipnode, np);
 }
 
-int pn_cmd_dumpnodenicks(void *source, int cargc, char **cargv) {
+int pn_cmd_nodeuserlist(void *source, int cargc, char **cargv) {
   nick *np=(nick *)source;
   struct irc_in_addr sin;
   unsigned char bits;
@@ -151,7 +151,7 @@ int pn_cmd_dumpnodenicks(void *source, int cargc, char **cargv) {
   nick *npp;
 
   if (cargc < 1) {
-    controlreply(np, "Syntax: dumpnodenicks <ipv4|ipv6|cidr4|cidr6>");
+    controlreply(np, "Syntax: nodeuserlist <ipv4|ipv6|cidr4|cidr6>");
     return CMD_OK;
   }
 

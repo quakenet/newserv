@@ -9,7 +9,6 @@
 
 typedef struct patricianick_s {
   nick *identhash[PATRICIANICK_HASHSIZE];
-  unsigned int marker; /* todo */
 } patricianick_t;
 
 extern int pnode_ext;
