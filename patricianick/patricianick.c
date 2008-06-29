@@ -44,7 +44,7 @@ void _init() {
   registerhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
 
-  registercontrolcmd("nodeuserlist", NO_OPER, 1, &pn_cmd_nodeuserlist);
+  registercontrolhelpcmd("nodeuserlist", NO_OPER, 1, &pn_cmd_nodeuserlist, "Usage: nodeuserlist <ipv4|ipv6|cidr4|cidr6>\nLists all users on a given IP address or CIDR range.");
 }
 
 void _fini() {
@@ -151,13 +151,12 @@ int pn_cmd_nodeuserlist(void *source, int cargc, char **cargv) {
   nick *npp;
 
   if (cargc < 1) {
-    controlreply(np, "Syntax: nodeuserlist <ipv4|ipv6|cidr4|cidr6>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
     controlreply(np, "Invalid mask.");
-    return CMD_OK;
+    return CMD_ERROR;
   }
 
   head = refnode(iptree, &sin, bits);
