@@ -1,5 +1,0 @@
-@include@ @includel@../build.mk@includel@
-.PHONY: all
-all: nodecount.so
-
-nodecount.so: nodecount.o

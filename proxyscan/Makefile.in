@@ -6,4 +6,4 @@ LDFLAGS+=$(LIBDBAPI)
 .PHONY: all
 all: proxyscan.so  
 
-proxyscan.so: proxyscan.o proxyscanalloc.o proxyscanconnect.o proxyscancache.o proxyscanqueue.o proxyscanhandlers.o proxyscandb.o
+proxyscan.so: proxyscan.o proxyscanext.o proxyscanalloc.o proxyscanconnect.o proxyscancache.o proxyscanqueue.o proxyscanhandlers.o proxyscandb.o
