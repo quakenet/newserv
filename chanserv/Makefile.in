@@ -4,7 +4,7 @@
 CSDIRS=database chancmds usercmds authcmds authtracker newsearch
 
 .PHONY: all dirs $(CSDIRS) clean
-all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_chansearch.so chanserv_relay.so dirs
+all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_relay.so dirs
 
 dirs: $(CSDIRS)
 	ln -sf */*.so .
@@ -24,8 +24,6 @@ chanserv.so: chanservdb_updates.o chanserv.o chanservuser.o chanservnetevents.o 
 chanserv_protect.so: chanserv_protect.o
 
 chanserv_grep.so: chanserv_grep.o
-
-chanserv_chansearch.so: chanserv_chansearch.o
 
 chanserv_relay.so: chanserv_relay.o
 
