@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ALLOCUNIT	1000
+#define ALLOCUNIT	100
 
 patricianick_t *freepatricianicks;
 int pnode_ext;
@@ -24,13 +24,13 @@ void _init() {
   int i;
 
   pnode_ext = registernodeext("patricianick");
-  if ( pnode_ext == -1 ) {
+  if (pnode_ext == -1) {
     Error("patricianick", ERR_FATAL, "Could not register a required node extension");
     return;
   }
 
   pnick_ext = registernickext("patricianick");
-  if ( pnick_ext == -1) { 
+  if (pnick_ext == -1) {
     Error("patricianick", ERR_FATAL, "Could not register a required nick extension");
     return;
   }
@@ -49,7 +49,7 @@ void _init() {
 
 void _fini() {
   nsfreeall(POOL_PATRICIANICK);
- 
+
   if (pnode_ext != -1) {
     releasenodeext(pnode_ext);
   }
@@ -71,34 +71,38 @@ patricianick_t *getpatricianick() {
   if (freepatricianicks==NULL) {
     freepatricianicks=(patricianick_t *)nsmalloc(POOL_PATRICIANICK, ALLOCUNIT*sizeof(patricianick_t));
     for(i=0;i<ALLOCUNIT-1;i++) {
-      freepatricianicks[i].np=(nick *)&(freepatricianicks[i+1]);
+      freepatricianicks[i].identhash[0]=(nick *)&(freepatricianicks[i+1]);
     }
-    freepatricianicks[ALLOCUNIT-1].np=NULL;
+    freepatricianicks[ALLOCUNIT-1].identhash[0]=NULL;
   }
 
   pnp=freepatricianicks;
-  freepatricianicks=(patricianick_t *)pnp->np;
+  freepatricianicks=(patricianick_t *)pnp->identhash[0];
 
-  pnp->marker = 0;
-  pnp->np = NULL;
+  memset(pnp, 0, sizeof(patricianick_t));
   return pnp;
 }
 
 void addnicktonode(patricia_node_t *node, nick *np) {
-  if ( !(node->exts[pnode_ext]) ) {
+  unsigned long hash;
+
+  if (!(node->exts[pnode_ext])) {
     node->exts[pnode_ext] = getpatricianick();
   }
- 
-  np->exts[pnick_ext] = ((patricianick_t *)node->exts[pnode_ext])->np;
-  ((patricianick_t *)node->exts[pnode_ext])->np = np;
+
+  hash = pn_getidenthash(np->ident);
+  np->exts[pnick_ext] = ((patricianick_t *)node->exts[pnode_ext])->identhash[hash];
+  ((patricianick_t *)node->exts[pnode_ext])->identhash[hash] = np;
 }
 
 void deletenickfromnode(patricia_node_t *node, nick *np) {
   nick **tnp;
-  int found =0; 
+  int found, i;
 
-  for ( tnp = &(((patricianick_t *)node->exts[pnode_ext])->np); *tnp; tnp = (nick **)(&((*tnp)->exts[pnick_ext])) ) {
-    if ( *tnp == np ) { 
+  found = 0;
+
+  for (tnp = &(((patricianick_t *)node->exts[pnode_ext])->identhash[pn_getidenthash(np->ident)]); *tnp; tnp = (nick **)(&((*tnp)->exts[pnick_ext]))) {
+    if (*tnp == np) {
       *tnp = np->exts[pnick_ext];
       found = 1;
       break;
@@ -106,18 +110,22 @@ void deletenickfromnode(patricia_node_t *node, nick *np) {
   }
 
   if (!found) {
-    return; /* err */
+    Error("patricianick", ERR_ERROR, "Could not remove %s!%s from %s", np->nick, np->ident, IPtostr(node->prefix->sin));
+    return;
   }
 
-  if (!(((patricianick_t *)node->exts[pnode_ext])->np)) {
-    freepatricianick(node->exts[pnode_ext]);
-    node->exts[pnode_ext]= NULL;
+  for (i = 0; i < PATRICIANICK_HASHSIZE; i++) {
+    if (((patricianick_t *)node->exts[pnode_ext])->identhash[i]) {
+      return;
+    }
   }
 
+  freepatricianick(node->exts[pnode_ext]);
+  node->exts[pnode_ext]= NULL;
 }
 
 void freepatricianick(patricianick_t *pnp) {
-  pnp->np=(nick *)freepatricianicks;
+  pnp->identhash[0]=(nick *)freepatricianicks;
   freepatricianicks=pnp;
 }
 
@@ -137,10 +145,10 @@ int pn_cmd_dumpnodenicks(void *source, int cargc, char **cargv) {
   nick *np=(nick *)source;
   struct irc_in_addr sin;
   unsigned char bits;
+  unsigned int count, i;
   patricia_node_t *head, *node;
   patricianick_t *pnp;
   nick *npp;
-  int limit = 0;
 
   if (cargc < 1) {
     controlreply(np, "Syntax: dumpnodenicks <ipv4|ipv6|cidr4|cidr6>");
@@ -153,26 +161,31 @@ int pn_cmd_dumpnodenicks(void *source, int cargc, char **cargv) {
   }
 
   head = refnode(iptree, &sin, bits);
+  count = 0;
 
   PATRICIA_WALK(head, node)
   {
     pnp = node->exts[pnode_ext];
-    if (pnp ) {
-      npp = pnp->np;
-      while(npp) {
-        limit++;
+    if (pnp) {
+      if (count < PATRICIANICK_MAXRESULTS) {
+        for (i = 0; i < PATRICIANICK_HASHSIZE; i++) {
+          for (npp = pnp->identhash[i]; npp; npp=npp->exts[pnick_ext]) {
+            controlreply(np, "%s!%s@%s%s%s (%s)", npp->nick, npp->ident, npp->host->name->content, IsAccount(npp) ? "/" : "", npp->authname, IPtostr(node->prefix->sin));
+          }
+        }
 
-        if ( limit < PATRICIANICK_MAXRESULTS )
-          controlreply(np, "%s!%s@%s%s%s (%s)", npp->nick, npp->ident, npp->host->name->content, IsAccount(npp) ? "/" : "", npp->authname, IPtostr(node->prefix->sin));
-        else if ( limit == PATRICIANICK_MAXRESULTS )
-          controlreply(np, "Too many Results, truncated..");
-        npp=npp->exts[pnick_ext];
-      }    
+        count += node->usercount;
+
+        if (count >= PATRICIANICK_MAXRESULTS) {
+          controlreply(np, "Too many results, output truncated");
+        }
+      } else {
+        count += node->usercount;
+      }
     }
   }
   PATRICIA_WALK_END;
-  controlreply(np, "Nick Count: %d", limit);
 
+  controlreply(np, "Total users on %s: %d", cargv[0], count);
   return CMD_OK;
 }
-

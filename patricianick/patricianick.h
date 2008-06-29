@@ -3,11 +3,12 @@
 
 #include "../nick/nick.h"
 
-#define  PNHASHSIZE              1000
-#define  PATRICIANICK_MAXRESULTS 1000
+#define PATRICIANICK_HASHSIZE   5
+#define pn_getidenthash(x)      ((crc32i(x)) % PATRICIANICK_HASHSIZE)
+#define PATRICIANICK_MAXRESULTS 1000
 
-typedef struct patricianick_s {  
-  nick *np;
+typedef struct patricianick_s {
+  nick *identhash[PATRICIANICK_HASHSIZE];
   unsigned int marker; /* todo */
 } patricianick_t;
 
@@ -18,6 +19,6 @@ void pn_hook_newuser(int hook, void *arg);
 void pn_hook_lostuser(int hook, void *arg);
 
 void addnicktonode(patricia_node_t *node, nick *nick);
-void deletenickfromnode(patricia_node_t *node, nick *nick) ;
+void deletenickfromnode(patricia_node_t *node, nick *nick);
 void freepatricianick(patricianick_t *pnp);
 #endif
