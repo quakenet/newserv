@@ -184,6 +184,7 @@ int pn_cmd_nodeuserlist(void *source, int cargc, char **cargv) {
     }
   }
   PATRICIA_WALK_END;
+  derefnode(iptree, head);
 
   controlreply(np, "Total users on %s: %d", cargv[0], count);
   return CMD_OK;
