@@ -1,0 +1,6 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: patricianick.so
+
+patricianick.so: patricianick.o

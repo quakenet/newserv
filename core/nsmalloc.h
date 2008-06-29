@@ -60,6 +60,7 @@ beginpools() {
   pool(SQLITE),
   pool(PQSQL),
   pool(PATRICIA),
+  pool(PATRICIANICK),
 } endpools()
 
 #undef pool
