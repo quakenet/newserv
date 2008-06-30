@@ -1,6 +1,8 @@
 #ifndef __AUTHEXT_H
 #define __AUTHEXT_H
 
+#include "../lib/flags.h"
+
 #define MAXAUTHNAMEEXTS 5
 
 struct nick;
@@ -12,6 +14,7 @@ typedef struct authname {
   struct nick *nicks;
   struct authname *next, *nextbyname;
   unsigned int namebucket;
+  flag_t flags;
   /* These are extensions only used by other modules */
   void *exts[MAXAUTHNAMEEXTS];
 } authname;

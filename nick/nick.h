@@ -123,7 +123,6 @@ typedef struct nick {
   authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
-  flag_t accountflags;
   patricia_node_t *ipnode;
   unsigned int marker;
   struct nick *next;

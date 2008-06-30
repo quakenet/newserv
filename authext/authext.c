@@ -147,6 +147,7 @@ authname *findorcreateauthname(unsigned long userid, const char *name) {
   anp->userid=userid;
   anp->usercount=0;
   anp->marker=0;
+  anp->flags=0;
   anp->nicks=NULL;
   memset(anp->exts, 0, MAXAUTHNAMEEXTS * sizeof(void *));
   anp->next=(struct authname *)authnametable[thehash];

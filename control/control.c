@@ -202,10 +202,11 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     controlreply((nick *)sender,"Account   : %s",target->authname);
     if (target->accountts) 
       controlreply((nick *)sender,"AccountTS : %ld",target->accountts);
-    if (target->auth) 
+    if (target->auth)  {
       controlreply((nick *)sender,"UserID    : %ld",target->auth->userid);
-    if (target->accountflags) 
-      controlreply((nick *)sender,"AccFlags  : %s",printflags(target->accountflags,accountflags));
+      if (target->auth->flags) 
+        controlreply((nick *)sender,"AccFlags  : %s",printflags(target->auth->flags,accountflags));
+    }
   }
 
   hooknick=(nick *)sender;
