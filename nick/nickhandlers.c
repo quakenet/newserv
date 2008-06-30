@@ -150,7 +150,6 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
     np->authname[0]='\0';
     np->auth=NULL;
-    np->accountflags=0;
     if(cargc>=9) {
       setflags(&(np->umodes),UMODE_ALL,cargv[5],umodeflags,REJECT_NONE);
       if (IsAccount(np)) {
@@ -166,9 +165,9 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
               np->auth->usercount++;
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
+              if(accountflags)
+                np->auth->flags=strtoul(accountflags + 1,NULL,10);
             }
-            if(accountflags)
-              np->accountflags=strtoul(accountflags + 1,NULL,10);
           } else {
             np->auth=NULL;
           }
@@ -399,9 +398,9 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
         target->auth->usercount++;
         target->nextbyauthname = target->auth->nicks;
         target->auth->nicks = target;
+        if (cargc>=5)
+          target->auth->flags=strtoul(cargv[4],NULL,10);
       }
-      if (cargc>=5)
-        target->accountflags=strtoul(cargv[4],NULL,10);
     } else {
       target->auth=NULL;
     }
@@ -465,3 +464,31 @@ int handlestatsmsg(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
+
+int handleprivmsg(void *source, int cargc, char **cargv) {
+  nick *sender;
+  char *message;
+  void *args[3];
+
+  if (cargc<2)
+    return CMD_OK;
+
+  if (cargv[0][0]!='$')
+    return CMD_OK;
+
+  sender=getnickbynumericstr((char *)source);
+
+  if (!match2strings(cargv[0] + 1,myserver->content))
+    return CMD_OK;
+
+  message=cargv[0];
+
+  args[0]=sender;
+  args[1]=cargv[0];
+  args[2]=cargv[1];
+
+  triggerhook(HOOK_NICK_MASKPRIVMSG, (void *)args);
+
+  return CMD_OK;
+}
+

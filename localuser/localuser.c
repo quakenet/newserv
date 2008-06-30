@@ -100,7 +100,6 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
   newuser->nextbyrealname=newuser->realname->nicks;
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
-  newuser->accountflags=accountflags;
   
   memset(&ipaddress, 0, sizeof(ipaddress));
   ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
@@ -125,6 +124,7 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
       newuser->auth->usercount++;
       newuser->nextbyauthname=newuser->auth->nicks;
       newuser->auth->nicks=newuser;
+      newuser->auth->flags=accountflags;
     } else {
       newuser->auth=NULL;
     }
@@ -265,16 +265,18 @@ void sendnickmsg(nick *np) {
   numericbuf[5]='\0';
   
   if (IsAccount(np)) {
-    if(np->accountflags) {
-      irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu:" FLAG_T_SPECIFIER " %s %s :%s",
-        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-        printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth?np->auth->userid:0,np->accountflags,
-        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
-    } else if (np->auth) {
+    if (np->auth) {
+      if(np->auth->flags) {
+        irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu:" FLAG_T_SPECIFIER " %s %s :%s",
+          mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+          printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,np->auth->flags,
+          iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+      } else {
         irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu %s %s :%s",
           mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
           printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,
           iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+      }
     } else if (np->accountts) {
       irc_send("%s N %s 1 %ld %s %s %s %s:%ld %s %s :%s",
         mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
@@ -563,22 +565,24 @@ void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long
   strncpy(np->authname, accname, ACCOUNTLEN);
   np->authname[ACCOUNTLEN]='\0';
   np->accountts=authTS?authTS:getnettime();
-  np->accountflags=accountflags;
 
   if (accid) {
     np->auth=findorcreateauthname(accid, accname);
     np->auth->usercount++;
     np->nextbyauthname=np->auth->nicks;
     np->auth->nicks=np;
+    np->auth->flags=accountflags;
   } else {
     np->auth=NULL;
   }
 
   if (connected) {
-    if (np->accountflags) {
-      irc_send("%s AC %s %s %ld %lu %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth?np->auth->userid:0, np->accountflags);
-    } else if (np->auth) {
-      irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
+    if (np->auth) {
+      if (np->auth->flags) {
+        irc_send("%s AC %s %s %ld %lu %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
+      } else {
+        irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
+      }
     } else {
       irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
     }

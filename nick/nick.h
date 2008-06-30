@@ -123,7 +123,6 @@ typedef struct nick {
   authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
-  flag_t accountflags;
   patricia_node_t *ipnode;
   unsigned int marker;
   struct nick *next;
@@ -189,6 +188,7 @@ int handleusermodemsg(void *source, int cargc, char **cargv);
 int handlewhoismsg(void *source, int cargc, char **cargv);
 int handleaccountmsg(void *source, int cargc, char **cargv);
 int handlestatsmsg(void *source, int cargc, char **cargv);
+int handleprivmsg(void *source, int cargc, char **cargv);
 
 /* These functions have been replaced by macros 
 nick **gethandlebynumeric(long numeric);
