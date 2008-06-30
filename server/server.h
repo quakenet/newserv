@@ -5,6 +5,7 @@
 
 #include "../lib/sstring.h"
 #include "../irc/irc_config.h"
+#include "../lib/flags.h"
 
 #define LS_INVALID   0   /* No server here */
 #define LS_LINKED    1   /* Server fully linked */
@@ -12,12 +13,22 @@
 #define LS_PLINKING  3   /* Some other server between here and there is bursting */
 #define LS_SQUIT     4   /* This server is being deleted due to a SQUIT */
 
+#define SMODE_HUB       0x0001
+#define SMODE_IPV6      0x0002
+#define SMODE_SERVICE   0x0004
+#define SMODE_OPERNAME  0x0008
+
+#define SMODE_ALL       0x000F
+
+extern const flag smodeflags[];
+
 typedef struct {
   sstring   *name;
   sstring   *description;
   short      parent;
   short      linkstate;
   int        maxusernum;
+  flag_t     flags;
 } server;
 
 extern server serverlist[MAXSERVERS];

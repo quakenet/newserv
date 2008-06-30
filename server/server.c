@@ -25,6 +25,13 @@ void completelink(int servernum);
 server serverlist[MAXSERVERS];
 long myhub;
 
+const flag smodeflags[] = {
+   { 'h', SMODE_HUB },
+   { '6', SMODE_IPV6 },
+   { 's', SMODE_SERVICE },
+   { 'n', SMODE_OPERNAME },
+   { '\0', 0 } };
+
 void _init() {
   /* Initialise the server tree */
   memset(serverlist,0,MAXSERVERS*sizeof(server));
@@ -36,6 +43,8 @@ void _init() {
   serverlist[numerictolong(mynumeric->content,2)].description=getcopyconfigitem("irc","serverdescription","newserv",100);
   serverlist[numerictolong(mynumeric->content,2)].maxusernum=MAXLOCALUSER;
   serverlist[numerictolong(mynumeric->content,2)].linkstate=LS_LINKED;
+  /* remember to update the mode line in irc/irc.c */
+  serverlist[numerictolong(mynumeric->content,2)].flags=SMODE_SERVICE|SMODE_IPV6|SMODE_HUB;
   
   /* Register the protocol messages we handle */
   registerserverhandler("SERVER",&handleservermsg,8);
@@ -76,7 +85,8 @@ int handleservermsg(void *source, int cargc, char **cargv) {
   serverlist[servernum].name=getsstring(cargv[0],HOSTLEN);
   serverlist[servernum].description=getsstring(cargv[cargc-1],REALLEN);
   serverlist[servernum].maxusernum=numerictolong(cargv[5]+2,3);
-  
+  setflags(&serverlist[servernum].flags,SMODE_ALL,cargv[6],smodeflags,REJECT_NONE);
+
   if (!strncmp((char *)source,"INIT",4)) {
     /* This is the initial server */
     myhub=servernum;

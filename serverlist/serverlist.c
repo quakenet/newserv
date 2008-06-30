@@ -66,7 +66,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
   nick *np = (nick*)sender;
   int a, i, ucount, acount, scount;
 
-  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-15s %-20s", "Numeric", "Hostname", "EClients", "Clients", "MaxCl", "Connected for", "Version");
+  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-7s %-15s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Version");
 
   scount = acount = 0;
 
@@ -81,8 +81,10 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
       acount += ucount;
       scount++;
 
-      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-15s %-20s - %s", i, serverlist[i].name->content,
-            servercount[i], ucount, serverlist[i].maxusernum, longtoduration(getnettime() - serverinfo[i].ts, 0),
+      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-15s %-20s - %s", i, serverlist[i].name->content,
+            servercount[i], ucount, serverlist[i].maxusernum,
+            printflags(serverlist[i].flags, smodeflags),
+            longtoduration(getnettime() - serverinfo[i].ts, 0),
             serverinfo[i].version1 ? serverinfo[i].version1->content : "Unknown",
             serverinfo[i].version2 ? serverinfo[i].version2->content : "Unknown");
     }
