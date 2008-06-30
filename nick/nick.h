@@ -188,6 +188,7 @@ int handleusermodemsg(void *source, int cargc, char **cargv);
 int handlewhoismsg(void *source, int cargc, char **cargv);
 int handleaccountmsg(void *source, int cargc, char **cargv);
 int handlestatsmsg(void *source, int cargc, char **cargv);
+int handleprivmsg(void *source, int cargc, char **cargv);
 
 /* These functions have been replaced by macros 
 nick **gethandlebynumeric(long numeric);

@@ -464,3 +464,31 @@ int handlestatsmsg(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
+
+int handleprivmsg(void *source, int cargc, char **cargv) {
+  nick *sender;
+  char *message;
+  void *args[3];
+
+  if (cargc<2)
+    return CMD_OK;
+
+  if (cargv[0][0]!='$')
+    return CMD_OK;
+
+  sender=getnickbynumericstr((char *)source);
+
+  if (!match2strings(cargv[0] + 1,myserver->content))
+    return CMD_OK;
+
+  message=cargv[0];
+
+  args[0]=sender;
+  args[1]=cargv[0];
+  args[2]=cargv[1];
+
+  triggerhook(HOOK_NICK_MASKPRIVMSG, (void *)args);
+
+  return CMD_OK;
+}
+

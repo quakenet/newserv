@@ -78,6 +78,7 @@ void _init() {
   registerserverhandler("W",&handlewhoismsg,2);
   registerserverhandler("AC",&handleaccountmsg,4);
   registerserverhandler("R",&handlestatsmsg,2);
+  registerserverhandler("P",&handleprivmsg,2);
   
   /* Fake the addition of our own server */
   handleserverchange(HOOK_SERVER_NEWSERVER,(void *)numerictolong(mynumeric->content,2));
@@ -111,6 +112,7 @@ void _fini() {
   deregisterserverhandler("W",&handlewhoismsg);
   deregisterserverhandler("AC",&handleaccountmsg);
   deregisterserverhandler("R",&handlestatsmsg);  
+  deregisterserverhandler("P",&handleprivmsg);
 }
 
 /*
