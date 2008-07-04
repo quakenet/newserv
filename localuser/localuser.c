@@ -259,41 +259,38 @@ UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler)
 
 void sendnickmsg(nick *np) {
   char numericbuf[6];
-  char ipbuf[25];
+  char ipbuf[25], operbuf[ACCOUNTLEN + 5];
+  char accountbuf[100];
 
   strncpy(numericbuf,longtonumeric(np->numeric,5),5);
   numericbuf[5]='\0';
-  
+
+  if(IsOper(np) && (serverlist[myhub].flags & SMODE_OPERNAME)) {
+    snprintf(operbuf,sizeof(operbuf)," %s",np->opername?np->opername->content:"-");
+  } else {
+    operbuf[0] = '\0';
+  }
+
   if (IsAccount(np)) {
     if (np->auth) {
       if(np->auth->flags) {
-        irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu:" FLAG_T_SPECIFIER " %s %s :%s",
-          mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-          printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,np->auth->flags,
-          iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:" FLAG_T_SPECIFIER,np->authname,np->accountts,np->auth->userid,np->auth->flags);
       } else {
-        irc_send("%s N %s 1 %ld %s %s %s %s:%ld:%lu %s %s :%s",
-          mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-          printflags(np->umodes,umodeflags),np->authname,np->accountts,np->auth->userid,
-          iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
     } else if (np->accountts) {
-      irc_send("%s N %s 1 %ld %s %s %s %s:%ld %s %s :%s",
-        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-        printflags(np->umodes,umodeflags),np->authname,np->accountts,
-        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+      snprintf(accountbuf,sizeof(accountbuf)," %s:%ld",np->authname,np->accountts);
     } else {
-      irc_send("%s N %s 1 %ld %s %s %s %s %s %s :%s",
-        mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-        printflags(np->umodes,umodeflags),np->authname,
-        iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),numericbuf,np->realname->name->content);
+      snprintf(accountbuf,sizeof(accountbuf)," %s",np->authname);
     }
   } else {
-    irc_send("%s N %s 1 %ld %s %s %s %s %s :%s",
-      mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-      printflags(np->umodes,umodeflags),iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),
-      numericbuf,np->realname->name->content);
+    accountbuf[0]='\0';
   }
+
+  irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
+    mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
+    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->p_ipaddr),
+    sizeof(ipbuf),1),numericbuf,np->realname->name->content);
 }
 
 void sendnickburst(int hooknum, void *arg) {

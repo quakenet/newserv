@@ -145,15 +145,28 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
 
     np->shident=NULL;
     np->sethost=NULL;
+    np->opername=NULL;
     np->umodes=0;
     np->marker=0;
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
     np->authname[0]='\0';
     np->auth=NULL;
     if(cargc>=9) {
+      int sethostarg = 6, opernamearg = 6, accountarg = 6;
+
       setflags(&(np->umodes),UMODE_ALL,cargv[5],umodeflags,REJECT_NONE);
+
+      if(IsOper(np) && (serverlist[myhub].flags & SMODE_OPERNAME)) {
+        accountarg++;
+        sethostarg++;
+
+        np->opername=getsstring(cargv[opernamearg],ACCOUNTLEN);
+      }
+
       if (IsAccount(np)) {
-        if ((accountts=strchr(cargv[6],':'))) {
+        sethostarg++;
+
+        if ((accountts=strchr(cargv[accountarg],':'))) {
           *accountts++='\0';
           np->accountts=strtoul(accountts,&accountid,10);
           if(accountid) {
@@ -161,7 +174,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
             if(!userid) {
               np->auth=NULL;
             } else {
-              np->auth=findorcreateauthname(userid, cargv[6]);
+              np->auth=findorcreateauthname(userid, cargv[accountarg]);
               np->auth->usercount++;
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
@@ -175,13 +188,13 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
           np->accountts=0;
           np->auth=NULL;
         }        
-        strncpy(np->authname,cargv[6],ACCOUNTLEN);
+        strncpy(np->authname,cargv[accountarg],ACCOUNTLEN);
         np->authname[ACCOUNTLEN]='\0';
       } 
-      if (IsSetHost(np) && (fakehost=strchr(cargv[cargc-4],'@'))) {
+      if (IsSetHost(np) && (fakehost=strchr(cargv[sethostarg],'@'))) {
 	/* valid sethost */
 	*fakehost++='\0';
-	np->shident=getsstring(cargv[cargc-4],USERLEN);
+	np->shident=getsstring(cargv[sethostarg],USERLEN);
 	np->sethost=getsstring(fakehost,HOSTLEN);
       }
     }
@@ -282,13 +295,19 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
       return CMD_OK;
     }
     oldflags=np->umodes;
-    if (strchr(cargv[1],'o')) {
-      void *harg[2];
-        harg[0]=np;
-        harg[1]=cargv[1];
-        triggerhook(HOOK_NICK_MODEOPER,harg);
-    }
     setflags(&(np->umodes),UMODE_ALL,cargv[1],umodeflags,REJECT_NONE);
+
+    if (strchr(cargv[1],'o')) { /* o always comes on its own when being set */
+      if(serverlist[myhub].flags & SMODE_OPERNAME) {
+        if((np->umodes & UMODE_OPER)) {
+          np->opername = getsstring(cargv[2], ACCOUNTLEN);
+        } else {
+          freesstring(np->opername);
+        }
+      }
+      if((np->umodes ^ oldflags) & UMODE_OPER)
+        triggerhook(HOOK_NICK_MODEOPER,np);
+    }
     if (strchr(cargv[1],'h')) { /* Have to allow +h twice.. */
       /* +-h: just the freesstring() calls for the -h case */
       freesstring(np->shident); /* freesstring(NULL) is OK */

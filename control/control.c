@@ -198,6 +198,8 @@ int controlwhois(void *sender, int cargc, char **cargv) {
   if (target->umodes) {
     controlreply((nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));
   }
+  if (IsOper(target) && target->opername)
+    controlreply((nick *)sender,"Opered as : %s",target->opername->content);
   if (IsAccount(target)) {
     controlreply((nick *)sender,"Account   : %s",target->authname);
     if (target->accountts) 

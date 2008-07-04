@@ -118,6 +118,7 @@ typedef struct nick {
   realname *realname;
   sstring *shident;  /* +h users: fake ident/host goes here */
   sstring *sethost;
+  sstring *opername;
   flag_t umodes;
   char authname[ACCOUNTLEN+1];
   authname *auth; /* This requires User ID numbers to work */

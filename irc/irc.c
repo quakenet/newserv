@@ -151,7 +151,7 @@ void irc_connect(void *arg) {
 
   irc_send("PASS :%s",conpass->content);
   /* remember when changing modes to change server/server.c too */
-  irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh6 :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
+  irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh6n :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
 
   registerhandler(serverfd, POLLIN|POLLPRI|POLLERR|POLLHUP|POLLNVAL, &handledata);
 

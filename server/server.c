@@ -44,7 +44,7 @@ void _init() {
   serverlist[numerictolong(mynumeric->content,2)].maxusernum=MAXLOCALUSER;
   serverlist[numerictolong(mynumeric->content,2)].linkstate=LS_LINKED;
   /* remember to update the mode line in irc/irc.c */
-  serverlist[numerictolong(mynumeric->content,2)].flags=SMODE_SERVICE|SMODE_IPV6|SMODE_HUB;
+  serverlist[numerictolong(mynumeric->content,2)].flags=SMODE_SERVICE|SMODE_IPV6|SMODE_HUB|SMODE_OPERNAME;
   
   /* Register the protocol messages we handle */
   registerserverhandler("SERVER",&handleservermsg,8);

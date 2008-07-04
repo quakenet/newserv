@@ -94,6 +94,7 @@ void _fini() {
     for (np=nicktable[i];np;np=np->next) {
       freesstring(np->shident);
       freesstring(np->sethost);
+      freesstring(np->opername);
     }
   }
 
@@ -191,6 +192,7 @@ void deletenick(nick *np) {
   
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
+  freesstring(np->opername); 
 
   node_decrement_usercount(np->ipnode);
   derefnode(iptree, np->ipnode);

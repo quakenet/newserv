@@ -21,6 +21,7 @@
 #define SMODE_ALL       0x000F
 
 extern const flag smodeflags[];
+extern long myhub;
 
 typedef struct {
   sstring   *name;
