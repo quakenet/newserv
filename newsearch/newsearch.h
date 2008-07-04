@@ -29,27 +29,54 @@
 #define    RETURNTYPE_TYPE        0xFF
 #define    RETURNTYPE_CONST       0x100
 
+#define    VARIABLE_LEN    10
+#define    MAX_VARIABLES   10
+
 struct searchNode;
 struct searchCtx;
+struct coercedata;
 
 typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, int type, char *input);
 typedef void (*replyFunc)(nick *np, char *format, ...);
 typedef void (*wallFunc)(int level, char *format, ...);
+
+typedef struct searchNode *(*parseFunc)(struct searchCtx *, int, int, char **);
+typedef void (*freeFunc)(struct searchCtx *, struct searchNode *);
+typedef void *(*exeFunc)(struct searchCtx *, struct searchNode *, void *);
+typedef void (*ChanDisplayFunc)(struct searchCtx *, nick *, chanindex *);
+typedef void (*NickDisplayFunc)(struct searchCtx *, nick *, nick *);
+typedef void (*UserDisplayFunc)(struct searchCtx *, nick *, authname *);
+typedef void (*HeaderFunc)(void *sender, void *arg);
+
+struct coercedata {
+  struct searchNode *child;
+  union {
+    char *stringbuf;
+    unsigned long val;
+  } u;
+};
+
+typedef struct searchNode {
+  int returntype;
+  exeFunc  exe;
+  freeFunc free;
+  void *localdata;
+} searchNode;
+
+struct searchVariable {
+  char name[VARIABLE_LEN];
+  struct searchNode data;
+  struct coercedata cdata;
+};
 
 typedef struct searchCtx {
   searchParseFunc parser;
   replyFunc reply;
   wallFunc wall;
   void *arg;
+  struct searchVariable vars[MAX_VARIABLES];
+  int lastvar;
 } searchCtx;
-
-typedef struct searchNode *(*parseFunc)(searchCtx *, int, int, char **);
-typedef void (*freeFunc)(searchCtx *, struct searchNode *);
-typedef void *(*exeFunc)(searchCtx *, struct searchNode *, void *);
-typedef void (*ChanDisplayFunc)(searchCtx *, nick *, chanindex *);
-typedef void (*NickDisplayFunc)(searchCtx *, nick *, nick *);
-typedef void (*UserDisplayFunc)(searchCtx *, nick *, authname *);
-typedef void (*HeaderFunc)(void *sender, void *arg);
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
@@ -109,6 +136,14 @@ struct searchNode *kick_parse(searchCtx *ctx, int type, int argc, char **argv);
 /* Interpret a string to give a node */
 struct searchNode *search_parse(searchCtx *ctx, int type, char *input);
 
+/* Iteration functions */
+struct searchNode *any_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *all_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *var_parse(searchCtx *ctx, int type, int argc, char **argv);
+
+/* Iteraterable functions */
+struct searchNode *channeliter_parse(searchCtx *ctx, int type, int argc, char **argv);
+
 /* Force a node to return the thing you want */
 struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int type);
 
@@ -125,14 +160,8 @@ void unreguserdisp(const char *name, UserDisplayFunc handler);
 /* Special nick* printf */
 void nssnprintf(char *, size_t, const char *, nick *);
 
-typedef struct searchNode {
-  int returntype;
-  exeFunc  exe;
-  freeFunc free;
-  void *localdata;
-} searchNode;
-
 extern const char *parseError;
+extern nick *senderNSExtern;
 
 void printnick(searchCtx *, nick *, nick *);
 void printuser(searchCtx *, nick *, authname *);
@@ -147,6 +176,12 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 
 void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void literal_free(searchCtx *ctx, struct searchNode *thenode);
+
+struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int type);
+searchNode *var_get(searchCtx *ctx, int nstype, char *arg);
+void var_setstr(struct searchVariable *v, char *data);
+
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg);
 
 /* AST functions */
 

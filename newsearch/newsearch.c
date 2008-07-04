@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "newsearch.h"
 
 #include "../irc/irc_config.h"
@@ -9,6 +10,7 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 #include "../lib/stringbuf.h"
+#include "../lib/strlfunc.h"
 
 MODULE_VERSION("");
 
@@ -117,6 +119,14 @@ void _init() {
   registersearchterm("kill",kill_parse);
   registersearchterm("gline",gline_parse);
 
+  /* Iteration functionality */
+  registersearchterm("any",any_parse);
+  registersearchterm("all",all_parse);
+  registersearchterm("var",var_parse);
+  
+  /* Iterable functions */
+  registersearchterm("channeliter",channeliter_parse);
+  
   /* Notice functionality */
   registersearchterm("notice",notice_parse);
   
@@ -168,7 +178,7 @@ static void controlwallwrapper(int level, char *format, ...) {
 static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **display, CommandTree *tree, replyFunc reply, void *sender) {
   char *ch;
   struct Command *cmd;
-
+  
   if (*cargv[0] == '-') {
     /* options */
     (*arg)++;
@@ -206,8 +216,17 @@ static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **displ
   return CMD_OK;
 }
 
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg) {
+  memset(ctx, 0, sizeof(searchCtx));
+  
+  ctx->reply = replyfn;
+  ctx->wall = wallfn;
+  ctx->parser = searchfn;
+  ctx->arg = arg;
+}
+
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source;
+  nick *sender = source;
   struct searchNode *search;
   int limit=500;
   int arg=0;
@@ -231,9 +250,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  ctx.parser = search_parse;
-  ctx.reply = reply;
-  ctx.wall = wall;
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
 
   if (!(search = ctx.parser(&ctx, SEARCHTYPE_NICK, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
@@ -258,7 +275,8 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Nic
   unsigned int tchans=0,uchans=0;
   struct channel **cs;
   nick *np;
-
+  senderNSExtern = sender;
+  
   /* Get a marker value to mark "seen" channels for unique count */
   cmarker=nextchanmarker();
   
@@ -295,7 +313,7 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Nic
 }  
 
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source;
+  nick *sender = source;
   struct searchNode *search;
   int limit=500;
   int arg=0;
@@ -319,10 +337,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  ctx.parser = search_parse;
-  ctx.reply = reply;
-  ctx.wall = wall;
-
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
   if (!(search = ctx.parser(&ctx, SEARCHTYPE_CHANNEL, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
@@ -343,6 +358,7 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Cha
   int i;
   chanindex *cip;
   int matches = 0;
+  senderNSExtern = sender;
   
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
@@ -362,7 +378,7 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Cha
 }
 
 int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source;
+  nick *sender = source;
   struct searchNode *search;
   int limit=500;
   int arg=0;
@@ -386,10 +402,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  ctx.parser = search_parse;
-  ctx.reply = reply;
-  ctx.wall = wall;
-
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
   if (!(search = ctx.parser(&ctx, SEARCHTYPE_USER, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
@@ -410,6 +423,7 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Use
   int i;
   authname *aup;
   int matches = 0;
+  senderNSExtern = sender;
   
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
@@ -427,14 +441,6 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, Use
 
   ctx->reply(sender,"--- End of list: %d matches", matches);
 }
-
-struct coercedata {
-  struct searchNode *child;
-  union {
-    char *stringbuf;
-    unsigned long val;
-  } u;
-};
 
 /* Free a coerce node */
 void free_coerce(searchCtx *ctx, struct searchNode *thenode) {
@@ -851,3 +857,80 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
   */
 }
 
+static char *var_tochar(searchCtx *ctx, int nstype, char *arg, searchNode **variable) {
+  *variable = ctx->parser(ctx, nstype, arg);
+  if (!(*variable = coerceNode(ctx, *variable, RETURNTYPE_STRING)))
+    return NULL;
+
+  if(!((*variable)->returntype & RETURNTYPE_CONST)) {
+    parseError = "only constant variables allowed";
+    ((*variable)->free)(ctx, *variable);
+    return NULL;
+  }
+  
+  return (char *)((*variable)->exe)(ctx, *variable, NULL);
+}
+
+void free_val_null(searchCtx *ctx, struct searchNode *thenode) {
+}
+
+struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int type) {
+  searchNode *variable;
+  struct searchVariable *us;
+  char *var;
+  int i;
+  
+  if(ctx->lastvar >= MAX_VARIABLES) {
+    parseError = "Maximum number of variables reached";
+    return NULL;
+  }
+  
+  us = &ctx->vars[ctx->lastvar];
+  
+  var = var_tochar(ctx, nstype, arg, &variable);
+  if(!var)
+    return NULL;
+  
+  strlcpy(us->name, var, sizeof(us->name));
+  (variable->free)(ctx, variable);
+  
+  for(i=0;i<ctx->lastvar;i++) {
+    if(!strcmp(us->name, ctx->vars[i].name)) {
+      parseError = "variable name already in use";
+      return NULL;
+    }
+  }
+  
+  ctx->lastvar++;
+  us->data.returntype = type;
+  us->data.localdata = &us->cdata;
+  us->data.exe = exe_val_null;
+  us->data.free = free_val_null;
+  
+  us->cdata.child = NULL;
+  return us;
+}
+
+searchNode *var_get(searchCtx *ctx, int nstype, char *arg) {
+  searchNode *variable, *found = NULL;
+  int i;
+  char *var = var_tochar(ctx, nstype, arg, &variable);
+  if(!var)
+    return NULL;
+
+  for(i=0;i<ctx->lastvar;i++) {
+    if(!strcmp(var, ctx->vars[i].name)) {
+      found = &ctx->vars[i].data;
+      break;
+    }
+  }
+  (variable->free)(ctx, variable);
+  
+  if(!found)
+    parseError = "variable not found";
+  return found;
+}
+
+void var_setstr(struct searchVariable *v, char *data) {
+  v->cdata.u.stringbuf = data;
+}
