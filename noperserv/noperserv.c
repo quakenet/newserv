@@ -484,17 +484,15 @@ int noperserv_userflags(void *sender, int cargc, char **cargv) {
 }
 
 void noperserv_oper_detection(int hooknum, void *arg) {
-  void **args = (void **)arg;
-  nick *np = args[0];
-  char *modestr = args[1];
-  flag_t after = np->umodes;
+  nick *np = (nick *)arg;
 
-  setflags(&after, UMODE_ALL, modestr, umodeflags, REJECT_NONE);
   if(np->umodes & UMODE_OPER) {
-    if(!(after & UMODE_OPER))
-      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just DEOPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
-  } else {
-    if(after & UMODE_OPER)
+    if(np->opername && strcmp(np->opername->content, "-")) {
+      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed as %s", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"", np->opername->content);
+    } else {
       controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
+    }
+  } else {
+    controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just DEOPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
   }
 }
