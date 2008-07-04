@@ -116,6 +116,11 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
   newuser->marker=0;
   memset(newuser->exts, 0, MAXNICKEXTS * sizeof(void *));
 
+  if (IsOper(newuser)) {
+    newuser->opername = getsstring("-", ACCOUNTLEN);
+  } else {
+    newuser->opername = NULL;
+  }
   if (IsAccount(newuser)) {
     strncpy(newuser->authname,authname,ACCOUNTLEN);
     newuser->accountts=newuser->timestamp;
