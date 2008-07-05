@@ -139,8 +139,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->timestamp=timestamp;
 
     base64toip(cargv[cargc-3], &ipaddress);
-    /* todo: use a single node for /64 prefixes */
-    np->ipnode = refnode(iptree, &ipaddress, irc_in_addr_is_ipv4(&ipaddress) ? PATRICIA_MAXBITS : 64);
+    np->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
     node_increment_usercount(np->ipnode);
 
     np->shident=NULL;
