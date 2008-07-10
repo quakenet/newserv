@@ -14,10 +14,10 @@ void *hostmask_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void *hostmask_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void hostmask_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *hostmask_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_NICK) {
+  if (ctx->type != SEARCHTYPE_NICK) {
     parseError = "hostmask: this function is only valid for nick searches.";
     return NULL;
   }

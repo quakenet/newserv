@@ -9,13 +9,12 @@
 
 struct nick_localdata {
   nick *np;
-  int type;
 };
 
 void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void nick_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv) {
   struct nick_localdata *localdata;
   struct searchNode *thenode;
 
@@ -24,7 +23,7 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
     return NULL;
   }
     
-  switch (type) {
+  switch (ctx->type) {
   case SEARCHTYPE_CHANNEL:
     if (argc!=1) {
       parseError="nick: usage: (nick target)";
@@ -36,7 +35,6 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
       free(localdata);
       return NULL;
     }
-    localdata->type = type;
     break;
 
   case SEARCHTYPE_NICK:
@@ -45,7 +43,6 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
       free(localdata);
       return NULL;
     }
-    localdata->type = type;
     localdata->np = NULL;
     break;
 
@@ -62,7 +59,7 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
     return NULL;
   }
 
-  if (type == SEARCHTYPE_CHANNEL)
+  if (ctx->type == SEARCHTYPE_CHANNEL)
     thenode->returntype = RETURNTYPE_BOOL;
   else
     thenode->returntype = RETURNTYPE_STRING;
@@ -80,7 +77,7 @@ void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
   localdata = thenode->localdata;
 
-  switch (localdata->type) {
+  switch (ctx->type) {
   case SEARCHTYPE_CHANNEL:
     cip = (chanindex *)theinput;
 

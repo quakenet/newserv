@@ -17,12 +17,12 @@ void country_free(searchCtx *ctx, struct searchNode *thenode);
 
 int ext;
 
-struct searchNode *country_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
   GeoIP_LookupCode l;
   long target;
 
-  if (type != SEARCHTYPE_NICK) {
+  if (ctx->type != SEARCHTYPE_NICK) {
     parseError = "country: this function is only valid for nick searches.";
     return NULL;
   }

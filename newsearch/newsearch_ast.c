@@ -77,7 +77,7 @@ static void cachepush(searchASTCache *cache, searchASTExpr *expr) {
 }
 
 /* ast parser, the way we pass context around is very very hacky... */
-searchNode *search_astparse(searchCtx *ctx, int type, char *loc) {
+searchNode *search_astparse(searchCtx *ctx, char *loc) {
   searchASTCache *cache = ctx->arg;
   searchASTExpr *expr = cachesearch(cache, (exprunion *)&loc);
   searchNode *node;
@@ -124,7 +124,7 @@ searchNode *search_astparse(searchCtx *ctx, int type, char *loc) {
         }
       }
 
-      node = expr->u.child->fn(ctx, type, expr->u.child->argc, v);
+      node = expr->u.child->fn(ctx, expr->u.child->argc, v);
       free(v);
       return node;
    default:
@@ -142,11 +142,11 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, SEARCHTYPE_NICK);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree));
-  search = ctx.parser(&ctx, SEARCHTYPE_NICK, (char *)tree);
+  search = ctx.parser(&ctx, (char *)tree);
   if(!search) {
     reply(sender, "Parse error: %s", parseError);
     return CMD_ERROR;
@@ -168,11 +168,11 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   searchNode *search;
   char buf[1024];
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, SEARCHTYPE_CHANNEL);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree));
-  search = ctx.parser(&ctx, SEARCHTYPE_CHANNEL, (char *)tree);
+  search = ctx.parser(&ctx, (char *)tree);
   if(!search) {
     reply(sender, "Parse error: %s", parseError);
     return CMD_ERROR;
@@ -197,11 +197,11 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, SEARCHTYPE_USER);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree));
-  search = ctx.parser(&ctx, SEARCHTYPE_USER, (char *)tree);
+  search = ctx.parser(&ctx, (char *)tree);
   if(!search) {
     reply(sender, "Parse error: %s", parseError);
     return CMD_ERROR;

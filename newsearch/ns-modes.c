@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 struct modes_localdata {
-  int         type;
   flag_t      setmodes;
   flag_t      clearmodes;
 }; 
@@ -16,7 +15,7 @@ struct modes_localdata {
 void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void modes_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
   struct modes_localdata *localdata;
   struct searchNode *thenode;
   const flag *flaglist;
@@ -26,7 +25,7 @@ struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) 
     return NULL;
   }
     
-  switch (type) {
+  switch (ctx->type) {
   case SEARCHTYPE_CHANNEL:
     flaglist=cmodeflags;
     break;
@@ -45,7 +44,6 @@ struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) 
     return NULL;
   }
   
-  localdata->type=type;
   localdata->setmodes=0;
   localdata->clearmodes = ~0;
   
@@ -77,7 +75,7 @@ void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
   
   localdata = (struct modes_localdata *)thenode->localdata;
 
-  switch (localdata->type) {
+  switch (ctx->type) {
   case SEARCHTYPE_CHANNEL:
     cip=(chanindex *)value;
     if (!cip->channel)

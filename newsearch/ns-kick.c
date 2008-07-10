@@ -11,11 +11,11 @@
 void *kick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void kick_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *kick_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
   nick *np;
   
-  if (type!=SEARCHTYPE_CHANNEL) {
+  if (ctx->type!=SEARCHTYPE_CHANNEL) {
     parseError="kick: only channel searches are supported";
     return NULL;
   }

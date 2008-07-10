@@ -23,11 +23,10 @@ static const char *defaultreason = "You (%n) have been disconnected for violatin
 struct kill_localdata {
   unsigned int marker;
   int count;
-  int type;
   char reason[NSMAX_REASON_LEN];
 };
 
-struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -37,8 +36,7 @@ struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv) {
     return NULL;
   }
   localdata->count = 0;
-  localdata->type = type;
-  if (type == SEARCHTYPE_CHANNEL)
+  if (ctx->type == SEARCHTYPE_CHANNEL)
     localdata->marker = nextchanmarker();
   else
     localdata->marker = nextnickmarker();
@@ -79,7 +77,7 @@ void *kill_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
   localdata = thenode->localdata;
 
-  if (localdata->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->type == SEARCHTYPE_CHANNEL) {
     cip = (chanindex *)theinput;
     cip->marker = localdata->marker;
     localdata->count += cip->channel->users->totalusers;
@@ -112,7 +110,7 @@ void kill_free(searchCtx *ctx, struct searchNode *thenode) {
   }
 
   /* For channel searches, mark up all the nicks in the relevant channels first */
-  if (localdata->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->type == SEARCHTYPE_CHANNEL) {
     nickmarker=nextnickmarker();
     for (i=0;i<CHANNELHASHSIZE;i++) {
       for (cip=chantable[i];cip;cip=cip->next) {
@@ -156,7 +154,7 @@ void kill_free(searchCtx *ctx, struct searchNode *thenode) {
     ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
   ctx->wall(NL_KICKKILLS, "%s/%s killed %d %s via %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
-    (localdata->count - safe) != 1 ? "users" : "user", (localdata->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", safe);
+    (localdata->count - safe) != 1 ? "users" : "user", (ctx->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", safe);
   free(localdata);
   free(thenode);
 }

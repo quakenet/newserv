@@ -17,7 +17,7 @@ struct lt_localdata {
 void lt_free(searchCtx *ctx, struct searchNode *thenode);
 void *lt_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *lt_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *lt_parse(searchCtx *ctx, int argc, char **argv) {
   struct lt_localdata *localdata;
   struct searchNode *thenode;
   int i;
@@ -49,7 +49,7 @@ struct searchNode *lt_parse(searchCtx *ctx, int type, int argc, char **argv) {
   
   for (i=0;i<argc;i++) {
     /* Parse the node.. */
-    localdata->nodes[i] = ctx->parser(ctx, type, argv[i]);
+    localdata->nodes[i] = ctx->parser(ctx, argv[i]);
     
     /* Subsequent nodes get coerced to match the type of the first node */
     if (i)

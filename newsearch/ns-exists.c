@@ -10,10 +10,10 @@
 void *exists_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void exists_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *exists_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_CHANNEL) {
+  if (ctx->type != SEARCHTYPE_CHANNEL) {
     parseError = "exists: this function is only valid for channel searches.";
     return NULL;
   }

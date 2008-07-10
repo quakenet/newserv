@@ -36,11 +36,11 @@ struct searchNode;
 struct searchCtx;
 struct coercedata;
 
-typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, int type, char *input);
+typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, char *input);
 typedef void (*replyFunc)(nick *np, char *format, ...);
 typedef void (*wallFunc)(int level, char *format, ...);
 
-typedef struct searchNode *(*parseFunc)(struct searchCtx *, int, int, char **);
+typedef struct searchNode *(*parseFunc)(struct searchCtx *, int, char **);
 typedef void (*freeFunc)(struct searchCtx *, struct searchNode *);
 typedef void *(*exeFunc)(struct searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(struct searchCtx *, nick *, chanindex *);
@@ -76,73 +76,74 @@ typedef struct searchCtx {
   void *arg;
   struct searchVariable vars[MAX_VARIABLES];
   int lastvar;
+  int type;
 } searchCtx;
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
-struct searchNode *and_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *not_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *or_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *and_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *not_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *or_parse(searchCtx *ctx,  int argc, char **argv);
 
 /* Comparison (INT -> BOOL) */
-struct searchNode *eq_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *lt_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *gt_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *eq_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *lt_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *gt_parse(searchCtx *ctx, int argc, char **argv);
 
 /* String match (STRING -> BOOL) */
-struct searchNode *match_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *regex_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *match_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *regex_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Length (STRING -> INT) */
-struct searchNode *length_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *length_parse(searchCtx *ctx, int argc, char **argv);
 
 /* kill/gline actions (BOOL) */
-struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *gline_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv);
 
 /* notice action (BOOL) */
-struct searchNode *notice_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Nick/Channel functions (various types) */
-struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Nick functions (various types) */
-struct searchNode *hostmask_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *realname_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authname_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authts_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *ident_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *host_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *channel_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *country_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *ip_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *channels_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *server_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authid_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *realname_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authname_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authts_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ident_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *channel_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *timestamp_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ip_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
-struct searchNode *exists_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *services_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *size_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *name_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *topic_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *oppct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *hostpct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authedpct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *kick_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *services_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *size_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *name_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *topic_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *oppct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *hostpct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authedpct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Interpret a string to give a node */
-struct searchNode *search_parse(searchCtx *ctx, int type, char *input);
+struct searchNode *search_parse(searchCtx *ctx, char *input);
 
 /* Iteration functions */
-struct searchNode *any_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *all_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *var_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *any_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *all_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *var_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Iteraterable functions */
-struct searchNode *channeliter_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Force a node to return the thing you want */
 struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int type);
@@ -177,11 +178,11 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void literal_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int type);
-searchNode *var_get(searchCtx *ctx, int nstype, char *arg);
+struct searchVariable *var_register(searchCtx *ctx, char *arg, int type);
+searchNode *var_get(searchCtx *ctx, char *arg);
 void var_setstr(struct searchVariable *v, char *data);
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg);
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, int type);
 
 /* AST functions */
 
@@ -221,7 +222,7 @@ typedef struct searchASTNode {
 #define NSASTLiteral(data) __NSASTExpr(AST_NODE_LITERAL, literal, data)
 #define NSASTNode(fn, ...) __NSASTChild(__NSASTNode(fn, __VA_ARGS__))
 
-searchNode *search_astparse(searchCtx *, int, char *);
+searchNode *search_astparse(searchCtx *, char *);
 
 int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit);

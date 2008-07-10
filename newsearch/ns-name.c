@@ -10,10 +10,10 @@
 void *name_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void name_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *name_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *name_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_CHANNEL) {
+  if (ctx->type != SEARCHTYPE_CHANNEL) {
     parseError = "name: this function is only valid for channel searches.";
     return NULL;
   }

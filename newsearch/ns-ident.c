@@ -10,10 +10,10 @@
 void *ident_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void ident_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *ident_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *ident_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_NICK) {
+  if (ctx->type != SEARCHTYPE_NICK) {
     parseError = "ident: this function is only valid for nick searches.";
     return NULL;
   }

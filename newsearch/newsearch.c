@@ -216,13 +216,14 @@ static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **displ
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, int type) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
   ctx->wall = wallfn;
   ctx->parser = searchfn;
   ctx->arg = arg;
+  ctx->type = type;
 }
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
@@ -250,9 +251,9 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_NICK);
 
-  if (!(search = ctx.parser(&ctx, SEARCHTYPE_NICK, cargv[arg]))) {
+  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
@@ -337,8 +338,8 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
-  if (!(search = ctx.parser(&ctx, SEARCHTYPE_CHANNEL, cargv[arg]))) {
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_CHANNEL);
+  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
@@ -402,8 +403,8 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL);
-  if (!(search = ctx.parser(&ctx, SEARCHTYPE_USER, cargv[arg]))) {
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_USER);
+  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
@@ -671,7 +672,7 @@ void literal_free(searchCtx *ctx, struct searchNode *thenode) {
  *  Given an input string, return a searchNode.
  */
 
-struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
+struct searchNode *search_parse(searchCtx *ctx, char *input) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */
   char *argvector[100];
   char thestring[500];
@@ -754,7 +755,7 @@ struct searchNode *search_parse(searchCtx *ctx, int type, char *input) {
       parseError = "Unknown command";
       return NULL;
     } else {
-      return ((parseFunc)cmd->handler)(ctx, type, j, argvector+1);
+      return ((parseFunc)cmd->handler)(ctx, j, argvector+1);
     }
   } else {
     /* Literal */
@@ -857,8 +858,8 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
   */
 }
 
-static char *var_tochar(searchCtx *ctx, int nstype, char *arg, searchNode **variable) {
-  *variable = ctx->parser(ctx, nstype, arg);
+static char *var_tochar(searchCtx *ctx, char *arg, searchNode **variable) {
+  *variable = ctx->parser(ctx, arg);
   if (!(*variable = coerceNode(ctx, *variable, RETURNTYPE_STRING)))
     return NULL;
 
@@ -874,7 +875,7 @@ static char *var_tochar(searchCtx *ctx, int nstype, char *arg, searchNode **vari
 void free_val_null(searchCtx *ctx, struct searchNode *thenode) {
 }
 
-struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int type) {
+struct searchVariable *var_register(searchCtx *ctx, char *arg, int type) {
   searchNode *variable;
   struct searchVariable *us;
   char *var;
@@ -887,7 +888,7 @@ struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int t
   
   us = &ctx->vars[ctx->lastvar];
   
-  var = var_tochar(ctx, nstype, arg, &variable);
+  var = var_tochar(ctx, arg, &variable);
   if(!var)
     return NULL;
   
@@ -911,10 +912,10 @@ struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int t
   return us;
 }
 
-searchNode *var_get(searchCtx *ctx, int nstype, char *arg) {
+searchNode *var_get(searchCtx *ctx, char *arg) {
   searchNode *variable, *found = NULL;
   int i;
-  char *var = var_tochar(ctx, nstype, arg, &variable);
+  char *var = var_tochar(ctx, arg, &variable);
   if(!var)
     return NULL;
 

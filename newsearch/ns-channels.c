@@ -13,10 +13,10 @@
 void *channels_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void channels_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *channels_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_NICK) {
+  if (ctx->type != SEARCHTYPE_NICK) {
     parseError = "channels: this function is only valid for nick searches.";
     return NULL;
   }

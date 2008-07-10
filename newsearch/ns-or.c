@@ -15,7 +15,7 @@ struct or_localdata {
   searchNode **nodes;
 };
 
-struct searchNode *or_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *or_parse(searchCtx *ctx, int argc, char **argv) {
   searchNode *thenode, *subnode;
   struct or_localdata *localdata;
   int i;
@@ -48,7 +48,7 @@ struct searchNode *or_parse(searchCtx *ctx, int type, int argc, char **argv) {
   thenode->free         = or_free;
 
   for (i=0;i<argc;i++) {
-    subnode=ctx->parser(ctx, type, argv[i]); /* Propogate the search type */
+    subnode=ctx->parser(ctx, argv[i]); /* Propogate the search type */
     subnode=coerceNode(ctx, subnode, RETURNTYPE_BOOL); /* BOOL please */
     if (subnode) {
       localdata->nodes[localdata->count++] = subnode;

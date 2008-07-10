@@ -10,10 +10,10 @@
 void *hostpct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void hostpct_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *hostpct_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *hostpct_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_CHANNEL) {
+  if (ctx->type != SEARCHTYPE_CHANNEL) {
     parseError = "uniquehostpct: this function is only valid for channel searches.";
     return NULL;
   }

@@ -19,7 +19,7 @@ struct regex_localdata {
 void *regex_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void regex_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *regex_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *regex_parse(searchCtx *ctx, int argc, char **argv) {
   struct regex_localdata *localdata;
   struct searchNode *thenode;
   struct searchNode *targnode, *patnode;
@@ -33,11 +33,11 @@ struct searchNode *regex_parse(searchCtx *ctx, int type, int argc, char **argv) 
     return NULL;
   }
 
-  targnode=ctx->parser(ctx, type, argv[0]);
+  targnode=ctx->parser(ctx, argv[0]);
   if (!(targnode = coerceNode(ctx,targnode, RETURNTYPE_STRING)))
     return NULL;
 
-  patnode=ctx->parser(ctx, type, argv[1]);
+  patnode=ctx->parser(ctx, argv[1]);
   if (!(patnode = coerceNode(ctx,patnode, RETURNTYPE_STRING))) {
     (targnode->free)(ctx, targnode);
     return NULL;
