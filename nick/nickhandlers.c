@@ -302,6 +302,7 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
           np->opername = getsstring(cargv[2], ACCOUNTLEN);
         } else {
           freesstring(np->opername);
+          np->opername = NULL;
         }
       }
       if((np->umodes ^ oldflags) & UMODE_OPER)
