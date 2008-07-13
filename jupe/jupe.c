@@ -20,6 +20,8 @@ void _init() {
 	registerhook(HOOK_IRC_SENDBURSTBURSTS, &sendjupeburst);
 	
 	registerserverhandler("JU", &handlejupe, 5);
+
+	irc_send("%s RB J", mynumeric->content);
 }
 
 void _fini() {
