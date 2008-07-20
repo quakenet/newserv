@@ -310,6 +310,7 @@ void _fini(void) {
   /* free() all our structures */
   nsfreeall(POOL_PROXYSCAN);
   
+  freesstring(myipstr);
   freesstring(ps_mailname);
 #if defined(PROXYSCAN_MAIL)
   if (psm_mailerfd!=-1)
