@@ -177,10 +177,10 @@ void _init(void) {
   myip=((ipbits[0]&0xFF)<<24)+((ipbits[1]&0xFF)<<16)+
     ((ipbits[2]&0xFF)<<8)+(ipbits[3]&0xFF);
 
+#if defined(PROXYSCAN_MAIL)
   /* Mailer host */
   cfgstr=getcopyconfigitem("proxyscan","mailerip","",16);
   
-#if defined(PROXYSCAN_MAIL)
   psm_mailerfd=-1;
   if (cfgstr) {
     sscanf(cfgstr->content,"%d.%d.%d.%d",&ipbits[0],&ipbits[1],&ipbits[2],&ipbits[3]);
