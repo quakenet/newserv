@@ -64,6 +64,13 @@ void _init() {
   initnickhelpers();
   memset(nicktable,0,sizeof(nicktable));
   memset(servernicks,0,sizeof(servernicks));
+
+  /* If we're connected to IRC, force a disconnect.  This needs to be done
+   * before we register all our hooks which would otherwise get called
+   * during the disconnect. */
+  if (connected) {
+    irc_send("%s SQ %s 0 :Resync [adding nick support]",mynumeric->content,myserver->content); irc_disconnected();
+  }
   
   /* Register our hooks */
   registerhook(HOOK_SERVER_NEWSERVER,&handleserverchange);
