@@ -122,8 +122,8 @@ int scantodm(int scannum) {
  */
 
 void loggline(cachehost *chp, patricia_node_t *node) {
-  char reasonlist[100];
-  char reasonesc[200 + 1]; /* reasonlist*2+1 */
+  char reasonlist[200];
+  char reasonesc[400 + 1]; /* reasonlist*2+1 */
   int reasonmask=0;
   int reasonpos=0;
   foundproxy *fpp;
@@ -136,6 +136,9 @@ void loggline(cachehost *chp, patricia_node_t *node) {
   reasonlist[0]='\0';
   reasonmask=0;
   for (fpp=chp->proxies;fpp;fpp=fpp->next) {
+    if ((reasonpos + 20) > sizeof(reasonlist))
+      break;
+
     reasonpos += sprintf(reasonlist+reasonpos, "%s:%d ",scantostr(fpp->type), fpp->port);
   }
 
