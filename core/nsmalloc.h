@@ -61,6 +61,7 @@ beginpools() {
   pool(PQSQL),
   pool(PATRICIA),
   pool(PATRICIANICK),
+  pool(SPAMSCAN2),
 } endpools()
 
 #undef pool
