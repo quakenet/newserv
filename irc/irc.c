@@ -178,12 +178,6 @@ int irc_handleserver(void *source, int cargc, char **cargv) {
     setnettime(strtol(cargv[3],NULL,10));
 
     connected=1;
-    triggerhook(HOOK_IRC_SENDBURSTSERVERS,NULL);
-    triggerhook(HOOK_IRC_SENDBURSTNICKS,NULL);
-    triggerhook(HOOK_IRC_SENDBURSTBURSTS,NULL);
-    irc_send("%s EB",mynumeric->content);
-   
-    triggerhook(HOOK_IRC_CONNECTED,NULL);
   } else {
     Error("irc",ERR_INFO,"Unexpected SERVER message");
   }

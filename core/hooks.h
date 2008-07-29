@@ -15,11 +15,11 @@
 #define HOOK_CORE_ERROR	             5	/* Argument is a struct error_event * */
 #define HOOK_CORE_SIGUSR1            6 
 
-#define HOOK_IRC_CONNECTED         100
+#define HOOK_IRC_CONNECTED         100  /* Located in server.c now to fix burst bug */
 #define HOOK_IRC_DISCON            101
-#define HOOK_IRC_SENDBURSTSERVERS  102
-#define HOOK_IRC_SENDBURSTNICKS    103
-#define HOOK_IRC_SENDBURSTBURSTS   104
+#define HOOK_IRC_SENDBURSTSERVERS  102  /* Located in server.c now to fix burst bug */
+#define HOOK_IRC_SENDBURSTNICKS    103  /* Located in server.c now to fix burst bug */
+#define HOOK_IRC_SENDBURSTBURSTS   104  /* Located in server.c now to fix burst bug */
 #define HOOK_IRC_PRE_DISCON        105
 
 #define HOOK_SERVER_NEWSERVER      200  /* Argument is number of new server */
