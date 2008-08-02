@@ -45,7 +45,14 @@ void destroycommandtree(CommandTree *ct) {
       destroycommandtree((CommandTree *)ct->next[i]);
     }
   }
-  
+
+  if(ct->cmd) {
+    if(ct->cmd->command)
+      freesstring(ct->cmd->command);
+    if(ct->cmd->help)
+      free(ct->cmd->help);
+    free(ct->cmd);
+  } 
   free(ct);
 }
 
