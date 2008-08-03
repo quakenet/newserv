@@ -47,6 +47,7 @@ void at_handlequitorkill(int hooknum, void *arg) {
   nick *np=args[0];
   char *reason=args[1];
   char *rreason;
+  char resbuf[512];
   unsigned long userid;
   
   /* Ignore unauthed users, or those with no accountts */
@@ -57,8 +58,10 @@ void at_handlequitorkill(int hooknum, void *arg) {
   at_lastauthts=np->accountts;
   at_lastnum=np->numeric;
 
-  if (hooknum==HOOK_NICK_KILL && (rreason=strchr(reason,'@')))
-    reason=rreason;
+  if (hooknum==HOOK_NICK_KILL && (rreason=strchr(reason,' '))) {
+    sprintf(resbuf,"Killed%s",rreason);
+    reason=resbuf;
+  }
   
   at_logquit(userid, np->accountts, time(NULL), reason);
 }
