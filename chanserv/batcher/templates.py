@@ -50,8 +50,11 @@ Thank you for registering.
 To get your password please visit:
 %(url)s
 
+Note that this URL will not work forever, you should make a note of your password
+or change it (as on the site).
+
 In case you forget your login/password use:
-/msg %(config.bot)s REQUESTPASSWORD %(user.username)s %(user.email)s
+/msg %(config.bot)s REQUESTPASSWORD %(user.email)s
 
 Make sure you've read the %(config.bot)s FAQ at %(config.siteurl)s for a complete
 reference on Q's commands and usage.

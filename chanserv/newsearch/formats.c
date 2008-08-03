@@ -121,7 +121,7 @@ void printauth(searchCtx *ctx, nick *sender, authname *anp) {
 
   if (rup->lastauth) {
     char timebuf[20];
-    strftime(timebuf, 15, "%d/%m/%y %H:%M", gmtime(&(rup->lastauth)));
+    strftime(timebuf, sizeof(timebuf), Q9_FORMAT_TIME, gmtime(&(rup->lastauth)));
     la = timebuf;
   } else {
     la = "(never)";

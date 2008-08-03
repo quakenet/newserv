@@ -73,6 +73,7 @@ chanban *makeban(const char *mask) {
   int i;
   int checklen;
   chanban *cbp;
+  char tmpbuf[512];
   
   cbp=getchanban();  
   len=strlen(mask);
@@ -94,8 +95,10 @@ chanban *makeban(const char *mask) {
       /* Got @ sign: everything after here is host */
       if ((len-i)-1 > HOSTLEN) {
         /* This is too long, we need to truncate it */
-        cbp->host=getsstring(&mask[len-HOSTLEN],HOSTLEN);
-        cbp->host->content[0]='*';
+        strncpy(tmpbuf,&mask[len-HOSTLEN],HOSTLEN);
+        tmpbuf[HOSTLEN]='\0';
+        tmpbuf[0]='*';
+        cbp->host=getsstring(tmpbuf,HOSTLEN);
         cbp->flags |= CHANBAN_HOSTMASK;
       } else if (i==(len-1)) {
         /* Ban ending with @, just mark it invalid */
@@ -264,8 +267,10 @@ chanban *makeban(const char *mask) {
       cbp->user=NULL;
     } else if (foundat - foundbang - 1 > USERLEN) {
       /* It's too long.. */
-      cbp->user=getsstring(&mask[foundat-USERLEN],USERLEN);
-      cbp->user->content[0]='*';
+      strncpy(tmpbuf,&mask[foundat-USERLEN],USERLEN);
+      tmpbuf[USERLEN]='\0';
+      tmpbuf[0]='*';
+      cbp->user=getsstring(tmpbuf,USERLEN);
       cbp->flags |= CHANBAN_USERMASK;
     } else if ((foundat - foundbang - 1 == 1) && mask[foundbang+1]=='*') {
       cbp->user=NULL;
@@ -276,6 +281,10 @@ chanban *makeban(const char *mask) {
         cbp->flags |= CHANBAN_USERMASK;
       else
         cbp->flags |= CHANBAN_USEREXACT;
+    }
+    /* Username part can't contain an @ */
+    if (cbp->user && strchr(cbp->user->content,'@')) {
+      cbp->flags |= CHANBAN_INVALID;
     }
   }
 

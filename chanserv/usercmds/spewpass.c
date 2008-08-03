@@ -30,6 +30,9 @@ int csu_dospewpass(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "spewpass");
     return CMD_ERROR;
   }
+
+  cs_log(sender, "SPEWPASS %s", cargv[0]);
+  chanservwallmessage("%s (%s) using SPEWPASS (see log for password)", sender->nick, rup->username);
   
   chanservstdmessage(sender, QM_SPEWHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {

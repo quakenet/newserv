@@ -30,7 +30,6 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
   regchan *rcp;
-  char timebuf[30];
   
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "chanstat");
@@ -45,16 +44,13 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_STATSHEADER, cip->name->content);
 
-  strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(rcp->created)));
-  chanservstdmessage(sender, QM_STATSADDED, timebuf);
+  chanservstdmessage(sender, QM_STATSADDED, rcp->created);
 
   /* Show opers founder/addedby/type info */
   if (cs_privcheck(QPRIV_VIEWFULLCHANLEV, sender)) {
     reguser *founder=NULL, *addedby=NULL;
 
-    strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(rcp->lastactive)));
-    chanservstdmessage(sender, QM_STATSLASTACTIVE, timebuf);
-
+    chanservstdmessage(sender, QM_STATSLASTACTIVE, rcp->lastactive);
 
     addedby=findreguserbyID(rcp->addedby);
     chanservstdmessage(sender, QM_ADDEDBY, addedby ? addedby->username : "(unknown)");
@@ -63,14 +59,10 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_CHANTYPE, chantypes[rcp->chantype]->content);
   }
 
-  strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(rcp->created)));
-
-  chanservstdmessage(sender, QM_STATSJOINS, timebuf, rcp->maxusers, rcp->totaljoins, 
+  chanservstdmessage(sender, QM_STATSJOINS, rcp->created, rcp->maxusers, rcp->totaljoins, 
 		     (float)rcp->totaljoins/ ((time(NULL)-rcp->created)/(3600*24)));
 
-  strftime(timebuf, 30, "%d/%m/%y %H:%M", localtime(&(rcp->statsreset)));
-
-  chanservstdmessage(sender, QM_STATSJOINS, timebuf, rcp->tripusers, rcp->tripjoins, 
+  chanservstdmessage(sender, QM_STATSJOINS, rcp->statsreset, rcp->tripusers, rcp->tripjoins, 
 		     (float)rcp->tripjoins / ((time(NULL)-rcp->statsreset)/(3600*24)));
   
   if (cargc>1 && !ircd_strcmp(cargv[1],"reset")) {

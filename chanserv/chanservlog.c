@@ -57,7 +57,7 @@ void cs_log(nick *np, char *event, ... ) {
 
   now=time(NULL);
   tm=gmtime(&now);
-  strftime(timebuf,100,"%Y-%m-%d %H:%M:%S",tm);
-  len=snprintf(buf2,1024,"[%s] %s %s\n",timebuf,userbuf,buf);
+  strftime(timebuf,sizeof(timebuf),"%Y-%m-%d %H:%M:%S",tm);
+  len=snprintf(buf2,sizeof(buf2),"[%s] %s %s\n",timebuf,userbuf,buf);
   write(logfd, buf2, len);
 }

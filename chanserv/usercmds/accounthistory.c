@@ -65,8 +65,8 @@ void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
     newpass=dbgetvalue(pgres, 4);
     oldemail=dbgetvalue(pgres, 5);
     newemail=dbgetvalue(pgres, 6);
-    tmp=localtime(&changetime);
-    strftime(tbuf, 15, "%d/%m/%y %H:%M", tmp);
+    tmp=gmtime(&changetime);
+    strftime(tbuf, sizeof(tbuf), Q9_FORMAT_TIME, tmp);
     chanservsendmessage(np, "#%-6d %-15s %-14s %-14s %-30s %s", ++count, tbuf, oldpass, newpass, oldemail, newemail);
   }
   chanservstdmessage(np, QM_ENDOFLIST);

@@ -21,6 +21,7 @@ int cs_privcheck(int privnum, nick *np) {
   case QPRIV_VIEWAUTOLIMIT:
   case QPRIV_VIEWBANTIMER:
   case QPRIV_VIEWUSERFLAGS:
+  case QPRIV_VIEWCHANSUSPENSION:
     return (rup && UHasHelperPriv(rup));
     
   case QPRIV_VIEWCOMMENTS:
@@ -31,6 +32,7 @@ int cs_privcheck(int privnum, nick *np) {
   case QPRIV_CHANGEAUTOLIMIT:
   case QPRIV_CHANGEBANTIMER:
   case QPRIV_CHANGEUSERFLAGS:
+  case QPRIV_VIEWSUSPENDEDBY:
     return (np && rup && IsOper(np) && UHasOperPriv(rup));
     
   default: /* By default opers can override anything */

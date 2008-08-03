@@ -73,6 +73,32 @@ int countcommandtree(CommandTree *ct) {
   return sum;
 }
 
+/* sanitisecommandname:
+ *
+ * Converts the given command name to uppercase and checks for bad chars.
+ * 
+ * Returns 1 if bad chars were found
+ */
+static int sanitisecommandname(const char *cmdname, char *cmdbuf) {
+  int len,i;
+
+  strncpy(cmdbuf,cmdname,MAX_COMMAND_LEN);
+  cmdbuf[MAX_COMMAND_LEN-1]='\0';
+  
+  len=strlen(cmdbuf);
+  
+  /* Sanity check the string */
+  for (i=0;i<len;i++) {
+    cmdbuf[i]=toupper(cmdbuf[i]);
+    if (cmdbuf[i]<'A' || cmdbuf[i]>'Z') {
+      /* Someone tried to register an invalid command name */
+      return 1;    
+    }
+  }
+  
+  return 0;
+}
+
 /* 
  * addcommandhelptotree:
  *
@@ -84,11 +110,14 @@ int countcommandtree(CommandTree *ct) {
  
 Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help) {
   Command *nc, *c;
-  int i;
-  
+  char cmdbuf[MAX_COMMAND_LEN];
+
+  if (sanitisecommandname(cmdname, cmdbuf))
+    return NULL;
+
   /* Generate the struct.. */
   nc=(void *)malloc(sizeof(Command));
-  nc->command=getsstring(cmdname, MAX_COMMAND_LEN);
+  nc->command=getsstring(cmdbuf, MAX_COMMAND_LEN);
   nc->level=level;
   nc->maxparams=maxparams;
   nc->handler=handler;
@@ -103,19 +132,6 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
     }
   } else {
     nc->help=NULL;
-  }
-
-  /* Sanity check the string */
-  for (i=0;i<nc->command->length;i++) {
-    nc->command->content[i]=toupper(nc->command->content[i]);
-    if (nc->command->content[i]<'A' || nc->command->content[i]>'Z') {
-      /* Someone tried to register an invalid command name */
-      freesstring(nc->command);
-      if(nc->help)
-        free(nc->help);
-      free(nc);
-      return NULL;    
-    }
   }
 
   if ((c=findcommandintree(ct,cmdname,1))!=NULL) {
@@ -190,21 +206,16 @@ int insertcommand(Command *c, CommandTree *ct, int depth) {
 
 int deletecommandfromtree(CommandTree *ct, const char *cmdname, CommandHandler handler) {
   int i;
+  char cmdbuf[MAX_COMMAND_LEN+1];
   sstring *tmpstr;
   
-  tmpstr=getsstring(cmdname,MAX_COMMAND_LEN);
+  if (sanitisecommandname(cmdname, cmdbuf))
+    return 1;
   
-  /* Sanity check input string */
-  for (i=0;i<tmpstr->length;i++) {
-    tmpstr->content[i]=toupper(tmpstr->content[i]);
-    if (tmpstr->content[i]<'A' || tmpstr->content[i]>'Z') {
-      /* Someone tried to delete an invalid command name */
-      freesstring(tmpstr);
-      return 1;
-    }
-  }
+  tmpstr=getsstring(cmdbuf, MAX_COMMAND_LEN);
   i=deletecommand(tmpstr,ct,0,handler);
   freesstring(tmpstr);
+
   return i;
 }
 
