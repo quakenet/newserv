@@ -192,13 +192,12 @@ void irc_disconnected() {
   serverfd=-1;
   if (connected) {
     connected=0;
-    
-    deleteschedule(NULL,&irc_connect,NULL);
-    deleteschedule(NULL,&sendping,NULL);
-    scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
     triggerhook(HOOK_IRC_PRE_DISCON,NULL);
     triggerhook(HOOK_IRC_DISCON,NULL);
   }
+  deleteschedule(NULL,&irc_connect,NULL);
+  deleteschedule(NULL,&sendping,NULL);
+  scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
 }
 
 void irc_send(char *format, ... ) {
