@@ -1,6 +1,7 @@
 #ifndef __AUTHEXT_H
 #define __AUTHEXT_H
 
+#include "../irc/irc_config.h"
 #include "../lib/flags.h"
 
 #define MAXAUTHNAMEEXTS 5
@@ -15,6 +16,7 @@ typedef struct authname {
   struct authname *next, *nextbyname;
   unsigned int namebucket;
   flag_t flags;
+  char name[ACCOUNTLEN+1];
   /* These are extensions only used by other modules */
   void *exts[MAXAUTHNAMEEXTS];
 } authname;
