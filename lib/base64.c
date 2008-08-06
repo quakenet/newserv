@@ -23,7 +23,8 @@ int numerictab[] = {
 
 char tokens[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]";
 
-INLINE long numerictolong(const char *numeric, int numericlen)
+/*
+VALID_INLINE long numerictolong(const char *numeric, int numericlen)
 {
   long mynumeric=0; 
   int i;
@@ -34,6 +35,7 @@ INLINE long numerictolong(const char *numeric, int numericlen)
 
   return mynumeric;
 }
+*/
 
 char *longtonumeric(long param, int len)
 {
