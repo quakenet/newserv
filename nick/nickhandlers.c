@@ -167,11 +167,12 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
         sethostarg++;
 
         if ((accountts=strchr(cargv[accountarg],':'))) {
+          time_t accountts_t=strtoul(accountts,&accountid,10)
           *accountts++='\0';
           if(accountid) {
             strncpy(np->authname,cargv[accountarg],ACCOUNTLEN);
             np->authname[ACCOUNTLEN]='\0';
-            np->accountts=strtoul(accountts,&accountid,10);
+            np->accountts=accountts_t;
 
             userid=strtoul(accountid + 1,&accountflags,10);
             if(!userid) {
