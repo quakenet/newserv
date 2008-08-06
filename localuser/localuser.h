@@ -23,9 +23,8 @@ typedef void (*UserMessageHandler)(nick *,int,void **);
 
 extern UserMessageHandler umhandlers[MAXLOCALUSER+1];
 
-#define registerlocaluserwithuserid(nickname, ident, host, realname, authname, id, umodes, handler) registerlocaluserwithuseridflags(nickname, ident, host, realname, authname, id, umodes, 0, handler)
-#define registerlocaluser(nickname, ident, host, realname, authname, umodes, handler) registerlocaluserwithuserid(nickname, ident, host, realname, authname, 0, umodes, handler)
-nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, flag_t accountflags, UserMessageHandler hander);
+#define registerlocaluser(nickname, ident, host, realname, authname, umodes, handler) registerlocaluserflags(nickname, ident, host, realname, authname, 0, 0, umodes, handler)
+nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler hander);
 int renamelocaluser(nick *np, char *newnick);
 int deregisterlocaluser(nick *np, char *reason);
 UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler);
@@ -38,11 +37,8 @@ void sendmessagetouser(nick *source, nick *target, char *format, ... );
 void sendsecuremessagetouser(nick *source, nick *target, char *servername, char *format, ... );
 void sendnoticetouser(nick *source, nick *target, char *format, ... );
 void killuser(nick *source, nick *target, char *format, ... );
-#define localusersetaccount(np, accname) localusersetaccountwithuserid(np, accname, 0)
-#define localusersetaccountwithuserid(np, accname, userid) localusersetaccountwithuseridflags(np, accname, userid, 0)
-#define localusersetaccountwithuseridflags(np, accname, accid, accountflags) localusersetaccountwithuseridflagsts(np, accname, accid, accountflags, 0)
-#define localusersetaccountwithuseridts(np, accname, userid, authts) localusersetaccountwithuseridflagsts(np, accname, userid, 0, authts)
-void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS);
+#define localusersetaccount(np, accname) localusersetaccountflags(np, accname, 0)
+void localusersetaccountflags(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS);
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
 

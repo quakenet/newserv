@@ -38,7 +38,12 @@
 #define UMODE_ALL       0x3FFF
 
 #define AFLAG_STAFF     0x0001
-#define AFLAG_DEVELOPER 0x0002
+#define AFLAG_SUPPORT   0x0002
+#define AFLAG_OPER      0x0004
+#define AFLAG_ADMIN     0x0008
+#define AFLAG_DEVELOPER 0x0010
+
+#define AFLAG_ALL       0x001F
 
 #define IsInvisible(x)    ((x)->umodes & UMODE_INV)
 #define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
@@ -87,12 +92,21 @@
 
 #define IsStaff(x)           ((x)->umodes & AFLAG_STAFF)
 #define IsDeveloper(x)       ((x)->umodes & AFLAG_DEVELOPER)
+#define IsSupport(x)         ((x)->umodes & AFLAG_SUPPORT)
+#define IsAdmin(x)           ((x)->umodes & AFLAG_ADMIN)
+#define IsOperFlag(x)        ((x)->umodes & AFLAG_OPER)
 
 #define SetStaff(x)          ((x)->umodes |= AFLAG_STAFF)
 #define SetDeveloper(x)      ((x)->umodes |= AFLAG_DEVELOPER)
+#define SetSupport(x)        ((x)->umodes |= AFLAG_SUPPORT)
+#define SetAdmin(x)          ((x)->umodes |= AFLAG_ADMIN)
+#define SetOperFlag(x)       ((x)->umodes |= AFLAG_OPER)
 
 #define ClearStaff(x)        ((x)->umodes &= ~AFLAG_STAFF)
 #define ClearDeveloper(x)    ((x)->umodes &= ~AFLAG_DEVELOPER)
+#define ClearSupport(x)      ((x)->umodes &= ~AFLAG_SUPPORT)
+#define ClearAdmin(x)        ((x)->umodes &= ~AFLAG_ADMIN)
+#define ClearOperFlag(x)     ((x)->umodes &= ~AFLAG_OPER)
 
 typedef struct host {
   sstring *name;

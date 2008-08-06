@@ -76,7 +76,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
 
   controlreply(np, "Ticket valid, authing. . .");
 
-  localusersetaccountwithuserid(np, acc, id);
+  localusersetaccountflags(np, acc, id, 0, 0);
 
   controlreply(np, "Done.");
   return CMD_OK;

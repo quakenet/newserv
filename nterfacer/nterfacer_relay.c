@@ -183,7 +183,7 @@ nick *relay_getnick(void) {
       number = 1;
 
     if(!getnickbynick(ournick))
-       return registerlocaluserwithuserid(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", userid, UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
+       return registerlocaluserflags(ournick, "nterf", "cer", "nterfacer relay", "nterfacer", userid, 0, UMODE_SERVICE | UMODE_DEAF | UMODE_OPER | UMODE_INV | UMODE_ACCOUNT, &relay_messages);
 
     attempts--;
   } while(attempts > 0);

@@ -69,6 +69,8 @@
 
 #define HOOK_SHADOW_SERVER         701 /* Argument is char* */
 
+#define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, flag_t) */
+
 typedef void (*HookCallback)(int, void *);
 
 extern unsigned int hookqueuelength;

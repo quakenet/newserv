@@ -67,11 +67,11 @@ void _fini() {
 }
 
 /*
- * registerlocaluserwithuseridflags:
+ * registerlocaluserflags:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, flag_t accountflags, UserMessageHandler handler) {
+nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
   struct irc_in_addr ipaddress;
@@ -283,10 +283,8 @@ void sendnickmsg(nick *np) {
       } else {
         snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
-    } else if (np->accountts) {
-      snprintf(accountbuf,sizeof(accountbuf)," %s:%ld",np->authname,np->accountts);
     } else {
-      snprintf(accountbuf,sizeof(accountbuf)," %s",np->authname);
+      snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:0",np->authname,np->accountts);
     }
   } else {
     accountbuf[0]='\0';
@@ -557,7 +555,7 @@ void checkpendingkills(int hooknum, void *arg) {
 }
 
 /* Auth user */
-void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
+void localusersetaccountflags(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
@@ -586,7 +584,7 @@ void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long
         irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
       }
     } else {
-      irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
+      irc_send("%s AC %s %s %ld 0",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
     }
   }
 

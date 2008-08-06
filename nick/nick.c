@@ -38,7 +38,10 @@ const flag umodeflags[] = {
    { '\0', 0 } };
 
 const flag accountflags[] = {
-   { 's', AFLAG_STAFF },
+   { 'q', AFLAG_STAFF },
+   { 's', AFLAG_SUPPORT },
+   { 'o', AFLAG_OPER },
+   { 'a', AFLAG_ADMIN },
    { 'd', AFLAG_DEVELOPER },
    { '\0', 0 } };
 
