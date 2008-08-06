@@ -2,6 +2,7 @@
  * Nick protection system for the chanserv
  */
 
+#include <stdio.h>
 #include "chanserv.h"
 #include "../core/schedule.h"
 #include "../localuser/localuser.h"
