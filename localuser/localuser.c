@@ -287,7 +287,7 @@ void sendnickmsg(nick *np) {
   if (IsAccount(np)) {
     if (np->auth) {
       if(np->auth->flags) {
-        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:" FLAG_T_SPECIFIER,np->authname,np->accountts,np->auth->userid,np->auth->flags);
+        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:%llu",np->authname,np->accountts,np->auth->userid,np->auth->flags);
       } else {
         snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
@@ -564,7 +564,7 @@ void sendaccountmessage(nick *np) {
   if (connected) {
     if (np->auth) {
       if (np->auth->flags) {
-        irc_send("%s AC %s %s %ld %lu %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
+        irc_send("%s AC %s %s %ld %lu %llu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
       } else {
         irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
       }
@@ -575,7 +575,7 @@ void sendaccountmessage(nick *np) {
 }
 
 /* Auth user, don't use to set flags after authing */
-void localusersetaccount(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
+void localusersetaccount(nick *np, char *accname, unsigned long accid, u_int64_t accountflags, time_t authTS) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
@@ -610,16 +610,17 @@ void localusersetumodes(nick *np, flag_t newmodes) {
   np->umodes = newmodes;
 }
 
-void localusersetaccountflags(authname *anp, flag_t accountflags) {
+void localusersetaccountflags(authname *anp, u_int64_t accountflags) {
   void *arg[2];
   nick *np;
+  u_int64_t oldflags = anp->flags;
 
-  arg[0] = (void *)anp;
-  arg[1] = (void *)(long)anp->flags;
+  arg[0] = anp;
+  arg[1] = &oldflags;
   anp->flags = accountflags;
 
   for(np=anp->nicks;np;np=np->next)
     sendaccountmessage(np);
 
-  triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);  
+  triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);
 }

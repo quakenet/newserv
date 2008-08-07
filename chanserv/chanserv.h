@@ -897,7 +897,7 @@ void q9snprintf(char *buf, size_t size, const char *format, const char *args, ..
 void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap);
 
 /* chanserv_flags.c */
-flag_t cs_accountflagmap(reguser *rup);
-flag_t cs_accountflagmap_str(char *flags);
+u_int64_t cs_accountflagmap(reguser *rup);
+u_int64_t cs_accountflagmap_str(char *flags);
 
 #endif

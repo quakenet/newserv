@@ -179,7 +179,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
               if(accountflags)
-                np->auth->flags=strtoul(accountflags + 1,NULL,10);
+                np->auth->flags=strtoull(accountflags + 1,NULL,10);
             }
           }
           if(!userid) {
@@ -388,7 +388,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   nick *target;
   unsigned long userid;
   time_t accountts;
-  flag_t accountflags;
+  u_int64_t accountflags, oldflags;
 
   if (cargc<4) {
     return CMD_OK;
@@ -401,7 +401,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   accountts=strtoul(cargv[2],NULL,10);
   userid=strtoul(cargv[3],NULL,10);
   if(cargc>=5)
-    accountflags=strtoul(cargv[4],NULL,10);
+    accountflags=strtoull(cargv[4],NULL,10);
 
   /* allow user flags to change if all fields match */
   if (IsAccount(target)) {
@@ -411,15 +411,15 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
       return CMD_OK;
     }
 
-    arg[0] = (void *)target->auth;
-    arg[1] = (void *)(long)target->auth->flags;
+    oldflags = target->auth->flags;
+    arg[0] = target->auth;
+    arg[1] = &oldflags;
     
     if (cargc>=5)
       target->auth->flags=accountflags;
 
     triggerhook(HOOK_AUTH_FLAGSUPDATED, (void *)arg);
 
-    /* TODO: trigger flag update hook */
     return CMD_OK;
   }
   

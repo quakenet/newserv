@@ -62,7 +62,7 @@ const flag mdflags[] = {
   { 'u', MDFLAG_ACTLIMIT },
   { '\0', 0 } };
 
-flag_t cs_accountflagmap(reguser *rup) {
+u_int64_t cs_accountflagmap(reguser *rup) {
   authname a2, *a = &a2;
   a->flags = 0;
 
@@ -84,7 +84,7 @@ flag_t cs_accountflagmap(reguser *rup) {
   return a->flags;
 }
 
-flag_t cs_accountflagmap_str(char *flags) {
+u_int64_t cs_accountflagmap_str(char *flags) {
   reguser r2, *r = &r2;
 
   setflags(&r->flags, QUFLAG_ALL, flags, ruflags, REJECT_NONE);
