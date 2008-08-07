@@ -23,6 +23,7 @@
 int csu_douserflags(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender), *target;
+  authname *anp;
   int arg=0, wasorisoper;
   flag_t flagmask, changemask, oldflags;
   char flagbuf[30];
@@ -95,6 +96,10 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
 #endif
     }
     csdb_updateuser(target);
+
+    if ((anp=findauthname(rup->ID)))
+      localusersetaccountflags(anp, cs_accountflagmap(target));
+
     chanservstdmessage(sender, QM_DONE);
   }
 

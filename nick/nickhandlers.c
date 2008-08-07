@@ -148,7 +148,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->umodes=0;
     np->marker=0;
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
-    np->authname[0]='\0';
+    np->authname=NULL;
     np->auth=NULL;
     np->accountts=0;
     if(cargc>=9) {
@@ -167,24 +167,22 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
         sethostarg++;
 
         if ((accountts=strchr(cargv[accountarg],':'))) {
-          time_t accountts_t=strtoul(accountts,&accountid,10)
           *accountts++='\0';
+          np->accountts=strtoul(accountts,&accountid,10);
           if(accountid) {
-            strncpy(np->authname,cargv[accountarg],ACCOUNTLEN);
-            np->authname[ACCOUNTLEN]='\0';
-            np->accountts=accountts_t;
-
             userid=strtoul(accountid + 1,&accountflags,10);
-            if(!userid) {
-              np->auth=NULL;
-            } else {
+            if(userid) {
               np->auth=findorcreateauthname(userid, cargv[accountarg]);
+              np->authname=np->auth->name;
               np->auth->usercount++;
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
               if(accountflags)
                 np->auth->flags=strtoul(accountflags + 1,NULL,10);
             }
+          } else {
+            np->authname=malloc(strlen(cargv[accountarg]) + 1);
+            strcpy(np->authname,cargv[accountarg]);
           }
         }        
       } 
@@ -400,14 +398,14 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   
   accountts=strtoul(cargv[2],NULL,10);
   userid=strtoul(cargv[3],NULL,10);
-  if(cargv>=5)
+  if(cargc>=5)
     accountflags=strtoul(cargv[4],NULL,10);
 
   /* allow user flags to change if all fields match */
   if (IsAccount(target)) {
     void *arg[2];
 
-    if (!target->auth || strcmp(target->authname,cargv[1]) || (target->auth->userid != userid) || (target->accountts != accountts)) {
+    if (!target->auth || strcmp(target->auth->name,cargv[1]) || (target->auth->userid != userid) || (target->accountts != accountts)) {
       return CMD_OK;
     }
 
@@ -424,15 +422,16 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   }
   
   SetAccount(target);
-  strncpy(target->authname,cargv[1],ACCOUNTLEN);
-  target->authname[ACCOUNTLEN]='\0';
   target->accountts=accountts;
 
   if(!userid) {
     target->auth=NULL;
+    target->authname=malloc(strlen(cargv[1]) + 1);
+    strcpy(target->authname,cargv[1]);
   } else {
     target->auth=findorcreateauthname(userid, target->authname);
     target->auth->usercount++;
+    target->authname=target->auth->name;
     target->nextbyauthname = target->auth->nicks;
     target->auth->nicks = target;
     if (cargc>=5)

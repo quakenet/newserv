@@ -39,7 +39,7 @@ const flag umodeflags[] = {
 
 const flag accountflags[] = {
    { 'q', AFLAG_STAFF },
-   { 's', AFLAG_SUPPORT },
+   { 'h', AFLAG_SUPPORT },
    { 'o', AFLAG_OPER },
    { 'a', AFLAG_ADMIN },
    { 'd', AFLAG_DEVELOPER },
@@ -98,6 +98,8 @@ void _fini() {
       freesstring(np->shident);
       freesstring(np->sethost);
       freesstring(np->opername);
+      if(!np->auth && np->authname)
+        free(np->authname);
     }
   }
 
@@ -179,18 +181,22 @@ void deletenick(nick *np) {
   releaserealname(np->realname);
   releasehost(np->host);
   
-  if(IsAccount(np) && np->auth)
-  {
-    np->auth->usercount--;
+  if(IsAccount(np)) {
+    if(!np->auth) {
+      if(np->authname)
+        free(np->authname);
+    } else {
+      np->auth->usercount--;
     
-    for (nh=&(np->auth->nicks);*nh;nh=&((*nh)->nextbyauthname)) {
-      if (*nh==np) {
-        *nh=np->nextbyauthname;
-        break;
+      for (nh=&(np->auth->nicks);*nh;nh=&((*nh)->nextbyauthname)) {
+        if (*nh==np) {
+          *nh=np->nextbyauthname;
+          break;
+        }
       }
-    }
     
-    releaseauthname(np->auth);
+      releaseauthname(np->auth);
+    }
   }
   
   freesstring(np->shident); /* freesstring(NULL) is OK */

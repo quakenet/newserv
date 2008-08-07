@@ -100,7 +100,7 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   newuser->nextbyrealname=newuser->realname->nicks;
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
-  
+
   memset(&ipaddress, 0, sizeof(ipaddress));
   ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress.in6_16))[6] = 127;
@@ -121,24 +121,31 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   } else {
     newuser->opername = NULL;
   }
+
+  newuser->accountts=0;
+  newuser->auth=NULL;
+  newuser->authname=NULL;  
   if (IsAccount(newuser)) {
-    strncpy(newuser->authname,authname,ACCOUNTLEN);
     newuser->accountts=newuser->timestamp;
     if (authid) {
-      newuser->auth=findorcreateauthname(authid, newuser->authname);
+      newuser->auth=findorcreateauthname(authid, authname);
+      newuser->authname=newuser->auth->name;
       newuser->auth->usercount++;
       newuser->nextbyauthname=newuser->auth->nicks;
       newuser->auth->nicks=newuser;
       newuser->auth->flags=accountflags;
     } else {
-      newuser->auth=NULL;
+      /*
+         this is done for three reasons:
+         1: so I don't have to change 500 pieces of code
+         2: so services can be authed with special reserved ids
+         3: saves space over the old authname per user method
+       */
+      newuser->authname=malloc(strlen(authname) + 1);
+      strcpy(newuser->authname,authname);
     }
-  } else {
-    newuser->authname[0]='\0';
-    newuser->accountts=0;
-    newuser->auth=NULL;
   }
-  
+
   if (connected) {
     /* Check for nick collision */
     if ((np=getnickbynick(nickname))!=NULL) {
@@ -276,6 +283,7 @@ void sendnickmsg(nick *np) {
     operbuf[0] = '\0';
   }
 
+  accountbuf[0]='\0';
   if (IsAccount(np)) {
     if (np->auth) {
       if(np->auth->flags) {
@@ -283,11 +291,9 @@ void sendnickmsg(nick *np) {
       } else {
         snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
-    } else {
+    } else if(np->authname) {
       snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:0",np->authname,np->accountts);
     }
-  } else {
-    accountbuf[0]='\0';
   }
 
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
@@ -554,28 +560,7 @@ void checkpendingkills(int hooknum, void *arg) {
   }
 }
 
-/* Auth user */
-void localusersetaccountflags(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
-  if (IsAccount(np)) {
-    Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
-    return;
-  }
-
-  SetAccount(np);
-  strncpy(np->authname, accname, ACCOUNTLEN);
-  np->authname[ACCOUNTLEN]='\0';
-  np->accountts=authTS?authTS:getnettime();
-
-  if (accid) {
-    np->auth=findorcreateauthname(accid, accname);
-    np->auth->usercount++;
-    np->nextbyauthname=np->auth->nicks;
-    np->auth->nicks=np;
-    np->auth->flags=accountflags;
-  } else {
-    np->auth=NULL;
-  }
-
+void sendaccountmessage(nick *np) {
   if (connected) {
     if (np->auth) {
       if (np->auth->flags) {
@@ -587,6 +572,32 @@ void localusersetaccountflags(nick *np, char *accname, unsigned long accid, flag
       irc_send("%s AC %s %s %ld 0",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
     }
   }
+}
+
+/* Auth user, don't use to set flags after authing */
+void localusersetaccount(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
+  if (IsAccount(np)) {
+    Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
+    return;
+  }
+
+  SetAccount(np);
+  np->accountts=authTS?authTS:getnettime();
+
+  if (accid) {
+    np->auth=findorcreateauthname(accid, accname);
+    np->auth->usercount++;
+    np->authname=np->auth->name;
+    np->nextbyauthname=np->auth->nicks;
+    np->auth->nicks=np;
+    np->auth->flags=accountflags;
+  } else {
+    np->auth=NULL;
+    np->authname=malloc(strlen(accname) + 1);
+    strcpy(np->authname,accname);
+  }
+
+  sendaccountmessage(np);
 
   triggerhook(HOOK_NICK_ACCOUNT, np);
 }
@@ -597,4 +608,18 @@ void localusersetumodes(nick *np, flag_t newmodes) {
   }
 
   np->umodes = newmodes;
+}
+
+void localusersetaccountflags(authname *anp, flag_t accountflags) {
+  void *arg[2];
+  nick *np;
+
+  arg[0] = (void *)anp;
+  arg[1] = (void *)(long)anp->flags;
+  anp->flags = accountflags;
+
+  for(np=anp->nicks;np;np=np->next)
+    sendaccountmessage(np);
+
+  triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);  
 }

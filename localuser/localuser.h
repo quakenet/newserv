@@ -37,9 +37,9 @@ void sendmessagetouser(nick *source, nick *target, char *format, ... );
 void sendsecuremessagetouser(nick *source, nick *target, char *servername, char *format, ... );
 void sendnoticetouser(nick *source, nick *target, char *format, ... );
 void killuser(nick *source, nick *target, char *format, ... );
-#define localusersetaccount(np, accname) localusersetaccountflags(np, accname, 0)
-void localusersetaccountflags(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS);
+void localusersetaccount(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS);
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
+void localusersetaccountflags(authname *anp, flag_t accountflags);
 
 #endif

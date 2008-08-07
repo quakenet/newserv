@@ -90,23 +90,23 @@
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
 #define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
 
-#define IsStaff(x)           ((x)->umodes & AFLAG_STAFF)
-#define IsDeveloper(x)       ((x)->umodes & AFLAG_DEVELOPER)
-#define IsSupport(x)         ((x)->umodes & AFLAG_SUPPORT)
-#define IsAdmin(x)           ((x)->umodes & AFLAG_ADMIN)
-#define IsOperFlag(x)        ((x)->umodes & AFLAG_OPER)
+#define IsStaff(x)           ((x)->flags & AFLAG_STAFF)
+#define IsDeveloper(x)       ((x)->flags & AFLAG_DEVELOPER)
+#define IsSupport(x)         ((x)->flags & AFLAG_SUPPORT)
+#define IsAdmin(x)           ((x)->flags & AFLAG_ADMIN)
+#define IsOperFlag(x)        ((x)->flags & AFLAG_OPER)
 
-#define SetStaff(x)          ((x)->umodes |= AFLAG_STAFF)
-#define SetDeveloper(x)      ((x)->umodes |= AFLAG_DEVELOPER)
-#define SetSupport(x)        ((x)->umodes |= AFLAG_SUPPORT)
-#define SetAdmin(x)          ((x)->umodes |= AFLAG_ADMIN)
-#define SetOperFlag(x)       ((x)->umodes |= AFLAG_OPER)
+#define SetStaff(x)          ((x)->flags |= AFLAG_STAFF)
+#define SetDeveloper(x)      ((x)->flags |= AFLAG_DEVELOPER)
+#define SetSupport(x)        ((x)->flags |= AFLAG_SUPPORT)
+#define SetAdmin(x)          ((x)->flags |= AFLAG_ADMIN)
+#define SetOperFlag(x)       ((x)->flags |= AFLAG_OPER)
 
-#define ClearStaff(x)        ((x)->umodes &= ~AFLAG_STAFF)
-#define ClearDeveloper(x)    ((x)->umodes &= ~AFLAG_DEVELOPER)
-#define ClearSupport(x)      ((x)->umodes &= ~AFLAG_SUPPORT)
-#define ClearAdmin(x)        ((x)->umodes &= ~AFLAG_ADMIN)
-#define ClearOperFlag(x)     ((x)->umodes &= ~AFLAG_OPER)
+#define ClearStaff(x)        ((x)->flags &= ~AFLAG_STAFF)
+#define ClearDeveloper(x)    ((x)->flags &= ~AFLAG_DEVELOPER)
+#define ClearSupport(x)      ((x)->flags &= ~AFLAG_SUPPORT)
+#define ClearAdmin(x)        ((x)->flags &= ~AFLAG_ADMIN)
+#define ClearOperFlag(x)     ((x)->flags &= ~AFLAG_OPER)
 
 typedef struct host {
   sstring *name;
@@ -134,7 +134,7 @@ typedef struct nick {
   sstring *sethost;
   sstring *opername;
   flag_t umodes;
-  char authname[ACCOUNTLEN+1];
+  char *authname;
   authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
