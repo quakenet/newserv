@@ -124,7 +124,7 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
 
   newuser->accountts=0;
   newuser->auth=NULL;
-  newuser->authname=NULL;  
+  newuser->authname=NULLAUTHNAME;
   if (IsAccount(newuser)) {
     newuser->accountts=newuser->timestamp;
     if (authid) {

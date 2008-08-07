@@ -54,6 +54,8 @@ sstring *nickextnames[MAXNICKEXTS];
 
 void nickstats(int hooknum, void *arg);
 
+char *NULLAUTHNAME = "";
+
 void _init() {
   unsigned int i;
   authname *anp;
@@ -98,7 +100,7 @@ void _fini() {
       freesstring(np->shident);
       freesstring(np->sethost);
       freesstring(np->opername);
-      if(!np->auth && np->authname)
+      if(!np->auth && np->authname && (np->authname != NULLAUTHNAME))
         free(np->authname);
     }
   }
@@ -183,7 +185,7 @@ void deletenick(nick *np) {
   
   if(IsAccount(np)) {
     if(!np->auth) {
-      if(np->authname)
+      if(np->authname && (np->authname != NULLAUTHNAME))
         free(np->authname);
     } else {
       np->auth->usercount--;

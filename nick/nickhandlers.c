@@ -148,7 +148,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->umodes=0;
     np->marker=0;
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
-    np->authname=NULL;
+    np->authname=NULLAUTHNAME;
     np->auth=NULL;
     np->accountts=0;
     if(cargc>=9) {
@@ -167,6 +167,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
         sethostarg++;
 
         if ((accountts=strchr(cargv[accountarg],':'))) {
+          userid=0;
           *accountts++='\0';
           np->accountts=strtoul(accountts,&accountid,10);
           if(accountid) {
@@ -180,7 +181,8 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
               if(accountflags)
                 np->auth->flags=strtoul(accountflags + 1,NULL,10);
             }
-          } else {
+          }
+          if(!userid) {
             np->authname=malloc(strlen(cargv[accountarg]) + 1);
             strcpy(np->authname,cargv[accountarg]);
           }

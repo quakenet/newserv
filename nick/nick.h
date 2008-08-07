@@ -161,6 +161,7 @@ extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
 extern const flag umodeflags[];
 extern const flag accountflags[];
+extern char *NULLAUTHNAME;
 
 #define MAXNUMERIC 0x3FFFFFFF
 
