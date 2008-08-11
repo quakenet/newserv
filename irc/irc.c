@@ -144,6 +144,11 @@ void irc_connect(void *arg) {
     Error("irc",ERR_ERROR,"Couldn't connect to %s:%s, will retry in one minute",conto->content,conport->content);
     scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
     close(serverfd);
+    freesstring(conto);
+    freesstring(conport);
+    freesstring(conpass);
+    freesstring(mydesc);
+    freesstring(pingfreq);
     return;
   }
   
