@@ -65,7 +65,7 @@ void loadextrascans() {
       break;
     }
 
-    res=sscanf(buf,"%s %hu",&ip,&port);
+    res=sscanf(buf,"%s %hu",ip,&port);
 
     if (res<2)
       continue;
@@ -93,7 +93,6 @@ void loadextrascans() {
 
 
 unsigned int extrascancount() {
-  int i;
   unsigned int total=0;
   extrascan *esp;
   patricia_node_t *node;

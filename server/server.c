@@ -91,6 +91,11 @@ int handleservermsg(void *source, int cargc, char **cargv) {
     /* This is the initial server */
     myhub=servernum;
     serverlist[servernum].parent=numerictolong(mynumeric->content,2);
+    triggerhook(HOOK_IRC_SENDBURSTSERVERS,NULL);
+    triggerhook(HOOK_IRC_SENDBURSTNICKS,NULL);
+    triggerhook(HOOK_IRC_SENDBURSTBURSTS,NULL);
+    irc_send("%s EB",mynumeric->content);
+    triggerhook(HOOK_IRC_CONNECTED,NULL);
   } else {
     serverlist[servernum].parent=numerictolong(source,2);
   }    

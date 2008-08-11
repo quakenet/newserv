@@ -178,12 +178,6 @@ int irc_handleserver(void *source, int cargc, char **cargv) {
     setnettime(strtol(cargv[3],NULL,10));
 
     connected=1;
-    triggerhook(HOOK_IRC_SENDBURSTSERVERS,NULL);
-    triggerhook(HOOK_IRC_SENDBURSTNICKS,NULL);
-    triggerhook(HOOK_IRC_SENDBURSTBURSTS,NULL);
-    irc_send("%s EB",mynumeric->content);
-   
-    triggerhook(HOOK_IRC_CONNECTED,NULL);
   } else {
     Error("irc",ERR_INFO,"Unexpected SERVER message");
   }
@@ -198,13 +192,12 @@ void irc_disconnected() {
   serverfd=-1;
   if (connected) {
     connected=0;
-    
-    deleteschedule(NULL,&irc_connect,NULL);
-    deleteschedule(NULL,&sendping,NULL);
-    scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
     triggerhook(HOOK_IRC_PRE_DISCON,NULL);
     triggerhook(HOOK_IRC_DISCON,NULL);
   }
+  deleteschedule(NULL,&irc_connect,NULL);
+  deleteschedule(NULL,&sendping,NULL);
+  scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
 }
 
 void irc_send(char *format, ... ) {

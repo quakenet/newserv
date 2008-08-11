@@ -5,6 +5,7 @@
 #include "../lib/irc_string.h"
 #include "../nick/nick.h"
 #include "../core/hooks.h"
+#include "../lib/strlfunc.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -126,7 +127,7 @@ authname *findauthnamebyname(const char *name) {
     return NULL;
 
   for (anp=authnametablebyname[authnamehashbyname(name)];anp;anp=(authname *)anp->nextbyname)
-    if (!ircd_strcmp(anp->nicks->authname, name))
+    if (!ircd_strcmp(anp->name, name))
       return anp;
 
   return NULL;
@@ -145,6 +146,7 @@ authname *findorcreateauthname(unsigned long userid, const char *name) {
 
   anp=newauthname();
   anp->userid=userid;
+  strlcpy(anp->name, name, sizeof(anp->name));
   anp->usercount=0;
   anp->marker=0;
   anp->flags=0;

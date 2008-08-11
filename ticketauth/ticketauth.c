@@ -13,6 +13,7 @@
 #include "../localuser/localuser.h"
 #include "../core/hooks.h"
 #include "../irc/irc.h"
+#include "../chanserv/chanserv.h"
 
 #define WARN_CHANNEL "#twilightzone"
 
@@ -22,7 +23,7 @@ sstring *sharedsecret = NULL;
 
 int ta_ticketauth(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
-  char buffer[1024], *uhmac, *acc, *junk;
+  char buffer[1024], *uhmac, *acc, *junk, *flags;
   unsigned char digest[32];
   int expiry, acclen, id;
   hmacsha256 hmac;
@@ -33,15 +34,16 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargc != 5)
+  if(cargc != 6)
     return CMD_USAGE;
 
   acc = cargv[0];
   expiry = atoi(cargv[1]);
   id = atoi(cargv[2]);
   acclen = strlen(acc);
-  junk = cargv[3];
-  uhmac = cargv[4];
+  flags = cargv[3];
+  junk = cargv[4];
+  uhmac = cargv[5];
 
   if((acclen <= 1) || (acclen > ACCOUNTLEN)) {
     controlreply(np, "Bad account.");
@@ -76,7 +78,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
 
   controlreply(np, "Ticket valid, authing. . .");
 
-  localusersetaccountwithuserid(np, acc, id);
+  localusersetaccount(np, acc, id, 0, cs_accountflagmap_str(flags));
 
   controlreply(np, "Done.");
   return CMD_OK;

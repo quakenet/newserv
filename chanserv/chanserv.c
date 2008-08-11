@@ -18,67 +18,6 @@ int chanserv_init_status;
 sstring **chantypes;
 sstring *cs_quitreason;
 
-const flag rcflags[] = {
-  { 'a', QCFLAG_AUTOOP },
-  { 'b', QCFLAG_BITCH },
-  { 'c', QCFLAG_AUTOLIMIT },
-  { 'e', QCFLAG_ENFORCE },
-  { 'f', QCFLAG_FORCETOPIC },
-  { 'g', QCFLAG_AUTOVOICE },
-  { 'i', QCFLAG_INFO },
-  { 'j', QCFLAG_JOINED },
-  { 'k', QCFLAG_KNOWNONLY },
-  { 'p', QCFLAG_PROTECT },
-  { 's', QCFLAG_NOINFO },
-  { 't', QCFLAG_TOPICSAVE },
-  { 'v', QCFLAG_VOICEALL },
-  { 'w', QCFLAG_WELCOME },
-  { 'z', QCFLAG_SUSPENDED },
-  { '\0', 0 } };   
-
-const flag rcuflags[] = {
-  { 'a', QCUFLAG_AUTOOP },
-  { 'b', QCUFLAG_BANNED },
-  { 'd', QCUFLAG_DENY },
-  { 'g', QCUFLAG_AUTOVOICE },
-  { 'i', QCUFLAG_INFO },
-  { 'j', QCUFLAG_AUTOINVITE },
-  { 'k', QCUFLAG_KNOWN },
-  { 'm', QCUFLAG_MASTER },
-  { 'n', QCUFLAG_OWNER },
-  { 'o', QCUFLAG_OP },
-  { 'p', QCUFLAG_PROTECT },
-  { 'q', QCUFLAG_QUIET },
-  { 's', QCUFLAG_NOINFO },
-  { 't', QCUFLAG_TOPIC },
-  { 'v', QCUFLAG_VOICE },
-  { 'w', QCUFLAG_HIDEWELCOME },
-  { '\0', 0 } };
-
-const flag ruflags[] = {
-  { 'a',  QUFLAG_ADMIN },
-  { 'd',  QUFLAG_DEV },
-  { 'D',  QUFLAG_CLEANUPEXEMPT },
-  { 'g',  QUFLAG_GLINE },
-  { 'G',  QUFLAG_DELAYEDGLINE },
-  { 'h',  QUFLAG_HELPER },
-  { 'i',  QUFLAG_INFO },
-  { 'L',  QUFLAG_NOAUTHLIMIT },
-  { 'n',  QUFLAG_NOTICE },
-  { 'o',  QUFLAG_OPER },
-  { 'p',  QUFLAG_PROTECT },
-  { 'q',  QUFLAG_STAFF },
-  { 's',  QUFLAG_NOINFO },
-  { 'T',  QUFLAG_TRUST },
-  { 'z',  QUFLAG_SUSPENDED },
-  { '\0', 0 } };
-
-const flag mdflags[] = {
-  { 'l', MDFLAG_LIMIT },
-  { 'b', MDFLAG_BANNED },
-  { 'u', MDFLAG_ACTLIMIT },
-  { '\0', 0 } };
-
 void chanservfreestuff();
 void chanservfinishinit(int hooknum, void *arg);
 

@@ -63,6 +63,7 @@ beginpools() {
   pool(PATRICIANICK),
   pool(GLINE),
   pool(TRUSTS),
+  pool(SPAMSCAN2),
 } endpools()
 
 #undef pool

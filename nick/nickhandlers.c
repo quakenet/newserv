@@ -148,8 +148,9 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->umodes=0;
     np->marker=0;
     memset(np->exts, 0, MAXNICKEXTS * sizeof(void *));
-    np->authname[0]='\0';
+    np->authname=NULLAUTHNAME;
     np->auth=NULL;
+    np->accountts=0;
     if(cargc>=9) {
       int sethostarg = 6, opernamearg = 6, accountarg = 6;
 
@@ -166,29 +167,26 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
         sethostarg++;
 
         if ((accountts=strchr(cargv[accountarg],':'))) {
+          userid=0;
           *accountts++='\0';
           np->accountts=strtoul(accountts,&accountid,10);
           if(accountid) {
             userid=strtoul(accountid + 1,&accountflags,10);
-            if(!userid) {
-              np->auth=NULL;
-            } else {
+            if(userid) {
               np->auth=findorcreateauthname(userid, cargv[accountarg]);
+              np->authname=np->auth->name;
               np->auth->usercount++;
               np->nextbyauthname=np->auth->nicks;
               np->auth->nicks=np;
               if(accountflags)
-                np->auth->flags=strtoul(accountflags + 1,NULL,10);
+                np->auth->flags=strtoull(accountflags + 1,NULL,10);
             }
-          } else {
-            np->auth=NULL;
           }
-        } else {
-          np->accountts=0;
-          np->auth=NULL;
+          if(!userid) {
+            np->authname=malloc(strlen(cargv[accountarg]) + 1);
+            strcpy(np->authname,cargv[accountarg]);
+          }
         }        
-        strncpy(np->authname,cargv[accountarg],ACCOUNTLEN);
-        np->authname[ACCOUNTLEN]='\0';
       } 
       if (IsSetHost(np) && (fakehost=strchr(cargv[sethostarg],'@'))) {
 	/* valid sethost */
@@ -302,6 +300,7 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
           np->opername = getsstring(cargv[2], ACCOUNTLEN);
         } else {
           freesstring(np->opername);
+          np->opername = NULL;
         }
       }
       if((np->umodes ^ oldflags) & UMODE_OPER)
@@ -388,8 +387,10 @@ int handlewhoismsg(void *source, int cargc, char **cargv) {
 int handleaccountmsg(void *source, int cargc, char **cargv) {
   nick *target;
   unsigned long userid;
-  
-  if (cargc<2) {
+  time_t accountts;
+  u_int64_t accountflags, oldflags;
+
+  if (cargc<4) {
     return CMD_OK;
   }
   
@@ -397,36 +398,48 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
   
+  accountts=strtoul(cargv[2],NULL,10);
+  userid=strtoul(cargv[3],NULL,10);
+  if(cargc>=5)
+    accountflags=strtoull(cargv[4],NULL,10);
+
+  /* allow user flags to change if all fields match */
   if (IsAccount(target)) {
+    void *arg[2];
+
+    if (!target->auth || strcmp(target->auth->name,cargv[1]) || (target->auth->userid != userid) || (target->accountts != accountts)) {
+      return CMD_OK;
+    }
+
+    oldflags = target->auth->flags;
+    arg[0] = target->auth;
+    arg[1] = &oldflags;
+    
+    if (cargc>=5)
+      target->auth->flags=accountflags;
+
+    triggerhook(HOOK_AUTH_FLAGSUPDATED, (void *)arg);
+
     return CMD_OK;
   }
   
   SetAccount(target);
-  strncpy(target->authname,cargv[1],ACCOUNTLEN);
-  target->authname[ACCOUNTLEN]='\0';
-  
-  if (cargc>=3) {
-    target->accountts=strtoul(cargv[2],NULL,10);
-    if (cargc>=4) {
-      userid=strtoul(cargv[3],NULL,10);
-      if(!userid) {
-        target->auth=NULL;
-      } else {
-        target->auth=findorcreateauthname(userid, target->authname);
-        target->auth->usercount++;
-        target->nextbyauthname = target->auth->nicks;
-        target->auth->nicks = target;
-        if (cargc>=5)
-          target->auth->flags=strtoul(cargv[4],NULL,10);
-      }
-    } else {
-      target->auth=NULL;
-    }
-  } else {
-    target->accountts=0;
+  target->accountts=accountts;
+
+  if(!userid) {
     target->auth=NULL;
+    target->authname=malloc(strlen(cargv[1]) + 1);
+    strcpy(target->authname,cargv[1]);
+  } else {
+    target->auth=findorcreateauthname(userid, target->authname);
+    target->auth->usercount++;
+    target->authname=target->auth->name;
+    target->nextbyauthname = target->auth->nicks;
+    target->auth->nicks = target;
+    if (cargc>=5)
+      target->auth->flags=accountflags;
   }
-  
+
   triggerhook(HOOK_NICK_ACCOUNT, (void *)target);
 
   return CMD_OK;

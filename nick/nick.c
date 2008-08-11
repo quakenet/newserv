@@ -38,7 +38,10 @@ const flag umodeflags[] = {
    { '\0', 0 } };
 
 const flag accountflags[] = {
-   { 's', AFLAG_STAFF },
+   { 'q', AFLAG_STAFF },
+   { 'h', AFLAG_SUPPORT },
+   { 'o', AFLAG_OPER },
+   { 'a', AFLAG_ADMIN },
    { 'd', AFLAG_DEVELOPER },
    { '\0', 0 } };
 
@@ -50,6 +53,8 @@ nick **servernicks[MAXSERVERS];
 sstring *nickextnames[MAXNICKEXTS];
 
 void nickstats(int hooknum, void *arg);
+
+char *NULLAUTHNAME = "";
 
 void _init() {
   unsigned int i;
@@ -102,6 +107,8 @@ void _fini() {
       freesstring(np->shident);
       freesstring(np->sethost);
       freesstring(np->opername);
+      if(!np->auth && np->authname && (np->authname != NULLAUTHNAME))
+        free(np->authname);
     }
   }
 
@@ -183,18 +190,22 @@ void deletenick(nick *np) {
   releaserealname(np->realname);
   releasehost(np->host);
   
-  if(IsAccount(np) && np->auth)
-  {
-    np->auth->usercount--;
+  if(IsAccount(np)) {
+    if(!np->auth) {
+      if(np->authname && (np->authname != NULLAUTHNAME))
+        free(np->authname);
+    } else {
+      np->auth->usercount--;
     
-    for (nh=&(np->auth->nicks);*nh;nh=&((*nh)->nextbyauthname)) {
-      if (*nh==np) {
-        *nh=np->nextbyauthname;
-        break;
+      for (nh=&(np->auth->nicks);*nh;nh=&((*nh)->nextbyauthname)) {
+        if (*nh==np) {
+          *nh=np->nextbyauthname;
+          break;
+        }
       }
-    }
     
-    releaseauthname(np->auth);
+      releaseauthname(np->auth);
+    }
   }
   
   freesstring(np->shident); /* freesstring(NULL) is OK */
