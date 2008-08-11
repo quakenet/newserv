@@ -63,10 +63,10 @@ int main(int argc, char **argv) {
     }
   }  
 
-  nsexit();
-
   freeconfig();
   finisstring();  
+
+  nsexit();
 }
 
 /*
