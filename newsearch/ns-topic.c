@@ -13,11 +13,6 @@ void topic_free(searchCtx *ctx, struct searchNode *thenode);
 struct searchNode *topic_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (ctx->type != SEARCHTYPE_CHANNEL) {
-    parseError = "topic: this function is only valid for channel searches.";
-    return NULL;
-  }
-
   if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
     parseError = "malloc: could not allocate memory for this search.";

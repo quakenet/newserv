@@ -22,11 +22,6 @@ struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv) {
   GeoIP_LookupCode l;
   long target;
 
-  if (ctx->type != SEARCHTYPE_NICK) {
-    parseError = "country: this function is only valid for nick searches.";
-    return NULL;
-  }
-
   if (argc<1) {
     parseError = "country: usage: country <country 2 character ISO code>";
     return NULL;

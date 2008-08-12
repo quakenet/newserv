@@ -13,11 +13,6 @@ void authname_free(searchCtx *ctx, struct searchNode *thenode);
 struct searchNode *authname_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (ctx->type != SEARCHTYPE_NICK) {
-    parseError = "authname: this function is only valid for nick searches.";
-    return NULL;
-  }
-
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;

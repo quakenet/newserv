@@ -39,10 +39,14 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
   localdata->count = 0;
-  if (ctx->type == SEARCHTYPE_CHANNEL)
+  if (ctx->searchcmd == reg_chansearch)
     localdata->marker = nextchanmarker();
-  else
+  else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
+  else {
+    parseError = "gline: invalid search type";
+    return NULL;
+  }
 
   switch (argc) {
   case 0:
@@ -118,7 +122,7 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
   localdata = thenode->localdata;
 
-  if (ctx->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->searchcmd == reg_chansearch) {
     cip = (chanindex *)theinput;
     cip->marker = localdata->marker;
     localdata->count += cip->channel->users->totalusers;
@@ -150,7 +154,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
     return;
   }
 
-  if (ctx->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->searchcmd == reg_chansearch) {
     for (i=0;i<CHANNELHASHSIZE;i++) {
       for (cip=chantable[i];cip;cip=ncip) {
         ncip = cip->next;
@@ -197,7 +201,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
     ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */
   ctx->wall(NL_GLINES, "%s/%s glined %d %s via %s for %s [%d untouched].", senderNSExtern->nick, senderNSExtern->authname, (localdata->count - safe), 
-    (localdata->count - safe) != 1 ? "users" : "user", (ctx->type == SEARCHTYPE_CHANNEL) ? "chansearch" : "nicksearch", longtoduration(localdata->duration, 1), safe);
+    (localdata->count - safe) != 1 ? "users" : "user", (ctx->searchcmd == reg_chansearch) ? "chansearch" : "nicksearch", longtoduration(localdata->duration, 1), safe);
   free(localdata);
   free(thenode);
 }

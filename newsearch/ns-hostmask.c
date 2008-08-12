@@ -17,11 +17,6 @@ void hostmask_free(searchCtx *ctx, struct searchNode *thenode);
 struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (ctx->type != SEARCHTYPE_NICK) {
-    parseError = "hostmask: this function is only valid for nick searches.";
-    return NULL;
-  }
-
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;

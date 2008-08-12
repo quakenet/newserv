@@ -16,11 +16,6 @@ struct searchNode *channel_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
   channel *cp;
 
-  if (ctx->type != SEARCHTYPE_NICK) {
-    parseError = "channel: this function is only valid for nick searches.";
-    return NULL;
-  }
-
   if (argc<1) {
     parseError = "channel: usage: channel <channel name>";
     return NULL;

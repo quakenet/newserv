@@ -15,11 +15,6 @@ struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
   nick *np;
   
-  if (ctx->type!=SEARCHTYPE_CHANNEL) {
-    parseError="kick: only channel searches are supported";
-    return NULL;
-  }
-
   if (argc!=1) {
     parseError="kick: usage: (kick target)";
     return NULL;

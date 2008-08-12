@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include "newsearch.h"
 
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
@@ -11,13 +10,13 @@
 #include "../lib/version.h"
 #include "../lib/stringbuf.h"
 #include "../lib/strlfunc.h"
+#include "../lib/array.h"
+#include "newsearch.h"
 
 MODULE_VERSION("");
 
-CommandTree *searchTree;
-CommandTree *chanOutputTree;
-CommandTree *nickOutputTree;
-CommandTree *userOutputTree;
+CommandTree *searchCmdTree;
+searchList *globalterms = NULL;
 
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
@@ -32,32 +31,58 @@ UserDisplayFunc defaultuserfn = printuser;
 NickDisplayFunc defaultnickfn = printnick;
 ChanDisplayFunc defaultchanfn = printchannel;
 
-void registersearchterm(char *term, parseFunc parsefunc);
-void deregistersearchterm(char *term, parseFunc parsefunc);
+searchCmd *reg_nicksearch, *reg_chansearch, *reg_usersearch;
 
-void regchandisp(const char *name, ChanDisplayFunc handler) {
-  addcommandtotree(chanOutputTree, name, 0, 0, (CommandHandler)handler);
+searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void *defaultdisplayfunc) {
+  searchCmd *acmd;
+  searchList *sl;
+
+  registercontrolhelpcmd(name, NO_OPER,4, cmd, "Usage: <criteria\nSearches with the given criteria");
+  
+  acmd=(struct searchCmd *)malloc(sizeof(struct searchCmd));
+
+  acmd->handler = cmd;
+
+  acmd->name = getsstring( name, NSMAX_COMMAND_LEN); 
+  acmd->outputtree = newcommandtree();
+  acmd->searchtree = newcommandtree();
+
+  addcommandtotree(searchCmdTree, name, 0, 0, (CommandHandler)acmd);
+
+  sl = globalterms;
+  while (sl) {
+    registersearchterm( acmd, sl->name->content, sl->cmd);
+    sl = sl->next;
+  }
+
+  return acmd;
 }
 
-void unregchandisp(const char *name, ChanDisplayFunc handler) {
-  deletecommandfromtree(chanOutputTree, name, (CommandHandler)handler);
+void deregistersearchcommand(searchCmd *scmd) {
+  deregistercontrolcmd(scmd->name->content, (CommandHandler)scmd->handler);
+  destroycommandtree(scmd->outputtree);
+  destroycommandtree(scmd->searchtree);
+  freesstring(scmd->name);
+  free(scmd);
 }
 
-void regnickdisp(const char *name, NickDisplayFunc handler) {
-  addcommandtotree(nickOutputTree, name, 0, 0, (CommandHandler)handler);
+void regdisp( searchCmd *cmd, const char *name, void *handler) {
+  addcommandtotree(cmd->outputtree, name, 0, 0, (CommandHandler) handler);
+} 
+
+void unregdisp( searchCmd *cmd, const char *name, void *handler ) {
+  deletecommandfromtree(cmd->outputtree, name, (CommandHandler) handler);
 }
 
-void unregnickdisp(const char *name, NickDisplayFunc handler) {
-  deletecommandfromtree(nickOutputTree, name, (CommandHandler)handler);
-}
-
-void reguserdisp(const char *name, UserDisplayFunc handler) {
-  addcommandtotree(userOutputTree, name, 0, 0, (CommandHandler)handler);
-}
-
-void unreguserdisp(const char *name, UserDisplayFunc handler) {
-  deletecommandfromtree(userOutputTree, name, (CommandHandler)handler);
-}
+void *findcommandinlist( searchList *sl, char *name){
+  while(sl) {
+    if(strcmp(sl->name->content,name) == 0 ) {
+      return sl;
+    }
+    sl = sl->next;
+  }
+  return NULL;
+} 
 
 const char *parseError;
 /* used for *_free functions that need to warn users of certain things
@@ -65,104 +90,171 @@ const char *parseError;
 nick *senderNSExtern;
 
 void _init() {
-  searchTree=newcommandtree();
-  chanOutputTree=newcommandtree();
-  nickOutputTree=newcommandtree();
-  userOutputTree=newcommandtree();
+  searchCmdTree=newcommandtree();
+
+  reg_nicksearch = (searchCmd *)registersearchcommand("nicksearch",NO_OPER,&do_nicksearch, printnick);
+  reg_chansearch = (searchCmd *)registersearchcommand("chansearch",NO_OPER,&do_chansearch, printchannel);
+  reg_usersearch = (searchCmd *)registersearchcommand("usersearch",NO_OPER,&do_usersearch, printuser);
 
   /* Boolean operations */
-  registersearchterm("and",and_parse);
-  registersearchterm("not",not_parse);
-  registersearchterm("or",or_parse);
+  registerglobalsearchterm("and",and_parse);
+  registerglobalsearchterm("not",not_parse);
+  registerglobalsearchterm("or",or_parse);
 
-  registersearchterm("eq",eq_parse);
+  registerglobalsearchterm("eq",eq_parse);
 
-  registersearchterm("lt",lt_parse);
-  registersearchterm("gt",gt_parse);
+  registerglobalsearchterm("lt",lt_parse);
+  registerglobalsearchterm("gt",gt_parse);
  
   /* String operations */
-  registersearchterm("match",match_parse);
-  registersearchterm("regex",regex_parse);
-  registersearchterm("length",length_parse);
+  registerglobalsearchterm("match",match_parse);
+  registerglobalsearchterm("regex",regex_parse);
+  registerglobalsearchterm("length",length_parse);
   
   /* Nickname operations */
-  registersearchterm("hostmask",hostmask_parse);
-  registersearchterm("realname",realname_parse);
-  registersearchterm("authname",authname_parse);
-  registersearchterm("authts",authts_parse);
-  registersearchterm("ident",ident_parse);
-  registersearchterm("host",host_parse);
-  registersearchterm("channel",channel_parse);
-  registersearchterm("timestamp",timestamp_parse);
-  registersearchterm("country",country_parse);
-  registersearchterm("ip",ip_parse);
-  registersearchterm("channels",channels_parse);
-  registersearchterm("server",server_parse);
-  registersearchterm("authid",authid_parse);
+  registersearchterm(reg_nicksearch, "hostmask",hostmask_parse);     /* nick only */
+  registersearchterm(reg_nicksearch, "realname",realname_parse);     /* nick only */
+  registersearchterm(reg_nicksearch, "authname",authname_parse);     /* nick only */
+  registersearchterm(reg_nicksearch, "authts",authts_parse);         /* nick only */
+  registersearchterm(reg_nicksearch, "ident",ident_parse);           /* nick only */
+  registersearchterm(reg_nicksearch, "host",host_parse);             /* nick only */
+  registersearchterm(reg_nicksearch, "channel",channel_parse);       /* nick only */
+  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse);   /* nick only */
+  registersearchterm(reg_nicksearch, "country",country_parse);       /* nick only */
+  registersearchterm(reg_nicksearch, "ip",ip_parse);                 /* nick only */
+  registersearchterm(reg_nicksearch, "channels",channels_parse);     /* nick only */
+  registersearchterm(reg_nicksearch, "server",server_parse);         /* nick only */
+  registersearchterm(reg_nicksearch, "authid",authid_parse);         /* nick only */
 
   /* Channel operations */
-  registersearchterm("exists",exists_parse);
-  registersearchterm("services",services_parse);
-  registersearchterm("size",size_parse);
-  registersearchterm("name",name_parse);
-  registersearchterm("topic",topic_parse);
-  registersearchterm("oppct",oppct_parse);
-  registersearchterm("uniquehostpct",hostpct_parse);
-  registersearchterm("authedpct",authedpct_parse);
-  registersearchterm("kick",kick_parse);
+  registersearchterm(reg_chansearch, "exists",exists_parse);         /* channel only */
+  registersearchterm(reg_chansearch, "services",services_parse);     /* channel only */
+  registersearchterm(reg_chansearch, "size",size_parse);             /* channel only */
+  registersearchterm(reg_chansearch, "name",name_parse);             /* channel only */
+  registersearchterm(reg_chansearch, "topic",topic_parse);           /* channel only */
+  registersearchterm(reg_chansearch, "oppct",oppct_parse);           /* channel only */
+  registersearchterm(reg_chansearch, "uniquehostpct",hostpct_parse); /* channel only */
+  registersearchterm(reg_chansearch, "authedpct",authedpct_parse);   /* channel only */
+  registersearchterm(reg_chansearch, "kick",kick_parse);             /* channel only */
 
   /* Nickname / channel operations */
-  registersearchterm("modes",modes_parse);
-  registersearchterm("nick",nick_parse);
+  registersearchterm(reg_chansearch, "modes",modes_parse);
+  registersearchterm(reg_nicksearch, "modes",modes_parse);
+  registersearchterm(reg_chansearch, "nick",nick_parse);
+  registersearchterm(reg_nicksearch, "nick",nick_parse);
 
   /* Kill / gline parameters */
-  registersearchterm("kill",kill_parse);
-  registersearchterm("gline",gline_parse);
+  registersearchterm(reg_chansearch,"kill",kill_parse);
+  registersearchterm(reg_chansearch,"gline",gline_parse);
+  registersearchterm(reg_nicksearch,"kill",kill_parse);
+  registersearchterm(reg_nicksearch,"gline",gline_parse);
 
   /* Iteration functionality */
-  registersearchterm("any",any_parse);
-  registersearchterm("all",all_parse);
-  registersearchterm("var",var_parse);
+  registerglobalsearchterm("any",any_parse);
+  registerglobalsearchterm("all",all_parse);
+  registerglobalsearchterm("var",var_parse);
   
   /* Iterable functions */
-  registersearchterm("channeliter",channeliter_parse);
+  registersearchterm(reg_nicksearch, "channeliter",channeliter_parse);         /* nick only */
   
   /* Notice functionality */
-  registersearchterm("notice",notice_parse);
-  
+  registersearchterm(reg_chansearch,"notice",notice_parse);
+  registersearchterm(reg_nicksearch,"notice",notice_parse);
+ 
   /* Nick output filters */
-  regnickdisp("default",printnick);
-  regnickdisp("channels",printnick_channels);
+  regdisp(reg_nicksearch,"default",printnick);
+  regdisp(reg_nicksearch,"channels",printnick_channels);
     
   /* Channel output filters */
-  regchandisp("default",printchannel);
-  regchandisp("topic",printchannel_topic);
-  regchandisp("services",printchannel_services);
+  regdisp(reg_chansearch,"default",printchannel);
+  regdisp(reg_chansearch,"topic",printchannel_topic);
+  regdisp(reg_chansearch,"services",printchannel_services);
 
   /* Nick output filters */
-  reguserdisp("default",printuser);
-    
-  registercontrolhelpcmd("nicksearch",NO_OPER,4,do_nicksearch, "Usage: nicksearch <criteria>\nSearches for nicknames with the given criteria.");
-  registercontrolhelpcmd("chansearch",NO_OPER,4,do_chansearch, "Usage: chansearch <criteria>\nSearches for channels with the given criteria.");
-  registercontrolhelpcmd("usersearch",NO_OPER,4,do_usersearch, "Usage: usersearch <criteria>\nSearches for users with the given criteria.");
+  regdisp(reg_usersearch,"default",printuser);
+ 
 }
 
 void _fini() {
-  destroycommandtree(searchTree);
-  destroycommandtree(chanOutputTree);
-  destroycommandtree(nickOutputTree);
-  destroycommandtree(userOutputTree);
-  deregistercontrolcmd("nicksearch", do_nicksearch);
-  deregistercontrolcmd("chansearch", do_chansearch);
-  deregistercontrolcmd("usersearch", do_usersearch);
+  searchList *sl, *psl;
+  int i,n;
+  Command *cmdlist[100];
+
+  sl = globalterms; 
+  while (sl) {
+    psl = sl;
+    sl = sl->next;
+
+    n=getcommandlist(searchCmdTree,cmdlist,100);
+    for(i=0;i<n;i++) {
+      deregistersearchterm( (searchCmd *)cmdlist[i]->handler, psl->name->content, psl->cmd);
+    }
+
+    freesstring(psl->name);
+    free(psl);
+ 
+  }
+
+  deregistersearchcommand( reg_nicksearch );
+  deregistersearchcommand( reg_chansearch );
+  deregistersearchcommand( reg_usersearch );
+  destroycommandtree( searchCmdTree );
 }
 
-void registersearchterm(char *term, parseFunc parsefunc) {
-  addcommandtotree(searchTree, term, 0, 0, (CommandHandler) parsefunc);
+void registerglobalsearchterm(char *term, parseFunc parsefunc) {
+  searchList *sl = malloc(sizeof(searchList));
+  int i,n;
+  Command *cmdlist[100];
+
+  sl->cmd = parsefunc;
+  sl->name = getsstring(term, NSMAX_COMMAND_LEN);
+  sl->next = NULL;
+
+  if ( globalterms != NULL ) {
+    sl->next = globalterms;
+  }
+  globalterms = sl;
+
+  n=getcommandlist(searchCmdTree,cmdlist,100);
+  for(i=0;i<n;i++) {
+    registersearchterm( (searchCmd *)cmdlist[i]->handler,term, parsefunc); 
+  }
 }
 
-void deregistersearchterm(char *term, parseFunc parsefunc) {
-  deletecommandfromtree(searchTree, term, (CommandHandler) parsefunc);
+void deregisterglobalsearchterm(char *term, parseFunc parsefunc) {
+  int i,n;
+  Command *cmdlist[100];
+  searchList *sl, *psl=NULL;
+
+  sl = globalterms;
+  while (sl) {
+    if ( strcmp( sl->name->content, term) == 0 ) {
+      break;
+    }
+    psl = sl;
+    sl = sl->next;
+  }
+
+  if (sl) {
+    if( psl ) {
+      psl->next = sl->next;
+    } 
+
+    n=getcommandlist(searchCmdTree,cmdlist,100);
+    for(i=0;i<n;i++) {
+      deregistersearchterm( (searchCmd *)cmdlist[i]->handler, term, parsefunc);
+    }
+    freesstring(sl->name);
+    free(sl);
+  }
+}
+
+void registersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc) {
+  addcommandtotree(cmd->searchtree, term, 0, 0, (CommandHandler) parsefunc);
+}
+
+void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc) {
+  deletecommandfromtree(cmd->searchtree, term, (CommandHandler) parsefunc);
 }
 
 static void controlwallwrapper(int level, char *format, ...) {
@@ -175,10 +267,11 @@ static void controlwallwrapper(int level, char *format, ...) {
   va_end(ap);
 }
 
-static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **display, CommandTree *tree, replyFunc reply, void *sender) {
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void **display, CommandTree *sl, replyFunc reply, void *sender) {
   char *ch;
-  struct Command *cmd;
-  
+  Command *cmd;
+  struct irc_in_addr sin; unsigned char bits;
+ 
   if (*cargv[0] == '-') {
     /* options */
     (*arg)++;
@@ -198,12 +291,25 @@ static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **displ
           reply(sender,"Error: -d switch requires an argument");
           return CMD_USAGE;
         }
-        cmd=findcommandintree(tree, cargv[*arg], 1);
+        cmd=findcommandintree(sl, cargv[*arg],1);
         if (!cmd) {
           reply(sender,"Error: unknown output format %s",cargv[*arg]);
           return CMD_USAGE;
         }
         *display=(void *)cmd->handler;
+        (*arg)++;
+        break;
+
+      case 's':
+        if (cargc<*arg) {
+          reply(sender,"Error: -s switch requires an argument");
+          return CMD_USAGE;
+        }
+        if (ipmask_parse(cargv[*arg], &sin, &bits) == 0) {
+          reply(sender, "Error: Invalid CIDR mask supplied");
+          return CMD_USAGE;
+        }
+        *subset = (void *)refnode(iptree, &sin, bits);
         (*arg)++;
         break;
         
@@ -216,14 +322,14 @@ static int parseopts(int cargc, char **cargv, int *arg, int *limit, void **displ
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, int type) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
   ctx->wall = wallfn;
   ctx->parser = searchfn;
   ctx->arg = arg;
-  ctx->type = type;
+  ctx->searchcmd = cmd;
 }
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
@@ -238,7 +344,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   if (cargc<1)
     return CMD_USAGE;
   
-  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, nickOutputTree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_nicksearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -251,7 +357,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_NICK);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
@@ -325,7 +431,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   if (cargc<1)
     return CMD_USAGE;
   
-  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, chanOutputTree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_chansearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -338,7 +444,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_CHANNEL);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch);
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
@@ -390,7 +496,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   if (cargc<1)
     return CMD_USAGE;
   
-  ret = parseopts(cargc, cargv, &arg, &limit, (void **)&display, userOutputTree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_usersearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -403,7 +509,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, SEARCHTYPE_USER);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch);
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
@@ -751,7 +857,7 @@ struct searchNode *search_parse(searchCtx *ctx, char *input) {
     if (*(ch-1) == 0) /* if the last character was a space */
       j--; /* remove an argument */
     
-    if (!(cmd=findcommandintree(searchTree,argvector[0],1))) {
+    if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
       parseError = "Unknown command";
       return NULL;
     } else {

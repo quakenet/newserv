@@ -13,11 +13,6 @@ void exists_free(searchCtx *ctx, struct searchNode *thenode);
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (ctx->type != SEARCHTYPE_CHANNEL) {
-    parseError = "exists: this function is only valid for channel searches.";
-    return NULL;
-  }
-
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;

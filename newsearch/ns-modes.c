@@ -25,16 +25,11 @@ struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
     
-  switch (ctx->type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     flaglist=cmodeflags;
-    break;
-
-  case SEARCHTYPE_NICK:
+  } else if (ctx->searchcmd == reg_nicksearch) {
     flaglist=umodeflags;
-    break;
-
-  default:
+  } else {
     parseError="modes: unsupported search type";
     return NULL;
   }
@@ -75,20 +70,15 @@ void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
   
   localdata = (struct modes_localdata *)thenode->localdata;
 
-  switch (ctx->type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     cip=(chanindex *)value;
     if (!cip->channel)
       return NULL;
     flags=cip->channel->flags;
-    break;
-
-  case SEARCHTYPE_NICK:
+  } else if (ctx->searchcmd == reg_nicksearch) {
     np=(nick *)value;
     flags=np->umodes;
-    break;
-
-  default:
+  } else {
     return NULL;
   }
 

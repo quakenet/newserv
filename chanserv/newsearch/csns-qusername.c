@@ -10,13 +10,8 @@
 void *qusername_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void qusername_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *qusername_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *qusername_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
-
-  if (type != SEARCHTYPE_USER) {
-    parseError = "qusername: this function is only valid for user searches.";
-    return NULL;
-  }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
