@@ -13,6 +13,8 @@
 #include "../localuser/localuser.h"
 #include "../core/hooks.h"
 #include "../irc/irc.h"
+
+#define CS_NODB
 #include "../chanserv/chanserv.h"
 
 #define WARN_CHANNEL "#twilightzone"

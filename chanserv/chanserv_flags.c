@@ -1,4 +1,6 @@
+#define CS_NODB
 #include "../chanserv/chanserv.h"
+#undef CS_NODB
 
 const flag rcflags[] = {
   { 'a', QCFLAG_AUTOOP },

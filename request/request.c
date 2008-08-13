@@ -118,8 +118,8 @@ void _fini(void) {
 void rq_registeruser(void) {
   channel *cp;
 
-  rqnick = registerlocaluserwithuserid(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
-                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH, 1780711,
+  rqnick = registerlocaluserflags(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
+                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH, 1780711, 0,
                              UMODE_ACCOUNT | UMODE_SERVICE | UMODE_OPER,
                              rq_handler);
 
