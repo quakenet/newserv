@@ -56,6 +56,7 @@ static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
 static int attached = 0, started = 0;
 
+/* shadowserver only reports classes[0] */
 static const char *classes[] = { "drone", "proxy", "spam", "fakeauth", "other", (char *)0 };
 
 void _init(void) {
@@ -179,6 +180,10 @@ void rg_setdelay(nick *np, rg_struct *reason, short punish) {
 
 static void rg_shadowserver(nick *np, struct rg_struct *reason, int type) {
   char buf[1024];
+
+  if(reason->class != classes[0]) /* drone */
+    return;
+
   snprintf(buf, sizeof(buf), "regex-ban %lu %s!%s@%s %s %s", time(NULL), np->nick, np->ident, np->host->name->content, reason->mask->content, serverlist[homeserver(np->numeric)].name->content);
 
   triggerhook(HOOK_SHADOW_SERVER, (void *)buf);

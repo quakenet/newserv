@@ -18,7 +18,10 @@
 #include "../channel/channel.h"
 #include "../parser/parser.h"
 #include "../localuser/localuserchannel.h"
+
+#ifndef CS_NODB
 #include "../dbapi/dbapi.h"
+#endif
 
 #define CS_PARANOID
 
@@ -651,7 +654,10 @@ extern unsigned int lastmaillockID;
 
 extern int chanserv_init_status;
 extern int chanservdb_ready;
+
+#ifndef CS_NODB
 extern DBModuleIdentifier q9dbid, q9adbid, q9cdbid, q9udbid;
+#endif
 
 extern maildomain *maildomainnametable[MAILDOMAINHASHSIZE];
 extern maildomain *maildomainIDtable[MAILDOMAINHASHSIZE];
