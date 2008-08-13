@@ -36,8 +36,10 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargc != 6)
+  if(cargc != 6) {
+    controlreply(np, "%d\n", cargc);
     return CMD_USAGE;
+  }
 
   acc = cargv[0];
   expiry = atoi(cargv[1]);
@@ -59,7 +61,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
   }
 
   hmacsha256_init(&hmac, (unsigned char *)sharedsecret->content, sharedsecret->length);
-  snprintf(buffer, sizeof(buffer), "%s %d %d %s", acc, expiry, id, junk);
+  snprintf(buffer, sizeof(buffer), "%s %d %d %s %s", acc, expiry, id, flags, junk);
   hmacsha256_update(&hmac, (unsigned char *)buffer, strlen(buffer));
   hmacsha256_final(&hmac, digest);
   
@@ -80,7 +82,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
 
   controlreply(np, "Ticket valid, authing. . .");
 
-  localusersetaccount(np, acc, id, 0, cs_accountflagmap_str(flags));
+  localusersetaccount(np, acc, id, cs_accountflagmap_str(flags), 0);
 
   controlreply(np, "Done.");
   return CMD_OK;
@@ -98,7 +100,7 @@ void _init() {
     return;
   }
 
-  registercontrolhelpcmd("ticketauth", NO_OPERED, 5, ta_ticketauth, "Usage: ticketauth <ticket>");
+  registercontrolhelpcmd("ticketauth", NO_OPERED, 6, ta_ticketauth, "Usage: ticketauth <ticket>");
 }
 
 void _fini() {
