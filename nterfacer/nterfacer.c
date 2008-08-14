@@ -15,6 +15,8 @@
 #include <netdb.h>
 #include <string.h>
 #include <strings.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
@@ -363,8 +365,7 @@ void nterfacer_accept_event(struct esocket *socket) {
   }
 
   if(!item) {
-    /* Someone needs to figure out how to print the IP :) */
-    nterface_log(nrl, NL_INFO, "Unauthorised connection closed");
+    nterface_log(nrl, NL_INFO, "Unauthorised connection from %s closed", inet_ntoa(sin.sin_addr));
     close(newfd);
     return;
   }
