@@ -12,6 +12,7 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
+#include "../lib/strlfunc.h"
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
