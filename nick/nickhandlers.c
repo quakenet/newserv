@@ -431,7 +431,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
     target->authname=malloc(strlen(cargv[1]) + 1);
     strcpy(target->authname,cargv[1]);
   } else {
-    target->auth=findorcreateauthname(userid, target->authname);
+    target->auth=findorcreateauthname(userid, cargv[1]);
     target->auth->usercount++;
     target->authname=target->auth->name;
     target->nextbyauthname = target->auth->nicks;
