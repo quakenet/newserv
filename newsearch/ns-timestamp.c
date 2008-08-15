@@ -16,8 +16,8 @@ void timestamp_free(searchCtx *ctx, struct searchNode *thenode);
 struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **argv) {
   struct searchNode *thenode;
 
-  if (type != SEARCHTYPE_NICK) {
-    parseError = "timestamp: this function is only valid for nick searches.";
+  if ((type != SEARCHTYPE_NICK) && (type != SEARCHTYPE_CHANNEL)){
+    parseError = "timestamp: this function is only valid for nick or channel searches.";
     return NULL;
   }
 
@@ -27,7 +27,7 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **ar
   }
 
   thenode->returntype = RETURNTYPE_INT;
-  thenode->localdata = NULL;
+  thenode->localdata = (void *)type;
   thenode->exe = timestamp_exe;
   thenode->free = timestamp_free;
 
@@ -36,8 +36,16 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **ar
 
 void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-
-  return (void *)np->timestamp;
+  chanindex *cip = (chanindex *)theinput;
+  
+  if ((int)thenode->localdata == SEARCHTYPE_NICK) {
+    return (void *)np->timestamp;
+  } else {
+    if (cip->channel)
+      return (void *)cip->channel->timestamp;
+    else
+      return 0;
+  }
 }
 
 void timestamp_free(searchCtx *ctx, struct searchNode *thenode) {
