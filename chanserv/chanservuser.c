@@ -732,6 +732,10 @@ void cs_doallautomodes(nick *np) {
     return;
   
   for (rcup=rup->knownon;rcup;rcup=rcup->nextbyuser) {
+    /* Skip suspended channels */
+    if (CIsSuspended(rcup->chan))
+      continue;
+      
     if (rcup->chan->index->channel) {
       /* Channel exists */
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
