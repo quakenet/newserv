@@ -381,7 +381,7 @@ static int lua_getuserbyauth(lua_State *l) {
 
   for(i=0;i<NICKHASHSIZE;i++) {
     for(np=nicktable[i];np;np=np->next) {
-      if(np && np->authname && !ircd_strcmp(np->authname, acc)) {  
+      if(np && np->authname[0] && !ircd_strcmp(np->authname, acc)) {  
         lua_pushnumeric(l, np->numeric);
         found++;
       }
@@ -940,6 +940,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_REALUSERS 11
 #define PUSHER_CHANMODES 12
 #define PUSHER_TIMESTAMP 13
+#define PUSHER_STRING_INDIRECT 14
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -951,7 +952,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_STRING, ident);
   PUSH_NICKPUSHER(PUSHER_HOSTNAME, host);
   PUSH_NICKPUSHER(PUSHER_REALNAME, realname);
-  PUSH_NICKPUSHER(PUSHER_STRING, authname);
+  PUSH_NICKPUSHER(PUSHER_STRING_INDIRECT, authname);
   PUSH_NICKPUSHER(PUSHER_IP, ipnode);
   PUSH_NICKPUSHER(PUSHER_LONG, numeric);
   PUSH_NICKPUSHER(PUSHER_LONG, timestamp);
@@ -1001,6 +1002,9 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
     switch((*lp)->argtype) {
       case PUSHER_STRING:
         lua_pushstring(l, (char *)offset);
+        break;
+      case PUSHER_STRING_INDIRECT:
+        lua_pushstring(l, *(char **)offset);
         break;
       case PUSHER_HOSTNAME:
         lua_pushstring(l, (*(host **)offset)->name->content);

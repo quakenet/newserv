@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 MODULE_VERSION("");
 
@@ -287,7 +288,7 @@ void sendnickmsg(nick *np) {
   if (IsAccount(np)) {
     if (np->auth) {
       if(np->auth->flags) {
-        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:%llu",np->authname,np->accountts,np->auth->userid,np->auth->flags);
+        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:%"PRIu64,np->authname,np->accountts,np->auth->userid,np->auth->flags);
       } else {
         snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
@@ -564,7 +565,7 @@ void sendaccountmessage(nick *np) {
   if (connected) {
     if (np->auth) {
       if (np->auth->flags) {
-        irc_send("%s AC %s %s %ld %lu %llu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
+        irc_send("%s AC %s %s %ld %lu %"PRIu64,mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
       } else {
         irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
       }

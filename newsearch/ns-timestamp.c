@@ -31,8 +31,16 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int argc, char **argv) {
 
 void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
+  chanindex *cip = (chanindex *)theinput;
 
-  return (void *)np->timestamp;
+  if (ctx->searchcmd == reg_nicksearch) {  
+    return (void *)np->timestamp;
+  } else {
+    if (cip->channel)
+      return (void *)cip->channel->timestamp;
+    else
+      return 0;
+  }
 }
 
 void timestamp_free(searchCtx *ctx, struct searchNode *thenode) {
