@@ -50,6 +50,7 @@ int controlrehash(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
+void handlerehash(int hooknum, void *arg);
 
 void _init() {
   controlcmds=newcommandtree();
@@ -68,7 +69,8 @@ void _init() {
   registercontrolhelpcmd("showcommands",NO_ACCOUNT,0,&controlshowcommands,"Usage: showcommands\nShows all registered commands.");
   registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
   registercontrolhelpcmd("help",NO_ANYONE,1,&controlhelpcmd,"Usage: help <command>\nShows help for specified command.");
-  
+ 
+  registerhook(HOOK_CORE_REHASH, &handlerehash); 
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
@@ -92,6 +94,8 @@ void _fini() {
   deregistercontrolcmd("help",&controlhelpcmd);
   
   destroycommandtree(controlcmds);
+
+  deregisterhook(HOOK_CORE_REHASH, &handlerehash); 
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
@@ -622,5 +626,11 @@ void controlnswall(int noticelevel, char *format, ...) {
   va_end(va);
 
   controlwall(NO_OPER, noticelevel, "%s", broadcast);
+}
+
+void handlerehash(int hooknum, void *arg) {
+  long hupped = (long)arg;
+  if(hupped)
+    controlwall(NO_OPER, NL_OPERATIONS, "SIGHUP received, rehashing...");
 }
 

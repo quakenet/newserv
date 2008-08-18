@@ -7,7 +7,7 @@
 
 /* This is the authoritative registry of all known hook numbers */
 
-#define HOOK_CORE_REHASH             0
+#define HOOK_CORE_REHASH             0  /* Argument is an int */
 #define HOOK_CORE_STATSREQUEST       1
 #define HOOK_CORE_STATSREPLY         2
 #define HOOK_CORE_ENDOFHOOKSQUEUE    3
