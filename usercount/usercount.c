@@ -2,7 +2,10 @@
 
 #include "../nick/nick.h"
 #include "../core/hooks.h"
+#include "../lib/version.h"
 #include "usercount.h"
+
+MODULE_VERSION("")
 
 int servercount[MAXSERVERS];
 

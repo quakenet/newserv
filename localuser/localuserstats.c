@@ -4,11 +4,14 @@
 #include "../nick/nick.h"
 #include "../irc/irc.h"
 #include "../core/error.h"
+#include "../lib/version.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+
+MODULE_VERSION("")
 
 int handleserverstats(void *source, int cargc, char **cargv);
 int handleserverstatsend(void *source, int cargc, char **cargv);

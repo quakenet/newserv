@@ -6,9 +6,12 @@
 #include "../nick/nick.h"
 #include "../core/hooks.h"
 #include "../lib/strlfunc.h"
+#include "../lib/version.h"
 
 #include <string.h>
 #include <stdio.h>
+
+MODULE_VERSION("")
 
 #define ALLOCUNIT 100
 

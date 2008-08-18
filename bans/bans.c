@@ -10,6 +10,9 @@
 #include "../irc/irc_config.h"
 #include "../core/nsmalloc.h"
 #include "../lib/flags.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 #define ALLOCUNIT 100
 

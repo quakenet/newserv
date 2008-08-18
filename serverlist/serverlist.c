@@ -5,6 +5,9 @@
 #include "../localuser/localuserchannel.h"
 #include "../control/control.h"
 #include "../usercount/usercount.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 #include <stdlib.h>
 #include <string.h>
