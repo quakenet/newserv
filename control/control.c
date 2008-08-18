@@ -1,4 +1,4 @@
-#/* 
+/* 
  * This is the first client module for newserv :)
  *
  * A very simple bot which should give people some ideas for how to

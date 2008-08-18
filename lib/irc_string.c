@@ -232,7 +232,9 @@ const char *IPlongtostr(unsigned long IP) {
 /*
  * longtoduration: 
  *  Converts a specified number of seconds into a duration string.  
- *  format: 0 for the "/stats u" compatible output, 1 for more human-friendly output, 2 for a different human-friendly output.
+ *  format: 0 for the "/stats u" compatible output, 1 for more
+ *  human-friendly output (that is sometimes format 0), and
+ *  2 for a different human-friendly output.
  */
 
 const char *longtoduration(unsigned long interval, int format) {
@@ -245,11 +247,11 @@ const char *longtoduration(unsigned long interval, int format) {
   hours=(interval%(3600*24))/3600;
   days=interval/(3600*24);
 
-  if (format==0) {
-    sprintf(outstring,"%d day%s, %02d:%02d:%02d",
-            days,(days==1)?"":"s",hours,minutes,seconds);
-  } else if (format == 1) {
-    if (days>0) {
+  if(format<2) {
+    if (format==0 || (days>0 && (hours||minutes||seconds))) {
+      sprintf(outstring,"%d day%s, %02d:%02d:%02d",
+              days,(days==1)?"":"s",hours,minutes,seconds);
+    } else if (days>0) {
       sprintf(outstring, "%d day%s",days,(days==1)?"":"s");
     } else {
       if (hours>0) {
