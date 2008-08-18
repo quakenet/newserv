@@ -533,9 +533,9 @@ void controlnotice(nick *target, char *message, ... ) {
 
 void controlspecialrmmod(void *arg) {
   struct specialsched *a = (struct specialsched *)arg;
+  sstring *froo = a->modulename;
   
   a->schedule = NULL;
-  sstring *froo = a->modulename;
 
   rmmod(froo->content);
   freesstring(froo);
@@ -543,19 +543,20 @@ void controlspecialrmmod(void *arg) {
 
 void controlspecialreloadmod(void *arg) {
   struct specialsched *a = (struct specialsched *)arg;
+  sstring *froo = a->modulename;
 
   a->schedule = NULL;
-  sstring *froo = a->modulename;
 
   safereload(froo->content);
   freesstring(froo);
 }
 
 void controlhelp(nick *np, Command *cmd) {
-  char *cp = cmd->help, *sp = cp;
-  if(!cp || !*cp) {
+  sstring *scp = cmd->help;
+  if(!scp) {
     controlreply(np, "Sorry, no help for this command.");
   } else {
+    char *cp = scp->content, *sp = cp;
     int finished = 0;
     for(;;cp++) {
       if(*cp == '\0' || *cp == '\n') {

@@ -19,8 +19,8 @@
 struct storedhook {
   CommandHandler old;
   sstring *name;
-  char *oldhelp;
-  char *newhelp;
+  sstring *oldhelp;
+  sstring *newhelp;
   struct storedhook *next;
 } storedhook;
 
@@ -87,13 +87,12 @@ int noperserv_hook_command(char *command, CommandHandler newcommand, char *newhe
 
   newhook->old = fetchcommand->handler;
   if(newhelp) {
-    int len = strlen(newhelp) + 1;
-    newhook->newhelp = (char *)malloc(len);
+    newhook->newhelp = getsstring(newhelp, 512);
     if(!newhook->newhelp) {
       freesstring(newhook->name);
       free(newhook);
+      return 1;
     }
-    strlcpy(newhook->newhelp, newhelp, len);
     newhook->oldhelp = fetchcommand->help;
     fetchcommand->help = newhook->newhelp;
   } else {
@@ -117,7 +116,7 @@ void noperserv_unhook_all_commands(void) {
       fetchcommand->handler = ch->old;
       if(ch->newhelp) {
         fetchcommand->help = ch->oldhelp;
-        free(ch->newhelp);
+        freesstring(ch->newhelp);
       }
     }
     nh = ch->next;
