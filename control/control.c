@@ -62,7 +62,7 @@ void _init() {
   registercontrolhelpcmd("die",NO_DEVELOPER,1,&die,"Usage: die <reason>\nTerminates the service.");
   registercontrolhelpcmd("insmod",NO_DEVELOPER,1,&controlinsmod,"Usage: insmod <module>\nAdds a module to the running instance.");
   registercontrolhelpcmd("rmmod",NO_DEVELOPER,1,&controlrmmod,"Usage: rmmod <module>\nRemoves a module from the running instance.");
-  registercontrolhelpcmd("lsmod",NO_DEVELOPER,0,&controllsmod,"Usage: lsmod\nLists currently running modules.");
+  registercontrolhelpcmd("lsmod",NO_OPER,0,&controllsmod,"Usage: lsmod\nLists currently running modules.");
   registercontrolhelpcmd("rehash",NO_DEVELOPER,1,&controlrehash,"Usage: rehash\nReloads configuration file.");
   registercontrolhelpcmd("showcommands",NO_ACCOUNT,0,&controlshowcommands,"Usage: showcommands\nShows all registered commands.");
   registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
