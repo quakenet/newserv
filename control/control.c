@@ -50,7 +50,7 @@ int controlrehash(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
-void handlesignals(int hooknum, void *arg);
+void handlesignal(int hooknum, void *arg);
 
 void _init() {
   controlcmds=newcommandtree();
@@ -70,8 +70,8 @@ void _init() {
   registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
   registercontrolhelpcmd("help",NO_ANYONE,1,&controlhelpcmd,"Usage: help <command>\nShows help for specified command.");
  
-  registerhook(HOOK_CORE_REHASH, &handlesignals);
-  registerhook(HOOK_CORE_SIGINT, &handlesignals);
+  registerhook(HOOK_CORE_REHASH, &handlesignal);
+  registerhook(HOOK_CORE_SIGINT, &handlesignal);
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
@@ -96,8 +96,8 @@ void _fini() {
   
   destroycommandtree(controlcmds);
 
-  deregisterhook(HOOK_CORE_REHASH, &handlesignals);
-  deregisterhook(HOOK_CORE_SIGINT, &handlesignals);
+  deregisterhook(HOOK_CORE_REHASH, &handlesignal);
+  deregisterhook(HOOK_CORE_SIGINT, &handlesignal);
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
@@ -631,7 +631,7 @@ void controlnswall(int noticelevel, char *format, ...) {
   controlwall(NO_OPER, noticelevel, "%s", broadcast);
 }
 
-void handlesignals(int hooknum, void *arg) {
+void handlesignal(int hooknum, void *arg) {
   char *signal, *action;
 
   if(hooknum == HOOK_CORE_SIGINT) {
