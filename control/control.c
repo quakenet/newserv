@@ -331,7 +331,7 @@ int relink(void *sender, int cargc, char **cargv) {
 }
 
 int die(void *sender, int cargc, char **cargv) {
-  if (cargc<1) {
+  if (cargc<1 || (strlen(cargv[0]) < 10)) {
     controlreply((nick *)sender,"You must give a reason.");
     return CMD_USAGE;
   }
