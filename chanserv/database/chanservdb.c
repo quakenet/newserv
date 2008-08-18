@@ -230,7 +230,7 @@ static void setuptables() {
 
 void _init() {
   chanservext=registerchanext("chanserv");
-  chanservaext=registerauthnameext("chanserv");
+  chanservaext=registerauthnameext("chanserv",1);
 
   /* Set up the allocators and hashes */
   chanservallocinit();

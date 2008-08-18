@@ -70,6 +70,7 @@
 #define HOOK_SHADOW_SERVER         701 /* Argument is char* */
 
 #define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, u_int64_t*) */
+#define HOOK_AUTH_LOSTAUTHNAME     802 /* Argument is authname* */
 
 typedef void (*HookCallback)(int, void *);
 
