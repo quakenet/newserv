@@ -1,4 +1,4 @@
-/* 
+#/* 
  * This is the first client module for newserv :)
  *
  * A very simple bot which should give people some ideas for how to
@@ -50,7 +50,7 @@ int controlrehash(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
-void handlerehash(int hooknum, void *arg);
+void handlesignals(int hooknum, void *arg);
 
 void _init() {
   controlcmds=newcommandtree();
@@ -70,7 +70,8 @@ void _init() {
   registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
   registercontrolhelpcmd("help",NO_ANYONE,1,&controlhelpcmd,"Usage: help <command>\nShows help for specified command.");
  
-  registerhook(HOOK_CORE_REHASH, &handlerehash); 
+  registerhook(HOOK_CORE_REHASH, &handlesignals);
+  registerhook(HOOK_CORE_SIGINT, &handlesignals);
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
@@ -95,7 +96,8 @@ void _fini() {
   
   destroycommandtree(controlcmds);
 
-  deregisterhook(HOOK_CORE_REHASH, &handlerehash); 
+  deregisterhook(HOOK_CORE_REHASH, &handlesignals);
+  deregisterhook(HOOK_CORE_SIGINT, &handlesignals);
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
@@ -629,9 +631,20 @@ void controlnswall(int noticelevel, char *format, ...) {
   controlwall(NO_OPER, noticelevel, "%s", broadcast);
 }
 
-void handlerehash(int hooknum, void *arg) {
-  long hupped = (long)arg;
-  if(hupped)
-    controlwall(NO_OPER, NL_OPERATIONS, "SIGHUP received, rehashing...");
-}
+void handlesignals(int hooknum, void *arg) {
+  char *signal, *action;
 
+  if(hooknum == HOOK_CORE_SIGINT) {
+    signal = "INT";
+    action = "terminating";
+  } else {
+    long hupped = (long)arg;
+    if(!hupped)
+      return;
+
+    signal = "HUP";
+    action = "rehashing";
+  }
+
+  controlwall(NO_OPER, NL_OPERATIONS, "SIG%s received, %s...", signal, action);
+}
