@@ -77,7 +77,7 @@ void handlesignals(void) {
    }
 
   if (newserv_sighup_pending) {
-    signal(SIGHUP, sigusr1handler);
+    signal(SIGHUP, sighuphandler);
     Error("core", ERR_INFO, "SIGHUP received, rehashing...");
     triggerhook(HOOK_CORE_REHASH, (void *)1);
     newserv_sighup_pending=0;
