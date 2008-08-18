@@ -46,6 +46,7 @@ typedef struct rg_struct {
   pcre_extra       *hint;     /* pcre hint       */
   long             glineid;   /* gline ID */
   const char       *class;    /* class of gline */
+  unsigned long    hits;      /* hits since we were loaded */
   struct rg_struct *next;     /* ... pointer to next item */
 } rg_struct;
 
