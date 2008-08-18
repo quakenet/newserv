@@ -299,9 +299,9 @@ int controllsmod(void *sender, int cargc, char **cargv) {
     ptr = lsmod(i, &ver, &buildid, &t);
 
     /*                                                                    9999d 24h 59m 59s fbf2a4a69ee1-tip */
-    controlreply((nick *)sender,"Module                                   Loaded for        Version              Build id");
+    controlreply((nick *)sender,"Module                                   Loaded for        Version                        Build id");
     while (ptr != NULL) {
-      controlreply((nick *)sender," %-40s %-17s %-20s %s", ptr, longtoduration(t2-t, 2), ver?ver:"", buildid?buildid:"");
+      controlreply((nick *)sender," %-40s %-17s %-30s %s", ptr, longtoduration(t2-t, 2), ver?ver:"", buildid?buildid:"");
       ptr = lsmod(++i, &ver, &buildid, &t);
     }
   } else {
