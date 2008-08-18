@@ -1,3 +1,5 @@
+/* TODO: catch control messages */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -7,28 +9,45 @@
 #include "../irc/irc.h"
 #include "../lib/array.h"
 #include "../lib/base64.h"
+#include "../lib/irc_string.h"
 #include "../core/error.h"
-#include "../server/server.h"
-#include "../control/control.h"
+#include "../localuser/localuser.h"
+#include "../lib/strlfunc.h"
 #include "xsb.h"
 
+#undef XSB_DEBUG
+
 static const char *DEFAULT_SERVICE_MASKS[] = { "services*.*.quakenet.org", (char *)0 };
+
 static array defaultservicemasks_a;
 static sstring **defaultservicemasks;
 
 static void handlemaskprivmsg(int, void *);
+static void handlecontrolregistered(int, void *);
 static CommandTree *cmds;
 
-#define DEBUG
+static char controlnum[6];
+
+struct messagequeue {
+  struct messagequeue *next;
+  char buf[];
+};
+
+struct messagequeue *head, *tail;
 
 void _init(void) {
   const char **p;
   array *servicemasks;
 
+  controlnum[0] = '\0';
+  
   cmds = newcommandtree();
-  if(cmds)
-    registerhook(HOOK_NICK_MASKPRIVMSG, &handlemaskprivmsg);
-
+  if(!cmds)
+    return;
+  
+  registerhook(HOOK_NICK_MASKPRIVMSG, &handlemaskprivmsg);
+  registerhook(HOOK_CONTROL_REGISTERED, &handlecontrolregistered);
+  
   array_init(&defaultservicemasks_a, sizeof(sstring *));
 
   for(p=DEFAULT_SERVICE_MASKS;*p;p++) {
@@ -45,17 +64,35 @@ void _init(void) {
 
 void _fini(void) {
   int i;
+  struct messagequeue *q, *nq;
+  
+  if(!cmds)
+    return;
+
+  destroycommandtree(cmds);
+
+  deregisterhook(HOOK_NICK_MASKPRIVMSG, &handlemaskprivmsg);
+  deregisterhook(HOOK_CONTROL_REGISTERED, &handlecontrolregistered);
 
   for(i=0;i<defaultservicemasks_a.cursi;i++)
     freesstring(defaultservicemasks[i]);
   array_free(&defaultservicemasks_a);
 
-  if(!cmds)
-    return;
+  for(q=head;q;q=nq) {
+    nq = q->next;
+    free(q);
+  }
+  
+  head = NULL;
+  tail = NULL;
+}
 
-  deregisterhook(HOOK_NICK_MASKPRIVMSG, &handlemaskprivmsg);
+void xsb_addcommand(const char *name, const int maxparams, CommandHandler handler) {
+  addcommandtotree(cmds, name, 0, maxparams, handler);
+}
 
-  destroycommandtree(cmds);
+void xsb_delcommand(const char *name, CommandHandler handler) {
+  deletecommandfromtree(cmds, name, handler);
 }
 
 static void handlemaskprivmsg(int hooknum, void *args) {
@@ -86,7 +123,7 @@ static void handlemaskprivmsg(int hooknum, void *args) {
     return;
   }
 
-#ifndef DEBUG
+#ifndef XSB_DEBUG
   if(!(s->flags & SMODE_SERVICE)) {
     Error("xsb", ERR_WARNING, "Got XSB message from non-service server (%s): %s", s->name->content, source->nick);
     return;
@@ -105,34 +142,113 @@ static void handlemaskprivmsg(int hooknum, void *args) {
   (cmd->handler)(source, cargc - 2, &cargv[2]);
 }
 
-void xsb_addcommand(const char *name, const int maxparams, CommandHandler handler) {
-  addcommandtotree(cmds, name, 0, maxparams, handler);
+static void directsend(char *buf) {
+  irc_send("%s P %s", controlnum, buf);
 }
 
-void xsb_delcommand(const char *name, CommandHandler handler) {
-  deletecommandfromtree(cmds, name, handler);
+static void handlecontrolregistered(int hooknum, void *args) {
+  nick *np = (nick *)args;
+
+  if(np) {
+    struct messagequeue *q, *nq;
+    
+    longtonumeric2(np->numeric, 5, controlnum);
+    
+    for(q=head;q;q=nq) {
+      nq = q->next;
+      
+      directsend(q->buf);
+      free(q);
+    }
+    head = NULL;
+    tail = NULL;
+  } else {
+    controlnum[0] = '\0';
+  }
 }
 
-void xsb_command(const char *command, const char *format, ...) {
+static int getservicemasks(sstring ***masks) {
+  array *aservicemasks = getconfigitems("xsb", "servicemask");
+  if(!aservicemasks || !aservicemasks->cursi)
+    aservicemasks = &defaultservicemasks_a;
+
+  *masks = (sstring **)aservicemasks->content;
+
+  return aservicemasks->cursi;
+}
+
+static void xsb_send(const char *format, ...) {
+  char buf[512];
+  va_list va;
+  size_t len;
+  
+  va_start(va, format);
+  len = vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+  if(len >= sizeof(buf))
+    len = sizeof(buf);
+  
+  if(controlnum[0]) {
+    directsend(buf);
+  } else {
+    struct messagequeue *q = (struct messagequeue *)malloc(sizeof(struct messagequeue) + len);
+    
+    strlcpy(q->buf, buf, len + 1);
+    q->next = NULL;
+    if(tail) {
+      tail->next = q;
+    } else {
+      head = q;
+    }
+    tail = q;
+  }
+}
+
+void xsb_broadcast(const char *command, server *service, const char *format, ...) {
   char buf[512];
   va_list va;
   sstring **servicemasks;
-  array *aservicemasks;
   int i;
-  char *controlnum;
 
   va_start(va, format);
   vsnprintf(buf, sizeof(buf), format, va);
   va_end(va);
 
-  aservicemasks = getconfigitems("xsb", "servicemask");
-  if(!aservicemasks || !aservicemasks->cursi)
-    aservicemasks = &defaultservicemasks_a;
+  if(service) {
+    xsb_send("$%s :XSB1 %s %s", service->name->content, command, buf);
+    return;
+  }
 
-  servicemasks = (sstring **)aservicemasks->content;
-
-  controlnum = longtonumeric(mynick->numeric, 5);
-
-  for(i=0;i<aservicemasks->cursi;i++)
-    irc_send("%s P $%s :XSB1 %s %s", controlnum, servicemasks[i]->content, command, buf);
+  for(i=getservicemasks(&servicemasks)-1;i>=0;i--)
+    xsb_send("$%s :XSB1 %s %s", servicemasks[i]->content, command, buf);
 }
+
+void xsb_unicast(const char *command, nick *np, const char *format, ...) {
+  char buf[512];
+  va_list va;
+  
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  /* TODO */
+  xsb_send("$%s :XSB1 %s %s", serverlist[homeserver(np->numeric)].name, command, buf);
+  /* xsb_send("%s :XSB1 %s %s", longtonumeric(np->numeric, 5), command, buf);*/
+  
+}
+
+int xsb_isservice(server *service) {
+  int i;
+  sstring **servicemasks;
+  char *name = service->name->content;
+
+  if(!(service->flags & SMODE_SERVICE))
+    return 0;
+
+  for(i=getservicemasks(&servicemasks)-1;i>=0;i--)
+    if(match2strings(servicemasks[i]->content, name))
+      return 1;
+
+  return 0;
+}
+

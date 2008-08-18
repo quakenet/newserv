@@ -483,6 +483,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       /* someone killed me?  Bastards */
       scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
       mynick=NULL;
+      triggerhook(HOOK_CONTROL_REGISTERED, NULL);
       break;
       
     default:
