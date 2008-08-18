@@ -27,7 +27,7 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **ar
   }
 
   thenode->returntype = RETURNTYPE_INT;
-  thenode->localdata = (void *)type;
+  thenode->localdata = (void *)(long)type;
   thenode->exe = timestamp_exe;
   thenode->free = timestamp_free;
 
@@ -38,7 +38,7 @@ void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) 
   nick *np = (nick *)theinput;
   chanindex *cip = (chanindex *)theinput;
   
-  if ((int)thenode->localdata == SEARCHTYPE_NICK) {
+  if ((long)thenode->localdata == SEARCHTYPE_NICK) {
     return (void *)np->timestamp;
   } else {
     if (cip->channel)
