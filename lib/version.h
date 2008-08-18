@@ -10,6 +10,6 @@
 #define _BUILDID "" XStringify(BUILDID) ""
 #endif
 
-#define MODULE_VERSION(id) const char *_version(void) { return (id[0]=='\0')?_BUILDID:(id "/" _BUILDID); };
+#define MODULE_VERSION(id) const char *_version(const char **version) { *version=(id[0]=='\0')?NULL:id; return _BUILDID; };
 
 #endif

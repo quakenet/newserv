@@ -20,6 +20,7 @@
 #include "../lib/base64.h"
 #include "../core/modules.h"
 #include "../lib/version.h"
+#include "../lib/irc_string.h"
 #include "control.h"
 
 #include <stdio.h>
@@ -289,15 +290,18 @@ int controllsmod(void *sender, int cargc, char **cargv) {
   char *ptr;
 
   if (cargc < 1) { /* list all loaded modules */
-    ptr = lsmod(i);
-    controlreply((nick *)sender,"Module");
+    const char *ver, *buildid;
+    time_t t, t2 = time(NULL);
+    ptr = lsmod(i, &ver, &buildid, &t);
+
+    /*                                                                    9999d 24h 59m 59s fbf2a4a69ee1-tip */
+    controlreply((nick *)sender,"Module                                   Loaded for        Version              Build id");
     while (ptr != NULL) {
-      const char *ver = lsmodver(i);
-      controlreply((nick *)sender,"%s%s%s%s", ptr, ver?" (":"", ver?ver:"", ver?")":"");
-      ptr = lsmod(++i);
+      controlreply((nick *)sender," %-40s %-17s %-20s %s", ptr, longtoduration(t2-t, 2), ver?ver:"", buildid?buildid:"");
+      ptr = lsmod(++i, &ver, &buildid, &t);
     }
   } else {
-    ptr = lsmod(getindex(cargv[0]));
+    ptr = lsmod(getindex(cargv[0]), NULL, NULL, NULL);
     controlreply((nick *)sender,"Module \"%s\" %s", cargv[0], (ptr ? "is loaded." : "is NOT loaded."));
   }
   return CMD_OK;

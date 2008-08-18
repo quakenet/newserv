@@ -171,7 +171,7 @@ int noperserv_modules_loaded(char *mask) {
   int i;
   char *ptr;
 
-  for(i=0,ptr=lsmod(i);ptr;ptr=lsmod(++i))
+  for(i=0,ptr=lsmod(i,NULL,NULL,NULL);ptr;ptr=lsmod(++i,NULL,NULL,NULL))
     if(match2strings(mask, ptr))
       return 1;
 

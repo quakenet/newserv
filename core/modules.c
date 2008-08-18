@@ -223,7 +223,7 @@ int insmod(char *modulename) {
   int i;
   module *mods;
   char buf[1024];
-  const char *(*verinfo)(void);
+  const char *(*verinfo)(const char **);
   struct module_dep *mdp;
 
   delchars(modulename,"./\\;");
@@ -269,11 +269,13 @@ int insmod(char *modulename) {
 
   verinfo=dlsym(mods[i].handle,"_version");
   if(verinfo) {
-    mods[i].version=verinfo();
-  }  else {
+    mods[i].buildid=verinfo(&mods[i].version);
+  } else {
     mods[i].version=NULL;
+    mods[i].buildid=NULL;
   }
 
+  mods[i].loadedsince = time(NULL);
   Error("core",ERR_INFO,"Loaded module %s OK.",modulename);
   
   return 0;
@@ -291,24 +293,21 @@ int getindex(char *modulename) {
   return -1;
 }
 
-char *lsmod(int index) {
+char *lsmod(int index, const char **ver, const char **buildid, time_t *t) {
   module *mods;
 
   if (index < 0 || index >= modules.cursi)
     return NULL;
 
   mods=(module *)(modules.content);
+  if(ver)
+    *ver=mods[index].version;
+  if(buildid)
+    *buildid=mods[index].buildid;
+  if(t)
+    *t=mods[index].loadedsince;
+
   return mods[index].name->content;
-}
-
-const char *lsmodver(int index) {
-  module *mods;
-
-  if (index < 0 || index >= modules.cursi)
-    return NULL;
-
-  mods=(module *)(modules.content);
-  return mods[index].version;
 }
 
 int isloaded(char *modulename) {

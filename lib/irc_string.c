@@ -232,12 +232,12 @@ const char *IPlongtostr(unsigned long IP) {
 /*
  * longtoduration: 
  *  Converts a specified number of seconds into a duration string.  
- *  format: 0 for the "/stats u" compatible output, 1 for more human-friendly output.
+ *  format: 0 for the "/stats u" compatible output, 1 for more human-friendly output, 2 for a different human-friendly output.
  */
 
 const char *longtoduration(unsigned long interval, int format) {
   int days,hours,minutes,seconds;
-  static char outstring[50];
+  static char outstring[100];
   int pos=0;
 
   seconds=interval%60;
@@ -245,20 +245,35 @@ const char *longtoduration(unsigned long interval, int format) {
   hours=(interval%(3600*24))/3600;
   days=interval/(3600*24);
 
-  if (format==0 || (days>0 && (hours||minutes||seconds))) {
+  if (format==0) {
     sprintf(outstring,"%d day%s, %02d:%02d:%02d",
             days,(days==1)?"":"s",hours,minutes,seconds);
-  } else if (days>0) {
-    sprintf(outstring, "%d day%s",days,(days==1)?"":"s");
+  } else if (format == 1) {
+    if (days>0) {
+      sprintf(outstring, "%d day%s",days,(days==1)?"":"s");
+    } else {
+      if (hours>0) {
+        pos += sprintf(outstring+pos,"%d hour%s ",hours,hours==1?"":"s");
+      }
+      if (minutes>0 || (hours>0 && seconds>0)) {
+        pos += sprintf(outstring+pos,"%d minute%s ",minutes,minutes==1?"":"s");
+      }
+      if (seconds>0 || !interval) {
+        pos += sprintf(outstring+pos,"%d second%s ",seconds,seconds==1?"":"s");
+      }
+    }
   } else {
-    if (hours>0) {
-      pos += sprintf(outstring+pos,"%d hour%s ",hours,hours==1?"":"s");
+    if (days>0) {
+      pos += sprintf(outstring+pos, "%dd ",days);
     }
-    if (minutes>0 || (hours>0 && seconds>0)) {
-      pos += sprintf(outstring+pos,"%d minute%s ",minutes,minutes==1?"":"s");
+    if (hours>0 || (days>0 && (minutes>0 || seconds>0))) {
+      pos += sprintf(outstring+pos, "%dh ",hours);
     }
-    if (seconds>0) {
-      pos += sprintf(outstring+pos,"%d second%s ",seconds,seconds==1?"":"s");
+    if (minutes>0 || ((days>0 || hours>0) && seconds>0)) {
+      pos += sprintf(outstring+pos, "%dm ",minutes);
+    }
+    if (seconds>0 || !interval) {
+      pos += sprintf(outstring+pos, "%ds ",seconds);
     }
   }
 
