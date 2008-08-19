@@ -52,8 +52,8 @@ struct mblock_list {
 static void *mblock_head;
 
 #define sunprotectb(x) mprotect(x, SSTRING_ALLOC, PROT_READ|PROT_WRITE);
-#define sunprotect(x) sunprotectb(x->block);
-#define sprotect(x) mprotect(x->block, SSTRING_ALLOC, PROT_READ);
+#define sunprotect(x) sunprotectb((x)->block);
+#define sprotect(x) mprotect((x)->block, SSTRING_ALLOC, PROT_READ);
 
 #ifndef MAP_ANON
 #define MAP_ANON MAP_ANONYMOUS
@@ -111,11 +111,25 @@ void sstring_enhash(sstring *ss) {
 
 void sstring_dehash(sstring *ss) {
   unsigned int hash=crc32(ss->content)%SSTRING_HASHSIZE;
-  sstring **ssh;
+  sstring *ssh, *ssp;
   
-  for (ssh=&(sshash[hash]); *ssh; ssh=&((*ssh)->next)) {
-    if (*ssh==ss) {
-      *ssh=ss->next;
+  for (ssh=sshash[hash],ssp=NULL; ssh; ssp=ssh,ssh=ssh->next) {
+    if (ssh==ss) {
+      if (!ssp) {
+        sshash[hash]=ss->next;
+      } else {
+#ifndef USE_VALGRIND
+        ssp->next=ss->next;
+#else
+        if (ssp->block!=ss->block) {
+          sunprotect(ssp) {
+            ssp->next=ss->next;
+          } sprotect(ssp);
+        } else {
+          ssp->next=ss->next;
+        }
+      }
+#endif
       return;
     }
   }
@@ -190,7 +204,8 @@ sstring *getsstring(const char *inputstr, int maxlen) {
       /* Not enough for us - turn the remaining memory into a free string for later */
       if (ssmemfree>sizeof(sstring)) {
         retval=(sstring *)ssmem;
-        sunprotect(retval);
+        sunprotectb(mblock);
+        retval->block=mblock;
         retval->alloc=(ssmemfree-sizeof(sstring));
         retval->refcount=0;
         freesstring(retval);
@@ -246,23 +261,24 @@ void freesstring(sstring *inval) {
   /* Only count calls that actually did something */
   freecalls++;
   
+  if (inval->refcount)
+    sunprotect(inval);
+
   if (inval->refcount > 1) {
-    sunprotect(inval) {
-      inval->refcount--;
-    } sprotect(inval);
+    inval->refcount--;
+    sprotect(inval);
     return;
   }
 
   /* If refcount==0 it wasn't hashed, or protected */
-  if (inval->refcount) {
-    sunprotect(inval);
+  if (inval->refcount)
     sstring_dehash(inval);
-  }
 
   alloc=inval->alloc;
   assert(alloc<=SSTRING_MAXLEN);
   inval->next=freelist[alloc];
   freelist[alloc]=inval;
+  sprotect(inval);
 }
 
 void sstringstats(int hooknum, void *arg) {
