@@ -28,8 +28,32 @@ static int getcalls;
 static int freecalls;
 static int allocs;
 
-/* Internal function */
+/* Internal functions */
 static void sstringstats(int hooknum, void *arg);
+static void salloc(void);
+
+#ifndef USE_VALGRIND
+
+#define sunprotect(x)
+#define sunprotectb(x)
+#define sprotect(x)
+
+#else
+
+#include <sys/mman.h>
+static void *mblock;
+struct mblock_list {
+  void *block;
+  struct mblock_list *next;
+};
+
+static void *mblock_head;
+
+#define sunprotectb(x) mprotect(x, SSTRING_ALLOC, PROT_READ|PROT_WRITE);
+#define sunprotect(x) sunprotectb(x->block);
+#define sprotect(x) mprotect(x->block, SSTRING_ALLOC, PROT_READ);
+
+#endif /* USE_VALGRIND */
 
 void initsstring() {
   int i;
@@ -50,9 +74,16 @@ void initsstring() {
   registerhook(HOOK_CORE_STATSREQUEST,&sstringstats);
 }
 
+#ifndef USE_VALGRIND
 void finisstring() {
   nsfreeall(POOL_SSTRING);
 }
+
+static void salloc(void) {
+  ssmem=(char *)nsmalloc(POOL_SSTRING, SSTRING_ALLOC);
+  ssmemfree=SSTRING_ALLOC;
+}
+#endif /* USE_VALGRIND */
 
 sstring *findsstring(const char *str) {
   unsigned int hash=crc32(str)%SSTRING_HASHSIZE;
@@ -89,7 +120,7 @@ void sstring_dehash(sstring *ss) {
 sstring *getsstring(const char *inputstr, int maxlen) {
   int i;
   sstring *retval=NULL;
-  int length;
+  int length, foreignblock;
   char strbuf[SSTRING_MAXLEN];
 
   /* getsstring() on a NULL pointer returns a NULL sstring.. */
@@ -121,10 +152,14 @@ sstring *getsstring(const char *inputstr, int maxlen) {
 
   /* If it's hashed this is easy */
   if ((retval=findsstring(strbuf))) {
-    retval->refcount++;
+    sunprotect(retval) {
+      retval->refcount++;
+    } sprotect(retval);
+
     return retval;
   }
-  
+
+  foreignblock=0;  
   /* Check to see if an approximately correct 
    * sized string is available */
   for(i=0;i<SSTRING_SLACK;i++) {
@@ -134,6 +169,9 @@ sstring *getsstring(const char *inputstr, int maxlen) {
     if (freelist[length+i]!=NULL) {
       retval=freelist[length+i];
       freelist[length+i]=retval->next;
+      sunprotect(retval);
+      foreignblock=1;
+
       retval->alloc=(length+i);
       break;
     }  
@@ -146,14 +184,16 @@ sstring *getsstring(const char *inputstr, int maxlen) {
       /* Not enough for us - turn the remaining memory into a free string for later */
       if (ssmemfree>sizeof(sstring)) {
         retval=(sstring *)ssmem;
+        sunprotect(retval);
         retval->alloc=(ssmemfree-sizeof(sstring));
         retval->refcount=0;
         freesstring(retval);
       }
   
-      allocs++;      
-      ssmem=(char *)nsmalloc(POOL_SSTRING, SSTRING_ALLOC);
-      ssmemfree=SSTRING_ALLOC;
+      allocs++;     
+      salloc();
+    } else {
+      sunprotectb(mblock);
     }
     
     retval=(sstring *)ssmem;
@@ -179,8 +219,14 @@ sstring *getsstring(const char *inputstr, int maxlen) {
   strcpy(retval->content,strbuf);
   retval->refcount=1;
   
+#ifdef USE_VALGRIND 
+  if(!foreignblock)
+    retval->block = mblock;
+#endif
+
   sstring_enhash(retval);
-  
+  sprotect(retval);
+
   return retval;    
 }
 
@@ -195,14 +241,18 @@ void freesstring(sstring *inval) {
   freecalls++;
   
   if (inval->refcount > 1) {
-    inval->refcount--;
+    sunprotect(inval) {
+      inval->refcount--;
+    } sprotect(inval);
     return;
   }
 
-  /* If refcount==0 it wasn't hashed */
-  if (inval->refcount)
+  /* If refcount==0 it wasn't hashed, or protected */
+  if (inval->refcount) {
+    sunprotect(inval);
     sstring_dehash(inval);
-  
+  }
+
   alloc=inval->alloc;
   assert(alloc<=SSTRING_MAXLEN);
   inval->next=freelist[alloc];
@@ -233,3 +283,25 @@ int sstringcompare(sstring *ss1, sstring *ss2) {
   return strncmp(ss1->content, ss2->content, ss1->length);
 }
 
+#ifdef USE_VALGRIND
+void finisstring() {
+  struct mblock_list *c, *n;
+  for (c=mblock_head;c;c=n) {
+    n=c->next;
+    munmap(c->block, SSTRING_ALLOC);
+  }
+}
+
+static void salloc(void) {
+  struct mblock_list *n;
+  mblock=mmap((void *)0, SSTRING_ALLOC, PROT_WRITE|PROT_READ, MAP_PRIVATE|MAP_ANON, -1, 0);
+
+  n=(struct mblock_list *)mblock;
+  n->block = mblock;
+  n->next = mblock_head;
+  mblock_head = n;
+
+  ssmem=(char *)mblock + sizeof(struct mblock_list);
+  ssmemfree=SSTRING_ALLOC-sizeof(struct mblock_list);
+}
+#endif /* USE_VALGRIND */
