@@ -192,7 +192,12 @@ void sstringstats(int hooknum, void *arg) {
 
 #else /* USE_VALGRIND */
 
+#define __USE_MISC
 #include <sys/mman.h>
+
+#ifndef MAP_ANON
+#define MAP_ANON MAP_ANONYMOUS
+#endif
 
 #define MModify(x) mprotect(x, x->s->u.l.alloc, PROT_READ|PROT_WRITE)
 #define MUnmodify(x) mprotect(x, x->s->u.l.alloc, PROT_READ)

@@ -40,6 +40,8 @@ static void salloc(void);
 
 #else
 
+#define __USE_MISC
+
 #include <sys/mman.h>
 static void *mblock;
 struct mblock_list {
@@ -52,6 +54,10 @@ static void *mblock_head;
 #define sunprotectb(x) mprotect(x, SSTRING_ALLOC, PROT_READ|PROT_WRITE);
 #define sunprotect(x) sunprotectb(x->block);
 #define sprotect(x) mprotect(x->block, SSTRING_ALLOC, PROT_READ);
+
+#ifndef MAP_ANON
+#define MAP_ANON MAP_ANONYMOUS
+#endif
 
 #endif /* USE_VALGRIND */
 
