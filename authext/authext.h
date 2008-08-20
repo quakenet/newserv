@@ -36,7 +36,7 @@ authname *newauthname(void);
 void freeauthname (authname *hp);
 
 /* EXT management */
-int registerauthnameext(const char *name);
+int registerauthnameext(const char *name, int persistant);
 int findauthnameext(const char *name);
 void releaseauthnameext(int index);
 

@@ -6,10 +6,15 @@
 /* Externally visibly max string length */
 #define SSTRING_MAX	512
 
+/* you can actually change USE_VALGRIND here without recompiling! */
 typedef struct sstring {
   short length;
   short alloc;
   struct sstring *next;
+#ifdef USE_VALGRIND
+  void *block;
+#endif
+  unsigned long refcount;
   char content[];
 } sstring;
 

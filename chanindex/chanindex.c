@@ -5,9 +5,12 @@
 #include "../lib/irc_string.h"
 #include "../core/error.h"
 #include "../core/nsmalloc.h"
+#include "../lib/version.h"
 
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION("")
 
 #define ALLOCUNIT	1000
 

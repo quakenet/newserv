@@ -222,50 +222,51 @@ void initmodules() {
 int insmod(char *modulename) {
   int i;
   module *mods;
-  char buf[1024];
+  char buf[1024], modulebuf[1024];
   const char *(*verinfo)(const char **);
   struct module_dep *mdp;
 
-  delchars(modulename,"./\\;");
+  strlcpy(modulebuf, modulename, sizeof(modulebuf));
+  delchars(modulebuf,"./\\;");
   
-  if (isloaded(modulename)) {
-    Error("core",ERR_DEBUG,"Tried to load already loaded module: %s",modulename);
+  if (isloaded(modulebuf)) {
+    Error("core",ERR_DEBUG,"Tried to load already loaded module: %s",modulebuf);
     return 1;
   }
   
-  if (strlen(modulename)>100) {
-    Error("core",ERR_WARNING,"Module name too long: %s",modulename);  
+  if (strlen(modulebuf)>100) {
+    Error("core",ERR_WARNING,"Module name too long: %s",modulebuf);  
     return 1;
   }
 
-  if ((mdp=getmoduledep(modulename))) {
+  if ((mdp=getmoduledep(modulebuf))) {
     for (i=0;i<mdp->numparents;i++) {
       if (!isloaded(mdp->parents[i]->name->content)) {
         if (insmod(mdp->parents[i]->name->content)) {
           Error("core",ERR_WARNING,"Error loading dependant module %s (needed by %s)",
-                   mdp->parents[i]->name->content,modulename);
+                   mdp->parents[i]->name->content,modulebuf);
           return 1;
         }
       }
     }
   } else {
-    Error("core",ERR_WARNING,"Loading module %s without dependency information.",modulename);
+    Error("core",ERR_WARNING,"Loading module %s without dependency information.",modulebuf);
   }
 
   i=array_getfreeslot(&modules);
   mods=(module *)(modules.content);
 
-  sprintf(buf,"%s/%s%s",moddir->content,modulename,modsuffix->content);
+  sprintf(buf,"%s/%s%s",moddir->content,modulebuf,modsuffix->content);
   
   mods[i].handle=dlopen(buf,RTLD_NOW|RTLD_GLOBAL);
   
   if(mods[i].handle==NULL) {
-    Error("core",ERR_ERROR,"Loading module %s failed: %s",modulename,dlerror());
+    Error("core",ERR_ERROR,"Loading module %s failed: %s",modulebuf,dlerror());
     array_delslot(&modules,i);
     return -1;
   }
 
-  mods[i].name=getsstring(modulename,MODULENAMELEN);
+  mods[i].name=getsstring(modulebuf,MODULENAMELEN);
 
   verinfo=dlsym(mods[i].handle,"_version");
   if(verinfo) {
@@ -276,7 +277,7 @@ int insmod(char *modulename) {
   }
 
   mods[i].loadedsince = time(NULL);
-  Error("core",ERR_INFO,"Loaded module %s OK.",modulename);
+  Error("core",ERR_INFO,"Loaded module %s OK.",modulebuf);
   
   return 0;
 }
@@ -322,30 +323,32 @@ int rmmod(char *modulename) {
   int i,j;
   module *mods;
   struct module_dep *mdp;
+  char modulebuf[1024];
+
+  strlcpy(modulebuf, modulename, sizeof(modulebuf));
+  delchars(modulebuf,"./\\;");
   
-  delchars(modulename,"./\\;");
-  
-  i=getindex(modulename);
+  i=getindex(modulebuf);
   if (i<0)
     return 1;
 
-  if ((mdp=getmoduledep(modulename))) {
+  if ((mdp=getmoduledep(modulebuf))) {
     for (j=0;j<mdp->numchildren;j++) {
       if (isloaded(mdp->children[j]->name->content)) {
         if (rmmod(mdp->children[j]->name->content)) {
           Error("core",ERR_WARNING,"Unable to remove child module %s (depends on %s)",
-                 mdp->children[j]->name->content, modulename);
+                 mdp->children[j]->name->content, modulebuf);
           return 1;
         }
       }
     }
 
     /* We may have removed other modules - reaquire the index number in case it has changed. */
-    i=getindex(modulename);
+    i=getindex(modulebuf);
     if (i<0)
       return 1;
   } else {
-    Error("core",ERR_WARNING,"Removing module %s without dependency information",modulename);
+    Error("core",ERR_WARNING,"Removing module %s without dependency information",modulebuf);
   }
   
   mods=(module *)(modules.content);
@@ -363,7 +366,7 @@ int rmmod(char *modulename) {
   freesstring(mods[i].name);
   array_delslot(&modules,i);
 
-  Error("core",ERR_INFO,"Removed module %s.",modulename);
+  Error("core",ERR_INFO,"Removed module %s.",modulebuf);
   
   return 0;
 }    
