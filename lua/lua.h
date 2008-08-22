@@ -48,7 +48,8 @@
 #define LUA_AUXVERSION ""
 #endif
 
-#define LUA_FULLVERSION "Lua engine v" LUA_BOTVERSION " (" LUA_VERSION LUA_AUXVERSION ")"
+#define LUA_SMALLVERSION "v" LUA_BOTVERSION " (" LUA_VERSION LUA_AUXVERSION ")"
+#define LUA_FULLVERSION "Lua engine " LUA_SMALLVERSION
 
 /*** end defines ************************************/
 

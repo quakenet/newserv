@@ -20,6 +20,7 @@
 #include "../lib/base64.h"
 #include "../core/modules.h"
 #include "../lib/version.h"
+#include "../lib/irc_string.h"
 #include "control.h"
 
 #include <stdio.h>
@@ -53,6 +54,7 @@ int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
 int controlcheckpermitted(flag_t level, nick *user);
+void handlesignal(int hooknum, void *arg);
 
 void _init() {
   controlcmds=newcommandtree();
@@ -68,12 +70,14 @@ void _init() {
   registercontrolhelpcmd("die",NO_DEVELOPER,1,&die,"Usage: die <reason>\nTerminates the service.");
   registercontrolhelpcmd("insmod",NO_DEVELOPER,1,&controlinsmod,"Usage: insmod <module>\nAdds a module to the running instance.");
   registercontrolhelpcmd("rmmod",NO_DEVELOPER,1,&controlrmmod,"Usage: rmmod <module>\nRemoves a module from the running instance.");
-  registercontrolhelpcmd("lsmod",NO_DEVELOPER,0,&controllsmod,"Usage: lsmod\nLists currently running modules.");
+  registercontrolhelpcmd("lsmod",NO_OPER,0,&controllsmod,"Usage: lsmod\nLists currently running modules.");
   registercontrolhelpcmd("rehash",NO_DEVELOPER,1,&controlrehash,"Usage: rehash\nReloads configuration file.");
   registercontrolhelpcmd("showcommands",NO_ACCOUNT,0,&controlshowcommands,"Usage: showcommands\nShows all registered commands.");
   registercontrolhelpcmd("reload",NO_DEVELOPER,1,&controlreload,"Usage: reload <module>\nReloads specified module.");
   registercontrolhelpcmd("help",NO_ANYONE,1,&controlhelpcmd,"Usage: help <command>\nShows help for specified command.");
-  
+ 
+  registerhook(HOOK_CORE_REHASH, &handlesignal);
+  registerhook(HOOK_CORE_SIGINT, &handlesignal);
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
 }
 
@@ -97,6 +101,9 @@ void _fini() {
   deregistercontrolcmd("help",&controlhelpcmd);
   
   destroycommandtree(controlcmds);
+
+  deregisterhook(HOOK_CORE_REHASH, &handlesignal);
+  deregisterhook(HOOK_CORE_SIGINT, &handlesignal);
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *helpstr) {
@@ -337,15 +344,18 @@ int controllsmod(void *sender, int cargc, char **cargv) {
   char *ptr;
 
   if (cargc < 1) { /* list all loaded modules */
-    ptr = lsmod(i);
-    controlreply((nick *)sender,"Module");
+    const char *ver, *buildid;
+    time_t t, t2 = time(NULL);
+    ptr = lsmod(i, &ver, &buildid, &t);
+
+    /*                                                                    9999d 24h 59m 59s fbf2a4a69ee1-tip */
+    controlreply((nick *)sender,"Module                                   Loaded for        Version                        Build id");
     while (ptr != NULL) {
-      const char *ver = lsmodver(i);
-      controlreply((nick *)sender,"%s%s%s%s", ptr, ver?" (":"", ver?ver:"", ver?")":"");
-      ptr = lsmod(++i);
+      controlreply((nick *)sender," %-40s %-17s %-30s %s", ptr, longtoduration(t2-t, 2), ver?ver:"", buildid?buildid:"");
+      ptr = lsmod(++i, &ver, &buildid, &t);
     }
   } else {
-    ptr = lsmod(getindex(cargv[0]));
+    ptr = lsmod(getindex(cargv[0]), NULL, NULL, NULL);
     controlreply((nick *)sender,"Module \"%s\" %s", cargv[0], (ptr ? "is loaded." : "is NOT loaded."));
   }
   return CMD_OK;
@@ -375,7 +385,7 @@ int relink(void *sender, int cargc, char **cargv) {
 }
 
 int die(void *sender, int cargc, char **cargv) {
-  if (cargc<1) {
+  if (cargc<1 || (strlen(cargv[0]) < 10)) {
     controlreply((nick *)sender,"You must give a reason.");
     return CMD_USAGE;
   }
@@ -523,6 +533,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       /* someone killed me?  Bastards */
       scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
       mynick=NULL;
+      triggerhook(HOOK_CONTROL_REGISTERED, NULL);
       break;
       
     default:
@@ -577,9 +588,9 @@ void controlnotice(nick *target, char *message, ... ) {
 
 void controlspecialrmmod(void *arg) {
   struct specialsched *a = (struct specialsched *)arg;
+  sstring *froo = a->modulename;
   
   a->schedule = NULL;
-  sstring *froo = a->modulename;
 
   rmmod(froo->content);
   freesstring(froo);
@@ -587,9 +598,9 @@ void controlspecialrmmod(void *arg) {
 
 void controlspecialreloadmod(void *arg) {
   struct specialsched *a = (struct specialsched *)arg;
+  sstring *froo = a->modulename;
 
   a->schedule = NULL;
-  sstring *froo = a->modulename;
 
   safereload(froo->content);
   freesstring(froo);
@@ -683,6 +694,24 @@ void controlnswall(int noticelevel, char *format, ...) {
 
 int controlcheckpermitted(flag_t level, nick *user) {
   return 1;
+}
+
+void handlesignal(int hooknum, void *arg) {
+  char *signal, *action;
+
+  if(hooknum == HOOK_CORE_SIGINT) {
+    signal = "INT";
+    action = "terminating";
+  } else {
+    long hupped = (long)arg;
+    if(!hupped)
+      return;
+
+    signal = "HUP";
+    action = "rehashing";
+  }
+
+  controlwall(NO_OPER, NL_OPERATIONS, "SIG%s received, %s...", signal, action);
 }
 
 void controldestroycmdext(void *ext) {

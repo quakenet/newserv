@@ -560,6 +560,8 @@ void sendping(void *arg) {
   if (connected) {
     if (awaitingping==1) {
       /* We didn't get a ping reply, kill the connection */
+      Error("irc",ERR_INFO,"Connection closed due to ping timeout.");
+
       irc_send("%s SQ %s 0 :Ping timeout",mynumeric->content,myserver->content);
       irc_disconnected();
     } else {
