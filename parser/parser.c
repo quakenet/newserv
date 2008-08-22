@@ -49,8 +49,8 @@ void destroycommandtree(CommandTree *ct) {
   if(ct->cmd) {
     if(ct->cmd->command)
       freesstring(ct->cmd->command);
-    if(ct->cmd->help)
-      free(ct->cmd->help);
+    if(ct->cmd->ext && ct->cmd->destroyext)
+      (ct->cmd->destroyext)(ct->cmd->ext);
     free(ct->cmd);
   } 
   free(ct);
@@ -115,7 +115,7 @@ static int sanitisecommandname(const char *cmdname, char *cmdbuf) {
  * installing it in the tree
  */
  
-Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help) {
+Command *addcommandexttotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, void *ext) {
   Command *nc, *c;
   char cmdbuf[MAX_COMMAND_LEN];
 
@@ -130,16 +130,7 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
   nc->handler=handler;
   nc->ext=NULL;
   nc->next=NULL;
-  if (help) {
-    int len=strlen(help);
-    nc->help=(char *)malloc(len+1);
-    if(nc->help) {
-      strncpy(nc->help, help, len);
-      nc->help[len] = '\0';
-    }
-  } else {
-    nc->help=NULL;
-  }
+  nc->destroyext=NULL;
 
   if ((c=findcommandintree(ct,cmdname,1))!=NULL) {
     /* Found something already.  Append our entry to the end */
@@ -149,11 +140,12 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
   } else if (insertcommand(nc,ct,0)) {
     /* Erk, that didn't work.. */
     freesstring(nc->command);
-    if(nc->help)
-      free(nc->help);
     free(nc);
     return NULL;
   }
+
+  if (ext)
+    nc->ext=(void *)ext;
   
   return nc;
 }
@@ -243,8 +235,8 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
-        if(c->help)
-          free(c->help);
+        if(c->ext && c->destroyext)
+          (c->destroyext)(c->ext);
         free(c);
         return 0;
       }
@@ -262,8 +254,8 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
-        if(c->help)
-          free(c->help);
+        if(c->ext && c->destroyext)
+          (c->destroyext)(c->ext);
         free(c);
 
         /* We need to regenerate the final pointer if needed;
