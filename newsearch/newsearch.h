@@ -74,6 +74,7 @@ typedef struct searchCmd {
 typedef struct searchList { 
   void *cmd;
   sstring *name;  
+  char *help;
   struct searchList *next;
 } searchList;
 
@@ -85,6 +86,7 @@ typedef struct searchCtx {
   struct searchVariable vars[MAX_VARIABLES];
   int lastvar;
   struct searchCmd *searchcmd;
+  nick *sender;
 } searchCtx;
 
 /* Core functions */
@@ -159,11 +161,13 @@ struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int ty
 /* Registration functions */
 searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void *defaultdisplayfunc);
 void deregistersearchcommand(searchCmd *scmd);
-void registersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc);
+void registersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc, int level, char *help);
 void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc);
-void registerglobalsearchterm(char *term, parseFunc parsefunc);
+
+void registerglobalsearchterm(char *term, parseFunc parsefunc, char *help);
 void deregisterglobalsearchterm(char *term, parseFunc parsefunc);
-void regdisp( searchCmd *cmd, const char *name, void *handler);
+
+void regdisp( searchCmd *cmd, const char *name, void *handler, int level, char *help);
 void unregdisp( searchCmd *cmd, const char *name, void *handler);
 
 /* Special nick* printf */
@@ -190,7 +194,7 @@ struct searchVariable *var_register(searchCtx *ctx, char *arg, int type);
 searchNode *var_get(searchCtx *ctx, char *arg);
 void var_setstr(struct searchVariable *v, char *data);
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd);
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender);
 
 /* AST functions */
 

@@ -142,7 +142,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch, sender);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_nicksearch));
@@ -168,7 +168,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   searchNode *search;
   char buf[1024];
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_chansearch));
@@ -197,7 +197,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch, sender);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_usersearch));
