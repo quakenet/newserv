@@ -48,7 +48,6 @@ void *ps_nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   patricia_node_t *node;
   nick *np;
   patricianick_t *pnp;
-  patricia_node_t *pn;
   int i;
 
   localdata = thenode->localdata;

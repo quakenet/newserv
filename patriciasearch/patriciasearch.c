@@ -32,8 +32,8 @@ void _init() {
 
   reg_nodesearch = (searchCmd *)registersearchcommand("nodesearch",NO_OPER,do_pnodesearch, printnode);
 
-  registersearchterm(reg_nodesearch, "users",ps_users_parse);
-  registersearchterm(reg_nodesearch, "nick",ps_nick_parse);
+  registersearchterm(reg_nodesearch, "users", ps_users_parse, 0, "");
+  registersearchterm(reg_nodesearch, "nick", ps_nick_parse, 0, "");
 }
 
 void _fini() {
@@ -78,7 +78,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nodesearch);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nodesearch, sender);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
