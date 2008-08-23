@@ -128,7 +128,7 @@ int nc_cmd_nodecount(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
   struct irc_in_addr sin;
   unsigned char bits;
-  patricia_node_t *head, *node;
+  patricia_node_t *head;
   int count;
 
   if (cargc < 1) {

@@ -14,6 +14,9 @@
 #include "../core/hooks.h"
 #include "../irc/irc.h"
 
+#define CS_NODB
+#include "../chanserv/chanserv.h"
+
 #define WARN_CHANNEL "#twilightzone"
 
 MODULE_VERSION("");
@@ -22,7 +25,7 @@ sstring *sharedsecret = NULL;
 
 int ta_ticketauth(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
-  char buffer[1024], *uhmac, *acc, *junk;
+  char buffer[1024], *uhmac, *acc, *junk, *flags;
   unsigned char digest[32];
   int expiry, acclen, id;
   hmacsha256 hmac;
@@ -33,15 +36,18 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargc != 5)
+  if(cargc != 6) {
+    controlreply(np, "%d\n", cargc);
     return CMD_USAGE;
+  }
 
   acc = cargv[0];
   expiry = atoi(cargv[1]);
   id = atoi(cargv[2]);
   acclen = strlen(acc);
-  junk = cargv[3];
-  uhmac = cargv[4];
+  flags = cargv[3];
+  junk = cargv[4];
+  uhmac = cargv[5];
 
   if((acclen <= 1) || (acclen > ACCOUNTLEN)) {
     controlreply(np, "Bad account.");
@@ -55,7 +61,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
   }
 
   hmacsha256_init(&hmac, (unsigned char *)sharedsecret->content, sharedsecret->length);
-  snprintf(buffer, sizeof(buffer), "%s %d %d %s", acc, expiry, id, junk);
+  snprintf(buffer, sizeof(buffer), "%s %d %d %s %s", acc, expiry, id, flags, junk);
   hmacsha256_update(&hmac, (unsigned char *)buffer, strlen(buffer));
   hmacsha256_final(&hmac, digest);
   
@@ -76,7 +82,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
 
   controlreply(np, "Ticket valid, authing. . .");
 
-  localusersetaccountwithuserid(np, acc, id);
+  localusersetaccount(np, acc, id, cs_accountflagmap_str(flags), 0);
 
   controlreply(np, "Done.");
   return CMD_OK;
@@ -94,7 +100,7 @@ void _init() {
     return;
   }
 
-  registercontrolhelpcmd("ticketauth", NO_OPERED, 5, ta_ticketauth, "Usage: ticketauth <ticket>");
+  registercontrolhelpcmd("ticketauth", NO_OPERED, 6, ta_ticketauth, "Usage: ticketauth <ticket>");
 }
 
 void _fini() {

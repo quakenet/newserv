@@ -12,6 +12,7 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
+#include "../lib/strlfunc.h"
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -33,6 +34,8 @@ MODULE_VERSION("");
 
 void irc_connect(void *arg);
 void ircstats(int hooknum, void *arg);
+void checkhubconfig(void);
+void ircrehash(int hooknum, void *arg);
 
 CommandTree *servercommands;
 Command *numericcommands[MAX_NUMERIC-MIN_NUMERIC];
@@ -52,6 +55,9 @@ time_t timeoffset;
 int awaitingping;
 int connected;
 
+static int hubnum, hubcount, previouslyconnected = 0;
+static sstring **hublist;
+
 void _init() {
   servercommands=newcommandtree();
   starttime=time(NULL);
@@ -64,7 +70,9 @@ void _init() {
   myserver=getcopyconfigitem("irc","servername","services.lame.net",HOSTLEN);
   
   mylongnum=numerictolong(mynumeric->content,2);
-  
+
+  checkhubconfig();
+
   /* Schedule a connection to the IRC server */
   scheduleoneshot(time(NULL),&irc_connect,NULL);
     
@@ -74,6 +82,7 @@ void _init() {
   registerserverhandler("SERVER",&irc_handleserver,8);
 
   registerhook(HOOK_CORE_STATSREQUEST,&ircstats);
+  registerhook(HOOK_CORE_REHASH,&ircrehash);
 }
 
 void _fini() {
@@ -88,6 +97,7 @@ void _fini() {
   deregisterserverhandler("SERVER",&irc_handleserver);
 
   deregisterhook(HOOK_CORE_STATSREQUEST,&ircstats);
+  deregisterhook(HOOK_CORE_REHASH,&ircrehash);
  
   deleteschedule(NULL,&sendping,NULL);
   deleteschedule(NULL,&irc_connect,NULL);
@@ -98,28 +108,147 @@ void _fini() {
   destroycommandtree(servercommands);
 }
 
+void resethubnum(void) {
+  hubnum=0;
+}
+
+void nexthub(void) {
+  /*
+   * this is set if the connection before this (failed one)
+   * was successful, so we attempted reconnecting to the
+   * same server, and now we've failed, so reset to the first
+   * which should be the preferred one.
+   */
+
+  if (previouslyconnected) {
+    previouslyconnected=0;
+    if((hubcount<2) || (hubnum!=0)) {
+      hubnum=0;
+    } else {
+      hubnum=1;
+    }
+    return;
+  }
+
+  /* 1 % 0 is fun */
+  if (hubcount>0)
+    hubnum=(hubnum+1)%hubcount;
+}
+
+int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pingfreq) {
+  sstring *conto_s, *portnum_s, *conpass_s, *pingfreq_s;
+  static char conto_b[512], conpass_b[512];
+  int ret, s;
+  char *section;
+
+  if (hubcount) {
+    static char realsection[512];
+    snprintf(realsection,sizeof(realsection),"hub-%s",hublist[servernum]->content);
+    section=realsection;
+    s=1;
+  } else {
+    section="irc";
+    s=0;
+  }
+
+  conto_s=getconfigitem(section,s?"host":"hubhost");
+  if (!conto_s || !conto_s->content || !conto_s->content[0]) {
+    ret=0;
+  } else {
+    ret=1;
+  }
+
+  if (conto) {
+    conto_s=getcopyconfigitem(section,s?"host":"hubhost","127.0.0.1",HOSTLEN);
+    strlcpy(conto_b, conto_s->content, sizeof(conto_b));
+    *conto=conto_b;
+
+    freesstring(conto_s);
+  }
+
+  if (portnum) {
+     portnum_s=getcopyconfigitem(section,s?"port":"hubport","4400",7);
+    *portnum=strtol(portnum_s->content,NULL,10);
+
+    freesstring(portnum_s);
+  }
+
+  if (conpass) {
+    conpass_s=getcopyconfigitem(section,s?"pass":"hubpass","erik",20);
+    strlcpy(conpass_b, conpass_s->content, sizeof(conpass_b));
+    *conpass = conpass_b;
+
+    freesstring(conpass_s);
+  }
+
+  if (pingfreq) {
+    pingfreq_s=getcopyconfigitem(section,"pingfreq","90",10);
+    *pingfreq=strtol(pingfreq_s->content,NULL,10);
+
+    freesstring(pingfreq_s);
+  }
+
+  return ret;
+}
+
+/* we check at startup that (most things) resolve */
+void checkhubconfig(void) {
+  array *servers_ar;
+  int i;
+
+  resethubnum();
+  hubcount=0;
+
+  servers_ar=getconfigitems("irc", "hub");
+
+  /*
+   * we don't bother doing the gethostbyname check for
+   * the old style of configuration, as it'll
+   * be checked by irc_connect anyway.
+   */
+  if (!servers_ar || !servers_ar->cursi) {
+    Error("irc",ERR_WARNING,"Using legacy hub configuration format.");
+    return;
+  }
+
+  hublist=(sstring **)servers_ar->content;
+  hubcount=servers_ar->cursi;
+
+  for (i=0;i<hubcount;i++) {
+    char *conto;
+
+    if (!gethub(i, &conto, NULL, NULL, NULL)) {
+      Error("irc",ERR_FATAL,"No server configuration specified for '%s'.",hublist[i]->content);
+      exit(1);
+    }
+
+    if (!gethostbyname(conto)) {
+      Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto);
+      exit(1);
+    }
+  }
+}
+
+void ircrehash(int hookhum, void *arg) {
+  checkhubconfig();
+}
+
 void irc_connect(void *arg) {  
   struct sockaddr_in sockaddress;
   struct hostent *host;
-  sstring *conto,*conport,*conpass;
-  sstring *mydesc, *pingfreq;
-  long portnum;
+  sstring *mydesc;
+  char *conto,*conpass;
+  long portnum,pingfreq;
   socklen_t opt=1460;
 
   nextline=inbuf;
   bytesleft=0;
   linesreceived=0;
   awaitingping=0;
-  
-  conto=getcopyconfigitem("irc","hubhost","127.0.0.1",HOSTLEN);
-  conport=getcopyconfigitem("irc","hubport","4400",7);
-  conpass=getcopyconfigitem("irc","hubpass","erik",20);
+
+  gethub(hubnum, &conto, &portnum, &conpass, &pingfreq);
   
   mydesc=getcopyconfigitem("irc","serverdescription","newserv 0.01",100);
-
-  pingfreq=getcopyconfigitem("irc","pingfreq","90",10);
-  
-  portnum=strtol(conport->content,NULL,10);
 
   serverfd = socket(PF_INET, SOCK_STREAM, 0);
   if (serverfd == -1) {
@@ -129,9 +258,9 @@ void irc_connect(void *arg) {
 
   sockaddress.sin_family = AF_INET;
   sockaddress.sin_port = htons(portnum);
-  host = gethostbyname(conto->content);
+  host = gethostbyname(conto);
   if (!host) {
-    Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto->content);
+    Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto);
     exit(1);
   }
   memcpy(&sockaddress.sin_addr, host->h_addr, sizeof(struct in_addr));
@@ -140,16 +269,17 @@ void irc_connect(void *arg) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
   }
   
+  Error("irc",ERR_INFO,"Connecting to %s:%d",conto,portnum);
+
   if (connect(serverfd, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == -1) {
-    Error("irc",ERR_ERROR,"Couldn't connect to %s:%s, will retry in one minute",conto->content,conport->content);
+    nexthub();
+    Error("irc",ERR_ERROR,"Couldn't connect to %s:%d, will try next server in one minute",conto,portnum);
     scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
     close(serverfd);
     return;
   }
   
-  Error("irc",ERR_INFO,"Connecting to %s:%s",conto->content,conport->content);
-
-  irc_send("PASS :%s",conpass->content);
+  irc_send("PASS :%s",conpass);
   /* remember when changing modes to change server/server.c too */
   irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh6n :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
 
@@ -158,14 +288,9 @@ void irc_connect(void *arg) {
   /* Schedule our ping requests.  Note that this will also server
    * to time out a failed connection.. */
 
-  schedulerecurring(time(NULL)+strtol(pingfreq->content,NULL,10),0,
-		    strtol(pingfreq->content,NULL,10),&sendping,NULL);
+  schedulerecurring(time(NULL)+pingfreq,0,pingfreq,&sendping,NULL);
   
-  freesstring(conto);
-  freesstring(conport);
-  freesstring(conpass);
   freesstring(mydesc);
-  freesstring(pingfreq);
 }
 
 int irc_handleserver(void *source, int cargc, char **cargv) {
@@ -177,6 +302,7 @@ int irc_handleserver(void *source, int cargc, char **cargv) {
     /* Fix our timestamps before we do anything else */
     setnettime(strtol(cargv[3],NULL,10));
 
+    previouslyconnected=1;
     connected=1;
   } else {
     Error("irc",ERR_INFO,"Unexpected SERVER message");
@@ -192,13 +318,14 @@ void irc_disconnected() {
   serverfd=-1;
   if (connected) {
     connected=0;
-    
-    deleteschedule(NULL,&irc_connect,NULL);
-    deleteschedule(NULL,&sendping,NULL);
-    scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
     triggerhook(HOOK_IRC_PRE_DISCON,NULL);
     triggerhook(HOOK_IRC_DISCON,NULL);
+  } else {
+    nexthub();
   }
+  deleteschedule(NULL,&irc_connect,NULL);
+  deleteschedule(NULL,&sendping,NULL);
+  scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
 }
 
 void irc_send(char *format, ... ) {
@@ -432,6 +559,8 @@ void sendping(void *arg) {
   if (connected) {
     if (awaitingping==1) {
       /* We didn't get a ping reply, kill the connection */
+      Error("irc",ERR_INFO,"Connection closed due to ping timeout.");
+
       irc_send("%s SQ %s 0 :Ping timeout",mynumeric->content,myserver->content);
       irc_disconnected();
     } else {
@@ -441,6 +570,10 @@ void sendping(void *arg) {
   } else {
     /* We tried to send a ping when we weren't connected.. */
     Error("irc",ERR_INFO,"Connection timed out.");
+
+    /* have to have this here because of the EVIL HACK below */
+    nexthub();
+
     connected=1; /* EVIL HACK */
     irc_disconnected();
   }

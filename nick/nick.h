@@ -38,7 +38,12 @@
 #define UMODE_ALL       0x3FFF
 
 #define AFLAG_STAFF     0x0001
-#define AFLAG_DEVELOPER 0x0002
+#define AFLAG_SUPPORT   0x0002
+#define AFLAG_OPER      0x0004
+#define AFLAG_ADMIN     0x0008
+#define AFLAG_DEVELOPER 0x0010
+
+#define AFLAG_ALL       0x001F
 
 #define IsInvisible(x)    ((x)->umodes & UMODE_INV)
 #define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
@@ -85,14 +90,23 @@
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
 #define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
 
-#define IsStaff(x)           ((x)->umodes & AFLAG_STAFF)
-#define IsDeveloper(x)       ((x)->umodes & AFLAG_DEVELOPER)
+#define IsStaff(x)           ((x)->flags & AFLAG_STAFF)
+#define IsDeveloper(x)       ((x)->flags & AFLAG_DEVELOPER)
+#define IsSupport(x)         ((x)->flags & AFLAG_SUPPORT)
+#define IsAdmin(x)           ((x)->flags & AFLAG_ADMIN)
+#define IsOperFlag(x)        ((x)->flags & AFLAG_OPER)
 
-#define SetStaff(x)          ((x)->umodes |= AFLAG_STAFF)
-#define SetDeveloper(x)      ((x)->umodes |= AFLAG_DEVELOPER)
+#define SetStaff(x)          ((x)->flags |= AFLAG_STAFF)
+#define SetDeveloper(x)      ((x)->flags |= AFLAG_DEVELOPER)
+#define SetSupport(x)        ((x)->flags |= AFLAG_SUPPORT)
+#define SetAdmin(x)          ((x)->flags |= AFLAG_ADMIN)
+#define SetOperFlag(x)       ((x)->flags |= AFLAG_OPER)
 
-#define ClearStaff(x)        ((x)->umodes &= ~AFLAG_STAFF)
-#define ClearDeveloper(x)    ((x)->umodes &= ~AFLAG_DEVELOPER)
+#define ClearStaff(x)        ((x)->flags &= ~AFLAG_STAFF)
+#define ClearDeveloper(x)    ((x)->flags &= ~AFLAG_DEVELOPER)
+#define ClearSupport(x)      ((x)->flags &= ~AFLAG_SUPPORT)
+#define ClearAdmin(x)        ((x)->flags &= ~AFLAG_ADMIN)
+#define ClearOperFlag(x)     ((x)->flags &= ~AFLAG_OPER)
 
 typedef struct host {
   sstring *name;
@@ -120,7 +134,7 @@ typedef struct nick {
   sstring *sethost;
   sstring *opername;
   flag_t umodes;
-  char authname[ACCOUNTLEN+1];
+  char *authname;
   authname *auth; /* This requires User ID numbers to work */
   time_t timestamp;
   time_t accountts;
@@ -147,6 +161,7 @@ extern host *hosttable[HOSTHASHSIZE];
 extern realname *realnametable[REALNAMEHASHSIZE];
 extern const flag umodeflags[];
 extern const flag accountflags[];
+extern char *NULLAUTHNAME;
 
 #define MAXNUMERIC 0x3FFFFFFF
 

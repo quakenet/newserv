@@ -19,8 +19,8 @@
 struct storedhook {
   CommandHandler old;
   sstring *name;
-  char *oldhelp;
-  char *newhelp;
+  sstring *oldhelp;
+  sstring *newhelp;
   struct storedhook *next;
 } storedhook;
 
@@ -87,13 +87,12 @@ int noperserv_hook_command(char *command, CommandHandler newcommand, char *newhe
 
   newhook->old = fetchcommand->handler;
   if(newhelp) {
-    int len = strlen(newhelp) + 1;
-    newhook->newhelp = (char *)malloc(len);
+    newhook->newhelp = getsstring(newhelp, 512);
     if(!newhook->newhelp) {
       freesstring(newhook->name);
       free(newhook);
+      return 1;
     }
-    strlcpy(newhook->newhelp, newhelp, len);
     newhook->oldhelp = fetchcommand->help;
     fetchcommand->help = newhook->newhelp;
   } else {
@@ -117,7 +116,7 @@ void noperserv_unhook_all_commands(void) {
       fetchcommand->handler = ch->old;
       if(ch->newhelp) {
         fetchcommand->help = ch->oldhelp;
-        free(ch->newhelp);
+        freesstring(ch->newhelp);
       }
     }
     nh = ch->next;
@@ -136,7 +135,7 @@ void noperserv_cleanup_hooks(void) {
     firsttime = 0;
   }
 
-  if(oldhandler)
+  if(oldhandler && mynick)
     hooklocaluserhandler(mynick, oldhandler);
 
   controlwall = oldwall;
@@ -144,6 +143,10 @@ void noperserv_cleanup_hooks(void) {
 }
 
 void noperserv_trap_registration(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  if(!np)
+    return;
+
   oldhandler = hooklocaluserhandler((nick *)arg, &noperserv_handle_messages);
   if(!oldhandler)
     return;
@@ -171,7 +174,7 @@ int noperserv_modules_loaded(char *mask) {
   int i;
   char *ptr;
 
-  for(i=0,ptr=lsmod(i);ptr;ptr=lsmod(++i))
+  for(i=0,ptr=lsmod(i,NULL,NULL,NULL);ptr;ptr=lsmod(++i,NULL,NULL,NULL))
     if(match2strings(mask, ptr))
       return 1;
 

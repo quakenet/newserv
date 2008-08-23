@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 MODULE_VERSION("");
 
@@ -67,11 +68,11 @@ void _fini() {
 }
 
 /*
- * registerlocaluserwithuseridflags:
+ * registerlocaluserflags:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t umodes, flag_t accountflags, UserMessageHandler handler) {
+nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
   struct irc_in_addr ipaddress;
@@ -100,7 +101,7 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
   newuser->nextbyrealname=newuser->realname->nicks;
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
-  
+
   memset(&ipaddress, 0, sizeof(ipaddress));
   ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress.in6_16))[6] = 127;
@@ -121,24 +122,31 @@ nick *registerlocaluserwithuseridflags(char *nickname, char *ident, char *host, 
   } else {
     newuser->opername = NULL;
   }
+
+  newuser->accountts=0;
+  newuser->auth=NULL;
+  newuser->authname=NULLAUTHNAME;
   if (IsAccount(newuser)) {
-    strncpy(newuser->authname,authname,ACCOUNTLEN);
     newuser->accountts=newuser->timestamp;
     if (authid) {
-      newuser->auth=findorcreateauthname(authid, newuser->authname);
+      newuser->auth=findorcreateauthname(authid, authname);
+      newuser->authname=newuser->auth->name;
       newuser->auth->usercount++;
       newuser->nextbyauthname=newuser->auth->nicks;
       newuser->auth->nicks=newuser;
       newuser->auth->flags=accountflags;
     } else {
-      newuser->auth=NULL;
+      /*
+         this is done for three reasons:
+         1: so I don't have to change 500 pieces of code
+         2: so services can be authed with special reserved ids
+         3: saves space over the old authname per user method
+       */
+      newuser->authname=malloc(strlen(authname) + 1);
+      strcpy(newuser->authname,authname);
     }
-  } else {
-    newuser->authname[0]='\0';
-    newuser->accountts=0;
-    newuser->auth=NULL;
   }
-  
+
   if (connected) {
     /* Check for nick collision */
     if ((np=getnickbynick(nickname))!=NULL) {
@@ -276,20 +284,17 @@ void sendnickmsg(nick *np) {
     operbuf[0] = '\0';
   }
 
+  accountbuf[0]='\0';
   if (IsAccount(np)) {
     if (np->auth) {
       if(np->auth->flags) {
-        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:" FLAG_T_SPECIFIER,np->authname,np->accountts,np->auth->userid,np->auth->flags);
+        snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu:%"PRIu64,np->authname,np->accountts,np->auth->userid,np->auth->flags);
       } else {
         snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:%lu",np->authname,np->accountts,np->auth->userid);
       }
-    } else if (np->accountts) {
-      snprintf(accountbuf,sizeof(accountbuf)," %s:%ld",np->authname,np->accountts);
-    } else {
-      snprintf(accountbuf,sizeof(accountbuf)," %s",np->authname);
+    } else if(np->authname) {
+      snprintf(accountbuf,sizeof(accountbuf)," %s:%ld:0",np->authname,np->accountts);
     }
-  } else {
-    accountbuf[0]='\0';
   }
 
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
@@ -556,39 +561,44 @@ void checkpendingkills(int hooknum, void *arg) {
   }
 }
 
-/* Auth user */
-void localusersetaccountwithuseridflagsts(nick *np, char *accname, unsigned long accid, flag_t accountflags, time_t authTS) {
+void sendaccountmessage(nick *np) {
+  if (connected) {
+    if (np->auth) {
+      if (np->auth->flags) {
+        irc_send("%s AC %s %s %ld %lu %"PRIu64,mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
+      } else {
+        irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
+      }
+    } else {
+      irc_send("%s AC %s %s %ld 0",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
+    }
+  }
+}
+
+/* Auth user, don't use to set flags after authing */
+void localusersetaccount(nick *np, char *accname, unsigned long accid, u_int64_t accountflags, time_t authTS) {
   if (IsAccount(np)) {
     Error("localuser",ERR_WARNING,"Tried to set account on user %s already authed", np->nick);
     return;
   }
 
   SetAccount(np);
-  strncpy(np->authname, accname, ACCOUNTLEN);
-  np->authname[ACCOUNTLEN]='\0';
   np->accountts=authTS?authTS:getnettime();
 
   if (accid) {
     np->auth=findorcreateauthname(accid, accname);
     np->auth->usercount++;
+    np->authname=np->auth->name;
     np->nextbyauthname=np->auth->nicks;
     np->auth->nicks=np;
     np->auth->flags=accountflags;
   } else {
     np->auth=NULL;
+    np->authname=malloc(strlen(accname) + 1);
+    strcpy(np->authname,accname);
   }
 
-  if (connected) {
-    if (np->auth) {
-      if (np->auth->flags) {
-        irc_send("%s AC %s %s %ld %lu %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
-      } else {
-        irc_send("%s AC %s %s %ld %lu",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid);
-      }
-    } else {
-      irc_send("%s AC %s %s %ld",mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts);
-    }
-  }
+  sendaccountmessage(np);
 
   triggerhook(HOOK_NICK_ACCOUNT, np);
 }
@@ -599,4 +609,19 @@ void localusersetumodes(nick *np, flag_t newmodes) {
   }
 
   np->umodes = newmodes;
+}
+
+void localusersetaccountflags(authname *anp, u_int64_t accountflags) {
+  void *arg[2];
+  nick *np;
+  u_int64_t oldflags = anp->flags;
+
+  arg[0] = anp;
+  arg[1] = &oldflags;
+  anp->flags = accountflags;
+
+  for(np=anp->nicks;np;np=np->next)
+    sendaccountmessage(np);
+
+  triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);
 }

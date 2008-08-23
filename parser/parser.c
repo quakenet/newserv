@@ -124,12 +124,7 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
   nc->ext=NULL;
   nc->next=NULL;
   if (help) {
-    int len=strlen(help);
-    nc->help=(char *)malloc(len+1);
-    if(nc->help) {
-      strncpy(nc->help, help, len);
-      nc->help[len] = '\0';
-    }
+    nc->help=getsstring(help, 512);
   } else {
     nc->help=NULL;
   }
@@ -142,8 +137,7 @@ Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, i
   } else if (insertcommand(nc,ct,0)) {
     /* Erk, that didn't work.. */
     freesstring(nc->command);
-    if(nc->help)
-      free(nc->help);
+    freesstring(nc->help);
     free(nc);
     return NULL;
   }
@@ -236,8 +230,7 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
-        if(c->help)
-          free(c->help);
+        freesstring(c->help);
         free(c);
         return 0;
       }
@@ -255,8 +248,7 @@ int deletecommand(sstring *cmdname, CommandTree *ct, int depth, CommandHandler h
         c=*ch;
         (*ch)=(Command *)((*ch)->next);
         freesstring(c->command);
-        if(c->help)
-          free(c->help);
+        freesstring(c->help);
         free(c);
 
         /* We need to regenerate the final pointer if needed;

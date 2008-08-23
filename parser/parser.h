@@ -33,7 +33,7 @@ typedef int (*CommandHandler)(void *, int, char**);
  
 typedef struct Command {
   sstring        *command;       /* Name of the command/token/thing */
-  char           *help;          /* Help information, sorry splidge! */
+  sstring        *help;          /* Help information, sorry splidge! */
   int             level;         /* "level" required to use the command/token/thing */
   int             maxparams;     /* Maximum number of parameters for the command/token/thing */
   CommandHandler  handler;       /* Function to deal with the message */

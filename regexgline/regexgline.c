@@ -22,7 +22,7 @@
 #define DELAYED_HOST_GLINE   5
 #define DELAYED_KILL         6
 
-MODULE_VERSION("");
+MODULE_VERSION("1.41");
 
 typedef struct rg_glinenode {
   nick *np;
@@ -56,6 +56,7 @@ static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
 static int attached = 0, started = 0;
 
+/* shadowserver only reports classes[0] */
 static const char *classes[] = { "drone", "proxy", "spam", "fakeauth", "other", (char *)0 };
 
 void _init(void) {
@@ -179,6 +180,10 @@ void rg_setdelay(nick *np, rg_struct *reason, short punish) {
 
 static void rg_shadowserver(nick *np, struct rg_struct *reason, int type) {
   char buf[1024];
+
+  if(reason->class != classes[0]) /* drone */
+    return;
+
   snprintf(buf, sizeof(buf), "regex-ban %lu %s!%s@%s %s %s", time(NULL), np->nick, np->ident, np->host->name->content, reason->mask->content, serverlist[homeserver(np->numeric)].name->content);
 
   triggerhook(HOOK_SHADOW_SERVER, (void *)buf);
@@ -350,12 +355,12 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
                          "Duration is represented as 3d, 3M etc.\n"
                          "Class is one of the following: %s\n"
                          "Type is an integer which represents the following:\n"
-                         "1 - Instant USER@IP GLINE\n"
-                         "2 - Instant *@IP GLINE\n"
-                         "3 - Instant KILL\n"
-                         "4 - Delayed USER@IP GLINE\n"
-                         "5 - Delayed *@IP GLINE\n"
-                         "6 - Delayed KILL",
+                         "1 - Instant USER@IP GLINE (igu)\n"
+                         "2 - Instant *@IP GLINE (igh)\n"
+                         "3 - Instant KILL (ik)\n"
+                         "4 - Delayed USER@IP GLINE (dgu)\n"
+                         "5 - Delayed *@IP GLINE (dgh)\n"
+                         "6 - Delayed KILL (dk)",
                          allclasses);
 
   registercontrolhelpcmd("regexgline", NO_OPER, 5, &rg_gline, helpbuf);
@@ -647,7 +652,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
     }
     
     rg_logevent(np, "regexglist", "%s", cargv[0]);
-    controlreply(np, "Mask                      Expires              Set by          Class    Type Reason");
+    controlreply(np, "Mask                      Expires              Set by          Class    Type  Hits  Reason");
     for(rp=rg_list;rp;rp=rp->next)
       if(pcre_exec(regex, hint, rp->mask->content, rp->mask->length, 0, 0, NULL, 0) >= 0)
         rg_displaygline(np, rp);
@@ -658,7 +663,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
     
   } else {
     rg_logevent(np, "regexglist", "");
-    controlreply(np, "Mask                      Expires              Set by          Class    Type Reason");
+    controlreply(np, "Mask                      Expires              Set by          Class    Type  Hits  Reason");
     for(rp=rg_list;rp;rp=rp->next)
       rg_displaygline(np, rp);
   }
@@ -667,8 +672,39 @@ int rg_glist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+char *displaytype(int type) {
+  char *ctype;
+  static char ctypebuf[10];
+
+  switch(type) {
+    case 1:
+      ctype = "igu";
+      break;
+    case 2:
+      ctype = "igh";
+      break;
+    case 3:
+      ctype = "ik";
+      break;
+    case 4:
+      ctype = "dgu";
+      break;
+    case 5:
+      ctype = "dgh";
+      break;
+    case 6:
+      ctype = "dk";
+      break;
+    default:
+      ctype = "??";
+  }
+
+  snprintf(ctypebuf, sizeof(ctype), "%1d:%s", type, ctype);
+  return ctypebuf;
+}
+
 void rg_displaygline(nick *np, struct rg_struct *rp) { /* could be a macro? I'll assume the C compiler inlines it */
-  controlreply(np, "%-25s %-20s %-15s %-8s %-4d %s", rp->mask->content, longtoduration(rp->expires - time(NULL), 0), rp->setby->content, rp->class, rp->type, rp->reason->content);
+  controlreply(np, " %-25s %-20s %-15s %-8s %-5s %-5lu %s", rp->mask->content, longtoduration(rp->expires - time(NULL), 0), rp->setby->content, rp->class, displaytype(rp->type), rp->hits, rp->reason->content);
 }
 
 int rg_spew(void *source, int cargc, char **cargv) {
@@ -1043,6 +1079,8 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
 
 void rg_loggline(struct rg_struct *rg, nick *np) {
   char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
+
+  rg->hits++;
 
   /* @paul: disabled */
 

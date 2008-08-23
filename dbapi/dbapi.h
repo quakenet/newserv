@@ -58,7 +58,7 @@ typedef SQLiteResult DBResult;
 
 #define dbattach(schema) sqliteattach(schema)
 #define dbdetach(schema) sqlitedetach(schema)
-#define dbescapestring(buf, src, len) sqliteescapestring(buf, src, len)
+#define dbescapestring(buf, src, len) sqliteescapestring(buf, (char *)(src), len)
 #define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) sqliteasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)

@@ -31,7 +31,7 @@ void sqliteclear(SQLiteResult *);
 
 int sqlitequerysuccessful(SQLiteResult *);
 
-#define sqlitegetvalue(result, column) (char *)sqlite3_column_text(result->r, column)
+#define sqlitegetvalue(result, column) ((char *)sqlite3_column_text(result->r, column))
 
 void sqliteattach(char *schema);
 void sqlitedetach(char *schema);

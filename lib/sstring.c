@@ -192,6 +192,16 @@ void sstringstats(int hooknum, void *arg) {
 
 #else /* USE_VALGRIND */
 
+#define __USE_MISC
+#include <sys/mman.h>
+
+#ifndef MAP_ANON
+#define MAP_ANON MAP_ANONYMOUS
+#endif
+
+#define MModify(x) mprotect(x, x->s->u.l.alloc, PROT_READ|PROT_WRITE)
+#define MUnmodify(x) mprotect(x, x->s->u.l.alloc, PROT_READ)
+
 typedef struct sstringlist {
   struct sstringlist *prev;
   struct sstringlist *next;
@@ -210,6 +220,8 @@ void finisstring() {
 
   for(s=head;s;s=sn) {
     sn = s->next;
+
+    MModify(s);
     s->next = NULL;
     s->prev = NULL;
 
@@ -223,6 +235,7 @@ sstring *getsstring(const char *inputstr, int maxlen) {
   sstringlist *s;
   size_t len;
   char *p;
+  void *m;
 
   if(!inputstr)
     return NULL;
@@ -231,20 +244,29 @@ sstring *getsstring(const char *inputstr, int maxlen) {
     ; /* empty */
 
   len = p - inputstr;
-  s=(sstringlist *)malloc(sizeof(sstringlist) + sizeof(sstring));
-  
+  m=mmap((void *)0, sizeof(sstringlist) + sizeof(sstring) + len + 1, PROT_WRITE|PROT_READ, MAP_PRIVATE|MAP_ANON, -1, 0);
+  s=(sstringlist *)m;
+
+  if(m == MAP_FAILED)
+    s->s->u.l.length = 0;
+
   s->s->u.l.length = len;
-  s->s->content=(char *)malloc(len + 1);
+  s->s->u.l.alloc = sizeof(sstringlist) + sizeof(sstring) + len + 1;
+  s->s->content=(char *)m + sizeof(sstringlist) + sizeof(sstring);
 
   memcpy(s->s->content, inputstr, len);
   s->s->content[len] = '\0';
 
   s->next = head;
   s->prev = NULL;
-  if(head)
+  if(head) {
+    MModify(head);
     head->prev = s;
+    MUnmodify(head);
+  }
   head = s;
 
+  MUnmodify(s);
   return s->s;
 }
 
@@ -255,18 +277,26 @@ void freesstring(sstring *inval) {
 
   s = (sstringlist *)inval - 1;
 
+  MModify(s);
   if(s->prev) {
+    MModify(s->prev);
     s->prev->next = s->next;
-    if(s->next)
+    MUnmodify(s->prev);
+    if(s->next) {
+      MModify(s->next);
       s->next->prev = s->prev;
+      MUnmodify(s->prev);
+    }
   } else {
     head = s->next;
-    if(head)
+    if(head) {
+      MModify(head);
       head->prev = NULL;
+      MUnmodify(head);
+    }
   }
 
-  free(inval->content);
-  free(s);
+  munmap(s, s->s->u.l.alloc);
 }
 #endif
 
