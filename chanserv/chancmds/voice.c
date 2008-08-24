@@ -140,7 +140,7 @@ int csc_dovoice(void *source, int cargc, char **cargv) {
   }
 
   if (donotice && bufpos) {
-    sendopnoticetochannel(chanservnick, cip->channel, "%s voiced %s", sender, buf);
+    sendopnoticetochannel(chanservnick, cip->channel, "%s voiced %s", sender->nick, buf);
   }
 
   localsetmodeflush(&changes, 1);

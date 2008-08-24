@@ -94,7 +94,7 @@ int handleinvitecmd(void *source, int cargc, char **cargv) {
   }
   
   if (!(sender=getnickbynumericstr(source))) {
-    Error("localuserchannel",ERR_WARNING,"Got invite from unknown numeric %s.",source);
+    Error("localuserchannel",ERR_WARNING,"Got invite from unknown numeric %s.",(char *)source);
     return CMD_OK;
   }
   
@@ -352,7 +352,7 @@ int localpartchannel(nick *np, channel *cp, char *reason) {
   
   /* Check pointers are valid.. */
   if (cp==NULL || np==NULL) {
-    Error("localuserchannel",ERR_WARNING,"Trying to part NULL channel or NULL nick (cp=%x,np=%x)",cp,np);
+    Error("localuserchannel",ERR_WARNING,"Trying to part NULL channel or NULL nick (cp=%p,np=%p)",cp,np);
     return 1;
   }	
   
@@ -917,7 +917,7 @@ void localsettopic(nick *np, channel *cp, char *topic) {
   }
   
   if (connected) {
-    irc_send("%s T %s %u %u :%s",source,cp->index->name->content,cp->timestamp,cp->topictime,(cp->topic)?cp->topic->content:"");
+    irc_send("%s T %s %jd %jd :%s",source,cp->index->name->content,cp->timestamp,cp->topictime,(cp->topic)?cp->topic->content:"");
   }
 }
 

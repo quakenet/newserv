@@ -178,6 +178,7 @@ extern nick *senderNSExtern;
 
 void printnick(searchCtx *, nick *, nick *);
 void printuser(searchCtx *, nick *, authname *);
+void printchannel(searchCtx *, nick *, chanindex *);
 
 void nicksearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, NickDisplayFunc display, int limit);
 void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, ChanDisplayFunc display, int limit);

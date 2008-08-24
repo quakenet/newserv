@@ -194,7 +194,7 @@ endwhile:
   nres = strlen(sig);
 
   if(lua_debugpcall(l, (mode==LUA_CHARMODE)?function:"some_handler", narg, nres, top + 1)) {
-    Error("lua", ERR_ERROR, "Error pcalling %s: %s.", (mode==LUA_CHARMODE)?function:"some_handler", lua_tostring(l, -1));
+    Error("lua", ERR_ERROR, "Error pcalling %s: %s.", (mode==LUA_CHARMODE)?(char *)function:"some_handler", lua_tostring(l, -1));
   } else {
     nres = -nres;
     while(*sig) {

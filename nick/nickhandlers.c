@@ -46,7 +46,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
        * different case, e.g. Flash -> flash.  In this case the timestamp for the change should
        * match the existing timestamp, and we can bypass all the collision checking and hash fettling. */
       if (np->timestamp!=timestamp) {
-        Error("nick",ERR_WARNING,"Rename to same nickname with different timestamp (%s(%d) -> %s(%d))",
+        Error("nick",ERR_WARNING,"Rename to same nickname with different timestamp (%s(%jd) -> %s(%jd))",
                             np->nick,np->timestamp,cargv[0],timestamp);
         np->timestamp=timestamp;
       }

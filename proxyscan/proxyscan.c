@@ -898,7 +898,7 @@ void proxyscandebug(nick *np) {
     if ( node->exts[ps_cache_ext] ) {
       chp = (cachehost *) node->exts[ps_cache_ext];
       if (chp)
-        sendnoticetouser(proxyscannick,np,"node: %s , chp: %d", IPtostr(((patricia_node_t *)node)->prefix->sin), chp); 
+        sendnoticetouser(proxyscannick,np,"node: %s , chp: %p", IPtostr(((patricia_node_t *)node)->prefix->sin), chp);
     }
   } PATRICIA_WALK_END;
 

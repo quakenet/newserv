@@ -64,7 +64,7 @@ void _init() {
     /* Work out when to take the next sample */
     now=getnettime();
     if (now < chanstats_lastsample) {
-      Error("chanstats",ERR_WARNING,"Last sample time in future (%d > %d)",chanstats_lastsample,now);
+      Error("chanstats",ERR_WARNING,"Last sample time in future (%zu > %zu)",chanstats_lastsample,now);
       when=now;
     } else if (now<(chanstats_lastsample+SAMPLEINTERVAL)) {
       lastday=chanstats_lastsample/(24*3600);
@@ -168,7 +168,7 @@ void updatechanstats(chanindex *cip, time_t now) {
         continue;
 
       if ((np=getnickbynumeric(cp->users->content[i]))==NULL) {
-        Error("channel",ERR_ERROR,"Found unknown numeric %u on channel %s",cp->users->content[i],cp->index->name->content);
+        Error("channel",ERR_ERROR,"Found unknown numeric %lu on channel %s",cp->users->content[i],cp->index->name->content);
         continue;
       }
 

@@ -740,7 +740,7 @@ int trojanscan_whois(void *sender, int cargc, char **cargv) {
     for(i=0;i<TROJANSCAN_CLONE_TOTAL;i++) {
       if(trojanscan_swarm[i].clone->nick && !ircd_strcmp(trojanscan_swarm[i].clone->nick, np2->nick)) {
         trojanscan_reply(np, "Nickname   : %s", np2->nick);
-        trojanscan_reply(np, "Swarm      : yes", trojanscan_swarm[i].clone->nick);
+        trojanscan_reply(np, "Swarm      : yes");
         return CMD_OK;
       }
     }
@@ -2080,7 +2080,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
     trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, phrase->id, messagetype, glining);
     trojanscan_database.glines++;
     
-    irc_send("%s GL * +%s %d %d :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, time(NULL), sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+    irc_send("%s GL * +%s %d %zu :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, time(NULL), sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
 
     trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d%s%s", glinemask, messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", phrase->id, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
   }

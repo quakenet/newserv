@@ -8,9 +8,9 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
-int lua_channelmessage(channel *cp, char *message, ...);
-int lua_message(nick *np, char *message, ...);
-int lua_notice(nick *np, char *message, ...);
+int lua_channelmessage(channel *cp, char *message, ...) __attribute__ ((format (printf, 2, 3)));
+int lua_message(nick *np, char *message, ...) __attribute__ ((format (printf, 2, 3)));
+int lua_notice(nick *np, char *message, ...) __attribute__ ((format (printf, 2, 3)));
 int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...);
 char *printallmodes(channel *cp);
 

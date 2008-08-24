@@ -211,10 +211,10 @@ char trojanscan_getmtfrommessagetype(int input);
 
 void trojanscan_handlemessages(nick *target, int messagetype, void **args);
 void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args);
-void trojanscan_mainchanmsg(char *message, ...);
-void trojanscan_peonchanmsg(char *message, ...);
-void trojanscan_reply(nick *target, char *message, ... );
-void trojanscan_privmsg_chan_or_nick(channel *cp, nick *np, char *text, ...);
+void trojanscan_mainchanmsg(char *message, ...) __attribute__ ((format (printf, 1, 2)));
+void trojanscan_peonchanmsg(char *message, ...) __attribute__ ((format (printf, 1, 2)));
+void trojanscan_reply(nick *target, char *message, ... ) __attribute__ ((format (printf, 2, 3)));
+void trojanscan_privmsg_chan_or_nick(channel *cp, nick *np, char *text, ...) __attribute__ ((format (printf, 3, 4)));
 
 void trojanscan_connect(void *arg);
 void trojanscan_dojoin(void *arg);
@@ -246,7 +246,7 @@ char *trojanscan_iptostr(char *buf, int buflen, unsigned int ip);
 int trojanscan_database_connect(char *dbhost, char *dbuser, char *dbpass, char *db, unsigned int port);
 void trojanscan_database_close(void);
 void trojanscan_database_escape_string(char *dest, char *source, size_t length);
-int trojanscan_database_query(char *format, ...);
+int trojanscan_database_query(char *format, ...) __attribute__ ((format (printf, 1, 2)));
 int trojanscan_database_num_rows(trojanscan_database_res *res);
 trojanscan_database_res *trojanscan_database_store_result();
 trojanscan_database_row trojanscan_database_fetch_row(trojanscan_database_res *res);

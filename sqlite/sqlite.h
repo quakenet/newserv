@@ -16,7 +16,7 @@ typedef SQLiteResult SQLiteConn;
 typedef int SQLiteModuleIdentifier;
 typedef void (*SQLiteQueryHandler)(SQLiteConn *, void *);
 
-void sqliteasyncqueryf(SQLiteModuleIdentifier identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...);
+void sqliteasyncqueryf(SQLiteModuleIdentifier identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) __attribute__ ((format (printf, 5, 6)));
 
 int sqliteconnected(void);
 

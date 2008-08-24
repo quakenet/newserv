@@ -269,11 +269,11 @@ void irc_connect(void *arg) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
   }
   
-  Error("irc",ERR_INFO,"Connecting to %s:%d",conto,portnum);
+  Error("irc",ERR_INFO,"Connecting to %s:%lu",conto,portnum);
 
   if (connect(serverfd, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == -1) {
     nexthub();
-    Error("irc",ERR_ERROR,"Couldn't connect to %s:%d, will try next server in one minute",conto,portnum);
+    Error("irc",ERR_ERROR,"Couldn't connect to %s:%lu, will try next server in one minute",conto,portnum);
     scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
     close(serverfd);
     freesstring(mydesc);
@@ -535,7 +535,7 @@ time_t getnettime() {
 
 void setnettime(time_t newtime) {
   timeoffset=newtime-time(NULL);
-  Error("irc",ERR_INFO,"setnettime: Time offset is now %d",timeoffset);
+  Error("irc",ERR_INFO,"setnettime: Time offset is now %lu",timeoffset);
 }
 
 int handleping(void *sender, int cargc, char **cargv) {

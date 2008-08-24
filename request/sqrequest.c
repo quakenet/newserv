@@ -104,6 +104,7 @@ unsigned int rq_countchanusers(channel *cp) {
  * as part of the process.
  */
 
+static void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) __attribute__ ((format (printf, 4, 5)));
 static void qr_result(requestrec *req, int outcome, char failcode, char *message, ...) {
   sstring *user, *password;
   requestrec **rh;

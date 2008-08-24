@@ -228,7 +228,7 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             int i;
             if (argc == 0)
             {
-                helpmod_reply(sender, returntype, "Can not advance queue: User not specified", hchannel_get_name(hchan));
+                helpmod_reply(sender, returntype, "Can not advance queue: User not specified");
                 return;
             }
             if (argc > H_CMD_MAX_ARGS)
@@ -255,7 +255,7 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             {
                 if (!sscanf(argv[0], "%d", &nnext) || nnext <= 0 || nnext > 25 /* magic number */)
                 {
-                    helpmod_reply(sender, returntype, "Can not advance queue: Integer [1, 25] expected", hchannel_get_name(hchan));
+                    helpmod_reply(sender, returntype, "Can not advance queue: Integer [1, 25] expected");
                     return;
                 }
             }
@@ -272,7 +272,7 @@ void helpmod_queue_handler (huser *sender, channel* returntype, hchannel *hchan,
             }
             if (!sscanf(argv[0], "%d", &tmp) || tmp < 0 || tmp > 25)
             {
-                helpmod_reply(sender, returntype, "Can not set auto queue: Integer [0, 20] expected", hchannel_get_name(hchan));
+                helpmod_reply(sender, returntype, "Can not set auto queue: Integer [0, 20] expected");
                 return;
             }
             hchan->autoqueue = tmp;

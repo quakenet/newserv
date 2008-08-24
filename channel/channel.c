@@ -161,7 +161,7 @@ void delnickfromchannel(channel *cp, long numeric, int updateuser) {
   void *args[2];
   
   if ((np=getnickbynumeric(numeric&CU_NUMERICMASK))==NULL) {
-    Error("channel",ERR_ERROR,"Trying to remove non-existent nick %d from channel %s",numeric,cp->index->name);
+    Error("channel",ERR_ERROR,"Trying to remove non-existent nick %lu from channel %s",numeric,cp->index->name->content);
     return;
   }
   
@@ -418,7 +418,7 @@ unsigned int countuniquehosts(channel *cp) {
       continue;
       
     if ((np=getnickbynumeric(cp->users->content[i]))==NULL) {
-      Error("channel",ERR_ERROR,"Found unknown numeric %u on channel %s",cp->users->content[i],cp->index->name->content);
+      Error("channel",ERR_ERROR,"Found unknown numeric %lu on channel %s",cp->users->content[i],cp->index->name->content);
       continue;
     }
     

@@ -83,7 +83,7 @@ void csdb_updatechannel(regchan *rcp) {
 		  "addedby=%u, suspendby=%u, suspendtime=%lu, chantype=%d, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u,"
 		  "welcome='%s', topic='%s', chankey='%s', suspendreason='%s',"
-		  "comment='%s', lasttimestamp=%d WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
+		  "comment='%s', lasttimestamp=%jd WHERE ID=%u",escname,rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle,
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
 		  rcp->founder, rcp->addedby, rcp->suspendby, rcp->suspendtime,
@@ -105,7 +105,7 @@ void csdb_updatechannelcounters(regchan *rcp) {
 
 void csdb_updatechanneltimestamp(regchan *rcp) {
   dbquery("UPDATE chanserv.channels SET "
-		  "lasttimestamp=%u WHERE ID=%u",
+		  "lasttimestamp=%jd WHERE ID=%u",
 		  rcp->ltimestamp, rcp->ID);
 }
 
@@ -152,7 +152,7 @@ void csdb_createchannel(regchan *rcp) {
 		  "banduration, founder, addedby, suspendby, suspendtime, chantype, totaljoins, tripjoins,"
 		  "maxusers, tripusers, welcome, topic, chankey, suspendreason, "
 		  "comment, lasttimestamp) VALUES (%u,'%s',%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%u,"
-		  "%u,%u,%lu,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s',%d)",
+		  "%u,%u,%lu,%d,%u,%u,%u,%u,'%s','%s','%s','%s','%s',%jd)",
 		  rcp->ID, escname, rcp->flags,rcp->forcemodes,
 		  rcp->denymodes,rcp->limit,rcp->autolimit, rcp->banstyle, rcp->created, 
 		  rcp->lastactive,rcp->statsreset,rcp->banduration,
@@ -448,7 +448,7 @@ void csdb_createmaillock(maillock *mlp) {
   else
     escreason[0]='\0';
 
-  dbquery("INSERT INTO chanserv.maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %u)",
+  dbquery("INSERT INTO chanserv.maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %jd)",
           mlp->id,escpattern,escreason,mlp->createdby,mlp->created);
 }
 
@@ -462,6 +462,6 @@ void csdb_updatemaillock(maillock *mlp) {
   else
     escreason[0]='\0';
 
-  dbquery("UPDATE chanserv.maillocks SET pattern='%s', reason='%s', createdby=%u, created=%u WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
+  dbquery("UPDATE chanserv.maillocks SET pattern='%s', reason='%s', createdby=%u, created=%jd WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
 }
 

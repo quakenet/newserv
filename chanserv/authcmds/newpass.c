@@ -53,7 +53,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 
   if (strlen(cargv[1]) < 6) {
     chanservstdmessage(sender, QM_PWTOSHORT); /* new password to short */
-    cs_log(sender,"NEWPASS FAIL username %s password to short %s (%d characters)",rup->username,cargv[1],strlen(cargv[1]));
+    cs_log(sender,"NEWPASS FAIL username %s password to short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
     return CMD_ERROR;
   }
 

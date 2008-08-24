@@ -14,6 +14,7 @@
 #include "../lib/stringbuf.h"
 #include "../core/hooks.h"
 #include "../server/server.h"
+#include "../lib/strlfunc.h"
 
 #define INSTANT_IDENT_GLINE  1
 #define INSTANT_HOST_GLINE   2
@@ -22,7 +23,7 @@
 #define DELAYED_HOST_GLINE   5
 #define DELAYED_KILL         6
 
-MODULE_VERSION("1.41");
+MODULE_VERSION("1.43");
 
 typedef struct rg_glinenode {
   nick *np;
@@ -44,6 +45,8 @@ typedef struct rg_delay {
   struct rg_delay *next;
 } rg_delay;
 
+#define GLINE_HEADER " ID       Expires              Set by          Class    Type  Last seen (ago)      Hits(p) Hits    Reason"
+
 rg_delay *rg_delays;
 
 void rg_setdelay(nick *np, struct rg_struct *reason, short punish);
@@ -51,10 +54,13 @@ void rg_deletedelay(rg_delay *delay);
 void rg_dodelay(void *arg);
 
 void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched);
+void rg_flush_schedule(void *arg);
 
 static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
 static int attached = 0, started = 0;
+
+static unsigned int getrgmarker(void);
 
 /* shadowserver only reports classes[0] */
 static const char *classes[] = { "drone", "proxy", "spam", "fakeauth", "other", (char *)0 };
@@ -124,7 +130,10 @@ void _fini(void) {
     deleteschedule(rg_schedule, &rg_checkexpiry, NULL);
     rg_schedule = NULL;
   }
-  
+
+  deleteallschedules(rg_flush_schedule);
+  rg_flush_schedule(NULL);
+
   for(gp=rg_list;gp;) {
     oldgp = gp;
     gp = gp->next;
@@ -270,7 +279,7 @@ void rg_dodelay(void *arg) {
   }
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
-  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -309,13 +318,14 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
     return;
   }
 
-  if (dbnumfields(dbres) != 7) {
+  if (dbnumfields(dbres) != 9) {
     Error("regexgline", ERR_ERROR, "DB format error");
     return;
   }
 
   while(dbfetchrow(dbres)) {
-    unsigned long id;
+    unsigned long id, hitssaved;
+    time_t lastseen;
     char *gline, *setby, *reason, *expires, *type, *class;
 
     id = strtoul(dbgetvalue(dbres, 0), NULL, 10);
@@ -329,8 +339,11 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
     type = dbgetvalue(dbres, 5);
     class = dbgetvalue(dbres, 6);
 
-    if (!rg_newsstruct(id, gline, setby, reason, expires, type, 0, class))
-      dbquery("DELETE FROM regexgline.glines WHERE id = %u", id);
+    lastseen = strtoul(dbgetvalue(dbres, 7), NULL, 10);
+    hitssaved = strtoul(dbgetvalue(dbres, 8), NULL, 10);
+
+    if (!rg_newsstruct(id, gline, setby, reason, expires, type, 0, class, lastseen, hitssaved))
+      dbquery("DELETE FROM regexgline.glines WHERE id = %lu", id);
   }
 
   dbclear(dbres);
@@ -375,11 +388,12 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
   rg_startup();
 
   rg_schedule = schedulerecurring(time(NULL) + 1, 0, 1, rg_checkexpiry, NULL);
+  schedulerecurring(time(NULL) + 60, 0, 60, rg_flush_schedule, NULL);
 }
 
 void rg_dbload(void) {
   dbattach("regexgline");
-  dbcreatequery("CREATE TABLE regexgline.glines (id INT NOT NULL PRIMARY KEY, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires INT NOT NULL, type INT NOT NULL DEFAULT 1, class TEXT NOT NULL)", ACCOUNTLEN, RG_REASON_MAX);
+  dbcreatequery("CREATE TABLE regexgline.glines (id INT NOT NULL PRIMARY KEY, gline TEXT NOT NULL, setby VARCHAR(%d) NOT NULL, reason VARCHAR(%d) NOT NULL, expires INT NOT NULL, type INT NOT NULL DEFAULT 1, class TEXT NOT NULL, lastseen INT DEFAULT 0, hits INT DEFAULT 0)", ACCOUNTLEN, RG_REASON_MAX);
   dbcreatequery("CREATE TABLE regexgline.clog (host VARCHAR(%d) NOT NULL, account VARCHAR(%d) NOT NULL, event TEXT NOT NULL, arg TEXT NOT NULL, ts TIMESTAMP)", RG_MASKLEN - 1, ACCOUNTLEN);
   dbcreatequery("CREATE TABLE regexgline.glog (glineid INT NOT NULL, ts TIMESTAMP, nickname VARCHAR(%d) NOT NULL, username VARCHAR(%d) NOT NULL, hostname VARCHAR(%d) NOT NULL, realname VARCHAR(%d))", NICKLEN, USERLEN, HOSTLEN, REALLEN);
 
@@ -482,8 +496,8 @@ int rg_gline(void *source, int cargc, char **cargv) {
   dbescapestring(eereason, reason, strlen(reason));
   
   highestid = highestid + 1;
-  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type, class) VALUES (%d, '%s', '%s', '%s', %d, %c, '%s')", highestid, eemask, eesetby, eereason, realexpiry, type, eeclass);
-  rp = rg_newsstruct(highestid, regex, np->nick, reason, "", cargv[2], realexpiry, class);
+  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type, class, lastseen, hits) VALUES (%lu, '%s', '%s', '%s', %lu, %c, '%s', 0, 0)", highestid, eemask, eesetby, eereason, realexpiry, type, eeclass);
+  rp = rg_newsstruct(highestid, regex, np->nick, reason, "", cargv[2], realexpiry, class, 0, 0);
   
   rg_initglinelist(&gll);
 
@@ -608,7 +622,8 @@ int rg_idlist(void *source, int cargc, char **cargv) {
   } else {
     struct rg_struct *rp;
     unsigned long id = 0;
-    int i;
+    int i, longest = 0;
+    unsigned int m;
 
     for(i=0;i<8;i++) {
       if(0xff == rc_hexlookup[(int)cargv[0][i]]) {
@@ -619,10 +634,19 @@ int rg_idlist(void *source, int cargc, char **cargv) {
       }
     }
 
-    controlreply(np, "Mask                      Expires              Set by          Type Reason");
+    m = getrgmarker();
+    controlreply(np, GLINE_HEADER);
+    for(rp=rg_list;rp;rp=rp->next) {
+      if(id == rp->glineid) {
+        rp->marker = m;
+        if(rp->mask->length > longest)
+          longest = rp->mask->length;
+      }
+    }
+
     for(rp=rg_list;rp;rp=rp->next)
-      if(id == rp->glineid)
-        rg_displaygline(np, rp);
+      if(rp->marker == m)
+        rg_displaygline(np, rp, longest);
     controlreply(np, "Done.");
 
     return CMD_OK;
@@ -632,13 +656,15 @@ int rg_idlist(void *source, int cargc, char **cargv) {
 int rg_glist(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
   struct rg_struct *rp;
+  int longest = 0;
 
   if(cargc) {
     int erroroffset;
     pcre *regex;
     pcre_extra *hint;
     const char *error;    
-    
+    unsigned int m;
+
     if(!(regex = pcre_compile(cargv[0], RG_PCREFLAGS, &error, &erroroffset, NULL))) {
       controlreply(np, "Error compiling expression %s at offset %d: %s", cargv[0], erroroffset, error);
       return CMD_ERROR;
@@ -650,22 +676,35 @@ int rg_glist(void *source, int cargc, char **cargv) {
         return CMD_ERROR;
       }
     }
-    
+
+    m = getrgmarker();    
     rg_logevent(np, "regexglist", "%s", cargv[0]);
-    controlreply(np, "Mask                      Expires              Set by          Class    Type  Hits  Reason");
+    controlreply(np, GLINE_HEADER);
+    for(rp=rg_list;rp;rp=rp->next) {
+      if(pcre_exec(regex, hint, rp->mask->content, rp->mask->length, 0, 0, NULL, 0) >= 0) {
+        rp->marker = m;
+        if(rp->mask->length > longest)
+          longest = rp->mask->length;
+      }
+    }
+
     for(rp=rg_list;rp;rp=rp->next)
-      if(pcre_exec(regex, hint, rp->mask->content, rp->mask->length, 0, 0, NULL, 0) >= 0)
-        rg_displaygline(np, rp);
-    
+      if(rp->marker == m)
+        rg_displaygline(np, rp, longest);
+
     pcre_free(regex);
     if(hint)
       pcre_free(hint);
     
   } else {
-    rg_logevent(np, "regexglist", "");
-    controlreply(np, "Mask                      Expires              Set by          Class    Type  Hits  Reason");
+    rg_logevent(np, "regexglist", "%s", "");
+    controlreply(np, GLINE_HEADER);
     for(rp=rg_list;rp;rp=rp->next)
-      rg_displaygline(np, rp);
+      if(rp->mask->length > longest)
+        longest = rp->mask->length;
+
+    for(rp=rg_list;rp;rp=rp->next)
+      rg_displaygline(np, rp, longest);
   }
 
   controlreply(np, "Done.");
@@ -703,8 +742,55 @@ char *displaytype(int type) {
   return ctypebuf;
 }
 
-void rg_displaygline(nick *np, struct rg_struct *rp) { /* could be a macro? I'll assume the C compiler inlines it */
-  controlreply(np, " %-25s %-20s %-15s %-8s %-5s %-5lu %s", rp->mask->content, longtoduration(rp->expires - time(NULL), 0), rp->setby->content, rp->class, displaytype(rp->type), rp->hits, rp->reason->content);
+char *getsep(int longest) {
+  static int lastlongest = -1;
+  static char lenbuf[1024];
+
+  longest = 125;
+/*
+  if(longest < 100)
+    longest = 100;
+
+  if(longest >= sizeof(lenbuf) - 20)
+    longest = sizeof(lenbuf) - 20;
+*/
+  longest+=4;
+  if(lastlongest == -1) {
+    int i;
+
+    for(i=0;i<sizeof(lenbuf)-1;i++)
+      lenbuf[i] = '-';
+    lenbuf[sizeof(lenbuf)-1] = '\0';
+    lastlongest = 0;
+  }
+
+  if(lastlongest != longest) {
+    lenbuf[lastlongest] = '-';
+    lenbuf[longest] = '\0';
+    lastlongest = longest;
+  }
+
+  return lenbuf;
+}
+
+void rg_displaygline(nick *np, struct rg_struct *rp, int longest) { /* could be a macro? I'll assume the C compiler inlines it */
+  char *sep = getsep(longest);
+/*   12345678 12345678901234567890 123456789012345 12345678 12345 12345678901234567890 1234567 1234567 123456
+     ID       Expires              Set by          Class    Type  Last seen (ago)      Hits(s) Hits    Reason
+*/
+
+  char d[512];
+  time_t t = time(NULL);
+
+  if(rp->lastseen == 0) {
+    strlcpy(d, "(never)", sizeof(d));
+  } else {
+    strlcpy(d, longtoduration(t - rp->lastseen, 2), sizeof(d));
+  }
+
+  controlreply(np, "%s", rp->mask->content);
+  controlreply(np, " %08lx %-20s %-15s %-8s %-5s %-20s %-7lu %-7lu %s", rp->glineid, longtoduration(rp->expires - t, 2), rp->setby->content, rp->class, displaytype(rp->type), d, rp->hitssaved, rp->hits, rp->reason->content);
+  controlreply(np, "%s", sep);
 }
 
 int rg_spew(void *source, int cargc, char **cargv) {
@@ -830,7 +916,7 @@ struct rg_struct *rg_newstruct(time_t expires) {
   if(rp) {
     struct rg_struct *tp, *lp;
 
-    memset(rp, 0, sizeof(rp));
+    memset(rp, 0, sizeof(rg_struct));
     rp->expires = expires;
 
     for(lp=NULL,tp=rg_list;tp;lp=tp,tp=tp->next) {
@@ -857,7 +943,7 @@ struct rg_struct *rg_newstruct(time_t expires) {
   return rp;
 }
 
-struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class) {
+struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class, time_t lastseen, unsigned int hitssaved) {
   struct rg_struct *newrow, *lp, *cp;
   time_t rexpires;
   char glineiddata[1024];
@@ -901,6 +987,8 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
     }
     
     newrow->id = id;
+    newrow->hitssaved = hitssaved;
+    newrow->lastseen = lastseen;
 
     newrow->mask = getsstring(mask, RG_REGEXGLINE_MAX);
     if(!newrow->mask) {
@@ -1018,7 +1106,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   rg_shadowserver(np, rp, rp->type);
-  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
 
@@ -1051,11 +1139,15 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
   int masklen;
 
   va_list va;
-    
-  va_start(va, details);
-  vsnprintf(buf, sizeof(buf), details, va);
-  va_end(va);
-  
+
+  if(details) {
+    va_start(va, details);
+    vsnprintf(buf, sizeof(buf), details, va);
+    va_end(va);
+  } else {
+    buf[0] = '\0';
+  }
+
   if(np) {
     if (IsAccount(np)) {
       strncpy(account, np->authname, sizeof(account) - 1);
@@ -1081,6 +1173,9 @@ void rg_loggline(struct rg_struct *rg, nick *np) {
   char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
 
   rg->hits++;
+  rg->hitssaved++;
+  rg->lastseen = time(NULL);
+  rg->dirty = 1;
 
   /* @paul: disabled */
 
@@ -1092,3 +1187,33 @@ void rg_loggline(struct rg_struct *rg, nick *np) {
 
   dbquery("INSERT INTO regexgline.glog (glineid, nickname, username, hostname, realname, ts) VALUES (%d, '%s', '%s', '%s', '%s', NOW())", rg->id, eenick, eeuser, eehost, eereal);
 }
+
+static unsigned int getrgmarker(void) {
+  static unsigned int marker = 0;
+
+  marker++;
+  if(!marker) {
+    struct rg_struct *l;
+
+    /* If we wrapped to zero, zap the marker on all hosts */
+    for(l=rg_list;l;l=l->next)
+      l->marker=0;
+    marker++;
+  }
+
+  return marker;
+}
+
+void rg_flush_schedule(void *arg) {
+  struct rg_struct *l;
+
+  for(l=rg_list;l;l=l->next) {
+    if(!l->dirty)
+      continue;
+
+    dbquery("UPDATE regexgline.glines SET lastseen = %zu, hits = %lu WHERE id = %d", l->lastseen, l->hitssaved, l->id);
+
+    l->dirty = 0;
+  }
+}
+

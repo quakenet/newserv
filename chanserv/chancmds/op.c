@@ -143,7 +143,7 @@ int csc_doop(void *source, int cargc, char **cargv) {
   }
 
   if (donotice && bufpos) {
-    sendopnoticetochannel(chanservnick, cip->channel, "%s opped %s", sender, buf);
+    sendopnoticetochannel(chanservnick, cip->channel, "%s opped %s", sender->nick, buf);
   }
       
   localsetmodeflush(&changes, 1);

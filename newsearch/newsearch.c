@@ -338,6 +338,7 @@ void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc) {
   deletecommandfromtree(cmd->searchtree, term, (CommandHandler) parsefunc);
 }
 
+static void controlwallwrapper(int level, char *format, ...) __attribute__ ((format (printf, 2,	 3)));
 static void controlwallwrapper(int level, char *format, ...) {
   char buf[1024];
   va_list ap;

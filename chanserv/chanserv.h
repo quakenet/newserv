@@ -783,8 +783,8 @@ void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
 #define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
 #define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
-void chanservsendmessage_real(nick *np, int oneline, char *message, ... );
-void chanservwallmessage(char *message, ... );
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));;
+void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1, 2)));
 void chanservcommandinit();
 void chanservcommandclose();
 void chanservstdmessage(nick *np, int messageid, ... );
@@ -856,7 +856,7 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags, chanin
 /* chanservlog.c */
 void cs_initlog();
 void cs_closelog();
-void cs_log(nick *np, char *event, ...);
+void cs_log(nick *np, char *event, ...) __attribute__ ((format (printf, 2, 3)));
 
 /* chanservdump.c */
 int dumplastjoindata(const char *filename);
