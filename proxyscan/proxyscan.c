@@ -842,7 +842,7 @@ void proxyscandostatus(nick *np) {
   sendnoticetouser(proxyscannick,np,"Total scans completed:  %d",scansdone);
   sendnoticetouser(proxyscannick,np,"Total hosts glined:     %d",glinedhosts);
 
-  sendnoticetouser(proxyscannick,np,"pendingscan structures: %lu x %lu bytes = %lu bytes total",countpendingscan,
+  sendnoticetouser(proxyscannick,np,"pendingscan structures: %lu x %u bytes = %lu bytes total",countpendingscan,
 	sizeof(pendingscan), (countpendingscan * sizeof(pendingscan)));
 
   sendnoticetouser(proxyscannick,np,"Currently active scans: %d/%d",activescans,maxscans);
