@@ -3,6 +3,8 @@
 #ifndef __HOOKS_H
 #define __HOOKS_H
 
+#include <limits.h>
+
 #define HOOKMAX 5000
 
 /* This is the authoritative registry of all known hook numbers */
@@ -73,6 +75,11 @@
 #define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, u_int64_t*) */
 #define HOOK_AUTH_LOSTAUTHNAME     802 /* Argument is authname* */
 
+#define PRIORITY_DEFAULT           0
+
+#define PRIORITY_MAX               LONG_MIN
+#define PRIORITY_MIN               LONG_MAX
+
 typedef void (*HookCallback)(int, void *);
 
 extern unsigned int hookqueuelength;
@@ -81,5 +88,6 @@ void inithooks();
 int registerhook(int hooknum, HookCallback callback);
 int deregisterhook(int hooknum, HookCallback callback);
 void triggerhook(int hooknum, void *arg);
+int registerpriorityhook(int hooknum, HookCallback callback, long priority);
 
 #endif

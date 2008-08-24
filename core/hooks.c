@@ -1,8 +1,9 @@
 /* hooks.c */
 
 #include "hooks.h"
-#include <assert.h>
+#include "error.h"
 #include "../lib/array.h"
+#include <assert.h>
 #include <stdlib.h>
 
 array hooks[HOOKMAX];
@@ -44,6 +45,12 @@ int registerhook(int hooknum, HookCallback callback) {
   hcbs[i]=callback;
   
   return 0;
+}
+
+int registerpriorityhook(int hooknum, HookCallback callback, long priority) {
+  Error("core", ERR_WARNING, "Priority hook system not loaded.");
+
+  return registerhook(hooknum, callback);
 }
 
 int deregisterhook(int hooknum, HookCallback callback) {
