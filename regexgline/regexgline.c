@@ -15,6 +15,7 @@
 #include "../core/hooks.h"
 #include "../server/server.h"
 #include "../lib/strlfunc.h"
+#include <stdint.h>
 
 #define INSTANT_IDENT_GLINE  1
 #define INSTANT_HOST_GLINE   2

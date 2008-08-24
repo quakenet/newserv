@@ -11,6 +11,8 @@
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
+#include <stdint.h>
+
 #include "../lib/sstring.h"
 #include "../core/schedule.h"
 #include "../lib/flags.h"

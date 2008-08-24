@@ -13,6 +13,7 @@
 #include "../parser/parser.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 /*
  * handlenickmsg:
