@@ -697,7 +697,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
       pcre_free(hint);
     
   } else {
-    rg_logevent(np, "regexglist", NULL);
+    rg_logevent(np, "regexglist", "%s", "");
     controlreply(np, GLINE_HEADER);
     for(rp=rg_list;rp;rp=rp->next)
       if(rp->mask->length > longest)

@@ -6,9 +6,12 @@
 #include "../nick/nick.h"
 #include "../core/hooks.h"
 #include "../lib/strlfunc.h"
+#include "../lib/version.h"
 
 #include <string.h>
 #include <stdio.h>
+
+MODULE_VERSION("")
 
 #define ALLOCUNIT 100
 
@@ -21,7 +24,10 @@ authname *authnametable[AUTHNAMEHASHSIZE];
 /* internal access only */
 static authname *authnametablebyname[AUTHNAMEHASHSIZE];
 
-sstring *authnameextnames[MAXAUTHNAMEEXTS];
+static struct {
+  sstring *name;
+  int persistant;
+} authnameexts[MAXAUTHNAMEEXTS];
 
 static void authextstats(int hooknum, void *arg);
 
@@ -60,7 +66,7 @@ void freeauthname (authname *anp) {
   freeauthnames=anp;
 }
 
-int registerauthnameext(const char *name) {
+int registerauthnameext(const char *name, int persistant) {
   int i;
 
   if (findauthnameext(name)!=-1) {
@@ -69,8 +75,9 @@ int registerauthnameext(const char *name) {
   }
 
   for (i=0;i<MAXAUTHNAMEEXTS;i++) {
-    if (authnameextnames[i]==NULL) {
-      authnameextnames[i]=getsstring(name,100);
+    if (authnameexts[i].name==NULL) {
+      authnameexts[i].name=getsstring(name,100);
+      authnameexts[i].persistant=persistant;
       return i;
     }
   }
@@ -83,7 +90,7 @@ int findauthnameext(const char *name) {
   int i;
 
   for (i=0;i<MAXAUTHNAMEEXTS;i++) {
-    if (authnameextnames[i]!=NULL && !ircd_strcmp(name,authnameextnames[i]->content)) {
+    if (authnameexts[i].name!=NULL && !ircd_strcmp(name,authnameexts[i].name->content)) {
       return i;
     }
   }
@@ -95,8 +102,8 @@ void releaseauthnameext(int index) {
   int i;
   authname *anp;
 
-  freesstring(authnameextnames[index]);
-  authnameextnames[index]=NULL;
+  freesstring(authnameexts[index].name);
+  authnameexts[index].name=NULL;
 
   for (i=0;i<AUTHNAMEHASHSIZE;i++) {
     for (anp=authnametable[i];anp;anp=anp->next) {
@@ -169,9 +176,10 @@ void releaseauthname(authname *anp) {
     anp->nicks = NULL;
 
     for(i=0;i<MAXAUTHNAMEEXTS;i++)
-      if(anp->exts[i]!=NULL)
+      if(authnameexts[i].persistant && anp->exts[i]!=NULL)
         return;
 
+    triggerhook(HOOK_AUTH_LOSTAUTHNAME, (void *)anp);
     found = 0;
     for(manp=&(authnametable[authnamehash(anp->userid)]);*manp;manp=(authname **)&((*manp)->next)) {
       if ((*manp)==anp) {

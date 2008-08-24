@@ -23,7 +23,7 @@ void handlecore(void);
 void handlesignals(void);
 
 int newserv_shutdown_pending;
-static int newserv_sigusr1_pending, newserv_sighup_pending;
+static int newserv_sigint_pending, newserv_sigusr1_pending, newserv_sighup_pending;
 static void (*oldsegv)(int);
 
 int main(int argc, char **argv) {
@@ -82,6 +82,13 @@ void handlesignals(void) {
     triggerhook(HOOK_CORE_REHASH, (void *)1);
     newserv_sighup_pending=0;
   }
+
+  if (newserv_sigint_pending) {
+    Error("core", ERR_INFO, "SIGINT received, terminating.");
+    triggerhook(HOOK_CORE_SIGINT, NULL);
+    newserv_sigint_pending=0;
+    newserv_shutdown_pending=1;
+  }
 }
 
 /*
@@ -95,7 +102,7 @@ void initseed() {
 }
 
 void siginthandler(int sig) {
-  newserv_shutdown_pending = 1;
+  newserv_sigint_pending = 1;
 }
 
 void sigusr1handler(int sig) {

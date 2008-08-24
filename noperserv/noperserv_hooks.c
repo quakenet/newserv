@@ -135,7 +135,7 @@ void noperserv_cleanup_hooks(void) {
     firsttime = 0;
   }
 
-  if(oldhandler)
+  if(oldhandler && mynick)
     hooklocaluserhandler(mynick, oldhandler);
 
   controlwall = oldwall;
@@ -143,6 +143,10 @@ void noperserv_cleanup_hooks(void) {
 }
 
 void noperserv_trap_registration(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  if(!np)
+    return;
+
   oldhandler = hooklocaluserhandler((nick *)arg, &noperserv_handle_messages);
   if(!oldhandler)
     return;

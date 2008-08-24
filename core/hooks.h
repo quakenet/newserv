@@ -14,6 +14,7 @@
 #define HOOK_CORE_STOPERROR          4
 #define HOOK_CORE_ERROR	             5	/* Argument is a struct error_event * */
 #define HOOK_CORE_SIGUSR1            6 
+#define HOOK_CORE_SIGINT             7
 
 #define HOOK_IRC_CONNECTED         100  /* Located in server.c now to fix burst bug */
 #define HOOK_IRC_DISCON            101
@@ -70,6 +71,7 @@
 #define HOOK_SHADOW_SERVER         701 /* Argument is char* */
 
 #define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, u_int64_t*) */
+#define HOOK_AUTH_LOSTAUTHNAME     802 /* Argument is authname* */
 
 typedef void (*HookCallback)(int, void *);
 
