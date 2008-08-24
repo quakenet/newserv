@@ -47,6 +47,10 @@ typedef struct rg_struct {
   long             glineid;   /* gline ID */
   const char       *class;    /* class of gline */
   unsigned long    hits;      /* hits since we were loaded */
+  unsigned long    hitssaved; /* hits (persistent) */
+  unsigned int     marker;    /* newserv style marker */
+  time_t           lastseen;  /* ... */
+  short            dirty;     /* whether or not we need to flush to the db */
   struct rg_struct *next;     /* ... pointer to next item */
 } rg_struct;
 
@@ -71,9 +75,9 @@ void rg_dbload(void);
 
 void rg_freestruct(struct rg_struct *rp);
 struct rg_struct *rg_newstruct(time_t expires);
-struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class);
+struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char *reason, char *expires, char *type, time_t iexpires, char *class, time_t lastseen, unsigned int hitssaved);
 
-void rg_displaygline(nick *np, struct rg_struct *rp);
+void rg_displaygline(nick *np, struct rg_struct *rp, int longest);
 
 void rg_checkexpiry(void *arg);
 
