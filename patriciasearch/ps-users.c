@@ -25,7 +25,7 @@ struct searchNode *ps_users_parse(searchCtx *ctx, int argc, char **argv) {
 void *ps_users_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   patricia_node_t *pn = (patricia_node_t *)theinput;
 
-  return (void *)(pn->usercount);
+  return (void *)(long)(pn->usercount);
 }
 
 void ps_users_free(searchCtx *ctx, struct searchNode *thenode) {
