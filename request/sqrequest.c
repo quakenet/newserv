@@ -14,7 +14,9 @@
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
 #include "../core/config.h"
+/*
 #include "../spamscan2/spamscan2.h"
+*/
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -200,8 +202,9 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
       freesstring(password);
 
       /* /msg S addchan <channel> default */
-      //sendmessagetouser(rqnick, snp, "ADDCHAN %s default +op", req->cip->name->content);
+      sendmessagetouser(rqnick, snp, "ADDCHAN %s default +o", req->cip->name->content);
 
+/*
 {
     spamscan_channelprofile *cp;
     spamscan_channelsettings *cs;
@@ -239,6 +242,7 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
         }
     }
 }
+*/
 
       /* we do not put the request into another queue, so free it here */
       free(req);
