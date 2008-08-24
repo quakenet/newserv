@@ -917,7 +917,7 @@ void localsettopic(nick *np, channel *cp, char *topic) {
   }
   
   if (connected) {
-    irc_send("%s T %s %jd %jd :%s",source,cp->index->name->content,cp->timestamp,cp->topictime,(cp->topic)?cp->topic->content:"");
+    irc_send("%s T %s %jd %jd :%s",source,cp->index->name->content,(intmax_t)cp->timestamp,(intmax_t)cp->topictime,(cp->topic)?cp->topic->content:"");
   }
 }
 

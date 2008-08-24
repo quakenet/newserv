@@ -64,7 +64,7 @@ void _init() {
     /* Work out when to take the next sample */
     now=getnettime();
     if (now < chanstats_lastsample) {
-      Error("chanstats",ERR_WARNING,"Last sample time in future (%zu > %zu)",chanstats_lastsample,now);
+      Error("chanstats",ERR_WARNING,"Last sample time in future (%jd > %jd)",(intmax_t)chanstats_lastsample,(intmax_t)now);
       when=now;
     } else if (now<(chanstats_lastsample+SAMPLEINTERVAL)) {
       lastday=chanstats_lastsample/(24*3600);
