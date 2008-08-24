@@ -26,3 +26,5 @@ configure.ac.local
 config.h
 settings.mk
 graphing/dump
+silly
+
