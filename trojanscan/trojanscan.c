@@ -15,6 +15,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 #include "../core/nsmalloc.h"
+#include <stdint.h>
 
 #define tmalloc(x)     nsmalloc(POOL_TROJANSCAN, x)
 #define tfree(x)       nsfree(POOL_TROJANSCAN, x)
