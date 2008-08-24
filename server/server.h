@@ -20,6 +20,11 @@
 
 #define SMODE_ALL       0x000F
 
+#define SIsHub(x)       ((x)->flags & SMODE_HUB)
+#define SIsIPv6(x)      ((x)->flags & SMODE_IPV6)
+#define SIsService(x)   ((x)->flags & SMODE_SERVICE)
+#define SHasOpername(x) ((x)->flags & SMODE_OPERNAME)
+
 extern const flag smodeflags[];
 extern long myhub;
 
