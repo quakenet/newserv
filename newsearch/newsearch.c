@@ -174,53 +174,53 @@ void _init() {
   
   /* Nickname operations */
   registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "Users host mask, allow \"hostmask real\" to match realhost");     /* nick only */
-  registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "");     /* nick only */
-  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "");     /* nick only */
-  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "");         /* nick only */
-  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "");           /* nick only */
-  registersearchterm(reg_nicksearch, "host",host_parse, 0, "");             /* nick only */
-  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "");       /* nick only */
-  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "");   /* nick only */
+  registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "Users current realname");     /* nick only */
+  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "Users current authname or false");     /* nick only */
+  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "Users Auth timestamp");         /* nick only */
+  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "Users current ident");           /* nick only */
+  registersearchterm(reg_nicksearch, "host",host_parse, 0, "Users host, allow \"host real\" to match real host");             /* nick only */
+  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       /* nick only */
+  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "Users Timestamp");   /* nick only */
   registersearchterm(reg_nicksearch, "country",country_parse, 0, "2 letter country code (data source is geoip)");       /* nick only */
-  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "");                 /* nick only */
-  registersearchterm(reg_nicksearch, "channels",channels_parse, 0, "");     /* nick only */
-  registersearchterm(reg_nicksearch, "server",server_parse, 0, "");         /* nick only */
-  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "");         /* nick only */
+  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "Users IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");                 /* nick only */
+  registersearchterm(reg_nicksearch, "channels",channels_parse, 0, "Channel Count");     /* nick only */
+  registersearchterm(reg_nicksearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");         /* nick only */
+  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "Users Auth ID");         /* nick only */
 
   /* Channel operations */
-  registersearchterm(reg_chansearch, "exists",exists_parse, 0, "");         /* channel only */
+  registersearchterm(reg_chansearch, "exists",exists_parse, 0, "Returns if channel exists on network. Note: newserv may store data on empty channels");         /* channel only */
   registersearchterm(reg_chansearch, "services",services_parse, 0, "");     /* channel only */
-  registersearchterm(reg_chansearch, "size",size_parse, 0, "");             /* channel only */
-  registersearchterm(reg_chansearch, "name",name_parse, 0, "");             /* channel only */
-  registersearchterm(reg_chansearch, "topic",topic_parse, 0, "");           /* channel only */
-  registersearchterm(reg_chansearch, "oppct",oppct_parse, 0, "");           /* channel only */
-  registersearchterm(reg_chansearch, "uniquehostpct",hostpct_parse, 0, ""); /* channel only */
-  registersearchterm(reg_chansearch, "authedpct",authedpct_parse, 0, "");   /* channel only */
-  registersearchterm(reg_chansearch, "kick",kick_parse, 0, "");             /* channel only */
+  registersearchterm(reg_chansearch, "size",size_parse, 0, "Channel user count");             /* channel only */
+  registersearchterm(reg_chansearch, "name",name_parse, 0, "Channel Name");             /* channel only */
+  registersearchterm(reg_chansearch, "topic",topic_parse, 0, "Channel topic");           /* channel only */
+  registersearchterm(reg_chansearch, "oppct",oppct_parse, 0, "Percentage Opped");           /* channel only */
+  registersearchterm(reg_chansearch, "uniquehostpct",hostpct_parse, 0, "uniquehost percent"); /* channel only */
+  registersearchterm(reg_chansearch, "authedpct",authedpct_parse, 0, "Percentage of authed users");   /* channel only */
+  registersearchterm(reg_chansearch, "kick",kick_parse, 0, "KICK users channels in newsearch result. Note: evaluation order");             /* channel only */
 
   /* Nickname / channel operations */
-  registersearchterm(reg_chansearch, "modes",modes_parse, 0, "");
-  registersearchterm(reg_nicksearch, "modes",modes_parse, 0, "");
-  registersearchterm(reg_chansearch, "nick",nick_parse, 0, "");
-  registersearchterm(reg_nicksearch, "nick",nick_parse, 0, "");
+  registersearchterm(reg_chansearch, "modes",modes_parse, 0, "User Modes");
+  registersearchterm(reg_nicksearch, "modes",modes_parse, 0, "Channel Modes");
+  registersearchterm(reg_chansearch, "nick",nick_parse, 0, "Nickname");
+  registersearchterm(reg_nicksearch, "nick",nick_parse, 0, "Nickname");
 
   /* Kill / gline parameters */
-  registersearchterm(reg_chansearch,"kill",kill_parse, 0, "");
-  registersearchterm(reg_chansearch,"gline",gline_parse, 0, "");
-  registersearchterm(reg_nicksearch,"kill",kill_parse, 0, "");
-  registersearchterm(reg_nicksearch,"gline",gline_parse, 0, "");
+  registersearchterm(reg_chansearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_chansearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_nicksearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_nicksearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
 
   /* Iteration functionality */
-  registerglobalsearchterm("any",any_parse, "");
-  registerglobalsearchterm("all",all_parse, "");
-  registerglobalsearchterm("var",var_parse, "");
+  registerglobalsearchterm("any",any_parse, "usage: any (generatorfn x) (fn ... (var x) ...)");
+  registerglobalsearchterm("all",all_parse, "usage: all (generatorfn x) (fn ... (var x) ...)");
+  registerglobalsearchterm("var",var_parse, "usage: var variable");
   
   /* Iterable functions */
-  registersearchterm(reg_nicksearch, "channeliter",channeliter_parse, 0, "");         /* nick only */
+  registersearchterm(reg_nicksearch, "channeliter",channeliter_parse, 0, "Channel Iterable function - usage: (any (channeliter x) (match (var x) #twilight*))");         /* nick only */
   
   /* Notice functionality */
-  registersearchterm(reg_chansearch,"notice",notice_parse, 0, "");
-  registersearchterm(reg_nicksearch,"notice",notice_parse, 0, "");
+  registersearchterm(reg_chansearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_nicksearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
  
   /* Nick output filters */
   regdisp(reg_nicksearch,"default",printnick, 0, "");
