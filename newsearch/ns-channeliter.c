@@ -18,7 +18,7 @@ struct channeliter_localdata {
   nick *lastnick;
 };
 
-struct searchNode *channeliter_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv) {
   searchNode *thenode;
   struct channeliter_localdata *localdata;
   
@@ -27,17 +27,12 @@ struct searchNode *channeliter_parse(searchCtx *ctx, int type, int argc, char **
     return NULL;
   }
 
-  if(type != SEARCHTYPE_NICK) {
-    parseError = "channeliter: this function is only valid for nick searches.";
-    return NULL;
-  }
-
   if(!(localdata=(struct channeliter_localdata *)malloc(sizeof(struct channeliter_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;
   }
 
-  if(!(localdata->variable=var_register(ctx, type, argv[0], RETURNTYPE_STRING))) {
+  if(!(localdata->variable=var_register(ctx, argv[0], RETURNTYPE_STRING))) {
     free(localdata);
     return NULL;
   }

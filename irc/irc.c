@@ -276,6 +276,7 @@ void irc_connect(void *arg) {
     Error("irc",ERR_ERROR,"Couldn't connect to %s:%lu, will try next server in one minute",conto,portnum);
     scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
     close(serverfd);
+    freesstring(mydesc);
     return;
   }
   

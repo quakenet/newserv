@@ -30,14 +30,15 @@
  */
 
 typedef int (*CommandHandler)(void *, int, char**);
+typedef void (*DestroyExt)(void *); 
  
 typedef struct Command {
   sstring        *command;       /* Name of the command/token/thing */
-  sstring        *help;          /* Help information, sorry splidge! */
   int             level;         /* "level" required to use the command/token/thing */
   int             maxparams;     /* Maximum number of parameters for the command/token/thing */
   CommandHandler  handler;       /* Function to deal with the message */
   void           *ext;           /* Pointer to some arbitrary other data */
+  DestroyExt      destroyext;    /* Function to destroy ->ext on destroycommandtree (if necessary) */
   struct Command *next;          /* Next handler chained onto this command */
 } Command;
   
@@ -49,12 +50,12 @@ typedef struct CommandTree {
 
 CommandTree *newcommandtree();
 void destroycommandtree(CommandTree *ct);
-Command *addcommandhelptotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, const char *help);
+Command *addcommandexttotree(CommandTree *ct, const char *cmdname, int level, int maxparams, CommandHandler handler, void *ext);
 int deletecommandfromtree(CommandTree *ct, const char *cmdname, CommandHandler handler);
 Command *findcommandintree(CommandTree *ct, const char *cmdname, int strictcheck);
 int getcommandlist(CommandTree *ct, Command **commandlist, int maxcommands);
 sstring *getcommandname(CommandTree *ct, CommandHandler handler);
 
-#define addcommandtotree(a, b, c, d, e) addcommandhelptotree(a, b, c, d, e, NULL)
+#define addcommandtotree(a, b, c, d, e) addcommandexttotree(a, b, c, d, e, NULL)
 
 #endif

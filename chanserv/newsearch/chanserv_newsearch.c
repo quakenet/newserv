@@ -10,17 +10,17 @@ int cs_dospewdb(void *source, int cargc, char **cargv);
 UserDisplayFunc previousdefault;
 
 void _init() {
-  regnickdisp("auth", printnick_auth);
-  regnickdisp("authchans", printnick_authchans);
-  regchandisp("qusers", printchannel_qusers);
-  reguserdisp("auth", printauth);
+  regdisp(reg_nicksearch, "auth", printnick_auth, 0, "");
+  regdisp(reg_nicksearch, "authchans", printnick_authchans, 0, "");
+  regdisp(reg_chansearch, "qusers", printchannel_qusers, 0, "");
+  regdisp(reg_usersearch, "auth", printauth, 0, "");
 
-  registersearchterm("qusers", qusers_parse);
-  registersearchterm("qlasthost", qlasthost_parse);
-  registersearchterm("qemail", qemail_parse);
-  registersearchterm("qsuspendreason", qsuspendreason_parse);
-  registersearchterm("qusername", qusername_parse);
-  registersearchterm("qchanflags", qchanflags_parse);
+  registersearchterm(reg_usersearch, "qusers", qusers_parse, 0, "");
+  registersearchterm(reg_usersearch, "qlasthost", qlasthost_parse, 0, "");
+  registersearchterm(reg_usersearch, "qemail", qemail_parse, 0, "");
+  registersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse, 0, "");
+  registersearchterm(reg_usersearch, "qusername", qusername_parse, 0, "");
+  registersearchterm(reg_chansearch, "qchanflags", qchanflags_parse, 0, "");
 
   chanservaddcommand("nicksearch", QCMD_OPER, 5, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
   chanservaddcommand("chansearch", QCMD_OPER, 5, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
@@ -33,17 +33,17 @@ void _init() {
 }
 
 void _fini() {
-  unregnickdisp("auth", printnick_auth);
-  unregnickdisp("authchans", printnick_authchans);
-  unregchandisp("qusers", printchannel_qusers);
-  unreguserdisp("auth", printauth);
+  unregdisp(reg_nicksearch, "auth", printnick_auth);
+  unregdisp(reg_nicksearch, "authchans", printnick_authchans);
+  unregdisp(reg_chansearch, "qusers", printchannel_qusers);
+  unregdisp(reg_usersearch, "auth", printauth);
 
-  deregistersearchterm("qusers", qusers_parse);
-  deregistersearchterm("qlasthost", qlasthost_parse);
-  deregistersearchterm("qemail", qemail_parse);
-  deregistersearchterm("qsuspendreason", qsuspendreason_parse);
-  deregistersearchterm("qusername", qusername_parse);
-  deregistersearchterm("qchanflags", qchanflags_parse);
+  deregistersearchterm(reg_usersearch, "qusers", qusers_parse);
+  deregistersearchterm(reg_usersearch, "qlasthost", qlasthost_parse);
+  deregistersearchterm(reg_usersearch, "qemail", qemail_parse);
+  deregistersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse);
+  deregistersearchterm(reg_usersearch, "qusername", qusername_parse);
+  deregistersearchterm(reg_usersearch, "qchanflags", qchanflags_parse);
 
   chanservremovecommand("nicksearch", cs_donicksearch);
   chanservremovecommand("chansearch", cs_dochansearch);

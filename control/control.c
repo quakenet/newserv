@@ -36,7 +36,10 @@ nick *mynick;
 CommandTree *controlcmds;
 ControlMsg controlreply;
 ControlWall controlwall;
+ControlPermitted controlpermitted;
+DestroyExt controldestroyext;
 
+void controldestroycmdext(void *ext); 
 void handlemessages(nick *target, int messagetype, void **args);
 int controlstatus(void *sender, int cargc, char **cargv);
 void controlconnect(void *arg);
@@ -51,12 +54,15 @@ int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...) __attribute__ ((format (printf, 3, 4)));
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
+int controlcheckpermitted(flag_t level, nick *user);
 void handlesignal(int hooknum, void *arg);
 
 void _init() {
   controlcmds=newcommandtree();
   controlreply=&controlmessage;
   controlwall=&controlnoticeopers;
+  controlpermitted=&controlcheckpermitted;
+  controldestroyext=&controldestroycmdext;
 
   registercontrolhelpcmd("status",NO_DEVELOPER,1,&controlstatus,"Usage: status ?level?\nDisplays status information, increasing level gives more verbose information.");
   registercontrolhelpcmd("whois",NO_OPERED,1,&controlwhois,"Usage: whois <nickname|#numeric>\nDisplays lots of information about the specified nickname or numeric.");
@@ -101,9 +107,51 @@ void _fini() {
   deregisterhook(HOOK_CORE_SIGINT, &handlesignal);
 }
 
-void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help) {
-  addcommandhelptotree(controlcmds,name,level,maxparams,handler,help);
+void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *helpstr) {
+  cmdhelp *help;
+  Command *newcmd;
+
+  newcmd = addcommandtotree(controlcmds,name,level,maxparams,handler);
+ 
+  if (helpstr) {
+    /* Allocate a help record */
+    help=(cmdhelp *)malloc(sizeof(cmdhelp));
+    if(!help) {
+      Error("control",ERR_ERROR,"Malloc failed: registercontrolhelpcmd");
+      return; 
+    }
+    memset((void *)help,0,sizeof(cmdhelp));
+
+    /* this isn't an sstring atm, as sstring has a max length (512) */ 
+    int len=strlen(helpstr);
+    help->helpstr=(char *)malloc(len+1);
+    if(help->helpstr) {
+      strncpy(help->helpstr, helpstr, len);
+      help->helpstr[len] = '\0';
+    }
+    newcmd->ext=(void *)help;
+    newcmd->destroyext=controldestroyext;
+  }
 }
+
+void registercontrolhelpfunccmd(const char *name, int level, int maxparams, CommandHandler handler, CommandHelp helpcmd) {
+  cmdhelp *help;
+  Command *newcmd;
+
+  /* Allocate a help record */
+  help=(cmdhelp *)malloc(sizeof(cmdhelp));
+  if (!help) {
+    Error("control",ERR_ERROR,"Malloc failed: registercontrolhelpfunccmd");
+    return;
+  }
+  memset((void *)help,0,sizeof(cmdhelp));
+
+  help->helpcmd=helpcmd;
+
+  newcmd = addcommandexttotree(controlcmds,name,level,maxparams,handler, (void *)help);
+  newcmd->destroyext=controldestroyext;
+}
+
 
 int deregistercontrolcmd(const char *name, CommandHandler handler) {
   return deletecommandfromtree(controlcmds, name, handler);
@@ -560,29 +608,42 @@ void controlspecialreloadmod(void *arg) {
 }
 
 void controlhelp(nick *np, Command *cmd) {
-  sstring *scp = cmd->help;
-  if(!scp) {
+  char *cp, *sp;
+  char *scp;
+  cmdhelp *help=(cmdhelp *)cmd->ext;
+
+  if (!help) { 
     controlreply(np, "Sorry, no help for this command.");
+    return;
+  }
+  if ( help->helpcmd ) {
+    (help->helpcmd)(np, cmd); 
   } else {
-    char *cp = scp->content, *sp = cp;
-    int finished = 0;
-    for(;;cp++) {
-      if(*cp == '\0' || *cp == '\n') {
-        if(*cp == '\0') {
-          finished = 1;
-        } else {
-          *cp = '\0';
+    scp = help->helpstr;
+    if (!scp) {
+      controlreply(np, "Sorry, no help for this command.");
+    } else {
+      cp = scp;
+      sp = cp;
+      int finished = 0;
+      for(;;cp++) {
+        if(*cp == '\0' || *cp == '\n') {
+          if(*cp == '\0') {
+            finished = 1;
+          } else {
+            *cp = '\0';
+          }
+
+          if(sp != cp)
+            controlreply(np, "%s", sp);
+
+          if(finished)
+            break;
+
+          *cp = '\n';
+
+          sp = cp + 1;
         }
-
-        if(sp != cp)
-          controlreply(np, "%s", sp);
-
-        if(finished)
-          break;
-
-        *cp = '\n';
-
-        sp = cp + 1;
       }
     }
   }
@@ -632,6 +693,10 @@ void controlnswall(int noticelevel, char *format, ...) {
   controlwall(NO_OPER, noticelevel, "%s", broadcast);
 }
 
+int controlcheckpermitted(flag_t level, nick *user) {
+  return 1;
+}
+
 void handlesignal(int hooknum, void *arg) {
   char *signal, *action;
 
@@ -648,4 +713,10 @@ void handlesignal(int hooknum, void *arg) {
   }
 
   controlwall(NO_OPER, NL_OPERATIONS, "SIG%s received, %s...", signal, action);
+}
+
+void controldestroycmdext(void *ext) {
+  if ( ((cmdhelp *)ext)->helpstr)
+    free( ((cmdhelp *)ext)->helpstr);
+  free(ext);
 }

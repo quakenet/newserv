@@ -10,13 +10,8 @@
 void *authid_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void authid_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *authid_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
-
-  if (type != SEARCHTYPE_NICK) {
-    parseError = "authid: this function is only valid for nick searches.";
-    return NULL;
-  }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";

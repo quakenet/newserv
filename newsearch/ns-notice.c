@@ -22,11 +22,10 @@ void notice_free(searchCtx *ctx, struct searchNode *thenode);
 struct notice_localdata {
   unsigned int marker;
   int count;
-  int type;
   char message[NSMAX_NOTICE_LEN];
 };
 
-struct searchNode *notice_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv) {
   struct notice_localdata *localdata;
   struct searchNode *thenode;
   int len;
@@ -36,12 +35,14 @@ struct searchNode *notice_parse(searchCtx *ctx, int type, int argc, char **argv)
     return NULL;
   }
   localdata->count = 0;
-  localdata->type = type;
-  if (type == SEARCHTYPE_CHANNEL)
+  if (ctx->searchcmd == reg_chansearch)
     localdata->marker = nextchanmarker();
-  else
+  else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
-
+  else {
+    parseError = "notice: invalid search type";
+    return NULL;
+  }
   if (argc==1) {
     char *p = argv[0];
     if(*p == '\"')
@@ -82,7 +83,7 @@ void *notice_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
   localdata = thenode->localdata;
 
-  if (localdata->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->searchcmd == reg_chansearch) {
     cip = (chanindex *)theinput;
     cip->marker = localdata->marker;
     localdata->count += cip->channel->users->totalusers;
@@ -105,7 +106,7 @@ void notice_free(searchCtx *ctx, struct searchNode *thenode) {
 
   localdata = thenode->localdata;
 
-  if (localdata->type == SEARCHTYPE_CHANNEL) {
+  if (ctx->searchcmd == reg_chansearch) {
     nickmarker=nextnickmarker();
     for (i=0;i<CHANNELHASHSIZE;i++) {
       for (cip=chantable[i];cip;cip=ncip) {

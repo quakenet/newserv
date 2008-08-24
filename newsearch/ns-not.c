@@ -10,7 +10,7 @@
 void not_free(searchCtx *ctx, struct searchNode *thenode);
 void *not_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *not_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *not_parse(searchCtx *ctx, int argc, char **argv) {
   searchNode *thenode, *subnode;
 
   if (argc!=1) {
@@ -28,7 +28,7 @@ struct searchNode *not_parse(searchCtx *ctx, int type, int argc, char **argv) {
   thenode->exe          = not_exe;
   thenode->free         = not_free;
 
-  subnode=ctx->parser(ctx, type, argv[0]); /* Propogate the search type */
+  subnode=ctx->parser(ctx, argv[0]); /* Propogate the search type */
 
   if (!subnode) {
     free(thenode);

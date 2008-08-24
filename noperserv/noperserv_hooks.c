@@ -19,8 +19,8 @@
 struct storedhook {
   CommandHandler old;
   sstring *name;
-  sstring *oldhelp;
-  sstring *newhelp;
+  cmdhelp *oldhelp;
+  cmdhelp *newhelp;
   struct storedhook *next;
 } storedhook;
 
@@ -32,6 +32,7 @@ nick *replynick = NULL;
 UserMessageHandler oldhandler;
 ControlMsg oldreply;
 ControlWall oldwall;
+ControlPermitted oldpermitted;
 
 void noperserv_trap_registration(int hooknum, void *arg);
 int noperserv_showcommands(void *sender, int cargc, char **cargv);
@@ -56,6 +57,9 @@ void noperserv_setup_hooks(void) {
   
   oldwall = controlwall;
   controlwall = &noperserv_wall;
+
+  oldpermitted = controlpermitted;
+  controlpermitted = &noperserv_policy_command_permitted;
 
   memset(&special, 0, sizeof(struct specialsched));
 
@@ -87,14 +91,20 @@ int noperserv_hook_command(char *command, CommandHandler newcommand, char *newhe
 
   newhook->old = fetchcommand->handler;
   if(newhelp) {
-    newhook->newhelp = getsstring(newhelp, 512);
+    newhook->newhelp = (cmdhelp *)malloc(sizeof(cmdhelp));
+    memset(newhook->newhelp,0,sizeof(cmdhelp));
     if(!newhook->newhelp) {
       freesstring(newhook->name);
       free(newhook);
-      return 1;
+    } else {
+      int len = strlen(newhelp) + 1;
+      newhook->newhelp->helpstr = (char *)malloc(len);
+      if (newhook->newhelp->helpstr) {
+        strlcpy(newhook->newhelp->helpstr, newhelp, len);
+      } 
+      newhook->oldhelp = fetchcommand->ext;
+      fetchcommand->ext = newhook->newhelp;
     }
-    newhook->oldhelp = fetchcommand->help;
-    fetchcommand->help = newhook->newhelp;
   } else {
     newhook->newhelp = NULL;
   }
@@ -115,8 +125,10 @@ void noperserv_unhook_all_commands(void) {
     if(ch->old && (fetchcommand = findcommandintree(controlcmds, ch->name->content, 1))) {
       fetchcommand->handler = ch->old;
       if(ch->newhelp) {
-        fetchcommand->help = ch->oldhelp;
-        freesstring(ch->newhelp);
+        fetchcommand->ext = ch->oldhelp;
+        if ( ((cmdhelp *)ch->newhelp)->helpstr)
+          free( ((cmdhelp *)ch->newhelp)->helpstr);
+        free(ch->newhelp);
       }
     }
     nh = ch->next;
@@ -140,6 +152,7 @@ void noperserv_cleanup_hooks(void) {
 
   controlwall = oldwall;
   controlreply = oldreply;
+  controlpermitted = oldpermitted;
 }
 
 void noperserv_trap_registration(int hooknum, void *arg) {

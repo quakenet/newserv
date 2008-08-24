@@ -17,14 +17,9 @@ struct qchanflags_localdata {
   flag_t clearmodes;
 };
 
-struct searchNode *qchanflags_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *qchanflags_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
   struct qchanflags_localdata *localdata;
-
-  if (type != SEARCHTYPE_CHANNEL) {
-    parseError = "qchanflags: this function is only valid for channel searches.";
-    return NULL;
-  }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";

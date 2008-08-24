@@ -9,13 +9,12 @@
 
 struct nick_localdata {
   nick *np;
-  int type;
 };
 
 void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void nick_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv) {
   struct nick_localdata *localdata;
   struct searchNode *thenode;
 
@@ -24,8 +23,7 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
     return NULL;
   }
     
-  switch (type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     if (argc!=1) {
       parseError="nick: usage: (nick target)";
       free(localdata);
@@ -36,21 +34,15 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
       free(localdata);
       return NULL;
     }
-    localdata->type = type;
-    break;
-
-  case SEARCHTYPE_NICK:
+  } else if (ctx->searchcmd == reg_nicksearch) {
     if (argc) {
       parseError="nick: usage: (match (nick) target)";
       free(localdata);
       return NULL;
     }
-    localdata->type = type;
     localdata->np = NULL;
-    break;
-
-  default:
-    parseError="nick: unsupported search type";
+  } else {
+    parseError="nick: invalid search command";
     free(localdata);
     return NULL;
   }
@@ -62,7 +54,7 @@ struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv) {
     return NULL;
   }
 
-  if (type == SEARCHTYPE_CHANNEL)
+  if (ctx->searchcmd == reg_chansearch)
     thenode->returntype = RETURNTYPE_BOOL;
   else
     thenode->returntype = RETURNTYPE_STRING;
@@ -80,17 +72,14 @@ void *nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
   localdata = thenode->localdata;
 
-  switch (localdata->type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     cip = (chanindex *)theinput;
 
     if (cip->channel==NULL || getnumerichandlefromchanhash(cip->channel->users, localdata->np->numeric)==NULL)
       return (void *)0;
       
     return (void *)1;
-  
-  default:
-  case SEARCHTYPE_NICK:
+  } else { 
     np = (nick *)theinput;
 
     return np->nick;

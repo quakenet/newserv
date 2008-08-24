@@ -12,7 +12,7 @@
 void length_free(searchCtx *ctx, struct searchNode *thenode);
 void *length_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *length_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *length_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode, *childnode;
 
   if (!(thenode = (struct searchNode *)malloc(sizeof(struct searchNode)))) {
@@ -31,7 +31,7 @@ struct searchNode *length_parse(searchCtx *ctx, int type, int argc, char **argv)
     return NULL;
   }
 
-  childnode = ctx->parser(ctx, type, argv[0]);
+  childnode = ctx->parser(ctx, argv[0]);
   if (!(thenode->localdata = coerceNode(ctx, childnode, RETURNTYPE_STRING))) {
     length_free(ctx, thenode);
     return NULL;

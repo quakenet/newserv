@@ -8,6 +8,7 @@ local.mk
 build.mk
 newserv
 modules/
+data/
 newserv.conf
 chanservlog.*
 logs/*

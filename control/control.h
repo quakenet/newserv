@@ -6,7 +6,33 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
+#define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
+
+typedef void (*ControlMsg)(nick *, char *, ... );
+typedef void (*ControlWall)(flag_t, flag_t, char *, ...);
+typedef int (*ControlPermitted)(flag_t, nick *);
+
+extern ControlMsg controlreply;
+extern ControlWall controlwall;
+extern ControlPermitted controlpermitted;
+
+extern nick *mynick;
+
+extern CommandTree *controlcmds;
+
+struct specialsched {
+  sstring *modulename;
+  void *schedule;
+};
+
+typedef void (*CommandHelp)(nick *, Command *);
+typedef struct cmdhelp {
+  char *helpstr;
+  CommandHelp helpcmd;
+} cmdhelp;
+
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help);
+void registercontrolhelpfunccmd(const char *name, int level, int maxparams, CommandHandler handler, CommandHelp helpcmd);
 int deregistercontrolcmd(const char *name, CommandHandler handler);
 void controlmessage(nick *target, char *message, ... ) __attribute__ ((format (printf, 2, 3)));
 void controlchanmsg(channel *cp, char *message, ...) __attribute__ ((format (printf, 2, 3)));
@@ -17,23 +43,6 @@ void controlspecialrmmod(void *arg);
 void controlspecialreloadmod(void *arg);
 void controlhelp(nick *np, Command *cmd);
 void controlnswall(int noticelevel, char *format, ...) __attribute__ ((format (printf, 2, 3)));
-
-#define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
-
-typedef void (*ControlMsg)(nick *, char *, ... );
-typedef void (*ControlWall)(flag_t, flag_t, char *, ...);
-
-extern ControlMsg controlreply;
-extern ControlWall controlwall;
-
-extern nick *mynick;
-
-extern CommandTree *controlcmds;
-
-struct specialsched {
-  sstring *modulename;
-  void *schedule;
-};
 
 /* NEVER USE THE FOLLOWING IN COMMANDS, you'll end up missing bits off and users'll end up being able to gline people */
 #define __NO_ANYONE      0x000

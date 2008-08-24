@@ -61,6 +61,8 @@ beginpools() {
   pool(PQSQL),
   pool(PATRICIA),
   pool(PATRICIANICK),
+  pool(GLINE),
+  pool(TRUSTS),
   pool(SPAMSCAN2),
 } endpools()
 

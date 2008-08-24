@@ -13,13 +13,8 @@
 void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void timestamp_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *timestamp_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
-
-  if ((type != SEARCHTYPE_NICK) && (type != SEARCHTYPE_CHANNEL)){
-    parseError = "timestamp: this function is only valid for nick or channel searches.";
-    return NULL;
-  }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -27,7 +22,7 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **ar
   }
 
   thenode->returntype = RETURNTYPE_INT;
-  thenode->localdata = (void *)(long)type;
+  thenode->localdata = NULL;
   thenode->exe = timestamp_exe;
   thenode->free = timestamp_free;
 
@@ -37,8 +32,8 @@ struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **ar
 void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   chanindex *cip = (chanindex *)theinput;
-  
-  if ((long)thenode->localdata == SEARCHTYPE_NICK) {
+
+  if (ctx->searchcmd == reg_nicksearch) {  
     return (void *)np->timestamp;
   } else {
     if (cip->channel)

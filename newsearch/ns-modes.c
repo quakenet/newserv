@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 struct modes_localdata {
-  int         type;
   flag_t      setmodes;
   flag_t      clearmodes;
 }; 
@@ -16,7 +15,7 @@ struct modes_localdata {
 void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void modes_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
   struct modes_localdata *localdata;
   struct searchNode *thenode;
   const flag *flaglist;
@@ -26,16 +25,11 @@ struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) 
     return NULL;
   }
     
-  switch (type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     flaglist=cmodeflags;
-    break;
-
-  case SEARCHTYPE_NICK:
+  } else if (ctx->searchcmd == reg_nicksearch) {
     flaglist=umodeflags;
-    break;
-
-  default:
+  } else {
     parseError="modes: unsupported search type";
     return NULL;
   }
@@ -45,7 +39,6 @@ struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv) 
     return NULL;
   }
   
-  localdata->type=type;
   localdata->setmodes=0;
   localdata->clearmodes = ~0;
   
@@ -77,20 +70,15 @@ void *modes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
   
   localdata = (struct modes_localdata *)thenode->localdata;
 
-  switch (localdata->type) {
-  case SEARCHTYPE_CHANNEL:
+  if (ctx->searchcmd == reg_chansearch) {
     cip=(chanindex *)value;
     if (!cip->channel)
       return NULL;
     flags=cip->channel->flags;
-    break;
-
-  case SEARCHTYPE_NICK:
+  } else if (ctx->searchcmd == reg_nicksearch) {
     np=(nick *)value;
     flags=np->umodes;
-    break;
-
-  default:
+  } else {
     return NULL;
   }
 

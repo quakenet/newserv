@@ -17,7 +17,7 @@ struct gt_localdata {
 void gt_free(searchCtx *ctx, struct searchNode *thenode);
 void *gt_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 
-struct searchNode *gt_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *gt_parse(searchCtx *ctx, int argc, char **argv) {
   struct gt_localdata *localdata;
   struct searchNode *thenode;
   int i;
@@ -49,7 +49,7 @@ struct searchNode *gt_parse(searchCtx *ctx, int type, int argc, char **argv) {
   
   for (i=0;i<argc;i++) {
     /* Parse the node.. */
-    localdata->nodes[i] = ctx->parser(ctx, type, argv[i]);
+    localdata->nodes[i] = ctx->parser(ctx, argv[i]);
     
     /* Subsequent nodes get coerced to match the type of the first node */
     if (i)

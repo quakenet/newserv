@@ -18,7 +18,7 @@ struct all_localdata {
   int hitlimit;
 };
 
-struct searchNode *all_parse(searchCtx *ctx, int type, int argc, char **argv) {
+struct searchNode *all_parse(searchCtx *ctx, int argc, char **argv) {
   searchNode *thenode;
   struct all_localdata *localdata;
   
@@ -34,12 +34,12 @@ struct searchNode *all_parse(searchCtx *ctx, int type, int argc, char **argv) {
 
   localdata->hitlimit = 0;
 
-  if(!(localdata->genfn=ctx->parser(ctx, type, argv[0]))) {
+  if(!(localdata->genfn=ctx->parser(ctx, argv[0]))) {
     free(localdata);
     return NULL;
   }
 
-  localdata->lambdafn = ctx->parser(ctx, type, argv[1]);
+  localdata->lambdafn = ctx->parser(ctx, argv[1]);
   if(!(localdata->lambdafn = coerceNode(ctx, localdata->lambdafn, RETURNTYPE_BOOL))) {
     (localdata->genfn->free)(ctx, localdata->genfn);
     free(localdata);

@@ -62,10 +62,10 @@ int main(int argc, char **argv) {
     handlesignals();
   }  
 
-  nsexit();
-
   freeconfig();
   finisstring();  
+
+  nsexit();
 }
 
 void handlesignals(void) {

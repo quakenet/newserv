@@ -1,27 +1,21 @@
 #include "../nick/nick.h"
+#include "../lib/sstring.h"
 #include "../parser/parser.h"
 #include "../channel/channel.h"
 #include "../lib/flags.h"
 #include "../authext/authext.h"
-
-#define    SEARCHTYPE_CHANNEL     1
-#define    SEARCHTYPE_NICK        2
-#define    SEARCHTYPE_USER        3
-
+#include "../patricia/patricia.h"
 
 #define    NSMAX_KILL_LIMIT       500
 #define    NSMAX_GLINE_LIMIT      500
-
-
 #define    NSMAX_GLINE_CLONES     5
-
 
 /* gline duration, in seconds */
 #define    NSGLINE_DURATION       3600
 
 #define    NSMAX_REASON_LEN       120
 #define    NSMAX_NOTICE_LEN       250
-
+#define    NSMAX_COMMAND_LEN      20
 
 #define    RETURNTYPE_BOOL        0x01
 #define    RETURNTYPE_INT         0x02
@@ -36,11 +30,11 @@ struct searchNode;
 struct searchCtx;
 struct coercedata;
 
-typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, int type, char *input);
+typedef struct searchNode *(*searchParseFunc)(struct searchCtx *ctx, char *input);
 typedef void (*replyFunc)(nick *np, char *format, ...);
 typedef void (*wallFunc)(int level, char *format, ...);
 
-typedef struct searchNode *(*parseFunc)(struct searchCtx *, int, int, char **);
+typedef struct searchNode *(*parseFunc)(struct searchCtx *, int, char **);
 typedef void (*freeFunc)(struct searchCtx *, struct searchNode *);
 typedef void *(*exeFunc)(struct searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(struct searchCtx *, nick *, chanindex *);
@@ -69,6 +63,21 @@ struct searchVariable {
   struct coercedata cdata;
 };
 
+typedef struct searchCmd {
+  void *defaultdisplayfunc;  
+  sstring *name;
+  CommandHandler handler;
+  struct CommandTree *outputtree;
+  struct CommandTree *searchtree;
+} searchCmd;
+
+typedef struct searchList { 
+  void *cmd;
+  sstring *name;  
+  char *help;
+  struct searchList *next;
+} searchList;
+
 typedef struct searchCtx {
   searchParseFunc parser;
   replyFunc reply;
@@ -76,86 +85,90 @@ typedef struct searchCtx {
   void *arg;
   struct searchVariable vars[MAX_VARIABLES];
   int lastvar;
+  struct searchCmd *searchcmd;
+  nick *sender;
 } searchCtx;
 
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
-struct searchNode *and_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *not_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *or_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *and_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *not_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *or_parse(searchCtx *ctx,  int argc, char **argv);
 
 /* Comparison (INT -> BOOL) */
-struct searchNode *eq_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *lt_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *gt_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *eq_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *lt_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *gt_parse(searchCtx *ctx, int argc, char **argv);
 
 /* String match (STRING -> BOOL) */
-struct searchNode *match_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *regex_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *match_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *regex_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Length (STRING -> INT) */
-struct searchNode *length_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *length_parse(searchCtx *ctx, int argc, char **argv);
 
 /* kill/gline actions (BOOL) */
-struct searchNode *kill_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *gline_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv);
 
 /* notice action (BOOL) */
-struct searchNode *notice_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Nick/Channel functions (various types) */
-struct searchNode *nick_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *modes_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Nick functions (various types) */
-struct searchNode *hostmask_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *realname_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authname_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authts_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *ident_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *host_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *channel_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *timestamp_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *country_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *ip_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *channels_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *server_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authid_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *realname_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authname_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authts_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ident_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *channel_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *timestamp_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ip_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
-struct searchNode *exists_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *services_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *size_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *name_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *topic_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *oppct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *hostpct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *authedpct_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *kick_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *services_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *size_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *name_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *topic_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *oppct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *hostpct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *authedpct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Interpret a string to give a node */
-struct searchNode *search_parse(searchCtx *ctx, int type, char *input);
+struct searchNode *search_parse(searchCtx *ctx, char *input);
 
 /* Iteration functions */
-struct searchNode *any_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *all_parse(searchCtx *ctx, int type, int argc, char **argv);
-struct searchNode *var_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *any_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *all_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *var_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Iteraterable functions */
-struct searchNode *channeliter_parse(searchCtx *ctx, int type, int argc, char **argv);
+struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Force a node to return the thing you want */
 struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int type);
 
 /* Registration functions */
-void registersearchterm(char *term, parseFunc parsefunc);
-void deregistersearchterm(char *term, parseFunc parsefunc);
-void regchandisp(const char *name, ChanDisplayFunc handler);
-void unregchandisp(const char *name, ChanDisplayFunc handler);
-void regnickdisp(const char *name, NickDisplayFunc handler);
-void unregnickdisp(const char *name, NickDisplayFunc handler);
-void reguserdisp(const char *name, UserDisplayFunc handler);
-void unreguserdisp(const char *name, UserDisplayFunc handler);
+searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void *defaultdisplayfunc);
+void deregistersearchcommand(searchCmd *scmd);
+void registersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc, int level, char *help);
+void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc);
+
+void registerglobalsearchterm(char *term, parseFunc parsefunc, char *help);
+void deregisterglobalsearchterm(char *term, parseFunc parsefunc);
+
+void regdisp( searchCmd *cmd, const char *name, void *handler, int level, char *help);
+void unregdisp( searchCmd *cmd, const char *name, void *handler);
 
 /* Special nick* printf */
 void nssnprintf(char *, size_t, const char *, nick *);
@@ -178,11 +191,11 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void literal_free(searchCtx *ctx, struct searchNode *thenode);
 
-struct searchVariable *var_register(searchCtx *ctx, int nstype, char *arg, int type);
-searchNode *var_get(searchCtx *ctx, int nstype, char *arg);
+struct searchVariable *var_register(searchCtx *ctx, char *arg, int type);
+searchNode *var_get(searchCtx *ctx, char *arg);
 void var_setstr(struct searchVariable *v, char *data);
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg);
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender);
 
 /* AST functions */
 
@@ -222,16 +235,22 @@ typedef struct searchASTNode {
 #define NSASTLiteral(data) __NSASTExpr(AST_NODE_LITERAL, literal, data)
 #define NSASTNode(fn, ...) __NSASTChild(__NSASTNode(fn, __VA_ARGS__))
 
-searchNode *search_astparse(searchCtx *, int, char *);
+searchNode *search_astparse(searchCtx *, char *);
 
 int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 
-char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr);
+char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
+
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void **display, CommandTree *sl, replyFunc reply, void *sender);
 
 /* erk */
-extern CommandTree *searchTree;
+extern searchList *globalterms;
+
+extern searchCmd *reg_nicksearch;
+extern searchCmd *reg_chansearch;
+extern searchCmd *reg_usersearch;
 
 extern UserDisplayFunc defaultuserfn;
 extern NickDisplayFunc defaultnickfn;
