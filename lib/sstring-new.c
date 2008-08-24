@@ -128,13 +128,13 @@ void sstring_dehash(sstring *ss) {
         } else {
           ssp->next=ss->next;
         }
-      }
 #endif
+      }
       return;
     }
   }
   
-  Error("sstring",ERR_WARNING,"sstring_dehash(): Unable to find string (ref=%d, length=%d) in hash: %s",ss->refcount,ss->length,ss->content);
+  Error("sstring",ERR_WARNING,"sstring_dehash(): Unable to find string (ref=%lu, length=%d) in hash: %s",ss->refcount,ss->length,ss->content);
 }
 
 sstring *getsstring(const char *inputstr, int maxlen) {
@@ -205,7 +205,9 @@ sstring *getsstring(const char *inputstr, int maxlen) {
       if (ssmemfree>sizeof(sstring)) {
         retval=(sstring *)ssmem;
         sunprotectb(mblock);
+#ifdef USE_VALGRIND
         retval->block=mblock;
+#endif
         retval->alloc=(ssmemfree-sizeof(sstring));
         retval->refcount=0;
         freesstring(retval);
