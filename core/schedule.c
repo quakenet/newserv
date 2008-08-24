@@ -264,7 +264,7 @@ void doscheduledevents(time_t when) {
     schedule_heapify(0);
     
     if (sp->callback==NULL) {
-      Error("core",ERR_ERROR,"Tried to call NULL function in doscheduledevents(): (%x, %x, %x)",sp,sp->callback,sp->callbackparam);
+      Error("core",ERR_ERROR,"Tried to call NULL function in doscheduledevents(): (%p, %p, %p)",sp,sp->callback,sp->callbackparam);
       continue;
     }
 

@@ -165,9 +165,9 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
               if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
                 nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
                 if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-                  irc_send("%s GL * +*@%s %u %d :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
+                  irc_send("%s GL * +*@%s %u %zu :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
                 else
-                  irc_send("%s GL * +%s@%s %u %d :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
+                  irc_send("%s GL * +%s@%s %u %zu :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
               }
               else
                 safe++;
@@ -185,9 +185,9 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
           if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
             nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
             if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-              irc_send("%s GL * +*@%s %u %d :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
+              irc_send("%s GL * +*@%s %u %zu :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
             else
-              irc_send("%s GL * +%s@%s %u %d :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
+              irc_send("%s GL * +%s@%s %u %zu :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, ti, msgbuf);
           }
           else
               safe++;

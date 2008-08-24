@@ -84,7 +84,7 @@ void noperserv_load_users(DBConn *dbconn, void *arg) {
       lastuserid = nu->id;
   }
 
-  Error("noperserv", ERR_INFO, "Loaded %d users", loadedusers);
+  Error("noperserv", ERR_INFO, "Loaded %lu users", loadedusers);
   
   for(i=0;i<NICKHASHSIZE;i++)
     for(np=nicktable[i];np;np=np->next)
@@ -151,7 +151,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    dbquery("DELETE FROM noperserv.users WHERE id = %d", au->id);
+    dbquery("DELETE FROM noperserv.users WHERE id = %lu", au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {

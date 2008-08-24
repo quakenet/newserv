@@ -62,7 +62,7 @@ int handle_serverdata(struct rline *li, int argc, char **argv) {
     if(fsget_m(m, entry, t - m->entry[entry].freq * i, &v)) {
       ret = ri_append(li, "%d", v);
     } else {
-      ret = ri_append(li, "-1", v);
+      ret = ri_append(li, "-1");
     }
     if(ret == BF_OVER)
       return ri_error(li, BF_OVER, "Buffer overflow");

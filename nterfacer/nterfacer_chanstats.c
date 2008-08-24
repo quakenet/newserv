@@ -106,7 +106,7 @@ int handle_chanstats(struct rline *li, int argc, char **argv) {
   for(j=2;j<14;) {
     ri_append(li, "%.1f", details[j++]);
     ri_append(li, "%.1f%%", details[j++]);
-    ri_append(li, "%d%%", details[j++]);
+    ri_append(li, "%f%%", details[j++]);
   }
 
   return ri_final(li);

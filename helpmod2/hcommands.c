@@ -2155,7 +2155,7 @@ static void helpmod_cmd_mode(huser *sender, channel* returntype, int change, cha
         husr = huser_get(getnickbynick(argv[i]));
         if (husr == NULL)
         {
-            helpmod_reply(sender, returntype, "Cannot change mode: User %s not found", argv[i], hchannel_get_name(hchan));
+            helpmod_reply(sender, returntype, "Cannot change mode: User %s not found", argv[i]);
             continue;
         }
         huserchan = huser_on_channel(husr, hchan);
@@ -3553,9 +3553,9 @@ void helpmod_cmd_status (huser *sender, channel* returntype, char* ostr, int arg
     helpmod_reply(sender, returntype, "Channels          %d", hchannel_count());
     helpmod_reply(sender, returntype, "Accounts          %d", haccount_count(H_ANY));
     helpmod_reply(sender, returntype, "Users             %d", huser_count());
-    helpmod_reply(sender, returntype, "Help entries      %d", helpmod_entry_count(helpmod_base));
+    helpmod_reply(sender, returntype, "Help entries      %ld", helpmod_entry_count(helpmod_base));
     helpmod_reply(sender, returntype, "Bans              %d", hban_count());
-    helpmod_reply(sender, returntype, "Help provided     %d", helpmod_usage);
+    helpmod_reply(sender, returntype, "Help provided     %ld", helpmod_usage);
     helpmod_reply(sender, returntype, "Tickets           %d", hticket_count());
 }
 

@@ -230,7 +230,7 @@ int handlejoinmsg(void *source, int cargc, char **cargv) {
   /* Find out who we are talking about here */
   np=getnickbynumericstr(source);
   if (np==NULL) {
-    Error("channel",ERR_WARNING,"Channel join from non existent user %s",source);
+    Error("channel",ERR_WARNING,"Channel join from non existent user %s",(char *)source);
     return CMD_OK;  
   }
   
@@ -325,7 +325,7 @@ int handlecreatemsg(void *source, int cargc, char **cargv) {
   /* Find out who we are talking about here */
   np=getnickbynumericstr(source);
   if (np==NULL) {
-    Error("channel",ERR_WARNING,"Channel create from non existent user %s",source);
+    Error("channel",ERR_WARNING,"Channel create from non existent user %s",(char *)source);
     return CMD_OK;  
   }
   
@@ -408,7 +408,7 @@ int handlepartmsg(void *source, int cargc, char **cargv) {
   /* Find out who we are talking about here */
   np=getnickbynumericstr(source);
   if (np==NULL) {
-    Error("channel",ERR_WARNING,"PART from non existent numeric %s",source);
+    Error("channel",ERR_WARNING,"PART from non existent numeric %s",(char *)source);
     return CMD_OK;  
   }
   
@@ -455,7 +455,7 @@ int handlekickmsg(void *source, int cargc, char **cargv) {
   
   /* Find out who we are talking about here */
   if ((np=getnickbynumericstr(cargv[1]))==NULL) {
-    Error("channel",ERR_DEBUG,"Non-existant numeric %s kicked from channel %s",source,cargv[0]);
+    Error("channel",ERR_DEBUG,"Non-existant numeric %s kicked from channel %s",(char *)source,cargv[0]);
     return CMD_OK;  
   }
 

@@ -279,7 +279,7 @@ void rg_dodelay(void *arg) {
   }
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
-  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -343,7 +343,7 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
     hitssaved = strtoul(dbgetvalue(dbres, 8), NULL, 10);
 
     if (!rg_newsstruct(id, gline, setby, reason, expires, type, 0, class, lastseen, hitssaved))
-      dbquery("DELETE FROM regexgline.glines WHERE id = %u", id);
+      dbquery("DELETE FROM regexgline.glines WHERE id = %lu", id);
   }
 
   dbclear(dbres);
@@ -496,7 +496,7 @@ int rg_gline(void *source, int cargc, char **cargv) {
   dbescapestring(eereason, reason, strlen(reason));
   
   highestid = highestid + 1;
-  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type, class, lastseen, hits) VALUES (%d, '%s', '%s', '%s', %d, %c, '%s', 0, 0)", highestid, eemask, eesetby, eereason, realexpiry, type, eeclass);
+  dbquery("INSERT INTO regexgline.glines (id, gline, setby, reason, expires, type, class, lastseen, hits) VALUES (%lu, '%s', '%s', '%s', %lu, %c, '%s', 0, 0)", highestid, eemask, eesetby, eereason, realexpiry, type, eeclass);
   rp = rg_newsstruct(highestid, regex, np->nick, reason, "", cargv[2], realexpiry, class, 0, 0);
   
   rg_initglinelist(&gll);
@@ -697,7 +697,7 @@ int rg_glist(void *source, int cargc, char **cargv) {
       pcre_free(hint);
     
   } else {
-    rg_logevent(np, "regexglist", "");
+    rg_logevent(np, "regexglist", NULL);
     controlreply(np, GLINE_HEADER);
     for(rp=rg_list;rp;rp=rp->next)
       if(rp->mask->length > longest)
@@ -1106,7 +1106,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   rg_shadowserver(np, rp, rp->type);
-  irc_send("%s GL * +%s %d %d :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
 
@@ -1139,11 +1139,15 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
   int masklen;
 
   va_list va;
-    
-  va_start(va, details);
-  vsnprintf(buf, sizeof(buf), details, va);
-  va_end(va);
-  
+
+  if(details) {
+    va_start(va, details);
+    vsnprintf(buf, sizeof(buf), details, va);
+    va_end(va);
+  } else {
+    buf[0] = '\0';
+  }
+
   if(np) {
     if (IsAccount(np)) {
       strncpy(account, np->authname, sizeof(account) - 1);
@@ -1207,7 +1211,7 @@ void rg_flush_schedule(void *arg) {
     if(!l->dirty)
       continue;
 
-    dbquery("UPDATE regexgline.glines SET lastseen = %u, hits = %u WHERE id = %u", l->lastseen, l->hitssaved, l->id);
+    dbquery("UPDATE regexgline.glines SET lastseen = %zu, hits = %lu WHERE id = %d", l->lastseen, l->hitssaved, l->id);
 
     l->dirty = 0;
   }

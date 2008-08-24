@@ -1042,7 +1042,7 @@ INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
               continue;
 
             if((np2=getnickbynumeric(cp->users->content[i]))==NULL) {
-              Error("lua", ERR_ERROR, "Found unknown numeric %u on channel %s", cp->users->content[i], cp->index->name->content);
+              Error("lua", ERR_ERROR, "Found unknown numeric %lu on channel %s", cp->users->content[i], cp->index->name->content);
               continue;
             }
 

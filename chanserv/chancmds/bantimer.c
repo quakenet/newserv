@@ -72,7 +72,7 @@ int csc_dobantimer(void *source, int cargc, char **cargv) {
       
     csdb_updatechannel(rcp);
     
-    cs_log(sender,"BANTIMER %s %s (%u -> %u)",cip->name->content,cargv[1],oldtimer,rcp->banduration);
+    cs_log(sender,"BANTIMER %s %s (%u -> %lu)",cip->name->content,cargv[1],oldtimer,rcp->banduration);
     chanservstdmessage(sender, QM_DONE);
     cs_timerfunc(cip);
   }

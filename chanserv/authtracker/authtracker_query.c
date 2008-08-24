@@ -31,7 +31,7 @@ void at_lognewsession(unsigned int userid, nick *np) {
   dbescapestring(eschost, np->host->name->content, np->host->name->length);
 
   dbquery("INSERT INTO chanserv.authhistory (userID, nick, username, host, authtime, disconnecttime, numeric) "
-    "VALUES (%lu, E'%s', E'%s', E'%s', %lu, %lu, %u)",
+    "VALUES (%u, E'%s', E'%s', E'%s', %lu, %lu, %lu)",
     userid, escnick, escuser, eschost, np->accountts, 0UL, np->numeric);
 }
 

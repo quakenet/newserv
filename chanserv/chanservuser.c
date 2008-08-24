@@ -673,7 +673,7 @@ void cs_docheckopvoice(channel *cp, modechanges *changes) {
       continue;
       
     if ((np=getnickbynumeric(cp->users->content[i]))==NULL) {
-      Error("chanserv",ERR_ERROR,"Found non-existent numeric %d on channel %s",cp->users->content[i],
+      Error("chanserv",ERR_ERROR,"Found non-existent numeric %lu on channel %s",cp->users->content[i],
             cp->index->name->content);
       continue;
     }
@@ -832,7 +832,7 @@ void cs_checkbans(channel *cp) {
       continue;
     
     if ((np=getnickbynumeric(cp->users->content[i]))==NULL) {
-      Error("chanserv",ERR_ERROR,"Found numeric %d on channel %s who doesn't exist.",
+      Error("chanserv",ERR_ERROR,"Found numeric %lu on channel %s who doesn't exist.",
 	    cp->users->content[i], cp->index->name->content);
       continue;
     }
