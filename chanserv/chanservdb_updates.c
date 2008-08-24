@@ -89,7 +89,7 @@ void csdb_updatechannel(regchan *rcp) {
 		  rcp->founder, rcp->addedby, rcp->suspendby, rcp->suspendtime,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
-		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp,rcp->ID);
+		  escwelcome,esctopic,esckey,escreason,esccomment,(intmax_t)rcp->ltimestamp,rcp->ID);
 }
 
 void csdb_updatechannelcounters(regchan *rcp) {
@@ -106,7 +106,7 @@ void csdb_updatechannelcounters(regchan *rcp) {
 void csdb_updatechanneltimestamp(regchan *rcp) {
   dbquery("UPDATE chanserv.channels SET "
 		  "lasttimestamp=%jd WHERE ID=%u",
-		  rcp->ltimestamp, rcp->ID);
+		  (intmax_t)rcp->ltimestamp, rcp->ID);
 }
 
 void csdb_createchannel(regchan *rcp) {
@@ -159,7 +159,7 @@ void csdb_createchannel(regchan *rcp) {
 		  rcp->founder, rcp->addedby, rcp->suspendby, rcp->suspendtime,
 		  rcp->chantype,rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
-		  escwelcome,esctopic,esckey,escreason,esccomment,rcp->ltimestamp);
+		  escwelcome,esctopic,esckey,escreason,esccomment,(intmax_t)rcp->ltimestamp);
 }
 
 void csdb_deletechannel(regchan *rcp) {
@@ -449,7 +449,7 @@ void csdb_createmaillock(maillock *mlp) {
     escreason[0]='\0';
 
   dbquery("INSERT INTO chanserv.maillocks (id, pattern, reason, createdby, created) VALUES(%u, '%s', '%s', %u, %jd)",
-          mlp->id,escpattern,escreason,mlp->createdby,mlp->created);
+          mlp->id,escpattern,escreason,mlp->createdby,(intmax_t)mlp->created);
 }
 
 void csdb_updatemaillock(maillock *mlp) {
@@ -462,6 +462,6 @@ void csdb_updatemaillock(maillock *mlp) {
   else
     escreason[0]='\0';
 
-  dbquery("UPDATE chanserv.maillocks SET pattern='%s', reason='%s', createdby=%u, created=%jd WHERE ID=%u", escpattern, escreason, mlp->createdby, mlp->created, mlp->id);
+  dbquery("UPDATE chanserv.maillocks SET pattern='%s', reason='%s', createdby=%u, created=%jd WHERE ID=%u", escpattern, escreason, mlp->createdby, (intmax_t)mlp->created, mlp->id);
 }
 

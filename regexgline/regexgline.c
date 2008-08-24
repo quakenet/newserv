@@ -279,7 +279,7 @@ void rg_dodelay(void *arg) {
   }
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
-  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), delay->reason->reason->content, delay->reason->glineid);
+  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), delay->reason->reason->content, delay->reason->glineid);
   rg_deletedelay(delay);
 }
 
@@ -1106,7 +1106,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   rg_shadowserver(np, rp, rp->type);
-  irc_send("%s GL * +%s %d %zu :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, time(NULL), rp->reason->content, rp->glineid);
+  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
   return usercount;
 }
 
@@ -1211,7 +1211,7 @@ void rg_flush_schedule(void *arg) {
     if(!l->dirty)
       continue;
 
-    dbquery("UPDATE regexgline.glines SET lastseen = %zu, hits = %lu WHERE id = %d", l->lastseen, l->hitssaved, l->id);
+    dbquery("UPDATE regexgline.glines SET lastseen = %jd, hits = %lu WHERE id = %d", (intmax_t)l->lastseen, l->hitssaved, l->id);
 
     l->dirty = 0;
   }

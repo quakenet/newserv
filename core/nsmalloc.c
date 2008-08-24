@@ -118,7 +118,7 @@ void nscheckfreeall(unsigned int poolid) {
     return;
  
   if (nsmpools[poolid].first.next) {
-    Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%s): %lub, %lu items",poolid,nsmpoolnames[poolid]?nsmpoolnames[poolid]:"??",nsmpools[poolid].size,nsmpools[poolid].count);
+    Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%s): %zub, %lu items",poolid,nsmpoolnames[poolid]?nsmpoolnames[poolid]:"??",nsmpools[poolid].size,nsmpools[poolid].count);
     nsfreeall(poolid);
   }
 }

@@ -47,7 +47,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
        * match the existing timestamp, and we can bypass all the collision checking and hash fettling. */
       if (np->timestamp!=timestamp) {
         Error("nick",ERR_WARNING,"Rename to same nickname with different timestamp (%s(%jd) -> %s(%jd))",
-                            np->nick,np->timestamp,cargv[0],timestamp);
+                            np->nick,(intmax_t)np->timestamp,cargv[0], (intmax_t)timestamp);
         np->timestamp=timestamp;
       }
       strncpy(np->nick,cargv[0],NICKLEN);
