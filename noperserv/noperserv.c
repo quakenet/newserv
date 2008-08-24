@@ -74,7 +74,7 @@ int noperserv_noticeflags(void *sender, int cargc, char **cargv);
 int noperserv_userflags(void *sender, int cargc, char **cargv);
 int noperserv_deluser(void *sender, int cargc, char **cargv);
 void noperserv_oper_detection(int hooknum, void *arg);
-void noperserv_reply(nick *np, char *format, ...);
+void noperserv_reply(nick *np, char *format, ...) __attribute__ ((format (printf, 2, 3)));
 
 int init = 0;
 

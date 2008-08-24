@@ -42,7 +42,7 @@ int noperserv_help(void *sender, int cargc, char **cargv);
 void noperserv_whois_handler(int hooknum, void *arg);
 void noperserv_whois_account_handler(int hooknum, void *arg);
 void noperserv_handle_messages(nick *target, int messagetype, void **args);
-void noperserv_reply(nick *np, char *format, ...);
+void noperserv_reply(nick *np, char *format, ...) __attribute__ ((format (printf, 2, 3)));
 void noperserv_wall(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
 
 struct specialsched special;

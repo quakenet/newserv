@@ -21,7 +21,7 @@ extern time_t starttime;
 /* Functions from irc.c */
 void irc_connect(void *arg);
 void irc_disconnected();
-void irc_send(char *format, ... );
+void irc_send(char *format, ... ) __attribute__ ((format (printf, 1, 2)));
 void handledata(int fd, short events);
 int parseline();
 int registerserverhandler(const char *command, CommandHandler handler, int maxparams);

@@ -81,7 +81,7 @@ void rg_displaygline(nick *np, struct rg_struct *rp, int longest);
 
 void rg_checkexpiry(void *arg);
 
-void rg_logevent(nick *np, char *event, char *details, ...);
+void rg_logevent(nick *np, char *event, char *details, ...) __attribute__ ((format (printf, 3, 4)));
 void rg_loggline(struct rg_struct *rg, nick *np);
 
 unsigned char rc_hexlookup[256] = {

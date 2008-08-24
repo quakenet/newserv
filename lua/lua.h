@@ -111,7 +111,7 @@ extern struct rusage r_usagee;
 
 #ifdef LUA_DEBUGSOCKET
 
-void lua_debugoutput(char *p, ...);
+void lua_debugoutput(char *p, ...) __attribute__ ((format (printf, 1, 2)));
 #define DEBUGOUT(p, ...) lua_debugoutput(p , ##__VA_ARGS__)
 
 #endif

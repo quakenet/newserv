@@ -80,8 +80,8 @@ void deregister_handler(struct handler *hp);
 int respond(struct rline *li, int argc, ...);
 int error_respond(struct rline *li, int error_code, char *format, ...);
 
-int ri_append(struct rline *li, char *format, ...);
-int ri_error(struct rline *li, int error_code, char *format, ...);
+int ri_append(struct rline *li, char *format, ...) __attribute__ ((format (printf, 2, 3)));
+int ri_error(struct rline *li, int error_code, char *format, ...) __attribute__ ((format (printf, 3, 4)));
 int ri_final(struct rline *li);
 
 int load_permits(void);

@@ -8,15 +8,15 @@
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *help);
 int deregistercontrolcmd(const char *name, CommandHandler handler);
-void controlmessage(nick *target, char *message, ... );
-void controlchanmsg(channel *cp, char *message, ...);
-void controlnotice(nick *target, char *message, ...);
+void controlmessage(nick *target, char *message, ... ) __attribute__ ((format (printf, 2, 3)));
+void controlchanmsg(channel *cp, char *message, ...) __attribute__ ((format (printf, 2, 3)));
+void controlnotice(nick *target, char *message, ...) __attribute__ ((format (printf, 2, 3)));
 int controlshowcommands(void *sender, int cargc, char **cargv);
 int controlrmmod(void *sender, int cargc, char **cargv);
 void controlspecialrmmod(void *arg);
 void controlspecialreloadmod(void *arg);
 void controlhelp(nick *np, Command *cmd);
-void controlnswall(int noticelevel, char *format, ...);
+void controlnswall(int noticelevel, char *format, ...) __attribute__ ((format (printf, 2, 3)));
 
 #define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
 

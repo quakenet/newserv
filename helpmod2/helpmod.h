@@ -51,12 +51,12 @@ extern time_t helpmod_startup_time;
 
 void hcommit_modes(void);
 
-void helpmod_reply(huser *target, channel* returntype, const char *message, ... );
+void helpmod_reply(huser *target, channel* returntype, const char *message, ... ) __attribute__ ((format (printf, 3, 4)));
 
-void helpmod_message_channel_long(hchannel *hchan, const char *message, ...);
-void helpmod_message_channel(hchannel *hchan, const char *message, ...);
+void helpmod_message_channel_long(hchannel *hchan, const char *message, ...) __attribute__ ((format (printf, 2, 3)));
+void helpmod_message_channel(hchannel *hchan, const char *message, ...) __attribute__ ((format (printf, 2, 3)));
 
-void helpmod_kick(hchannel *hchan, huser *target, const char *reason, ...);
+void helpmod_kick(hchannel *hchan, huser *target, const char *reason, ...) __attribute__ ((format (printf, 3, 4)));
 
 void helpmod_invite(hchannel *, huser *);
 

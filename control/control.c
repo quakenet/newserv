@@ -49,7 +49,7 @@ int controllsmod(void *sender, int cargc, char **cargv);
 int controlrehash(void *sender, int cargc, char **cargv);
 int controlreload(void *sender, int cargc, char **cargv);
 int controlhelpcmd(void *sender, int cargc, char **cargv);
-void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
+void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...) __attribute__ ((format (printf, 3, 4)));
 void handlerehash(int hooknum, void *arg);
 
 void _init() {

@@ -47,6 +47,8 @@ void lua_initchanpusher(void);
 #define lua_setupnickpusher(L2, I2, P2, M2) lua_setuppusher(&nickpusher[0], L2, I2, P2, M2, nickpushercount)
 #define lua_setupchanpusher(L2, I2, P2, M2) lua_setuppusher(&chanpusher[0], L2, I2, P2, M2, chanpushercount)
 
+int lua_cmsg(char *channell, char *message, ...) __attribute__ ((format (printf, 2, 3)));
+
 int lua_cmsg(char *channell, char *message, ...) {
   char buf[512];
   va_list va;

@@ -118,7 +118,7 @@ void esocket_disconnect(struct esocket *active);
 int buffer_parse_ascii(struct esocket *sock);
 int esocket_read(struct esocket *sock);
 int esocket_write(struct esocket *sock, char *buffer, int bytes);
-int esocket_write_line(struct esocket *sock, char *format, ...);
+int esocket_write_line(struct esocket *sock, char *format, ...) __attribute__ ((format (printf, 2, 3)));
 unsigned short esocket_token(void);
 struct esocket *find_esocket_from_fd(int fd);
 void esocket_clean_by_token(unsigned short token);

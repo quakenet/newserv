@@ -55,7 +55,7 @@ typedef struct corehandler {
   struct corehandler *prev, *next;
 } corehandler;
 
-void Error(char *source, int severity, char *reason, ... );
+void Error(char *source, int severity, char *reason, ... ) __attribute__ ((format (printf, 3, 4)));
 
 corehandler *registercorehandler(CoreHandlerFn fn, void *arg);
 void deregistercorehandler(corehandler *c);
