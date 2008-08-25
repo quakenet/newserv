@@ -217,7 +217,10 @@ void _init() {
   
   /* Iterable functions */
   registersearchterm(reg_nicksearch, "channeliter",channeliter_parse, 0, "Channel Iterable function - usage: (any (channeliter x) (match (var x) #twilight*))");         /* nick only */
-  
+
+  /* Functions that work on strings?! */
+  registersearchterm(reg_nicksearch, "cumodes", cumodes_parse, 0, "usage: (cumodes (var x) <modes>)");
+    
   /* Notice functionality */
   registersearchterm(reg_chansearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
   registersearchterm(reg_nicksearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
