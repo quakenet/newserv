@@ -69,23 +69,23 @@ void _init() {
     schedulerecurring(time(NULL), 0, CFEXPIREINTERVAL, &cfsched_doexpire, NULL);
     schedulerecurring(time(NULL), 0, CFAUTOSAVEINTERVAL, &cfsched_dosave, NULL);
 
-    registercontrolcmd("cfdebug", 10, 1, &cfcmd_debug);
-    registercontrolcmd("cfhistogram", 10, 1, &cfcmd_debughistogram);
+    registercontrolhelpcmd("cfdebug", NO_DEVELOPER, 1, &cfcmd_debug, "Display Debug Information on chanfix data for channel");
+    registercontrolhelpcmd("cfhistogram", NO_DEVELOPER, 1, &cfcmd_debughistogram, "Display Debug Histogram of chanfix data for channel");
 #if CFDEBUG
-    registercontrolcmd("cfsample", 10, 1, &cfcmd_debugsample);
-    registercontrolcmd("cfexpire", 10, 1, &cfcmd_debugexpire);
+    registercontrolhelpcmd("cfsample", NO_DEVELOPER, &cfcmd_debugsample, "DEBUG Command - must not be loaded on live instances");
+    registercontrolhelpcmd("cfexpire", NO_DEVELOPER, 1, &cfcmd_debugexpire, "DEBUG Command - must not be loaded on live instances");
 #endif
-    registercontrolcmd("chanopstat", 10, 1, &cfcmd_chanopstat);
-    registercontrolcmd("chanoplist", 10, 1, &cfcmd_chanoplist);
+    registercontrolhelpcmd("chanopstat", NO_OPER, 1, &cfcmd_chanopstat, "Shows chanop statistics for a given channel");
+    registercontrolhelpcmd("chanoplist", NO_OPER, 1, &cfcmd_chanoplist, "Shows lists of known chanops, including scores");
 
-    registercontrolcmd("chanfix", 10, 1, &cfcmd_chanfix);
-    registercontrolcmd("showregs", 10, 1, &cfcmd_showregs);
+    registercontrolhelpcmd("chanfix", NO_OPER, 1, &cfcmd_chanfix, "Perform a chanfix on a channel to op known users only");
+    registercontrolhelpcmd("showregs", NO_OPER, 1, &cfcmd_showregs, "Show regular ops known on a channel (including services)");
 #if CFDEBUG
     /* should we disable this in the 'final' build? */
-//    registercontrolcmd("requestop", 0, 2, &cfcmd_requestop);
+    /* registercontrolcmd("requestop", 0, 2, &cfcmd_requestop); */
 #endif
-    registercontrolcmd("cfsave", 10, 0, &cfcmd_save);
-    registercontrolcmd("cfload", 10, 0, &cfcmd_load);
+    registercontrolhelpcmd("cfsave", NO_DEVELOPER, 0, &cfcmd_save, "Force save of chanfix data");
+    registercontrolhelpcmd("cfload", NO_DEVELOPER, 0, &cfcmd_load, "Force load of chanfix data");
 
 #if CFAUTOFIX
     registerhook(HOOK_CHANNEL_DEOPPED, &cfhook_autofix);
