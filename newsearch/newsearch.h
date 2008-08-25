@@ -246,7 +246,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
-int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void **display, CommandTree *sl, replyFunc reply, void *sender);
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender);
 
 /* erk */
 extern searchList *globalterms;

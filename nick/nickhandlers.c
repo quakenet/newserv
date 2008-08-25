@@ -389,7 +389,7 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   nick *target;
   unsigned long userid;
   time_t accountts;
-  u_int64_t accountflags, oldflags;
+  u_int64_t accountflags=0, oldflags;
 
   if (cargc<4) {
     return CMD_OK;

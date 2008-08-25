@@ -54,7 +54,7 @@ char *getdomainmode(maildomain *mdp) {
 int checkdomain(char *dom) {
   const char *validchars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
   int hypok=0;
-  char lastch;
+  char lastch = '\0';
   char *ch;
   
   for (ch=dom;*ch;ch++) {

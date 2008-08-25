@@ -65,7 +65,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
   if (cargc<1)
     return CMD_USAGE;
 
-  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, reg_nodesearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void *)&display, reg_nodesearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
