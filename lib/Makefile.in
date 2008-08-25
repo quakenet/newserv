@@ -11,7 +11,7 @@ sstring-new:
 	rm -f sstring.c sstring.h
 	ln -s sstring-new.c sstring.c
 	ln -s sstring-new.h sstring.h
-	echo warning: you must recompile newserv from scratch to use a different string library (make clean)
+	@echo "WARNING: you must recompile newserv from scratch to use a different string library (make clean)"
 
 .PHONY: all
 all: sstring.o array.o splitline.o base64.o flags.o irc_string.o strlfunc.o sha1.o irc_ipv6.o rijndael.o sha2.o hmac.o prng.o md5.o stringbuf.o
