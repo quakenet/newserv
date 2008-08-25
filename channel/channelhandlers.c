@@ -508,9 +508,11 @@ int handletopicmsg(void *source, int cargc, char **cargv) {
   if (cargc>3)
     timestamp=strtol(cargv[cargc-3], NULL, 10);
   
+  np=getnickbynumericstr((char *)source);
+
   /* The following check removed because servers can set topics.. */
 #if 0
-  if ((np=getnickbynumericstr((char *)source))==NULL) {
+  if (np==NULL) {
     /* We should check the sender exists, but we still change the topic even if it doesn't */
     Error("channel",ERR_WARNING,"Topic change by non-existent user %s",(char *)source);
   }

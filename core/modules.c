@@ -390,19 +390,21 @@ void setreloadmark(struct module_dep *mdp) {
 void preparereload(char *modulename) {
   unsigned int i;
   struct module_dep *mdp;
-  
-  delchars(modulename,"./\\;");
+  char modulebuf[1024];
+
+  strlcpy(modulebuf, modulename, sizeof(modulebuf));
+  delchars(modulebuf,"./\\;");
   
   /* First, clear the mark off all dependant modules */
   for (i=0;i<knownmodules;i++)
     moduledeps[i].reloading=0;
 
   /* Do nothing if this module is not loaded */
-  i=getindex(modulename);
+  i=getindex(modulebuf);
   if (i<0)
     return;
     
-  if ((mdp=getmoduledep(modulename))) {
+  if ((mdp=getmoduledep(modulebuf))) {
     setreloadmark(mdp);
   }
 }

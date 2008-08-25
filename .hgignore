@@ -28,4 +28,5 @@ config.h
 settings.mk
 graphing/dump
 silly
-
+core/hooks.c
+lib/sstring.c

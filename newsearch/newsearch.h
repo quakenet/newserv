@@ -155,6 +155,9 @@ struct searchNode *var_parse(searchCtx *ctx, int argc, char **argv);
 /* Iteraterable functions */
 struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv);
 
+/* Functions that operate on strings */
+struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv);
+
 /* Force a node to return the thing you want */
 struct searchNode *coerceNode(searchCtx *ctx, struct searchNode *thenode, int type);
 
@@ -243,7 +246,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
-int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void **display, CommandTree *sl, replyFunc reply, void *sender);
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender);
 
 /* erk */
 extern searchList *globalterms;

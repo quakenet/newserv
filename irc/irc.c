@@ -535,7 +535,7 @@ time_t getnettime() {
 
 void setnettime(time_t newtime) {
   timeoffset=newtime-time(NULL);
-  Error("irc",ERR_INFO,"setnettime: Time offset is now %lu",timeoffset);
+  Error("irc",ERR_INFO,"setnettime: Time offset is now %ld",timeoffset);
 }
 
 int handleping(void *sender, int cargc, char **cargv) {

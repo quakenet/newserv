@@ -217,7 +217,10 @@ void _init() {
   
   /* Iterable functions */
   registersearchterm(reg_nicksearch, "channeliter",channeliter_parse, 0, "Channel Iterable function - usage: (any (channeliter x) (match (var x) #twilight*))");         /* nick only */
-  
+
+  /* Functions that work on strings?! */
+  registersearchterm(reg_nicksearch, "cumodes", cumodes_parse, 0, "usage: (cumodes (var x) <modes>)");
+    
   /* Notice functionality */
   registersearchterm(reg_chansearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
   registersearchterm(reg_nicksearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
@@ -349,7 +352,7 @@ static void controlwallwrapper(int level, char *format, ...) {
   va_end(ap);
 }
 
-int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void **display, CommandTree *sl, replyFunc reply, void *sender) {
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender) {
   char *ch;
   Command *cmd;
   struct irc_in_addr sin; unsigned char bits;
@@ -382,7 +385,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
           reply(sender,"Error: Access Denied for output format %s (for help, see help <searchcmd>)", cargv[*arg]);
           return CMD_ERROR;
         }
-        *display=(void *)cmd->handler;
+        *((void **)display)=(void *)cmd->handler;
         (*arg)++;
         break;
 
@@ -435,7 +438,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
  
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_nicksearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_nicksearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -525,7 +528,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
   
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_chansearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_chansearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -593,7 +596,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
  
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void **)&display, reg_usersearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_usersearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
