@@ -132,6 +132,7 @@ struct searchNode *ip_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
