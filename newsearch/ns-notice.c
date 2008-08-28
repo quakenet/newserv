@@ -28,7 +28,6 @@ struct notice_localdata {
 struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv) {
   struct notice_localdata *localdata;
   struct searchNode *thenode;
-  int len;
 
   if (!(localdata = (struct notice_localdata *) malloc(sizeof(struct notice_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -44,15 +43,7 @@ struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
   if (argc==1) {
-    char *p = argv[0];
-    if(*p == '\"')
-      p++;
-    len = strlcpy(localdata->message, p, sizeof(localdata->message));
-    if(len >= sizeof(localdata->message)) {
-      localdata->message[sizeof(localdata->message)-1] = '\0';
-    } else {
-      localdata->message[len-1] = '\0';
-    }
+    strlcpy(localdata->message, argv[0], sizeof(localdata->message));
   }
   else {
     /* no notice to send out ... */
