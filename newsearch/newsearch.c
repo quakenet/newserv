@@ -953,6 +953,7 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
     q=0;
     argvector[0]="";
     for (ch=input;*ch;ch++) {
+      /*printf("i: %d j: %d e: %d q: %d ch: '%c'\n", i, j, e, q, *ch);*/
       if (i==-1) {
         argvector[j]=ch;
         if (*ch=='(') {
@@ -968,8 +969,11 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
       } else if (e==1) {
         e=0;
       } else if (q==1) {
-        if (*ch=='\"')	
-        q=0;
+        if (*ch=='\\')	 {
+          e=1;
+        } else if (*ch=='\"')	{
+          q=0;
+        }
       } else if (i==0) {
         if (*ch=='\\') {
           e=1;
@@ -1008,7 +1012,7 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
     for(k=1;k<=j;k++)
       if(!unescape(argvector[k], argvector[k], sizeof(inputb)))
         return NULL;
-    
+
     if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
       parseError = "Unknown command (for valid command list, see help <searchcmd>)";
       return NULL;
