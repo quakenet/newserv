@@ -170,6 +170,9 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
   newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender);
 
+  memset(&cache, 0, sizeof(cache));
+  cache.tree = tree;
+
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_chansearch));
   search = ctx.parser(&ctx, (char *)tree);
