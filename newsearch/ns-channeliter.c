@@ -68,9 +68,10 @@ void *channeliter_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput
     localdata->currentchannel = 0;
   }
   
-  if(np->channels->cursi > MAX_CHANS)
+/*  if(np->channels->cursi > MAX_CHANS)
     return (void *)0;
-  
+*/
+
   if(localdata->currentchannel >= np->channels->cursi)
     return (void *)0;
   
