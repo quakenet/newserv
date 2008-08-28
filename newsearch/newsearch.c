@@ -879,15 +879,62 @@ void literal_free(searchCtx *ctx, struct searchNode *thenode) {
  *  Given an input string, return a searchNode.
  */
 
-struct searchNode *search_parse(searchCtx *ctx, char *input) {
+static int unescape(char *input, char *output, size_t buflen) {
+  char *ch, *ch2;
+  int e=0;
+  
+  if (*input=='\"') {
+    for (ch=input;*ch;ch++) {
+      if(ch - input >= buflen) {
+        parseError="Buffer overflow";
+        return 0;
+      }
+    }
+      
+    if (*(ch-1) != '\"') {
+      parseError="Quote mismatch";
+      return 0;
+    }
+
+    *(ch-1)='\0';
+    input++;
+  }
+    
+  ch2=output;
+  for (ch=input;*ch;ch++) {
+    if(ch - input >= buflen) {
+      parseError="Buffer overflow";
+      return 0;
+    }
+    
+    if (e) {
+      e=0;
+      *ch2++=*ch;
+    } else if (*ch=='\\') {
+      e=1;
+    } else {
+      *ch2++=*ch;
+    }
+  }
+  *ch2='\0';
+  
+  return 1;
+}
+
+struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */
   char *argvector[100];
+  char inputb[1024];
+  char *input;
   char thestring[500];
-  int i,j,q=0,e=0;
-  char *ch,*ch2;
+  int i,j,q=0,e=0,k;
+  char *ch;
   struct Command *cmd;
   struct searchNode *thenode;
 
+  strlcpy(inputb, cinput, sizeof(inputb));
+  input = inputb;
+  
   /* If it starts with a bracket, it's a function call.. */
   if (*input=='(') {
     /* Skip past string */
@@ -958,43 +1005,29 @@ struct searchNode *search_parse(searchCtx *ctx, char *input) {
     if (*(ch-1) == 0) /* if the last character was a space */
       j--; /* remove an argument */
     
+    for(k=1;k<=j;k++)
+      if(!unescape(argvector[k], argvector[k], sizeof(inputb)))
+        return NULL;
+    
     if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
       parseError = "Unknown command (for valid command list, see help <searchcmd>)";
       return NULL;
     } else {
-      if ( !controlpermitted( cmd->level, ctx->sender) ) { 
-        parseError = "Access Denied (for valid command list, see help <searchcmd>)";
+      if (!controlpermitted(cmd->level, ctx->sender)) { 
+        parseError = "Access denied (for valid command list, see help <searchcmd>)";
         return NULL;
       }
       return ((parseFunc)cmd->handler)(ctx, j, argvector+1);
     }
   } else {
     /* Literal */
-    if (*input=='\"') {
-      for (ch=input;*ch;ch++);
-      
-      if (*(ch-1) != '\"') {
-        parseError="Quote mismatch";
-        return NULL;
-      }
-
-      *(ch-1)='\0';
-      input++;
-    }
     
-    ch2=thestring;
-    for (ch=input;*ch;ch++) {
-      if (e) {
-        e=0;
-        *ch2++=*ch;
-      } else if (*ch=='\\') {
-        e=1;
-      } else {
-        *ch2++=*ch;
-      }
-    }
-    *ch2='\0';
-        
+    /* slug: disabled now we unescape during the main parse stage */
+    /*
+    if(!unescape(input, thestring, sizeof(thestring)))
+      return NULL;
+*/
+
     if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
       parseError = "malloc: could not allocate memory for this search.";
       return NULL;
