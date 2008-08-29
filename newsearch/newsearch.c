@@ -53,7 +53,7 @@ searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void
   addcommandtotree(searchCmdTree, name, 0, 0, (CommandHandler)acmd);
 
   for (sl=globalterms; sl; sl=sl->next) {
-    registersearchterm( acmd, sl->name->content, sl->cmd, 0, sl->help);
+    addcommandexttotree(acmd->searchtree, sl->name->content, 0, 1, (CommandHandler)sl->cmd, sl->help);
   }
 
   return acmd;
@@ -63,6 +63,7 @@ void deregistersearchcommand(searchCmd *scmd) {
   deregistercontrolcmd(scmd->name->content, (CommandHandler)scmd->handler);
   destroycommandtree(scmd->outputtree);
   destroycommandtree(scmd->searchtree);
+  deletecommandfromtree(searchCmdTree, scmd->name->content, (CommandHandler) scmd);
   freesstring(scmd->name);
   free(scmd);
 }

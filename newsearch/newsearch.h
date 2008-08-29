@@ -6,6 +6,9 @@
 #include "../authext/authext.h"
 #include "../patricia/patricia.h"
 
+#ifndef __NEWSEARCH_H
+#define __NEWSEARCH_H
+
 #define    NSMAX_KILL_LIMIT       500
 #define    NSMAX_GLINE_LIMIT      500
 #define    NSMAX_GLINE_CLONES     5
@@ -259,3 +262,4 @@ extern UserDisplayFunc defaultuserfn;
 extern NickDisplayFunc defaultnickfn;
 extern ChanDisplayFunc defaultchanfn;
 
+#endif
