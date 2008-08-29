@@ -388,7 +388,7 @@ void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t ol
     oldflags, newflags);
 }
 
-void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail) {
+void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *oldemail, char *newemail) {
   reguser *rup=getreguserfromnick(np);
   char escoldpass[30];
   char escnewpass[30];
@@ -409,20 +409,17 @@ void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring 
     escnewpass[0]='\0';
 
   if (oldemail)
-    dbescapestring(escoldemail, oldemail->content, oldemail->length);
+    dbescapestring(escoldemail, oldemail, strlen(oldemail));
   else
     escoldemail[0]='\0';
   if (newemail)
-    dbescapestring(escnewemail, newemail->content, newemail->length);
+    dbescapestring(escnewemail, newemail, strlen(newemail));
   else
     escnewemail[0]='\0';
 
   dbquery("INSERT INTO chanserv.accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, "
     "newemail) VALUES (%u, %lu, %lu, '%s', '%s', '%s', '%s')", rup->ID, getnettime(), np->accountts, escoldpass, escnewpass,
     escoldemail, escnewemail);
-
-  if (newemail)
-    freesstring(newemail);
 }
 
 void csdb_cleanuphistories() {

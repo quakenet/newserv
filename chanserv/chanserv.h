@@ -894,7 +894,7 @@ void csdb_deletemaildomain(maildomain *mdp);
 void csdb_createmaildomain(maildomain *mdp);
 void csdb_updatemaildomain(maildomain *mdp);
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
-void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, sstring *oldemail, sstring *newemail);
+void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *oldemail, char *newemail);
 void csdb_cleanuphistories();
 void csdb_deletemaillock(maillock *mlp);
 void csdb_createmaillock(maillock *mlp);
