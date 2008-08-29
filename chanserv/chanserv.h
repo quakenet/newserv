@@ -92,6 +92,9 @@
 
 #include "chanserv_messages.h"
 
+#define CSMIN(a, b) ((a)<(b)?(a):(b))
+#define CSMAX(a, b) ((a)>(b)?(a):(b))
+
 /* List of privileged operations */
 
 #define   QPRIV_SUSPENDBYPASS       1

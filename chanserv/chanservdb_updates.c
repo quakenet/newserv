@@ -390,30 +390,30 @@ void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t ol
 
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *oldemail, char *newemail) {
   reguser *rup=getreguserfromnick(np);
-  char escoldpass[30];
-  char escnewpass[30];
-  char escoldemail[130];
-  char escnewemail[130];
+  char escoldpass[PASSLEN*2+5];
+  char escnewpass[PASSLEN*2+5];
+  char escoldemail[EMAILLEN*2+5];
+  char escnewemail[EMAILLEN*2+5];
 
   if (!rup || UHasOperPriv(rup))
     return;
 
   if (oldpass)
-    dbescapestring(escoldpass, oldpass, strlen(oldpass));
+    dbescapestring(escoldpass, oldpass, CSMIN(strlen(oldpass), PASSLEN));
   else
     escoldpass[0]='\0';
 
   if (newpass)
-    dbescapestring(escnewpass, newpass, strlen(newpass));
+    dbescapestring(escnewpass, newpass, CSMIN(strlen(newpass), PASSLEN));
   else
     escnewpass[0]='\0';
 
   if (oldemail)
-    dbescapestring(escoldemail, oldemail, strlen(oldemail));
+    dbescapestring(escoldemail, oldemail, CSMIN(strlen(oldemail), EMAILLEN));
   else
     escoldemail[0]='\0';
   if (newemail)
-    dbescapestring(escnewemail, newemail, strlen(newemail));
+    dbescapestring(escnewemail, newemail, CSMIN(strlen(newemail), EMAILLEN));
   else
     escnewemail[0]='\0';
 
