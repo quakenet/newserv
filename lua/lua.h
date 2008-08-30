@@ -28,7 +28,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.88"
+#define LUA_BOTVERSION "1.89"
 #define LUA_CHANFIXBOT "D"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -68,7 +68,7 @@ typedef struct lua_list {
 
 #define LUA_ENDLOOP() } }
 
-#define LUA_PATHLEN 1024
+#define LUA_PATHLEN 150
 
 extern lua_list *lua_head;
 extern sstring *cpath;

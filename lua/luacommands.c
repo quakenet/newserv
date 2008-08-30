@@ -370,6 +370,12 @@ static int lua_basepath(lua_State *ps) {
   return 1;
 }
 
+static int lua_botnick(lua_State *ps) {
+  lua_pushstring(ps, luabotnick->content);
+
+  return 1;
+}
+
 /* O(n) */
 static int lua_getuserbyauth(lua_State *l) {
   const char *acc;
@@ -846,6 +852,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "chanmsg", lua_chanmsg);
   lua_register(l, "versioninfo", lua_versioninfo);
   lua_register(l, "basepath", lua_basepath);
+  lua_register(l, "botnick", lua_botnick);
 
   lua_register(l, "irc_report", lua_chanmsg);
   lua_register(l, "irc_ctcp", lua_ctcp);
