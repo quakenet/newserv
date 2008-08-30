@@ -1038,7 +1038,7 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
       return NULL;
     }
 
-    thenode->localdata  = getsstring(thestring,512);
+    thenode->localdata  = getsstring(input,512);
     thenode->returntype = RETURNTYPE_CONST | RETURNTYPE_STRING;
     thenode->exe        = literal_exe;
     thenode->free       = literal_free;
