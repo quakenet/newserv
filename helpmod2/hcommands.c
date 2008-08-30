@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#include "../lib/strlfunc.h"
+
 #include "hcommands.h"
 #include "hcommand.h"
 
@@ -766,7 +768,7 @@ static void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr,
     }
     else
     {
-        strcpy(hchan->welcome, ostr);
+        strlcpy(hchan->welcome, ostr, HCHANNEL_WELCOME_LEN);
         helpmod_reply(sender, returntype, "Welcome message for channel %s (%s) is now: %s", hchan->real_channel->index->name->content, hchannel_get_state(hchan, H_WELCOME), hchan->welcome);
     }
 }

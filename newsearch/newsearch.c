@@ -53,7 +53,7 @@ searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void
   addcommandtotree(searchCmdTree, name, 0, 0, (CommandHandler)acmd);
 
   for (sl=globalterms; sl; sl=sl->next) {
-    registersearchterm( acmd, sl->name->content, sl->cmd, 0, sl->help);
+    addcommandexttotree(acmd->searchtree, sl->name->content, 0, 1, (CommandHandler)sl->cmd, sl->help);
   }
 
   return acmd;
@@ -63,6 +63,7 @@ void deregistersearchcommand(searchCmd *scmd) {
   deregistercontrolcmd(scmd->name->content, (CommandHandler)scmd->handler);
   destroycommandtree(scmd->outputtree);
   destroycommandtree(scmd->searchtree);
+  deletecommandfromtree(searchCmdTree, scmd->name->content, (CommandHandler) scmd);
   freesstring(scmd->name);
   free(scmd);
 }
@@ -99,7 +100,7 @@ void displaycommandhelp(nick *np, Command *cmd) {
     }
 
     controlreply(np, " \n");
-    controlreply(np, "Available Global Search Terms:\n" );
+    controlreply(np, "Available Global Commands and Operators:\n" );
     m=getcommandlist(acmd->searchtree,acmdlist,100);
     for(j=0;j<m;j++) {
       if ( acmdlist[j]->maxparams) {
@@ -112,7 +113,7 @@ void displaycommandhelp(nick *np, Command *cmd) {
     }
 
     controlreply(np, " \n");
-    controlreply(np, "Available Search Terms for %s:\n", acmd->name->content);
+    controlreply(np, "Available Commands and Operators for %s:\n", acmd->name->content);
 
     m=getcommandlist(acmd->searchtree,acmdlist,100);
     for(j=0;j<m;j++) {
@@ -173,19 +174,19 @@ void _init() {
   registerglobalsearchterm("length",length_parse, "usage: (length string)");
   
   /* Nickname operations */
-  registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "Users host mask, allow \"hostmask real\" to match realhost");     /* nick only */
-  registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "Users current realname");     /* nick only */
-  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "Users current authname or false");     /* nick only */
-  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "Users Auth timestamp");         /* nick only */
-  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "Users current ident");           /* nick only */
-  registersearchterm(reg_nicksearch, "host",host_parse, 0, "Users host, allow \"host real\" to match real host");             /* nick only */
+  registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");     /* nick only */
+  registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "User's current realname");     /* nick only */
+  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "User's current authname or false");     /* nick only */
+  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "User's Auth timestamp");         /* nick only */
+  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "User's current ident");           /* nick only */
+  registersearchterm(reg_nicksearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");             /* nick only */
   registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       /* nick only */
-  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "Users Timestamp");   /* nick only */
+  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "User's Timestamp");   /* nick only */
   registersearchterm(reg_nicksearch, "country",country_parse, 0, "2 letter country code (data source is geoip)");       /* nick only */
-  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "Users IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");                 /* nick only */
+  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "User's IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");                 /* nick only */
   registersearchterm(reg_nicksearch, "channels",channels_parse, 0, "Channel Count");     /* nick only */
   registersearchterm(reg_nicksearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");         /* nick only */
-  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "Users Auth ID");         /* nick only */
+  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "User's Auth ID");         /* nick only */
   registersearchterm(reg_nicksearch, "cidr",cidr_parse, 0, "CIDR matching");         /* nick only */
 
   /* Channel operations */

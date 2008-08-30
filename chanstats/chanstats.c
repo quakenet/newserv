@@ -43,6 +43,8 @@ void dohist_today(int *data, float *bounds, int cats);
 void dohist_days(int *data, float *bounds, int cats, int days);
 void dohist_namelen(int *data, float *bounds, int cats);
 
+#define EXPIREMIN 4
+
 void _init() {
   time_t now,when;
 
@@ -78,10 +80,10 @@ void _init() {
     }
     
     lastsave=now;
-    registercontrolcmd("chanstats",10,1,&dochanstats);
-    registercontrolcmd("channelhistogram",10,13,&dochanhistogram);
-    registercontrolcmd("userhistogram",10,1,&douserhistogram);
-    registercontrolcmd("expirecheck",10,1,&doexpirecheck);
+    registercontrolhelpcmd("chanstats",NO_OPER,1,&dochanstats, "Show usage statistics for a channel");
+    registercontrolhelpcmd("channelhistogram",NO_OPER,13,&dochanhistogram, "Display a histogram of network channel sizes");
+    registercontrolhelpcmd("userhistogram",NO_OPER,1,&douserhistogram, "Display a user histogram of channel size");
+    registercontrolhelpcmd("expirecheck",NO_DEVELOPER,1,&doexpirecheck, "Check if channel has too few users for services");
     registercontrolhelpcmd("chanstatssave",NO_DEVELOPER,1, &dochanstatssave, "Usage: chanstatssave\nForce a save of chanstats data");
     schedulerecurring(when,0,SAMPLEINTERVAL,&doupdate,NULL);  
   }
@@ -425,8 +427,6 @@ int dochanstats(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-#define EXPIREMIN 4
-
 int doexpirecheck(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;
   chanindex *cip;
@@ -454,12 +454,14 @@ int doexpirecheck(void *source, int cargc, char **cargv) {
  
   /* Did they hit the minimum today? */
   if (csp->todaymax >= EXPIREMIN) {
+    controlreply(sender,"OK %s",cargv[0]);
     return CMD_OK;
   }
   
   /* Or recently? */
   for (i=0;i<HISTORYDAYS;i++) {
     if (csp->lastmax[i] >= EXPIREMIN) {
+      controlreply(sender,"OK %s",cargv[0]);
       return CMD_OK;
     }
   }

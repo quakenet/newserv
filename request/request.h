@@ -19,8 +19,8 @@
 /* one week by default */
 #define RQU_HELPER_MAXEXPIRE 604800
 
-#define RQ_USERFILE "rqusers"
-#define RQ_LOGFILE "request.log"
+#define RQ_USERFILE "data/rqusers"
+#define RQ_LOGFILE "logs/request.log"
 
 #define RQ_OK 0
 #define RQ_ERROR 1

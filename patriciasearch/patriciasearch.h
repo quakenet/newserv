@@ -12,6 +12,9 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
 
 int ast_pnodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 
+void regpnodedisp(const char *name, NodeDisplayFunc handler);
+void unregpnodedisp(const char *name, NodeDisplayFunc handler);
+
 extern NodeDisplayFunc defaultpnodefn;
 extern searchCmd *reg_nodesearch;
  

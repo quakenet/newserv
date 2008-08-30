@@ -579,9 +579,6 @@ void loadchanbansdone(DBConn *dbconn, void *arg) {
   free(allchans);
   
   Error("chanserv",ERR_INFO,"Channel ban load done, highest ID was %d",lastbanID);
-
-  chanservdb_ready=1;
-  triggerhook(HOOK_CHANSERV_DBLOADED, NULL);
 }
 
 void loadmessages() {
@@ -844,5 +841,8 @@ void loadsomemaillocks(DBConn *dbconn,void *arg) {
 
 void loadmaillocksdone(DBConn *dbconn, void *arg) {
   Error("chanserv",ERR_INFO,"Load Mail Locks done (highest ID was %d)",lastmaillockID);
+
+  chanservdb_ready=1;
+  triggerhook(HOOK_CHANSERV_DBLOADED, NULL);
 }
 

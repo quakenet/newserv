@@ -12,24 +12,13 @@
 #include "../lib/strlfunc.h"
 #include "patriciasearch.h"
 
-CommandTree *pnodeOutputTree;
 searchCmd *reg_nodesearch;
 
 int do_pnodesearch(void *source, int cargc, char **cargv);
 
 NodeDisplayFunc defaultpnodefn = printnode;
 
-void regpnodedisp(const char *name, NodeDisplayFunc handler) {
-  addcommandtotree(pnodeOutputTree, name, 0, 0, (CommandHandler)handler);
-}
-
-void unregpnodedisp(const char *name, NodeDisplayFunc handler) {
-  deletecommandfromtree(pnodeOutputTree, name, (CommandHandler)handler);
-}
-
 void _init() {
-  pnodeOutputTree=newcommandtree();
-
   reg_nodesearch = (searchCmd *)registersearchcommand("nodesearch",NO_OPER,do_pnodesearch, printnode);
 
   registersearchterm(reg_nodesearch, "users", ps_users_parse, 0, "");
@@ -37,8 +26,6 @@ void _init() {
 }
 
 void _fini() {
-  destroycommandtree(pnodeOutputTree);
-
   deregistersearchcommand( reg_nodesearch );
 }
 
