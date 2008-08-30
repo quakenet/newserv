@@ -4,6 +4,9 @@
 /* ALL RIGHTS RESERVED. */
 /* Don't put this into the SVN repo. */
 
+#define _POSIX_C_SOURCE 200112L
+#include <stdlib.h>
+
 #include "../core/config.h"
 #include "../core/error.h"
 #include "../core/hooks.h"
@@ -11,7 +14,7 @@
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
 #include "../lib/version.h"
-
+#include "../lib/strlfunc.h"
 #include "lua.h"
 
 MODULE_VERSION(LUA_SMALLVERSION);
@@ -45,7 +48,7 @@ void lua_destroycontrol(void);
 void lua_onunload(lua_State *l);
 void lua_onload(lua_State *l);
 
-void lua_setpath(lua_State *l);
+void lua_setpath(void);
 
 void lua_setupdebugsocket(void);
 void lua_freedebugsocket(void);
@@ -114,6 +117,8 @@ void _init() {
     Error("lua", ERR_ERROR, "Error loading suffix.");
     return;
   }
+
+  lua_setpath();
 
   loaded = 1;
 
@@ -184,13 +189,16 @@ lua_State *lua_loadscript(char *file) {
   int top;
   lua_State *l;
   lua_list *n;
+  char buf[1024];
 
   if(!cpath || !suffix)
     return NULL;
 
-  delchars(file, "./\\;");
+  strlcpy(buf, file, sizeof(buf));
 
-  if(lua_scriptloaded(file))
+  delchars(buf, "./\\;");
+
+  if(lua_scriptloaded(buf))
     return NULL;
 
   l = lua_newstate(lua_nsmalloc, NULL);
@@ -199,13 +207,13 @@ lua_State *lua_loadscript(char *file) {
 
   n = (lua_list *)luamalloc(sizeof(lua_list));;
   if(!n) {
-    Error("lua", ERR_ERROR, "Error allocing list for %s.", file);
+    Error("lua", ERR_ERROR, "Error allocing list for %s.", buf);
     return NULL;
   }
 
-  n->name = getsstring(file, LUA_PATHLEN);
+  n->name = getsstring(buf, LUA_PATHLEN);
   if(!n->name) {
-    Error("lua", ERR_ERROR, "Error allocing name item for %s.", file);
+    Error("lua", ERR_ERROR, "Error allocing name item for %s.", buf);
     luafree(n);
     return NULL;
   }
@@ -221,8 +229,6 @@ lua_State *lua_loadscript(char *file) {
   lua_registerdbcommands(l);
   lua_registersocketcommands(l);
   lua_registercryptocommands(l);
-
-  lua_setpath(l);
 
 #ifdef LUA_USEJIT
   lua_require(l, "lib/jit");
@@ -313,43 +319,11 @@ void lua_unloadscript(lua_list *l) {
   luafree(l);
 }
 
-void lua_setpath(lua_State *l) {
-  char fullpath[LUA_PATHLEN], *prev = NULL;
+void lua_setpath(void) {
+  char fullpath[LUA_PATHLEN];
 
-  int top = lua_gettop(l);
-
-  lua_getglobal(l, "package");
-  if(!lua_istable(l, 1)) {
-    Error("lua", ERR_ERROR, "Unable to set package.path (package is not a table).");
-    return;
-  }
-
-  lua_pushstring(l, "path");
-  lua_gettable(l, -2);
-
-  if(lua_isstring(l, -1))
-    prev = (char *)lua_tostring(l, -1);
-
-  if(prev) {
-    snprintf(fullpath, sizeof(fullpath), "%s;%s/?%s", prev, cpath->content, suffix->content);
-  } else {
-    snprintf(fullpath, sizeof(fullpath), "%s/?%s", cpath->content, suffix->content);
-  }
-
-  /* pop broke! */
-
-  lua_getglobal(l, "package");
-  if(!lua_istable(l, 1)) {
-    Error("lua", ERR_ERROR, "Unable to set package.path (package is not a table).");
-    return;
-  }
-
-  lua_pushstring(l, "path");
-
-  lua_pushstring(l, fullpath);
-  lua_settable(l, -3);
-
-  lua_settop(l, top);
+  snprintf(fullpath, sizeof(fullpath), "%s/?%s", cpath->content, suffix->content);
+  setenv("LUA_PATH", fullpath, 1);
 }
 
 lua_list *lua_scriptloaded(char *name) {

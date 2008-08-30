@@ -33,6 +33,8 @@ void lua_onconnect(int hooknum, void *arg);
 void lua_onjoin(int hooknum, void *arg);
 void lua_onpart(int hooknum, void *arg);
 
+sstring *luabotnick;
+
 void lua_registerevents(void) {
   registerhook(HOOK_CHANNEL_MODECHANGE, &lua_onmode);
   registerhook(HOOK_NICK_NEWNICK, &lua_onnewnick);
@@ -73,12 +75,13 @@ void lua_deregisterevents(void) {
 
 void lua_startbot(void *arg) {
   channel *cp;
-  sstring *n;
 
   myureconnect = NULL;
 
-  n = getcopyconfigitem("lua", "botnick", "U", NICKLEN);
-  lua_nick = registerlocaluser(n->content, "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
+  if(!luabotnick)
+    luabotnick = getcopyconfigitem("lua", "botnick", "U", NICKLEN);
+
+  lua_nick = registerlocaluser(luabotnick->content, "lua", "quakenet.department.of.corrections", LUA_FULLVERSION, "U", UMODE_ACCOUNT | UMODE_DEAF | UMODE_OPER | UMODE_SERVICE, &lua_bothandler);
   if(!lua_nick) {
     myureconnect = scheduleoneshot(time(NULL) + 1, &lua_startbot, NULL);
     return;
@@ -118,6 +121,11 @@ void lua_destroybot(void) {
 
   if(lua_nick)
     deregisterlocaluser(lua_nick, NULL);
+
+  if(luabotnick) {
+    freesstring(luabotnick);
+    luabotnick = NULL;
+  }
 }
 
 int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...) {
