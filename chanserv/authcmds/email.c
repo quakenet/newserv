@@ -113,7 +113,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   mdp=findorcreatemaildomain(cargv[1]);
 
   csdb_createmail(rup, QMAIL_NEWEMAIL);
-  csdb_accounthistory_insert(sender, NULL, NULL, rup->email, getsstring(cargv[1], EMAILLEN));
+  csdb_accounthistory_insert(sender, NULL, NULL, rup->email?rup->email->content:NULL, cargv[1]);
   delreguserfrommaildomain(rup,rup->domain);
 
   if(rup->lastemail)

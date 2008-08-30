@@ -32,8 +32,6 @@ struct gline_localdata {
 struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
-  int len;
-  char *p;
 
   if (!(localdata = (struct gline_localdata *) malloc(sizeof(struct gline_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -56,43 +54,34 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
     break;
 
   case 1:
-    if (strchr(argv[0], ' ') == NULL) { /* duration specified */
+    if (strchr(argv[0], ' ') == NULL) { /* no space == duration specified */
       localdata->duration = durationtolong(argv[0]);
       /* error checking on gline duration */
-      if (localdata->duration == 0)
-        localdata->duration = NSGLINE_DURATION;
+      if (localdata->duration == 0) {
+        parseError = "gline duration invalid.";
+        free(localdata);
+        return NULL;
+      }
+      
       strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
     }
     else { /* reason specified */
       localdata->duration = NSGLINE_DURATION;
 
-      p = argv[0];
-      if(*p == '\"')
-        p++;
-      len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
-      if(len >= sizeof(localdata->reason)) {
-        localdata->reason[sizeof(localdata->reason)-1] = '\0';
-      } else {
-        localdata->reason[len-1] = '\0';
-      }
+      strlcpy(localdata->reason, argv[0], sizeof(localdata->reason));
     }
     break;
 
   case 2:
     localdata->duration = durationtolong(argv[0]);
     /* error checking on gline duration */
-    if (localdata->duration == 0)
-      localdata->duration = NSGLINE_DURATION;
-
-    p = argv[1];
-    if(*p == '\"')
-      p++;
-    len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
-    if(len >= sizeof(localdata->reason)) {
-      localdata->reason[sizeof(localdata->reason)-1] = '\0';
-    } else {
-      localdata->reason[len-1] = '\0';
+    if (localdata->duration == 0) {
+      parseError = "gline duration invalid.";
+      free(localdata);
+      return NULL;
     }
+
+    strlcpy(localdata->reason, argv[1], sizeof(localdata->reason));
 
     break;
   default:
@@ -137,12 +126,25 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   return (void *)1;
 }
 
+static int glineuser(nick *np, struct gline_localdata *localdata, time_t ti) {
+  char msgbuf[512];
+  if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
+    nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
+    if (np->host->clonecount <= NSMAX_GLINE_CLONES)
+      irc_send("%s GL * +*@%s %u %jd :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
+    else
+      irc_send("%s GL * +%s@%s %u %jd :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
+    return 1;
+  }
+  
+  return 0;
+}
+
 void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
   int i, j, safe=0;
-  char msgbuf[512];
   time_t ti = time(NULL);
 
   localdata = thenode->localdata;
@@ -165,14 +167,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
               continue;
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
-              if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-                nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-                if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-                  irc_send("%s GL * +*@%s %u %jd :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-                else
-                  irc_send("%s GL * +%s@%s %u %jd :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-              }
-              else
+              if(!glineuser(np, localdata, ti))
                 safe++;
             }
           }
@@ -185,15 +180,8 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
       for (np=nicktable[i];np;np=nnp) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
-          if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
-            nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-            if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-              irc_send("%s GL * +*@%s %u %jd :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-            else
-              irc_send("%s GL * +%s@%s %u %jd :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-          }
-          else
-              safe++;
+          if(!glineuser(np, localdata, ti))
+            safe++;
         }
       }
     }

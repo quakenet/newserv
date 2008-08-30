@@ -11,18 +11,16 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../localuser/localuserchannel.h"
-#include "../geoip/geoip.h"
 #include "../lib/version.h"
 #include "../core/modules.h"
 
 MODULE_VERSION("");
 
 int controlkill(void *sender, int cargc, char **cargv);
-int controlopchan(void *sender, int cargc, char **cargv);
 int controlkick(void *sender, int cargc, char **cargv);
 int controlspewchan(void *sender, int cargc, char **cargv);
 int controlspew(void *sender, int cargc, char **cargv);
-int controlresync(void *sender, int cargc, char **cargv);
+int controlcompare(void *sender, int cargc, char **cargv);
 int controlbroadcast(void *sender, int cargc, char **cargv);
 int controlobroadcast(void *sender, int cargc, char **cargv);
 int controlmbroadcast(void *sender, int cargc, char **cargv);
@@ -30,15 +28,12 @@ int controlsbroadcast(void *sender, int cargc, char **cargv);
 int controlcbroadcast(void *sender, int cargc, char **cargv);
 
 void _init() {
-/*  registercontrolhelpcmd("kill", NO_OPER, 2, &controlkill, "Usage: kill <nick> ?reason?\nKill specified user with given reason (or 'Killed').");*/
+  registercontrolhelpcmd("kill", NO_OPER, 2, &controlkill, "Usage: kill <nick> ?reason?\nKill specified user with given reason (or 'Killed').");
   registercontrolhelpcmd("kick", NO_OPER, 3, &controlkick, "Usage: kick <channel> <user> ?reason?\nKick a user from the given channel, with given reason (or 'Kicked').");
 
   registercontrolhelpcmd("spewchan", NO_OPER, 1, &controlspewchan, "Usage: spewchan <pattern>\nShows all channels which are matched by the given pattern");
-
   registercontrolhelpcmd("spew", NO_OPER, 1, &controlspew, "Usage: spew <pattern>\nShows all userss which are matched by the given pattern");
-
-  /* doesnt seem to work for me + pointless command?(paul) 
-  registercontrolhelpcmd("resync", NO_OPER, 1, &controlresync, "Usage: resync <channel>\nResyncs a desynched channel"); */
+  registercontrolhelpcmd("compare", NO_OPER, 255, &controlcompare, "Usage: compare <nick1> <nick2> ... <nickn>\nShows channels shared by supplied nicknames\nUsage: compare <channel1> <channel2> ... <channeln>\nShares nicks that share the supplied channels");
 
   registercontrolhelpcmd("broadcast", NO_OPER, 1, &controlbroadcast, "Usage: broadcast <text>\nSends a message to all users.");
   registercontrolhelpcmd("obroadcast", NO_OPER, 1, &controlobroadcast, "Usage: obroadcast <text>\nSends a message to all IRC operators.");
@@ -53,12 +48,13 @@ void _fini() {
   deregistercontrolcmd("mbroadcast", controlmbroadcast);
   deregistercontrolcmd("broadcast", controlbroadcast);
 
-  /* deregistercontrolcmd("resync", controlresync); */
   deregistercontrolcmd("spew", controlspew);
   deregistercontrolcmd("spewchan", controlspewchan);
 
-/*  deregistercontrolcmd("kill", controlkill); */
+  deregistercontrolcmd("kill", controlkill);
   deregistercontrolcmd("kick", controlkick);
+
+  deregistercontrolcmd("compare", controlcompare);
 }
 
 int controlkick(void *sender, int cargc, char **cargv) {
@@ -79,6 +75,11 @@ int controlkick(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if(IsService(target) && SIsService(&serverlist[homeserver(target->numeric)])) {
+    controlreply(np,"Sorry, cannot kick network services.");
+    return CMD_ERROR;
+  }
+
   controlwall(NO_OPER, NL_KICKKILLS, "%s/%s sent KICK for %s!%s@%s on %s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content,cp->index->name->content, (cargc>2)?cargv[2]:"Kicked");
   localkickuser(NULL, cp, target, (cargc>2)?cargv[2]:"Kicked");
   controlreply(sender, "KICK sent.");
@@ -86,16 +87,21 @@ int controlkick(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-/* NO checking to see if it's us or anyone important */
 int controlkill(void *sender, int cargc, char **cargv) {
   nick *target;
   nick *np = (nick *)sender;
- 
+
   if (cargc<1)
-    return CMD_USAGE;  
+    return CMD_USAGE;
 
   if ((target=getnickbynick(cargv[0]))==NULL) {
     controlreply(np,"Sorry, couldn't find that user.");
+    return CMD_ERROR;
+  }
+
+  if(IsService(target) && SIsService(&serverlist[homeserver(target->numeric)])) {
+    controlreply(np,"Sorry, cannot kill network services.");
+    controlwall(NO_OPER, NL_KICKKILLS, "%s/%s attempted to KILL service %s!%s@%s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content, (cargc>1)?cargv[1]:"Killed");
     return CMD_ERROR;
   }
 
@@ -106,133 +112,53 @@ int controlkill(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int controlresync(void *sender, int cargc, char **cargv) {
-  nick *np = (nick*)sender;
-  channel *cp;
-  modechanges changes;
-  int a;
-
-  if (cargc < 1)
-    return CMD_USAGE;
-
-  cp = findchannel(cargv[0]);
-
-  if (cp == NULL) {
-    controlreply(np, "No such channel.");
-
-    return CMD_ERROR;
-  }
-
-  controlwall(NO_OPER, NL_MISC, "%s/%s RESYNC'ed %s", np->nick, np->authname, cp->index->name->content);
-
-  irc_send("%s CM %s o", mynumeric->content, cp->index->name->content);
-
-  localsetmodeinit(&changes, cp, mynick);
-
-  for(a=0;a<cp->users->hashsize;a++) {
-    if (cp->users->content[a] != nouser) {
-      nick *np2 = getnickbynumeric(cp->users->content[a]);
-
-      /* make newserv believe that this user is not opped */
-      if (cp->users->content[a] & CUMODE_OP)
-        cp->users->content[a] &= ~CUMODE_OP;
-      else if (!IsService(np2)) /* if the user wasn't opped before and is not a service we don't care about him */
-        continue;
-
-      /* now reop him */
-      localdosetmode_nick(&changes, np2, MC_OP);
-    }
-  }
-
-  localsetmodeflush(&changes, 1);
-
-  controlreply(np, "Done.");
-
-  return CMD_OK;
-}
-
 int controlspew(void *sender, int cargc, char **cargv) {
-  searchASTExpr *tree;
+  searchASTExpr tree;
 
   if(cargc < 1)
     return CMD_USAGE;
 
   tree = NSASTNode(match_parse, NSASTNode(hostmask_parse), NSASTLiteral(cargv[0]));
-  return ast_nicksearch(tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500);
+  return ast_nicksearch(&tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500);
 }
 
-/* this function is the definition of horrible */
 int controlspewchan(void *sender, int cargc, char **cargv) {
-  nick *np = (nick*)sender;
-  nick *np2;
-  int i, a, ccount = 0, morecservices, ucount, cscount;
-  chanindex *cip;
-  channel *cp;
-  char cservices[300];
-  char strcscount[40];
+  searchASTExpr tree;
 
-  if (cargc < 1)
+  if(cargc < 1)
     return CMD_USAGE;
 
-  for (i=0; i<CHANNELHASHSIZE; i++) {
-    for (cip=chantable[i]; cip; cip=cip->next) {
-      if ((cp = cip->channel) != NULL && match2strings(cargv[0], cip->name->content)) {
-        /* find channel services */
-        cservices[0] = '\0';
-        cscount = ucount = morecservices = 0;
+  tree = NSASTNode(match_parse, NSASTNode(name_parse), NSASTLiteral(cargv[0]));
+  return ast_chansearch(&tree, controlreply, sender, controlnswall, printchannel, NULL, NULL, 500);
+}
 
-        for (a=0;a<cp->users->hashsize;a++) {
-          if (cp->users->content[a] != nouser) {
-            np2 = getnickbynumeric(cp->users->content[a]);
-
-            if (IsService(np2)) {
-              cscount++;
-
-              if (strlen(cservices) < 100) {
-                if (cservices[0])
-                  strlcat(cservices, ", ", sizeof(cservices));
+int controlcompare(void *sender, int cargc, char **cargv) {
+  searchASTExpr nodes[cargc], literals[cargc], tree;
+  int i;
+  void *displayfn;
+  ASTFunc execfn;
+  parseFunc parsefn;
   
-                strlcat(cservices, np2->nick, sizeof(cservices));
-              } else {
-                morecservices++;
-              }
-            }
-            
-            ucount++;
-          }
-        }
+  if(cargc < 2)
+    return CMD_USAGE;
 
-        if (morecservices)
-          snprintf(cservices + strlen(cservices), sizeof(cservices), " and %d more", morecservices);
-
-        snprintf(strcscount, sizeof(strcscount), "%d", cscount);
-
-        /* TODO: print this channel ;; @slug -- WTF? */
-        controlreply(np, "%-30s %5ld %-8s%s%s%-11s%s%s%s",
-              cip->name->content,
-              ucount,
-              ucount != 1 ? "users" : "user",
-              *cservices ? "- found " : "",
-              *cservices ? strcscount : "",
-              *cservices ? (strchr(cservices, ',') ? " chanservs" : " chanserv") : "",
-              *cservices ? "(" : "",
-              *cservices ? cservices : "",
-              *cservices ? ")" : "");
-
-        ccount++;
-        
-        if (ccount > 1000)
-          break; /* Don't ever list more than 1000 channels */
-      }
-    }
+  if(cargv[0][0] == '#') {
+    execfn = (ASTFunc)ast_nicksearch;
+    displayfn = printnick;
+    parsefn = channel_parse;
+  } else {
+    execfn = (ASTFunc)ast_chansearch;
+    displayfn = printchannel;
+    parsefn = nick_parse;
   }
-
-  if (ccount > 1000)
-    controlreply(np, "More than 1000 matching channels were found. Please use a more specific pattern.");
-  else
-    controlreply(np, "Found %d channels matching specified pattern.", ccount);
+    
+  for(i=0;i<cargc;i++) {
+    literals[i] = NSASTLiteral(cargv[i]);
+    nodes[i] = NSASTManualNode(parsefn, 1, &literals[i]);
+  }
+  tree = NSASTManualNode(and_parse, cargc, nodes);
   
-  return CMD_OK;
+  return (execfn)(&tree, controlreply, sender, controlnswall, displayfn, NULL, NULL, 500);
 }
 
 int controlbroadcast(void *sender, int cargc, char **cargv) {
@@ -281,54 +207,44 @@ int controlsbroadcast(void *sender, int cargc, char **cargv) {
 }
 
 int controlobroadcast(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender, *nip;
-  int i;
-
+  nick *np = (nick *)sender;
+  searchASTExpr tree;
+  int ret;
+  char message[512];
+  
   if(cargc<1)
     return CMD_USAGE;
 
-  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent an obroadcast: %s", np->nick, np->authname, cargv[0]);
+  snprintf(message, sizeof(message), "(oBroadcast) %s", cargv[0]);
 
-  for(i=0;i<NICKHASHSIZE;i++)
-    for(nip=nicktable[i];nip;nip=nip->next)
-      if(nip && IsOper(nip))
-        controlnotice(nip, "(oBroadcast) %s", cargv[0]);
+  tree = NSASTNode(and_parse, NSASTNode(modes_parse, NSASTLiteral("+o")), NSASTNode(notice_parse, NSASTLiteral(message)));
+  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1)) == CMD_OK) {
+    controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent an obroadcast: %s", np->nick, np->authname, cargv[0]);
+    controlreply(np, "Message obroadcasted.");
+  } else {
+    controlreply(np, "An error occured.");
+  }
 
-  controlreply(np, "Message obroadcasted.");
-
-  return CMD_OK;
+  return ret;
 }
 
 int controlcbroadcast(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender, *nip;
-  int i, ext, target;
-  GeoIP_LookupCode l;
-
+  nick *np = (nick *)sender;
+  int ret;
+  searchASTExpr tree;
+  char message[512];
+  
   if(cargc < 2)
     return CMD_USAGE;
 
-  ext = findnickext("geoip");
-  if(ext == -1) {
-    controlreply(np, "Geoip module not loaded.");
-    return CMD_ERROR;
+  snprintf(message, sizeof(message), "(cBroadcast) %s", cargv[1]);
+  tree = NSASTNode(and_parse, NSASTNode(country_parse, NSASTLiteral(cargv[0])), NSASTNode(notice_parse, NSASTLiteral(message)));
+  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1)) == CMD_OK) {
+    controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent a cbroadcast %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
+    controlreply(np, "Message cbroadcasted.");
+  } else {
+    controlreply(np, "An error occured.");
   }
 
-  l = ndlsym("geoip", "geoip_lookupcode");
-  target = l(cargv[0]);
-
-  if(target == -1) {
-    controlreply(np, "Invalid country.");
-    return CMD_ERROR;
-  }
-
-  controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent a cbroadcast %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
-
-  for(i=0;i<NICKHASHSIZE;i++)
-    for(nip=nicktable[i];nip;nip=nip->next)
-      if(nip && ((int)((long)nip->exts[ext]) == target))
-        controlnotice(nip, "(cBroadcast) %s", cargv[1]);
-
-  controlreply(np, "Message cbroadcasted.");
-
-  return CMD_OK;
+  return ret;
 }

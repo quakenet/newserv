@@ -29,7 +29,6 @@ struct kill_localdata {
 struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv) {
   struct kill_localdata *localdata;
   struct searchNode *thenode;
-  int len;
 
   if (!(localdata = (struct kill_localdata *) malloc(sizeof(struct kill_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
@@ -45,17 +44,8 @@ struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
 
-  if (argc==1) {
-    char *p = argv[0];
-    if(*p == '\"')
-      p++;
-    len = strlcpy(localdata->reason, p, sizeof(localdata->reason));
-    if(len >= sizeof(localdata->reason)) {
-      localdata->reason[sizeof(localdata->reason)-1] = '\0';
-    } else {
-      localdata->reason[len-1] = '\0';
-    }
-  }
+  if (argc==1)
+    strlcpy(localdata->reason, argv[0], sizeof(localdata->reason));
   else
     strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
 

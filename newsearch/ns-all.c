@@ -66,7 +66,7 @@ void all_free(searchCtx *ctx, struct searchNode *thenode) {
   struct all_localdata *localdata = thenode->localdata;
   
   if(localdata->hitlimit)
-    ctx->reply(senderNSExtern, "Warning: your expression hit the maximum iteration count and was terminated early.");
+    ctx->reply(senderNSExtern, "Warning: your expression was terminated for %d nicks as it hit the maximum iteration count.", localdata->hitlimit);
   
   (localdata->genfn->free)(ctx, localdata->genfn);
   (localdata->lambdafn->free)(ctx, localdata->lambdafn);
@@ -79,8 +79,9 @@ void *all_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct all_localdata *localdata = thenode->localdata;
   int i;
 
-  if(localdata->hitlimit)
+/*  if(localdata->hitlimit)
     return (void *)0;
+*/
 
   for(i=0;i<MAX_ITERATIONS;i++) {
     if(!(localdata->genfn->exe)(ctx, localdata->genfn, theinput))
@@ -90,6 +91,6 @@ void *all_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
       return (void *)0;
   }
   
-  localdata->hitlimit = 1;
+  localdata->hitlimit++;
   return (void *)0;
 }

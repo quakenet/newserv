@@ -29,4 +29,4 @@ settings.mk
 graphing/dump
 silly
 core/hooks.c
-lib/sstring.c
+lib/sstring.{c,h}

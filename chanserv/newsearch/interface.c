@@ -93,7 +93,7 @@ void showheader(void *source, void *header) {
 }
 
 int cs_dospewemail(void *source, int cargc, char **cargv) {
-  searchASTExpr *tree;
+  searchASTExpr tree;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -101,11 +101,11 @@ int cs_dospewemail(void *source, int cargc, char **cargv) {
   cs_log(source, "SPEWEMAIL %s", cargv[0]);
 
   tree = NSASTNode(match_parse, NSASTNode(qemail_parse), NSASTLiteral(cargv[0]));
-  return ast_usersearch(tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, showheader, (void *)QM_SPEWHEADER, 2000);
+  return ast_usersearch(&tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, showheader, (void *)QM_SPEWHEADER, 2000);
 }
 
 int cs_dospewdb(void *source, int cargc, char **cargv) {
-  searchASTExpr *tree;
+  searchASTExpr tree;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -119,6 +119,6 @@ int cs_dospewdb(void *source, int cargc, char **cargv) {
       NSASTNode(match_parse, NSASTNode(qemail_parse), NSASTLiteral(cargv[0])),
       NSASTNode(match_parse, NSASTNode(qlasthost_parse), NSASTLiteral(cargv[0])),
     );
-  return ast_usersearch(tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, showheader, (void *)QM_SPEWHEADER, 2000);
+  return ast_usersearch(&tree, chanservmessagewrapper, source, chanservwallwrapper, printauth, showheader, (void *)QM_SPEWHEADER, 2000);
 }
 

@@ -40,8 +40,8 @@ static searchASTExpr *treesearch(searchASTExpr *expr, exprunion *loc) {
   
   if(expr->type == AST_NODE_CHILD) {
     int i;
-    for(i=0;i<expr->u.child->argc;i++) {
-      searchASTExpr *d = treesearch(expr->u.child->argv[i], loc);
+    for(i=0;i<expr->u.child.argc;i++) {
+      searchASTExpr *d = treesearch(&expr->u.child.argv[i], loc);
       if(d)
         return d;
     }
@@ -101,13 +101,13 @@ searchNode *search_astparse(searchCtx *ctx, char *loc) {
       node->free       = literal_free;
       return node;
     case AST_NODE_CHILD:
-      v = (char **)malloc(expr->u.child->argc * sizeof(char *));
+      v = (char **)malloc(expr->u.child.argc * sizeof(char *));
       if(!v) {
         parseError = "malloc: could not allocate memory for this search.";
         return NULL;
       }
-      for(i=0;i<expr->u.child->argc;i++) {
-        searchASTExpr *child = expr->u.child->argv[i];
+      for(i=0;i<expr->u.child.argc;i++) {
+        searchASTExpr *child = &expr->u.child.argv[i];
 
         cachepush(cache, child);
         switch(child->type) {
@@ -124,7 +124,7 @@ searchNode *search_astparse(searchCtx *ctx, char *loc) {
         }
       }
 
-      node = expr->u.child->fn(ctx, expr->u.child->argc, v);
+      node = expr->u.child.fn(ctx, expr->u.child.argc, v);
       free(v);
       return node;
    default:
@@ -169,6 +169,9 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   char buf[1024];
 
   newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender);
+
+  memset(&cache, 0, sizeof(cache));
+  cache.tree = tree;
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_chansearch));
@@ -223,23 +226,48 @@ static char *ast_printtree_real(StringBuf *buf, searchASTExpr *expr, searchCmd *
   char lbuf[256];
   if(expr->type == AST_NODE_CHILD) {    
     int i;
-    sstring *command = getcommandname(cmd->searchtree, (void *)expr->u.child->fn);
+    sstring *command = getcommandname(cmd->searchtree, (void *)expr->u.child.fn);
 
     if(command) {
       snprintf(lbuf, sizeof(lbuf), "(%s", command->content);
     } else {
-      snprintf(lbuf, sizeof(lbuf), "(%p", expr->u.child->fn);
+      snprintf(lbuf, sizeof(lbuf), "(%p", expr->u.child.fn);
     }
     sbaddstr(buf, lbuf);
 
-    for(i=0;i<expr->u.child->argc;i++) {
+    for(i=0;i<expr->u.child.argc;i++) {
       sbaddchar(buf, ' ');
-      ast_printtree_real(buf, expr->u.child->argv[i], cmd);
+      ast_printtree_real(buf, &expr->u.child.argv[i], cmd);
     }
     sbaddchar(buf, ')');
 
   } else if(expr->type == AST_NODE_LITERAL) {
-    sbaddstr(buf, expr->u.literal);
+    int quotesrequired, escrequired;
+    char *p;
+    for(quotesrequired=escrequired=0,p=expr->u.literal;*p;p++) {
+      if(*p == '(' || *p == ')' || *p == ' ')
+        quotesrequired = 1;
+      if(*p == '\\' || *p == '"') {
+        escrequired = 1;
+        if(quotesrequired)
+          break;
+      }
+    }
+    if(quotesrequired)
+      sbaddchar(buf, '"');
+    
+    if(escrequired) {
+      for(p=expr->u.literal;*p;p++) {
+        if(*p == '\\' || *p == '"')
+          sbaddchar(buf, '\\');
+        sbaddchar(buf, *p);
+      }
+    } else {
+      sbaddstr(buf, expr->u.literal);
+    }
+
+    if(quotesrequired)
+      sbaddchar(buf, '"');
   } else {
     sbaddstr(buf, "???");
   }

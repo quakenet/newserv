@@ -135,6 +135,7 @@ struct searchNode *ip_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
@@ -213,33 +214,36 @@ struct searchASTNode;
 /* items to store in the ast lookup cache */
 #define AST_RECENT 10
 
-typedef struct searchASTExpr {
-  int type;
-  union {
-    char *literal;
-    struct searchASTNode *child;
-  } u;
-} searchASTExpr;
+struct searchASTExpr;
 
 typedef struct searchASTNode {
   parseFunc fn;
   int argc;
-  struct searchASTExpr **argv;
+  struct searchASTExpr *argv;
 } searchASTNode;
 
-/*
- *
- * FEAR THE COMPOUND LITERALS
- * MUHAHAHHAHAHAHAHAHAAH
- *
- */
-#define __NSASTExpr(x, y, ...) &(searchASTExpr){.type = x, .u.y = __VA_ARGS__}
-#define __NSASTList(...) (searchASTExpr *[]){__VA_ARGS__}
-#define __NSASTNode(x, ...) &(searchASTNode){.fn = x, .argc = sizeof(__NSASTList(__VA_ARGS__)) / sizeof(__NSASTList(__VA_ARGS__)[0]), .argv = __NSASTList(__VA_ARGS__)}
+typedef struct searchASTExpr {
+  int type;
+  union {
+    char *literal;
+    /* this was originally a pointer, but having it as one means you can't memcpy directly */
+    struct searchASTNode child;
+  } u;
+} searchASTExpr;
+
+#define __NSASTSizeOfArray(x) (sizeof(x) / sizeof(x[0]))
+
+#define __NSASTExpr(x, y, ...) (searchASTExpr){.type = x, .u.y = __VA_ARGS__}
+#define __NSASTRawNode(x, c, y) (searchASTNode){.fn = x, .argc = c, .argv = y}
+
+#define __NSASTSizeNode(x, y) __NSASTRawNode(x, __NSASTSizeOfArray(y), y)
+#define __NSASTNode(x, ...) __NSASTSizeNode(x, ((searchASTExpr []){__VA_ARGS__}))
+
 #define __NSASTChild(...) __NSASTExpr(AST_NODE_CHILD, child, __VA_ARGS__)
 
-#define NSASTLiteral(data) __NSASTExpr(AST_NODE_LITERAL, literal, data)
+#define NSASTLiteral(value) __NSASTExpr(AST_NODE_LITERAL, literal, value)
 #define NSASTNode(fn, ...) __NSASTChild(__NSASTNode(fn, __VA_ARGS__))
+#define NSASTManualNode(fn, count, children) __NSASTChild(__NSASTRawNode(fn, count, children))
 
 searchNode *search_astparse(searchCtx *, char *);
 
@@ -250,6 +254,8 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
 int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender);
+
+typedef int (*ASTFunc)(searchASTExpr *, replyFunc, void *, wallFunc, void *, HeaderFunc, void *, int limit);
 
 /* erk */
 extern searchList *globalterms;
