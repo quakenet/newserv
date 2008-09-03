@@ -876,10 +876,6 @@ void literal_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 
-/* search_parse:
- *  Given an input string, return a searchNode.
- */
-
 static int unescape(char *input, char *output, size_t buflen) {
   char *ch, *ch2;
   int e=0;
@@ -921,6 +917,10 @@ static int unescape(char *input, char *output, size_t buflen) {
   
   return 1;
 }
+
+/* search_parse:
+ *  Given an input string, return a searchNode.
+ */
 
 struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */
@@ -1010,9 +1010,10 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
     if (*(ch-1) == 0) /* if the last character was a space */
       j--; /* remove an argument */
     
-    for(k=1;k<=j;k++)
+/*    for(k=1;k<=j;k++)
       if(!unescape(argvector[k], argvector[k], sizeof(inputb)))
         return NULL;
+*/
 
     if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
       parseError = "Unknown command (for valid command list, see help <searchcmd>)";
@@ -1028,10 +1029,8 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
     /* Literal */
     
     /* slug: disabled now we unescape during the main parse stage */
-    /*
     if(!unescape(input, thestring, sizeof(thestring)))
       return NULL;
-*/
 
     if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
       parseError = "malloc: could not allocate memory for this search.";
