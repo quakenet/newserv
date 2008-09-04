@@ -77,7 +77,7 @@ int csa_checkeboy(nick *sender, char *eboy)
   if (!ircd_strncmp("user@mymailhost.xx", eboy, len) || !ircd_strncmp("info@quakenet.org", eboy, len)
       || !ircd_strncmp("user@mymail.xx", eboy, len) || !ircd_strncmp("user@mail.cc", eboy, len)
       || !ircd_strncmp("user@host.com", eboy, len) || !ircd_strncmp("Jackie@your.isp.com", eboy, len)
-      || !ircd_strncmp("QBot@QuakeNet.org", eboy, len)) {
+      || !ircd_strncmp("QBot@QuakeNet.org", eboy, len) || !ircd_strncmp("Q@CServe.quakenet.org", eboy, len)) {
     if (sender)
       chanservstdmessage(sender, QM_NOTYOUREMAIL, eboy);
     return (1);
