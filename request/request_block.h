@@ -18,7 +18,7 @@ typedef struct {
 
 extern array rqblocks;
 
-#define RQ_BLOCKFILE "rqblocks"
+#define RQ_BLOCKFILE "data/rqblocks"
 #define RQ_BLOCKLEN 256
 
 #define RQ_SPAMCOUNT 5

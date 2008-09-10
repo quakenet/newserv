@@ -3,6 +3,7 @@ INCPATH=../
 @endif@
 
 CFLAGS=
+CC=gcc
 
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 
@@ -15,6 +16,5 @@ BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 .o.so:
 	@-ldline-@ $(LDFLAGS)
 
-CC=gcc
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
 CFLAGS+=-fPIC -export-dynamic

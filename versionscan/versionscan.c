@@ -641,7 +641,7 @@ int versionscan_statsdump(void* sender, int cargc, char** cargv) {
     sendnoticetouser(versionscan_nick, np, "No statistics are available unless STATISTICS mode of operation is enabled.");
     return CMD_ERROR;
   }
-  if (!(fout=fopen("versionscanstats","w"))) {
+  if (!(fout=fopen("data/versionscanstats","w"))) {
     sendnoticetouser(versionscan_nick, np, "Unable to open save file.");
     return CMD_ERROR;
   }

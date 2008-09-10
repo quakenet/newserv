@@ -46,7 +46,7 @@ extern int cfnext;
 /* chanfix won't ever reop more users than this */
 #define CFMAXOPS 10
 /* where we store our chanfix data */
-#define CFSTORAGE "chanfix"
+#define CFSTORAGE "data/chanfix"
 /* how many chanfix files we have */
 #define CFSAVEFILES 5
 /* maximum number of servers which may be split */

@@ -44,8 +44,9 @@ int csa_dosetpw(void *source, int cargc, char **cargv) {
     rup->lastemail=NULL;
   }
   rup->lockuntil=0;
-  strncpy(rup->password,cargv[1],PASSLEN);
-  rup->password[PASSLEN]='\0';
+
+  csdb_accounthistory_insert(sender, rup->password, cargv[1], NULL, NULL);
+  setpassword(rup, cargv[1]);
   csdb_updateuser(rup);
 
   chanservstdmessage(sender, QM_PWCHANGED);

@@ -86,7 +86,9 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     rup->lastemail=NULL;
   }
 
+  csdb_accounthistory_insert(sender, rup->password, cargv[1], NULL, NULL);
   setpassword(rup, cargv[1]);
+
   rup->lastauth=time(NULL);
   chanservstdmessage(sender, QM_PWCHANGED);
   cs_log(sender,"NEWPASS OK username %s", rup->username);

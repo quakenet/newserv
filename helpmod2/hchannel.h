@@ -55,10 +55,12 @@ enum
 
 #define HCHANNEL_CONF_COUNT 21
 
+#define HCHANNEL_WELCOME_LEN 400
+
 typedef struct hchannel_struct
 {
     channel *real_channel;
-    char welcome[400];
+    char welcome[HCHANNEL_WELCOME_LEN];
     int flags;
 
     int jf_control; /* join flood control */

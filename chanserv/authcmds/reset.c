@@ -23,7 +23,8 @@
 int csa_doreset(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
-
+  char newpassword[PASSLEN+1];
+  
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "reset");
     return CMD_ERROR;
@@ -42,14 +43,20 @@ int csa_doreset(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  csa_createrandompw(newpassword, PASSLEN);
+
   if(rup->lastemail) {
+    csdb_accounthistory_insert(sender, rup->password, newpassword, rup->email?rup->email->content:NULL, rup->lastemail->content);
     if(rup->email)
       freesstring(rup->email);
     rup->email=rup->lastemail;
     rup->lastemail=NULL;
+  } else {
+    csdb_accounthistory_insert(sender, rup->password, newpassword, NULL, NULL);
   }
-
-  csa_createrandompw(rup->password, PASSLEN);
+  
+  setpassword(rup, newpassword);
+  
   rup->lockuntil=0;
   cs_log(sender,"RESET OK username %s", rup->username);
   csdb_updateuser(rup);

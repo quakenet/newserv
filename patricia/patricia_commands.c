@@ -21,8 +21,22 @@ int nc_cmd_nodecount(void *source, int cargc, char **cargv);
 void _init() {
   if (!(dumpip_logfp = fopen("log/iplist", "w")))
     Error("dumpip", ERR_ERROR, "Failed to open log file!");
-  registercontrolcmd("dumptree", 10, 2, &nc_cmd_dumptree);
-  registercontrolcmd("nodecount", 10, 1, &nc_cmd_nodecount);
+  registercontrolhelpcmd("dumptree", NO_DEVELOPER, 2, &nc_cmd_dumptree, 
+                                  "Dumps diaganostic information on the patricia trie structure\n"
+                                  "Usage: dumptree <ipv4|ipv6|cidr4|cidr6> [int]\n" 
+                                  "Nodes with prefixies Only:\n"
+                                  "No arguments - default prints: ptr, ip\n"
+                                  "1: ptr, prefixptr, bitlen, refcount, ip\n"
+                                  "2: ptr, bit, usercount, ip\n"
+                                  "3: ptr, leftptr, rightptr, parentptr\n"
+                                  "4: ptr, ext0, ext1, ext2, ext3, ext4\n"
+                                  "All Notes (inc no prefixies):\n"
+                                  "10: ptr, prefixptr, ip\n"
+                                  "11: ptr, prefixbitlen, refcount,ip\n"
+                                  "12: ptr, bitlen, usercount, ip\n"
+                                  "13: ptr, leftptr, rightptr, parentptr\n"
+                                  "14: ptr, ext0, ext1, ext2, ext3, ext4");
+  registercontrolhelpcmd("nodecount", NO_OPER, 1, &nc_cmd_nodecount, "Displays number of users on a given ipv4/6 or cidr4/6");
 }
 
 void _fini() {
