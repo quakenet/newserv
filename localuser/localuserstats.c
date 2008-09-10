@@ -5,6 +5,7 @@
 #include "../irc/irc.h"
 #include "../core/error.h"
 #include "../lib/version.h"
+#include "../lib/stringbuf.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -16,32 +17,43 @@ MODULE_VERSION("")
 int handleserverstats(void *source, int cargc, char **cargv);
 int handleserverstatsend(void *source, int cargc, char **cargv);
 
-#define RPL_STATSCLINE     213
-#define RPL_STATSCOMMANDS  212
-#define RPL_STATSCONN      250
-#define RPL_STATSDLINE     275
-#define RPL_STATSENGINE    237
-#define RPL_STATSHLINE     244
-#define RPL_STATSILINE     215
-#define RPL_STATSKLINE     216
-#define RPL_STATSLINKINFO  211
-#define RPL_STATSLLINE     241
-#define RPL_STATSOLINE     243
-#define RPL_STATSQLINE     228
-#define RPL_STATSSLINE     398
-#define RPL_STATSULINE     248
-#define RPL_STATSUPTIME    242
-#define RPL_STATSVERBOSE   236
-#define RPL_TEXT           304
+#define RPL_STATSLINKINFO    211
+#define RPL_STATSCOMMANDS    212
+#define RPL_STATSCLINE       213
+#define RPL_STATSNLINE       214 /* unused */
+#define RPL_STATSILINE       215
+#define RPL_STATSKLINE       216
+#define RPL_STATSPLINE       217        /* Undernet extension */
+#define RPL_STATSYLINE       218
+#define RPL_STATSJLINE       222        /* Undernet extension */
+#define RPL_STATSALINE       226        /* Hybrid, Undernet */
+#define RPL_STATSQLINE       228        /* Undernet extension */
+#define RPL_STATSVERBOSE     236        /* Undernet verbose server list */
+#define RPL_STATSENGINE      237        /* Undernet engine name */
+#define RPL_STATSFLINE       238        /* Undernet feature lines */
+#define RPL_STATSLLINE       241        /* Undernet dynamicly loaded modules */
+#define RPL_STATSUPTIME      242
+#define RPL_STATSOLINE       243
+#define RPL_STATSHLINE       244
+#define RPL_STATSTLINE       246        /* Undernet extension */
+#define RPL_STATSGLINE       247        /* Undernet extension */
+#define RPL_STATSULINE       248        /* Undernet extension */
+#define RPL_STATSCONN        250        /* Undernet extension */
+#define RPL_STATSDLINE       275        /* Undernet extension */
+#define RPL_STATSRLINE       276        /* Undernet extension */
+#define RPL_STATSSLINE       398        /* QuakeNet extension -froo */
 
-const int numerics[] = { RPL_STATSCLINE, RPL_STATSCOMMANDS, RPL_STATSCONN, RPL_STATSDLINE,
-                     RPL_STATSENGINE, RPL_STATSHLINE, RPL_STATSILINE, RPL_STATSKLINE,
-                     RPL_STATSLINKINFO, RPL_STATSLLINE, RPL_STATSOLINE, RPL_STATSQLINE,
-                     RPL_STATSSLINE, RPL_STATSULINE, RPL_STATSUPTIME, RPL_STATSVERBOSE,
-                     RPL_TEXT, 0 };
+#define RPL_ENDOFSTATS       219
+
+const int numerics[] = { RPL_STATSLINKINFO, RPL_STATSCOMMANDS, RPL_STATSCLINE, RPL_STATSNLINE, RPL_STATSILINE, RPL_STATSKLINE, 
+                         RPL_STATSPLINE, RPL_STATSYLINE, RPL_STATSJLINE, RPL_STATSALINE, RPL_STATSQLINE, RPL_STATSVERBOSE, 
+                         RPL_STATSENGINE, RPL_STATSFLINE, RPL_STATSLLINE, RPL_STATSUPTIME, RPL_STATSOLINE, RPL_STATSHLINE,
+                         RPL_STATSTLINE, RPL_STATSGLINE,RPL_STATSULINE, RPL_STATSCONN, RPL_STATSDLINE, RPL_STATSRLINE, 
+                         RPL_STATSSLINE, 0 };
+
 void _init() {
   const int *i;
-  registernumerichandler(219,&handleserverstats,4);
+  registernumerichandler(RPL_ENDOFSTATS,&handleserverstats,4);
 
   for(i=&numerics[0];*i;i++)
     registernumerichandler(*i,&handleserverstats,4);
@@ -49,7 +61,7 @@ void _init() {
 
 void _fini() {
   const int *i;
-  deregisternumerichandler(219,&handleserverstats);
+  deregisternumerichandler(RPL_ENDOFSTATS,&handleserverstats);
 
   for(i=&numerics[0];*i;i++)
     deregisternumerichandler(*i,&handleserverstats);
@@ -62,8 +74,9 @@ void _fini() {
 int handleserverstats(void *source, int cargc, char **cargv) {
   void *nargs[3];
   nick *target;
-  static char outbuffer[BUFSIZE * 2 + 5];
+  char outbuffer[BUFSIZE * 2 + 5];
   long numeric = (long)source, i;
+  StringBuf buf;
 
   if (cargc<4) {
     return CMD_OK;
@@ -79,20 +92,20 @@ int handleserverstats(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
   
-  outbuffer[0] = '\0';
+  sbinit(&buf, outbuffer, sizeof(outbuffer));
 
   /* bloody inefficient */
   for(i=3;i<cargc;i++) {
     if(i != 3)
-      strcat(outbuffer, " ");
+      sbaddchar(&buf, ' ');
     if(i == cargc - 1)
-      strcat(outbuffer, ":");
+      sbaddchar(&buf, ':');
 
-    strcat(outbuffer, cargv[i]);
+    sbaddstr(&buf, cargv[i]);
   }
-  outbuffer[sizeof(outbuffer) - 1] = '\0';
+  sbterminate(&buf);
 
-  if(numeric != 219) {
+  if(numeric != RPL_ENDOFSTATS) {
     nargs[0]=(void *)cargv[0];
     nargs[1]=(void *)numeric;
     nargs[2]=(void *)outbuffer;
