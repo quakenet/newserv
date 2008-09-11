@@ -20,6 +20,7 @@ def generate_url(config, obj):
 def generate_resetcode(config, obj):
   if obj["user.lockuntil"] == 0:
     obj["resetline"] = "LOCK UNTIL NOT SET. STAFF ACCOUNT'S CAN'T USE RESET"
+    obj["lockuntil"] = "never"
     return
 
   if not config.has_key("__codegensecret"):
