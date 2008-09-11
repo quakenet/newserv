@@ -1,10 +1,9 @@
 @include@ @includel@../build.mk@includel@
 
-CFLAGS+=$(INCSQLITE3)
-LDFLAGS+=$(LIBSQLITE3)
-
 .PHONY: all
 all: sqlite.so
 
-sqlite.so: sqlite.o
+libsqlite3.o: libsqlite3.c libsqlite3/sqlite3.c
+	$(CC) $(CFLAGS) -c libsqlite3.c -w
 
+sqlite.so: sqlite.o libsqlite3.o

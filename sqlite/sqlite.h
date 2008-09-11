@@ -1,11 +1,7 @@
 #ifndef __SQLITE_DB_H
 #define __SQLITE_DB_H
 
-#include <sqlite3.h>
-
-#ifdef SQLITE_THREADSAFE
-#error cannot use thread safe sqlite, recompile with --enable-threadsafe=no
-#endif
+#include "../sqlite/libsqlite3/sqlite3.h"
 
 typedef struct SQLiteResult {
   sqlite3_stmt *r;
