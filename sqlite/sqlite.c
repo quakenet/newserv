@@ -41,6 +41,7 @@ struct sqlitequeue {
 static struct sqlitequeue *head, *tail;
 static int queuesize;
 static void *processsched;
+static int inited;
 
 #define SYNC_MODE "OFF"
 
@@ -65,6 +66,15 @@ void _init(void) {
     return;
   }
 
+
+  if(sqlite3_initialize() != SQLITE_OK) {
+    Error("sqlite", ERR_ERROR, "Unable to initialise sqlite");
+    return;
+  }
+  sqlite3_config(SQLITE_CONFIG_SINGLETHREAD);
+
+  inited = 1;
+
   rc = sqlite3_open(dbfile->content, &conn);
   freesstring(dbfile);
 
@@ -82,25 +92,31 @@ void _init(void) {
 
 void _fini(void) {
   struct sqlitequeue *q, *nq;
-  if(!sqliteconnected())
-    return;
 
-  deregisterhook(HOOK_CORE_STATSREQUEST, dbstatus);
-  deleteschedule(processsched, &sqlitequeueprocessor, NULL);
+  if(sqliteconnected()) {
+    deregisterhook(HOOK_CORE_STATSREQUEST, dbstatus);
+    deleteschedule(processsched, &sqlitequeueprocessor, NULL);
 
-  /* we assume every module that's being unloaded
-   * has us as a dependency and will have cleaned up
-   * their queries by using freeid..
-   */
-  for(q=head;q;q=nq) {
-    nq = q->next;
-    sqlite3_finalize(q->statement);
-    nsfree(POOL_SQLITE, q);
+    /* we assume every module that's being unloaded
+     * has us as a dependency and will have cleaned up
+     * their queries by using freeid..
+     */
+    for(q=head;q;q=nq) {
+      nq = q->next;
+      sqlite3_finalize(q->statement);
+      nsfree(POOL_SQLITE, q);
+    }
+
+    sqlite3_close(conn);
+
+    dbconnected = 0;
   }
 
-  sqlite3_close(conn);
+  if(inited) {
+    sqlite3_shutdown();
+    inited = 0;
+  }
 
-  dbconnected = 0;
   nscheckfreeall(POOL_SQLITE);
 }
 
