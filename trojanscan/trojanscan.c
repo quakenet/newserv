@@ -1998,16 +1998,14 @@ static int trojanscan_hostcount(nick *sender, int hostmode, char *mask, int mask
   nick *np = NULL; /* sigh at warnings */
 
   if(hostmode)
-    for (j=0;j<NICKHASHSIZE;j++)
-      for (np=nicktable[j];np;np=np->next)
-        if (np->ipnode==sender->ipnode)
-          usercount++;
+    usercount = sender->ipnode->usercount;
 
   if(usercount > TROJANSCAN_MAX_HOST_GLINE) {
     hostmode = 0;
     usercount = 0;
   }
 
+  /* should really go through the ipnode I guess */
   if(!hostmode)
     for (j=0;j<NICKHASHSIZE;j++)
       for (np=nicktable[j];np;np=np->next)
