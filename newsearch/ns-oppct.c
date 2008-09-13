@@ -39,7 +39,7 @@ void *oppct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   
   for (i=0;i<cip->channel->users->hashsize;i++) {
     if (cip->channel->users->content[i]!=nouser) {
-      if (!(cip->channel->users->content[i] & CUMODE_OP)) {
+      if (cip->channel->users->content[i] & CUMODE_OP) {
         ops++;
       }
     }
