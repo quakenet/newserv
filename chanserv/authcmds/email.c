@@ -122,8 +122,11 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   rup->email=getsstring(cargv[1],EMAILLEN);
   rup->lastemailchange=t;
   rup->domain=findorcreatemaildomain(rup->email->content);
-  if(!UHasHelperPriv(rup))
+  if(!UHasHelperPriv(rup)) {
     rup->lockuntil=t+7*24*3600;
+  } else {
+    rup->lockuntil=0;
+  }
   addregusertomaildomain(rup, rup->domain);
 
   if(local) {

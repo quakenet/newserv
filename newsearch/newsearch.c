@@ -929,7 +929,7 @@ struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
   char inputb[1024];
   char *input;
   char thestring[500];
-  int i,j,q=0,e=0,k;
+  int i,j,q=0,e=0;
   char *ch;
   struct Command *cmd;
   struct searchNode *thenode;
