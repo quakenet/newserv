@@ -8,7 +8,7 @@
 
 #ifdef DBAPI_OVERRIDE
 #undef USE_DBAPI_PGSQL
-#undef USE_DBAPI_SQLITE3
+#undef USE_DBAPI_SQLITE
 #endif
 
 #ifndef BUILDING_DBAPI
@@ -43,7 +43,7 @@ typedef PQResult DBResult;
 
 #endif /* DBAPI_PGSQL */
 
-#if defined(USE_DBAPI_SQLITE3) || defined(DBAPI_OVERRIDE_SQLITE3)
+#if defined(USE_DBAPI_SQLITE) || defined(DBAPI_OVERRIDE_SQLITE)
 
 #include "../sqlite/sqlite.h"
 
@@ -71,7 +71,7 @@ typedef SQLiteResult DBResult;
 
 #define dbclear(result) sqliteclear(result)
 
-#endif /* DBAPI_SQLITE3 */
+#endif /* DBAPI_SQLITE */
 
 #endif /* BUILDING_DBAPI */
 
