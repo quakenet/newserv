@@ -48,9 +48,6 @@ static int inited;
 static void sqlitequeueprocessor(void *arg);
 static void dbstatus(int hooknum, void *arg);
 
-void registersqliteprovider(void);
-void deregistersqliteprovider(void);
-
 void _init(void) {
   sstring *dbfile;
   int rc;
@@ -91,8 +88,6 @@ void _init(void) {
 
   sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA synchronous=" SYNC_MODE ";");
   registerhook(HOOK_CORE_STATSREQUEST, dbstatus);
-
-  registersqliteprovider();
 }
 
 void _fini(void) {
@@ -113,8 +108,6 @@ void _fini(void) {
     }
 
     sqlite3_close(conn);
-
-    deregistersqliteprovider();
 
     dbconnected = 0;
   }

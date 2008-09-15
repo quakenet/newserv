@@ -1,7 +1,9 @@
 #ifndef __DBAPI_H
 #define __DBAPI_H
 
+#ifndef DBAPI2_ADAPTER
 #include "../config.h"
+#endif
 
 #define DB_NULLIDENTIFIER 0
 #define DB_CREATE 1
@@ -30,8 +32,10 @@ typedef PQResult DBResult;
 #define dbdetach(schema)
 #define dbescapestring(buf, src, len)  PQescapeString(buf, src, len)
 #define dbloadtable(tablename, init, data, fini) pqloadtable(tablename, init, data, fini, NULL);
+#define dbloadtable_tag(tablename, init, data, fini, tag) pqloadtable(tablename, init, data, fini, tag);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) pqasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
+#define dbasyncqueryfv(id, handler, tag, flags, format, ap) pqasyncqueryfv(id, handler, tag, flags, format, ap)
 #define dbquerysuccessful(x) pqquerysuccessful(x)
 #define dbgetresult(conn) pqgetresult(conn)
 #define dbnumfields(x) PQnfields(x->result)
@@ -60,8 +64,10 @@ typedef SQLiteResult DBResult;
 #define dbdetach(schema) sqlitedetach(schema)
 #define dbescapestring(buf, src, len) sqliteescapestring(buf, (char *)(src), len)
 #define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini, NULL);
+#define dbloadtable_tag(tablename, init, data, fini, tag) sqliteloadtable(tablename, init, data, fini, tag);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) sqliteasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
+#define dbasyncqueryfv(id, handler, tag, flags, format, ap) sqliteasyncqueryfv(id, handler, tag, flags, format, ap)
 #define dbquerysuccessful(x) sqlitequerysuccessful(x)
 #define dbgetresult(conn) sqlitegetresult(conn)
 #define dbnumfields(x) sqlite3_column_count(x->r)
