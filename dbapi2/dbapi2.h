@@ -3,13 +3,9 @@
 
 #define DBNAME_LEN 100
 
-#if defined(USE_DBAPI_PGSQL)
-#define DBAPI2_DEFAULT "pgsql"
-#elseif defined(USE_DBAPI_SQLITE)
-#define DBAPI2_DEFAULT "sqlite"
-#else
+#include "../config.h"
+
 #define DBAPI2_DEFAULT NULL
-#endif
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -33,17 +29,16 @@ typedef void (*DBAPIClose)(struct DBAPIConn *);
 
 typedef void (*DBAPIQueryCallback)(struct DBAPIResult *, void *);
 
-typedef void (*DBAPIQuery)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
-typedef void (*DBAPISimpleQuery)(struct DBAPIConn *, const char *, ...);
+typedef void (*DBAPIQuery)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
+typedef void (*DBAPISimpleQuery)(struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 typedef void (*DBAPIQueryV)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
-typedef void (*DBAPICreateTable)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
+typedef void (*DBAPICreateTable)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
 typedef void (*DBAPILoadTable)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData, const char *);
 
 typedef void (*DBAPISafeQuery)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, ...);
 typedef void (*DBAPISafeQueryV)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, va_list);
 typedef void (*DBAPISafeSimpleQuery)(struct DBAPIConn *, const char *, const char *, ...);
-typedef void (*DBAPISafeCreateTable)(struct DBAPIConn *, const char *, ...);
-typedef void (*DBAPISafeLoadTable)(struct DBAPIConn *, const char *, ...);
+typedef void (*DBAPISafeCreateTable)(struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 
 typedef void (*DBAPIEscapeString)(struct DBAPIConn *, char *, const char *, size_t);
 typedef int (*DBAPIQuoteString)(struct DBAPIConn *, char *, size_t, const char *, size_t);
@@ -61,7 +56,6 @@ typedef struct DBAPIProvider {
   DBAPISafeQuery safequery;
   DBAPISafeSimpleQuery safesimplequery;
   DBAPISafeCreateTable safecreatetable;
-  DBAPISafeLoadTable safeloadtable;
 */
 
   DBAPIEscapeString escapestring;
@@ -106,7 +100,7 @@ typedef struct DBAPIResult {
 
 int registerdbprovider(const char *, DBAPIProvider *);
 void deregisterdbprovider(int);
-DBAPIConn *dbapi2open(const char *, int, const char *);
+DBAPIConn *dbapi2open(const char *, const char *);
 
 void dbsnprintf(DBAPIConn *, char *, size_t, const char *, const char *, ...);
 

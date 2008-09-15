@@ -40,6 +40,8 @@ int registerdbprovider(const char *name, DBAPIProvider *provider) {
 
     strlcpy(providerobjs[i]->__providerdata->name, name, PROVIDER_NAME_LEN);
 
+    Error("dbapi2", ERR_INFO, "Database API registered: %s", name);
+
     return i;
   }
 
@@ -75,30 +77,34 @@ static void dbquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, co
   va_end(ap);
 }
 
-DBAPIConn *dbapi2open(const char *provider, int force, const char *database) {
-  int i, found, foundwanted;
+DBAPIConn *dbapi2open(const char *provider, const char *database) {
+  int i, found = -1;
   DBAPIConn *db;
   DBAPIProvider *p;
 
-  for(found=-1,foundwanted=i=0;i<MAX_PROVIDERS;i++) {
-    if(!providerobjs[i])
-      continue;
-    found = i;
-
-    if(provider && !strcmp(provider, providerobjs[i]->__providerdata->name)) {
-      foundwanted = 1;
-      break;
+  if(provider) {
+    for(i=0;i<MAX_PROVIDERS;i++) {
+      if(providerobjs[i] && !strcmp(provider, providerobjs[i]->__providerdata->name)) {
+        found = i;
+        break;
+      }
     }
-  }
+    if(found == -1) {
+      Error("dbapi2", ERR_WARNING, "Couldn't find forced database provider %s", provider);
+      return NULL;
+    }
+  } else {
+    for(i=0;i<MAX_PROVIDERS;i++) {
+      if(providerobjs[i]) {
+        found = i;
+        break;
+      }
+    }
 
-  if(found == -1) {
-    Error("dbapi2", ERR_WARNING, "No database providers found.");
-    return NULL;
-  }
-
-  if(provider && force && !foundwanted) {
-    Error("dbapi2", ERR_WARNING, "Couldn't find database provider (and no other alternative are permitted): %s", provider);
-    return NULL;
+    if(found == -1) {
+      Error("dbapi2", ERR_WARNING, "No database providers found.");
+      return NULL;
+    }
   }
 
   p = providerobjs[found];
@@ -126,6 +132,8 @@ DBAPIConn *dbapi2open(const char *provider, int force, const char *database) {
     Error("dbapi2", ERR_WARNING, "Unable to initialise database %s, provider: %s", database, p->__providerdata->name);
     return NULL;
   }
+
+  Error("dbapi2", ERR_INFO, "Database %s opened with provider %s.", database, p->__providerdata->name);
 
   return db;
 }
