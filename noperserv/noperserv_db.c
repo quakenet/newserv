@@ -11,7 +11,7 @@
 #include "../core/error.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
-#include "../dbapi/dbapi.h"
+#include "../dbapi2/dbapi2.h"
 
 #include "noperserv.h"
 #include "noperserv_db.h"
@@ -28,7 +28,7 @@ no_autheduser *authedusers = NULL;
 void noperserv_create_tables(void);
 
 void noperserv_free_user(no_autheduser *au);
-void noperserv_load_users(DBConn *dbconn, void *arg);
+void noperserv_load_users(DBAPIResult *res, void *arg);
 
 void noperserv_check_nick(nick *np);
 void noperserv_nick_account(int hooknum, void *arg);
@@ -36,14 +36,16 @@ void noperserv_quit_account(int hooknum, void *arg);
 
 void nopserserv_delete_from_autheduser(nick *np, no_autheduser *au);
 
-int noperserv_load_db(void) {
-  if(!dbconnected()) {
-    Error("noperserv", ERR_STOP, "Could not connect to database.");
-    return 0;
-  }
+static DBAPIConn *nodb;
 
-  if(db_loaded)
-    noperserv_cleanup_db();
+int noperserv_load_db(void) {
+  if(!nodb) {
+    nodb = dbapi2open(DBAPI2_DEFAULT, "noperserv");
+    if(!nodb) {
+      Error("noperserv", ERR_STOP, "Could not connect to database.");
+      return 0;
+    }
+  }
 
   db_loaded = 1;
 
@@ -51,34 +53,36 @@ int noperserv_load_db(void) {
 
   noperserv_create_tables();
 
-  dbasyncquery(noperserv_load_users, NULL,
+  nodb->query(nodb, noperserv_load_users, NULL,
     "SELECT ID, authname, flags, noticelevel FROM noperserv.users");
 
   return 1;
 }
 
-void noperserv_load_users(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
+void noperserv_load_users(DBAPIResult *res, void *arg) {
   no_autheduser *nu;
   nick *np;
   int i;
 
-  if(!dbquerysuccessful(pgres)) {
+  if(!res)
+    return;
+
+  if(!res->success) {
     Error("noperserv", ERR_ERROR, "Error loading user list.");
-    dbclear(pgres);
-    return; 
+    res->clear(res);
+    return;
   }
 
   lastuserid = 0;
 
-  while(dbfetchrow(pgres)) {
-    nu = noperserv_new_autheduser(dbgetvalue(pgres, 1));
+  while(res->next(res)) {
+    nu = noperserv_new_autheduser(res->get(res, 1));
     if(!nu)
       continue;
 
-    nu->id = strtoul(dbgetvalue(pgres, 0), NULL, 10);
-    nu->authlevel = strtoul(dbgetvalue(pgres, 2), NULL, 10);
-    nu->noticelevel = strtoul(dbgetvalue(pgres, 3), NULL, 10);
+    nu->id = strtoul(res->get(res, 0), NULL, 10);
+    nu->authlevel = strtoul(res->get(res, 2), NULL, 10);
+    nu->noticelevel = strtoul(res->get(res, 3), NULL, 10);
     nu->newuser = 0;
     if(nu->id > lastuserid)
       lastuserid = nu->id;
@@ -95,12 +99,11 @@ void noperserv_load_users(DBConn *dbconn, void *arg) {
   registerhook(HOOK_NICK_NEWNICK, &noperserv_nick_account);
   registerhook(HOOK_NICK_LOSTNICK, &noperserv_quit_account);
 
-  dbclear(pgres);
+  res->clear(res);
 }
 
 void noperserv_create_tables(void) {
-  dbattach("noperserv");
-  dbcreatequery(
+  nodb->createtable(nodb, NULL, NULL,
     "CREATE TABLE noperserv.users ("
       "ID            INT               NOT NULL,"
       "authname      VARCHAR(%d)       NOT NULL,"
@@ -123,7 +126,8 @@ void noperserv_cleanup_db(void) {
     ap = np;
   }
 
-  dbdetach("noperserv");
+  nodb->close(nodb);
+  nodb = NULL;
 }
 
 no_autheduser *noperserv_new_autheduser(char *authname) {
@@ -151,7 +155,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    dbquery("DELETE FROM noperserv.users WHERE id = %lu", au->id);
+    nodb->squery(nodb, "DELETE FROM noperserv.users WHERE id = %lu", au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {
@@ -169,11 +173,11 @@ void noperserv_delete_autheduser(no_autheduser *au) {
 void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
-    dbescapestring(escapedauthname, au->authname->content, au->authname->length);
-    dbquery("INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    nodb->escapestring(nodb, escapedauthname, au->authname->content, au->authname->length);
+    nodb->squery(nodb, "INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    dbquery("UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    nodb->squery(nodb, "UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 
