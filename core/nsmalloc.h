@@ -20,6 +20,7 @@ void nsfreeall(unsigned int poolid);
 void nsexit(void);
 void *nsrealloc(unsigned int poolid, void *ptr, size_t size);
 void nscheckfreeall(unsigned int poolid);
+void *nscalloc(unsigned int poolid, size_t nmemb, size_t size);
 
 #define MAXPOOL		100
 

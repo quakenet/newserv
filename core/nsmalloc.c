@@ -1,6 +1,7 @@
 /* nsmalloc: Simple pooled malloc() thing. */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "nsmalloc.h"
 #define __NSMALLOC_C
@@ -37,6 +38,19 @@ void *nsmalloc(unsigned int poolid, size_t size) {
   nsmpools[poolid].first.next=nsmp;
 
   return (void *)nsmp->data;
+}
+
+void *nscalloc(unsigned int poolid, size_t nmemb, size_t size) {
+  size_t total = nmemb * size;
+  void *m;
+
+  m = nsmalloc(poolid, total);
+  if(!m)
+    return NULL;
+
+  memset(m, 0, total);
+
+  return m;
 }
 
 /* we dump core on ptr == NULL */
@@ -134,6 +148,10 @@ void nsexit(void) {
 
 void *nsmalloc(unsigned int poolid, size_t size) {
   return malloc(size);
+}
+
+void *nscalloc(unsigned int poolid, size_t nmemb, size_t size) {
+  return calloc(nmemb, size);
 }
 
 void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
