@@ -48,6 +48,9 @@ static int inited;
 static void sqlitequeueprocessor(void *arg);
 static void dbstatus(int hooknum, void *arg);
 
+void registersqliteprovider(void);
+void deregistersqliteprovider(void);
+
 void _init(void) {
   sstring *dbfile;
   int rc;
@@ -88,6 +91,8 @@ void _init(void) {
 
   sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA synchronous=" SYNC_MODE ";");
   registerhook(HOOK_CORE_STATSREQUEST, dbstatus);
+
+/*  registersqliteprovider();*/
 }
 
 void _fini(void) {
@@ -108,6 +113,8 @@ void _fini(void) {
     }
 
     sqlite3_close(conn);
+
+/*    deregistersqliteprovider();*/
 
     dbconnected = 0;
   }
@@ -191,9 +198,8 @@ static void popqueue(void) {
   return;
 }
 
-void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
+void sqliteasyncqueryfv(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, va_list va) {
   char querybuf[8192];
-  va_list va;
   int len;
   int rc;
   sqlite3_stmt *s;
@@ -201,9 +207,7 @@ void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, in
   if(!sqliteconnected())
     return;
 
-  va_start(va, format);
   len = vsnprintf(querybuf, sizeof(querybuf), format, va);
-  va_end(va);
 
   rc = sqlite3_prepare(conn, querybuf, -1, &s, NULL);
   if(rc != SQLITE_OK) {
@@ -226,6 +230,14 @@ void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, in
   }
 
   processstatement(rc, s, handler, tag, querybuf);
+}
+
+void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
+  va_list va;
+
+  va_start(va, format);
+  sqliteasyncqueryfv(identifier, handler, tag, flags, format, va);
+  va_end(va);
 }
 
 int sqliteconnected(void) {
@@ -305,6 +317,7 @@ int sqlitequerysuccessful(SQLiteResult *r) {
 
 struct sqlitetableloader {
   SQLiteQueryHandler init, data, fini;
+  void *tag;
   char tablename[];
 };
 
@@ -318,12 +331,12 @@ static void loadtablerows(SQLiteConn *c, void *tag) {
 
   /* the handlers do all the checking and cleanup */
   if(t->init)
-    (t->init)(c, NULL);
+    (t->init)(c, t->tag);
 
-  (t->data)(c, NULL);
+  (t->data)(c, t->tag);
 
   if(t->fini)
-    (t->fini)(c, NULL);
+    (t->fini)(c, t->tag);
 
   nsfree(POOL_SQLITE, t);
 }
@@ -352,7 +365,7 @@ static void loadtablecount(SQLiteConn *c, void *tag) {
   sqliteasyncqueryf(0, loadtablerows, t, 0, "SELECT * FROM %s", t->tablename);
 }
 
-void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini) {
+void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini, void *tag) {
   struct sqlitetableloader *t;
   int len;
 
@@ -366,6 +379,7 @@ void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandle
   t->init = init;
   t->data = data;
   t->fini = fini;
+  t->tag = tag;
 
   sqliteasyncqueryf(0, loadtablecount, t, 0, "SELECT COUNT(*) FROM %s", tablename);
 }

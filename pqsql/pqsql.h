@@ -16,7 +16,7 @@ typedef struct PQResult {
 typedef int PQModuleIdentifier;
 typedef void (*PQQueryHandler)(PGconn *, void *);
 
-void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini);
+void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini, void *tag);
 
 void pqasyncqueryf(PQModuleIdentifier identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...) __attribute__ ((format (printf, 5, 6)));
 #define pqasyncqueryi(identifier, handler, tag, format, ...) pqasyncqueryf(identifier, handler, tag, 0, format , ##__VA_ARGS__)

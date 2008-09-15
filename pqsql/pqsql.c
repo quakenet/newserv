@@ -51,6 +51,7 @@ typedef struct pqtableloaderinfo_s
 {
     sstring *tablename;
     PQQueryHandler init, data, fini;
+    void *tag;
 } pqtableloaderinfo_s;
 
 pqasyncquery_s *queryhead = NULL, *querytail = NULL;
@@ -275,7 +276,7 @@ void pqasyncqueryf(int identifier, PQQueryHandler handler, void *tag, int flags,
   }
 }
 
-void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini)
+void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini, void *tag)
 {
   pqtableloaderinfo_s *tli;
 
@@ -284,6 +285,7 @@ void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQu
   tli->init=init;
   tli->data=data;
   tli->fini=fini;
+  tli->tag=tag;
   pqasyncquery(pqstartloadtable, tli, "SELECT COUNT(*) FROM %s", tli->tablename->content);
 }
 
@@ -311,16 +313,16 @@ void pqstartloadtable(PGconn *dbconn, void *arg)
 
   Error("pqsql", ERR_INFO, "Found %lu entries in table %s, scheduling load.", count, tli->tablename->content);
 
-  pqasyncquery(tli->init, NULL, "BEGIN");
+  pqasyncquery(tli->init, tli->tag, "BEGIN");
   pqasyncquery(NULL, NULL, "DECLARE table%lx%lx CURSOR FOR SELECT * FROM %s", tablecrc, count, tli->tablename->content);
 
   for (i=0;(count - i) > 1000; i+=1000)
-    pqasyncquery(tli->data, NULL, "FETCH 1000 FROM table%lx%lx", tablecrc, count);
+    pqasyncquery(tli->data, tli->tag, "FETCH 1000 FROM table%lx%lx", tablecrc, count);
 
-  pqasyncquery(tli->data, NULL, "FETCH ALL FROM table%lx%lx", tablecrc, count);
+  pqasyncquery(tli->data, tli->tag, "FETCH ALL FROM table%lx%lx", tablecrc, count);
 
   pqasyncquery(NULL, NULL, "CLOSE table%lx%lx", tablecrc, count);
-  pqasyncquery(tli->fini, NULL, "COMMIT");
+  pqasyncquery(tli->fini, tli->tag, "COMMIT");
 
   freesstring(tli->tablename);
   nsfree(POOL_PQSQL, tli);

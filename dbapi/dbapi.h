@@ -29,7 +29,7 @@ typedef PQResult DBResult;
 #define dbattach(schema) pqcreateschema(schema)
 #define dbdetach(schema)
 #define dbescapestring(buf, src, len)  PQescapeString(buf, src, len)
-#define dbloadtable(tablename, init, data, fini) pqloadtable(tablename, init, data, fini);
+#define dbloadtable(tablename, init, data, fini) pqloadtable(tablename, init, data, fini, NULL);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) pqasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
 #define dbquerysuccessful(x) pqquerysuccessful(x)
@@ -59,7 +59,7 @@ typedef SQLiteResult DBResult;
 #define dbattach(schema) sqliteattach(schema)
 #define dbdetach(schema) sqlitedetach(schema)
 #define dbescapestring(buf, src, len) sqliteescapestring(buf, (char *)(src), len)
-#define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini);
+#define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini, NULL);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) sqliteasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
 #define dbquerysuccessful(x) sqlitequerysuccessful(x)

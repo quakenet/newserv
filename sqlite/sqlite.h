@@ -13,6 +13,7 @@ typedef int SQLiteModuleIdentifier;
 typedef void (*SQLiteQueryHandler)(SQLiteConn *, void *);
 
 void sqliteasyncqueryf(SQLiteModuleIdentifier identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) __attribute__ ((format (printf, 5, 6)));
+void sqliteasyncqueryfv(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, va_list ap);
 
 int sqliteconnected(void);
 
@@ -31,6 +32,6 @@ int sqlitequerysuccessful(SQLiteResult *);
 
 void sqliteattach(char *schema);
 void sqlitedetach(char *schema);
-void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini);
+void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini, void *tag);
 
 #endif
