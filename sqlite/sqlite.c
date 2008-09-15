@@ -92,7 +92,7 @@ void _init(void) {
   sqliteasyncqueryf(0, NULL, NULL, 0, "PRAGMA synchronous=" SYNC_MODE ";");
   registerhook(HOOK_CORE_STATSREQUEST, dbstatus);
 
-/*  registersqliteprovider();*/
+  registersqliteprovider();
 }
 
 void _fini(void) {
@@ -114,7 +114,7 @@ void _fini(void) {
 
     sqlite3_close(conn);
 
-/*    deregistersqliteprovider();*/
+    deregistersqliteprovider();
 
     dbconnected = 0;
   }
@@ -244,7 +244,7 @@ int sqliteconnected(void) {
   return dbconnected;
 }
 
-void sqliteescapestring(char *buf, char *src, unsigned int len) {
+size_t sqliteescapestring(char *buf, char *src, unsigned int len) {
   unsigned int i;
   char *p;
 
@@ -254,6 +254,8 @@ void sqliteescapestring(char *buf, char *src, unsigned int len) {
     *buf++ = *p;
   }
   *buf = '\0';
+
+  return buf - p;
 }
 
 SQLiteResult *sqlitegetresult(SQLiteConn *r) {

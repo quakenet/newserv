@@ -6,4 +6,4 @@ all: sqlite.so
 libsqlite3.o: libsqlite3.c libsqlite3/sqlite3.c
 	$(CC) $(CFLAGS) -c libsqlite3.c -w
 
-sqlite.so: sqlite.o libsqlite3.o
+sqlite.so: sqlite.o libsqlite3.o sqlite-dbapi2.o

@@ -20,7 +20,7 @@ int sqliteconnected(void);
 int sqlitegetid(void);
 void sqlitefreeid(int);
 
-void sqliteescapestring(char *, char *, unsigned int);
+size_t sqliteescapestring(char *buf, char *src, unsigned int len);
 
 SQLiteResult *sqlitegetresult(SQLiteConn *);
 int sqlitefetchrow(SQLiteResult *);
