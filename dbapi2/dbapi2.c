@@ -32,7 +32,7 @@ int registerdbprovider(const char *name, DBAPIProvider *provider) {
   int i;
 
   for(i=0;i<MAX_PROVIDERS;i++) {
-    if(!providerobjs[i])
+    if(providerobjs[i])
       continue;
 
     providerobjs[i] = provider;
@@ -59,7 +59,23 @@ static void dbclose(DBAPIConn *db) {
   free(db);
 }
 
-DBAPIConn *dbopen(const char *provider, int force, const char *database) {
+static void dbsimplequery(DBAPIConn *db, const char *format, ...) {
+  va_list ap;
+
+  va_start(ap, format);
+  db->__query(db, NULL, NULL, format, ap);
+  va_end(ap);
+}
+
+static void dbquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+  va_list ap;
+
+  va_start(ap, format);
+  db->__query(db, cb, data, format, ap);
+  va_end(ap);
+}
+
+DBAPIConn *dbapi2open(const char *provider, int force, const char *database) {
   int i, found, foundwanted;
   DBAPIConn *db;
   DBAPIProvider *p;
@@ -69,7 +85,7 @@ DBAPIConn *dbopen(const char *provider, int force, const char *database) {
       continue;
     found = i;
 
-    if(!strcmp(provider, providerobjs[i]->__providerdata->name)) {
+    if(provider && !strcmp(provider, providerobjs[i]->__providerdata->name)) {
       foundwanted = 1;
       break;
     }
@@ -85,18 +101,20 @@ DBAPIConn *dbopen(const char *provider, int force, const char *database) {
     return NULL;
   }
 
-  p = providerobjs[i];
+  p = providerobjs[found];
 
   db = calloc(1, sizeof(DBAPIConn));
   if(!db)
     return NULL;
 
   db->close = dbclose;
-  db->query = p->query;
+  db->query = dbquery;
   db->createtable = p->createtable;
   db->loadtable = p->loadtable;
   db->escapestring = p->escapestring;
+  db->squery = dbsimplequery;
 
+  db->__query = p->query;
   db->__close = p->close;
   db->__quotestring = p->quotestring;
 

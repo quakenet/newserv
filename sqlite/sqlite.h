@@ -1,6 +1,8 @@
 #ifndef __SQLITE_DB_H
 #define __SQLITE_DB_H
 
+#include <stdlib.h>
+
 #include "../sqlite/libsqlite3/sqlite3.h"
 
 typedef struct SQLiteResult {

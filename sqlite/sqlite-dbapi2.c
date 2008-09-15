@@ -1,19 +1,22 @@
 #include <stdarg.h>
 
-#include "../dbapi2/dbapi2.h"
 #include "sqlite.h"
+
+#define DBAPI2_RESULT_HANDLE SQLiteConn
+#include "../dbapi2/dbapi2.h"
+
 #include "../dbapi/dbapi.h"
 #include "../lib/stringbuf.h"
 
-DBAPI2_HANDLE *dbapi2_sqlite_new(DBAPIConn *);
-void dbapi2_sqlite_close(DBAPIConn *);
+static DBAPI2_HANDLE *dbapi2_sqlite_new(DBAPIConn *);
+static void dbapi2_sqlite_close(DBAPIConn *);
 
-void dbapi2_sqlite_query(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
-void dbapi2_sqlite_createtable(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
-void dbapi2_sqlite_loadtable(DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData data, const char *);
+static void dbapi2_sqlite_query(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
+static void dbapi2_sqlite_createtable(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
+static void dbapi2_sqlite_loadtable(DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData data, const char *);
 
-void dbapi2_sqlite_escapestring(DBAPIConn *, char *, const char *, size_t);
-int dbapi2_sqlite_quotestring(DBAPIConn *, char *, size_t, const char *, size_t);
+static void dbapi2_sqlite_escapestring(DBAPIConn *, char *, const char *, size_t);
+static int dbapi2_sqlite_quotestring(DBAPIConn *, char *, size_t, const char *, size_t);
 
 static DBAPIProvider sqliteprovider = {
   .new = dbapi2_sqlite_new,
@@ -50,7 +53,7 @@ void deregistersqliteprovider(void) {
   deregisterdbprovider(sqlitehandle);
 }
 
-DBAPI2_HANDLE *dbapi2_sqlite_new(DBAPIConn *db) {
+static DBAPI2_HANDLE *dbapi2_sqlite_new(DBAPIConn *db) {
   long id = sqlitegetid();
 
   sqliteattach(db->name);
@@ -58,42 +61,83 @@ DBAPI2_HANDLE *dbapi2_sqlite_new(DBAPIConn *db) {
   return (void *)id;
 }
 
-void dbapi2_sqlite_close(DBAPIConn *db) {
+static void dbapi2_sqlite_close(DBAPIConn *db) {
   sqlitefreeid((int)(long)db->handle);
   sqlitedetach(db->name);
 }
 
+static char *dbapi2_sqlite_result_get(DBAPIResult *r, int column) {
+  return sqlitegetvalue(r->handle, column);
+}
+
+static int dbapi2_sqlite_result_next(DBAPIResult *r) {
+  return sqlitefetchrow(r->handle);
+}
+
+static void dbapi2_sqlite_result_clear(DBAPIResult *r) {
+  if(!r)
+    return;
+
+  sqliteclear(r->handle);
+/*  free(r);*/
+}
+
+static DBAPIResult *wrapresult(DBAPIResult *r, SQLiteConn *c) {
+  if(!c)
+    return NULL;
+
+  if(!r)
+    r = calloc(1, sizeof(DBAPIResult));
+
+  r->clear = dbapi2_sqlite_result_clear;
+
+  if(!sqlitequerysuccessful(c))
+    return r;
+
+  r->success = 1;
+  r->fields = sqlite3_column_count(c->r);
+
+  r->handle = c;
+  r->get = dbapi2_sqlite_result_get;
+  r->next = dbapi2_sqlite_result_next;
+
+  return r;
+}
+
 static void dbapi2_sqlite_querywrapper(SQLiteConn *c, void *data) {
   struct DBAPI2SQLiteQueryCallback *a = data;
+  DBAPIResult r_, *r = wrapresult(&r_, c);
 
-  a->callback(NULL, a->data);
+  a->callback(r, a->data);
 
   free(a);
 }
 
-void dbapi2_sqlite_query(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
-  va_list ap;
-  struct DBAPI2SQLiteQueryCallback *a = malloc(sizeof(struct DBAPI2SQLiteQueryCallback));
+static void sqquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap, int flags) {
+  struct DBAPI2SQLiteQueryCallback *a;
 
-  a->db = db;
-  a->data = data;
-  a->callback = cb;
+  if(cb) {
+    a = malloc(sizeof(struct DBAPI2SQLiteQueryCallback));
 
-  va_start(ap, format);
-  sqliteasyncqueryfv((int)(long)db->handle, dbapi2_sqlite_querywrapper, a, 0, (char *)format, ap);
-  va_end(ap);
+    a->db = db;
+    a->data = data;
+    a->callback = cb;
+  } else {
+    a = NULL;
+  }
+
+  sqliteasyncqueryfv((int)(long)db->handle, cb?dbapi2_sqlite_querywrapper:NULL, a, flags, (char *)format, ap);
 }
 
-void dbapi2_sqlite_createtable(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
-  va_list ap;
-  struct DBAPI2SQLiteQueryCallback *a = malloc(sizeof(struct DBAPI2SQLiteQueryCallback));
+static void dbapi2_sqlite_query(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap) {
+  sqquery(db, cb, data, format, ap, 0);
+}
 
-  a->db = db;
-  a->data = data;
-  a->callback = cb;
+static void dbapi2_sqlite_createtable(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+  va_list ap;
 
   va_start(ap, format);
-  sqliteasyncqueryfv((int)(long)db->handle, dbapi2_sqlite_querywrapper, a, DB_CREATE, (char *)format, ap);
+  sqquery(db, cb, data, format, ap, DB_CREATE);
   va_end(ap);
 }
 
@@ -119,7 +163,7 @@ static void dbapi2_sqlite_loadtablewrapper_fini(SQLiteConn *c, void *data) {
   free(a);
 }
 
-void dbapi2_sqlite_loadtable(DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryCallback cb, DBAPIQueryCallback final, DBAPIUserData data, const char *table) {
+static void dbapi2_sqlite_loadtable(DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryCallback cb, DBAPIQueryCallback final, DBAPIUserData data, const char *table) {
   struct DBAPI2SQLiteLoadTableCallback *a = malloc(sizeof(struct DBAPI2SQLiteLoadTableCallback));
 
   a->db = db;
@@ -132,11 +176,11 @@ void dbapi2_sqlite_loadtable(DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryC
   sqliteloadtable((char *)table, init?dbapi2_sqlite_loadtablewrapper_init:NULL, cb?dbapi2_sqlite_loadtablewrapper_data:NULL, dbapi2_sqlite_loadtablewrapper_fini, a);
 }
 
-void dbapi2_sqlite_escapestring(DBAPIConn *db, char *buf, const char *data, size_t len) {
+static void dbapi2_sqlite_escapestring(DBAPIConn *db, char *buf, const char *data, size_t len) {
   sqliteescapestring(buf, (char *)data, len);
 }
 
-int dbapi2_sqlite_quotestring(DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
+static int dbapi2_sqlite_quotestring(DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
   StringBuf b;
   sbinit(&b, buf, buflen);
   char xbuf[len * 2 + 5];
