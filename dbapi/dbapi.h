@@ -35,7 +35,6 @@ typedef PQResult DBResult;
 #define dbloadtable_tag(tablename, init, data, fini, tag) pqloadtable(tablename, init, data, fini, tag);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) pqasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
-#define dbasyncqueryfv(id, handler, tag, flags, format, ap) pqasyncqueryfv(id, handler, tag, flags, format, ap)
 #define dbquerysuccessful(x) pqquerysuccessful(x)
 #define dbgetresult(conn) pqgetresult(conn)
 #define dbnumfields(x) PQnfields(x->result)
@@ -67,7 +66,6 @@ typedef SQLiteResult DBResult;
 #define dbloadtable_tag(tablename, init, data, fini, tag) sqliteloadtable(tablename, init, data, fini, tag);
 
 #define dbasyncqueryf(id, handler, tag, flags, format, ...) sqliteasyncqueryf(id, handler, tag, flags, format , ##__VA_ARGS__)
-#define dbasyncqueryfv(id, handler, tag, flags, format, ap) sqliteasyncqueryfv(id, handler, tag, flags, format, ap)
 #define dbquerysuccessful(x) sqlitequerysuccessful(x)
 #define dbgetresult(conn) sqlitegetresult(conn)
 #define dbnumfields(x) sqlite3_column_count(x->r)

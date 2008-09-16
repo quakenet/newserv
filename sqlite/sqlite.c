@@ -191,16 +191,19 @@ static void popqueue(void) {
   return;
 }
 
-void sqliteasyncqueryfv(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, va_list va) {
+void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
   char querybuf[8192];
   int len;
   int rc;
   sqlite3_stmt *s;
-  
+  va_list va;
+
   if(!sqliteconnected())
     return;
 
+  va_start(va, format);
   len = vsnprintf(querybuf, sizeof(querybuf), format, va);
+  va_end(va);
 
   rc = sqlite3_prepare(conn, querybuf, -1, &s, NULL);
   if(rc != SQLITE_OK) {
@@ -223,14 +226,6 @@ void sqliteasyncqueryfv(int identifier, SQLiteQueryHandler handler, void *tag, i
   }
 
   processstatement(rc, s, handler, tag, querybuf);
-}
-
-void sqliteasyncqueryf(int identifier, SQLiteQueryHandler handler, void *tag, int flags, char *format, ...) {
-  va_list va;
-
-  va_start(va, format);
-  sqliteasyncqueryfv(identifier, handler, tag, flags, format, va);
-  va_end(va);
 }
 
 int sqliteconnected(void) {

@@ -1,5 +1,6 @@
 #define MAX_PROVIDERS 10
 #define PROVIDER_NAME_LEN 100
+#define QUERYBUFLEN 8192*2
 
 #define DBAPI_SNPRINTF_MAX_ARGS       20
 #define DBAPI_SNPRINTF_MAX_ARG_LENGTH 2048
@@ -19,6 +20,8 @@ struct DBAPIProviderData {
 
 static DBAPIProvider *providerobjs[MAX_PROVIDERS];
 static struct DBAPIProviderData providerdata[MAX_PROVIDERS];
+
+static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, va_list ap);
 
 void _init(void) {
   memset(providerobjs, 0, sizeof(providerobjs));
@@ -61,19 +64,65 @@ static void dbclose(DBAPIConn *db) {
   free((DBAPIConn *)db);
 }
 
+static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  /* TODO: truncation check */
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  va_end(ap);
+
+  db->__query(db, cb, data, buf);
+}
+
+static void dbcreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  /* TODO: truncation check */
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  va_end(ap);
+
+  db->__createtable(db, cb, data, buf);
+}
+
 static void dbsimplequery(const DBAPIConn *db, const char *format, ...) {
   va_list ap;
 
   va_start(ap, format);
-  db->__query(db, NULL, NULL, format, ap);
+  dbquery(db, NULL, NULL, format, ap);
   va_end(ap);
 }
 
-static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+static void dbsafequery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__query(db, cb, data, buf);
+}
+
+static void dbsafecreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__createtable(db, cb, data, buf);
+}
+
+static void dbsafesimplequery(const DBAPIConn *db, const char *format, const char *types, ...) {
   va_list ap;
 
-  va_start(ap, format);
-  db->__query(db, cb, data, format, ap);
+  va_start(ap, types);
+  dbsafequery(db, NULL, NULL, format, types, ap);
   va_end(ap);
 }
 
@@ -115,15 +164,19 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
 
   db->close = dbclose;
   db->query = dbquery;
-  db->createtable = p->createtable;
+  db->createtable = dbcreatetable;
   db->loadtable = p->loadtable;
   db->escapestring = p->escapestring;
   db->squery = dbsimplequery;
   db->tablename = p->tablename;
+  db->safequery = dbsafequery;
+  db->safesquery = dbsafesimplequery;
+  db->safecreatetable = dbsafecreatetable;
 
   db->__query = p->query;
   db->__close = p->close;
   db->__quotestring = p->quotestring;
+  db->__createtable = p->createtable;
 
   strlcpy(db->name, database, DBNAME_LEN);
 
@@ -233,12 +286,4 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
   }
 
   sbterminate(&b);
-}
-
-void dbsnprintf(const DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, ...) {
-  va_list ap;
-
-  va_start(ap, types);
-  dbvsnprintf(db, buf, size, format, types, ap);
-  va_end(ap);
 }

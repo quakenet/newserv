@@ -12,8 +12,8 @@
 static DBAPI2_HANDLE *dbapi2_adapter_new(const DBAPIConn *);
 static void dbapi2_adapter_close(DBAPIConn *);
 
-static void dbapi2_adapter_query(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
-static void dbapi2_adapter_createtable(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
+static void dbapi2_adapter_query(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *);
+static void dbapi2_adapter_createtable(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *);
 static void dbapi2_adapter_loadtable(const DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData data, const char *);
 
 static void dbapi2_adapter_escapestring(const DBAPIConn *, char *, const char *, size_t);
@@ -116,7 +116,7 @@ static void dbapi2_adapter_querywrapper(DBConn *c, void *data) {
   free(a);
 }
 
-static void sqquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap, int flags) {
+static void sqquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, int flags, const char *query) {
   struct DBAPI2AdapterQueryCallback *a;
 
   if(cb) {
@@ -129,19 +129,15 @@ static void sqquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData da
     a = NULL;
   }
 
-  dbasyncqueryfv((int)(long)db->handle, cb?dbapi2_adapter_querywrapper:NULL, a, flags, (char *)format, ap);
+  dbasyncqueryf((int)(long)db->handle, cb?dbapi2_adapter_querywrapper:NULL, a, flags, "%s", query);
 }
 
-static void dbapi2_adapter_query(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap) {
-  sqquery(db, cb, data, format, ap, 0);
+static void dbapi2_adapter_query(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *query) {
+  sqquery(db, cb, data, 0, query);
 }
 
-static void dbapi2_adapter_createtable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
-  va_list ap;
-
-  va_start(ap, format);
-  sqquery(db, cb, data, format, ap, DB_CREATE);
-  va_end(ap);
+static void dbapi2_adapter_createtable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *query) {
+  sqquery(db, cb, data, DB_CREATE, query);
 }
 
 static void dbapi2_adapter_loadtablewrapper_init(DBConn *c, void *data) {

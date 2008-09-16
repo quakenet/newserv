@@ -232,15 +232,18 @@ void dbhandler(int fd, short revents) {
 }
 
 /* sorry Q9 */
-void pqasyncqueryfv(int identifier, PQQueryHandler handler, void *tag, int flags, char *format, va_list va) {
+void pqasyncqueryf(int identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...) {
   char querybuf[8192];
   int len;
   pqasyncquery_s *qp;
+  va_list va;
 
   if(!pqconnected())
     return;
 
+  va_start(va, format);
   len = vsnprintf(querybuf, sizeof(querybuf), format, va);
+  va_end(va);
 
   /* PPA: no check here... */
   qp = (pqasyncquery_s *)nsmalloc(POOL_PQSQL, sizeof(pqasyncquery_s));
@@ -271,14 +274,6 @@ void pqasyncqueryfv(int identifier, PQQueryHandler handler, void *tag, int flags
     PQsendQuery(dbconn, qp->query);
     PQflush(dbconn);
   }
-}
-
-void pqasyncqueryf(int identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...) {
-  va_list va;
-
-  va_start(va, format);
-  pqasyncqueryfv(identifier, handler, tag, flags, format, va);
-  va_end(va);
 }
 
 void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini, void *tag)
