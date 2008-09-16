@@ -43,6 +43,8 @@ typedef void (*DBAPISafeCreateTable)(struct DBAPIConn *, const char *, ...) __at
 typedef void (*DBAPIEscapeString)(struct DBAPIConn *, char *, const char *, size_t);
 typedef int (*DBAPIQuoteString)(struct DBAPIConn *, char *, size_t, const char *, size_t);
 
+typedef char *(*DBAPITableName)(struct DBAPIConn *, const char *);
+
 struct DBAPIProviderData;
 
 typedef struct DBAPIProvider {
@@ -52,6 +54,9 @@ typedef struct DBAPIProvider {
   DBAPIQueryV query;
   DBAPICreateTable createtable;
   DBAPILoadTable loadtable;
+
+  DBAPITableName tablename;
+
 /*
   DBAPISafeQuery safequery;
   DBAPISafeSimpleQuery safesimplequery;
@@ -73,6 +78,7 @@ typedef struct DBAPIConn {
   DBAPICreateTable createtable;
   DBAPILoadTable loadtable;
   DBAPIEscapeString escapestring; /* deprecated */
+  DBAPITableName tablename;
 
   char name[DBNAME_LEN+1];
 

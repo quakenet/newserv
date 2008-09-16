@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdio.h>
 
 #define DBAPI2_ADAPTER
 #include "../dbapi/dbapi.h"
@@ -6,7 +7,6 @@
 #define DBAPI2_RESULT_HANDLE DBResult
 
 #include "../dbapi2/dbapi2.h"
-
 #include "../lib/stringbuf.h"
 
 static DBAPI2_HANDLE *dbapi2_adapter_new(DBAPIConn *);
@@ -19,6 +19,8 @@ static void dbapi2_adapter_loadtable(DBAPIConn *, DBAPIQueryCallback, DBAPIQuery
 static void dbapi2_adapter_escapestring(DBAPIConn *, char *, const char *, size_t);
 static int dbapi2_adapter_quotestring(DBAPIConn *, char *, size_t, const char *, size_t);
 
+static char *dbapi2_adapter_tablename(DBAPIConn *, const char *);
+
 static DBAPIProvider adapterprovider = {
   .new = dbapi2_adapter_new,
   .close = dbapi2_adapter_close,
@@ -28,7 +30,9 @@ static DBAPIProvider adapterprovider = {
   .loadtable = dbapi2_adapter_loadtable,
 
   .escapestring = dbapi2_adapter_escapestring,
-  .quotestring = dbapi2_adapter_quotestring
+  .quotestring = dbapi2_adapter_quotestring,
+
+  .tablename = dbapi2_adapter_tablename,
 };
 
 struct DBAPI2AdapterQueryCallback {
@@ -198,5 +202,15 @@ static int dbapi2_adapter_quotestring(DBAPIConn *db, char *buf, size_t buflen, c
     return 0;
 
   return 1;
+}
+#endif
+
+#ifndef DBAPI2_CUSTOM_TABLENAME
+static char *dbapi2_adapter_tablename(DBAPIConn *db, const char *tablename) {
+  static char buf[1024];
+
+  snprintf(buf, sizeof(buf), "%s.%s", db->name, tablename);
+
+  return buf;
 }
 #endif

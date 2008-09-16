@@ -119,6 +119,7 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   db->loadtable = p->loadtable;
   db->escapestring = p->escapestring;
   db->squery = dbsimplequery;
+  db->tablename = p->tablename;
 
   db->__query = p->query;
   db->__close = p->close;

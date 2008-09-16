@@ -54,7 +54,7 @@ int noperserv_load_db(void) {
   noperserv_create_tables();
 
   nodb->query(nodb, noperserv_load_users, NULL,
-    "SELECT ID, authname, flags, noticelevel FROM noperserv.users");
+    "SELECT ID, authname, flags, noticelevel FROM %s", nodb->tablename(nodb, "users"));
 
   return 1;
 }
@@ -104,12 +104,12 @@ void noperserv_load_users(DBAPIResult *res, void *arg) {
 
 void noperserv_create_tables(void) {
   nodb->createtable(nodb, NULL, NULL,
-    "CREATE TABLE noperserv.users ("
+    "CREATE TABLE %s ("
       "ID            INT               NOT NULL,"
       "authname      VARCHAR(%d)       NOT NULL,"
       "flags         INT               NOT NULL,"
       "noticelevel   INT               NOT NULL,"
-      "PRIMARY KEY (ID))", ACCOUNTLEN);
+      "PRIMARY KEY (ID))", nodb->tablename(nodb, "users"), ACCOUNTLEN);
 }
 
 void noperserv_cleanup_db(void) {
@@ -155,7 +155,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    nodb->squery(nodb, "DELETE FROM noperserv.users WHERE id = %lu", au->id);
+    nodb->squery(nodb, "DELETE FROM %s WHERE id = %lu", nodb->tablename(nodb, "users"), au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {
@@ -174,10 +174,10 @@ void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
     nodb->escapestring(nodb, escapedauthname, au->authname->content, au->authname->length);
-    nodb->squery(nodb, "INSERT INTO noperserv.users (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    nodb->squery(nodb, "INSERT INTO %s (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", nodb->tablename(nodb, "users"), au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    nodb->squery(nodb, "UPDATE noperserv.users SET flags = %u, noticelevel = %u WHERE id = %lu", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    nodb->squery(nodb, "UPDATE %s SET flags = %u, noticelevel = %u WHERE id = %lu", nodb->tablename(nodb, "users"), NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 
