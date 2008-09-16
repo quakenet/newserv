@@ -67,11 +67,14 @@ static void dbclose(DBAPIConn *db) {
 static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
   char buf[QUERYBUFLEN];
+  size_t ret;
 
-  /* TODO: truncation check */
   va_start(ap, format);
-  vsnprintf(buf, sizeof(buf), format, ap);
+  ret = vsnprintf(buf, sizeof(buf), format, ap);
   va_end(ap);
+
+  if(ret >= sizeof(buf))
+    Error("dbapi2", ERR_STOP, "Query truncated in dbquery, format: '%s', database: %s", format, db->name);
 
   db->__query(db, cb, data, buf);
 }
@@ -79,11 +82,14 @@ static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData da
 static void dbcreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
   char buf[QUERYBUFLEN];
+  size_t ret;
 
-  /* TODO: truncation check */
   va_start(ap, format);
-  vsnprintf(buf, sizeof(buf), format, ap);
+  ret = vsnprintf(buf, sizeof(buf), format, ap);
   va_end(ap);
+
+  if(ret >= sizeof(buf))
+    Error("dbapi2", ERR_STOP, "Query truncated in dbcreatetable, format: '%s', database: %s", format, db->name);
 
   db->__createtable(db, cb, data, buf);
 }
@@ -220,7 +226,7 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
 
       if(argcount++ >= DBAPI_SNPRINTF_MAX_ARGS) {
         /* calls exit(0) */
-        Error("dbapi2", ERR_STOP, "Maximum arguments reached in dbvsnprintf, database: %s", db->name);
+        Error("dbapi2", ERR_STOP, "Maximum arguments reached in dbvsnprintf, format: '%s', database: %s", format, db->name);
       }
 
       fallthrough = 0;
@@ -239,7 +245,7 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
 
           /* now... this is a guess, but we should catch it most of the time */
           if((l > (DBAPI_SNPRINTF_MAX_ARG_LENGTH / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
-            Error("dbapi2", ERR_WARNING, "Long string truncated (database: %s).", db->name);
+            Error("dbapi2", ERR_WARNING, "Long string truncated, format: '%s', database: %s", format, db->name);
             l = DBAPI_SNPRINTF_MAX_ARG_LENGTH;
           }
 
@@ -272,15 +278,11 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
       continue;
     }
     p++;
-    if(arg >= argcount) {
-      /* calls exit(0) */
-      Error("dbapi2", ERR_STOP, "Gone over number of arguments in dbvsnprintf, database: %s", db->name);
-    }
+    if(arg >= argcount)
+      Error("dbapi2", ERR_STOP, "Gone over number of arguments in dbvsnprintf, format: '%s', database: %s", format, db->name);
 
-    if(!sbaddstr(&b, convbuf[arg])) {
-      /* calls exit(0) */
-      Error("dbapi2", ERR_STOP, "Possible truncation in dbvsnprintf, database: %s", db->name);
-    }
+    if(!sbaddstr(&b, convbuf[arg]))
+      Error("dbapi2", ERR_STOP, "Possible truncation in dbvsnprintf, format: '%s', database: %s", format, db->name);
 
     arg++;
   }
