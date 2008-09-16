@@ -28,7 +28,7 @@ no_autheduser *authedusers = NULL;
 void noperserv_create_tables(void);
 
 void noperserv_free_user(no_autheduser *au);
-void noperserv_load_users(DBAPIResult *res, void *arg);
+void noperserv_load_users(const DBAPIResult *res, void *arg);
 
 void noperserv_check_nick(nick *np);
 void noperserv_nick_account(int hooknum, void *arg);
@@ -53,13 +53,13 @@ int noperserv_load_db(void) {
 
   noperserv_create_tables();
 
-  nodb->query(nodb, noperserv_load_users, NULL,
-    "SELECT ID, authname, flags, noticelevel FROM %s", nodb->tablename(nodb, "users"));
+  nodb->safequery(nodb, noperserv_load_users, NULL,
+    "SELECT ID, authname, flags, noticelevel FROM ?", "T", "users");
 
   return 1;
 }
 
-void noperserv_load_users(DBAPIResult *res, void *arg) {
+void noperserv_load_users(const DBAPIResult *res, void *arg) {
   no_autheduser *nu;
   nick *np;
   int i;
@@ -103,13 +103,13 @@ void noperserv_load_users(DBAPIResult *res, void *arg) {
 }
 
 void noperserv_create_tables(void) {
-  nodb->createtable(nodb, NULL, NULL,
-    "CREATE TABLE %s ("
+  nodb->safecreatetable(nodb, NULL, NULL,
+    "CREATE TABLE ? ("
       "ID            INT               NOT NULL,"
-      "authname      VARCHAR(%d)       NOT NULL,"
+      "authname      VARCHAR(?)       NOT NULL,"
       "flags         INT               NOT NULL,"
       "noticelevel   INT               NOT NULL,"
-      "PRIMARY KEY (ID))", nodb->tablename(nodb, "users"), ACCOUNTLEN);
+      "PRIMARY KEY (ID))", "Td", "users", ACCOUNTLEN);
 }
 
 void noperserv_cleanup_db(void) {
@@ -155,7 +155,7 @@ void noperserv_delete_autheduser(no_autheduser *au) {
   no_autheduser *ap = authedusers, *lp = NULL;
 
   if(!au->newuser)
-    nodb->squery(nodb, "DELETE FROM %s WHERE id = %lu", nodb->tablename(nodb, "users"), au->id);
+    nodb->safesquery(nodb, "DELETE FROM ? WHERE id = ?", "Tu", "users", au->id);
 
   for(;ap;lp=ap,ap=ap->next) {
     if(ap == au) {
@@ -174,10 +174,10 @@ void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
     char escapedauthname[ACCOUNTLEN * 2 + 1];
     nodb->escapestring(nodb, escapedauthname, au->authname->content, au->authname->length);
-    nodb->squery(nodb, "INSERT INTO %s (id, authname, flags, noticelevel) VALUES (%lu,'%s',%u,%u)", nodb->tablename(nodb, "users"), au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
+    nodb->safesquery(nodb, "INSERT INTO ? (id, authname, flags, noticelevel) VALUES (?,?,?,?)", "Tusuu", "users", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
-    nodb->squery(nodb, "UPDATE %s SET flags = %u, noticelevel = %u WHERE id = %lu", nodb->tablename(nodb, "users"), NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
+    nodb->safesquery(nodb, "UPDATE ? SET flags = ?, noticelevel = ? WHERE id = ?", "Tuuu", "users", NOGetAuthLevel(au), NOGetNoticeLevel(au), au->id);
   }
 }
 

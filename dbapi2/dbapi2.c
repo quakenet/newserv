@@ -287,7 +287,7 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
         break;
       continue;
     }
-    p++;
+
     if(arg >= argcount)
       Error("dbapi2", ERR_STOP, "Gone over number of arguments in dbvsnprintf, format: '%s', database: %s", format, db->name);
 
