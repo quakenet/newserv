@@ -67,16 +67,16 @@ typedef struct DBAPIProvider {
 typedef struct DBAPIConn {
   DBAPIClose close;
 
-  DBAPIQuery query;
-  DBAPISimpleQuery squery;
-  DBAPICreateTable createtable;
+  DBAPIQuery unsafequery;
+  DBAPISimpleQuery unsafesquery;
+  DBAPICreateTable unsafecreatetable;
   DBAPILoadTable loadtable;
   DBAPIEscapeString escapestring; /* deprecated */
   DBAPITableName tablename;
 
-  DBAPISafeQuery safequery;
-  DBAPISafeSimpleQuery safesquery;
-  DBAPISafeCreateTable safecreatetable;
+  DBAPISafeQuery query;
+  DBAPISafeSimpleQuery squery;
+  DBAPISafeCreateTable createtable;
 
   char name[DBNAME_LEN+1];
 

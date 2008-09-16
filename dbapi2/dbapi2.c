@@ -64,7 +64,7 @@ static void dbclose(DBAPIConn *db) {
   free((DBAPIConn *)db);
 }
 
-static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+static void dbunsafequery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
   char buf[QUERYBUFLEN];
   size_t ret;
@@ -74,12 +74,12 @@ static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData da
   va_end(ap);
 
   if(ret >= sizeof(buf))
-    Error("dbapi2", ERR_STOP, "Query truncated in dbquery, format: '%s', database: %s", format, db->name);
+    Error("dbapi2", ERR_STOP, "Query truncated in dbunsafequery, format: '%s', database: %s", format, db->name);
 
   db->__query(db, cb, data, buf);
 }
 
-static void dbcreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+static void dbunsafecreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
   char buf[QUERYBUFLEN];
   size_t ret;
@@ -89,16 +89,16 @@ static void dbcreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserD
   va_end(ap);
 
   if(ret >= sizeof(buf))
-    Error("dbapi2", ERR_STOP, "Query truncated in dbcreatetable, format: '%s', database: %s", format, db->name);
+    Error("dbapi2", ERR_STOP, "Query truncated in dbunsafecreatetable, format: '%s', database: %s", format, db->name);
 
   db->__createtable(db, cb, data, buf);
 }
 
-static void dbsimplequery(const DBAPIConn *db, const char *format, ...) {
+static void dbunsafesimplequery(const DBAPIConn *db, const char *format, ...) {
   va_list ap;
 
   va_start(ap, format);
-  dbquery(db, NULL, NULL, format, ap);
+  dbunsafequery(db, NULL, NULL, format, ap);
   va_end(ap);
 }
 
@@ -169,15 +169,15 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
     return NULL;
 
   db->close = dbclose;
-  db->query = dbquery;
-  db->createtable = dbcreatetable;
+  db->query = dbsafequery;
+  db->createtable = dbsafecreatetable;
+  db->squery = dbsafesimplequery;
   db->loadtable = p->loadtable;
   db->escapestring = p->escapestring;
-  db->squery = dbsimplequery;
   db->tablename = p->tablename;
-  db->safequery = dbsafequery;
-  db->safesquery = dbsafesimplequery;
-  db->safecreatetable = dbsafecreatetable;
+  db->unsafequery = dbunsafequery;
+  db->unsafesquery = dbunsafesimplequery;
+  db->unsafecreatetable = dbunsafecreatetable;
 
   db->__query = p->query;
   db->__close = p->close;
