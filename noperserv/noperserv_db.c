@@ -172,8 +172,6 @@ void noperserv_delete_autheduser(no_autheduser *au) {
 
 void noperserv_update_autheduser(no_autheduser *au) {
   if(au->newuser) {
-    char escapedauthname[ACCOUNTLEN * 2 + 1];
-    nodb->escapestring(nodb, escapedauthname, au->authname->content, au->authname->length);
     nodb->squery(nodb, "INSERT INTO ? (id, authname, flags, noticelevel) VALUES (?,?,?,?)", "Tusuu", "users", au->id, au->authname->content, NOGetAuthLevel(au), NOGetNoticeLevel(au));
     au->newuser = 0;
   } else {
