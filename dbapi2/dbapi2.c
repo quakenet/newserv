@@ -2,8 +2,8 @@
 #define PROVIDER_NAME_LEN 100
 #define QUERYBUFLEN 8192*2
 
-#define DBAPI_SNPRINTF_MAX_ARGS       20
-#define DBAPI_SNPRINTF_MAX_ARG_LENGTH 2048
+#define VSNPF_MAXARGS   20
+#define VSNPF_MAXARGLEN 2048
 
 #include <string.h>
 #include <stdlib.h>
@@ -201,7 +201,7 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
 static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, va_list ap) {
   StringBuf b;
   const char *p;
-  static char convbuf[DBAPI_SNPRINTF_MAX_ARGS][DBAPI_SNPRINTF_MAX_ARG_LENGTH+10];
+  static char convbuf[VSNPF_MAXARGS][VSNPF_MAXARGLEN+10];
   int arg, argcount;
 
   if(size == 0)
@@ -217,14 +217,14 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
     size_t l;
     int fallthrough;
 
-    for(i=0;i<DBAPI_SNPRINTF_MAX_ARGS;i++)
+    for(i=0;i<VSNPF_MAXARGS;i++)
       convbuf[i][0] = '\0';
 
     argcount=0;
     for(;*types;types++) {
       char *cb = convbuf[argcount];
 
-      if(argcount++ >= DBAPI_SNPRINTF_MAX_ARGS) {
+      if(argcount++ >= VSNPF_MAXARGS) {
         /* calls exit(0) */
         Error("dbapi2", ERR_STOP, "Maximum arguments reached in dbvsnprintf, format: '%s', database: %s", format, db->name);
       }
@@ -244,23 +244,33 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
           }
 
           /* now... this is a guess, but we should catch it most of the time */
-          if((l > (DBAPI_SNPRINTF_MAX_ARG_LENGTH / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
+          if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
             Error("dbapi2", ERR_WARNING, "Long string truncated, format: '%s', database: %s", format, db->name);
-            l = DBAPI_SNPRINTF_MAX_ARG_LENGTH;
+            l = VSNPF_MAXARGLEN;
           }
 
           break;
+        case 'R':
+          s = va_arg(ap, char *);
+
+          strlcpy(cb, s, sizeof(convbuf[0]));
+          break;
+        case 'T':
+          s = va_arg(ap, char *);
+
+          strlcpy(cb, db->tablename(db, s), sizeof(convbuf[0]));
+          break;
         case 'd':
           d = va_arg(ap, int);
-          snprintf(cb, DBAPI_SNPRINTF_MAX_ARG_LENGTH, "%d", d);
+          snprintf(cb, VSNPF_MAXARGLEN, "%d", d);
           break;
         case 'u':
           u = va_arg(ap, unsigned int);
-          snprintf(cb, DBAPI_SNPRINTF_MAX_ARG_LENGTH, "%u", u);
+          snprintf(cb, VSNPF_MAXARGLEN, "%u", u);
           break;
         case 'g':
           g = va_arg(ap, double);
-          snprintf(cb, DBAPI_SNPRINTF_MAX_ARG_LENGTH, "%.1f", g);
+          snprintf(cb, VSNPF_MAXARGLEN, "%.1f", g);
           break;
         default:
           /* calls exit(0) */
