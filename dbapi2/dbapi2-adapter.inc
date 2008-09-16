@@ -9,17 +9,17 @@
 #include "../dbapi2/dbapi2.h"
 #include "../lib/stringbuf.h"
 
-static DBAPI2_HANDLE *dbapi2_adapter_new(DBAPIConn *);
+static DBAPI2_HANDLE *dbapi2_adapter_new(const DBAPIConn *);
 static void dbapi2_adapter_close(DBAPIConn *);
 
-static void dbapi2_adapter_query(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
-static void dbapi2_adapter_createtable(DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
-static void dbapi2_adapter_loadtable(DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData data, const char *);
+static void dbapi2_adapter_query(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
+static void dbapi2_adapter_createtable(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...);
+static void dbapi2_adapter_loadtable(const DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData data, const char *);
 
-static void dbapi2_adapter_escapestring(DBAPIConn *, char *, const char *, size_t);
-static int dbapi2_adapter_quotestring(DBAPIConn *, char *, size_t, const char *, size_t);
+static void dbapi2_adapter_escapestring(const DBAPIConn *, char *, const char *, size_t);
+static int dbapi2_adapter_quotestring(const DBAPIConn *, char *, size_t, const char *, size_t);
 
-static char *dbapi2_adapter_tablename(DBAPIConn *, const char *);
+static char *dbapi2_adapter_tablename(const DBAPIConn *, const char *);
 
 static DBAPIProvider adapterprovider = {
   .new = dbapi2_adapter_new,
@@ -36,13 +36,13 @@ static DBAPIProvider adapterprovider = {
 };
 
 struct DBAPI2AdapterQueryCallback {
-  DBAPIConn *db;
+  const DBAPIConn *db;
   DBAPIUserData data;
   DBAPIQueryCallback callback;
 };
 
 struct DBAPI2AdapterLoadTableCallback {
-  DBAPIConn *db;
+  const DBAPIConn *db;
   DBAPIUserData data;
   DBAPIQueryCallback init, callback, fini;
 };
@@ -57,10 +57,10 @@ static void deregisteradapterprovider(void) {
   deregisterdbprovider(adapterhandle);
 }
 
-static DBAPI2_HANDLE *dbapi2_adapter_new(DBAPIConn *db) {
+static DBAPI2_HANDLE *dbapi2_adapter_new(const DBAPIConn *db) {
   long id = dbgetid();
 
-  dbattach(db->name);
+  dbattach(((DBAPIConn *)db)->name);
 
   return (void *)id;
 }
@@ -70,15 +70,15 @@ static void dbapi2_adapter_close(DBAPIConn *db) {
   dbdetach(db->name);
 }
 
-static char *dbapi2_adapter_result_get(DBAPIResult *r, int column) {
+static char *dbapi2_adapter_result_get(const DBAPIResult *r, unsigned int column) {
   return dbgetvalue(r->handle, column);
 }
 
-static int dbapi2_adapter_result_next(DBAPIResult *r) {
+static int dbapi2_adapter_result_next(const DBAPIResult *r) {
   return dbfetchrow(r->handle);
 }
 
-static void dbapi2_adapter_result_clear(DBAPIResult *r) {
+static void dbapi2_adapter_result_clear(const DBAPIResult *r) {
   if(!r)
     return;
 
@@ -116,7 +116,7 @@ static void dbapi2_adapter_querywrapper(DBConn *c, void *data) {
   free(a);
 }
 
-static void sqquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap, int flags) {
+static void sqquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap, int flags) {
   struct DBAPI2AdapterQueryCallback *a;
 
   if(cb) {
@@ -132,11 +132,11 @@ static void sqquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, co
   dbasyncqueryfv((int)(long)db->handle, cb?dbapi2_adapter_querywrapper:NULL, a, flags, (char *)format, ap);
 }
 
-static void dbapi2_adapter_query(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap) {
+static void dbapi2_adapter_query(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, va_list ap) {
   sqquery(db, cb, data, format, ap, 0);
 }
 
-static void dbapi2_adapter_createtable(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+static void dbapi2_adapter_createtable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
 
   va_start(ap, format);
@@ -168,7 +168,7 @@ static void dbapi2_adapter_loadtablewrapper_fini(DBConn *c, void *data) {
   free(a);
 }
 
-static void dbapi2_adapter_loadtable(DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryCallback cb, DBAPIQueryCallback final, DBAPIUserData data, const char *table) {
+static void dbapi2_adapter_loadtable(const DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryCallback cb, DBAPIQueryCallback final, DBAPIUserData data, const char *table) {
   struct DBAPI2AdapterLoadTableCallback *a = malloc(sizeof(struct DBAPI2AdapterLoadTableCallback));
 
   a->db = db;
@@ -181,12 +181,12 @@ static void dbapi2_adapter_loadtable(DBAPIConn *db, DBAPIQueryCallback init, DBA
   dbloadtable_tag((char *)table, init?dbapi2_adapter_loadtablewrapper_init:NULL, cb?dbapi2_adapter_loadtablewrapper_data:NULL, dbapi2_adapter_loadtablewrapper_fini, a);
 }
 
-static void dbapi2_adapter_escapestring(DBAPIConn *db, char *buf, const char *data, size_t len) {
+static void dbapi2_adapter_escapestring(const DBAPIConn *db, char *buf, const char *data, size_t len) {
   dbescapestring(buf, (char *)data, len);
 }
 
 #ifndef DBAPI2_CUSTOM_QUOTESTRING
-static int dbapi2_adapter_quotestring(DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
+static int dbapi2_adapter_quotestring(const DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
   StringBuf b;
   sbinit(&b, buf, buflen);
   char xbuf[len * 2 + 5];
@@ -206,7 +206,7 @@ static int dbapi2_adapter_quotestring(DBAPIConn *db, char *buf, size_t buflen, c
 #endif
 
 #ifndef DBAPI2_CUSTOM_TABLENAME
-static char *dbapi2_adapter_tablename(DBAPIConn *db, const char *tablename) {
+static char *dbapi2_adapter_tablename(const DBAPIConn *db, const char *tablename) {
   static char buf[1024];
 
   snprintf(buf, sizeof(buf), "%s.%s", db->name, tablename);

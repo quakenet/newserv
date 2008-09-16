@@ -60,8 +60,8 @@ typedef SQLiteResult DBResult;
 #define dbgetid() sqlitegetid()
 #define dbfreeid(x) sqlitefreeid(x)
 
-#define dbattach(schema) sqliteattach(schema)
-#define dbdetach(schema) sqlitedetach(schema)
+#define dbattach(schema) sqliteattach((schema))
+#define dbdetach(schema) sqlitedetach((schema))
 #define dbescapestring(buf, src, len) sqliteescapestring(buf, (char *)(src), len)
 #define dbloadtable(tablename, init, data, fini) sqliteloadtable(tablename, init, data, fini, NULL);
 #define dbloadtable_tag(tablename, init, data, fini, tag) sqliteloadtable(tablename, init, data, fini, tag);

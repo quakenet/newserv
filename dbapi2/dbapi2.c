@@ -58,10 +58,10 @@ void deregisterdbprovider(int handle) {
 
 static void dbclose(DBAPIConn *db) {
   db->__close(db);
-  free(db);
+  free((DBAPIConn *)db);
 }
 
-static void dbsimplequery(DBAPIConn *db, const char *format, ...) {
+static void dbsimplequery(const DBAPIConn *db, const char *format, ...) {
   va_list ap;
 
   va_start(ap, format);
@@ -69,7 +69,7 @@ static void dbsimplequery(DBAPIConn *db, const char *format, ...) {
   va_end(ap);
 }
 
-static void dbquery(DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
+static void dbquery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, ...) {
   va_list ap;
 
   va_start(ap, format);
@@ -139,7 +139,7 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   return db;
 }
 
-static void dbvsnprintf(DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, va_list ap) {
+static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, va_list ap) {
   StringBuf b;
   const char *p;
   static char convbuf[DBAPI_SNPRINTF_MAX_ARGS][DBAPI_SNPRINTF_MAX_ARG_LENGTH+10];
@@ -235,7 +235,7 @@ static void dbvsnprintf(DBAPIConn *db, char *buf, size_t size, const char *forma
   sbterminate(&b);
 }
 
-void dbsnprintf(DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, ...) {
+void dbsnprintf(const DBAPIConn *db, char *buf, size_t size, const char *format, const char *types, ...) {
   va_list ap;
 
   va_start(ap, types);

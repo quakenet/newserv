@@ -13,7 +13,7 @@ void _fini() {
   deregisteradapterprovider();
 }
 
-static int dbapi2_adapter_quotestring(DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
+static int dbapi2_adapter_quotestring(const DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
   StringBuf b;
   sbinit(&b, buf, buflen);
   char xbuf[len * 2 + 5];

@@ -24,26 +24,26 @@ typedef void *DBAPIUserData;
 
 struct DBAPIResult;
 
-typedef DBAPI2_HANDLE *(*DBAPINew)(struct DBAPIConn *);
+typedef DBAPI2_HANDLE *(*DBAPINew)(const struct DBAPIConn *);
 typedef void (*DBAPIClose)(struct DBAPIConn *);
 
-typedef void (*DBAPIQueryCallback)(struct DBAPIResult *, void *);
+typedef void (*DBAPIQueryCallback)(const struct DBAPIResult *, void *);
 
-typedef void (*DBAPIQuery)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
-typedef void (*DBAPISimpleQuery)(struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
-typedef void (*DBAPIQueryV)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
-typedef void (*DBAPICreateTable)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
-typedef void (*DBAPILoadTable)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData, const char *);
+typedef void (*DBAPIQuery)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
+typedef void (*DBAPISimpleQuery)(const struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
+typedef void (*DBAPIQueryV)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, va_list);
+typedef void (*DBAPICreateTable)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, ...) __attribute__ ((format (printf, 4, 5)));
+typedef void (*DBAPILoadTable)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIQueryCallback, DBAPIUserData, const char *);
 
-typedef void (*DBAPISafeQuery)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, ...);
-typedef void (*DBAPISafeQueryV)(struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, va_list);
-typedef void (*DBAPISafeSimpleQuery)(struct DBAPIConn *, const char *, const char *, ...);
-typedef void (*DBAPISafeCreateTable)(struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
+typedef void (*DBAPISafeQuery)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, ...);
+typedef void (*DBAPISafeQueryV)(const struct DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *, va_list);
+typedef void (*DBAPISafeSimpleQuery)(const struct DBAPIConn *, const char *, const char *, ...);
+typedef void (*DBAPISafeCreateTable)(const struct DBAPIConn *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 
-typedef void (*DBAPIEscapeString)(struct DBAPIConn *, char *, const char *, size_t);
-typedef int (*DBAPIQuoteString)(struct DBAPIConn *, char *, size_t, const char *, size_t);
+typedef void (*DBAPIEscapeString)(const struct DBAPIConn *, char *, const char *, size_t);
+typedef int (*DBAPIQuoteString)(const struct DBAPIConn *, char *, size_t, const char *, size_t);
 
-typedef char *(*DBAPITableName)(struct DBAPIConn *, const char *);
+typedef char *(*DBAPITableName)(const struct DBAPIConn *, const char *);
 
 struct DBAPIProviderData;
 
@@ -90,9 +90,9 @@ typedef struct DBAPIConn {
   DBAPIQueryV __query;
 } DBAPIConn;
 
-typedef char *(*DBAPIResultGet)(struct DBAPIResult *, int);
-typedef int (*DBAPIResultNext)(struct DBAPIResult *);
-typedef void (*DBAPIResultClear)(struct DBAPIResult *);
+typedef char *(*DBAPIResultGet)(const struct DBAPIResult *, unsigned int);
+typedef int (*DBAPIResultNext)(const struct DBAPIResult *);
+typedef void (*DBAPIResultClear)(const struct DBAPIResult *);
 
 typedef struct DBAPIResult {
   DBAPI2_RESULT_HANDLE *handle;
@@ -108,6 +108,6 @@ int registerdbprovider(const char *, DBAPIProvider *);
 void deregisterdbprovider(int);
 DBAPIConn *dbapi2open(const char *, const char *);
 
-void dbsnprintf(DBAPIConn *, char *, size_t, const char *, const char *, ...);
+void dbsnprintf(const DBAPIConn *, char *, size_t, const char *, const char *, ...);
 
 #endif
