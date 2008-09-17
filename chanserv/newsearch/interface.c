@@ -95,8 +95,10 @@ void showheader(void *source, void *header) {
 int cs_dospewemail(void *source, int cargc, char **cargv) {
   searchASTExpr tree;
 
-  if(cargc < 1)
-    return CMD_USAGE;
+  if(cargc < 1) {
+    chanservstdmessage(source, QM_NOTENOUGHPARAMS, "spewemail");
+    return CMD_ERROR;
+  }
 
   cs_log(source, "SPEWEMAIL %s", cargv[0]);
 
@@ -107,8 +109,10 @@ int cs_dospewemail(void *source, int cargc, char **cargv) {
 int cs_dospewdb(void *source, int cargc, char **cargv) {
   searchASTExpr tree;
 
-  if(cargc < 1)
-    return CMD_USAGE;
+  if(cargc < 1) {
+    chanservstdmessage(source, QM_NOTENOUGHPARAMS, "spewdb");
+    return CMD_ERROR;
+  }
 
   cs_log(source, "SPEWDB %s", cargv[0]);
 
