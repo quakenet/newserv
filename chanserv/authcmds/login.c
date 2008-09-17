@@ -134,12 +134,11 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     return CMD_ERROR;
   }
   
-  
-  chanservstdmessage(sender, QM_AUTHOK, rup->username);
-
   cs_log(sender,"%s OK username %s", authtype,rup->username);
 
   localusersetaccount(sender, rup->username, rup->ID, cs_accountflagmap(rup), rup->lastauth);
+
+  chanservstdmessage(sender, QM_AUTHOK, rup->username);
 
   return CMD_OK;
 }
