@@ -160,6 +160,7 @@ struct searchNode *var_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Iteraterable functions */
 struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *nickiter_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Functions that operate on strings */
 struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv);
