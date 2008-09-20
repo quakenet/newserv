@@ -142,7 +142,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch, sender);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch, sender, display, limit);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_nicksearch));
@@ -155,7 +155,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   reply(sender, "Executing...");
   if(header)  
     header(sender, headerarg);
-  nicksearch_exe(search, &ctx, sender, display, limit);
+  nicksearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 
@@ -168,7 +168,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   searchNode *search;
   char buf[1024];
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender, display, limit);
 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
@@ -184,7 +184,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   reply(sender, "Executing...");
   if(header)  
     header(sender, headerarg);
-  chansearch_exe(search, &ctx, sender, display, limit);
+  chansearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 
@@ -200,7 +200,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch, sender);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch, sender, display, limit);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_usersearch));
@@ -213,7 +213,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   reply(sender, "Executing...");
   if(header)  
     header(sender, headerarg);
-  usersearch_exe(search, &ctx, sender, display, limit);
+  usersearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 

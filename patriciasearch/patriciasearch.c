@@ -65,14 +65,14 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nodesearch, sender);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nodesearch, sender, display, limit);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
-  pnodesearch_exe(search, &ctx, sender, display, limit, subset);
+  pnodesearch_exe(search, &ctx, subset);
 
   (search->free)(&ctx, search);
 
@@ -83,9 +83,12 @@ int do_pnodesearch(void *source, int cargc, char **cargv) {
   return do_pnodesearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
-void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, NodeDisplayFunc display, int limit, patricia_node_t *subset) {
+void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, patricia_node_t *subset) {
   int matches = 0;
   patricia_node_t *node;
+  nick *sender = ctx->sender;
+  int limit = ctx->limit;
+  NodeDisplayFunc display = ctx->displayfn;
 
   /* Get a marker value to mark "seen" channels for unique count */
   //nmarker=nextnodemarker();

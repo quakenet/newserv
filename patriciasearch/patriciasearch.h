@@ -6,7 +6,7 @@ typedef void (*NodeDisplayFunc)(struct searchCtx *, nick *, patricia_node_t *);
 
 void printnode(searchCtx *, nick *, patricia_node_t *);
 
-void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, NodeDisplayFunc display, int limit, patricia_node_t *subset);
+void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, patricia_node_t *subset);
 
 int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 

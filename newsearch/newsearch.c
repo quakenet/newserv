@@ -414,7 +414,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
@@ -423,6 +423,8 @@ void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc reply
   ctx->arg = arg;
   ctx->searchcmd = cmd;
   ctx->sender = np;
+  ctx->limit = limit;
+  ctx->displayfn = displayfn;
 }
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
@@ -453,14 +455,14 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch, sender);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch, sender, display, limit);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
-  nicksearch_exe(search, &ctx, sender, display, limit);
+  nicksearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 
@@ -471,15 +473,17 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
   return do_nicksearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
-void nicksearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, NickDisplayFunc display, int limit) {
+void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
   int i, j;
   int matches = 0;
   unsigned int cmarker;
   unsigned int tchans=0,uchans=0;
   struct channel **cs;
-  nick *np;
+  nick *np, *sender = ctx->sender;
   senderNSExtern = sender;
-  
+  NickDisplayFunc display = ctx->displayfn;
+  int limit = ctx->limit;
+
   /* Get a marker value to mark "seen" channels for unique count */
   cmarker=nextchanmarker();
   
@@ -543,13 +547,13 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch, sender);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch, sender, display, limit);
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
-  chansearch_exe(search, &ctx, sender, display, limit);
+  chansearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 
@@ -560,11 +564,14 @@ int do_chansearch(void *source, int cargc, char **cargv) {
   return do_chansearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
-void chansearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, ChanDisplayFunc display, int limit) {  
+void chansearch_exe(struct searchNode *search, searchCtx *ctx) {  
   int i;
   chanindex *cip;
   int matches = 0;
+  nick *sender = ctx->sender;
   senderNSExtern = sender;
+  ChanDisplayFunc display = ctx->displayfn;
+  int limit = ctx->limit;
   
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
@@ -611,14 +618,14 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch, sender);
+  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch, sender, display, limit);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
   }
 
-  usersearch_exe(search, &ctx, sender, display, limit);
+  usersearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
 
@@ -629,12 +636,15 @@ int do_usersearch(void *source, int cargc, char **cargv) {
   return do_usersearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
-void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, UserDisplayFunc display, int limit) {  
+void usersearch_exe(struct searchNode *search, searchCtx *ctx) {  
   int i;
   authname *aup;
   int matches = 0;
+  nick *sender = ctx->sender;
+  int limit = ctx->limit;
+  UserDisplayFunc display = ctx->displayfn;
   senderNSExtern = sender;
-  
+
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<AUTHNAMEHASHSIZE;i++) {

@@ -90,6 +90,8 @@ typedef struct searchCtx {
   int lastvar;
   struct searchCmd *searchcmd;
   nick *sender;
+  int limit;
+  void *displayfn;
 } searchCtx;
 
 /* Core functions */
@@ -187,9 +189,9 @@ void printnick(searchCtx *, nick *, nick *);
 void printuser(searchCtx *, nick *, authname *);
 void printchannel(searchCtx *, nick *, chanindex *);
 
-void nicksearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, NickDisplayFunc display, int limit);
-void chansearch_exe(struct searchNode *search, searchCtx *sctx, nick *sender, ChanDisplayFunc display, int limit);
-void usersearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, UserDisplayFunc display, int limit);
+void nicksearch_exe(struct searchNode *search, searchCtx *sctx);
+void chansearch_exe(struct searchNode *search, searchCtx *sctx);
+void usersearch_exe(struct searchNode *search, searchCtx *ctx);
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
@@ -202,7 +204,7 @@ struct searchVariable *var_register(searchCtx *ctx, char *arg, int type);
 searchNode *var_get(searchCtx *ctx, char *arg);
 void var_setstr(struct searchVariable *v, char *data);
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender);
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender, void *displayfn, int limit);
 
 /* AST functions */
 
