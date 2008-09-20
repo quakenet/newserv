@@ -96,10 +96,17 @@ static void dbunsafecreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAP
 
 static void dbunsafesimplequery(const DBAPIConn *db, const char *format, ...) {
   va_list ap;
+  char buf[QUERYBUFLEN];
+  size_t ret;
 
   va_start(ap, format);
-  dbunsafequery(db, NULL, NULL, format, ap);
+  ret = vsnprintf(buf, sizeof(buf), format, ap);
   va_end(ap);
+
+  if(ret >= sizeof(buf))
+    Error("dbapi2", ERR_STOP, "Query truncated in dbunsafequery, format: '%s', database: %s", format, db->name);
+
+  db->__query(db, NULL, NULL, buf);
 }
 
 static void dbsafequery(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *format, const char *types, ...) {
@@ -126,10 +133,13 @@ static void dbsafecreatetable(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIU
 
 static void dbsafesimplequery(const DBAPIConn *db, const char *format, const char *types, ...) {
   va_list ap;
+  char buf[QUERYBUFLEN];
 
   va_start(ap, types);
-  dbsafequery(db, NULL, NULL, format, types, ap);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
   va_end(ap);
+
+  db->__query(db, NULL, NULL, buf);
 }
 
 DBAPIConn *dbapi2open(const char *provider, const char *database) {
@@ -245,7 +255,7 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
 
           /* now... this is a guess, but we should catch it most of the time */
           if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
-            Error("dbapi2", ERR_WARNING, "Long string truncated, format: '%s', database: %s", format, db->name);
+            Error("dbapi2", ERR_STOP, "Long string truncated, format: '%s', database: %s", format, db->name);
             l = VSNPF_MAXARGLEN;
           }
 

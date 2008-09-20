@@ -184,17 +184,17 @@ static void dbapi2_adapter_escapestring(const DBAPIConn *db, char *buf, const ch
 #ifndef DBAPI2_CUSTOM_QUOTESTRING
 static int dbapi2_adapter_quotestring(const DBAPIConn *db, char *buf, size_t buflen, const char *data, size_t len) {
   StringBuf b;
-  sbinit(&b, buf, buflen);
   char xbuf[len * 2 + 5];
   size_t esclen;
 
+  sbinit(&b, buf, buflen);
   esclen = dbescapestring(xbuf, (char *)data, len);
 
   sbaddchar(&b, '\'');
   sbaddstrlen(&b, xbuf, esclen);
   sbaddchar(&b, '\'');
 
-  if(sbterminate(&b))
+  if(!sbterminate(&b))
     return 0;
 
   return 1;

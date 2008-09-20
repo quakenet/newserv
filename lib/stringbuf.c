@@ -36,7 +36,7 @@ int sbaddstrlen(StringBuf *buf, char *c, size_t len) {
   char *p;
   int i;
 
-  for(i=0;i<len;len++) {
+  for(p=c,i=0;i<len;i++,p++) {
     if(remaining <= 0)
       return 0;
 

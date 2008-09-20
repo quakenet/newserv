@@ -23,7 +23,9 @@ static int dbapi2_adapter_quotestring(const DBAPIConn *db, char *buf, size_t buf
   sbaddstr(&b, "E'");
   sbaddstrlen(&b, xbuf, esclen);
   sbaddchar(&b, '\'');
-  if(sbterminate(&b))
+
+  if(!sbterminate(&b))
     return 0;
+
   return 1;
 }
