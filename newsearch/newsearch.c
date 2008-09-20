@@ -223,6 +223,7 @@ void _init() {
 
   /* Functions that work on strings?! */
   registersearchterm(reg_nicksearch, "cumodes", cumodes_parse, 0, "usage: (cumodes (var x) <modes>)");
+  registersearchterm(reg_chansearch, "cumodes", cumodes_parse, 0, "usage: (cumodes (var x) <modes>)");
     
   /* Notice functionality */
   registersearchterm(reg_chansearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
