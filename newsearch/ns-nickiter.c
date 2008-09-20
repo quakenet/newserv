@@ -72,7 +72,8 @@ void *nickiter_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   
   while(localdata->currentnick < cip->channel->users->hashsize) {
     if(cip->channel->users->content[localdata->currentnick] != nouser) {
-      np = getnickbynumeric((cip->channel->users->content[localdata->currentnick++]));
+      np = getnickbynumeric(cip->channel->users->content[localdata->currentnick]);
+      localdata->currentnick++;
       
       if(!np)
         continue;
