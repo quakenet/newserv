@@ -1,0 +1,6 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: auth.so
+
+auth.so: auth.o
