@@ -5,7 +5,7 @@
 #include "newsearch.h"
 #include "parser.h"
 
-#define YYSTYPE char *
+#define YYSTYPE sstring *
 
 int yylex(void);
 extern char *parseStrError;
@@ -49,7 +49,7 @@ void resetparser(fnFinder fnf, void *arg, parsertree **result) {
 %%
 invocation: LPAREN function argumentlist RPAREN
 	{
-    char *str = $2;
+    sstring *str = $2;
     int i, count;
     searchASTExpr *ap, *root;
     parserlist *pp, *npp;
@@ -99,7 +99,7 @@ invocation: LPAREN function argumentlist RPAREN
     }
     *root = NSASTManualNode(pfn, count, ap);
    
-    free(str);
+    freesstring(str);
 	}
 
 function: IDENTIFIER
@@ -118,18 +118,19 @@ argumentlist: /* empty */ | WHITESPACE argument argumentlist;
 argument:
 	invocation | literal
 	{
-    char *str = $1;
+    sstring *str = $1;
     parserlist *l = malloc(sizeof(parserlist) + sizeof(stringlist));
     stringlist *sl;
     
-    l->expr = NSASTLiteral(str);
+    l->expr = NSASTLiteral(str->content);
     l->next = stack[stackpos - 1];
     stack[stackpos - 1] = l;
     stackcount[stackpos - 1]++;
 
     /* HACK */
     sl = (stringlist *)(l + 1);
-    
+
+    sl->data = str;
     sl->next = (*presult)->strlist;
     (*presult)->strlist = sl;
 	}

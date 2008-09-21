@@ -2,10 +2,11 @@
 #define NEWSEARCH_PARSER_H
 
 #include "newsearch.h"
+#include "../lib/sstring.h"
 
 typedef struct stringlist {
   struct stringlist *next;
-  char data[];
+  sstring *data;
 } stringlist;
 
 typedef struct expressionlist {

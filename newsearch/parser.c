@@ -64,6 +64,7 @@ void parse_free(parsertree *pt) {
   
   for(sl=pt->strlist;sl;sl=nsl) {
     nsl = sl->next;
+    freesstring(sl->data);
     free(sl);
   }
 

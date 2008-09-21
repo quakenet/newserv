@@ -1,16 +1,28 @@
 %option noyywrap
 
 %{
-#include "y.tab.h"
-#include <string.h>
+#include "../lib/sstring.h"
 
-#define YYSTYPE char *
+#define YYSTYPE sstring *
 extern YYSTYPE yylval;
+
+#include "y.tab.h"
 
 #include <stdlib.h>
 #include "../lib/stringbuf.h"
 
 #define MAX_STR_CONST 512
+
+/* shuts gcc up */
+static void yyunput (int c,char *buf_ptr);
+void newsearch_parser_dummy(void) {
+  yyunput(0, NULL);
+}
+
+int fileno(void *arg) {
+  return 0;
+}
+
 %}
 
 digit		[0-9]
@@ -31,7 +43,7 @@ letter		[a-zA-Z]
   \"		{
 		  BEGIN(INITIAL);
 		  sbterminate(&buf);
-		  yylval = strdup(bufdata);
+		  yylval = getsstring(bufdata, 512);
 		  return STRING;
 		}
   \\\\		{ sbaddchar(&buf, '\\');	}
@@ -43,7 +55,7 @@ letter		[a-zA-Z]
 ")"		{ return RPAREN;		}
 [ \t]+		{ return WHITESPACE;		}
 {letter}+	{
-		  yylval = strdup(yytext);
+		  yylval = getsstring(yytext, 512);
 		  return IDENTIFIER;
 		}
 
