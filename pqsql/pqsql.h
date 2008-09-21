@@ -18,7 +18,6 @@ typedef void (*PQQueryHandler)(PGconn *, void *);
 
 void pqloadtable(char *tablename, PQQueryHandler init, PQQueryHandler data, PQQueryHandler fini, void *tag);
 
-void pqasyncqueryfv(int identifier, PQQueryHandler handler, void *tag, int flags, char *format, va_list va);
 void pqasyncqueryf(PQModuleIdentifier identifier, PQQueryHandler handler, void *tag, int flags, char *format, ...) __attribute__ ((format (printf, 5, 6)));
 #define pqasyncqueryi(identifier, handler, tag, format, ...) pqasyncqueryf(identifier, handler, tag, 0, format , ##__VA_ARGS__)
 #define pqasyncquery(handler, tag, format, ...) pqasyncqueryf(DB_NULLIDENTIFIER, handler, tag, 0, format , ##__VA_ARGS__)
