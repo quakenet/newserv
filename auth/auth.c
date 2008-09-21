@@ -42,7 +42,7 @@ int au_auth(void *source, int cargc, char **cargv) {
 }
 
 void _init() {
-  registercontrolhelpcmd("auth", NO_OPER, 3, au_auth, "Usage: auth <authname> <authid> ?accountflags?");
+  registercontrolhelpcmd("auth", NO_OPERED, 3, au_auth, "Usage: auth <authname> <authid> ?accountflags?");
 }
 
 void _fini() {
