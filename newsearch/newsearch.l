@@ -87,7 +87,7 @@ letter		[a-zA-Z]
 [ \t]+		{ addpos(strlen(yytext));
 		  return WHITESPACE;
 		}
-({letter}|{digit})+	{ addpos(strlen(yytext));
+({letter}|{digit}|[#\-\+\.])+	{ addpos(strlen(yytext));
 		  yylval = getsstring(yytext, 512);
 		  return IDENTIFIER;
 		}
