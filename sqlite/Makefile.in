@@ -1,5 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
+LDFLAGS+=-lc
+
 .PHONY: all
 all: sqlite.so sqlite-dbapi2.so
 
