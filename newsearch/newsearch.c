@@ -12,6 +12,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/array.h"
 #include "newsearch.h"
+#include "parser.h"
 
 MODULE_VERSION("");
 
@@ -429,12 +430,16 @@ void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc reply
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = source;
-  struct searchNode *search;
   int limit=500;
   int arg=0;
   NickDisplayFunc display=defaultnickfn;
-  searchCtx ctx;
   int ret;
+#ifndef NEWSEARCH_NEWPARSER
+  searchCtx ctx;
+  struct searchNode *search;
+#else
+  parsertree *tree;
+#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -455,8 +460,8 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
+#ifndef NEWSEARCH_NEWPARSER
   newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch, sender, display, limit);
-
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
     return CMD_ERROR;
@@ -465,6 +470,17 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   nicksearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
+#else
+  tree = parse_string(reg_nicksearch, cargv[arg]);
+  if(!tree) {
+    reply(sender,"Parse error: %s", parseStrError);
+    return CMD_ERROR;
+  }
+
+  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+
+  parse_free(tree);
+#endif
 
   return CMD_OK;
 }
@@ -521,12 +537,16 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
 
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = source;
-  struct searchNode *search;
   int limit=500;
   int arg=0;
   ChanDisplayFunc display=defaultchanfn;
-  searchCtx ctx;
   int ret;
+#ifndef NEWSEARCH_NEWPARSER
+  struct searchNode *search;
+  searchCtx ctx;
+#else
+  parsertree *tree;
+#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -547,6 +567,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
+#ifndef NEWSEARCH_NEWPARSER
   newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch, sender, display, limit);
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
     reply(sender,"Parse error: %s",parseError);
@@ -556,6 +577,17 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   chansearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
+#else
+  tree = parse_string(reg_chansearch, cargv[arg]);
+  if(!tree) {
+    reply(sender,"Parse error: %s", parseStrError);
+    return CMD_ERROR;
+  }
+
+  ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+
+  parse_free(tree);
+#endif
 
   return CMD_OK;
 }
@@ -592,12 +624,16 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx) {
 
 int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = source;
-  struct searchNode *search;
   int limit=500;
   int arg=0;
   UserDisplayFunc display=defaultuserfn;
-  searchCtx ctx;
   int ret;
+#ifndef NEWSEARCH_NEWPARSER
+  struct searchNode *search;
+  searchCtx ctx;
+#else
+  parsertree *tree;
+#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -618,6 +654,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
+#ifndef NEWSEARCH_NEWPARSER
   newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch, sender, display, limit);
 
   if (!(search = ctx.parser(&ctx, cargv[arg]))) {
@@ -628,6 +665,17 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   usersearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
+#else
+  tree = parse_string(reg_usersearch, cargv[arg]);
+  if(!tree) {
+    reply(sender,"Parse error: %s", parseStrError);
+    return CMD_ERROR;
+  }
+
+  ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+
+  parse_free(tree);
+#endif
 
   return CMD_OK;
 }
@@ -928,10 +976,6 @@ static int unescape(char *input, char *output, size_t buflen) {
   
   return 1;
 }
-
-/* search_parse:
- *  Given an input string, return a searchNode.
- */
 
 struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
   /* OK, we need to split the input into chunks on spaces and brackets.. */

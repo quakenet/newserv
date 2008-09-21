@@ -30,3 +30,5 @@ graphing/dump
 silly
 core/hooks.c
 lib/sstring.{c,h}
+y.tab.{c,h}
+lex.yy.c

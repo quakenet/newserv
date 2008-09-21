@@ -11,10 +11,14 @@ CC=gcc
 BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 @endif@
 
-.SUFFIXES: .so
+.SUFFIXES: .so .y .l
 
 .o.so:
 	@-ldline-@ $(LDFLAGS)
+
+.y.c:	;
+
+.l.c:	;
 
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
 CFLAGS+=-fPIC -export-dynamic
