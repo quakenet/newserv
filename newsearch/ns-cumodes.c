@@ -23,7 +23,8 @@ const flag cumodelist[] = {
   { '\0', 0 }
 };
 
-void *cumodes_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void *cumodes_nick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
+void *cumodes_chan_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void cumodes_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
@@ -33,6 +34,11 @@ struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
 
   if (argc!=2) {
     parseError="cumodes: usage: cumodes (string) (mode string)";
+    return NULL;
+  }
+
+  if (!(ctx->searchcmd == reg_nicksearch) && !(ctx->searchcmd == reg_chansearch)) {
+    parseError="cumodes: cannot be used outside of nicksearch or chansearch";
     return NULL;
   }
     
@@ -77,13 +83,25 @@ struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
   
   thenode->returntype  = RETURNTYPE_BOOL;
   thenode->localdata   = (void *)localdata;
-  thenode->exe         = cumodes_exe;
+  
+  if (ctx->searchcmd == reg_nicksearch) {
+    thenode->exe       = cumodes_nick_exe;
+  } else if (ctx->searchcmd == reg_chansearch) {
+    thenode->exe       = cumodes_chan_exe;
+  } else { /* We really shouldn't get here */
+    parseError = "cumodes: internal code error.";
+    free(thenode);
+    (localdata->xnode->free)(ctx, localdata->xnode);
+    free(localdata);
+    return NULL;
+  }
+  
   thenode->free        = cumodes_free;
 
   return thenode;
 }
 
-void *cumodes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
+void *cumodes_nick_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
   struct cumodes_localdata *localdata;
   nick *np = (nick *)value;
   channel *cp;
@@ -99,6 +117,39 @@ void *cumodes_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
     return (void *)0;
 
   lp = getnumerichandlefromchanhash(cp->users,np->numeric);
+  if(!lp)
+    return (void *)0;
+
+  flags = *lp;
+
+  if (~flags & (localdata->setmodes))
+    return (void *)0;
+
+  if (flags & (localdata->clearmodes))
+    return (void *)0;
+  
+  return (void *)1;
+}
+
+void *cumodes_chan_exe(searchCtx *ctx, struct searchNode *thenode, void *value) {
+  struct cumodes_localdata *localdata;
+  chanindex *cip = (chanindex *)value;
+  nick *np;
+  char *nickname;
+  unsigned long *lp, flags;
+
+  if(!cip->channel || !cip->channel->users)
+    return (void *)0;
+
+  localdata = (struct cumodes_localdata *)thenode->localdata;
+
+  /* MEGA SLOW */
+  nickname = (char *)(localdata->xnode->exe) (ctx, localdata->xnode, value);
+  np = getnickbynick(nickname);
+  if(!np)
+    return (void *)0;
+
+  lp = getnumerichandlefromchanhash(cip->channel->users,np->numeric);
   if(!lp)
     return (void *)0;
 
