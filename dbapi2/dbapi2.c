@@ -12,7 +12,10 @@
 #include "../core/error.h"
 #include "../lib/strlfunc.h"
 #include "../lib/stringbuf.h"
+#include "../lib/version.h"
 #include "dbapi2.h"
+
+MODULE_VERSION("");
 
 struct DBAPIProviderData {
   char name[PROVIDER_NAME_LEN+1];
