@@ -4,6 +4,8 @@
 
 #include "../dbapi2/dbapi2-adapter.inc"
 
+MODULE_VERSION("");
+
 void _init() {
   if(pqconnected())
     registeradapterprovider();

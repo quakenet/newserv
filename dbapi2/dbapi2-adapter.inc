@@ -8,6 +8,7 @@
 
 #include "../dbapi2/dbapi2.h"
 #include "../lib/stringbuf.h"
+#include "../lib/version.h"
 
 static DBAPI2_HANDLE *dbapi2_adapter_new(const DBAPIConn *);
 static void dbapi2_adapter_close(DBAPIConn *);
