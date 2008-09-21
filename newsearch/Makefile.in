@@ -1,6 +1,6 @@
 @include@ @includel@../build.mk@includel@
 
-CFLAGS+=$(INCPCRE) -DYY_NO_UNPUT
+CFLAGS+=$(INCPCRE) -D_POSIX_SOURCE
 LDFLAGS+=$(LIBPCRE)
 
 .PHONY: all

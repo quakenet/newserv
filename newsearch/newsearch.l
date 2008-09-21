@@ -1,6 +1,7 @@
 %option noyywrap
 
 %{
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -107,3 +108,7 @@ letter		[a-zA-Z]
 		  yyterminate();
 		}
 %%
+
+void ydummyfn(void) {
+  yyunput(0, NULL);
+}
