@@ -59,7 +59,7 @@ invocation: LPAREN function argumentlist RPAREN
     stackpos--;
     count = stackcount[stackpos];
     
-    pfn = functionfinder(str, fnfarg);
+    pfn = functionfinder(str->content, fnfarg);
     if(!pfn) {
       parse_free(&sresult);
       YYERROR;

@@ -4,6 +4,7 @@ INCPATH=../
 
 CFLAGS=
 CC=gcc
+LEX=flex
 
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 

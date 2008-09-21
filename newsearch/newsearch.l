@@ -13,16 +13,6 @@ extern YYSTYPE yylval;
 
 #define MAX_STR_CONST 512
 
-/* shuts gcc up */
-static void yyunput (int c,char *buf_ptr);
-void newsearch_parser_dummy(void) {
-  yyunput(0, NULL);
-}
-
-int fileno(void *arg) {
-  return 0;
-}
-
 %}
 
 digit		[0-9]
