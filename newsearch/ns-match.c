@@ -39,6 +39,8 @@ struct searchNode *match_parse(searchCtx *ctx, int argc, char **argv) {
 
   if (!(localdata=(struct match_localdata *)malloc(sizeof (struct match_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
+    (targnode->free)(ctx, targnode);
+    (patnode->free)(ctx, patnode);
     return NULL;
   }
     
@@ -48,6 +50,8 @@ struct searchNode *match_parse(searchCtx *ctx, int argc, char **argv) {
   if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
     parseError = "malloc: could not allocate memory for this search.";
+    (targnode->free)(ctx, targnode);
+    (patnode->free)(ctx, patnode);
     free(localdata);
     return NULL;
   }

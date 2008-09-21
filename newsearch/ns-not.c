@@ -37,7 +37,11 @@ struct searchNode *not_parse(searchCtx *ctx, int argc, char **argv) {
 
   /* Our subnode needs to return a BOOL */  
   subnode=coerceNode(ctx, subnode, RETURNTYPE_BOOL);
-
+  if(!subnode) {
+    free(thenode);
+    return NULL;
+  }
+  
   thenode->localdata=(void *)subnode;
       
   return thenode;
