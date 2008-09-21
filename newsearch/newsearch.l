@@ -18,7 +18,7 @@ extern YYSTYPE yylval;
 digit		[0-9]
 letter		[a-zA-Z]
 
-%x str
+%x str pascalstr
 %%
 
 	char bufdata[MAX_STR_CONST];
@@ -39,6 +39,22 @@ letter		[a-zA-Z]
   \\\\		{ sbaddchar(&buf, '\\');	}
   \\\"		{ sbaddchar(&buf, '"');		}
   [^\\]		{ sbaddchar(&buf, *yytext); 	}
+}
+
+\'		{
+		  sbinit(&buf, bufdata, sizeof(bufdata));
+		  BEGIN(pascalstr);
+		}
+
+<pascalstr>{
+  \'\'		{ sbaddchar(&buf, '\'');	}
+  \'		{
+		  BEGIN(INITIAL);
+		  sbterminate(&buf);
+		  yylval = getsstring(bufdata, 512);
+		  return STRING;
+		}
+  .		{ sbaddchar(&buf, *yytext); 	}
 }
 
 "("		{ return LPAREN;		}
