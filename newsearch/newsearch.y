@@ -31,11 +31,12 @@ static parsertree **presult, sresult;
 
 void resetparser(fnFinder fnf, void *arg, parsertree **result) {
   presult = result;
+  *presult = &sresult;
   
   sresult.exprlist = NULL;
   sresult.strlist = NULL;
   sresult.finished = 0;
-  
+
   functionfinder = fnf;
   fnfarg = arg;
   
@@ -119,16 +120,13 @@ argument:
 	invocation | literal
 	{
     sstring *str = $1;
-    parserlist *l = malloc(sizeof(parserlist) + sizeof(stringlist));
-    stringlist *sl;
+    parserlist *l = malloc(sizeof(parserlist));
+    stringlist *sl = malloc(sizeof(stringlist));
     
     l->expr = NSASTLiteral(str->content);
     l->next = stack[stackpos - 1];
     stack[stackpos - 1] = l;
     stackcount[stackpos - 1]++;
-
-    /* HACK */
-    sl = (stringlist *)(l + 1);
 
     sl->data = str;
     sl->next = (*presult)->strlist;
