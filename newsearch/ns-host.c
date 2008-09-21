@@ -15,8 +15,9 @@ void *host_exe_real(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void host_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv) {
-  struct searchNode *thenode;
-
+  struct searchNode *thenode, *argsn;
+  char *p;
+  
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;
@@ -32,11 +33,16 @@ struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv) {
   thenode->exe = host_exe;
   thenode->free = host_free;
 
-  /* Allow "host real" to match realhost */
-
-  if (argc>0 && !ircd_strcmp(argv[0],"real")) {
-    thenode->exe = host_exe_real;
+  if (!(argsn=argtoconststr("host", ctx, argv[0], &p))) {
+    free(thenode);
+    return NULL;
   }
+  
+  /* Allow "host real" to match realhost */
+  if (argc>0 && !ircd_strcmp(p,"real"))
+    thenode->exe = host_exe_real;
+    
+  argsn->free(ctx, argsn);
 
   return thenode;
 }

@@ -32,6 +32,7 @@ struct searchNode *channeliter_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
 
+  /* @argv usage OK */
   if(!(localdata->variable=var_register(ctx, argv[0], RETURNTYPE_STRING))) {
     free(localdata);
     return NULL;

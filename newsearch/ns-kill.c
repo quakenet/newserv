@@ -40,15 +40,25 @@ struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv) {
   else if (ctx->searchcmd == reg_nicksearch) 
     localdata->marker = nextnickmarker();
   else {
+    free(localdata);
     parseError = "kill: invalid search type";
     return NULL;
   }
 
-  if (argc==1)
-    strlcpy(localdata->reason, argv[0], sizeof(localdata->reason));
-  else
+  if (argc==1) {
+    struct searchNode *reasonstr;
+    char *p;
+    if (!(reasonstr=argtoconststr("kill", ctx, argv[0], &p))) {
+      free(localdata);
+      return NULL;
+    }
+    
+    strlcpy(localdata->reason, p, sizeof(localdata->reason));
+    reasonstr->free(ctx, reasonstr);
+  } else {
     strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
-
+  }
+  
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
     parseError = "malloc: could not allocate memory for this search.";

@@ -18,10 +18,11 @@ void country_free(searchCtx *ctx, struct searchNode *thenode);
 int ext;
 
 struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv) {
-  struct searchNode *thenode;
+  struct searchNode *thenode, *countrysn;
   GeoIP_LookupCode l;
   long target;
-
+  char *p;
+  
   if (argc<1) {
     parseError = "country: usage: country <country 2 character ISO code>";
     return NULL;
@@ -34,7 +35,17 @@ struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv) {
   }
   
   l = ndlsym("geoip", "geoip_lookupcode");
-  target = l(argv[0]);
+  if(!l) {
+    parseError = "unable to lookup geoip function pointer";
+    return NULL;
+  }
+  
+  if (!(countrysn=argtoconststr("country", ctx, argv[0], &p)))
+    return NULL;
+    
+  target = l(p);
+  countrysn->free(ctx, countrysn);
+  
   if(target == -1) {
     parseError = "country: invalid country.";
     return NULL;

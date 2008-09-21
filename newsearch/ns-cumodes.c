@@ -29,9 +29,10 @@ void cumodes_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
   struct cumodes_localdata *localdata;
-  struct searchNode *thenode;
+  struct searchNode *thenode, *flagstr;
   flag_t fset, fclear;
-
+  char *p;
+  
   if (argc!=2) {
     parseError="cumodes: usage: cumodes (string) (mode string)";
     return NULL;
@@ -56,9 +57,15 @@ struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
   fset=0;
   fclear=~0;
   
-  setflags(&(fset), CU_ALL, argv[1], cumodelist, REJECT_NONE);
-  setflags(&(fclear), CU_ALL, argv[1], cumodelist, REJECT_NONE);
-
+  if (!(flagstr=argtoconststr("cumodes", ctx, argv[0], &p))) {
+    localdata->xnode->free(ctx, localdata->xnode);
+    free(localdata);
+    return NULL;
+  }
+  setflags(&(fset), CU_ALL, p, cumodelist, REJECT_NONE);
+  setflags(&(fclear), CU_ALL, p, cumodelist, REJECT_NONE);
+  flagstr->free(ctx, flagstr);
+  
   localdata->setmodes=0;
   localdata->clearmodes=~0;
 

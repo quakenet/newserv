@@ -17,9 +17,10 @@ void modes_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
   struct modes_localdata *localdata;
-  struct searchNode *thenode;
+  struct searchNode *thenode, *modestring;
   const flag *flaglist;
-
+  char *p;
+  
   if (argc!=1) {
     parseError="modes: usage: modes (mode string)";
     return NULL;
@@ -42,9 +43,15 @@ struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
   localdata->setmodes=0;
   localdata->clearmodes = ~0;
   
-  setflags(&(localdata->setmodes), 0xFFFF, argv[0], flaglist, REJECT_NONE);
-  setflags(&(localdata->clearmodes), 0xFFFF, argv[0], flaglist, REJECT_NONE);
-
+  if (!(modestring=argtoconststr("modes", ctx, argv[0], &p))) {
+    free(localdata);
+    return NULL;
+  }
+  
+  setflags(&(localdata->setmodes), 0xFFFF, p, flaglist, REJECT_NONE);
+  setflags(&(localdata->clearmodes), 0xFFFF, p, flaglist, REJECT_NONE);
+  (modestring->free)(ctx, modestring);
+  
   localdata->clearmodes = ~(localdata->clearmodes);
   
   if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {

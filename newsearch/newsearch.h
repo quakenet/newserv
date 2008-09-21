@@ -271,4 +271,6 @@ extern UserDisplayFunc defaultuserfn;
 extern NickDisplayFunc defaultnickfn;
 extern ChanDisplayFunc defaultchanfn;
 
+struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p);
+
 #endif

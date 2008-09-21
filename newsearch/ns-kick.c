@@ -12,15 +12,22 @@ void *kick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void kick_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv) {
-  struct searchNode *thenode;
+  struct searchNode *thenode, *kicknick;
   nick *np;
+  char *p;
   
   if (argc!=1) {
     parseError="kick: usage: (kick target)";
     return NULL;
   }
 
-  if ((np=getnickbynick(argv[0]))==NULL) {
+  if (!(kicknick=argtoconststr("kick", ctx, argv[0], &p)))
+    return NULL;
+  
+  np=getnickbynick(p);
+  kicknick->free(ctx, kicknick);
+  
+  if (np==NULL) {
     parseError="kick: unknown nickname";
     return NULL;
   }

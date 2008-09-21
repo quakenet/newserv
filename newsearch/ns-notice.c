@@ -27,8 +27,9 @@ struct notice_localdata {
 
 struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv) {
   struct notice_localdata *localdata;
-  struct searchNode *thenode;
-
+  struct searchNode *thenode, *message;
+  char *p;
+  
   if (!(localdata = (struct notice_localdata *) malloc(sizeof(struct notice_localdata)))) {
     parseError = "malloc: could not allocate memory for this search.";
     return NULL;
@@ -39,19 +40,24 @@ struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv) {
   else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
   else {
+    free(localdata);
     parseError = "notice: invalid search type";
     return NULL;
   }
-  if (argc==1) {
-    strlcpy(localdata->message, argv[0], sizeof(localdata->message));
-  }
-  else {
-    /* no notice to send out ... */
-    parseError = "Warning: you did not specify a message to notice out.";
+  if (argc!=1) {
+    parseError = "notice: warning: you did not specify a message to notice out.";
     free(localdata);
     return NULL;
   }
 
+  if (!(message=argtoconststr("notice", ctx, argv[0], &p))) {
+    free(localdata);
+    return NULL;
+  }
+  
+  strlcpy(localdata->message, p, sizeof(localdata->message));
+  (message->free)(ctx, message);
+  
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     /* couldn't malloc() memory for thenode, so free localdata to avoid leakage */
     parseError = "malloc: could not allocate memory for this search.";

@@ -13,5 +13,6 @@ struct searchNode *var_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
   
+  /* @argv usage OK */
   return var_get(ctx, argv[0]);
 }

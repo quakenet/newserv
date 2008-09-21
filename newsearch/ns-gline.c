@@ -43,51 +43,70 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
   else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
   else {
+    free(localdata);
     parseError = "gline: invalid search type";
     return NULL;
   }
 
-  switch (argc) {
-  case 0:
+  /* default duration, default reason */
+  if(argc == 0) {
     localdata->duration = NSGLINE_DURATION;
     strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
-    break;
+  } else if(argc > 2) {
+    free(localdata);
+    parseError = "gline: invalid number of arguments";
+    return NULL;
+  } else {
+    char *argzerop, *reasonp, *durationp;
+    struct searchNode *durationsn, *reasonsn, *argzerosn;
+    
+    if (!(argzerosn=argtoconststr("gline", ctx, argv[0], &argzerop))) {
+      free(localdata);
+      return NULL;
+    }
 
-  case 1:
-    if (strchr(argv[0], ' ') == NULL) { /* no space == duration specified */
-      localdata->duration = durationtolong(argv[0]);
-      /* error checking on gline duration */
+    if(argc == 1) {
+      durationp = reasonp = NULL;
+      durationsn = reasonsn = NULL;
+      
+      /* if we have a space it's a reason */
+      if(strchr(argzerop, ' ')) {
+        reasonsn = argzerosn;
+        reasonp = argzerop;
+      } else {
+        durationsn = argzerosn;
+        durationp = argzerop;
+      }
+    } else {
+      durationsn = argzerosn;
+      durationp = argzerop;
+      
+      if (!(reasonsn=argtoconststr("gline", ctx, argv[1], &reasonp))) {
+        durationsn->free(ctx, durationsn);
+        free(localdata);
+        return NULL;
+      }      
+    }
+    
+    if(!reasonp) {
+      strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
+    } else {
+      strlcpy(localdata->reason, reasonp, sizeof(localdata->reason));
+      reasonsn->free(ctx, reasonsn);
+    }
+
+    if(!durationp) {
+      localdata->duration = NSGLINE_DURATION;
+    } else {
+      localdata->duration = durationtolong(durationp);
+      durationsn->free(ctx, durationsn);
+      
       if (localdata->duration == 0) {
         parseError = "gline duration invalid.";
         free(localdata);
         return NULL;
       }
-      
-      strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
     }
-    else { /* reason specified */
-      localdata->duration = NSGLINE_DURATION;
-
-      strlcpy(localdata->reason, argv[0], sizeof(localdata->reason));
-    }
-    break;
-
-  case 2:
-    localdata->duration = durationtolong(argv[0]);
-    /* error checking on gline duration */
-    if (localdata->duration == 0) {
-      parseError = "gline duration invalid.";
-      free(localdata);
-      return NULL;
-    }
-
-    strlcpy(localdata->reason, argv[1], sizeof(localdata->reason));
-
-    break;
-  default:
-    free(localdata);
-    parseError = "gline: invalid number of arguments";
-    return NULL;
   }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {

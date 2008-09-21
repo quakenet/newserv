@@ -20,16 +20,29 @@ void *cidr_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void cidr_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv) {
-  struct searchNode *thenode;
+  struct searchNode *thenode, *convsn;
   struct cidr_localdata *c;
   unsigned char mask;
   struct irc_in_addr ip;
-
-  if((argc != 1) || !ipmask_parse(argv[0], &ip, &mask)) {
+  char *p;
+  int ret;
+  
+  if(argc != 1) {
     parseError = "usage: cidr ip/mask";
     return NULL;
   }
 
+  if (!(convsn=argtoconststr("cidr", ctx, argv[0], &p)))
+    return NULL;
+  
+  ret = ipmask_parse(p, &ip, &mask);
+  convsn->free(ctx, convsn);
+  
+  if(!ret) {
+    parseError = "usage: cidr ip/mask";
+    return NULL;
+  }
+  
   if(!irc_in_addr_is_ipv4(&ip)) {
     parseError = "cidr: sorry, no IPv6 yet";
     return NULL;

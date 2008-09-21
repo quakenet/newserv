@@ -1260,3 +1260,27 @@ void displaystrerror(replyFunc reply, nick *np, const char *input) {
 
   reply(np, "Parse error: %s", parseStrError);
 }
+
+struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p) {
+  struct searchNode *c;
+  static char errorbuf[512];
+  
+  c = ctx->parser(ctx, arg);
+  if (!(c = coerceNode(ctx, c, RETURNTYPE_STRING))) {
+    snprintf(errorbuf, sizeof(errorbuf), "%s: unable to coerce argument to string", command);
+    parseError = errorbuf;
+    return NULL;
+  }
+  
+  if (!(c->returntype & RETURNTYPE_CONST)) {
+    snprintf(errorbuf, sizeof(errorbuf), "%s: constant argument required", command);
+    parseError = errorbuf;
+    (c->free)(ctx, c);
+    return NULL;
+  }
+  
+  if(p)
+    *p = (char *)(c->exe)(ctx, c, NULL);
+    
+  return c;
+}

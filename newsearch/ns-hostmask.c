@@ -18,14 +18,25 @@ void hostmask_free(searchCtx *ctx, struct searchNode *thenode);
 
 struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
-  int realhost = 0, realname = 0, i;
+  int realhost = 0, realname = 0, i, error = 0;
   
   for(i=0;i<argc;i++) {
-    if(!ircd_strcmp(argv[i], "realhost")) {
+    struct searchNode *convsn;
+    char *p;
+    
+    if (!(convsn=argtoconststr("hostmask", ctx, argv[i], &p)))
+      return NULL;
+    
+    if(!ircd_strcmp(p, "realhost")) {
       realhost = 1;
-    } else if(!ircd_strcmp(argv[i], "realname")) {
+    } else if(!ircd_strcmp(p, "realname")) {
       realname = 1;
     } else {
+      error = 1;
+    }
+    convsn->free(ctx, convsn);
+    
+    if(error) {
       parseError = "bad argument: use realhost and/or realname";
       return NULL;
     }

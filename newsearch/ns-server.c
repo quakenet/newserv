@@ -30,17 +30,28 @@ struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv) {
   }
 
   if (argc>0) {
+    struct searchNode *servername;
+    char *p;
+    
+    if (!(servername=argtoconststr("server", ctx, argv[0], &p))) {
+      free(thenode);
+      return NULL;
+    }
+     
     numeric = -1;
     for(i=0;i<MAXSERVERS;i++) {
       sstring *n = serverlist[i].name;
-      if(n && !strcmp(n->content, argv[0])) {
+      if(n && !strcmp(n->content, p)) {
         numeric = i;
         break;
       }
     }
 
+    (servername->free)(ctx, servername);
+    
     if(numeric == -1) {
       parseError = "server: server not found.";
+      free(thenode);
       return NULL;
     }
 

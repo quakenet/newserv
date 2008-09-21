@@ -24,12 +24,23 @@ struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv) {
   }
     
   if (ctx->searchcmd == reg_chansearch) {
+    struct searchNode *nickname;
+    char *p;
+    
     if (argc!=1) {
       parseError="nick: usage: (nick target)";
       free(localdata);
       return NULL;
     }
-    if ((localdata->np=getnickbynick(argv[0]))==NULL) {
+    
+    if (!(nickname=argtoconststr("nick", ctx, argv[0], &p))) {
+      free(localdata);
+      return NULL;
+    }
+    
+    localdata->np=getnickbynick(p);
+    (nickname->free)(ctx, nickname);
+    if (localdata->np==NULL) {
       parseError="nick: unknown nickname";
       free(localdata);
       return NULL;
