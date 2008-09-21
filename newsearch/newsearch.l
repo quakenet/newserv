@@ -1,17 +1,28 @@
 %option noyywrap
 
 %{
+#include <stdlib.h>
+#include <string.h>
+
 #include "../lib/sstring.h"
 
 #define YYSTYPE sstring *
 extern YYSTYPE yylval;
 
 #include "y.tab.h"
-
-#include <stdlib.h>
 #include "../lib/stringbuf.h"
 
 #define MAX_STR_CONST 512
+
+int lexpos, lexerror;
+
+#define addpos(x) lexpos+=x;
+#define incpos() addpos(1);
+
+void lexreset(void) {
+  lexerror = 0;
+  lexpos = -1;
+}
 
 %}
 
@@ -24,48 +35,72 @@ letter		[a-zA-Z]
 	char bufdata[MAX_STR_CONST];
 	StringBuf buf;
 
-\"		{
+\"		{ incpos();
 		  sbinit(&buf, bufdata, sizeof(bufdata));
 		  BEGIN(str);
 		}
 
 <str>{
-  \"		{
+  \"		{ incpos();
 		  BEGIN(INITIAL);
 		  sbterminate(&buf);
 		  yylval = getsstring(bufdata, 512);
 		  return STRING;
 		}
-  \\\\		{ sbaddchar(&buf, '\\');	}
-  \\\"		{ sbaddchar(&buf, '"');		}
-  [^\\]		{ sbaddchar(&buf, *yytext); 	}
+  \\\\		{ addpos(2);
+		  sbaddchar(&buf, '\\');
+		}
+  \\\"		{ addpos(2);
+		  sbaddchar(&buf, '"');
+		}
+  [^\\]		{ incpos();
+		  sbaddchar(&buf, *yytext);
+		}
 }
 
-\'		{
+\'		{ incpos();
 		  sbinit(&buf, bufdata, sizeof(bufdata));
 		  BEGIN(pascalstr);
 		}
 
 <pascalstr>{
-  \'\'		{ sbaddchar(&buf, '\'');	}
-  \'		{
+  \'\'		{ addpos(2);
+		  sbaddchar(&buf, '\'');
+		}
+  \'		{ incpos();
 		  BEGIN(INITIAL);
 		  sbterminate(&buf);
 		  yylval = getsstring(bufdata, 512);
 		  return STRING;
 		}
-  .		{ sbaddchar(&buf, *yytext); 	}
+  .		{ incpos();
+		  sbaddchar(&buf, *yytext);
+		}
 }
 
-"("		{ return LPAREN;		}
-")"		{ return RPAREN;		}
-[ \t]+		{ return WHITESPACE;		}
-{letter}+	{
+"("		{ incpos();
+		  return LPAREN;
+		}
+")"		{ incpos();
+		  return RPAREN;
+		}
+[ \t]+		{ addpos(strlen(yytext));
+		  return WHITESPACE;
+		}
+{letter}+	{ addpos(strlen(yytext));
 		  yylval = getsstring(yytext, 512);
 		  return IDENTIFIER;
 		}
 
-[\n\r]		/* ignore */;
+[\n\r]		{ incpos();
+		  /* ignore */;
+		}
+
+.		{
+		  incpos();
+		  lexerror = 1;
+		  yyterminate();
+		}
 
 <<EOF>>		{
 		  BEGIN(INITIAL);

@@ -10,6 +10,7 @@ void yy_flush_buffer(struct yy_buffer_state *);
 
 int yyparse(void);
 char *parseStrError;
+int parseStrErrorPos;
 
 parseFunc fnfinder(char *name, void *arg) {
   searchCmd *cmdtree = arg;
@@ -54,7 +55,7 @@ parsertree *parse_string(searchCmd *cmd, const char *str) {
   if(ret) /* error occured, parseStrError has it */
     return NULL;
 
-  parseStrError = "not yet implemented";
+  parseStrError = "BUG: you shouldn't ever see this";
   return pt;
 }
 

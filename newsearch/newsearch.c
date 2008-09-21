@@ -34,6 +34,7 @@ ChanDisplayFunc defaultchanfn = printchannel;
 
 searchCmd *reg_nicksearch, *reg_chansearch, *reg_usersearch;
 void displaycommandhelp(nick *, Command *);
+void displaystrerror(replyFunc, nick *, const char *);
 
 searchCmd *registersearchcommand(char *name, int level, CommandHandler cmd, void *defaultdisplayfunc) {
   searchCmd *acmd;
@@ -475,7 +476,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 #else
   tree = parse_string(reg_nicksearch, cargv[arg]);
   if(!tree) {
-    reply(sender,"Parse error: %s", parseStrError);
+    displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
@@ -582,7 +583,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 #else
   tree = parse_string(reg_chansearch, cargv[arg]);
   if(!tree) {
-    reply(sender,"Parse error: %s", parseStrError);
+    displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
@@ -670,7 +671,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
 #else
   tree = parse_string(reg_usersearch, cargv[arg]);
   if(!tree) {
-    reply(sender,"Parse error: %s", parseStrError);
+    displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
@@ -1239,4 +1240,23 @@ searchNode *var_get(searchCtx *ctx, char *arg) {
 
 void var_setstr(struct searchVariable *v, char *data) {
   v->cdata.u.stringbuf = data;
+}
+
+void displaystrerror(replyFunc reply, nick *np, const char *input) {
+  char buf[515];
+
+  if((parseStrErrorPos >= 0) && (parseStrErrorPos < sizeof(buf) - 3)) {
+    int i;
+
+    for(i=0;i<parseStrErrorPos;i++)
+      buf[i] = ' ';
+
+    buf[i++] = '^';
+    buf[i] = '\0';
+
+    reply(np, "%s", input);
+    reply(np, "%s", buf);
+  }
+
+  reply(np, "Parse error: %s", parseStrError);
 }

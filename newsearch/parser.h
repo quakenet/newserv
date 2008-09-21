@@ -29,5 +29,6 @@ void parse_free(parsertree *);
 void resetparser(fnFinder fnf, void *arg, parsertree **result);
 
 extern char *parseStrError;
+extern int parseStrErrorPos;
 
 #endif

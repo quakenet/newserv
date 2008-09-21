@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include "../lib/stringbuf.h"
 #include "newsearch.h"
 #include "parser.h"
@@ -9,7 +10,7 @@
 
 int yylex(void);
 extern char *parseStrError;
-int position;
+extern int parseStrErrorPos;
 
 #define MAXSTACKSIZE 50
 
@@ -18,16 +19,16 @@ typedef struct parserlist {
   struct parserlist *next;
 } parserlist;
 
-void yyerror(const char *str) {
-  parseStrError = (char *)str;
-}
-
 static int stackpos;
 static parserlist *stack[MAXSTACKSIZE];
 static int stackcount[MAXSTACKSIZE];
 static fnFinder functionfinder;
 static void *fnfarg;
 static parsertree **presult, sresult;
+
+extern int lexerror, lexpos;
+void yystrerror(const char *format, ...);
+void lexreset(void);
 
 void resetparser(fnFinder fnf, void *arg, parsertree **result) {
   presult = result;
@@ -39,8 +40,33 @@ void resetparser(fnFinder fnf, void *arg, parsertree **result) {
 
   functionfinder = fnf;
   fnfarg = arg;
-  
+ 
   stackpos = 0;
+  lexreset();
+}
+
+void yyerror(const char *str) {
+  if(lexerror) {
+    lexerror = 0;
+    yystrerror("lexical error");
+    return;
+  }
+
+  parseStrError = (char *)str;
+  parseStrErrorPos = lexpos;
+}
+
+void yystrerror(const char *format, ...) {
+  va_list va;
+  static char buf[512];
+
+  parse_free(&sresult);
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  yyerror(buf);
 }
 
 %}
@@ -62,7 +88,7 @@ invocation: LPAREN function argumentlist RPAREN
     
     pfn = functionfinder(str->content, fnfarg);
     if(!pfn) {
-      parse_free(&sresult);
+      yystrerror("unknown function: %s", str->content);
       YYERROR;
     }
     /* if we're at the top of the stack we're the root of the tree */
@@ -105,9 +131,11 @@ invocation: LPAREN function argumentlist RPAREN
 
 function: IDENTIFIER
   {
-    if(stackpos >= MAXSTACKSIZE - 1)
+    if(stackpos >= MAXSTACKSIZE - 1) {
+      yyerror("function stack overflow");
       YYERROR;
-      
+    }
+
     stackcount[stackpos] = 0;
     stack[stackpos] = NULL;
     
