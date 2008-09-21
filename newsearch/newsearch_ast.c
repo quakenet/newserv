@@ -242,32 +242,17 @@ static char *ast_printtree_real(StringBuf *buf, searchASTExpr *expr, searchCmd *
     sbaddchar(buf, ')');
 
   } else if(expr->type == AST_NODE_LITERAL) {
-    int quotesrequired, escrequired;
     char *p;
-    for(quotesrequired=escrequired=0,p=expr->u.literal;*p;p++) {
-      if(*p == '(' || *p == ')' || *p == ' ')
-        quotesrequired = 1;
-      if(*p == '\\' || *p == '"') {
-        escrequired = 1;
-        if(quotesrequired)
-          break;
-      }
-    }
-    if(quotesrequired)
-      sbaddchar(buf, '"');
-    
-    if(escrequired) {
-      for(p=expr->u.literal;*p;p++) {
-        if(*p == '\\' || *p == '"')
-          sbaddchar(buf, '\\');
-        sbaddchar(buf, *p);
-      }
-    } else {
-      sbaddstr(buf, expr->u.literal);
+
+    sbaddchar(buf, '"');
+
+    for(p=expr->u.literal;*p;p++) {
+      if(*p == '\\' || *p == '"')
+        sbaddchar(buf, '\\');
+      sbaddchar(buf, *p);
     }
 
-    if(quotesrequired)
-      sbaddchar(buf, '"');
+    sbaddchar(buf, '"');
   } else {
     sbaddstr(buf, "???");
   }
