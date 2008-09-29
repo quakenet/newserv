@@ -49,6 +49,7 @@ void *oppct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 }
 
 void oppct_free(searchCtx *ctx, struct searchNode *thenode) {
+  ctx->reply(senderNSExtern, "Notice: oppct is deprecated by cumodepct");
   free(thenode);
 }
 

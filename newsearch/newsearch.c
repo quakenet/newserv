@@ -198,6 +198,8 @@ void _init() {
   registersearchterm(reg_chansearch, "name",name_parse, 0, "Channel Name");             /* channel only */
   registersearchterm(reg_chansearch, "topic",topic_parse, 0, "Channel topic");           /* channel only */
   registersearchterm(reg_chansearch, "oppct",oppct_parse, 0, "Percentage Opped");           /* channel only */
+  registersearchterm(reg_chansearch, "cumodecount",cumodecount_parse, 0, "Count of users with given channel modes");           /* channel only */
+  registersearchterm(reg_chansearch, "cumodepct",cumodepct_parse, 0, "Percentage of users with given channel modes");           /* channel only */
   registersearchterm(reg_chansearch, "uniquehostpct",hostpct_parse, 0, "uniquehost percent"); /* channel only */
   registersearchterm(reg_chansearch, "authedpct",authedpct_parse, 0, "Percentage of authed users");   /* channel only */
   registersearchterm(reg_chansearch, "kick",kick_parse, 0, "KICK users channels in newsearch result. Note: evaluation order");             /* channel only */

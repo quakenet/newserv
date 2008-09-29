@@ -146,6 +146,8 @@ struct searchNode *size_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *name_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *topic_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *oppct_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *cumodecount_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *cumodepct_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *hostpct_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authedpct_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv);
