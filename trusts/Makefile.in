@@ -1,6 +1,8 @@
 @include@ @includel@../build.mk@includel@
 
 .PHONY: all
-all: trusts.so
+all: trusts.so trusts_commands.so
 
 trusts.so: trusts.o migration.o db.o db-migration.o
+
+trusts_commands.so: trusts_commands.o

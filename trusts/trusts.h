@@ -8,6 +8,8 @@
 
 #define CONTACTLEN 100
 #define COMMENTLEN 300
+#define TRUSTNAMELEN 100
+#define TRUSTHOSTLEN 100
 
 struct trustmigration;
 
@@ -27,6 +29,14 @@ typedef struct trustmigration {
 
 typedef void (*TrustDBMigrationCallback)(int, void *);
 
+typedef struct trusthost {
+  sstring *host;
+  unsigned int maxseen;
+  time_t lastseen;
+
+  struct trusthost *next;
+} trusthost;
+
 typedef struct trustgroup {
   unsigned int id;
 
@@ -34,23 +44,20 @@ typedef struct trustgroup {
   unsigned int trustedfor;
   int mode;
   unsigned int maxperident;
+  unsigned int maxseen;
   time_t expires;
-  time_t latseeen;
+  time_t lastseen;
   time_t lastmaxuserreset;
-
   sstring *createdby, *contact, *comment;
+
+  trusthost *hosts;
 
   struct trustgroup *next;
 } trustgroup;
 
-typedef struct trusthost {
-  unsigned int id;
+void trusts_reloaddb(void);
 
-  sstring *mask;
-  unsigned int max;
-  time_t lastseen;
-
-  struct trusthost *next;
-} trusthost;
+extern int trustsdbloaded;
+extern trustgroup *tglist;
 
 #endif

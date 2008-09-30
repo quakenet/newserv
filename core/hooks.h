@@ -75,6 +75,8 @@
 #define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, u_int64_t*) */
 #define HOOK_AUTH_LOSTAUTHNAME     802 /* Argument is authname* */
 
+#define HOOK_TRUSTS_DB_LOADED      901 /* No arg */
+
 #define PRIORITY_DEFAULT           0
 
 #define PRIORITY_MAX               LONG_MIN

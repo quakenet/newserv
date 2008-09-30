@@ -1,5 +1,4 @@
 #include "../nterfacer/nterfacer.h"
-#include "../nick/nick.h"
 #include "../lib/strlfunc.h"
 #include "trusts.h"
 #include <stdio.h>
