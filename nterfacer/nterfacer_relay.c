@@ -162,9 +162,11 @@ void _fini(void) {
   deregisterhook(HOOK_CORE_REHASH, &relay_rehash);
 
   for(np=list;np;) {
+    struct rline *ri = np->rline;
     lp = np->next;
-    ri_error(np->rline, RELAY_UNLOADED, "Module was unloaded");
+
     dispose_rld(np);
+    ri_error(ri, RELAY_UNLOADED, "Module was unloaded");
 
     np = lp;
   }
@@ -338,13 +340,17 @@ int stats_handler(struct rline *ri, int argc, char **argv) {
 
 void relay_messages(nick *target, int messagetype, void **args) {
   struct rld *item, *prev = NULL;
+  struct rline *ri;
+
   for(item=list;item;prev=item,item=item->next)
     if(item->nick == target)
       break;
 
   if(!item)
     return;
-   
+
+  ri = item->rline;
+
   switch(messagetype) {
     case LU_PRIVNOTICE:
     case LU_PRIVMSG:
@@ -357,52 +363,54 @@ void relay_messages(nick *target, int messagetype, void **args) {
           if(!strncmp((char *)args[1], "Your authlevel is ", 18)) {
             item->mode|=MODE_O_AUTH2;
           } else {
-            ri_error(item->rline, RELAY_O_AUTH_ERROR, "Unable to auth with O");
             dispose_rld_prev(item, prev);
+            ri_error(ri, RELAY_O_AUTH_ERROR, "Unable to auth with O");
           }
         } else {
           if(!strcmp((char *)args[1], "Auth successful.")) {
             item->mode|=MODE_O_AUTH1;
           } else {
-            ri_error(item->rline, RELAY_O_AUTH_ERROR, "Unable to auth with O");
             dispose_rld_prev(item, prev);
+            ri_error(ri, RELAY_O_AUTH_ERROR, "Unable to auth with O");
           }
         }
-      } else if(ri_append(item->rline, "%s", (char *)args[1]) == BF_OVER) {
-        ri_error(item->rline, BF_OVER, "Buffer overflow");
+      } else if(ri_append(ri, "%s", (char *)args[1]) == BF_OVER) {
         dispose_rld_prev(item, prev);
+        ri_error(ri, BF_OVER, "Buffer overflow");
       } else {
         if(((item->mode & MODE_LINES) && (!--item->termination.remaining_lines)) || ((item->mode & MODE_TAG) && (pcre_exec(item->termination.pcre.phrase, item->termination.pcre.hint, (char *)args[1], strlen((char *)args[1]), 0, 0, NULL, 0) >= 0))) {
-          ri_final(item->rline);
           dispose_rld_prev(item, prev);
+          ri_final(ri);
         }
       }
       break;
 
     case LU_KILLED:
-      ri_error(item->rline, RELAY_KILLED, "Killed");
       if(prev) {
         prev->next = item->next;
       } else {
         list = item->next;
       }
       dispose_rld_dontquit(item, 1);
+      ri_error(ri, RELAY_KILLED, "Killed");
       break;
 
     case LU_STATS:
       if(item->mode != MODE_STATS)
         return;
-      if(ri_append(item->rline, "%s", (char *)args[2]) == BF_OVER) {
-        ri_error(item->rline, BF_OVER, "Buffer overflow");
+      if(ri_append(ri, "%s", (char *)args[2]) == BF_OVER) {
         dispose_rld_prev(item, prev);
+        ri_error(ri, BF_OVER, "Buffer overflow");
       }
       break;
 
     case LU_STATS_END:
       if(item->mode != MODE_STATS)
         return;
-      ri_final(item->rline);
+
       dispose_rld_prev(item, prev);
+
+      ri_final(ri);
       break;
   }
 }
@@ -431,33 +439,35 @@ void dispose_rld_dontquit(struct rld *item, int dontquit) {
 
 void relay_timeout(void *arg) {
   struct rld *item = (struct rld *)arg, *lp = NULL, *np;
+  struct rline *ri = item->rline;
   
   item->schedule = NULL;
-  
-  ri_error(item->rline, RELAY_TIMEOUT, "Timed out");
-
   for(np=list;np;lp=np,np=np->next) {
     if(np == item) {
       dispose_rld_prev(item, lp);
       break;
     }
   }
+
+  ri_error(ri, RELAY_TIMEOUT, "Timed out");
 }
 
 void relay_quits(int hook, void *args) {
   nick *np = (nick *)args;
-  struct rld *cp, *lp;
-  
+  struct rld *cp, *lp, *freed = NULL;
+
+  /* get them out of the list before freeing */
   for(lp=NULL,cp=list;cp;) {
     if(cp->dest == np) {
-      ri_error(cp->rline, RELAY_TARGET_LEFT, "Target left QuakeNet");
       if(lp) {
         lp->next = cp->next;
-        dispose_rld(cp);
+        cp->next = freed;
+        freed = cp;
         cp = lp->next;
       } else {
         list = cp->next;
-        dispose_rld(cp);
+        cp->next = freed;
+        freed = cp;
         cp = list;
       }
     } else {
@@ -465,13 +475,27 @@ void relay_quits(int hook, void *args) {
       cp = cp->next;
     }
   }
+
+  /* now free them up */
+  while(freed) {
+    struct rline *ri = freed->rline;
+    cp = freed->next;
+
+    dispose_rld(freed);
+    ri_error(ri, RELAY_TARGET_LEFT, "Target left QuakeNet");
+
+    freed = cp;
+  }
 }
 
 void relay_disconnect(int hook, void *args) {
   struct rld *np, *lp = NULL;
   while(list) {
-    ri_error(list->rline, RELAY_DISCONNECTED, "Disconnected from IRC");
+    struct rline *ri = list->rline;
+
     dispose_rld_prev(list, NULL);
+
+    ri_error(ri, RELAY_DISCONNECTED, "Disconnected from IRC");
 
     np = lp;
   }
