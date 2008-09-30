@@ -1,7 +1,7 @@
 #include "../nterfacer/nterfacer.h"
 #include "../nick/nick.h"
 #include "../lib/strlfunc.h"
-#include "trusts_migration.h"
+#include "trusts.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -11,9 +11,18 @@
 static void tm_trustdump(trustmigration *tm);
 
 static void tm_fini(trustmigration *tm, int errcode) {
-  tm->fini(tm, errcode);
+  tm->fini(tm->tag, errcode);
 
-  trusts_migration_stop(tm);
+  if(tm->schedule) {
+    nterfacer_freeline(tm->schedule);
+    tm->schedule = NULL;
+  }
+
+  free(tm);
+}
+
+void migration_stop(trustmigration *tm) {
+  tm_fini(tm, MIGRATION_STOPPED);
 }
 
 static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline) {
@@ -59,7 +68,7 @@ static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline)
     return 4;
   *comment++ = '\0';  
 
-  tm->group(tm, id, name, trustedfor, mode, maxperident, maxseen, (time_t)expires, (time_t)lastseen, (time_t)lastmaxusereset, createdby, contact, comment);
+  tm->group(tm->tag, id, name, trustedfor, mode, maxperident, maxseen, (time_t)expires, (time_t)lastseen, (time_t)lastmaxusereset, createdby, contact, comment);
   return 0;
 }
 
@@ -82,7 +91,7 @@ static int tm_parsehost(trustmigration *tm, unsigned int id, char *line) {
   if(sscanf(line, "%*u,%u,%lu", /*current, */&max, &lastseen) != 2)
     return 6;
 
-  tm->host(tm, id, ip, max, lastseen);
+  tm->host(tm->tag, id, ip, max, lastseen);
   return 0;
 }
 
@@ -92,10 +101,10 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
   unsigned int groupcount, totallines, i, dummy;
 
 #ifdef TRUSTS_MIGRATION_DEBUG
-  Error("trusts_migration", ERR_INFO, "Total lines: %d", linec);
+  Error("trusts", ERR_INFO, "Migration total lines: %d", linec);
 
   for(i=0;i<linec;i++)
-    Error("trusts_migration", ERR_INFO, "Line %d: |%s|", i, linev[i]);
+    Error("trusts", ERR_INFO, "Migration line %d: |%s|", i, linev[i]);
 #endif
 
   tm->schedule = NULL;
@@ -164,7 +173,7 @@ static void tm_trustdump(trustmigration *tm) {
   char buf[100];
 
   if(tm->cur >= tm->count) {
-    tm->fini(tm, 0);
+    tm->fini(tm->tag, 0);
     return;
   }
 
@@ -190,14 +199,14 @@ static void tm_stage1(int failure, int linec, char **linev, void *tag) {
     return;
   }
 
-  Error("trusts_migration", ERR_INFO, "Migration in progress, total groups: %d", count);
+  Error("trusts", ERR_INFO, "Migration in progress, total groups: %d", count);
 
   tm->count = count;
 
   tm_trustdump(tm);
 }
 
-trustmigration *trusts_migration_start(TrustMigrationGroup group, TrustMigrationHost host, TrustMigrationFini fini) {
+trustmigration *migration_start(TrustMigrationGroup group, TrustMigrationHost host, TrustMigrationFini fini, void *tag) {
   trustmigration *tm = malloc(sizeof(trustmigration));
   if(!tm)
     return NULL;
@@ -207,16 +216,8 @@ trustmigration *trusts_migration_start(TrustMigrationGroup group, TrustMigration
   tm->fini = fini;
   tm->count = 0;
   tm->cur = 0;
+  tm->tag = tag;
 
   tm->schedule = nterfacer_sendline("R", "relay", 4, (char *[]){"1", "1", "O", "trustdump #9999999 1"}, tm_stage1, tm);
   return tm;
-}
-
-void trusts_migration_stop(trustmigration *tm) {
-  if(tm->schedule) {
-    nterfacer_freeline(tm->schedule);
-    tm->schedule = NULL;
-  }
-
-  free(tm);
 }
