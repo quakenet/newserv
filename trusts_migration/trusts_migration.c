@@ -80,7 +80,7 @@ static int tm_parsehost(trustmigration *tm, unsigned int id, char *line) {
   *line++ = '\0';
 
   if(sscanf(line, "%*u,%u,%lu", /*current, */&max, &lastseen) != 2)
-    return 5;
+    return 6;
 
   tm->host(tm, id, ip, max, lastseen);
   return 0;
@@ -91,9 +91,16 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
   char *finishline;
   unsigned int groupcount, totallines, i, dummy;
 
+#ifdef DEBUG
+  Error("trusts_migration", ERR_INFO, "Total lines: %d", linec);
+
+  for(i=0;i<linec;i++)
+    Error("trusts_migration", ERR_INFO, "Line %d: |%s|", i, i, linev[i]);
+#endif
+
   tm->schedule = NULL;
   if(failure || (linec < 1)) {
-    tm_fini(tm, 6);
+    tm_fini(tm, 7);
     return;
   }
 
@@ -105,12 +112,12 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
   }
 
   if(sscanf(finishline, "End of list, %u groups and %u lines returned.", &groupcount, &totallines) != 2) {
-    tm_fini(tm, 7);
+    tm_fini(tm, 8);
     return;
   }
 
   if(totallines != linec - 1) {
-    tm_fini(tm, 8);
+    tm_fini(tm, 9);
     return;
   }
 
@@ -122,7 +129,7 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
       int pos, ret;
 
       if(sscanf(linestart, "#%u,%n", &id, &pos) != 1) {
-        tm_fini(tm, 9);
+        tm_fini(tm, 10);
         return;
       }
 
@@ -181,7 +188,7 @@ static void tm_stage1(int failure, int linec, char **linev, void *tag) {
     return;
   }
 
-  Error("trusts-migration", ERR_INFO, "Migration in progress, total groups: %d", count);
+  Error("trusts_migration", ERR_INFO, "Migration in progress, total groups: %d", count);
 
   tm->count = count;
 

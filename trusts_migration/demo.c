@@ -42,7 +42,7 @@ void _fini(void) {
 
 static void tm_group(trustmigration *tm, unsigned int id, char *name, unsigned int trustedfor, unsigned int mode, unsigned int maxperident, unsigned int maxseen, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
   if(id % 25 == 0)
-    Error("trusts-migration", ERR_INFO, "Currently at id: %d", id);
+    Error("trusts_migration", ERR_INFO, "Currently at id: %d", id);
 
   tsdb->squery(tsdb, 
     "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
