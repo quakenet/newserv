@@ -42,6 +42,7 @@ struct permitted *permits;
 int permit_count = 0;
 
 int ping_handler(struct rline *ri, int argc, char **argv);
+static void nterfacer_sendcallback(struct rline *ri, int error, char *buf);
 
 void _init(void) {
   int loaded;
@@ -50,12 +51,10 @@ void _init(void) {
   nrl = nterface_open_log("nterfacer", "logs/nterfacer.log", debug_mode);
 
   loaded = load_permits();
-  if(!loaded) {
-    nterface_log(nrl, NL_ERROR, "No permits loaded successfully.");
+  nterface_log(nrl, NL_INFO, "Loaded %d permit%s successfully.", loaded, loaded==1?"":"s");
+
+  if(!loaded)
     return;
-  } else {
-    nterface_log(nrl, NL_INFO, "Loaded %d permit%s successfully.", loaded, loaded==1?"":"s");
-  }
 
   nterfacer_events.on_accept = nterfacer_accept_event;
   nterfacer_events.on_line = nterfacer_line_event;
@@ -89,7 +88,7 @@ void free_handler(struct handler *hp) {
       if(li->socket) {
         esocket_write_line(li->socket, "%d,OE%d,%s", li->id, BF_UNLOADED, "Service was unloaded.");
       } else if(li->callback) {
-        li->callback(BF_UNLOADED, "Service was unloaded.", li->tag);
+        nterfacer_sendcallback(li, BF_UNLOADED, "Service was unloaded.");
       }
       if(pi) {
         pi->next = li->next;
@@ -165,10 +164,8 @@ int load_permits(void) {
 
   hostnamesa = getconfigitems("nterfacer", "hostname");
   passwordsa = getconfigitems("nterfacer", "password");
-  if(!hostnamesa || !passwordsa) {
-    nterface_log(nrl, NL_ERROR, "Unable to load hostnames/passwords.");
+  if(!hostnamesa || !passwordsa)
     return 0;
-  }
   if(hostnamesa->cursi != passwordsa->cursi) {
     nterface_log(nrl, NL_ERROR, "Different number of hostnames/passwords in config file.");
     return 0;
@@ -729,7 +726,7 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
       if(error_code == 0) /* :P */
         error_code = -10000;
 
-      li->callback(error_code, escapedbuf, li->tag);
+      nterfacer_sendcallback(li, error_code, escapedbuf);
     }
   }
 
@@ -756,7 +753,7 @@ int ri_final(struct rline *li) {
     if(esocket_write_line(li->socket, "%d,OO%s", li->id, li->buf))
       retval = RE_SOCKET_ERROR;
   } else if(li->callback) {
-    li->callback(0, li->buf, li->tag);
+    nterfacer_sendcallback(li, 0, li->buf);
   }
 
   for(pp=rlines;pp;lp=pp,pp=pp->next) {
@@ -839,4 +836,39 @@ void nterfacer_freeline(void *tag) {
   struct rline *prequest = tag;
 
   prequest->callback = NULL;
+}
+
+#define MAX_LINES 8192
+
+/* this bites */
+static void nterfacer_sendcallback(struct rline *ri, int error, char *buf) {
+  char *lines[MAX_LINES+1];
+  char newbuf[MAX_BUFSIZE+1];
+  char *s, *d, *laststart;
+  int linec = 0;
+
+  for(laststart=s=buf,d=newbuf;*s;s++) {
+    if((*s == '\\') && *(s + 1)) {
+      if(*(s + 1) == ',') {
+        *d++ = ',';
+      } else if(*(s + 1) == '\\') {
+        *d++ = '\\';
+      }
+      s++;
+    } else if(*s == ',') {
+      *d++ = '\0';
+      if(linec >= MAX_LINES - 5) {
+        nterfacer_sendcallback(ri, BF_OVER, "Buffer overflow.");
+        return;
+      }
+
+      lines[linec++] = laststart;
+      laststart = s + 1;
+    } else {
+      *d++ = *s;
+    }
+  }
+  lines[linec++] = laststart;
+
+  ri->callback(error, linec, lines, ri->tag);
 }

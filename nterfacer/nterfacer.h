@@ -32,7 +32,7 @@
 struct rline;
 
 typedef int (*handler_function)(struct rline *ri, int argc, char **argv);
-typedef void (*rline_callback)(int failed, char *buf, void *tag);
+typedef void (*rline_callback)(int failed, int linec, char **linev, void *tag);
 
 typedef struct handler {
   sstring *command;
