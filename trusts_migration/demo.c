@@ -1,11 +1,8 @@
-#include <stdio.h>
-#include <stdint.h>
-
 #include "../core/error.h"
+#include "../nick/nick.h"
 #include "trusts_migration.h"
 
-DBAPIConn *tsdb;
-
+static DBAPIConn *tsdb;
 static trustmigration *t;
 
 static void tm_group(trustmigration *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
@@ -18,6 +15,15 @@ void _init(void) {
     Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
     return;
   }
+
+  tsdb->createtable(tsdb, NULL, NULL,
+    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(100), trustedfor INT, mode INT, maxperident INT, maxseen INT, expires INT, lastseen INT, lastmaxuserreset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
+    "Tddd", "groups", NICKLEN, CONTACTLEN, COMMENTLEN
+  );
+  tsdb->createtable(tsdb, NULL, NULL, "CREATE TABLE ? (groupid INT, host VARCHAR(100), max INT, lastseen INT, PRIMARY KEY (groupid, host))", "T", "hosts");
+
+  tsdb->squery(tsdb, "DELETE FROM ?", "T", "groups");
+  tsdb->squery(tsdb, "DELETE FROM ?", "T", "hosts");
 
   t = trusts_migration_start(tm_group, tm_host, tm_final);
 }
@@ -35,19 +41,28 @@ void _fini(void) {
 }
 
 static void tm_group(trustmigration *tm, unsigned int id, char *name, unsigned int trustedfor, unsigned int mode, unsigned int maxperident, unsigned int maxseen, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
-  printf("id: %d, name: %s, trusted for: %u mode: %u maxperident: %u maxseen: %u expires: %jd lastseen: %jd lastmaxuserreset: %jd createdby: %s contact: %s comment: %s\n", id, name, trustedfor, mode, maxperident, maxseen, (intmax_t)expires, (intmax_t)lastseen, (intmax_t)lastmaxuserreset, createdby, contact, comment);
+  if(id % 25 == 0)
+    Error("trusts-migration", ERR_INFO, "Currently at id: %d", id);
+
+  tsdb->squery(tsdb, 
+    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tusuuuutttsss", "groups", id, name, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby, contact, comment
+  );
 }
 
 static void tm_host(trustmigration *tm, unsigned int id, char *host, unsigned int max, time_t lastseen) {
-  printf("  id: %d, host: %s, max: %d, last seen: %jd\n", id, host, max, (intmax_t)lastseen);
+  tsdb->squery(tsdb, 
+    "INSERT INTO ? (groupid, host, max, lastseen) VALUES (?, ?, ?, ?)",
+    "Tusut", "hosts", id, host, max, lastseen
+  );
 }
 
 static void tm_final(trustmigration *tm, int errcode) {
   t = NULL;
 
   if(errcode) {
-    printf("error :(: %d\n", errcode);
+    Error("trusts_migration", ERR_ERROR, "Error: %d", errcode);
   } else {
-    printf("finished!\n");
+    Error("trusts_migration", ERR_INFO, "Operation completed.");
   }
 }
