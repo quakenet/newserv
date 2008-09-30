@@ -60,4 +60,6 @@ void trusts_reloaddb(void);
 extern int trustsdbloaded;
 extern trustgroup *tglist;
 
+char *trusts_timetostr(time_t t);
+
 #endif
