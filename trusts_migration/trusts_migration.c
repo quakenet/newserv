@@ -8,6 +8,8 @@
 #define Stringify(x) __Stringify(x)
 #define __Stringify(x) #x
 
+#define TRUSTS_MIGRATION_DEBUG
+
 static void tm_trustdump(trustmigration *tm);
 
 static void tm_fini(trustmigration *tm, int errcode) {
@@ -91,11 +93,11 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
   char *finishline;
   unsigned int groupcount, totallines, i, dummy;
 
-#ifdef DEBUG
+#ifdef TRUSTS_MIGRATION_DEBUG
   Error("trusts_migration", ERR_INFO, "Total lines: %d", linec);
 
   for(i=0;i<linec;i++)
-    Error("trusts_migration", ERR_INFO, "Line %d: |%s|", i, i, linev[i]);
+    Error("trusts_migration", ERR_INFO, "Line %d: |%s|", i, linev[i]);
 #endif
 
   tm->schedule = NULL;
@@ -133,10 +135,12 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
         return;
       }
 
-      if(id != tm->cur) {
-        /* ignore, this one is missing and we've received a later one */
-        /* we'll get this one again when we ask for it */
-        continue;
+      if(id > tm->cur) {
+        /* this one is missing and we've received a later one instead, update tm->cur to point to this one */
+        tm->cur = id;
+      } else if(id < tm->cur) {
+        tm_fini(tm, 11);
+        return;
       }
 
       realline = &linestart[pos];
@@ -169,7 +173,7 @@ static void tm_trustdump(trustmigration *tm) {
   tm->cur++;
 
   snprintf(buf, sizeof(buf), "trustdump #%d 1", tm->cur);
-  tm->schedule = nterfacer_sendline("R", "relay", 4, (char *[]){"2", "^(Start ID cannot exceed current maximum group ID \\(#\\d+\\)|End of list, 1 groups and \\d lines returned\\.)$", "O", buf}, tm_stage2, tm);
+  tm->schedule = nterfacer_sendline("R", "relay", 4, (char *[]){"2", "^(Start ID cannot exceed current maximum group ID \\(#\\d+\\)|End of list, 1 groups and \\d+ lines returned\\.)$", "O", buf}, tm_stage2, tm);
 }
 
 static void tm_stage1(int failure, int linec, char **linev, void *tag) {
