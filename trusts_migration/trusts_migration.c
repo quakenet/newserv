@@ -135,10 +135,12 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
         return;
       }
 
-      if(id != tm->cur) {
-        /* ignore, this one is missing and we've received a later one */
-        /* we'll get this one again when we ask for it */
-        continue;
+      if(id > tm->cur) {
+        /* this one is missing and we've received a later one instead, update tm->cur to point to this one */
+        tm->cur = id;
+      } else if(id < tm->cur) {
+        tm_fini(tm, 11);
+        return;
       }
 
       realline = &linestart[pos];
