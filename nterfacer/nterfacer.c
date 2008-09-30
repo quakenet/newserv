@@ -843,11 +843,11 @@ void nterfacer_freeline(void *tag) {
 /* this bites */
 static void nterfacer_sendcallback(struct rline *ri, int error, char *buf) {
   char *lines[MAX_LINES+1];
-  char newbuf[MAX_BUFSIZE+1];
+  char newbuf[MAX_BUFSIZE+5];
   char *s, *d, *laststart;
   int linec = 0;
 
-  for(laststart=s=buf,d=newbuf;*s;s++) {
+  for(s=buf,laststart=d=newbuf;*s;s++) {
     if((*s == '\\') && *(s + 1)) {
       if(*(s + 1) == ',') {
         *d++ = ',';
@@ -863,11 +863,12 @@ static void nterfacer_sendcallback(struct rline *ri, int error, char *buf) {
       }
 
       lines[linec++] = laststart;
-      laststart = s + 1;
+      laststart = d;
     } else {
       *d++ = *s;
     }
   }
+  *d = '\0';
   lines[linec++] = laststart;
 
   ri->callback(error, linec, lines, ri->tag);
