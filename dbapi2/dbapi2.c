@@ -147,6 +147,10 @@ static void dbsafesimplequery(const DBAPIConn *db, const char *format, const cha
   db->__query(db, NULL, NULL, buf);
 }
 
+static void dbloadtable(const DBAPIConn *db, DBAPIQueryCallback init, DBAPIQueryCallback data, DBAPIQueryCallback fini, DBAPIUserData tag, const char *tablename) {
+  db->__loadtable(db, init, data, fini, tag, db->tablename(db, tablename));
+}
+
 DBAPIConn *dbapi2open(const char *provider, const char *database) {
   int i, found = -1;
   DBAPIConn *db;
@@ -187,7 +191,7 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   db->query = dbsafequery;
   db->createtable = dbsafecreatetable;
   db->squery = dbsafesimplequery;
-  db->loadtable = p->loadtable;
+  db->loadtable = dbloadtable;
   db->escapestring = p->escapestring;
   db->tablename = p->tablename;
   db->unsafequery = dbunsafequery;
@@ -198,6 +202,7 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   db->__close = p->close;
   db->__quotestring = p->quotestring;
   db->__createtable = p->createtable;
+  db->__loadtable = p->loadtable;
 
   strlcpy(db->name, database, DBNAME_LEN);
 

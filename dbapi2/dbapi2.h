@@ -87,6 +87,7 @@ typedef struct DBAPIConn {
   DBAPIQuoteString __quotestring;
   DBAPIQueryV __query;
   DBAPICreateTableV __createtable;
+  DBAPILoadTable __loadtable;
 } DBAPIConn;
 
 typedef char *(*DBAPIResultGet)(const struct DBAPIResult *, unsigned int);
