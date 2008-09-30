@@ -1,0 +1,6 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: trusts_migration.so
+
+trusts_migration.so: trusts_migration.o demo.o
