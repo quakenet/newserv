@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <time.h>
+#include <stdint.h>
 
 #include "../core/error.h"
 #include "../lib/strlfunc.h"
@@ -229,6 +231,9 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
     unsigned int u;
     size_t l;
     int fallthrough;
+    time_t t;
+    unsigned long ul;
+    long _l;
 
     for(i=0;i<VSNPF_MAXARGS;i++)
       convbuf[i][0] = '\0';
@@ -280,6 +285,18 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
         case 'u':
           u = va_arg(ap, unsigned int);
           snprintf(cb, VSNPF_MAXARGLEN, "%u", u);
+          break;
+        case 't':
+          t = va_arg(ap, time_t);
+          snprintf(cb, VSNPF_MAXARGLEN, "%jd", (intmax_t)t);
+          break;
+        case 'D':
+          _l = va_arg(ap, long);
+          snprintf(cb, VSNPF_MAXARGLEN, "%ld", _l);
+          break;
+        case 'U':
+          ul = va_arg(ap, unsigned long);
+          snprintf(cb, VSNPF_MAXARGLEN, "%lu", ul);
           break;
         case 'g':
           g = va_arg(ap, double);
