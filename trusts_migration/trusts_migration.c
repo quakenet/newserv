@@ -8,8 +8,6 @@
 #define Stringify(x) __Stringify(x)
 #define __Stringify(x) #x
 
-#define TRUSTS_MIGRATION_DEBUG
-
 static void tm_trustdump(trustmigration *tm);
 
 static void tm_fini(trustmigration *tm, int errcode) {
