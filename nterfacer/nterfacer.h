@@ -31,6 +31,7 @@
 struct rline;
 
 typedef int (*handler_function)(struct rline *ri, int argc, char **argv);
+typedef void (*rline_callback)(int failed, char *buf, void *tag);
 
 typedef struct handler {
   sstring *command;
@@ -54,6 +55,7 @@ typedef struct rline {
   char *curpos;
   struct rline *next;
   void *tag;
+  rline_callback callback;
   struct esocket *socket;
 } rline;
 
@@ -93,5 +95,7 @@ int nterfacer_line_event(struct esocket *socket, char *newline);
 int nterfacer_new_rline(char *line, struct esocket *socket, int *number);
 struct sconnect *find_sconnect_from_fd(int fd);
 
-#endif
+void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rline_callback callback, void *tag);
+void nterfacer_freeline(void *arg);
 
+#endif

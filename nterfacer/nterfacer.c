@@ -642,6 +642,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   prequest->id = *number;
   prequest->next = rlines;
   prequest->socket = socket;
+  prequest->callback = NULL;
 
   rlines = prequest;
   re = (hl->function)(prequest, argcount, args);
@@ -706,7 +707,7 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
   va_list ap;
   int retval = RE_OK;
 
-  if(li->socket) {
+  if(li->socket || li->callback) {
     va_start(ap, format);
     vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
@@ -714,9 +715,15 @@ int ri_error(struct rline *li, int error_code, char *format, ...) {
     for(tp=escapedbuf,p=buf;*p||(*tp='\0');*tp++=*p++)
       if((*p == ',') || (*p == '\\'))
         *tp++ = '\\';
+    if(li->socket) {
+      if(esocket_write_line(li->socket, "%d,OE%d,%s", li->id, error_code, escapedbuf))
+        retval = RE_SOCKET_ERROR;
+    } else {
+      if(error_code == 0) /* :P */
+        error_code = -10000;
 
-    if(esocket_write_line(li->socket, "%d,OE%d,%s", li->id, error_code, escapedbuf))
-      retval = RE_SOCKET_ERROR;
+      li->callback(error_code, escapedbuf, li->tag);
+    }
   }
 
   for(pp=rlines;pp;lp=pp,pp=pp->next) {
@@ -738,9 +745,12 @@ int ri_final(struct rline *li) {
   struct rline *pp, *lp = NULL;
   int retval = RE_OK;
 
-  if(li->socket)
+  if(li->socket) {
     if(esocket_write_line(li->socket, "%d,OO%s", li->id, li->buf))
       retval = RE_SOCKET_ERROR;
+  } else if(li->callback) {
+    li->callback(0, li->buf, li->tag);
+  }
 
   for(pp=rlines;pp;lp=pp,pp=pp->next) {
     if(pp == li) {
@@ -760,4 +770,66 @@ int ri_final(struct rline *li) {
 int ping_handler(struct rline *ri, int argc, char **argv) {
   ri_append(ri, "OK");
   return ri_final(ri);
+}
+
+void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rline_callback callback, void *tag) {
+  struct service_node *servicep;
+  struct rline *prequest;
+  struct handler *hl;
+  int re;
+
+  for(servicep=tree;servicep;servicep=servicep->next)
+    if(!strcmp(servicep->name->content, service))
+      break;
+
+  if(!servicep) {
+    Error("nterfacer", ERR_WARNING, "sendline: service not found: %s", service);
+    return NULL;
+  }
+
+  for(hl=servicep->handlers;hl;hl=hl->next)
+    if(!strcmp(hl->command->content, command))
+      break;
+
+  if(!hl) {
+    Error("nterfacer", ERR_WARNING, "sendline: command not found: %s", command);
+    return NULL;
+  }
+
+  if(argc < hl->args) {
+    Error("nterfacer", ERR_WARNING, "sendline: wrong number of arguments: %s", command);
+    return NULL;
+  }
+
+  prequest = (struct rline *)ntmalloc(sizeof(struct rline));
+  if(!prequest) {
+    MemError();
+    return NULL;
+  }
+
+  prequest->service = servicep;
+  prequest->handler = hl;
+  prequest->buf[0] = '\0';
+  prequest->curpos = prequest->buf;
+  prequest->tag = tag;
+  prequest->id = 0;
+  prequest->next = rlines;
+  prequest->socket = NULL;
+  prequest->callback = callback;
+
+  rlines = prequest;
+  re = (hl->function)(prequest, argc, argv);
+
+  if(re) {
+    Error("nterfacer", ERR_WARNING, "sendline: error occured calling %s %d: %s", command, re, request_error(re));
+    return NULL;
+  }
+
+  return (void *)prequest;
+}
+
+void nterfacer_freeline(void *tag) {
+  struct rline *prequest = tag;
+
+  prequest->callback = NULL;
 }
