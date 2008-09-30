@@ -243,7 +243,7 @@ size_t sqliteescapestring(char *buf, char *src, unsigned int len) {
   }
   *buf = '\0';
 
-  return p - src;
+  return p - buf;
 }
 
 SQLiteResult *sqlitegetresult(SQLiteConn *r) {
