@@ -82,6 +82,29 @@ void _init(void) {
 }
 
 void free_handler(struct handler *hp) {
+  struct rline *li, *pi = NULL;
+
+  for(li=rlines;li;) {
+    if(li->handler == hp) {
+      if(li->socket) {
+        esocket_write_line(li->socket, "%d,OE%d,%s", li->id, BF_UNLOADED, "Service was unloaded.");
+      } else if(li->callback) {
+        li->callback(BF_UNLOADED, "Service was unloaded.", li->tag);
+      }
+      if(pi) {
+        pi->next = li->next;
+        ntfree(li);
+        li = pi->next;
+      } else {
+        rlines = li->next;
+        ntfree(li);
+        li = rlines;
+      }
+    } else {
+      pi=li,li=li->next;
+    }
+  }
+
   freesstring(hp->command);
   ntfree(hp);
 }
@@ -300,7 +323,6 @@ void deregister_handler(struct handler *hl) {
 
 void deregister_service(struct service_node *service) {
   struct service_node *sp, *lp = NULL;
-  struct rline *li, *pi = NULL;
 
   for(sp=tree;sp;lp=sp,sp=sp->next) {
     if(sp == service) {
@@ -318,21 +340,6 @@ void deregister_service(struct service_node *service) {
 
   free_handlers(service);
 
-  for(li=rlines;li;) {
-    if(li->service == service) {
-      if(pi) {
-        pi->next = li->next;
-        ntfree(li);
-        li = pi->next;
-      } else {
-        rlines = li->next;
-        ntfree(li);
-        li = rlines;
-      }
-    } else {
-      pi=li,li=li->next;
-    }
-  }
   freesstring(service->name);
 
   ntfree(service);

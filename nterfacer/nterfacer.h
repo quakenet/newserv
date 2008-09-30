@@ -16,6 +16,7 @@
 
 #define BF_OK      0x00
 #define BF_OVER    0xFF
+#define BF_UNLOADED 0xFE
 
 #define SS_IDLE           0x00
 #define SS_VERSIONED      0x01
