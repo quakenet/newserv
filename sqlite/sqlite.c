@@ -234,16 +234,16 @@ int sqliteconnected(void) {
 
 size_t sqliteescapestring(char *buf, char *src, unsigned int len) {
   unsigned int i;
-  char *p;
+  char *p, *d;
 
-  for(p=src,i=0;i<len;i++,p++) {
+  for(p=src,d=buf,i=0;i<len;i++,p++) {
     if(*p == '\'')
-      *buf++ = *p;
-    *buf++ = *p;
+      *d++ = *p;
+    *d++ = *p;
   }
-  *buf = '\0';
+  *d = '\0';
 
-  return p - buf;
+  return d - buf;
 }
 
 SQLiteResult *sqlitegetresult(SQLiteConn *r) {
