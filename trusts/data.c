@@ -114,4 +114,3 @@ trusthost *th_getbyhost(uint32_t host) {
 
   return NULL;
 }
-

@@ -11,19 +11,6 @@ int trustsdbloaded;
 void trusts_reloaddb(void);
 void createtrusttables(int migration);
 
-int trusts_loaddb(void) {
-  trustsdb = dbapi2open(NULL, "trusts");
-  if(!trustsdb) {
-    Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
-    return 0;
-  }
-
-  createtrusttables(0);
-
-  trusts_reloaddb();
-  return 1;
-}
-
 void createtrusttables(int migration) {
   char *groups, *hosts;
 
@@ -42,11 +29,13 @@ void createtrusttables(int migration) {
   trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (groupid INT, host VARCHAR(?), max INT, lastseen INT, PRIMARY KEY (groupid, host))", "Td", hosts, TRUSTHOSTLEN);
 }
 
-static void trusts_freedb(void) {
-  trusts_freeall();
+static void loadcomplete(void ) {
+  /* error has already been shown */
+  if(loaderror)
+    return;
 
-  trustsdbloaded = 0;
-  tgmaxid = 0;
+  trustsdbloaded = 1;
+  triggerhook(HOOK_TRUSTS_DB_LOADED, NULL);
 }
 
 static void loadhosts_data(const DBAPIResult *result, void *tag) {
@@ -95,10 +84,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
 
   result->clear(result);
 
-  if(!loaderror) {
-    trustsdbloaded = 1;
-    triggerhook(HOOK_TRUSTS_DB_LOADED, NULL);
-  }
+  loadcomplete();
 }
 
 static void loadhosts_fini(const DBAPIResult *result, void *tag) {
@@ -169,18 +155,30 @@ static void loadgroups_fini(const DBAPIResult *result, void *tag) {
   Error("trusts", ERR_INFO, "Finished loading groups, maximum id: %d.", tgmaxid);
 }
 
-void trusts_reloaddb(void) {
-  trusts_freedb();
+int trusts_loaddb(void) {
+  trustsdb = dbapi2open(NULL, "trusts");
+  if(!trustsdb) {
+    Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
+    return 0;
+  }
+
+  createtrusttables(0);
 
   loaderror = 0;
 
   trustsdb->loadtable(trustsdb, NULL, loadgroups_data, loadgroups_fini, NULL, "groups");
   trustsdb->loadtable(trustsdb, NULL, loadhosts_data, loadhosts_fini, NULL, "hosts");
+
+  return 1;
 }
 
 void trusts_closedb(void) {
   if(!trustsdb)
     return;
+
+  trusts_freeall();
+  trustsdbloaded = 0;
+  tgmaxid = 0;
 
   trustsdb->close(trustsdb);
   trustsdb = NULL;

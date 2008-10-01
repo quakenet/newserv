@@ -7,8 +7,6 @@ void trusts_migration_stop(void);
 static void registercommands(void);
 static void deregistercommands(void);
 
-static int commandsregistered;
-
 static void migrate_status(int errcode, void *tag) {
   long sender = (long)tag;
   nick *np = getnickbynumeric(sender);
@@ -17,10 +15,9 @@ static void migrate_status(int errcode, void *tag) {
     return;
 
   if(!errcode) {
-    controlreply(np, "Migration complete.");
-    trusts_reloaddb();
+    controlreply(np, "Migration complete, you must reload the module.");
   } else {
-    controlreply(np, "Error %d occured during migration.", errcode);
+    controlreply(np, "Error %d occured during migration, commands reregistered.", errcode);
     registercommands();
   }
 }
@@ -32,7 +29,7 @@ static int trusts_cmdmigrate(void *source, int cargc, char **cargv) {
   /* iffy but temporary */
   ret = trusts_migration_start(migrate_status, (void *)(sender->numeric));
   if(!ret) {
-    controlreply(sender, "Migration started.");
+    controlreply(sender, "Migration started, commands deregistered.");
     deregistercommands();
   } else {
     controlreply(sender, "Error %d starting migration.", ret);
@@ -131,20 +128,14 @@ void _fini(void) {
 }
 
 static void registercommands(void) {
-  if(!trustsdbloaded || commandsregistered)
-    return;
-
-  commandsregistered = 1;
-
   registercontrolhelpcmd("trustmigrate", NO_OPER, 0, trusts_cmdmigrate, "Usage: trustmigrate\nCopies trust data from O and reloads the database.");
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|id>\nShows trust data for the specified trust group.");
 }
 
 static void deregistercommands(void) {
-  if(!commandsregistered)
+  if(!trustsdbloaded)
     return;
 
   deregistercontrolcmd("trustmigrate", trusts_cmdmigrate);
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
-  commandsregistered = 0;
 }

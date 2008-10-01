@@ -1,8 +1,6 @@
 #include "../core/hooks.h"
 #include "trusts.h"
 
-static int eventsregistered;
-
 static void __newnick(int hooknum, void *arg) {
   nick *sender = arg;
   uint32_t host;
@@ -67,8 +65,6 @@ static void __dbloaded(int hooknum, void *arg) {
   int i;
   nick *np;
 
-  eventsregistered = 1;
-
   registerhook(HOOK_NICK_NEWNICK, __newnick);
   registerhook(HOOK_NICK_LOSTNICK, __lostnick);
 
@@ -89,7 +85,7 @@ void trusts_registerevents(void) {
 }
 
 void trusts_deregisterevents(void) {
-  if(eventsregistered) {
+  if(trustsdbloaded) {
     deregisterhook(HOOK_NICK_NEWNICK, __newnick);
     deregisterhook(HOOK_NICK_LOSTNICK, __lostnick);
 

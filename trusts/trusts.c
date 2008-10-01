@@ -53,17 +53,18 @@ void _fini(void) {
 static void statusfn(int hooknum, void *arg) {
   if((long)arg > 10) {
     char message[100];
-    int groupcount = 0, hostcount = 0;
+    int groupcount = 0, hostcount = 0, usercount = 0;
     trustgroup *tg;
     trusthost *th;
 
     for(tg=tglist;tg;tg=tg->next) {
+      usercount+=tg->count;
       groupcount++;
       for(th=tg->hosts;th;th=th->next)
         hostcount++;
     }
 
-    snprintf(message, sizeof(message), "Trusts  : %d trust groups, %d hosts", groupcount, hostcount);
+    snprintf(message, sizeof(message), "Trusts  :%7d groups, %7d hosts, %7d users", groupcount, hostcount, usercount);
     triggerhook(HOOK_CORE_STATSREPLY, message);
   }  
 }
