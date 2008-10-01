@@ -3,6 +3,6 @@
 .PHONY: all
 all: trusts.so trusts_commands.so
 
-trusts.so: trusts.o migration.o db.o db-migration.o data.o
+trusts.so: trusts.o migration.o db.o db-migration.o data.o formats.o
 
 trusts_commands.so: trusts_commands.o

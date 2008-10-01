@@ -40,12 +40,12 @@ typedef struct trustgroup {
   struct trustgroup *next;
 } trustgroup;
 
-/* trusts.c */
-char *trusts_timetostr(time_t);
-
 /* db.c */
 extern int trustsdbloaded;
 void trusts_reloaddb(void);
+
+/* formats.c */
+char *trusts_timetostr(time_t);
 int trusts_parsecidr(const char *, uint32_t *, short *);
 int trusts_str2cidr(const char *, uint32_t *, uint32_t *);
 char *trusts_cidr2str(uint32_t, uint32_t);
