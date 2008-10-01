@@ -40,7 +40,7 @@ void th_free(trusthost *th) {
   free(th);
 }
 
-int th_add(trustgroup *tg, char *host, unsigned int maxusage, time_t lastseen) {
+int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
   u_int32_t ip, mask;
   trusthost *th;
 
@@ -51,6 +51,7 @@ int th_add(trustgroup *tg, char *host, unsigned int maxusage, time_t lastseen) {
   if(!th)
     return 0;
 
+  th->id = id;
   th->maxusage = maxusage;
   th->lastseen = lastseen;
   th->ip = ip;

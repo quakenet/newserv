@@ -18,6 +18,8 @@ struct trustmigration;
 struct trusthost;
 
 typedef struct trusthost {
+  unsigned int id;
+
   uint32_t ip, mask;
   unsigned int maxusage;
   time_t lastseen;
@@ -73,7 +75,7 @@ extern trustgroup *tglist;
 void trusts_freeall(void);
 trustgroup *tg_getbyid(unsigned int);
 void th_free(trusthost *);
-int th_add(trustgroup *, char *, unsigned int, time_t);
+int th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);
 void tg_free(trustgroup *);
 int tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
 trusthost *th_getbyhost(uint32_t host);

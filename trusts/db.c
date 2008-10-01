@@ -5,7 +5,7 @@
 #include "trusts.h"
 
 DBAPIConn *trustsdb;
-static int tgmaxid;
+static int tgmaxid, thmaxid;
 static int loaderror;
 static void *flushschedule;
 
@@ -29,7 +29,9 @@ void createtrusttables(int migration) {
     "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxuserreset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
     "Tdddd", groups, TRUSTNAMELEN, NICKLEN, CONTACTLEN, COMMENTLEN
   );
-  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (groupid INT, host VARCHAR(?), maxusage INT, lastseen INT, PRIMARY KEY (groupid, host))", "Td", hosts, TRUSTHOSTLEN);
+
+  /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
+  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
 }
 
 static void flushdatabase(void *arg) {
@@ -61,7 +63,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  if(result->fields != 4) {
+  if(result->fields != 5) {
     Error("trusts", ERR_ERROR, "Wrong number of fields in hosts table.");
     loaderror = 1;
 
@@ -70,12 +72,16 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
   }
 
   while(result->next(result)) {
-    unsigned int groupid;
+    unsigned int groupid, id;
     char *host;
     unsigned int maxusage, lastseen;
     trustgroup *tg;
 
-    groupid = strtoul(result->get(result, 0), NULL, 10);
+    id = strtoul(result->get(result, 0), NULL, 10);
+    if(id > thmaxid)
+      thmaxid = id;
+
+    groupid = strtoul(result->get(result, 1), NULL, 10);
 
     tg = tg_getbyid(groupid);
     if(!tg) {
@@ -83,11 +89,12 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
       continue;
     }
 
-    maxusage = strtoul(result->get(result, 2), NULL, 10);
-    lastseen = (time_t)strtoul(result->get(result, 3), NULL, 10);
-    host = result->get(result, 1);
+    /* NOTE: 2 is at the bottom */
+    maxusage = strtoul(result->get(result, 3), NULL, 10);
+    lastseen = (time_t)strtoul(result->get(result, 4), NULL, 10);
+    host = result->get(result, 2);
 
-    if(!th_add(tg, host, maxusage, lastseen))
+    if(!th_add(tg, id, host, maxusage, lastseen))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
   }
 
@@ -97,7 +104,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
 }
 
 static void loadhosts_fini(const DBAPIResult *result, void *tag) {
-  Error("trusts", ERR_INFO, "Finished loading hosts.");
+  Error("trusts", ERR_INFO, "Finished loading hosts, maximum id: %d", thmaxid);
 }
 
 static void loadgroups_data(const DBAPIResult *result, void *tag) {
@@ -190,14 +197,14 @@ void trusts_closedb(void) {
 
   trusts_freeall();
   trustsdbloaded = 0;
-  tgmaxid = 0;
+  thmaxid = tgmaxid = 0;
 
   trustsdb->close(trustsdb);
   trustsdb = NULL;
 }
 
 void th_dbupdatecounts(trusthost *th) {
-  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE groupid = ? AND host = ?", "Ttuus", "hosts", th->lastseen, th->maxusage, th->group->id, trusts_cidr2str(th->ip, th->mask));
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuus", "hosts", th->lastseen, th->maxusage, th->id);
 }
 
 void tg_dbupdatecounts(trustgroup *tg) {
