@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <time.h>
 
-trustgroup *tglist;
-
 int trusts_loaddb(void);
 void trusts_closedb(void);
 static void statusfn(int, void *);

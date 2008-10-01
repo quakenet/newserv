@@ -44,38 +44,10 @@ void createtrusttables(int migration) {
 }
 
 static void trusts_freedb(void) {
-  trustgroup *tg, *ntg;
-  trusthost *th, *nth;
-
-  for(tg=tglist;tg;tg=ntg) {
-    ntg = tg->next;
-    for(th=tg->hosts;th;th=nth) {
-      nth = th->next;
-
-      freesstring(th->host);
-      free(th);
-    }
-
-    freesstring(tg->name);
-    freesstring(tg->createdby);
-    freesstring(tg->contact);
-    freesstring(tg->comment);
-    free(tg);
-  }
+  trusts_freeall();
 
   trustsdbloaded = 0;
-  tglist = NULL;
   tgmaxid = 0;
-}
-
-trustgroup *tg_getbyid(unsigned int id) {
-  trustgroup *tg;
-
-  for(tg=tglist;tg;tg=tg->next)
-    if(tg->id == id)
-      return tg;
-
-  return NULL;
 }
 
 static void loadhosts_data(const DBAPIResult *result, void *tag) {
@@ -102,7 +74,8 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
 
   while(result->next(result)) {
     unsigned int groupid;
-    trusthost *th;
+    char *host;
+    unsigned int maxseen, lastseen;
     trustgroup *tg;
 
     groupid = strtoul(result->get(result, 0), NULL, 10);
@@ -113,16 +86,12 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
       continue;
     }
 
-    th = malloc(sizeof(trusthost));
-    if(!th)
-      continue;
+    maxseen = strtoul(result->get(result, 2), NULL, 10);
+    lastseen = (time_t)strtoul(result->get(result, 3), NULL, 10);
+    host = result->get(result, 1);
 
-    th->host = getsstring(result->get(result, 1), TRUSTHOSTLEN);
-    th->maxseen = strtoul(result->get(result, 2), NULL, 10);
-    th->lastseen = (time_t)strtoul(result->get(result, 3), NULL, 10);
-
-    th->next = tg->hosts;
-    tg->hosts = th;
+    if(!th_add(tg, host, maxseen, lastseen))
+      Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
   }
 
   result->clear(result);
@@ -161,33 +130,37 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
 
   while(result->next(result)) {
     unsigned int id;
-    trustgroup *tg;
+    sstring *name, *createdby, *contact, *comment;
+    unsigned int trustedfor, mode, maxperident, maxseen;
+    time_t expires, lastseen, lastmaxuserreset;
 
     id = strtoul(result->get(result, 0), NULL, 10);
     if(id > tgmaxid)
       tgmaxid = id;
 
-    tg = malloc(sizeof(trustgroup));
-    if(!tg)
-      continue;
+    name = getsstring(result->get(result, 1), TRUSTNAMELEN);
+    trustedfor = strtoul(result->get(result, 2), NULL, 10);
+    mode = atoi(result->get(result, 3));
+    maxperident = strtoul(result->get(result, 4), NULL, 10);
+    maxseen = strtoul(result->get(result, 5), NULL, 10);
+    expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
+    lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
+    lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
+    createdby = getsstring(result->get(result, 9), NICKLEN);
+    contact = getsstring(result->get(result, 10), CONTACTLEN);
+    comment = getsstring(result->get(result, 11), COMMENTLEN);
 
-    tg->id = id;
-    tg->name = getsstring(result->get(result, 1), TRUSTNAMELEN);
-    tg->trustedfor = strtoul(result->get(result, 2), NULL, 10);
-    tg->mode = atoi(result->get(result, 3));
-    tg->maxperident = strtoul(result->get(result, 4), NULL, 10);
-    tg->maxseen = strtoul(result->get(result, 5), NULL, 10);
-    tg->expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
-    tg->lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
-    tg->lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
-    tg->createdby = getsstring(result->get(result, 9), NICKLEN);
-    tg->contact = getsstring(result->get(result, 10), CONTACTLEN);
-    tg->comment = getsstring(result->get(result, 11), COMMENTLEN);
+    if(name && createdby && contact && comment) {
+      if(!tg_add(id, name->content, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby->content, contact->content, comment->content))
+        Error("trusts", ERR_WARNING, "Error adding trustgroup %d: %s", id, name->content);
+    } else {
+      Error("trusts", ERR_ERROR, "Error allocating sstring in group loader, id: %d", id);
+    }
 
-    tg->hosts = NULL;
-
-    tg->next = tglist;
-    tglist = tg;
+    freesstring(name);
+    freesstring(createdby);
+    freesstring(contact);
+    freesstring(comment);
   }
 
   result->clear(result);  

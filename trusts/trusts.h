@@ -13,22 +13,6 @@
 
 struct trustmigration;
 
-typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
-typedef void (*TrustMigrationHost)(void *, unsigned int, char *, unsigned int, time_t);
-typedef void (*TrustMigrationFini)(void *, int);
-
-typedef struct trustmigration {
-  int count, cur;
-  void *schedule;
-  void *tag;
-
-  TrustMigrationGroup group;
-  TrustMigrationHost host;
-  TrustMigrationFini fini;
-} trustmigration;
-
-typedef void (*TrustDBMigrationCallback)(int, void *);
-
 typedef struct trusthost {
   sstring *host;
   unsigned int maxseen;
@@ -55,11 +39,39 @@ typedef struct trustgroup {
   struct trustgroup *next;
 } trustgroup;
 
+/* trusts.c */
+char *trusts_timetostr(time_t);
+
+/* db.c */
+extern int trustsdbloaded;
 void trusts_reloaddb(void);
 
-extern int trustsdbloaded;
+/* data.c */
 extern trustgroup *tglist;
+void trusts_freeall(void);
+trustgroup *tg_getbyid(unsigned int);
+void th_free(trusthost *);
+int th_add(trustgroup *, char *, unsigned int, time_t);
+void tg_free(trustgroup *);
+int tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
 
-char *trusts_timetostr(time_t t);
+/* migration.c */
+typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
+typedef void (*TrustMigrationHost)(void *, unsigned int, char *, unsigned int, time_t);
+typedef void (*TrustMigrationFini)(void *, int);
+
+typedef struct trustmigration {
+  int count, cur;
+  void *schedule;
+  void *tag;
+
+  TrustMigrationGroup group;
+  TrustMigrationHost host;
+  TrustMigrationFini fini;
+} trustmigration;
+
+/* db-migration.c */
+
+typedef void (*TrustDBMigrationCallback)(int, void *);
 
 #endif
