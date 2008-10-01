@@ -2,6 +2,7 @@
 #define __TRUSTS_H
 
 #include <time.h>
+#include <stdint.h>
 #include "../lib/sstring.h"
 
 #define MIGRATION_STOPPED -1
@@ -14,7 +15,7 @@
 struct trustmigration;
 
 typedef struct trusthost {
-  sstring *host;
+  uint32_t ip, mask;
   unsigned int maxseen;
   time_t lastseen;
 
@@ -45,6 +46,9 @@ char *trusts_timetostr(time_t);
 /* db.c */
 extern int trustsdbloaded;
 void trusts_reloaddb(void);
+int trusts_parsecidr(const char *, uint32_t *, short *);
+int trusts_str2cidr(const char *, uint32_t *, uint32_t *);
+char *trusts_cidr2str(uint32_t, uint32_t);
 
 /* data.c */
 extern trustgroup *tglist;

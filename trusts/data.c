@@ -35,22 +35,24 @@ trustgroup *tg_getbyid(unsigned int id) {
 }
 
 void th_free(trusthost *th) {
-  freesstring(th->host);
   free(th);
 }
 
 int th_add(trustgroup *tg, char *host, unsigned int maxseen, time_t lastseen) {
-  trusthost *th = malloc(sizeof(trusthost));
+  u_int32_t ip, mask;
+  trusthost *th;
+
+  if(!trusts_str2cidr(host, &ip, &mask))
+    return 0;
+
+  th = malloc(sizeof(trusthost));
   if(!th)
     return 0;
 
-  th->host = getsstring(host, TRUSTHOSTLEN);
-  if(!th->host) {
-    th_free(th);
-    return 0;
-  }
   th->maxseen = maxseen;
   th->lastseen = lastseen;
+  th->ip = ip;
+  th->mask = mask;
 
   th->next = tg->hosts;
   tg->hosts = th;
@@ -88,6 +90,7 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
   tg->expires = expires;
   tg->lastseen = lastseen;
   tg->lastmaxuserreset = lastmaxuserreset;
+  tg->hosts = NULL;
 
   tg->next = tglist;
   tglist = tg;

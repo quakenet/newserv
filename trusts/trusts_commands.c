@@ -105,7 +105,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host                 Max        Last seen");
 
   for(th=tg->hosts;th;th=th->next)
-    controlreply(sender, " %-20s %-10d %s", th->host?th->host->content:"??", th->maxseen, (th->lastseen==t)?"(now)":trusts_timetostr(th->lastseen));
+    controlreply(sender, " %-20s %-10d %s", trusts_cidr2str(th->ip, th->mask), th->maxseen, (th->lastseen==t)?"(now)":trusts_timetostr(th->lastseen));
 
   controlreply(sender, "End of list.");
 
