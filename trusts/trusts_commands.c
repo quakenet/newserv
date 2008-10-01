@@ -1,5 +1,4 @@
 #include "../control/control.h"
-#include "../nick/nick.h"
 #include "../lib/irc_string.h"
 #include "trusts.h"
 
@@ -92,6 +91,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   controlreply(sender, "Name:            : %s", tg->name?tg->name->content:"(unknown)");
   controlreply(sender, "Trusted for      : %d", tg->trustedfor);
+  controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, tg->mode?"":"not ");
   controlreply(sender, "Contact:         : %s", tg->contact?tg->contact->content:"(unknown)");
   controlreply(sender, "Expires in       : %s", (tg->expires>t)?longtoduration(tg->expires - t, 2):"(in the past)");
@@ -102,10 +102,10 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "Max usage        : %d", tg->maxseen);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
 
-  controlreply(sender, "Host                 Max        Last seen");
+  controlreply(sender, "Host                 Current   Max        Last seen");
 
   for(th=tg->hosts;th;th=th->next)
-    controlreply(sender, " %-20s %-10d %s", trusts_cidr2str(th->ip, th->mask), th->maxseen, (th->lastseen==t)?"(now)":trusts_timetostr(th->lastseen));
+    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxseen, (th->lastseen==t)?"(now)":trusts_timetostr(th->lastseen));
 
   controlreply(sender, "End of list.");
 

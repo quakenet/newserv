@@ -1,6 +1,5 @@
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
-#include "../nick/nick.h"
 #include "../core/hooks.h"
 #include "trusts.h"
 

@@ -1,7 +1,6 @@
 #include <stdlib.h>
 
 #include "../lib/sstring.h"
-#include "../nick/nick.h" /* NICKLEN */
 #include "trusts.h"
 
 trustgroup *tglist;
@@ -54,6 +53,10 @@ int th_add(trustgroup *tg, char *host, unsigned int maxseen, time_t lastseen) {
   th->ip = ip;
   th->mask = mask;
 
+  th->users = NULL;
+  th->group = tg;
+  th->count = 0;
+
   th->next = tg->hosts;
   tg->hosts = th;
 
@@ -92,8 +95,23 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
   tg->lastmaxuserreset = lastmaxuserreset;
   tg->hosts = NULL;
 
+  tg->count = 0;
+
   tg->next = tglist;
   tglist = tg;
 
   return 1;
 }
+
+trusthost *th_getbyhost(uint32_t host) {
+  trustgroup *tg;
+  trusthost *th;
+
+  for(tg=tglist;tg;tg=tg->next)
+    for(th=tg->hosts;th;th=th->next)
+      if((host & th->mask) == th->ip)
+        return th;
+
+  return NULL;
+}
+

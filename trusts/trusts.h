@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdint.h>
+#include "../nick/nick.h"
 #include "../lib/sstring.h"
 
 #define MIGRATION_STOPPED -1
@@ -14,10 +15,17 @@
 
 struct trustmigration;
 
+struct trusthost;
+
 typedef struct trusthost {
   uint32_t ip, mask;
   unsigned int maxseen;
   time_t lastseen;
+
+  nick *users;
+  struct trustgroup *group;
+
+  unsigned int count;
 
   struct trusthost *next;
 } trusthost;
@@ -37,8 +45,18 @@ typedef struct trustgroup {
 
   trusthost *hosts;
 
+  unsigned int count;
+
   struct trustgroup *next;
 } trustgroup;
+
+/* trusts.c */
+extern int trusts_thext, trusts_nextuserext;
+
+#define nextbytrust(x) (nick *)((x)->exts[trusts_nextuserext])
+#define gettrusthost(x) (trusthost *)((x)->exts[trusts_thext])
+#define setnextbytrust(x, y) (x)->exts[trusts_nextuserext] = (y)
+#define settrusthost(x, y) (x)->exts[trusts_thext] = (y)
 
 /* db.c */
 extern int trustsdbloaded;
@@ -58,6 +76,7 @@ void th_free(trusthost *);
 int th_add(trustgroup *, char *, unsigned int, time_t);
 void tg_free(trustgroup *);
 int tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
+trusthost *th_getbyhost(uint32_t host);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
