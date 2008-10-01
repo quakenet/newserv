@@ -26,7 +26,7 @@ void migration_stop(trustmigration *tm) {
 
 static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline) {
   char *line, *createdby, *contact, *comment, *name;
-  unsigned int trustedfor, maxperident, mode, maxseen;
+  unsigned int trustedfor, maxperident, mode, maxusage;
   unsigned long expires, lastseen, lastmaxusereset;
   char xbuf[1024];
   int pos;
@@ -36,7 +36,7 @@ static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline)
                  ,trustedfor
                     ,mode
                       ,maxperident
-                        ,maxseen
+                        ,maxusage
                            ,expires  ,lastseen   ,lastmaxusereset
                                                    ,createdby,contact       ,comment
 */
@@ -52,7 +52,7 @@ static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline)
 
   r = sscanf(line, "%*u,%u,%u,%u,%u,%lu,%lu,%lu,%n",
              /*current, */ &trustedfor, &mode, &maxperident, 
-             &maxseen, &expires, &lastseen, &lastmaxusereset, &pos);
+             &maxusage, &expires, &lastseen, &lastmaxusereset, &pos);
   if(r != 7)
     return 2;
 
@@ -67,7 +67,7 @@ static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline)
     return 4;
   *comment++ = '\0';  
 
-  tm->group(tm->tag, id, name, trustedfor, mode, maxperident, maxseen, (time_t)expires, (time_t)lastseen, (time_t)lastmaxusereset, createdby, contact, comment);
+  tm->group(tm->tag, id, name, trustedfor, mode, maxperident, maxusage, (time_t)expires, (time_t)lastseen, (time_t)lastmaxusereset, createdby, contact, comment);
   return 0;
 }
 

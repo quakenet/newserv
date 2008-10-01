@@ -19,7 +19,7 @@ struct trusthost;
 
 typedef struct trusthost {
   uint32_t ip, mask;
-  unsigned int maxseen;
+  unsigned int maxusage;
   time_t lastseen;
 
   nick *users;
@@ -37,7 +37,7 @@ typedef struct trustgroup {
   unsigned int trustedfor;
   int mode;
   unsigned int maxperident;
-  unsigned int maxseen;
+  unsigned int maxusage;
   time_t expires;
   time_t lastseen;
   time_t lastmaxuserreset;

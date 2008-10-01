@@ -6,7 +6,7 @@ extern DBAPIConn *trustsdb;
 static trustmigration *migration;
 
 static void tm_group(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
-static void tm_host(void *tm, unsigned int id, char *host, unsigned int max, time_t lastseen);
+static void tm_host(void *, unsigned int, char *, unsigned int, time_t);
 static void tm_final(void *, int);
 
 trustmigration *migration_start(TrustMigrationGroup, TrustMigrationHost, TrustMigrationFini, void *);
@@ -55,20 +55,20 @@ void trusts_migration_stop(void) {
   migration_stop(migration);
 }
 
-static void tm_group(void *tag, unsigned int id, char *name, unsigned int trustedfor, unsigned int mode, unsigned int maxperident, unsigned int maxseen, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
+static void tm_group(void *tag, unsigned int id, char *name, unsigned int trustedfor, unsigned int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
   if(id % 25 == 0)
     Error("trusts", ERR_INFO, "Migration currently at id: %d", id);
 
   trustsdb->squery(trustsdb, 
-    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tusuuuutttsss", "migration_groups", id, name, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby, contact, comment
+    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tusuuuutttsss", "migration_groups", id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment
   );
 }
 
-static void tm_host(void *tag, unsigned int id, char *host, unsigned int max, time_t lastseen) {
+static void tm_host(void *tag, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
   trustsdb->squery(trustsdb, 
-    "INSERT INTO ? (groupid, host, max, lastseen) VALUES (?, ?, ?, ?)",
-    "Tusut", "migration_hosts", id, host, max, lastseen
+    "INSERT INTO ? (groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?)",
+    "Tusut", "migration_hosts", id, host, maxusage, lastseen
   );
 }
 

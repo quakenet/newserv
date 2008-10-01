@@ -50,14 +50,22 @@ static void __lostnick(int hooknum, void *arg) {
 }
 
 static void __counthandler(int hooknum, void *arg) {
+  time_t t = time(NULL);
   trusthost *th = gettrusthost((nick *)arg);
+  trustgroup *tg = th->group;
 
+  tg->lastseen = th->lastseen = t;
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
     th->count++;
-    th->group->count++;
+    if(th->count > th->maxusage)
+      th->maxusage = th->count;
+
+    tg->count++;
+    if(tg->count > tg->maxusage)
+      tg->maxusage = tg->count;
   } else {
     th->count--;
-    th->group->count--;
+    tg->count--;
   }
 }
 

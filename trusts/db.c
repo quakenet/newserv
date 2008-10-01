@@ -1,15 +1,18 @@
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
 #include "../core/hooks.h"
+#include "../core/schedule.h"
 #include "trusts.h"
 
 DBAPIConn *trustsdb;
 static int tgmaxid;
 static int loaderror;
+static void *flushschedule;
+
 int trustsdbloaded;
 
-void trusts_reloaddb(void);
 void createtrusttables(int migration);
+void trusts_flush(void);
 
 void createtrusttables(int migration) {
   char *groups, *hosts;
@@ -23,18 +26,24 @@ void createtrusttables(int migration) {
   }
 
   trustsdb->createtable(trustsdb, NULL, NULL,
-    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxseen INT, expires INT, lastseen INT, lastmaxuserreset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
+    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxuserreset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
     "Tdddd", groups, TRUSTNAMELEN, NICKLEN, CONTACTLEN, COMMENTLEN
   );
-  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (groupid INT, host VARCHAR(?), max INT, lastseen INT, PRIMARY KEY (groupid, host))", "Td", hosts, TRUSTHOSTLEN);
+  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (groupid INT, host VARCHAR(?), maxusage INT, lastseen INT, PRIMARY KEY (groupid, host))", "Td", hosts, TRUSTHOSTLEN);
 }
 
-static void loadcomplete(void ) {
+static void flushdatabase(void *arg) {
+  trusts_flush();
+}
+
+static void loadcomplete(void) {
   /* error has already been shown */
   if(loaderror)
     return;
 
   trustsdbloaded = 1;
+  flushschedule = schedulerecurring(time(NULL) + 300, 0, 300, flushdatabase, NULL);
+
   triggerhook(HOOK_TRUSTS_DB_LOADED, NULL);
 }
 
@@ -63,7 +72,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
   while(result->next(result)) {
     unsigned int groupid;
     char *host;
-    unsigned int maxseen, lastseen;
+    unsigned int maxusage, lastseen;
     trustgroup *tg;
 
     groupid = strtoul(result->get(result, 0), NULL, 10);
@@ -74,11 +83,11 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
       continue;
     }
 
-    maxseen = strtoul(result->get(result, 2), NULL, 10);
+    maxusage = strtoul(result->get(result, 2), NULL, 10);
     lastseen = (time_t)strtoul(result->get(result, 3), NULL, 10);
     host = result->get(result, 1);
 
-    if(!th_add(tg, host, maxseen, lastseen))
+    if(!th_add(tg, host, maxusage, lastseen))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
   }
 
@@ -116,7 +125,7 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
   while(result->next(result)) {
     unsigned int id;
     sstring *name, *createdby, *contact, *comment;
-    unsigned int trustedfor, mode, maxperident, maxseen;
+    unsigned int trustedfor, mode, maxperident, maxusage;
     time_t expires, lastseen, lastmaxuserreset;
 
     id = strtoul(result->get(result, 0), NULL, 10);
@@ -127,7 +136,7 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
     trustedfor = strtoul(result->get(result, 2), NULL, 10);
     mode = atoi(result->get(result, 3));
     maxperident = strtoul(result->get(result, 4), NULL, 10);
-    maxseen = strtoul(result->get(result, 5), NULL, 10);
+    maxusage = strtoul(result->get(result, 5), NULL, 10);
     expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
     lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
     lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
@@ -136,7 +145,7 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
     comment = getsstring(result->get(result, 11), COMMENTLEN);
 
     if(name && createdby && contact && comment) {
-      if(!tg_add(id, name->content, trustedfor, mode, maxperident, maxseen, expires, lastseen, lastmaxuserreset, createdby->content, contact->content, comment->content))
+      if(!tg_add(id, name->content, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby->content, contact->content, comment->content))
         Error("trusts", ERR_WARNING, "Error adding trustgroup %d: %s", id, name->content);
     } else {
       Error("trusts", ERR_ERROR, "Error allocating sstring in group loader, id: %d", id);
@@ -176,10 +185,21 @@ void trusts_closedb(void) {
   if(!trustsdb)
     return;
 
+  deleteschedule(flushschedule, flushdatabase, NULL);
+  flushdatabase(NULL);
+
   trusts_freeall();
   trustsdbloaded = 0;
   tgmaxid = 0;
 
   trustsdb->close(trustsdb);
   trustsdb = NULL;
+}
+
+void th_dbupdatecounts(trusthost *th) {
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE groupid = ? AND host = ?", "Ttuus", "hosts", th->lastseen, th->maxusage, th->group->id, trusts_cidr2str(th->ip, th->mask));
+}
+
+void tg_dbupdatecounts(trustgroup *tg) {
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuus", "groups", tg->lastseen, tg->maxusage, tg->id);
 }

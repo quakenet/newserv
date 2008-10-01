@@ -95,14 +95,14 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "Last changed by  : %s", tg->createdby?tg->createdby->content:"(unknown)");
   controlreply(sender, "Comment:         : %s", tg->comment?tg->comment->content:"(unknown)");
   controlreply(sender, "ID:              : %u", tg->id);
-  controlreply(sender, "Last used        : %s", (tg->lastseen==t)?"(now)":trusts_timetostr(tg->lastseen));
-  controlreply(sender, "Max usage        : %d", tg->maxseen);
+  controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":trusts_timetostr(tg->lastseen));
+  controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
 
-  controlreply(sender, "Host                 Current   Max        Last seen");
+  controlreply(sender, "Host                 Current    Max        Last seen");
 
   for(th=tg->hosts;th;th=th->next)
-    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxseen, (th->lastseen==t)?"(now)":trusts_timetostr(th->lastseen));
+    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (th->count>0)?"(now)":trusts_timetostr(th->lastseen));
 
   controlreply(sender, "End of list.");
 
