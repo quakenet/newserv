@@ -204,9 +204,9 @@ void trusts_closedb(void) {
 }
 
 void th_dbupdatecounts(trusthost *th) {
-  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuus", "hosts", th->lastseen, th->maxusage, th->id);
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "hosts", th->lastseen, th->maxusage, th->id);
 }
 
 void tg_dbupdatecounts(trustgroup *tg) {
-  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuus", "groups", tg->lastseen, tg->maxusage, tg->id);
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "groups", tg->lastseen, tg->maxusage, tg->id);
 }
