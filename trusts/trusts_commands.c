@@ -15,7 +15,13 @@ static void migrate_status(int errcode, void *tag) {
     return;
 
   if(!errcode) {
-    controlreply(np, "Migration complete, you must reload the module.");
+    controlreply(np, "Migration complete.");
+
+    /* stops flush destroying the database */
+    trusts_freeall();
+
+    trusts_unload();
+    controlreply(np, "All functionality disabled, database unloaded -- please reload the module.");
   } else {
     controlreply(np, "Error %d occured during migration, commands reregistered.", errcode);
     registercommands();

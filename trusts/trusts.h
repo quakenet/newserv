@@ -52,13 +52,14 @@ typedef struct trustgroup {
   struct trustgroup *next;
 } trustgroup;
 
-/* trusts.c */
-extern int trusts_thext, trusts_nextuserext;
-
 #define nextbytrust(x) (nick *)((x)->exts[trusts_nextuserext])
 #define gettrusthost(x) (trusthost *)((x)->exts[trusts_thext])
 #define setnextbytrust(x, y) (x)->exts[trusts_nextuserext] = (y)
 #define settrusthost(x, y) (x)->exts[trusts_thext] = (y)
+
+/* trusts.c */
+extern int trusts_thext, trusts_nextuserext;
+void trusts_unload(void);
 
 /* db.c */
 extern int trustsdbloaded;

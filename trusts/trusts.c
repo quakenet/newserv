@@ -10,7 +10,7 @@ void trusts_deregisterevents(void);
 
 static void statusfn(int, void *);
 
-static int loaded;
+static int loaded, unloaded;
 
 int trusts_thext, trusts_nextuserext;
 
@@ -36,7 +36,12 @@ void _init(void) {
   trusts_registerevents();
 }
 
-void _fini(void) {
+void trusts_unload(void) {
+  if(unloaded)
+    return;
+
+  unloaded = 1;
+
   if(trusts_thext != -1) {
     releasenickext(trusts_thext);
     releasenickext(trusts_nextuserext);
@@ -48,6 +53,10 @@ void _fini(void) {
   }
 
   trusts_closedb();
+}
+
+void _fini(void) {
+  trusts_unload();
 }
 
 static void statusfn(int hooknum, void *arg) {

@@ -1,6 +1,8 @@
 #include "../core/hooks.h"
 #include "trusts.h"
 
+static void __counthandler(int hooknum, void *arg);
+
 static void __newnick(int hooknum, void *arg) {
   nick *sender = arg;
   uint32_t host;
@@ -18,6 +20,8 @@ static void __newnick(int hooknum, void *arg) {
   setnextbytrust(sender, th->users);
   th->users = sender;
 
+  /* sucks we have to do this, at least until we get priority hooks */
+  __counthandler(HOOK_TRUSTS_NEWNICK, sender);
   triggerhook(HOOK_TRUSTS_NEWNICK, sender);
 }
 
@@ -28,6 +32,7 @@ static void __lostnick(int hooknum, void *arg) {
   if(!th)
     return;
 
+  __counthandler(HOOK_TRUSTS_LOSTNICK, sender);
   triggerhook(HOOK_TRUSTS_LOSTNICK, sender);
 
   /*
@@ -76,8 +81,9 @@ static void __dbloaded(int hooknum, void *arg) {
   registerhook(HOOK_NICK_NEWNICK, __newnick);
   registerhook(HOOK_NICK_LOSTNICK, __lostnick);
 
-  registerhook(HOOK_TRUSTS_NEWNICK, __counthandler);
+/*  registerhook(HOOK_TRUSTS_NEWNICK, __counthandler);
   registerhook(HOOK_TRUSTS_LOSTNICK, __counthandler);
+*/
 
   /* we could do it by host, but hosts and ips are not bijective :( */
   for(i=0;i<NICKHASHSIZE;i++)
@@ -97,8 +103,10 @@ void trusts_deregisterevents(void) {
     deregisterhook(HOOK_NICK_NEWNICK, __newnick);
     deregisterhook(HOOK_NICK_LOSTNICK, __lostnick);
 
+/*
     deregisterhook(HOOK_TRUSTS_NEWNICK, __counthandler);
     deregisterhook(HOOK_TRUSTS_LOSTNICK, __counthandler);
+*/
   }
 
   deregisterhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
