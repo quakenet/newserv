@@ -119,14 +119,21 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
 
 trusthost *th_getbyhost(uint32_t host) {
   trustgroup *tg;
-  trusthost *th;
+  trusthost *th, *result = NULL;
+  uint32_t mask;
 
-  for(tg=tglist;tg;tg=tg->next)
-    for(th=tg->hosts;th;th=th->next)
-      if((host & th->mask) == th->ip)
-        return th;
+  for(tg=tglist;tg;tg=tg->next) {
+    for(th=tg->hosts;th;th=th->next) {
+      if((host & th->mask) == th->ip) {
+        if(!result || (th->mask > mask)) {
+          mask = th->mask;
+          result = th;
+        }
+      }
+    }
+  }
 
-  return NULL;
+  return result;
 }
 
 void trusts_flush(void) {
