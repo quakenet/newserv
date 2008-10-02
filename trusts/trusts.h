@@ -85,6 +85,7 @@ int th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);
 void tg_free(trustgroup *);
 int tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
 trusthost *th_getbyhost(uint32_t host);
+trustgroup *tg_strtotg(char *name);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);

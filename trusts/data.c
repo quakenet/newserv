@@ -4,6 +4,7 @@
 #include "../lib/sstring.h"
 #include "../core/hooks.h"
 #include "../core/nsmalloc.h"
+#include "../lib/irc_string.h"
 #include "trusts.h"
 
 trustgroup *tglist;
@@ -147,3 +148,35 @@ void trusts_flush(void) {
     }
   }
 }
+
+trustgroup *tg_strtotg(char *name) {
+  unsigned long id;
+  trustgroup *tg;
+
+  /* legacy format */
+  if(name[0] == '#') {
+    id = strtoul(&name[1], NULL, 10);
+    if(id == ULONG_MAX)
+      return NULL;
+
+    for(tg=tglist;tg;tg=tg->next)
+      if(tg->id == id)
+        return tg;
+  }
+
+  for(tg=tglist;tg;tg=tg->next)
+    if(!match(name, tg->name->content))
+      return tg;
+
+  id = strtoul(name, NULL, 10);
+  if(id == ULONG_MAX)
+    return NULL;
+
+  /* legacy format */
+  for(tg=tglist;tg;tg=tg->next)
+    if(tg->id == id)
+      return tg;
+
+  return NULL;
+}
+

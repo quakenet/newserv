@@ -48,37 +48,6 @@ static int trusts_cmdmigrate(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static trustgroup *tg_strtotg(char *name) {
-  unsigned long id;
-  trustgroup *tg;
-
-  /* legacy format */
-  if(name[0] == '#') {
-    id = strtoul(&name[1], NULL, 10);
-    if(id == ULONG_MAX)
-      return NULL;
-
-    for(tg=tglist;tg;tg=tg->next)
-      if(tg->id == id)
-        return tg;
-  }
-
-  for(tg=tglist;tg;tg=tg->next)
-    if(!match(name, tg->name->content))
-      return tg;
-
-  id = strtoul(name, NULL, 10);
-  if(id == ULONG_MAX)
-    return NULL;
-
-  /* legacy format */
-  for(tg=tglist;tg;tg=tg->next)
-    if(tg->id == id)
-      return tg;
-
-  return NULL;
-}
-
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   nick *sender = source;
   trustgroup *tg;

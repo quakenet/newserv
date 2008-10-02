@@ -1,10 +1,26 @@
 @include@ @includel@../build.mk@includel@
 
-.PHONY: all
-all: trusts.so trusts_commands.so trusts_policy.so
+TRUSTSDIRS=newsearch
+
+.PHONY: all dirs $(TRUSTSDIRS) clean distclean
+
+all: trusts.so trusts_commands.so trusts_policy.so dirs
 
 trusts.so: trusts.o migration.o db.o db-migration.o data.o formats.o events.o
 
 trusts_commands.so: trusts_commands.o
 
 trusts_policy.so: trusts_policy.o
+
+dirs: $(TRUSTSDIRS)
+	ln -sf */*.so .
+
+$(TRUSTSDIRS):
+	cd $@ && $(MAKE) BUILDID=$(BUILDID) all
+
+clean:
+	rm -f */*.o */*.so
+
+distclean:
+	rm -f */Makefile
+
