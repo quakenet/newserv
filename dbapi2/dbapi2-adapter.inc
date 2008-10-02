@@ -143,9 +143,8 @@ static void dbapi2_adapter_createtable(const DBAPIConn *db, DBAPIQueryCallback c
 
 static void dbapi2_adapter_loadtablewrapper_init(DBConn *c, void *data) {
   struct DBAPI2AdapterLoadTableCallback *a = data;
-  DBAPIResult r;
 
-  a->init(wrapresult(&r, c), a->data);
+  a->init(NULL, a->data);
 }
 
 static void dbapi2_adapter_loadtablewrapper_data(DBConn *c, void *data) {
@@ -157,10 +156,9 @@ static void dbapi2_adapter_loadtablewrapper_data(DBConn *c, void *data) {
 
 static void dbapi2_adapter_loadtablewrapper_fini(DBConn *c, void *data) {
   struct DBAPI2AdapterLoadTableCallback *a = data;
-  DBAPIResult r;
 
   if(a->fini)
-    a->fini(wrapresult(&r, c), a->data);
+    a->fini(NULL, a->data);
 
   free(a);
 }
