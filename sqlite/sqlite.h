@@ -8,6 +8,7 @@
 typedef struct SQLiteResult {
   sqlite3_stmt *r;
   char first, final;
+  short flags;
 } SQLiteResult;
 
 typedef SQLiteResult SQLiteConn;

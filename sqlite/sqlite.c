@@ -45,6 +45,8 @@ static int inited;
 
 #define SYNC_MODE "OFF"
 
+#define FLAG_DONTFREE 0x02
+
 static void sqlitequeueprocessor(void *arg);
 static void dbstatus(int hooknum, void *arg);
 
@@ -133,6 +135,7 @@ static void processstatement(int rc, sqlite3_stmt *s, SQLiteQueryHandler handler
 
     r = (SQLiteResult *)nsmalloc(POOL_SQLITE, sizeof(SQLiteResult));
     r->r = s;
+    r->flags = 0;
     r->first = 1;
     if(rc == SQLITE_ROW) {
       r->final = 0;
@@ -292,6 +295,9 @@ void sqliteclear(SQLiteResult *r) {
   if(!r)
     return;
 
+  if(r->flags & FLAG_DONTFREE)
+    return;
+
   if(r->r)
     sqlite3_finalize(r->r);
 
@@ -313,17 +319,25 @@ struct sqlitetableloader {
 
 static void loadtablerows(SQLiteConn *c, void *tag) {
   struct sqlitetableloader *t = (struct sqlitetableloader *)tag;
+  SQLiteResult *r = (SQLiteResult *)c;
 
   if(!c) { /* pqsql doesnt call the handlers so we don't either */
     nsfree(POOL_SQLITE, t);
     return;
   }
 
+  r->flags|=FLAG_DONTFREE;
+
   /* the handlers do all the checking and cleanup */
   if(t->init)
     (t->init)(c, t->tag);
 
+  if(!t->fini)
+    r->flags&=~FLAG_DONTFREE;
+
   (t->data)(c, t->tag);
+
+  r->flags&=~FLAG_DONTFREE;
 
   if(t->fini)
     (t->fini)(c, t->tag);
