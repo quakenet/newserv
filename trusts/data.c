@@ -3,6 +3,7 @@
 
 #include "../lib/sstring.h"
 #include "../core/hooks.h"
+#include "../core/nsmalloc.h"
 #include "trusts.h"
 
 trustgroup *tglist;
@@ -39,7 +40,7 @@ trustgroup *tg_getbyid(unsigned int id) {
 }
 
 void th_free(trusthost *th) {
-  free(th);
+  nsfree(POOL_TRUSTS, th);
 }
 
 int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
@@ -49,7 +50,7 @@ int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, t
   if(!trusts_str2cidr(host, &ip, &mask))
     return 0;
 
-  th = malloc(sizeof(trusthost));
+  th = nsmalloc(POOL_TRUSTS, sizeof(trusthost));
   if(!th)
     return 0;
 
@@ -76,11 +77,11 @@ void tg_free(trustgroup *tg) {
   freesstring(tg->createdby);
   freesstring(tg->contact);
   freesstring(tg->comment);
-  free(tg);
+  nsfree(POOL_TRUSTS, tg);
 }
 
 int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
-  trustgroup *tg = malloc(sizeof(trustgroup));
+  trustgroup *tg = nsmalloc(POOL_TRUSTS, sizeof(trustgroup));
   if(!tg)
     return 0;
 

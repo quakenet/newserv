@@ -1,5 +1,6 @@
 #include "../nterfacer/nterfacer.h"
 #include "../lib/strlfunc.h"
+#include "../core/nsmalloc.h"
 #include "trusts.h"
 #include <stdio.h>
 #include <string.h>
@@ -17,7 +18,7 @@ static void tm_fini(trustmigration *tm, int errcode) {
     tm->schedule = NULL;
   }
 
-  free(tm);
+  nsfree(POOL_TRUSTS, tm);
 }
 
 void migration_stop(trustmigration *tm) {
@@ -206,7 +207,7 @@ static void tm_stage1(int failure, int linec, char **linev, void *tag) {
 }
 
 trustmigration *migration_start(TrustMigrationGroup group, TrustMigrationHost host, TrustMigrationFini fini, void *tag) {
-  trustmigration *tm = malloc(sizeof(trustmigration));
+  trustmigration *tm = nsmalloc(POOL_TRUSTS, sizeof(trustmigration));
   if(!tm)
     return NULL;
 

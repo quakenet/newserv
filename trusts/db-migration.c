@@ -1,5 +1,6 @@
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
+#include "../core/nsmalloc.h"
 #include "trusts.h"
 
 extern DBAPIConn *trustsdb;
@@ -25,7 +26,7 @@ int trusts_migration_start(TrustDBMigrationCallback callback, void *tag) {
   if(migration)
     return 1;
 
-  cbd = malloc(sizeof(struct callbackdata));
+  cbd = nsmalloc(POOL_TRUSTS, sizeof(struct callbackdata));
   if(!cbd)
     return 2;
 
@@ -39,7 +40,7 @@ int trusts_migration_start(TrustDBMigrationCallback callback, void *tag) {
 
   migration = migration_start(tm_group, tm_host, tm_final, cbd);
   if(!migration) {
-    free(cbd);
+    nsfree(POOL_TRUSTS, cbd);
     return 3;
   }
 
@@ -91,7 +92,7 @@ static void tm_complete(const DBAPIResult *r, void *tag) {
   if(cbd->callback)
     cbd->callback(errcode, cbd->tag);
 
-  free(cbd);
+  nsfree(POOL_TRUSTS, cbd);
 }
 
 static void tm_final(void *tag, int errcode) {
@@ -102,7 +103,7 @@ static void tm_final(void *tag, int errcode) {
     Error("trusts", ERR_ERROR, "Migration error: %d", errcode);
     if(cbd) {
       cbd->callback(errcode, cbd->tag);
-      free(cbd);
+      nsfree(POOL_TRUSTS, cbd);
     }
   } else {
     Error("trusts", ERR_INFO, "Migration completed, copying tables...");

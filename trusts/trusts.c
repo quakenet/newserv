@@ -2,6 +2,7 @@
 #include <string.h>
 #include "../core/hooks.h"
 #include "../core/error.h"
+#include "../core/nsmalloc.h"
 #include "trusts.h"
 
 int trusts_loaddb(void);
@@ -59,6 +60,7 @@ void trusts_unload(void) {
 
 void _fini(void) {
   trusts_unload();
+  nscheckfreeall(POOL_TRUSTS);
 }
 
 static void statusfn(int hooknum, void *arg) {
