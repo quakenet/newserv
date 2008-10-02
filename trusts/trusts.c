@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "../core/hooks.h"
 #include "../core/error.h"
 #include "trusts.h"
@@ -11,6 +12,7 @@ void trusts_deregisterevents(void);
 static void statusfn(int, void *);
 
 static int loaded, unloaded;
+static sstring *tgextnames[MAXTGEXTS];
 
 int trusts_thext, trusts_nextuserext;
 
@@ -76,4 +78,43 @@ static void statusfn(int hooknum, void *arg) {
     snprintf(message, sizeof(message), "Trusts  :%7d groups, %7d hosts, %7d users", groupcount, hostcount, usercount);
     triggerhook(HOOK_CORE_STATSREPLY, message);
   }  
+}
+
+int findtgext(const char *name) {
+  int i;
+
+  for(i=0;i<MAXTGEXTS;i++)
+    if(tgextnames[i] && !strcmp(name, tgextnames[i]->content))
+      return i;
+
+  return -1;
+}
+
+int registertgext(const char *name) {
+  int i;
+
+  if(findtgext(name) != -1) {
+    Error("trusts", ERR_WARNING, "Tried to register duplicate trust group extension: %s.", name);
+    return -1;
+  }
+
+  for(i=0;i<MAXNICKEXTS;i++) {
+    if(!tgextnames[i]) {
+      tgextnames[i] = getsstring(name, 100);
+      return i;
+    }
+  }
+
+  Error("trusts", ERR_WARNING, "Tried to register too many trust group extensions: %s.", name);
+  return -1;
+}
+
+void releasetgext(int index) {
+  trustgroup *tg;
+
+  freesstring(tgextnames[index]);
+  tgextnames[index] = NULL;
+
+  for(tg=tglist;tg;tg=tg->next)
+    tg->exts[index] = NULL;
 }

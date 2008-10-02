@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "../lib/sstring.h"
+#include "../core/hooks.h"
 #include "trusts.h"
 
 trustgroup *tglist;
@@ -68,6 +70,8 @@ int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, t
 }
 
 void tg_free(trustgroup *tg) {
+  triggerhook(HOOK_TRUSTS_LOSTGROUP, tg);
+
   freesstring(tg->name);
   freesstring(tg->createdby);
   freesstring(tg->contact);
@@ -101,8 +105,12 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
 
   tg->count = 0;
 
+  memset(tg->exts, 0, sizeof(tg->exts));
+
   tg->next = tglist;
   tglist = tg;
+
+  triggerhook(HOOK_TRUSTS_NEWGROUP, tg);
 
   return 1;
 }

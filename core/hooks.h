@@ -78,6 +78,8 @@
 #define HOOK_TRUSTS_DB_LOADED      901 /* No arg */
 #define HOOK_TRUSTS_NEWNICK        902 /* Argument is nick* */
 #define HOOK_TRUSTS_LOSTNICK       903 /* Argument is nick* */
+#define HOOK_TRUSTS_NEWGROUP       904 /* Argument is trustgroup* */
+#define HOOK_TRUSTS_LOSTGROUP      905 /* Argument is trustgroup* */
 
 #define PRIORITY_DEFAULT           0
 

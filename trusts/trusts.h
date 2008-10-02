@@ -12,6 +12,7 @@
 #define COMMENTLEN 300
 #define TRUSTNAMELEN 100
 #define TRUSTHOSTLEN 100
+#define MAXTGEXTS 5
 
 struct trustmigration;
 
@@ -46,10 +47,11 @@ typedef struct trustgroup {
   sstring *createdby, *contact, *comment;
 
   trusthost *hosts;
-
   unsigned int count;
 
   struct trustgroup *next;
+
+  void *exts[MAXTGEXTS];
 } trustgroup;
 
 #define nextbytrust(x) (nick *)((x)->exts[trusts_nextuserext])
@@ -60,6 +62,9 @@ typedef struct trustgroup {
 /* trusts.c */
 extern int trusts_thext, trusts_nextuserext;
 void trusts_unload(void);
+int findtgext(const char *);
+int registertgext(const char *);
+void releasetgext(int);
 
 /* db.c */
 extern int trustsdbloaded;
