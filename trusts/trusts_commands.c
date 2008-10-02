@@ -60,7 +60,7 @@ static trustgroup *tg_strtotg(char *name) {
   }
 
   for(tg=tglist;tg;tg=tg->next)
-    if(tg->name && !match(name, tg->name->content))
+    if(!match(name, tg->name->content))
       return tg;
 
   id = strtoul(name, NULL, 10);
@@ -92,14 +92,14 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   t = time(NULL);
 
-  controlreply(sender, "Name:            : %s", tg->name?tg->name->content:"(unknown)");
+  controlreply(sender, "Name:            : %s", tg->name->content);
   controlreply(sender, "Trusted for      : %d", tg->trustedfor);
   controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, tg->mode?"":"not ");
-  controlreply(sender, "Contact:         : %s", tg->contact?tg->contact->content:"(unknown)");
+  controlreply(sender, "Contact:         : %s", tg->contact->content);
   controlreply(sender, "Expires in       : %s", (tg->expires>t)?longtoduration(tg->expires - t, 2):"(in the past)");
-  controlreply(sender, "Last changed by  : %s", tg->createdby?tg->createdby->content:"(unknown)");
-  controlreply(sender, "Comment:         : %s", tg->comment?tg->comment->content:"(unknown)");
+  controlreply(sender, "Last changed by  : %s", tg->createdby->content);
+  controlreply(sender, "Comment:         : %s", tg->comment->content);
   controlreply(sender, "ID:              : %u", tg->id);
   controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":trusts_timetostr(tg->lastseen));
   controlreply(sender, "Max usage        : %d", tg->maxusage);
