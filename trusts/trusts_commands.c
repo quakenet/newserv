@@ -14,11 +14,18 @@ static void migrate_status(int errcode, void *tag) {
   if(!np)
     return;
 
-  if(!errcode) {
-    controlreply(np, "Migration complete.");
-    controlreply(np, "All functionality disabled, database unloaded -- please reload the module.");
-  } else if(errcode == MIGRATION_LASTERROR) {
-    controlreply(np, "An error occured after the database was unloaded -- please reload the module.");
+  if(!errcode || errcode == MIGRATION_LASTERROR) {
+    if(!errcode) {
+       controlreply(np, "Migration complete.");
+       controlreply(np, "Attempting to reload database. . .");
+    } else {
+      controlreply(np, "An error occured after the database was unloaded, attempting reload. . .");
+    }
+    if(trusts_loaddb()) {
+      controlreply(np, "Database reloaded successfully.");
+    } else {
+      controlreply(np, "An error occured, please reload the module manually.");
+    }
   } else {
     controlreply(np, "Error %d occured during migration, commands reregistered.", errcode);
     registercommands(0, NULL);
