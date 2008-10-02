@@ -38,6 +38,10 @@ static void flushdatabase(void *arg) {
   trusts_flush();
 }
 
+static void triggerdbloaded(void *arg) {
+  triggerhook(HOOK_TRUSTS_DB_LOADED, NULL);
+}
+
 static void loadcomplete(void) {
   /* error has already been shown */
   if(loaderror)
@@ -46,7 +50,7 @@ static void loadcomplete(void) {
   trustsdbloaded = 1;
   flushschedule = schedulerecurring(time(NULL) + 300, 0, 300, flushdatabase, NULL);
 
-  triggerhook(HOOK_TRUSTS_DB_LOADED, NULL);
+  scheduleoneshot(time(NULL), triggerdbloaded, NULL);
 }
 
 static void loadhosts_data(const DBAPIResult *result, void *tag) {
