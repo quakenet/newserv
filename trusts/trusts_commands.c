@@ -4,8 +4,8 @@
 
 int trusts_migration_start(TrustDBMigrationCallback, void *);
 void trusts_migration_stop(void);
-static void registercommands(int hooknum, void *arg);
-static void deregistercommands(void);
+static void registercommands(int, void *);
+static void deregistercommands(int, void *);
 
 static void migrate_status(int errcode, void *tag) {
   long sender = (long)tag;
@@ -16,12 +16,9 @@ static void migrate_status(int errcode, void *tag) {
 
   if(!errcode) {
     controlreply(np, "Migration complete.");
-
-    /* stops flush destroying the database */
-    trusts_freeall();
-
-    trusts_unload();
     controlreply(np, "All functionality disabled, database unloaded -- please reload the module.");
+  } else if(errcode == MIGRATION_LASTERROR) {
+    controlreply(np, "An error occured after the database was unloaded -- please reload the module.");
   } else {
     controlreply(np, "Error %d occured during migration, commands reregistered.", errcode);
     registercommands(0, NULL);
@@ -36,7 +33,7 @@ static int trusts_cmdmigrate(void *source, int cargc, char **cargv) {
   ret = trusts_migration_start(migrate_status, (void *)(sender->numeric));
   if(!ret) {
     controlreply(sender, "Migration started, commands deregistered.");
-    deregistercommands();
+    deregistercommands(0, NULL);
   } else {
     controlreply(sender, "Error %d starting migration.", ret);
   }
@@ -126,7 +123,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|id>\nShows trust data for the specified trust group.");
 }
 
-static void deregistercommands(void) {
+static void deregistercommands(int hooknum, void *arg) {
   if(!commandsregistered)
     return;
   commandsregistered = 0;
@@ -137,6 +134,7 @@ static void deregistercommands(void) {
 
 void _init(void) {
   registerhook(HOOK_TRUSTS_DB_LOADED, registercommands);
+  registerhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
   if(trustsdbloaded)
     registercommands(0, NULL);
@@ -144,8 +142,9 @@ void _init(void) {
 
 void _fini(void) {
   deregisterhook(HOOK_TRUSTS_DB_LOADED, registercommands);
-  deregistercommands();
+  deregisterhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
   trusts_migration_stop();
-}
 
+  deregistercommands(0, NULL);
+}

@@ -75,6 +75,7 @@
 #define HOOK_AUTH_FLAGSUPDATED     801 /* Argument is void*[2] (authname*, u_int64_t*) */
 #define HOOK_AUTH_LOSTAUTHNAME     802 /* Argument is authname* */
 
+#define HOOK_TRUSTS_DB_CLOSED      900 /* No arg */
 #define HOOK_TRUSTS_DB_LOADED      901 /* No arg */
 #define HOOK_TRUSTS_NEWNICK        902 /* Argument is nick* */
 #define HOOK_TRUSTS_LOSTNICK       903 /* Argument is nick* */

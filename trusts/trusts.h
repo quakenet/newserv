@@ -7,6 +7,7 @@
 #include "../lib/sstring.h"
 
 #define MIGRATION_STOPPED -1
+#define MIGRATION_LASTERROR -2
 
 #define CONTACTLEN 100
 #define COMMENTLEN 300
@@ -61,14 +62,14 @@ typedef struct trustgroup {
 
 /* trusts.c */
 extern int trusts_thext, trusts_nextuserext;
-void trusts_unload(void);
 int findtgext(const char *);
 int registertgext(const char *);
 void releasetgext(int);
 
 /* db.c */
 extern int trustsdbloaded;
-void trusts_reloaddb(void);
+int trusts_loaddb(void);
+void trusts_closedb(int);
 
 /* formats.c */
 char *trusts_timetostr(time_t);
@@ -78,7 +79,6 @@ char *trusts_cidr2str(uint32_t, uint32_t);
 
 /* data.c */
 extern trustgroup *tglist;
-void trusts_freeall(void);
 trustgroup *tg_getbyid(unsigned int);
 void th_free(trusthost *);
 int th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);

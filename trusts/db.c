@@ -13,6 +13,7 @@ int trustsdbloaded;
 
 void createtrusttables(int migration);
 void trusts_flush(void);
+void trusts_freeall(void);
 
 void createtrusttables(int migration) {
   char *groups, *hosts;
@@ -176,10 +177,12 @@ static void loadgroups_fini(const DBAPIResult *result, void *tag) {
 }
 
 int trusts_loaddb(void) {
-  trustsdb = dbapi2open(NULL, "trusts");
   if(!trustsdb) {
-    Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
-    return 0;
+    trustsdb = dbapi2open(NULL, "trusts");
+    if(!trustsdb) {
+      Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
+      return 0;
+    }
   }
 
   createtrusttables(0);
@@ -192,19 +195,28 @@ int trusts_loaddb(void) {
   return 1;
 }
 
-void trusts_closedb(void) {
+void trusts_closedb(int closeconnection) {
   if(!trustsdb)
     return;
 
-  deleteschedule(flushschedule, flushdatabase, NULL);
-  flushdatabase(NULL);
+  if(flushschedule) {
+    deleteschedule(flushschedule, flushdatabase, NULL);
+    flushschedule = NULL;
+
+    flushdatabase(NULL);
+  }
 
   trusts_freeall();
+
   trustsdbloaded = 0;
   thmaxid = tgmaxid = 0;
 
-  trustsdb->close(trustsdb);
-  trustsdb = NULL;
+  if(closeconnection) {
+    trustsdb->close(trustsdb);
+    trustsdb = NULL;
+  }
+
+  triggerhook(HOOK_TRUSTS_DB_CLOSED, NULL);
 }
 
 void th_dbupdatecounts(trusthost *th) {

@@ -82,7 +82,7 @@ static void tm_complete(const DBAPIResult *r, void *tag) {
   } else {
     if(!r->success) {
       Error("trusts", ERR_ERROR, "A error occured executing the rename table query.");
-      errcode = 100;
+      errcode = MIGRATION_LASTERROR;
     } else {
       Error("trusts", ERR_INFO, "Migration table copying complete.");
     }
@@ -106,22 +106,10 @@ static void tm_final(void *tag, int errcode) {
       nsfree(POOL_TRUSTS, cbd);
     }
   } else {
+    trusts_closedb(0);
+
     Error("trusts", ERR_INFO, "Migration completed, copying tables...");
-/*
-    trustsdb->query(trustsdb, cbd?tm_complete:NULL, cbd,
-                    "BEGIN TRANSACTION; DROP TABLE ?; ALTER TABLE ? RENAME TO ?; DROP TABLE ?; ALTER TABLE ? RENAME TO ?; COMMIT;",
-                    "TTsTTs", "groups", "migration_groups", "groups", "hosts", "migration_hosts", "hosts");
-*/
-/*
-    trustsdb->query(trustsdb, cbd?tm_complete:NULL, cbd,
-                    "BEGIN TRANSACTION; DELETE FROM ?; INSERT INTO ? SELECT * FROM ?; DELETE FROM ?; INSERT INTO ? SELECT * FROM ?; COMMIT;",
-                    "TTTTTT", "groups", "groups", "migration_groups", "hosts", "hosts", "migration_hosts");
-*/
-/*
-    trustsdb->query(trustsdb, cbd?tm_complete:NULL, cbd,
-                    "DELETE FROM ?; INSERT INTO ? SELECT * FROM ?; DELETE FROM ?; INSERT INTO ? SELECT * FROM ?;",
-                    "TTTTTT", "groups", "groups", "migration_groups", "hosts", "hosts", "migration_hosts");
-*/
+
     trustsdb->squery(trustsdb, "BEGIN TRANSACTION", "");
     trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "groups");
     trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO ?", "Ts", "migration_groups", "groups");

@@ -5,14 +5,12 @@
 #include "../core/nsmalloc.h"
 #include "trusts.h"
 
-int trusts_loaddb(void);
-void trusts_closedb(void);
 void trusts_registerevents(void);
 void trusts_deregisterevents(void);
 
 static void statusfn(int, void *);
 
-static int loaded, unloaded;
+static int loaded;
 static sstring *tgextnames[MAXTGEXTS];
 
 int trusts_thext, trusts_nextuserext;
@@ -39,12 +37,7 @@ void _init(void) {
   trusts_registerevents();
 }
 
-void trusts_unload(void) {
-  if(unloaded)
-    return;
-
-  unloaded = 1;
-
+void _fini(void) {
   if(trusts_thext != -1) {
     releasenickext(trusts_thext);
     releasenickext(trusts_nextuserext);
@@ -55,11 +48,8 @@ void trusts_unload(void) {
     trusts_deregisterevents();
   }
 
-  trusts_closedb();
-}
+  trusts_closedb(1);
 
-void _fini(void) {
-  trusts_unload();
   nscheckfreeall(POOL_TRUSTS);
 }
 

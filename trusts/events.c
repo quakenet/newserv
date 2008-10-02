@@ -97,16 +97,7 @@ static void __dbloaded(int hooknum, void *arg) {
       __newnick(0, np);
 }
 
-void trusts_registerevents(void) {
-  registerhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
-
-  if(trustsdbloaded)
-    __dbloaded(0, NULL);
-}
-
-void trusts_deregisterevents(void) {
-  deregisterhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
-
+static void __dbclosed(int hooknum, void *arg) {
   if(!hooksregistered)
     return;
   hooksregistered = 0;
@@ -118,4 +109,19 @@ void trusts_deregisterevents(void) {
   deregisterhook(HOOK_TRUSTS_NEWNICK, __counthandler);
   deregisterhook(HOOK_TRUSTS_LOSTNICK, __counthandler);
 */
+}
+
+void trusts_deregisterevents(void) {
+  deregisterhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
+  deregisterhook(HOOK_TRUSTS_DB_CLOSED, __dbclosed);
+
+  __dbclosed(0, NULL);
+}
+
+void trusts_registerevents(void) {
+  registerhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
+  registerhook(HOOK_TRUSTS_DB_CLOSED, __dbclosed);
+
+  if(trustsdbloaded)
+    __dbloaded(0, NULL);
 }
