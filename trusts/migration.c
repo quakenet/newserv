@@ -173,7 +173,7 @@ static void tm_trustdump(trustmigration *tm) {
   char buf[100];
 
   if(tm->cur >= tm->count) {
-    tm->fini(tm->tag, 0);
+    tm_fini(tm, 0);
     return;
   }
 

@@ -4,7 +4,7 @@
 
 int trusts_migration_start(TrustDBMigrationCallback, void *);
 void trusts_migration_stop(void);
-static void registercommands(void);
+static void registercommands(int hooknum, void *arg);
 static void deregistercommands(void);
 
 static void migrate_status(int errcode, void *tag) {
@@ -24,7 +24,7 @@ static void migrate_status(int errcode, void *tag) {
     controlreply(np, "All functionality disabled, database unloaded -- please reload the module.");
   } else {
     controlreply(np, "Error %d occured during migration, commands reregistered.", errcode);
-    registercommands();
+    registercommands(0, NULL);
   }
 }
 
@@ -115,33 +115,37 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static void dbloaded(int hooknum, void *arg) {
-  registercommands();
-}
+static int commandsregistered;
 
-void _init(void) {
-  registerhook(HOOK_TRUSTS_DB_LOADED, dbloaded);
+static void registercommands(int hooknum, void *arg) {
+  if(commandsregistered)
+    return;
+  commandsregistered = 1;
 
-  if(trustsdbloaded)
-    registercommands();
-}
-
-void _fini(void) {
-  deregisterhook(HOOK_TRUSTS_DB_LOADED, dbloaded);
-  deregistercommands();
-
-  trusts_migration_stop();
-}
-
-static void registercommands(void) {
   registercontrolhelpcmd("trustmigrate", NO_DEVELOPER, 0, trusts_cmdmigrate, "Usage: trustmigrate\nCopies trust data from O and reloads the database.");
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|id>\nShows trust data for the specified trust group.");
 }
 
 static void deregistercommands(void) {
-  if(!trustsdbloaded)
+  if(!commandsregistered)
     return;
+  commandsregistered = 0;
 
   deregistercontrolcmd("trustmigrate", trusts_cmdmigrate);
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
 }
+
+void _init(void) {
+  registerhook(HOOK_TRUSTS_DB_LOADED, registercommands);
+
+  if(trustsdbloaded)
+    registercommands(0, NULL);
+}
+
+void _fini(void) {
+  deregisterhook(HOOK_TRUSTS_DB_LOADED, registercommands);
+  deregistercommands();
+
+  trusts_migration_stop();
+}
+

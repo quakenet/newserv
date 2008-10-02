@@ -74,9 +74,15 @@ static void __counthandler(int hooknum, void *arg) {
   }
 }
 
+static int hooksregistered;
+
 static void __dbloaded(int hooknum, void *arg) {
   int i;
   nick *np;
+
+  if(hooksregistered)
+    return;
+  hooksregistered = 1;
 
   registerhook(HOOK_NICK_NEWNICK, __newnick);
   registerhook(HOOK_NICK_LOSTNICK, __lostnick);
@@ -99,15 +105,17 @@ void trusts_registerevents(void) {
 }
 
 void trusts_deregisterevents(void) {
-  if(trustsdbloaded) {
-    deregisterhook(HOOK_NICK_NEWNICK, __newnick);
-    deregisterhook(HOOK_NICK_LOSTNICK, __lostnick);
+  deregisterhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
+
+  if(!hooksregistered)
+    return;
+  hooksregistered = 0;
+
+  deregisterhook(HOOK_NICK_NEWNICK, __newnick);
+  deregisterhook(HOOK_NICK_LOSTNICK, __lostnick);
 
 /*
-    deregisterhook(HOOK_TRUSTS_NEWNICK, __counthandler);
-    deregisterhook(HOOK_TRUSTS_LOSTNICK, __counthandler);
+  deregisterhook(HOOK_TRUSTS_NEWNICK, __counthandler);
+  deregisterhook(HOOK_TRUSTS_LOSTNICK, __counthandler);
 */
-  }
-
-  deregisterhook(HOOK_TRUSTS_DB_LOADED, __dbloaded);
 }
