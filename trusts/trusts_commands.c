@@ -95,7 +95,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *host;
   uint32_t ip, mask;
-  trusthost *th;
+  trusthost *th, *superset, *subset;
 
   if(cargc < 2)
     return CMD_USAGE;
@@ -112,25 +112,41 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  th = th_getbyhost(ip);
-  if(th) {
-    if(mask == th->mask) {
-      controlreply(sender, "This host already exists with the same mask.");
+  /* OKAY! Lots of checking here!
+   *
+   * Need to check:
+   *   - host isn't already covered by given group (reject if it is)
+   *   - host doesn't already exist exactly already (reject if it does)
+   *   - host is more specific than an existing one (warn if it is, fix up later)
+   *   - host is less specific than an existing one (warn if it is, don't need to do anything special)
+   */
+
+  for(th=tg->hosts;th;th=th->next) {
+    if(th->ip == (ip & th->mask)) {
+      controlreply(sender, "This host (or part of it) is already covered in the given group.");
       return CMD_ERROR;
     }
-    if(mask > th->mask) {
-      /* this mask is a closer fit */
-
-      controlreply(sender, "Warning: this host will override another (%s), as it has smaller prefix (group: %s).", trusts_cidr2str(th->ip, th->mask), th->group->name->content);
-      controlreply(sender, "Adding anyway...");
-    }
-  } else {
-    th = th_getsupersetbyhost(ip, mask);
-    if(th) {
-      controlreply(sender, "Warning: this host is already covered by a smaller prefix (%s), which will remain part of that group: %s", trusts_cidr2str(th->ip, th->mask), th->group->name->content);
-      controlreply(sender, "Adding anyway...");
-    }
   }
+
+  if(th_getbyhostandmask(ip, mask)) {
+    controlreply(sender, "This host already exists in another group with the same mask.");
+    return CMD_ERROR;
+  }
+
+  /* this function will set both to NULL if it's equal, hence the check above */
+  th_getsuperandsubsets(ip, mask, &superset, &subset);
+  if(superset) {
+    /* a superset exists for us, we will be more specific than one existing host */
+
+    controlreply(sender, "Warning: this host already exists in another group, but this new host will override it as it has a smaller prefix.");
+  }
+  if(subset) {
+    /* a subset of us exists, we will be less specific than some existing hosts */
+
+    controlreply(sender, "Warning: this host already exists in at least one other group, the new host has a larger prefix and therefore will not override those hosts.");
+  }
+  if(superset || subset)
+    controlreply(sender, "Adding anyway...");
 
   th = th_new(tg, host);
   if(!th) {

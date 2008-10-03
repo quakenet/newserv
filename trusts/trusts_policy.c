@@ -5,9 +5,14 @@
 static int countext;
 
 static void policycheck(int hooknum, void *arg) {
-  nick *np = arg;
+  void **args = arg;
+  nick *np = args[0];
+  long moving = (long)args[1];
   trusthost *th = gettrusthost(np);
   trustgroup *tg = th->group;
+
+  if(moving)
+    return;
 
   /*
    * the purpose of this logic is to avoid spam like this:

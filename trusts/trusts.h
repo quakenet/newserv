@@ -87,8 +87,12 @@ trusthost *th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);
 void tg_free(trustgroup *);
 trustgroup *tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
 trusthost *th_getbyhost(uint32_t);
-trusthost *th_getsupersetbyhost(uint32_t, uint32_t);
-trustgroup *tg_strtotg(char *name);
+trusthost *th_getbyhostandmask(uint32_t, uint32_t);
+trusthost *th_getsmallestsupersetbyhost(uint32_t, uint32_t);
+trustgroup *tg_strtotg(char *);
+void th_adjusthosts(trusthost *th, trusthost *, trusthost *);
+void th_getsuperandsubsets(uint32_t, uint32_t, trusthost **, trusthost **);
+trusthost *th_getsubsetbyhost(uint32_t, uint32_t);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
@@ -107,5 +111,9 @@ typedef struct trustmigration {
 
 /* db-migration.c */
 typedef void (*TrustDBMigrationCallback)(int, void *);
+
+/* events.c */
+void trusts_newnick(nick *, int);
+void trusts_lostnick(nick *, int);
 
 #endif

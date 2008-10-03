@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../lib/sstring.h"
 #include "../core/hooks.h"
@@ -136,17 +137,55 @@ trusthost *th_getbyhost(uint32_t ip) {
   return result;
 }
 
-/* should this return the largest, smallest or any match? currently the latter */
-trusthost *th_getsupersetbyhost(uint32_t ip, uint32_t mask) {
+trusthost *th_getbyhostandmask(uint32_t ip, uint32_t mask) {
+  trustgroup *tg;
+  trusthost *th;
+
+  for(tg=tglist;tg;tg=tg->next)
+    for(th=tg->hosts;th;th=th->next)
+      if((th->ip == ip) && (th->mask == mask))
+        return th;
+
+  return NULL;
+}
+
+/* returns the ip with the smallest prefix that is still a superset of the given host */
+trusthost *th_getsmallestsupersetbyhost(uint32_t ip, uint32_t mask) {
+  trustgroup *tg;
+  trusthost *th, *result = NULL;
+  uint32_t smask;
+
+  for(tg=tglist;tg;tg=tg->next) {
+    for(th=tg->hosts;th;th=th->next) {
+      if(th->ip == (ip & th->mask)) {
+        if((th->mask < mask) && (!result || (th->mask > smask))) {
+          smask = th->mask;
+          result = th;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/* returns the first ip that is a subset it comes across */
+trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask) {
   trustgroup *tg;
   trusthost *th;
 
   for(tg=tglist;tg;tg=tg->next)
     for(th=tg->hosts;th;th=th->next)
       if((th->ip & mask) == ip)
-        return th;
+        if(th->mask > mask)
+          return th;
 
   return NULL;
+}
+
+void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, trusthost **subset) {
+  *superset = th_getsmallestsupersetbyhost(ip, mask);
+  *subset = th_getsubsetbyhost(ip, mask);
 }
 
 void trusts_flush(void) {
@@ -198,4 +237,88 @@ trustgroup *tg_strtotg(char *name) {
       return tg;
 
   return NULL;
+}
+
+void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
+  /*
+   * First and foremost, CIDR doesn't allow hosts to cross boundaries, i.e. everything with a smaller prefix
+   * is entirely contained with the prefix that is one smaller.
+   * e.g. 0.0.0.0/23, 0.0.0.128/23, you can't have a single prefix for 0.0.0.64-0.0.0.192, instead
+   * you have two, 0.0.0.64/26 and 0.0.0.128/26.
+   *
+   * This makes the code MUCH easier as the entire thing is one huge set/tree.
+   *
+   * Four cases here:
+   * 1: host isn't covered by any existing hosts.
+   * 2: host is covered by a less specific one only, e.g. adding 0.0.0.1/32, while 0.0.0.0/24 already exists.
+   * 3: host is covered by a more specific one only, e.g. adding 0.0.0.0/24 while 0.0.0.1/32 already exists
+   *    (note there might be more than one more specific host, e.g. 0.0.0.1/32 and 0.0.0.2/32).
+   * 4: covered by more and less specific cases, e.g. adding 0.0.0.0/24 to: { 0.0.0.1/32, 0.0.0.2/32, 0.0.0.0/16 }.
+   *
+   * CASE 1
+   * ------
+   *
+   * !superset && !subset
+   *
+   * Scan through the host hash and add any clients which match our host, this is exactly the same as case 3
+   * but without needing to check (though checking doesn't hurt), so we'll just use the code for that.
+   *
+   * CASE 2
+   * ------
+   *
+   * superset && !subset
+   *
+   * We have the less specific host in 'superset', we know it is the only one so pull out clients in it's
+   * ->users list matching our new host.
+   * No need to look for extra hosts in the main nick hash as they're all covered already.
+   *
+   * CASE 3
+   * ------
+   *
+   * !superset && subset
+   *
+   * We have one host in 'subset', but there might be more than one, we don't care though!
+   * We can scan the entire host hash and pull out any hosts that match us and don't have
+   * a trust group already, this ignores any with a more specific prefix.
+   *
+   * CASE 4
+   * ------
+   *
+   * superset && subset
+   *
+   * Here we first fix up the ones less specific then us, so we just perform what we did for case 2,
+   * then we perform what we did for case 3.
+   *
+   * So in summary:
+   *   CASE 1: DO 3
+   *   CASE 2: (work)
+   *   CASE 3: (work)
+   *   CASE 4: DO 2; DO 3
+   * Or:
+   *   if(2 || 4)     : DO 2
+   *   if(1 || 3 || 4): DO 3
+   */
+
+  /* we let the compiler do the boolean minimisation for clarity reasons */
+
+  if((superset && !subset) || (superset && subset)) { /* cases 2 and 4 */
+    nick *np, *nnp;
+    for(np=superset->users;np;np=nnp) {
+      nnp = nextbytrust(np);
+      if((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip) {
+        trusts_lostnick(np, 1);
+        trusts_newnick(np, 1);
+      }
+    }
+  }
+
+  if((!superset && !subset) || (!superset && subset) || (superset && subset)) { /* cases 1, 3 and 4 */
+    nick *np;
+    int i;
+
+    for(i=0;i<NICKHASHSIZE;i++)
+      for(np=nicktable[i];np;np=np->next)
+        if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip))
+          trusts_newnick(np, 1);
+  }
 }

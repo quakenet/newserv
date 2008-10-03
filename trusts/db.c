@@ -228,7 +228,16 @@ void tg_dbupdatecounts(trustgroup *tg) {
 }
 
 trusthost *th_new(trustgroup *tg, char *host) {
-  trusthost *th = th_add(tg, thmaxid + 1, host, 0, 0);
+  trusthost *th, *superset, *subset;
+  u_int32_t ip, mask;
+
+  /* ugh */
+  if(!trusts_str2cidr(host, &ip, &mask))
+    return NULL;
+
+  th_getsuperandsubsets(ip, mask, &superset, &subset);
+
+  th = th_add(tg, thmaxid + 1, host, 0, 0);
   if(!th)
     return NULL;
 
@@ -239,7 +248,7 @@ trusthost *th_new(trustgroup *tg, char *host) {
     "Tuusut", "hosts", th->id, tg->id, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
   );
 
-  /* fix up stuff in memory */
+  th_adjusthosts(th, subset, superset);
 
   return th;
 }
