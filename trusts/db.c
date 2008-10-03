@@ -48,6 +48,7 @@ static void loadcomplete(void) {
   if(loaderror)
     return;
 
+  th_linktree();
   trustsdbloaded = 1;
   flushschedule = schedulerecurring(time(NULL) + 300, 0, 300, flushdatabase, NULL);
 
@@ -250,6 +251,7 @@ trusthost *th_new(trustgroup *tg, char *host) {
 
   th_adjusthosts(th, subset, superset);
 
+  th_linktree();
   return th;
 }
 

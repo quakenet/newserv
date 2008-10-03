@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 #include "../control/control.h"
 #include "../lib/irc_string.h"
+#include "../lib/strlfunc.h"
 #include "trusts.h"
 
 int trusts_migration_start(TrustDBMigrationCallback, void *);
@@ -49,6 +51,81 @@ static int trusts_cmdmigrate(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void calculatespaces(int spaces, char *str, char **_prebuf, char **_postbuf) {
+  static char prebuf[512], postbuf[512];
+  int spacelen;
+
+  if(spaces + 5 >= sizeof(prebuf)) {
+    prebuf[0] = prebuf[1] = '\0';
+  } else {
+    memset(prebuf, ' ', spaces);
+    prebuf[spaces] = '\0';
+  }
+
+  spacelen = 21 - (strlen(str) + spaces);
+  if(spacelen <= 0 || spacelen + 5 >= sizeof(postbuf)) {
+    postbuf[0] = postbuf[1] = '\0';
+  } else {
+    memset(postbuf, ' ', spacelen);
+    postbuf[spacelen] = '\0';
+  }
+
+  *_prebuf = prebuf;
+  *_postbuf = postbuf;
+}
+
+#define MODE_PARENT   0
+#define MODE_CURRENT  1
+#define MODE_CHILDREN 2
+
+static int __replytrusthosts(nick *sender, trusthost *th, int mode, int childdepth) {
+  char parentbuf[512], *postspacebuf, *prespacebuf, *cidrstr;
+  int depth;
+
+  if(mode != MODE_CHILDREN) {
+    /* find all parents of this node */
+    if(th->parent) {
+      depth = __replytrusthosts(sender, th->parent, MODE_PARENT, 0) + 1;
+    } else {
+      depth = 1;
+    }
+  } else {
+    depth = childdepth;
+  }
+
+  cidrstr = trusts_cidr2str(th->ip, th->mask);
+  calculatespaces(depth, cidrstr, &prespacebuf, &postspacebuf);
+
+  if(mode == MODE_CURRENT) {
+    /* prefix the hosts in the current group with > */
+
+    if(!prespacebuf[0])
+      prespacebuf[1] = '\0';
+    prespacebuf[0] = '>';
+
+    parentbuf[0] = '\0';
+  } else {
+    /* show the ids of other groups */
+
+    snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->id, th->group->name->content);
+  }
+
+  controlreply(sender, "%s%s%s %-10d %-10d %-20s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);
+
+  /* find all children of this node */
+  if(mode != MODE_PARENT) {
+    trusthost *cth;
+    for(cth=th->children;cth;cth=cth->nextbychild)
+      __replytrusthosts(sender, cth, MODE_CHILDREN, depth + 1);
+  }
+
+  return depth;
+}
+
+static void replytrusthosts(nick *sender, trusthost *th) {
+  __replytrusthosts(sender, th, MODE_CURRENT, 0);
+}
+
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   nick *sender = source;
   trustgroup *tg;
@@ -80,10 +157,10 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
 
-  controlreply(sender, "Host                 Current    Max        Last seen");
+  controlreply(sender, "Host                 Current    Max        Last seen           Group ID   Group name");
 
   for(th=tg->hosts;th;th=th->next)
-    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"));
+    replytrusthosts(sender, th);
 
   controlreply(sender, "End of list.");
 

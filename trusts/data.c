@@ -13,6 +13,8 @@ trustgroup *tglist;
 void th_dbupdatecounts(trusthost *);
 void tg_dbupdatecounts(trustgroup *);
 
+static trusthost *th_getnextchildbyhost(trusthost *, trusthost *);
+
 void trusts_freeall(void) {
   trustgroup *tg, *ntg;
   trusthost *th, *nth;
@@ -45,8 +47,38 @@ void th_free(trusthost *th) {
   nsfree(POOL_TRUSTS, th);
 }
 
+static void th_updatechildren(trusthost *th) {
+  trusthost *nth = NULL;
+
+  th->children = NULL;
+
+  for(;;) {
+    nth = th_getnextchildbyhost(th, nth);
+    if(!nth)
+      break;
+
+    nth->nextbychild = th->children;
+    th->children = nth;
+  }
+}
+
+void th_linktree(void) {
+  trustgroup *tg;
+  trusthost *th;
+
+  /* ugh */
+  for(tg=tglist;tg;tg=tg->next)
+    for(th=tg->hosts;th;th=th->next)
+      th->parent = th_getsmallestsupersetbyhost(th->ip, th->mask);
+
+  for(tg=tglist;tg;tg=tg->next)
+    for(th=tg->hosts;th;th=th->next)
+      if(th->parent)
+        th_updatechildren(th->parent);
+}
+
 trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
-  u_int32_t ip, mask;
+  uint32_t ip, mask;
   trusthost *th;
 
   if(!trusts_str2cidr(host, &ip, &mask))
@@ -65,6 +97,9 @@ trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxu
   th->users = NULL;
   th->group = tg;
   th->count = 0;
+
+  th->parent = NULL;
+  th->children = NULL;
 
   th->next = tg->hosts;
   tg->hosts = th;
@@ -181,6 +216,40 @@ trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask) {
           return th;
 
   return NULL;
+}
+
+/* NOT reentrant obviously */
+static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
+  if(!th) {
+    trustgroup *tg;
+
+    tg = tglist;
+    for(tg=tglist;tg;tg=tg->next) {
+      th = tg->hosts;
+      if(th)
+        break;
+    }
+
+    /* INVARIANT: tg => th */
+    if(!tg)
+      return NULL;
+
+    if(th->parent == orig)
+      return th;
+  }
+
+  for(;;) {
+    if(th->next) {
+      th = th->next;
+    } else {
+      if(!th->group->next)
+        return NULL;
+      th = th->group->next->hosts;
+    }
+
+    if(th->parent == orig)
+      return th;
+  }
 }
 
 void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, trusthost **subset) {
