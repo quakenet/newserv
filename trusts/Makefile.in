@@ -6,11 +6,13 @@ TRUSTSDIRS=newsearch
 
 all: trusts.so trusts_commands.so trusts_policy.so dirs
 
-trusts.so: trusts.o migration.o db.o db-migration.o data.o formats.o events.o
+trusts.so: trusts.o db-migration.o data.o formats.o events.o
 
 trusts_commands.so: trusts_commands.o
 
 trusts_policy.so: trusts_policy.o
+
+trusts_migration.so: trusts_migration.o db-migration.o migration.o
 
 dirs: $(TRUSTSDIRS)
 	ln -sf */*.so .
