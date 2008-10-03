@@ -101,6 +101,8 @@ trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxu
   th->parent = NULL;
   th->children = NULL;
 
+  th->marker = 0;
+
   th->next = tg->hosts;
   tg->hosts = th;
 
@@ -140,6 +142,8 @@ trustgroup *tg_add(unsigned int id, char *name, unsigned int trustedfor, int mod
   tg->lastseen = lastseen;
   tg->lastmaxuserreset = lastmaxuserreset;
   tg->hosts = NULL;
+
+  tg->marker = 0;
 
   tg->count = 0;
 
@@ -390,4 +394,38 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
         if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip))
           trusts_newnick(np, 1);
   }
+}
+
+unsigned int nexttgmarker(void) {
+  static unsigned int tgmarker = 0;
+  trustgroup *tg;
+
+  tgmarker++;
+  if(!tgmarker) {
+    /* If we wrapped to zero, zap the marker on all groups */
+    for(tg=tglist;tg;tg=tg->next)
+      tg->marker=0;
+
+    tgmarker++;
+  }
+
+  return tgmarker;
+}
+
+unsigned int nextthmarker(void) {
+  static unsigned int thmarker = 0;
+  trustgroup *tg;
+  trusthost *th;
+
+  thmarker++;
+  if(!thmarker) {
+    /* If we wrapped to zero, zap the marker on all hosts */
+    for(tg=tglist;tg;tg=tg->next)
+      for(th=tg->hosts;th;th=th->next)
+        th->marker=0;
+
+    thmarker++;
+  }
+
+  return thmarker;
 }
