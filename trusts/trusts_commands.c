@@ -66,23 +66,24 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   t = time(NULL);
 
+  /* abusing the ternary operator a bit :( */
   controlreply(sender, "Name:            : %s", tg->name->content);
   controlreply(sender, "Trusted for      : %d", tg->trustedfor);
   controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, tg->mode?"":"not ");
   controlreply(sender, "Contact:         : %s", tg->contact->content);
-  controlreply(sender, "Expires in       : %s", (tg->expires>t)?longtoduration(tg->expires - t, 2):"(in the past)");
+  controlreply(sender, "Expires in       : %s", (tg->expires>t)?longtoduration(tg->expires - t, 2):"(the past -- BUG)");
   controlreply(sender, "Last changed by  : %s", tg->createdby->content);
   controlreply(sender, "Comment:         : %s", tg->comment->content);
   controlreply(sender, "ID:              : %u", tg->id);
-  controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":trusts_timetostr(tg->lastseen));
+  controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":((tg->lastseen>0)?trusts_timetostr(tg->lastseen):"(never)"));
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
 
   controlreply(sender, "Host                 Current    Max        Last seen");
 
   for(th=tg->hosts;th;th=th->next)
-    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (th->count>0)?"(now)":trusts_timetostr(th->lastseen));
+    controlreply(sender, " %-20s %-10d %-10d %s", trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"));
 
   controlreply(sender, "End of list.");
 
