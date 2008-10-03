@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "trusts.h"
@@ -88,6 +89,129 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  nick *sender = source;
+  char *host;
+  uint32_t ip, mask;
+  trusthost *th;
+
+  if(cargc < 2)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  host = cargv[1];
+  if(!trusts_str2cidr(host, &ip, &mask)) {
+    controlreply(sender, "Invalid host.");
+    return CMD_ERROR;
+  }
+
+  th = th_getbyhost(ip);
+  if(th) {
+    if(mask == th->mask) {
+      controlreply(sender, "This host already exists with the same mask.");
+      return CMD_ERROR;
+    }
+    if(mask > th->mask) {
+      /* this mask is a closer fit */
+
+      controlreply(sender, "Warning: this host will override another (%s), as it has smaller prefix (group: %s).", trusts_cidr2str(th->ip, th->mask), th->group->name->content);
+      controlreply(sender, "Adding anyway...");
+    }
+  } else {
+    th = th_getsupersetbyhost(ip, mask);
+    if(th) {
+      controlreply(sender, "Warning: this host is already covered by a smaller prefix (%s), which will remain part of that group: %s", trusts_cidr2str(th->ip, th->mask), th->group->name->content);
+      controlreply(sender, "Adding anyway...");
+    }
+  }
+
+  th = th_new(tg, host);
+  if(!th) {
+    controlreply(sender, "An error occured adding the host to the group.");
+    return CMD_ERROR;
+  }
+
+  controlreply(sender, "Host added.");
+  /* TODO: controlwall */
+
+  return CMD_OK;
+}
+
+static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
+  unsigned int howmany, maxperident, enforceident;
+  time_t howlong;
+  trustgroup *tg;
+
+  if(cargc < 6)
+    return CMD_USAGE;
+
+  name = cargv[0];
+  howmany = strtoul(cargv[1], NULL, 10);
+  if(!howmany || (howmany > 50000)) {
+    controlreply(sender, "Bad value maximum number of clients.");
+    return CMD_ERROR;
+  }
+
+  howlong = durationtolong(cargv[2]);
+  if((howlong <= 0) || (howlong > 365 * 86400 * 20)) {
+    controlreply(sender, "Invalid duration supplied.");
+    return CMD_ERROR;
+  }
+
+  maxperident = strtoul(cargv[3], NULL, 10);
+  if(!howmany || (maxperident > 1000)) {
+    controlreply(sender, "Bad value for max per ident.");
+    return CMD_ERROR;
+  }
+
+  if(cargv[4][0] != '1' && cargv[4][0] != '0') {
+    controlreply(sender, "Bad value for enforce ident (use 0 or 1).");
+    return CMD_ERROR;
+  }
+  enforceident = cargv[4][0] == '1';
+
+  contact = cargv[5];
+
+  if(cargc < 7) {
+    comment = "(no comment)";
+  } else {
+    comment = cargv[6];
+  }
+
+  /* don't allow #id or id forms */
+  if((name[0] == '#') || strtoul(name, NULL, 10)) {
+    controlreply(sender, "Invalid trustgroup name.");
+    return CMD_ERROR;
+  }
+
+  tg = tg_strtotg(name);
+  if(tg) {
+    controlreply(sender, "A group with that name already exists");
+    return CMD_ERROR;
+  }
+
+  snprintf(createdby, sizeof(createdby), "#%s", sender->authname);
+
+  tg = tg_new(name, howmany, enforceident, maxperident, howlong + time(NULL), createdby, contact, comment);
+  if(!tg) {
+    controlreply(sender, "An error occured adding the trustgroup.");
+    return CMD_ERROR;
+  }
+
+  controlreply(sender, "Group added.");
+  /* TODO: controlwall */
+
+  return CMD_OK;
+}
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -97,6 +221,8 @@ static void registercommands(int hooknum, void *arg) {
 
   registercontrolhelpcmd("trustmigrate", NO_DEVELOPER, 0, trusts_cmdmigrate, "Usage: trustmigrate\nCopies trust data from O and reloads the database.");
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|id>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustgroupadd", NO_OPER, 6, trusts_cmdtrustgroupadd, "Usage: trustgroupadd <name> <howmany> <howlong> <maxperident> <enforceident> <contact> ?comment?");
+  registercontrolhelpcmd("trustadd", NO_OPER, 2, trusts_cmdtrustadd, "Usage: trustadd <#id|name|id> <host>");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -106,6 +232,8 @@ static void deregistercommands(int hooknum, void *arg) {
 
   deregistercontrolcmd("trustmigrate", trusts_cmdmigrate);
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
+  deregistercontrolcmd("trustgroupadd", trusts_cmdtrustgroupadd);
+  deregistercontrolcmd("trustadd", trusts_cmdtrustadd);
 }
 
 void _init(void) {

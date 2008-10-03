@@ -44,16 +44,16 @@ void th_free(trusthost *th) {
   nsfree(POOL_TRUSTS, th);
 }
 
-int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
+trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
   u_int32_t ip, mask;
   trusthost *th;
 
   if(!trusts_str2cidr(host, &ip, &mask))
-    return 0;
+    return NULL;
 
   th = nsmalloc(POOL_TRUSTS, sizeof(trusthost));
   if(!th)
-    return 0;
+    return NULL;
 
   th->id = id;
   th->maxusage = maxusage;
@@ -68,7 +68,7 @@ int th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, t
   th->next = tg->hosts;
   tg->hosts = th;
 
-  return 1;
+  return th;
 }
 
 void tg_free(trustgroup *tg) {
@@ -81,10 +81,10 @@ void tg_free(trustgroup *tg) {
   nsfree(POOL_TRUSTS, tg);
 }
 
-int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
+trustgroup *tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
   trustgroup *tg = nsmalloc(POOL_TRUSTS, sizeof(trustgroup));
   if(!tg)
-    return 0;
+    return NULL;
 
   tg->name = getsstring(name, TRUSTNAMELEN);
   tg->createdby = getsstring(createdby, NICKLEN);
@@ -92,7 +92,7 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
   tg->comment = getsstring(comment, COMMENTLEN);
   if(!tg->name || !tg->createdby || !tg->contact || !tg->comment) {
     tg_free(tg);
-    return 0;
+    return NULL;
   }
 
   tg->id = id;
@@ -114,17 +114,17 @@ int tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsig
 
   triggerhook(HOOK_TRUSTS_NEWGROUP, tg);
 
-  return 1;
+  return tg;
 }
 
-trusthost *th_getbyhost(uint32_t host) {
+trusthost *th_getbyhost(uint32_t ip) {
   trustgroup *tg;
   trusthost *th, *result = NULL;
   uint32_t mask;
 
   for(tg=tglist;tg;tg=tg->next) {
     for(th=tg->hosts;th;th=th->next) {
-      if((host & th->mask) == th->ip) {
+      if((ip & th->mask) == th->ip) {
         if(!result || (th->mask > mask)) {
           mask = th->mask;
           result = th;
@@ -134,6 +134,19 @@ trusthost *th_getbyhost(uint32_t host) {
   }
 
   return result;
+}
+
+/* should this return the largest, smallest or any match? currently the latter */
+trusthost *th_getsupersetbyhost(uint32_t ip, uint32_t mask) {
+  trustgroup *tg;
+  trusthost *th;
+
+  for(tg=tglist;tg;tg=tg->next)
+    for(th=tg->hosts;th;th=th->next)
+      if((th->ip & mask) == ip)
+        return th;
+
+  return NULL;
 }
 
 void trusts_flush(void) {
@@ -186,4 +199,3 @@ trustgroup *tg_strtotg(char *name) {
 
   return NULL;
 }
-

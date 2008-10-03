@@ -226,3 +226,35 @@ void th_dbupdatecounts(trusthost *th) {
 void tg_dbupdatecounts(trustgroup *tg) {
   trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "groups", tg->lastseen, tg->maxusage, tg->id);
 }
+
+trusthost *th_new(trustgroup *tg, char *host) {
+  trusthost *th = th_add(tg, thmaxid + 1, host, 0, 0);
+  if(!th)
+    return NULL;
+
+  thmaxid++;
+
+  trustsdb->squery(trustsdb,
+    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
+    "Tuusut", "hosts", th->id, tg->id, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
+  );
+
+  /* fix up stuff in memory */
+
+  return th;
+}
+
+trustgroup *tg_new(char *name, unsigned int trustedfor, int mode, unsigned int maxperident, time_t expires, char *createdby, char *contact, char *comment) {
+  trustgroup *tg = tg_add(tgmaxid + 1, name, trustedfor, mode, maxperident, 0, expires, 0, 0, createdby, contact, comment);
+  if(!tg)
+    return NULL;
+
+  tgmaxid++;
+
+  trustsdb->squery(trustsdb,
+    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tusuuuutttsss", "groups", tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content
+  );
+
+  return tg;
+}
