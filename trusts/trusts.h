@@ -70,6 +70,8 @@ void releasetgext(int);
 extern int trustsdbloaded;
 int trusts_loaddb(void);
 void trusts_closedb(int);
+trustgroup *tg_new(char *name, unsigned int trustedfor, int mode, unsigned int maxperident, time_t expires, char *createdby, char *contact, char *comment);
+trusthost *th_new(trustgroup *tg, char *host);
 
 /* formats.c */
 char *trusts_timetostr(time_t);
@@ -81,11 +83,16 @@ char *trusts_cidr2str(uint32_t, uint32_t);
 extern trustgroup *tglist;
 trustgroup *tg_getbyid(unsigned int);
 void th_free(trusthost *);
-int th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);
+trusthost *th_add(trustgroup *, unsigned int, char *, unsigned int, time_t);
 void tg_free(trustgroup *);
-int tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
-trusthost *th_getbyhost(uint32_t host);
-trustgroup *tg_strtotg(char *name);
+trustgroup *tg_add(unsigned int, char *, unsigned int, int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
+trusthost *th_getbyhost(uint32_t);
+trusthost *th_getbyhostandmask(uint32_t, uint32_t);
+trusthost *th_getsmallestsupersetbyhost(uint32_t, uint32_t);
+trustgroup *tg_strtotg(char *);
+void th_adjusthosts(trusthost *th, trusthost *, trusthost *);
+void th_getsuperandsubsets(uint32_t, uint32_t, trusthost **, trusthost **);
+trusthost *th_getsubsetbyhost(uint32_t, uint32_t);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
@@ -103,7 +110,10 @@ typedef struct trustmigration {
 } trustmigration;
 
 /* db-migration.c */
-
 typedef void (*TrustDBMigrationCallback)(int, void *);
+
+/* events.c */
+void trusts_newnick(nick *, int);
+void trusts_lostnick(nick *, int);
 
 #endif

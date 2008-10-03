@@ -3,10 +3,10 @@
 
 static void __counthandler(int hooknum, void *arg);
 
-static void __newnick(int hooknum, void *arg) {
-  nick *sender = arg;
+void trusts_newnick(nick *sender, int moving) {
   uint32_t host;
   trusthost *th;
+  void *arg[2];
 
   host = irc_in_addr_v4_to_int(&sender->p_ipaddr);
   th = th_getbyhost(host);
@@ -22,18 +22,29 @@ static void __newnick(int hooknum, void *arg) {
 
   /* sucks we have to do this, at least until we get priority hooks */
   __counthandler(HOOK_TRUSTS_NEWNICK, sender);
-  triggerhook(HOOK_TRUSTS_NEWNICK, sender);
+
+  arg[0] = sender;
+  arg[1] = (void *)(long)moving;
+  triggerhook(HOOK_TRUSTS_NEWNICK, arg);
 }
 
-static void __lostnick(int hooknum, void *arg) {
-  nick *sender = arg, *np, *lp;
+static void __newnick(int hooknum, void *arg) {
+  trusts_newnick(arg, 0);
+}
+
+void trusts_lostnick(nick *sender, int moving) {
+  nick *np, *lp;
   trusthost *th = gettrusthost(sender);
+  void *arg[2];
 
   if(!th)
     return;
 
   __counthandler(HOOK_TRUSTS_LOSTNICK, sender);
-  triggerhook(HOOK_TRUSTS_LOSTNICK, sender);
+
+  arg[0] = sender;
+  arg[1] = (void *)(long)moving;
+  triggerhook(HOOK_TRUSTS_LOSTNICK, arg);
 
   /*
    * we need to erase this nick from the trusthost list
@@ -52,6 +63,10 @@ static void __lostnick(int hooknum, void *arg) {
 
     break;
   }
+}
+
+static void __lostnick(int hooknum, void *arg) {
+  trusts_lostnick(arg, 0);
 }
 
 static void __counthandler(int hooknum, void *arg) {
