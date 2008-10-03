@@ -176,7 +176,7 @@ trustgroup *tg_strtotg(char *name) {
   /* legacy format */
   if(name[0] == '#') {
     id = strtoul(&name[1], NULL, 10);
-    if(id == ULONG_MAX)
+    if(!id)
       return NULL;
 
     for(tg=tglist;tg;tg=tg->next)
@@ -189,7 +189,7 @@ trustgroup *tg_strtotg(char *name) {
       return tg;
 
   id = strtoul(name, NULL, 10);
-  if(id == ULONG_MAX)
+  if(!id)
     return NULL;
 
   /* legacy format */
