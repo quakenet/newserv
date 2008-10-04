@@ -21,7 +21,7 @@ void qabot_loaddb() {
   time_t created;
   flag_t flags;
   
-  if (!(f = fopen("qab_users", "r")))
+  if (!(f = fopen("data/qab_users", "r")))
     return;
   
   while (!feof(f)) {
@@ -41,7 +41,7 @@ void qabot_loaddb() {
   
   fclose(f);
   
-  if (!(f = fopen("qab_bots", "r")))
+  if (!(f = fopen("data/qab_bots", "r")))
     return;
   
   while (!feof(f)) {
@@ -65,7 +65,7 @@ void qabot_savedb() {
   qab_user* u;
   qab_bot* b;
   
-  if (!(f = fopen("qab_users", "w")))
+  if (!(f = fopen("data/qab_users", "w")))
     return;
   
   for (u = qabot_users; u; u = u->next)
@@ -73,7 +73,7 @@ void qabot_savedb() {
   
   fclose(f);
   
-  if (!(f = fopen("qab_bots", "w")))
+  if (!(f = fopen("data/qab_bots", "w")))
     return;
   
   for (b = qab_bots; b; b = b->next)
