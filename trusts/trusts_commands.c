@@ -51,7 +51,7 @@ static int trusts_cmdmigrate(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-void calculatespaces(int spaces, char *str, char **_prebuf, char **_postbuf) {
+void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_postbuf) {
   static char prebuf[512], postbuf[512];
   int spacelen;
 
@@ -62,7 +62,7 @@ void calculatespaces(int spaces, char *str, char **_prebuf, char **_postbuf) {
     prebuf[spaces] = '\0';
   }
 
-  spacelen = 21 - (strlen(str) + spaces);
+  spacelen = width - (strlen(str) + spaces);
   if(spacelen <= 0 || spacelen + 5 >= sizeof(postbuf)) {
     postbuf[0] = postbuf[1] = '\0';
   } else {
@@ -74,63 +74,72 @@ void calculatespaces(int spaces, char *str, char **_prebuf, char **_postbuf) {
   *_postbuf = postbuf;
 }
 
-#define MODE_PARENT   0
-#define MODE_CURRENT  1
-#define MODE_CHILDREN 2
+static void traverseandmark(unsigned int marker, trusthost *th) {
+  th->marker = marker;
 
-static int __replytrusthosts(nick *sender, trusthost *th, int mode, int childdepth) {
-  char parentbuf[512], *postspacebuf, *prespacebuf, *cidrstr;
-  int depth;
+  for(th=th->children;th;th=th->nextbychild) {
+    th->marker = marker;
+    traverseandmark(marker, th);
+  }
+}
 
-  if(mode != MODE_CHILDREN) {
-    /* find all parents of this node */
-    if(th->parent) {
-      depth = __replytrusthosts(sender, th->parent, MODE_PARENT, 0) + 1;
-    } else {
-      depth = 1;
+static void marktree(array *parents, unsigned int marker, trusthost *th) {
+  trusthost *pth;
+
+  for(pth=th->parent;pth;pth=pth->next) {
+    trusthost **p2 = (trusthost **)(parents->content);
+    int i;
+
+    /* this eliminates common subtrees */
+    for(i=0;i<parents->cursi;i++)
+      if(p2[i] == pth)
+        break;
+
+    if(i == parents->cursi) {
+      int pos = array_getfreeslot(parents);
+      ((trusthost **)(parents->content))[pos] = pth;
     }
-  } else {
-    depth = childdepth;
+
+    pth->marker = marker;
   }
 
+  /* sadly we need to recurse down */
+  traverseandmark(marker, th);
+}
+
+static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth) {
+  char *cidrstr, *prespacebuf, *postspacebuf, parentbuf[512];
+
+  if(th->marker != marker)
+    return;
+
   cidrstr = trusts_cidr2str(th->ip, th->mask);
-  calculatespaces(depth, cidrstr, &prespacebuf, &postspacebuf);
+  calculatespaces(depth + 1, 20 + 1, cidrstr, &prespacebuf, &postspacebuf);
 
-  if(mode == MODE_CURRENT) {
-    /* prefix the hosts in the current group with > */
-
-    if(!prespacebuf[0])
-      prespacebuf[1] = '\0';
+  if(th->group == originalgroup) {
     prespacebuf[0] = '>';
 
     parentbuf[0] = '\0';
   } else {
     /* show the ids of other groups */
 
-    snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->id, th->group->name->content);
+    snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->group->id, th->group->name->content);
   }
 
-  controlreply(sender, "%s%s%s %-10d %-10d %-20s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);
+  controlreply(np, "%s%s%s %-10d %-10d %-20s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);  
 
-  /* find all children of this node */
-  if(mode != MODE_PARENT) {
-    trusthost *cth;
-    for(cth=th->children;cth;cth=cth->nextbychild)
-      __replytrusthosts(sender, cth, MODE_CHILDREN, depth + 1);
-  }
-
-  return depth;
-}
-
-static void replytrusthosts(nick *sender, trusthost *th) {
-  __replytrusthosts(sender, th, MODE_CURRENT, 0);
+  for(th=th->children;th;th=th->nextbychild)
+    outputtree(np, marker, originalgroup, th, depth + 1);
 }
 
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   nick *sender = source;
   trustgroup *tg;
-  trusthost *th;
+  trusthost *th, **p2;
   time_t t;
+  unsigned int marker;
+  array parents;
+  int i;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -159,8 +168,17 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   controlreply(sender, "Host                 Current    Max        Last seen           Group ID   Group name");
 
+  marker = nextthmarker();
+  array_init(&parents, sizeof(trusthost *));
+
   for(th=tg->hosts;th;th=th->next)
-    replytrusthosts(sender, th);
+    marktree(&parents, marker, th);
+
+  p2 = (trusthost **)(parents.content);
+  for(i=0;i<parents.cursi;i++)
+    outputtree(sender, marker, tg, p2[i], 0);
+
+  array_free(&parents);
 
   controlreply(sender, "End of list.");
 
