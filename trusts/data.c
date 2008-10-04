@@ -261,7 +261,7 @@ void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, tru
   *subset = th_getsubsetbyhost(ip, mask);
 }
 
-void trusts_flush(void) {
+void trusts_flush(void (*thflush)(trusthost *), void (*tgflush)(trustgroup *)) {
   trustgroup *tg;
   trusthost *th;
   time_t t = time(NULL);
@@ -270,13 +270,13 @@ void trusts_flush(void) {
     if(tg->count > 0)
       tg->lastseen = t;
 
-    tg_dbupdatecounts(tg);
+    tgflush(tg);
 
     for(th=tg->hosts;th;th=th->next) {
       if(th->count > 0)
         th->lastseen = t;
 
-      th_dbupdatecounts(th);
+      thflush(th);
     }
   }
 }

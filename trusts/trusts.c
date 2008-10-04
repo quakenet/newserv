@@ -10,10 +10,10 @@ void trusts_deregisterevents(void);
 
 static void statusfn(int, void *);
 
-static int loaded;
 static sstring *tgextnames[MAXTGEXTS];
 
 int trusts_thext, trusts_nextuserext;
+int trustsdbloaded;
 
 void _init(void) {
   trusts_thext = registernickext("trustth");
@@ -29,10 +29,6 @@ void _init(void) {
     return;
   }
 
-  if(!trusts_loaddb())
-    return;
-  loaded = 1;
-
   registerhook(HOOK_CORE_STATSREQUEST, statusfn);
   trusts_registerevents();
 }
@@ -43,12 +39,8 @@ void _fini(void) {
     releasenickext(trusts_nextuserext);
   }
 
-  if(loaded) {
-    deregisterhook(HOOK_CORE_STATSREQUEST, statusfn);
-    trusts_deregisterevents();
-  }
-
-  trusts_closedb(1);
+  deregisterhook(HOOK_CORE_STATSREQUEST, statusfn);
+  trusts_deregisterevents();
 
   nscheckfreeall(POOL_TRUSTS);
 }

@@ -9,11 +9,11 @@ static int tgmaxid, thmaxid;
 static int loaderror;
 static void *flushschedule;
 
-int trustsdbloaded;
-
 void createtrusttables(int migration);
-void trusts_flush(void);
+void trusts_flush(void (*)(trusthost *), void (*)(trustgroup *));
 void trusts_freeall(void);
+static void th_dbupdatecounts(trusthost *th);
+static void tg_dbupdatecounts(trustgroup *tg);
 
 void createtrusttables(int migration) {
   char *groups, *hosts;
@@ -36,7 +36,7 @@ void createtrusttables(int migration) {
 }
 
 static void flushdatabase(void *arg) {
-  trusts_flush();
+  trusts_flush(th_dbupdatecounts, tg_dbupdatecounts);
 }
 
 static void triggerdbloaded(void *arg) {
@@ -220,11 +220,11 @@ void trusts_closedb(int closeconnection) {
   triggerhook(HOOK_TRUSTS_DB_CLOSED, NULL);
 }
 
-void th_dbupdatecounts(trusthost *th) {
+static void th_dbupdatecounts(trusthost *th) {
   trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "hosts", th->lastseen, th->maxusage, th->id);
 }
 
-void tg_dbupdatecounts(trustgroup *tg) {
+static void tg_dbupdatecounts(trustgroup *tg) {
   trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "groups", tg->lastseen, tg->maxusage, tg->id);
 }
 
@@ -268,4 +268,12 @@ trustgroup *tg_new(char *name, unsigned int trustedfor, int mode, unsigned int m
   );
 
   return tg;
+}
+
+void _init(void) {
+  trusts_loaddb();
+}
+
+void _fini(void) {
+  trusts_closedb(1);
 }

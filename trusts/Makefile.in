@@ -4,9 +4,11 @@ TRUSTSDIRS=newsearch
 
 .PHONY: all dirs $(TRUSTSDIRS) clean distclean
 
-all: trusts.so trusts_commands.so trusts_policy.so dirs
+all: trusts.so trusts_commands.so trusts_policy.so trusts_migration.so trusts_db.so dirs
 
-trusts.so: trusts.o db-migration.o data.o formats.o events.o
+trusts.so: trusts.o data.o formats.o events.o
+
+trusts_db.so: trusts_db.o
 
 trusts_commands.so: trusts_commands.o
 
