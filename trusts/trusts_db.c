@@ -15,12 +15,15 @@ void trusts_freeall(void);
 static void th_dbupdatecounts(trusthost *th);
 static void tg_dbupdatecounts(trustgroup *tg);
 
-void createtrusttables(int migration) {
+void createtrusttables(int mode) {
   char *groups, *hosts;
 
-  if(migration) {
+  if(mode == TABLES_MIGRATION) {
     groups = "migration_groups";
     hosts = "migration_hosts";
+  } else if(mode == TABLES_REPLICATION) {
+    groups = "replication_groups";
+    hosts = "replication_hosts";
   } else {
     groups = "groups";
     hosts = "hosts";
@@ -186,7 +189,7 @@ int trusts_loaddb(void) {
     }
   }
 
-  createtrusttables(0);
+  createtrusttables(TABLES_REGULAR);
 
   loaderror = 0;
 

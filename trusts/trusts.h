@@ -15,6 +15,10 @@
 #define TRUSTHOSTLEN 100
 #define MAXTGEXTS 5
 
+#define TABLES_REGULAR 0
+#define TABLES_MIGRATION 1
+#define TABLES_REPLICATION 2
+
 struct trustmigration;
 
 struct trusthost;

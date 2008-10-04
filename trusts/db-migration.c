@@ -34,7 +34,7 @@ int trusts_migration_start(TrustDBMigrationCallback callback, void *tag) {
   cbd->tag = tag;
   cbd->hostid = 1;
 
-  createtrusttables(1);
+  createtrusttables(TABLES_MIGRATION);
   trustsdb->squery(trustsdb, "DELETE FROM ?", "T", "migration_groups");
   trustsdb->squery(trustsdb, "DELETE FROM ?", "T", "migration_hosts");
 
