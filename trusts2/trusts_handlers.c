@@ -62,7 +62,7 @@ void trusts_hook_newuser(int hook, void *arg) {
       if( (tg->currenton + 1) > tg->maxclones) {
         /* user exceeds trust group limit - disconnect */
         //killuser(NULL, np, "USER: Exceeding Trustgroup Limit.");
-        controlwall(NO_OPER, NL_TRUSTS, "KILL TG %lu: Excedding trustgroup limit (%d / %d) for %s!%s@%s",tg->id, (tg->currenton + 1), tg->maxclones, np->nick, np->ident, np->host->name->content);
+        controlwall(NO_OPER, NL_TRUSTS, "KILL TG %lu: Exceeding trustgroup limit (%d / %d) for %s!%s@%s",tg->id, (tg->currenton + 1), tg->maxclones, np->nick, np->ident, np->host->name->content);
       }
     }
     if ( np->ident[0] == '~')  {

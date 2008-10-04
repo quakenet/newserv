@@ -127,7 +127,7 @@ trustgroupidentcount_t* findtrustgroupcountbyident(char *ident, trustgroup_t *t)
 
   for(tgi=trustgroupidentcounttable[trusts_gettrustgroupidenthash(ident)]; tgi; tgi = (trustgroupidentcount_t *)tgi->next) {
     if(tgi->trustgroup == t) {
-      if(ircd_strcmp(tgi->ident->content,ident)==0) {
+      if(strcmp(tgi->ident->content,ident)==0) {
         return tgi;
       }
     }
