@@ -256,7 +256,7 @@ void _init(void) {
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
 
-  ps_logfile=fopen("proxyscan.log","a");
+  ps_logfile=fopen("log/proxyscan.log","a");
 }
 
 void registerproxyscannick(void *arg) {

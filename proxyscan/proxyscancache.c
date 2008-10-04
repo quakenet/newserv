@@ -75,7 +75,7 @@ void dumpcachehosts(void *arg) {
   foundproxy *fpp;
   patricia_node_t *node;
 
-  if ((fp=fopen("cleanhosts","w"))==NULL) {
+  if ((fp=fopen("data/cleanhosts","w"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for writing!");
     return;
   }
@@ -129,7 +129,7 @@ void loadcachehosts() {
   unsigned char bits;
   patricia_node_t *node;
 
-  if ((fp=fopen("cleanhosts","r"))==NULL) {
+  if ((fp=fopen("data/cleanhosts","r"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for reading!");
     return;
   }

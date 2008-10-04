@@ -40,11 +40,11 @@ void reopen_logfile(int hooknum, void *arg) {
   if (logfile)
     fclose(logfile);
   
-  logfile=fopen("newserv.log","a");
+  logfile=fopen("log/newserv.log","a");
 }
 
 void init_logfile() {
-  logfile=fopen("newserv.log","a");
+  logfile=fopen("log/newserv.log","a");
   registerhook(HOOK_CORE_SIGUSR1, reopen_logfile);
 }
 
