@@ -68,8 +68,8 @@ void proxyscan_newnick(int hooknum, void *arg) {
     }
 
     /* set a SHORT gline - if they really have an open proxy the gline will be re-set, with a new ID */
-    irc_send("%s GL * +*@%s 600 :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	     mynumeric->content,IPtostr(np->p_ipaddr),chp->glineid);
+    irc_send("%s GL * +*@%s 600 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
+	     mynumeric->content,IPtostr(np->p_ipaddr),(intmax_t)getnettime(), chp->glineid);
 
     chp->lastscan=time(NULL);
     chp->proxies=NULL;
