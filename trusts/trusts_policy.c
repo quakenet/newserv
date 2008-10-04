@@ -9,14 +9,14 @@ static void policycheck(int hooknum, void *arg) {
   nick *np = args[0];
   long moving = (long)args[1];
   trusthost *th = gettrusthost(np);
-  trustgroup *tg = th;
+  trustgroup *tg;
 
   if(moving)
     return;
 
   if(!th) {
     if(np->ipnode->usercount > 5)
-      controlwall(NO_OPER, NL_TRUSTS, "Hard limit exceeded on IP: %s (untrusted) %d connected, 5 max.", irc_in_addr_v4_to_int(&(np->p_ipaddr)), np->ipnode->usercount);
+      controlwall(NO_OPER, NL_TRUSTS, "Hard limit exceeded on IP: %s (untrusted) %d connected, 5 max.", IPtostr(np->p_ipaddr), np->ipnode->usercount);
     return;
   }
 
