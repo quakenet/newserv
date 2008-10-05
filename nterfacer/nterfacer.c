@@ -23,6 +23,7 @@
 #include "../core/config.h"
 #include "../core/events.h"
 #include "../lib/version.h"
+#include "../core/schedule.h"
 
 #include "nterfacer.h"
 #include "logging.h"
@@ -776,15 +777,50 @@ int ping_handler(struct rline *ri, int argc, char **argv) {
   return ri_final(ri);
 }
 
+struct sched_rline {
+  rline rl;
+  int argc;
+  handler *hl;
+  void *schedule;
+  char argv[];
+};
+
+static const int XMAXARGS = 50;
+
+static void execrline(void *arg) {
+  struct sched_rline *sr = arg;
+  int re, i;
+  char *argv[XMAXARGS], *buf;
+
+  sr->schedule = NULL;
+
+  buf = sr->argv;
+  for(i=0;i<sr->argc;i++) {
+    printf("%s\n", buf);
+    argv[i] = buf;
+    buf+=strlen(buf) + 1;
+  }
+
+  re = (sr->hl->function)(&sr->rl, sr->argc, argv);
+
+  if(re)
+    Error("nterfacer", ERR_WARNING, "sendline: error occured calling %p %d: %s", sr->hl->function, re, request_error(re));
+}
+
 void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rline_callback callback, void *tag) {
   struct service_node *servicep;
   struct rline *prequest;
+  struct sched_rline *sr;
   struct handler *hl;
-  int re;
+  int totallen, i;
+  char *buf;
 
   for(servicep=tree;servicep;servicep=servicep->next)
     if(!strcmp(servicep->name->content, service))
       break;
+
+  if(argc > XMAXARGS)
+    Error("nterfacer", ERR_STOP, "Over maximum arguments.");
 
   if(!servicep) {
     Error("nterfacer", ERR_WARNING, "sendline: service not found: %s", service);
@@ -805,11 +841,27 @@ void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rl
     return NULL;
   }
 
-  prequest = (struct rline *)ntmalloc(sizeof(struct rline));
-  if(!prequest) {
+  /* we have to create a copy of the arguments for reentrancy reasons, grr */
+  totallen = 0;
+  for(i=0;i<argc;i++)
+    totallen+=strlen(argv[i]) + 1;
+
+  /* HACKY but allows existing code to still work */
+  sr = (struct sched_rline *)ntmalloc(sizeof(struct sched_rline) + totallen);
+  if(!sr) {
     MemError();
     return NULL;
   }
+  prequest = &sr->rl;
+
+  sr->argc = argc;
+  buf = sr->argv;
+  for(i=0;i<argc;i++) {
+    size_t len = strlen(argv[i]) + 1;
+    memcpy(buf, argv[i], len);
+    buf+=len;
+  }
+  sr->hl = hl;
 
   prequest->service = servicep;
   prequest->handler = hl;
@@ -817,25 +869,23 @@ void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rl
   prequest->curpos = prequest->buf;
   prequest->tag = tag;
   prequest->id = 0;
-  prequest->next = rlines;
   prequest->socket = NULL;
   prequest->callback = callback;
 
+  prequest->next = rlines;
   rlines = prequest;
-  re = (hl->function)(prequest, argc, argv);
 
-  if(re) {
-    Error("nterfacer", ERR_WARNING, "sendline: error occured calling %s %d: %s", command, re, request_error(re));
-    return NULL;
-  }
+  scheduleoneshot(time(NULL), execrline, sr);
 
-  return (void *)prequest;
+  return (void *)sr;
 }
 
 void nterfacer_freeline(void *tag) {
-  struct rline *prequest = tag;
+  struct sched_rline *prequest = tag;
 
-  prequest->callback = NULL;
+  prequest->rl.callback = NULL;
+  if(prequest->schedule)
+    deleteschedule(prequest->schedule, execrline, NULL);
 }
 
 #define MAX_LINES 8192
