@@ -55,20 +55,20 @@ void trusts_hook_newuser(int hook, void *arg) {
     tg = tgh->trustgroup;
     if(((((int)(np->ipnode->usercount))) > tg->maxperip) && tg->maxperip ) {
       /* user exceed ip trust limit - disconnect */
-      controlwall(NO_OPER, NL_TRUSTS, "KILL TG %lu: Exceeding IP limit (%d / %d) for %s!%s@%s", tg->id, (((int)(np->ipnode->usercount))), tg->maxperip, np->nick, np->ident, np->host->name->content);
+      controlwall(NO_OPER, NL_TRUSTS, "TG %lu: Exceeding IP limit (%d / %d) for %s!%s@%s (%s)", tg->id, (((int)(np->ipnode->usercount))), tg->maxperip, np->nick, np->ident, np->host->name->content, removeusers == 1 ? "disconnected": "ignored");
       //killuser(NULL, np, "USER: Exceeding IP Limit.");
     }
     if( tg->maxclones >0 ) {
       if( (tg->currenton + 1) > tg->maxclones) {
         /* user exceeds trust group limit - disconnect */
         //killuser(NULL, np, "USER: Exceeding Trustgroup Limit.");
-        controlwall(NO_OPER, NL_TRUSTS, "KILL TG %lu: Exceeding trustgroup limit (%d / %d) for %s!%s@%s",tg->id, (tg->currenton + 1), tg->maxclones, np->nick, np->ident, np->host->name->content);
+        controlwall(NO_OPER, NL_TRUSTS, "TG %lu: Exceeding trustgroup limit (%d / %d) for %s!%s@%s (%s)",tg->id, (tg->currenton + 1), tg->maxclones, np->nick, np->ident, np->host->name->content, removeusers == 1 ? "disconnected": "ignored");
       }
     }
     if ( np->ident[0] == '~')  {
       /* non-ident user */
       if (tg->enforceident ) {
-        controlwall(NO_OPER, NL_TRUSTS, "KILL TG %lu: Ident Required for %s!%s@%s", tg->id, np->nick, np->ident, np->host->name->content);
+        controlwall(NO_OPER, NL_TRUSTS, "TG %lu: Ident Required for %s!%s@%s (%s)", tg->id, np->nick, np->ident, np->host->name->content, removeusers == 1 ? "disconnected": "ignored");
         //killuser(NULL, np, "USER: Ident Required From Your Host.");
         /*TODO: add short gline here - ~*@%s - "IDENTD required from your host", "MissingIDENT" */
       }

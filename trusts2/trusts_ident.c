@@ -16,7 +16,7 @@ void increment_ident_count(nick *np, trustgroup_t *tg) {
   if(identcnt) {
     /* ident exists */
     if( tg->maxperident && (identcnt->currenton+1) > tg->maxperident) {
-      trust_debug("NEWNICK TRUSTED BAD USER: Exceeding User (%s) Ident Limit (%d/%d)",np->ident, identcnt->currenton+1, tg->maxperident);
+      controlwall(NO_OPER, NL_TRUSTS, "TG %lu: Exceeded Ident Limit (%d/%d) for %s!%s@%s (%s)",tg->id, identcnt->currenton+1, tg->maxperident, np->nick, np->ident, np->host->name->content, removeusers == 1 ? "disconnected": "ignored");
       //killuser(NULL, np, "USER: Exceeding User Ident Limit.");
     }
     identcnt->currenton++;

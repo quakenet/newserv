@@ -226,6 +226,9 @@ void trusts_loadtrustblocks(DBConn *dbconn, void *arg) {
   Error("trusts",ERR_INFO,"Loaded %d trustblocks (highest ID was %lu)",rows,trusts_lasttrustblockid);
 
   dbclear(pgres);
+  
+  trusts_loaded = 1;
+  triggerhook(HOOK_TRUSTS_DBLOADED, NULL);
 }
 
 
