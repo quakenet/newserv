@@ -15,8 +15,6 @@
 #include "../lib/strlfunc.h"
 #include "xsb.h"
 
-#undef XSB_DEBUG
-
 static const char *DEFAULT_SERVICE_MASKS[] = { "services*.*.quakenet.org", (char *)0 };
 
 static array defaultservicemasks_a;
