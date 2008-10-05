@@ -4,8 +4,24 @@
 #include "../control/control.h"
 #include "trusts.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
-void trusts_cmdinit() {
+void _init(void) {
+  registerhook(HOOK_TRUSTS_DBLOADED, trusts_cmdinit);
+
+  /* Now that the database is in a separate module it might be loaded already. */
+  if (trusts_loaded)
+    trusts_cmdinit(HOOK_TRUSTS_DBLOADED, NULL);
+
+}
+
+void _fini(void) {
+  deregisterhook(HOOK_TRUSTS_DBLOADED, trusts_cmdinit);
+  trusts_cmdfini();
+}
+
+void trusts_cmdinit(int hooknum, void *arg) {
   registercontrolcmd("trustgroupadd",10,7,trust_groupadd);
   registercontrolcmd("trustgroupmodify",10,4,trust_groupmodify);
   registercontrolcmd("trustgroupdel",10,2,trust_groupdel);
@@ -21,6 +37,8 @@ void trusts_cmdinit() {
 
   registercontrolcmd("truststats",10,2,trust_stats);
   registercontrolcmd("trustdump",10,2,trust_dump);
+
+  removeusers = 1;
 }
 
 void trusts_cmdfini() {
@@ -39,6 +57,8 @@ void trusts_cmdfini() {
 
   deregistercontrolcmd("truststats",trust_stats);
   deregistercontrolcmd("trustdump",trust_dump);
+
+  removeusers = 0;
 }
 
 /*TODO*/

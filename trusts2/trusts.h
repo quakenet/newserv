@@ -27,6 +27,8 @@
 #define TRUSTS_MAXGROUPNAMELEN 20
 
 extern int tgh_ext;
+extern int removeusers;
+extern int trusts_loaded;
 
 typedef struct trusthost_s {
         /* Details */
@@ -124,7 +126,7 @@ trustgroupidentcount_t* findtrustgroupcountbyident(char *ident, trustgroup_t *t)
 
 trustgroupidentcount_t *getnewtrustgroupidentcount(trustgroup_t *tg, char *ident);
 
-unsigned long trusts_lasttrustgroupid, trusts_lasttrusthostid, trusts_lasttrustblockid;
+extern unsigned long trusts_lasttrustgroupid, trusts_lasttrusthostid, trusts_lasttrustblockid;
 
 void trust_debug(char *format, ...);
 

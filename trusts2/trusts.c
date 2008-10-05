@@ -5,9 +5,14 @@
 #include "../core/nsmalloc.h"
 
 int tgh_ext;
-static int trusts_loaded;
+unsigned long trusts_lasttrustgroupid;
+unsigned long trusts_lasttrusthostid;
+unsigned long trusts_lasttrustblockid;
+int trusts_loaded;
+int removeusers = 0;
 
 static void trusts_status(int hooknum, void *arg);
+void trustsfinishinit(int hooknum, void *arg);
 
 void _init(void) {
   trusts_hash_init();
@@ -21,9 +26,17 @@ void _init(void) {
   if ( !trusts_load_db()) {
     return;
   }
-  trusts_loaded = 1;
  
-  trusts_cmdinit();
+  registerhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
+
+  if (trusts_loaded) 
+    trustsfinishinit(HOOK_TRUSTS_DBLOADED, NULL);
+}
+
+void trustsfinishinit(int hooknum, void *arg) {
+  Error("trusts",ERR_INFO,"Database loaded, finishing initialisation.");
+
+  deregisterhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
 
   registerhook(HOOK_NICK_NEWNICK, &trusts_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &trusts_hook_lostuser);
@@ -43,8 +56,6 @@ void _fini(void) {
   releasenodeext(tgh_ext); 
 
   if ( trusts_loaded ) {
-    trusts_cmdfini();
-
     deregisterhook(HOOK_NICK_NEWNICK, &trusts_hook_newuser);
     deregisterhook(HOOK_NICK_LOSTNICK, &trusts_hook_lostuser);
 
