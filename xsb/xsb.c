@@ -189,9 +189,9 @@ static void xsb_send(const char *format, ...) {
   if(controlnum[0]) {
     directsend(buf);
   } else {
-    struct messagequeue *q = (struct messagequeue *)malloc(sizeof(struct messagequeue) + len);
+    struct messagequeue *q = (struct messagequeue *)malloc(sizeof(struct messagequeue) + len + 5);
     
-    strlcpy(q->buf, buf, len + 1);
+    strlcpy(q->buf, buf, len + 2);
     q->next = NULL;
     if(tail) {
       tail->next = q;
