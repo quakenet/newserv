@@ -5,6 +5,8 @@
 #include "../core/nsmalloc.h"
 
 int tgh_ext;
+int tgb_ext;
+
 unsigned long trusts_lasttrustgroupid;
 unsigned long trusts_lasttrusthostid;
 unsigned long trusts_lasttrustblockid;
@@ -19,7 +21,13 @@ void _init(void) {
 
   tgh_ext = registernodeext("trusthost");
   if ( !tgh_ext ) {
-    Error("trusts", ERR_FATAL, "Could not register a required node extension");
+    Error("trusts", ERR_FATAL, "Could not register a required node extension (trusthost)");
+    return;
+  }
+
+  tgb_ext = registernodeext("trustblock");
+  if ( !tgb_ext ) {
+    Error("trusts", ERR_FATAL, "Could not register a required node extension (trustblock)");
     return;
   }
 
@@ -47,13 +55,17 @@ void trustsfinishinit(int hooknum, void *arg) {
 void _fini(void) {
   trusthost_t *thptr;
   trustgroupidentcount_t *t;
+
   int i;
   for ( i = 0; i < TRUSTS_HASH_HOSTSIZE ; i++ ) {
     for ( thptr = trusthostidtable[i]; thptr; thptr = thptr-> nextbyid ) {
       derefnode(iptree,thptr->node);
     }
   }
-  releasenodeext(tgh_ext); 
+  if (tgh_ext)
+    releasenodeext(tgh_ext); 
+  if (tgb_ext)
+    releasenodeext(tgb_ext);
 
   if ( trusts_loaded ) {
     deregisterhook(HOOK_NICK_NEWNICK, &trusts_hook_newuser);
@@ -69,6 +81,8 @@ void _fini(void) {
       }
     }
   }
+
+  trustblock_freeall();
 
   /* @@@ CLOSE DB */
 
