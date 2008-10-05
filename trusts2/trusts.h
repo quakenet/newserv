@@ -27,6 +27,7 @@
 #define TRUSTS_MAXGROUPNAMELEN 20
 
 extern int tgh_ext;
+extern int tgb_ext;
 extern int removeusers;
 extern int trusts_loaded;
 
@@ -177,6 +178,12 @@ void trusthost_addcounters(trusthost_t* tgh);
 trusthost_t* trusthostadd(patricia_node_t *node, trustgroup_t* tg, time_t expire);
 void trusthost_expire ( trusthost_t *th);
 
+/* trusts blocks */
+trustblock_t *createtrustblock(unsigned long id, patricia_node_t* node, unsigned long ownerid, time_t expire, char *reason_private, char *reason_public);
+trustblock_t *createtrustblockfromdb(unsigned long id, patricia_node_t* node, unsigned long ownerid, time_t expire, time_t startdate, char *reason_private, char *reason_public);
+void trustblock_free(trustblock_t* t);
+void trustblock_expire( trustblock_t *tb);
+
 /* trusts idents */
 void increment_ident_count(nick *np, trustgroup_t *tg);
 void decrement_ident_count(nick *np, trustgroup_t *tg);
@@ -189,17 +196,17 @@ void increment_trust_ipnode(patricia_node_t *node);
 void trusts_cmdinit();
 void trusts_cmdfini();
 
-int trust_groupadd(void *source, int cargc, char **cargv) ;
-int trust_groupmodify(void *source, int cargc, char **cargv) ;
-int trust_groupdel(void *source, int cargc, char **cargv) ;
-int trust_denyadd(void *source, int cargc, char **cargv) ;
-int trust_denydel(void *source, int cargc, char **cargv) ;
-int trust_denylist(void *source, int cargc, char **cargv) ;
-int trust_del(void *source, int cargc, char **cargv) ;
-int trust_add(void *source, int cargc, char **cargv) ;
-int trust_comment(void *source, int cargc, char **cargv) ;
+int trust_groupadd(void *source, int cargc, char **cargv);
+int trust_groupmodify(void *source, int cargc, char **cargv);
+int trust_groupdel(void *source, int cargc, char **cargv);
+int trust_denyadd(void *source, int cargc, char **cargv);
+int trust_denycomment(void *source, int cargc, char **cargv);
+int trust_denydel(void *source, int cargc, char **cargv);
+int trust_del(void *source, int cargc, char **cargv);
+int trust_add(void *source, int cargc, char **cargv);
+int trust_comment(void *source, int cargc, char **cargv);
 
 int trust_stats(void *source, int cargc, char **cargv);
-int trust_dump(void *source, int cargc, char **cargv) ;
+int trust_dump(void *source, int cargc, char **cargv);
 #endif
 

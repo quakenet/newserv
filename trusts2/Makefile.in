@@ -7,6 +7,6 @@ LDFLAGS+=$(LIBDBAPI)
 
 all: trusts.so trusts_commands.so
 
-trusts.so: trusts_ident.o trusts_hosts.o trusts_groups.o trusts_alloc.o trusts.o trusts_handlers.o trusts_hash.o trusts_db.o
+trusts.so: trusts_ident.o trusts_hosts.o trusts_groups.o trusts_alloc.o trusts.o trusts_handlers.o trusts_blocks.o trusts_hash.o trusts_db.o
 trusts_commands.so: trusts_commands.o
  

@@ -125,6 +125,11 @@ void trusts_loadtrustgroups(DBConn *dbconn, void *arg) {
                      /*created*/     strtoul(dbgetvalue(pgres,11),NULL,10),
                      /*modified*/    strtoul(dbgetvalue(pgres,12),NULL,10)
                      );
+    if (!t) {
+      Error("trusts", ERR_ERROR, "Error loading trustblock.");
+      return;
+    }
+
     if(t->id > trusts_lasttrustgroupid)
       trusts_lasttrustgroupid = t->id;
 
@@ -177,6 +182,10 @@ void trusts_loadtrusthosts(DBConn *dbconn, void *arg) {
                     /*created*/   strtoul(dbgetvalue(pgres,9),NULL,10),
                     /*modified*/ strtoul(dbgetvalue(pgres,8),NULL,10)
                   );
+    if (!t) {
+      Error("trusts", ERR_ERROR, "Error loading trusthost.");
+      return;
+    }
     node = 0;
     if(t->id > trusts_lasttrusthostid)
       trusts_lasttrusthostid = t->id;
@@ -194,6 +203,9 @@ void trusts_loadtrustblocks(DBConn *dbconn, void *arg) {
   DBResult *pgres = dbgetresult(dbconn);
   int rows=0;
   trustblock_t *t;
+  struct irc_in_addr sin;
+  unsigned char bits;
+  patricia_node_t *node;
 
   if(!dbquerysuccessful(pgres)) {
     Error("trusts", ERR_ERROR, "Error loading trustblock list.");
@@ -204,22 +216,29 @@ void trusts_loadtrustblocks(DBConn *dbconn, void *arg) {
   trusts_lasttrustblockid = 1;
 
   while(dbfetchrow(pgres)) {
-//    t = gettrustblock();
-    if(!t)
-      Error("trusts", ERR_ERROR, "Unable to load trust block");
+    /*node*/
+    ipmask_parse(dbgetvalue(pgres,1), &sin, &bits);
+    node  = refnode(iptree, &sin, bits);
 
-    t->id = strtoul(dbgetvalue(pgres,0),NULL,10);
-    /* host */
-    t->ownerid = strtoul(dbgetvalue(pgres,3),NULL,10);
-    t->expire = strtoul(dbgetvalue(pgres,11),NULL,10);
-    t->startdate = strtoul(dbgetvalue(pgres,2),NULL,10);
-    /* reason_private */
-    /* reason_public */
+    t = createtrustblockfromdb(
+      /* id */      strtoul(dbgetvalue(pgres,0),NULL,10),
+      /* node */    node,
+      /* ownerid */ strtoul(dbgetvalue(pgres,2),NULL,10),
+      /* expire */  strtoul(dbgetvalue(pgres,3),NULL,10), 
+      /* startdate*/ strtoul(dbgetvalue(pgres,4),NULL,10),
+      /* reason_private */ dbgetvalue(pgres,5),
+      /* reason_public */ dbgetvalue(pgres,6)
+     );
+    if (!t) {
+      Error("trusts", ERR_ERROR, "Error loading trustblock.");
+      return;
+    }
+
+    node->exts[tgb_ext] = t;
 
     if(t->id > trusts_lasttrustblockid)
       trusts_lasttrustblockid = t->id;
 
-    //trusts_addtrustgrouptohash(t);
     rows++;
   }
 
@@ -260,11 +279,17 @@ void trustsdb_deletetrusthost(trusthost_t *th) {
 
 /* trust block */
 void trustsdb_addtrustblock(trustblock_t *tb) {
-  dbquery("INSERT INTO trusts.blocks ( blockid,block,owner,expires,startdate,reason_private,reason_public) VALUES (%lu,'%s/%d',%lu,%lu,%lu,'%s','%s')",tb->id, IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, tb->reason_private->content, tb->reason_public->content);
+  dbquery("INSERT INTO trusts.blocks ( blockid,block,owner,expires,startdate,reason_private,reason_public) VALUES (%lu,'%s/%d',%lu,%lu,%lu,'%s','%s')",tb->id, IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, tb->reason_private ? tb->reason_private->content : "", tb->reason_public ? tb->reason_public->content : "");
 }
 
 void trustsdb_updatetrustblock(trustblock_t *tb) {
-  dbquery("UPDATE trusts.blocks SET blockid=%lu,block='%s/%d',owner=%lu,expires=%lu,startdate=%lu,reason_private='%s',reason_public='%s'", tb->id, IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, tb->reason_private->content, tb->reason_public->content);
+  char escprivate[2*512+1];
+  char escpublic[2*512+1];
+
+  dbescapestring(escprivate,tb->reason_private ? tb->reason_private->content : "", strlen(tb->reason_private ? tb->reason_private->content : ""));
+  dbescapestring(escpublic,tb->reason_public ? tb->reason_public->content : "", strlen(tb->reason_public ? tb->reason_public->content : ""));
+
+  dbquery("UPDATE trusts.blocks SET block='%s/%d',owner=%lu,expires=%lu,startdate=%lu,reason_private='%s',reason_public='%s' WHERE blockid=%lu", IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, escprivate, escpublic, tb->id);
 }
 
 void trustsdb_deletetrustblock(trustblock_t *tb) {
