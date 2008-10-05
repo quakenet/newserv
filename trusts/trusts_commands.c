@@ -3,6 +3,7 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
+#include "../core/nsmalloc.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
@@ -40,25 +41,33 @@ static void traverseandmark(unsigned int marker, trusthost *th) {
   }
 }
 
+static void insertth(array *parents, trusthost *th) {
+  int i;
+  trusthost **p2 = (trusthost **)(parents->content);
+
+  /* this eliminates common subtrees */
+  for(i=0;i<parents->cursi;i++)
+    if(p2[i] == th)
+      break;
+
+  if(i == parents->cursi) {
+    int pos = array_getfreeslot(parents);
+    ((trusthost **)(parents->content))[pos] = th;
+  }
+}
+
 static void marktree(array *parents, unsigned int marker, trusthost *th) {
   trusthost *pth;
+  int parentcount = 0;
 
   for(pth=th->parent;pth;pth=pth->next) {
-    trusthost **p2 = (trusthost **)(parents->content);
-    int i;
-
-    /* this eliminates common subtrees */
-    for(i=0;i<parents->cursi;i++)
-      if(p2[i] == pth)
-        break;
-
-    if(i == parents->cursi) {
-      int pos = array_getfreeslot(parents);
-      ((trusthost **)(parents->content))[pos] = pth;
-    }
+    insertth(parents, pth);
 
     pth->marker = marker;
   }
+
+  if(parentcount == 0)
+    insertth(parents, th);
 
   /* sadly we need to recurse down */
   traverseandmark(marker, th);
@@ -83,7 +92,7 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->group->id, th->group->name->content);
   }
 
-  controlreply(np, "%s%s%s %-10d %-10d %-20s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);  
+  controlreply(np, "%s%s%s %-10d %-10d %-21s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);  
 
   for(th=th->children;th;th=th->nextbychild)
     outputtree(np, marker, originalgroup, th, depth + 1);
@@ -123,7 +132,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
 
-  controlreply(sender, "Host                 Current    Max        Last seen           Group ID   Group name");
+  controlreply(sender, "Host                 Current    Max        Last seen            Group ID   Group name");
 
   marker = nextthmarker();
   array_init(&parents, sizeof(trusthost *));
@@ -142,6 +151,76 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int comparetgs(const void *_a, const void *_b) {
+  const trustgroup *a = _a;
+  const trustgroup *b = _b;
+
+  if(a->id > b->id)
+    return 1;
+  if(a->id < b-> id)
+    return -1;
+  return 0;
+}
+
+static int trusts_cmdtrustdump(void *source, int argc, char **argv) {
+  trusthost *th;
+  trustgroup *tg, **atg;
+  unsigned int wanted, max, maxid, totalcount, i, groupcount, linecount;
+  nick *np = source;
+
+  if((argc < 2) || (argv[0][0] != '#'))
+    return CMD_USAGE;
+
+  wanted = atoi(&argv[0][1]);
+  max = atoi(argv[1]);
+
+  for(maxid=totalcount=0,tg=tglist;tg;tg=tg->next) {
+    if(totalcount == 0 || tg->id > maxid)
+      maxid = tg->id;
+
+    totalcount++;
+  }
+
+  if(maxid > totalcount) {
+    controlreply(np, "Start ID cannot exceed current maximum group ID (#%u)", maxid);
+    return CMD_OK;
+  }
+
+  atg = nsmalloc(POOL_TRUSTS, sizeof(trusthost *) * totalcount);
+  if(!atg) {
+    controlreply(np, "Memory error.");
+    return CMD_ERROR;
+  }
+
+  for(i=0,tg=tglist;i<totalcount&&th;tg=tg->next,i++)
+    atg[i] = tg;
+
+  qsort(atg, totalcount, sizeof(trustgroup *), comparetgs);
+
+  for(i=0;i<totalcount;i++)
+    if(atg[i]->id >= wanted)
+      break;
+
+  for(groupcount=linecount=0;i<totalcount;i++) {
+    linecount++;
+    groupcount++;
+
+    controlreply(np, "G,%s", dumptg(atg[i], 1));
+
+    for(th=atg[i]->hosts;th;th=th->next) {
+      linecount++;
+      controlreply(np, "H,%s", dumpth(th, 1));
+    }
+
+    if(--max == 0)
+      break;
+  }
+  nsfree(POOL_TRUSTS, atg);
+
+  controlreply(np, "End of list, %u groups and %u lines returned.", groupcount, linecount);
+  return CMD_OK;
+}
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -150,6 +229,7 @@ static void registercommands(int hooknum, void *arg) {
   commandsregistered = 1;
 
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|id>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustdump", NO_OPER, 2, trusts_cmdtrustdump, "Usage: trustdump <#id> <number>");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -158,6 +238,7 @@ static void deregistercommands(int hooknum, void *arg) {
   commandsregistered = 0;
 
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
+  deregistercontrolcmd("trustdump", trusts_cmdtrustdump);
 }
 
 void _init(void) {

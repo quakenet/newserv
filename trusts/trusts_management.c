@@ -3,6 +3,7 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
+#include "../core/config.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
@@ -73,6 +74,8 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   }
 
   controlreply(sender, "Host added.");
+  triggerhook(HOOK_TRUSTS_ADDHOST, th);
+
   /* TODO: controlwall */
 
   return CMD_OK;
@@ -83,7 +86,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
   unsigned int howmany, maxperident, enforceident;
   time_t howlong;
-  trustgroup *tg;
+  trustgroup *tg, itg;
 
   if(cargc < 6)
     return CMD_USAGE;
@@ -135,13 +138,34 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
 
   snprintf(createdby, sizeof(createdby), "#%s", sender->authname);
 
-  tg = tg_new(name, howmany, enforceident, maxperident, howlong + time(NULL), createdby, contact, comment);
+  itg.trustedfor = howmany;
+  itg.mode = enforceident;
+  itg.maxperident = maxperident;
+  itg.expires = howlong + time(NULL);
+  itg.createdby = getsstring(createdby, NICKLEN);
+  itg.contact = getsstring(contact, CONTACTLEN);
+  itg.comment = getsstring(comment, COMMENTLEN);
+  itg.name = getsstring(name, TRUSTNAMELEN);
+
+  if(itg.createdby && itg.contact && itg.comment && itg.name) {
+    tg = tg_new(&itg);
+  } else {
+    tg = NULL;
+  }
+
+  freesstring(itg.createdby);
+  freesstring(itg.comment);
+  freesstring(itg.name);
+  freesstring(itg.contact);
+
   if(!tg) {
     controlreply(sender, "An error occured adding the trustgroup.");
     return CMD_ERROR;
   }
 
   controlreply(sender, "Group added.");
+  triggerhook(HOOK_TRUSTS_ADDGROUP, tg);
+
   /* TODO: controlwall */
 
   return CMD_OK;
@@ -167,7 +191,19 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustadd", trusts_cmdtrustadd);
 }
 
+static int loaded;
+
 void _init(void) {
+  sstring *m;
+
+  m = getconfigitem("trusts", "master");
+  if(!m || (atoi(m->content) != 1)) {
+    Error("trusts_management", ERR_ERROR, "Not a master server, not loaded.");
+    return;
+  }
+
+  loaded = 1;
+
   registerhook(HOOK_TRUSTS_DB_LOADED, registercommands);
   registerhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
@@ -176,6 +212,9 @@ void _init(void) {
 }
 
 void _fini(void) {
+  if(!loaded)
+    return;
+
   deregisterhook(HOOK_TRUSTS_DB_LOADED, registercommands);
   deregisterhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 

@@ -20,7 +20,7 @@ trusts_management.so: trusts_management.o
 
 trusts_master.so: trusts_master.o
 
-trusts_slave.so: trusts_slave.o
+trusts_slave.so: trusts_slave.o db-slave.o
 
 dirs: $(TRUSTSDIRS)
 	ln -sf */*.so .

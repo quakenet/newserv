@@ -3,6 +3,7 @@
 #include "../core/hooks.h"
 #include "../core/error.h"
 #include "../core/nsmalloc.h"
+#include "../server/server.h"
 #include "trusts.h"
 
 void trusts_registerevents(void);
@@ -102,3 +103,11 @@ void releasetgext(int index) {
   for(tg=tglist;tg;tg=tg->next)
     tg->exts[index] = NULL;
 }
+
+int trusts_fullyonline(void) {
+  if(myhub == -1)
+    return 0;
+
+  return serverlist[myhub].linkstate == LS_LINKED;
+}
+

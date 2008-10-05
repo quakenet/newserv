@@ -81,6 +81,10 @@
 #define HOOK_TRUSTS_LOSTNICK       903 /* Argument is void*[2] (nick*, long) */
 #define HOOK_TRUSTS_NEWGROUP       904 /* Argument is trustgroup* */
 #define HOOK_TRUSTS_LOSTGROUP      905 /* Argument is trustgroup* */
+#define HOOK_TRUSTS_ADDGROUP       906 /* Argument is trustgroup* */
+#define HOOK_TRUSTS_DELGROUP       907 /* Argument is trustgroup* */
+#define HOOK_TRUSTS_ADDHOST        908 /* Argument is trusthost* */
+#define HOOK_TRUSTS_DELHOST        909 /* Argument is trusthost* */
 
 #define PRIORITY_DEFAULT           0
 
