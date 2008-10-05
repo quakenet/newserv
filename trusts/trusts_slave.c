@@ -359,7 +359,7 @@ static void checksynced(void *arg) {
 }
 
 static void __serverlinked(int hooknum, void *arg) {
-  int servernum = (int)arg;
+  int servernum = (int)(long)arg;
 
   if(!ircd_strcmp(serverlist[servernum].name->content, masterserver->content)) {
     syncing = synced = 0;
