@@ -796,7 +796,6 @@ static void execrline(void *arg) {
 
   buf = sr->argv;
   for(i=0;i<sr->argc;i++) {
-    printf("%s\n", buf);
     argv[i] = buf;
     buf+=strlen(buf) + 1;
   }
