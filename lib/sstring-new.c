@@ -32,7 +32,7 @@ static int allocs;
 static void sstringstats(int hooknum, void *arg);
 static void salloc(void);
 
-#ifndef USE_VALGRIND
+#ifndef SSTRING_MMAP
 
 #define sunprotect(x)
 #define sunprotectb(x)
@@ -59,7 +59,7 @@ static void *mblock_head;
 #define MAP_ANON MAP_ANONYMOUS
 #endif
 
-#endif /* USE_VALGRIND */
+#endif /* SSTRING_MMAP */
 
 void initsstring() {
   int i;
@@ -80,7 +80,7 @@ void initsstring() {
   registerhook(HOOK_CORE_STATSREQUEST,&sstringstats);
 }
 
-#ifndef USE_VALGRIND
+#ifndef SSTRING_MMAP
 void finisstring() {
   nsfreeall(POOL_SSTRING);
 }
@@ -89,7 +89,7 @@ static void salloc(void) {
   ssmem=(char *)nsmalloc(POOL_SSTRING, SSTRING_ALLOC);
   ssmemfree=SSTRING_ALLOC;
 }
-#endif /* USE_VALGRIND */
+#endif /* SSTRING_MMAP */
 
 sstring *findsstring(const char *str) {
   unsigned int hash=crc32(str)%SSTRING_HASHSIZE;
@@ -118,7 +118,7 @@ void sstring_dehash(sstring *ss) {
       if (!ssp) {
         sshash[hash]=ss->next;
       } else {
-#ifndef USE_VALGRIND
+#ifndef SSTRING_MMAP
         ssp->next=ss->next;
 #else
         if (ssp->block!=ss->block) {
@@ -205,7 +205,7 @@ sstring *getsstring(const char *inputstr, int maxlen) {
       if (ssmemfree>sizeof(sstring)) {
         retval=(sstring *)ssmem;
         sunprotectb(mblock);
-#ifdef USE_VALGRIND
+#ifdef SSTRING_MMAP
         retval->block=mblock;
 #endif
         retval->alloc=(ssmemfree-sizeof(sstring));
@@ -242,7 +242,7 @@ sstring *getsstring(const char *inputstr, int maxlen) {
   strcpy(retval->content,strbuf);
   retval->refcount=1;
   
-#ifdef USE_VALGRIND 
+#ifdef SSTRING_MMAP 
   if(!foreignblock)
     retval->block = mblock;
 #endif
@@ -307,7 +307,7 @@ int sstringcompare(sstring *ss1, sstring *ss2) {
   return strncmp(ss1->content, ss2->content, ss1->length);
 }
 
-#ifdef USE_VALGRIND
+#ifdef SSTRING_MMAP
 void finisstring() {
   struct mblock_list *c, *n;
   for (c=mblock_head;c;c=n) {
@@ -328,4 +328,4 @@ static void salloc(void) {
   ssmem=(char *)mblock + sizeof(struct mblock_list);
   ssmemfree=SSTRING_ALLOC-sizeof(struct mblock_list);
 }
-#endif /* USE_VALGRIND */
+#endif /* SSTRING_MMAP */

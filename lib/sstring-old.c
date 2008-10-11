@@ -14,8 +14,6 @@
 #define __USE_GNU
 #include <string.h>
 
-#ifndef USE_VALGRIND
-
 /* List of free stuff */
 sstring *freelist[SSTRING_MAXLEN+1];
 
@@ -189,116 +187,6 @@ void sstringstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,(void *)buf);
   }
 }
-
-#else /* USE_VALGRIND */
-
-#define __USE_MISC
-#include <sys/mman.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-#define MModify(x) mprotect(x, x->s->u.l.alloc, PROT_READ|PROT_WRITE)
-#define MUnmodify(x) mprotect(x, x->s->u.l.alloc, PROT_READ)
-
-typedef struct sstringlist {
-  struct sstringlist *prev;
-  struct sstringlist *next;
-  sstring s[];
-} sstringlist;
-
-static sstringlist *head;
-
-void initsstring() {
-}
-
-void finisstring() {
-  sstringlist *s, *sn;
-
-  /* here we deliberately don't free the pointers so valgrind can tell us where they were allocated, in theory */
-
-  for(s=head;s;s=sn) {
-    sn = s->next;
-
-    MModify(s);
-    s->next = NULL;
-    s->prev = NULL;
-
-    Error("sstring", ERR_WARNING, "sstring of length %d still allocated: %s", s->s->u.l.length, s->s->content);
-  }
-
-  head = NULL;
-}
-
-sstring *getsstring(const char *inputstr, int maxlen) {
-  sstringlist *s;
-  size_t len;
-  char *p;
-  void *m;
-
-  if(!inputstr)
-    return NULL;
-
-  for(p=(char *)inputstr;*p&&maxlen;maxlen--,p++)
-    ; /* empty */
-
-  len = p - inputstr;
-  m=mmap((void *)0, sizeof(sstringlist) + sizeof(sstring) + len + 1, PROT_WRITE|PROT_READ, MAP_PRIVATE|MAP_ANON, -1, 0);
-  s=(sstringlist *)m;
-
-  if(m == MAP_FAILED)
-    s->s->u.l.length = 0;
-
-  s->s->u.l.length = len;
-  s->s->u.l.alloc = sizeof(sstringlist) + sizeof(sstring) + len + 1;
-  s->s->content=(char *)m + sizeof(sstringlist) + sizeof(sstring);
-
-  memcpy(s->s->content, inputstr, len);
-  s->s->content[len] = '\0';
-
-  s->next = head;
-  s->prev = NULL;
-  if(head) {
-    MModify(head);
-    head->prev = s;
-    MUnmodify(head);
-  }
-  head = s;
-
-  MUnmodify(s);
-  return s->s;
-}
-
-void freesstring(sstring *inval) {
-  sstringlist *s;
-  if(!inval)
-    return;
-
-  s = (sstringlist *)inval - 1;
-
-  MModify(s);
-  if(s->prev) {
-    MModify(s->prev);
-    s->prev->next = s->next;
-    MUnmodify(s->prev);
-    if(s->next) {
-      MModify(s->next);
-      s->next->prev = s->prev;
-      MUnmodify(s->prev);
-    }
-  } else {
-    head = s->next;
-    if(head) {
-      MModify(head);
-      head->prev = NULL;
-      MUnmodify(head);
-    }
-  }
-
-  munmap(s, s->s->u.l.alloc);
-}
-#endif
 
 int sstringcompare(sstring *ss1, sstring *ss2) {
   if (ss1->u.l.length != ss2->u.l.length)
