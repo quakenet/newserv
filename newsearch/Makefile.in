@@ -1,6 +1,6 @@
 @include@ @includel@../build.mk@includel@
 
-CFLAGS+=$(INCPCRE) -D_POSIX_SOURCE
+CFLAGS+=$(INCPCRE)
 LDFLAGS+=$(LIBPCRE)
 
 .PHONY: all clean distclean

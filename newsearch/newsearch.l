@@ -4,6 +4,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifndef __POSIX_VISIBLE
+#define fileno(x) 0
+#endif
 
 #include "../lib/sstring.h"
 
