@@ -5,11 +5,11 @@
 #include "../nick/nick.h"
 #include <time.h>
 
-#define MAGICSTRING       "NOTICE AUTH :*** Looking up your hostname\r\n"
-#define MAGICSTRINGLENGTH 42
+#define MAGICSTRING         "NOTICE AUTH :*** Looking up your hostname\r\n"
+#define MAGICSTRINGLENGTH   42
 
-#define PSCAN_MAXSCANS     50
-#define PSCAN_READBUFSIZE (MAGICSTRINGLENGTH * 2)
+#define PSCAN_MAXSCANS      50
+#define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
 
 #define SSTATE_CONNECTING   0
 #define SSTATE_SENTREQUEST  1
