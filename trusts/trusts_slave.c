@@ -7,12 +7,12 @@
 #include "../core/config.h"
 #include "../core/error.h"
 #include "../control/control.h"
-#include "../xsb/xsb.h"
 #include "../lib/sha1.h"
 #include "../lib/hmac.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
 #include "../server/server.h"
+#include "../xsb/xsb.h"
 #include "trusts.h"
 
 static int syncing, synced;
@@ -335,6 +335,14 @@ static int xsb_trdelgroup(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
+static int loaded;
+static void *syncsched;
+
+static void checksynced(void *arg) {
+  if(!synced || !syncing)
+    xsb_broadcast("trrequestsync", NULL, "%s", "");
+}
+
 static int trusts_cmdtrustresync(void *source, int argc, char **argv) {
   nick *np = source;
 
@@ -344,18 +352,10 @@ static int trusts_cmdtrustresync(void *source, int argc, char **argv) {
   }
 
   synced = 0;
-  xsb_broadcast("trrequestsync", NULL, "%s", "");
+  checksynced(NULL);
   controlreply(np, "Synchronisation request sent.");
 
   return CMD_OK;
-}
-
-static int loaded;
-static void *syncsched;
-
-static void checksynced(void *arg) {
-  if(!synced || !syncing)
-    xsb_broadcast("trrequestsync", NULL, "%s", "");
 }
 
 static void __serverlinked(int hooknum, void *arg) {
@@ -363,7 +363,7 @@ static void __serverlinked(int hooknum, void *arg) {
 
   if(!ircd_strcmp(serverlist[servernum].name->content, masterserver->content)) {
     syncing = synced = 0;
-    xsb_broadcast("trrequestsync", NULL, "%s", "");
+    checksynced(NULL);
   }
 }
 
@@ -399,7 +399,7 @@ void _init(void) {
   syncsched = schedulerecurring(time(NULL)+5, 0, 60, checksynced, NULL);
   
   if(trusts_fullyonline())
-    xsb_broadcast("trrequestsync", NULL, "%s", "");
+    checksynced(NULL);
 }
 
 void _fini(void) {
