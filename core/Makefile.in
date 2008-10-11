@@ -2,25 +2,35 @@
 
 default: all
 
+.PHONY: kqueue epoll poll hooks-new hooks-old
+
 events.c:
 	rm -f events.c
 	ln -s events-poll.c events.c
 
 kqueue:
-	rm -f events.c
+	rm -f events.c events.o
 	ln -s events-kqueue.c events.c
 
 epoll:
-	rm -f events.c
+	rm -f events.c events.o
 	ln -s events-epoll.c events.c
+
+poll:
+	rm -f events.c events.o
+	ln -s events-poll.c events.c
 
 hooks.c:
 	rm -f hooks.c
 	ln -s hooks-old.c hooks.c
 
 hooks-new:
-	rm -f hooks.c ../newserv
+	rm -f hooks.c hooks.o ../newserv
 	ln -s hooks-new.c hooks.c
+
+hooks-old:
+	rm -f hooks.c hooks.o ../newserv
+	ln -s hooks-old.c hooks.c
 
 .PHONY: all
 all: events.c main.o events.o schedule.o hooks.o error.o modules.o config.o schedulealloc.o nsmalloc.o

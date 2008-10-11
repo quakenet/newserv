@@ -1,5 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
+.PHONY: sstring-new sstring-old
+
 default: all
 
 sstring.c:
@@ -11,6 +13,12 @@ sstring-new:
 	rm -f sstring.c sstring.h
 	ln -s sstring-new.h sstring.h
 	ln -s sstring-new.c sstring.c
+	@echo "WARNING: you must recompile newserv from scratch to use a different string library (make clean)"
+
+sstring-old:
+	rm -f sstring.c sstring.h
+	ln -s sstring-old.h sstring.h
+	ln -s sstring-old.c sstring.c
 	@echo "WARNING: you must recompile newserv from scratch to use a different string library (make clean)"
 
 .PHONY: all
