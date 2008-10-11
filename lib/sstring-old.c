@@ -187,11 +187,3 @@ void sstringstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,(void *)buf);
   }
 }
-
-int sstringcompare(sstring *ss1, sstring *ss2) {
-  if (ss1->u.l.length != ss2->u.l.length)
-    return -1;
-  
-  return strncmp(ss1->content, ss2->content, ss1->u.l.length);
-}
-
