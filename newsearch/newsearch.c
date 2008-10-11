@@ -1244,6 +1244,7 @@ void var_setstr(struct searchVariable *v, char *data) {
   v->cdata.u.stringbuf = data;
 }
 
+#ifdef NEWSEARCH_NEWPARSER
 void displaystrerror(replyFunc reply, nick *np, const char *input) {
   char buf[515];
 
@@ -1262,6 +1263,7 @@ void displaystrerror(replyFunc reply, nick *np, const char *input) {
 
   reply(np, "Parse error: %s", parseStrError);
 }
+#endif
 
 struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p) {
   struct searchNode *c;

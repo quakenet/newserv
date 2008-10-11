@@ -6,6 +6,7 @@ CFLAGS=
 CC=gcc
 LEX=flex
 
+@sinclude@ @includel@$(INCPATH)defaults.mk@includel@
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
 
 @ifndef@ BUILDID
