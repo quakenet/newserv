@@ -101,28 +101,17 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   if (toomanyauths)
     return CMD_ERROR;
 
-  /* Guarantee a unique auth timestamp for each account */
   now=time(NULL);
-  if (rup->lastauth < now) 
-    rup->lastauth=now;
-  else
-    rup->lastauth++;
 
-  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
-  if (rup->lastuserhost)
-    freesstring(rup->lastuserhost);
-  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
-  
-  if (UHasSuspension(rup) && rup->suspendexp && (time(0) >= rup->suspendexp)) {
+  if (UHasSuspension(rup) && rup->suspendexp && (now >= rup->suspendexp)) {
     /* suspension has expired, remove it */
     rup->flags&=(~(QUFLAG_SUSPENDED|QUFLAG_GLINE|QUFLAG_DELAYEDGLINE));
     rup->suspendby=0;
     rup->suspendexp=0;
     freesstring(rup->suspendreason);
     rup->suspendreason=0;
+    csdb_updateuser(rup);  
   }
-  
-  csdb_updateuser(rup);
   
   if (UIsSuspended(rup)) {
     /* plain suspend */
@@ -134,6 +123,19 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
     return CMD_ERROR;
   }
   
+  /* Guarantee a unique auth timestamp for each account */
+  if (rup->lastauth < now) 
+    rup->lastauth=now;
+  else
+    rup->lastauth++;
+
+  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
+  if (rup->lastuserhost)
+    freesstring(rup->lastuserhost);
+  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
+  
+  csdb_updateuser(rup);  
+
   cs_log(sender,"%s OK username %s", authtype,rup->username);
 
   localusersetaccount(sender, rup->username, rup->ID, cs_accountflagmap(rup), rup->lastauth);
