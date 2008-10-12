@@ -75,10 +75,9 @@ MFLAGS+=BUILDID=$(BUILDID)
 default: checksettings all
 
 checksettings:
-	echo checked settings
-	@touch settings.mk
-	@test -f .settings.mk || cp settings.mk .settings.mk
-	@diff .settings.mk settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
+	@touch ${INCPATH}/settings.mk
+	@test -f ${INCPATH}/.settings.mk || cp ${INCPATH}/settings.mk ${INCPATH}/.settings.mk
+	@diff ${INCPATH}/.settings.mk ${INCPATH}/settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
 
 realchecksettings:
 
