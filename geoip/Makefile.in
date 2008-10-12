@@ -1,11 +1,21 @@
 @include@ @includel@../build.mk@includel@
 
-.PHONY: all clean distclean
-all: geoip.so
+GEOIPDIRS=libGeoIP
+
+.PHONY: all clean distclean $(GEOIPDIRS) dirs
+
+all: dirs geoip.so
+
+geoip.so: geoip.o libGeoIP/GeoIP.o libGeoIP/regionName.o libGeoIP/timeZone.o
+
+dirs: $(GEOIPDIRS)
+
+$(GEOIPDIRS):
+	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f *.o *.so libGeoIP/*.o
+	rm -f */*.o */*.so *.o *.so
 
 distclean:
-	
-geoip.so: geoip.o libGeoIP.o
+	rm -f */Makefile Makefile
+
