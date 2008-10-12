@@ -77,25 +77,16 @@ void th_linktree(void) {
         th_updatechildren(th->parent);
 }
 
-trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
-  uint32_t ip, mask;
+trusthost *th_add(trusthost *ith) {
   trusthost *th;
-
-  if(!trusts_str2cidr(host, &ip, &mask))
-    return NULL;
 
   th = nsmalloc(POOL_TRUSTS, sizeof(trusthost));
   if(!th)
     return NULL;
 
-  th->id = id;
-  th->maxusage = maxusage;
-  th->lastseen = lastseen;
-  th->ip = ip;
-  th->mask = mask;
+  memcpy(th, ith, sizeof(trusthost));
 
   th->users = NULL;
-  th->group = tg;
   th->count = 0;
 
   th->parent = NULL;
@@ -103,8 +94,8 @@ trusthost *th_add(trustgroup *tg, unsigned int id, char *host, unsigned int maxu
 
   th->marker = 0;
 
-  th->next = tg->hosts;
-  tg->hosts = th;
+  th->next = th->group->hosts;
+  th->group->hosts = th;
 
   return th;
 }
@@ -119,32 +110,24 @@ void tg_free(trustgroup *tg) {
   nsfree(POOL_TRUSTS, tg);
 }
 
-trustgroup *tg_add(unsigned int id, char *name, unsigned int trustedfor, int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
+trustgroup *tg_add(trustgroup *itg) {
   trustgroup *tg = nsmalloc(POOL_TRUSTS, sizeof(trustgroup));
   if(!tg)
     return NULL;
 
-  tg->name = getsstring(name, TRUSTNAMELEN);
-  tg->createdby = getsstring(createdby, NICKLEN);
-  tg->contact = getsstring(contact, CONTACTLEN);
-  tg->comment = getsstring(comment, COMMENTLEN);
+  memcpy(tg, itg, sizeof(trustgroup));
+
+  tg->name = getsstring(tg->name->content, TRUSTNAMELEN);
+  tg->createdby = getsstring(tg->createdby->content, NICKLEN);
+  tg->contact = getsstring(tg->contact->content, CONTACTLEN);
+  tg->comment = getsstring(tg->comment->content, COMMENTLEN);
   if(!tg->name || !tg->createdby || !tg->contact || !tg->comment) {
     tg_free(tg);
     return NULL;
   }
 
-  tg->id = id;
-  tg->trustedfor = trustedfor;
-  tg->mode = mode;
-  tg->maxperident = maxperident;
-  tg->maxusage = maxusage;
-  tg->expires = expires;
-  tg->lastseen = lastseen;
-  tg->lastmaxuserreset = lastmaxuserreset;
   tg->hosts = NULL;
-
   tg->marker = 0;
-
   tg->count = 0;
 
   memset(tg->exts, 0, sizeof(tg->exts));
@@ -261,7 +244,7 @@ void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, tru
   *subset = th_getsubsetbyhost(ip, mask);
 }
 
-void trusts_flush(void) {
+void trusts_flush(void (*thflush)(trusthost *), void (*tgflush)(trustgroup *)) {
   trustgroup *tg;
   trusthost *th;
   time_t t = time(NULL);
@@ -270,13 +253,13 @@ void trusts_flush(void) {
     if(tg->count > 0)
       tg->lastseen = t;
 
-    tg_dbupdatecounts(tg);
+    tgflush(tg);
 
     for(th=tg->hosts;th;th=th->next) {
       if(th->count > 0)
         th->lastseen = t;
 
-      th_dbupdatecounts(th);
+      thflush(th);
     }
   }
 }
@@ -429,3 +412,14 @@ unsigned int nextthmarker(void) {
 
   return thmarker;
 }
+
+trustgroup *tg_inttotg(unsigned int id) {
+  trustgroup *tg;
+
+  for(tg=tglist;tg;tg=tg->next)
+    if(tg->id == id)
+      return tg;
+
+  return NULL;
+}
+

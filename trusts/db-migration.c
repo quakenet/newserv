@@ -6,13 +6,13 @@
 extern DBAPIConn *trustsdb;
 static trustmigration *migration;
 
-static void tm_group(void *, unsigned int, char *, unsigned int, unsigned int, unsigned int, unsigned int, time_t, time_t, time_t, char *, char *, char *);
-static void tm_host(void *, unsigned int, char *, unsigned int, time_t);
+static void tm_group(void *, trustgroup *);
+static void tm_host(void *, trusthost *, unsigned int);
 static void tm_final(void *, int);
 
 trustmigration *migration_start(TrustMigrationGroup, TrustMigrationHost, TrustMigrationFini, void *);
 void migration_stop(trustmigration *);
-void createtrusttables(int migration);
+void createtrusttables(int);
 
 struct callbackdata {
   void *tag;
@@ -34,7 +34,7 @@ int trusts_migration_start(TrustDBMigrationCallback callback, void *tag) {
   cbd->tag = tag;
   cbd->hostid = 1;
 
-  createtrusttables(1);
+  createtrusttables(TABLES_MIGRATION);
   trustsdb->squery(trustsdb, "DELETE FROM ?", "T", "migration_groups");
   trustsdb->squery(trustsdb, "DELETE FROM ?", "T", "migration_hosts");
 
@@ -54,23 +54,18 @@ void trusts_migration_stop(void) {
   migration_stop(migration);
 }
 
-static void tm_group(void *tag, unsigned int id, char *name, unsigned int trustedfor, unsigned int mode, unsigned int maxperident, unsigned int maxusage, time_t expires, time_t lastseen, time_t lastmaxuserreset, char *createdby, char *contact, char *comment) {
-  if(id % 25 == 0)
-    Error("trusts", ERR_INFO, "Migration currently at id: %d", id);
+static void tm_group(void *tag, trustgroup *tg) {
+  if(tg->id % 25 == 0)
+    Error("trusts_migration", ERR_INFO, "Migration currently at id: %d", tg->id);
 
-  trustsdb->squery(trustsdb, 
-    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tusuuuutttsss", "migration_groups", id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment
-  );
+  trustsdb_inserttg("migration_groups", tg);
 }
 
-static void tm_host(void *tag, unsigned int id, char *host, unsigned int maxusage, time_t lastseen) {
+static void tm_host(void *tag, trusthost *th, unsigned int groupid) {
   struct callbackdata *cbd = tag;
 
-  trustsdb->squery(trustsdb, 
-    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
-    "Tuusut", "migration_hosts", cbd->hostid++, id, host, maxusage, lastseen
-  );
+  th->id = cbd->hostid++;
+  trustsdb_insertth("migration_hosts", th, groupid);
 }
 
 static void tm_complete(const DBAPIResult *r, void *tag) {
@@ -81,10 +76,10 @@ static void tm_complete(const DBAPIResult *r, void *tag) {
     errcode = MIGRATION_STOPPED;
   } else {
     if(!r->success) {
-      Error("trusts", ERR_ERROR, "A error occured executing the rename table query.");
+      Error("trusts_migration", ERR_ERROR, "A error occured executing the rename table query.");
       errcode = MIGRATION_LASTERROR;
     } else {
-      Error("trusts", ERR_INFO, "Migration table copying complete.");
+      Error("trusts_migration", ERR_INFO, "Migration table copying complete.");
     }
     r->clear(r);
   }
@@ -100,7 +95,7 @@ static void tm_final(void *tag, int errcode) {
   migration = NULL;
 
   if(errcode) {
-    Error("trusts", ERR_ERROR, "Migration error: %d", errcode);
+    Error("trusts_migration", ERR_ERROR, "Migration error: %d", errcode);
     if(cbd) {
       cbd->callback(errcode, cbd->tag);
       nsfree(POOL_TRUSTS, cbd);
@@ -108,7 +103,7 @@ static void tm_final(void *tag, int errcode) {
   } else {
     trusts_closedb(0);
 
-    Error("trusts", ERR_INFO, "Migration completed, copying tables...");
+    Error("trusts_migration", ERR_INFO, "Migration completed, copying tables...");
 
     trustsdb->squery(trustsdb, "BEGIN TRANSACTION", "");
     trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "groups");

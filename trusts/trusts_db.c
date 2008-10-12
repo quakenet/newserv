@@ -9,18 +9,21 @@ static int tgmaxid, thmaxid;
 static int loaderror;
 static void *flushschedule;
 
-int trustsdbloaded;
-
 void createtrusttables(int migration);
-void trusts_flush(void);
+void trusts_flush(void (*)(trusthost *), void (*)(trustgroup *));
 void trusts_freeall(void);
+static void th_dbupdatecounts(trusthost *th);
+static void tg_dbupdatecounts(trustgroup *tg);
 
-void createtrusttables(int migration) {
+void createtrusttables(int mode) {
   char *groups, *hosts;
 
-  if(migration) {
+  if(mode == TABLES_MIGRATION) {
     groups = "migration_groups";
     hosts = "migration_hosts";
+  } else if(mode == TABLES_REPLICATION) {
+    groups = "replication_groups";
+    hosts = "replication_hosts";
   } else {
     groups = "groups";
     hosts = "hosts";
@@ -36,7 +39,7 @@ void createtrusttables(int migration) {
 }
 
 static void flushdatabase(void *arg) {
-  trusts_flush();
+  trusts_flush(th_dbupdatecounts, tg_dbupdatecounts);
 }
 
 static void triggerdbloaded(void *arg) {
@@ -78,29 +81,32 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
   }
 
   while(result->next(result)) {
-    unsigned int groupid, id;
+    unsigned int groupid;
+    trusthost th;
     char *host;
-    unsigned int maxusage, lastseen;
-    trustgroup *tg;
 
-    id = strtoul(result->get(result, 0), NULL, 10);
-    if(id > thmaxid)
-      thmaxid = id;
+    th.id = strtoul(result->get(result, 0), NULL, 10);
+    if(th.id > thmaxid)
+      thmaxid = th.id;
 
     groupid = strtoul(result->get(result, 1), NULL, 10);
 
-    tg = tg_getbyid(groupid);
-    if(!tg) {
+    th.group = tg_getbyid(groupid);
+    if(!th.group) {
       Error("trusts", ERR_WARNING, "Orphaned trust group host: %d", groupid);
       continue;
     }
 
-    /* NOTE: 2 is at the bottom */
-    maxusage = strtoul(result->get(result, 3), NULL, 10);
-    lastseen = (time_t)strtoul(result->get(result, 4), NULL, 10);
     host = result->get(result, 2);
+    if(!trusts_str2cidr(host, &th.ip, &th.mask)) {
+      Error("trusts", ERR_WARNING, "Error parsing cidr for host: %s", host);
+      continue;
+    }
 
-    if(!th_add(tg, id, host, maxusage, lastseen))
+    th.maxusage = strtoul(result->get(result, 3), NULL, 10);
+    th.lastseen = (time_t)strtoul(result->get(result, 4), NULL, 10);
+
+    if(!th_add(&th))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
   }
 
@@ -136,38 +142,35 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
   }
 
   while(result->next(result)) {
-    unsigned int id;
-    sstring *name, *createdby, *contact, *comment;
-    unsigned int trustedfor, mode, maxperident, maxusage;
-    time_t expires, lastseen, lastmaxuserreset;
+    trustgroup tg;
 
-    id = strtoul(result->get(result, 0), NULL, 10);
-    if(id > tgmaxid)
-      tgmaxid = id;
+    tg.id = strtoul(result->get(result, 0), NULL, 10);
+    if(tg.id > tgmaxid)
+      tgmaxid = tg.id;
 
-    name = getsstring(result->get(result, 1), TRUSTNAMELEN);
-    trustedfor = strtoul(result->get(result, 2), NULL, 10);
-    mode = atoi(result->get(result, 3));
-    maxperident = strtoul(result->get(result, 4), NULL, 10);
-    maxusage = strtoul(result->get(result, 5), NULL, 10);
-    expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
-    lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
-    lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
-    createdby = getsstring(result->get(result, 9), NICKLEN);
-    contact = getsstring(result->get(result, 10), CONTACTLEN);
-    comment = getsstring(result->get(result, 11), COMMENTLEN);
+    tg.name = getsstring(rtrim(result->get(result, 1)), TRUSTNAMELEN);
+    tg.trustedfor = strtoul(result->get(result, 2), NULL, 10);
+    tg.mode = atoi(result->get(result, 3));
+    tg.maxperident = strtoul(result->get(result, 4), NULL, 10);
+    tg.maxusage = strtoul(result->get(result, 5), NULL, 10);
+    tg.expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
+    tg.lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
+    tg.lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
+    tg.createdby = getsstring(rtrim(result->get(result, 9)), NICKLEN);
+    tg.contact = getsstring(rtrim(result->get(result, 10)), CONTACTLEN);
+    tg.comment = getsstring(rtrim(result->get(result, 11)), COMMENTLEN);
 
-    if(name && createdby && contact && comment) {
-      if(!tg_add(id, name->content, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby->content, contact->content, comment->content))
-        Error("trusts", ERR_WARNING, "Error adding trustgroup %d: %s", id, name->content);
+    if(tg.name && tg.createdby && tg.contact && tg.comment) {
+      if(!tg_add(&tg))
+        Error("trusts", ERR_WARNING, "Error adding trustgroup %d: %s", tg.id, tg.name->content);
     } else {
-      Error("trusts", ERR_ERROR, "Error allocating sstring in group loader, id: %d", id);
+      Error("trusts", ERR_ERROR, "Error allocating sstring in group loader, id: %d", tg.id);
     }
 
-    freesstring(name);
-    freesstring(createdby);
-    freesstring(contact);
-    freesstring(comment);
+    freesstring(tg.name);
+    freesstring(tg.createdby);
+    freesstring(tg.contact);
+    freesstring(tg.comment);
   }
 
   result->clear(result);  
@@ -177,7 +180,7 @@ static void loadgroups_fini(const DBAPIResult *result, void *tag) {
   Error("trusts", ERR_INFO, "Finished loading groups, maximum id: %d.", tgmaxid);
 }
 
-int trusts_loaddb(void) {
+static int trusts_connectdb(void) {
   if(!trustsdb) {
     trustsdb = dbapi2open(NULL, "trusts");
     if(!trustsdb) {
@@ -186,7 +189,14 @@ int trusts_loaddb(void) {
     }
   }
 
-  createtrusttables(0);
+  createtrusttables(TABLES_REGULAR);
+
+  return 1;
+}
+
+int trusts_loaddb(void) {
+  if(!trusts_connectdb())
+    return 0;
 
   loaderror = 0;
 
@@ -220,52 +230,94 @@ void trusts_closedb(int closeconnection) {
   triggerhook(HOOK_TRUSTS_DB_CLOSED, NULL);
 }
 
-void th_dbupdatecounts(trusthost *th) {
+static void th_dbupdatecounts(trusthost *th) {
   trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "hosts", th->lastseen, th->maxusage, th->id);
 }
 
-void tg_dbupdatecounts(trustgroup *tg) {
+static void tg_dbupdatecounts(trustgroup *tg) {
   trustsdb->squery(trustsdb, "UPDATE ? SET lastseen = ?, maxusage = ? WHERE id = ?", "Ttuu", "groups", tg->lastseen, tg->maxusage, tg->id);
 }
 
-trusthost *th_new(trustgroup *tg, char *host) {
+trusthost *th_copy(trusthost *ith) {
   trusthost *th, *superset, *subset;
-  u_int32_t ip, mask;
 
-  /* ugh */
-  if(!trusts_str2cidr(host, &ip, &mask))
+  th = th_add(ith);
+  if(!th)
     return NULL;
 
-  th_getsuperandsubsets(ip, mask, &superset, &subset);
+  trustsdb_insertth("hosts", th, th->group->id);
 
-  th = th_add(tg, thmaxid + 1, host, 0, 0);
+  th_getsuperandsubsets(ith->ip, ith->mask, &superset, &subset);
+  th_adjusthosts(th, subset, superset);
+  th_linktree();
+
+  return th;
+}
+
+trusthost *th_new(trustgroup *tg, char *host) {
+  trusthost *th, nth;
+
+  if(!trusts_str2cidr(host, &nth.ip, &nth.mask))
+    return NULL;
+
+  nth.group = tg;
+  nth.id = thmaxid + 1;
+  nth.lastseen = 0;
+  nth.maxusage = 0;
+
+  th = th_copy(&nth);
   if(!th)
     return NULL;
 
   thmaxid++;
 
-  trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
-    "Tuusut", "hosts", th->id, tg->id, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
-  );
-
-  th_adjusthosts(th, subset, superset);
-
-  th_linktree();
   return th;
 }
 
-trustgroup *tg_new(char *name, unsigned int trustedfor, int mode, unsigned int maxperident, time_t expires, char *createdby, char *contact, char *comment) {
-  trustgroup *tg = tg_add(tgmaxid + 1, name, trustedfor, mode, maxperident, 0, expires, 0, 0, createdby, contact, comment);
+trustgroup *tg_copy(trustgroup *itg) {
+  trustgroup *tg = tg_add(itg);
+  if(!tg)
+    return NULL;
+
+  trustsdb_inserttg("groups", tg);
+  return tg;
+}
+
+trustgroup *tg_new(trustgroup *itg) {
+  trustgroup *tg;
+
+  itg->id = tgmaxid + 1;
+  itg->maxusage = 0;
+  itg->lastseen = 0;
+  itg->lastmaxuserreset = 0;
+
+  tg = tg_copy(itg);
   if(!tg)
     return NULL;
 
   tgmaxid++;
 
+  return tg;
+}
+
+void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
+  trustsdb->squery(trustsdb,
+    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
+    "Tuusut", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
+  );
+}
+
+void trustsdb_inserttg(char *table, trustgroup *tg) {
   trustsdb->squery(trustsdb,
     "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tusuuuutttsss", "groups", tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content
+    "Tusuuuutttsss", table, tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content
   );
+}
 
-  return tg;
+void _init(void) {
+  trusts_connectdb();
+}
+
+void _fini(void) {
+  trusts_closedb(1);
 }
