@@ -87,5 +87,8 @@ realchecksettings:
 @endif@
 MFLAGS+=CHECKEDSETTINGS=1
 
-CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
-CFLAGS+=-fPIC -export-dynamic
+CFLAGS+=-Wall -g -finline-functions -funroll-loops
+@ifndef@ NOC99
+CFLAGS+=-std=c99
+@endif@
+CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC -export-dynamic

@@ -1,4 +1,5 @@
 INCPATH=../../
+NOC99=1
 @include@ @includel@../../build.mk@includel@
 
 CFLAGS+=-DGEOIPDATADIR=\".\" -w
