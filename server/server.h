@@ -35,6 +35,7 @@ typedef struct {
   short      linkstate;
   int        maxusernum;
   flag_t     flags;
+  unsigned int marker;
 } server;
 
 extern server serverlist[MAXSERVERS];
@@ -45,5 +46,6 @@ int handlesquitmsg(void *source, int cargc, char **cargv);
 void handledisconnect(int hooknum, void *arg);
 void deleteserver(long servernum);
 int findserver(const char *name);
+unsigned int nextservermarker(void);
 
 #endif

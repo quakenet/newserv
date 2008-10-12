@@ -85,6 +85,7 @@ int handleservermsg(void *source, int cargc, char **cargv) {
   serverlist[servernum].name=getsstring(cargv[0],HOSTLEN);
   serverlist[servernum].description=getsstring(cargv[cargc-1],REALLEN);
   serverlist[servernum].maxusernum=numerictolong(cargv[5]+2,3);
+  serverlist[servernum].marker=0;
   setflags(&serverlist[servernum].flags,SMODE_ALL,cargv[6],smodeflags,REJECT_NONE);
 
   if (!strncmp((char *)source,"INIT",4)) {
@@ -210,5 +211,20 @@ int findserver(const char *name) {
       return i;
       
   return -1;
+}
+
+unsigned int nextservermarker(void) {
+  int i;
+  static unsigned int servermarker=0;
+
+  servermarker++;
+  if (!servermarker) {
+    /* If we wrapped to zero, zap the marker on all hosts */
+    for (i=0;i<MAXSERVERS;i++)
+      serverlist[i].marker=0;
+    servermarker++;
+  }
+
+  return servermarker;
 }
 
