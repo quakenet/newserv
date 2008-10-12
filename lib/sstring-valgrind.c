@@ -1,5 +1,3 @@
-/* sstring.h - Declaration of "static strings" functions */
-
 #define COMPILING_SSTRING
 #include "sstring.h"
 
@@ -13,6 +11,14 @@
 #include <stdlib.h>
 #define __USE_GNU
 #include <string.h>
+
+typedef struct sstringlist {
+  struct sstringlist *prev;
+  struct sstringlist *next;
+  sstring s[];
+} sstringlist;
+
+static sstringlist *head;
 
 void initsstring() {
 }

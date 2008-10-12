@@ -1,6 +1,7 @@
 /* sstring.h - Declaration of "static strings" functions */
 
 #define COMPILING_SSTRING
+#define SSTRING_NEW
 #include "sstring.h"
 
 #include "../core/hooks.h"
@@ -96,21 +97,21 @@ sstring *findsstring(const char *str) {
   sstring *ss;
   
   for (ss=sshash[hash];ss;ss=ss->next)
-    if (!strcmp(str, ss->content))
+    if (!strcmp(str, sstring_content(ss)))
       return ss;
   
   return NULL;
 }
 
 void sstring_enhash(sstring *ss) {
-  unsigned int hash=crc32(ss->content)%SSTRING_HASHSIZE;
+  unsigned int hash=crc32(sstring_content(ss))%SSTRING_HASHSIZE;
   
   ss->next=sshash[hash];
   sshash[hash]=ss;
 }
 
 void sstring_dehash(sstring *ss) {
-  unsigned int hash=crc32(ss->content)%SSTRING_HASHSIZE;
+  unsigned int hash=crc32(sstring_content(ss))%SSTRING_HASHSIZE;
   sstring *ssh, *ssp;
   
   for (ssh=sshash[hash],ssp=NULL; ssh; ssp=ssh,ssh=ssh->next) {
@@ -134,7 +135,7 @@ void sstring_dehash(sstring *ss) {
     }
   }
   
-  Error("sstring",ERR_WARNING,"sstring_dehash(): Unable to find string (ref=%lu, length=%d) in hash: %s",ss->refcount,ss->length,ss->content);
+  Error("sstring",ERR_WARNING,"sstring_dehash(): Unable to find string (ref=%lu, length=%d) in hash: %s",ss->refcount,ss->length,sstring_content(ss));
 }
 
 sstring *getsstring(const char *inputstr, int maxlen) {
@@ -239,15 +240,20 @@ sstring *getsstring(const char *inputstr, int maxlen) {
    */
   
   retval->length=(length-1);
-  strcpy(retval->content,strbuf);
+  strcpy(sstring_content(retval),strbuf);
   retval->refcount=1;
-  
+
 #ifdef SSTRING_MMAP 
   if(!foreignblock)
     retval->block = mblock;
 #endif
 
   sstring_enhash(retval);
+
+#ifdef SSTRING_COMPAT
+  retval->content = retval->__content;
+#endif
+
   sprotect(retval);
 
   return retval;    
