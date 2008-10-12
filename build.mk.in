@@ -20,29 +20,29 @@ HOOK_ENGINE=new
   CFLAGS+=-DUSE_VALGRIND
   SSTRING_ENGINE=valgrind
 
-  # if SSTRING_NEW == 1
-  @ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
+## if SSTRING_NEW == 1
+@ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
     IMPOSSIBLE="USE_VALGRIND and SSTRING_NEW"
-  @endif@
+@endif@ # SSTRING_NEW == 1
 
-  # if SSTRING_MMAP == 1
-  @ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
+## if SSTRING_MMAP == 1
+@ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
     IMPOSSIBLE="USE_VALGRIND and SSTRING_MMAP"
-  @endif@
-@else@
+@endif@ ## SSTRING_MMAP == 1
+@else@ # USE_VALGRIND == 1
 
-  # if SSTRING_NEW == 1
-  @ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
+## if SSTRING_NEW == 1
+@ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
     SSTRING_ENGINE=new
-  @else@
+@else@ ## SSTRING_NEW == 1
     SSTRING_ENGINE=old
 
-    # if SSTRING_MMAP == 1
-    @ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
+### if SSTRING_MMAP == 1
+@ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
       IMPOSSIBLE="SSTRING_MMAP without SSTRING_NEW"
-    @endif@
-  @endif@
-@endif@
+@endif@ ### SSTRING_MMAP == 1
+@endif@ ## SSTRING_NEW == 1
+@endif@ # USE_VALGRIND == 1
 
 @ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
 HOOK_ENGINE=old
@@ -72,6 +72,7 @@ BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 default: checksettings all
 
 checksettings:
+	@touch settings.mk
 	@test -f .settings.mk || cp settings.mk .settings.mk
 	@diff .settings.mk settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
 
