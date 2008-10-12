@@ -12,7 +12,6 @@ data/
 newserv.conf
 chanservlog.*
 logs/*
-core/events.c
 *.pyc
 config.py
 ktrace.out
@@ -28,7 +27,7 @@ config.h
 settings.mk
 graphing/dump
 silly
-core/hooks.c
-lib/sstring.{c,h}
 y.tab.{c,h}
 lex.yy.c
+.settings.mk
+

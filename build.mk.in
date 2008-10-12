@@ -67,5 +67,19 @@ BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 
 .l.c:	;
 
+.PHONY: checksettings default
+
+default: checksettings all
+
+checksettings:
+	@test -f .settings.mk || cp settings.mk .settings.mk
+	@diff .settings.mk settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
+
+realchecksettings:
+
+@ifdef@ FORCECHECK
+@error@ you must run make clean if you change settings.mk@errorend@
+@endif@
+
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
 CFLAGS+=-fPIC -export-dynamic
