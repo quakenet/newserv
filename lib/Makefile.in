@@ -1,25 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
-.PHONY: sstring-new sstring-old
+.PHONY: all
 
 default: all
 
-sstring.c:
-	rm -f sstring.c sstring.h
-	ln -s sstring-old.h sstring.h
-	ln -s sstring-old.c sstring.c
-
-sstring-new:
-	rm -f sstring.c sstring.h
-	ln -s sstring-new.h sstring.h
-	ln -s sstring-new.c sstring.c
-	@echo "WARNING: you must recompile newserv from scratch to use a different string library (make clean)"
-
-sstring-old:
-	rm -f sstring.c sstring.h
-	ln -s sstring-old.h sstring.h
-	ln -s sstring-old.c sstring.c
-	@echo "WARNING: you must recompile newserv from scratch to use a different string library (make clean)"
-
-.PHONY: all
-all: sstring.o array.o splitline.o base64.o flags.o irc_string.o strlfunc.o sha1.o irc_ipv6.o rijndael.o sha2.o hmac.o prng.o md5.o stringbuf.o
+all: sstring-${SSTRING_ENGINE}.o array.o splitline.o base64.o flags.o irc_string.o strlfunc.o sha1.o irc_ipv6.o rijndael.o sha2.o hmac.o prng.o md5.o stringbuf.o sstring-lib.o
