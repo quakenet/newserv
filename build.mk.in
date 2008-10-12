@@ -5,6 +5,7 @@ INCPATH=../
 CFLAGS=
 CC=gcc
 LEX=flex
+MFLAGS=
 
 @sinclude@ @includel@$(INCPATH)defaults.mk@includel@
 @sinclude@ @includel@$(INCPATH)settings.mk@includel@
@@ -57,6 +58,7 @@ HOOK_ENGINE=new
 @ifndef@ BUILDID
 BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 @endif@
+MFLAGS+=BUILDID=$(BUILDID)
 
 .SUFFIXES: .so .y .l
 
@@ -69,9 +71,11 @@ BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/+ /-/;s/ /-/" @shellend@
 
 .PHONY: checksettings default
 
+@ifndef@ CHECKEDSETTINGS
 default: checksettings all
 
 checksettings:
+	echo checked settings
 	@touch settings.mk
 	@test -f .settings.mk || cp settings.mk .settings.mk
 	@diff .settings.mk settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
@@ -81,6 +85,8 @@ realchecksettings:
 @ifdef@ FORCECHECK
 @error@ you must run make clean if you change settings.mk@errorend@
 @endif@
+@endif@
+MFLAGS+=CHECKEDSETTINGS=1
 
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -std=c99 -I./ -DBUILDID=$(BUILDID)
 CFLAGS+=-fPIC -export-dynamic

@@ -18,7 +18,7 @@ dirs: $(TRUSTSDIRS)
 	ln -sf */*.so .
 
 $(TRUSTSDIRS):
-	cd $@ && $(MAKE) BUILDID=$(BUILDID) all
+	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
 	rm -f */*.o */*.so

@@ -10,7 +10,7 @@ dirs: $(CSDIRS)
 	ln -sf */*.so .
 
 $(CSDIRS):
-	cd $@ && $(MAKE) BUILDID=$(BUILDID) all
+	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
 	rm -f */*.o */*.so
