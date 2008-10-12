@@ -1,0 +1,7 @@
+INCPATH=../../
+@include@ @includel@../../build.mk@includel@
+
+CFLAGS+=-DGEOIPDATADIR=\".\" -w
+
+.PHONY: all
+all: GeoIP.o regionName.o timeZone.o

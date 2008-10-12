@@ -29,8 +29,8 @@ $(TRUSTSDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.so
+	rm -f */*.o */*.so *.o *.so
 
 distclean:
-	rm -f */Makefile
+	rm -f */Makefile Makefile
 

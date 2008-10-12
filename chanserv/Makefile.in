@@ -13,10 +13,10 @@ $(CSDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.so
+	rm -f */*.o */*.so *.o *.so
 
 distclean:
-	rm -f */autobuild.mk */Makefile
+	rm -f */autobuild.mk */Makefile autobuild.mk Makefile
 
 chanserv.so: chanservdb_updates.o chanserv.o chanservuser.o chanservnetevents.o chanservprivs.o chanservlog.o chanservstdcmds.o \
 		chanservdump.o chanservschedule.o chanservcrypto.o authlib.o q9snprintf.o

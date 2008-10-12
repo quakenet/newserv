@@ -12,22 +12,20 @@
 
 #include <strings.h>
 
-#include "libGeoIP.h"
+#include "libGeoIP/GeoIP.h"
 #include "geoip.h"
-
-#warning This module is GPLed. Load/link at your peril.
 
 MODULE_VERSION("");
 
 int geoip_totals[COUNTRY_MAX + 1];
-int geoip_nickext = -1;
-GeoIP *gi = NULL;
+static int geoip_nickext = -1;
+static GeoIP *gi = NULL;
 
-void geoip_setupuser(nick *np);
+static void geoip_setupuser(nick *np);
 
-void geoip_new_nick(int hook, void *args);
-void geoip_quit(int hook, void *args);
-void geoip_whois_handler(int hooknum, void *arg);
+static void geoip_new_nick(int hook, void *args);
+static void geoip_quit(int hook, void *args);
+static void geoip_whois_handler(int hooknum, void *arg);
 
 void _init(void) {
   int i;
@@ -35,7 +33,7 @@ void _init(void) {
   sstring *filename;
 
   filename = getcopyconfigitem("geoip", "db", "GeoIP.dat", 256);
-  gi = GeoIP_new(GEOIP_MEMORY_CACHE, filename->content);
+  gi = GeoIP_open(filename->content, GEOIP_MEMORY_CACHE);
   freesstring(filename);
 
   if(!gi)
@@ -70,7 +68,7 @@ void _fini(void) {
   deregisterhook(HOOK_CONTROL_WHOISREQUEST, &geoip_whois_handler);
 }
 
-void geoip_setupuser(nick *np) {
+static void geoip_setupuser(nick *np) {
   if (!irc_in_addr_is_ipv4(&np->p_ipaddr)) 
     return; /* geoip only supports ipv4 */
 
@@ -83,11 +81,11 @@ void geoip_setupuser(nick *np) {
   np->exts[geoip_nickext] = (void *)(long)country;
 }
 
-void geoip_new_nick(int hook, void *args) {
+static void geoip_new_nick(int hook, void *args) {
   geoip_setupuser((nick *)args);
 }
 
-void geoip_quit(int hook, void *args) {
+static void geoip_quit(int hook, void *args) {
   int item;
   nick *np = (nick *)args;
 
@@ -99,9 +97,10 @@ void geoip_quit(int hook, void *args) {
   geoip_totals[item]--;
 }
 
-void geoip_whois_handler(int hooknum, void *arg) {
+static void geoip_whois_handler(int hooknum, void *arg) {
   int item;
-  char message[512], *longcountry, *shortcountry, *shortcountry3;
+  char message[512];
+  const char *longcountry, *shortcountry;
   nick *np = (nick *)arg;
 
   if(!np)
@@ -111,7 +110,10 @@ void geoip_whois_handler(int hooknum, void *arg) {
   if((item < COUNTRY_MIN) || (item > COUNTRY_MAX))
     return;
 
-  if(GeoIP_country_info_by_id(item, &shortcountry, &shortcountry3, &longcountry)) {
+  shortcountry = GeoIP_code_by_id(item);
+  longcountry = GeoIP_name_by_id(item);
+
+  if(shortcountry && longcountry) {
     snprintf(message, sizeof(message), "Country   : %s (%s)", shortcountry, longcountry);
     triggerhook(HOOK_CONTROL_WHOISREPLY, message);
   }
