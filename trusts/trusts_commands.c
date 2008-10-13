@@ -98,25 +98,12 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     outputtree(np, marker, originalgroup, th, depth + 1);
 }
 
-static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  trustgroup *tg;
+static void displaygroup(nick *sender, trustgroup *tg) {
   trusthost *th, **p2;
-  time_t t;
   unsigned int marker;
   array parents;
   int i;
-
-  if(cargc < 1)
-    return CMD_USAGE;
-
-  tg = tg_strtotg(cargv[0]);
-  if(!tg) {
-    controlreply(sender, "Couldn't find a trustgroup with that id.");
-    return CMD_ERROR;
-  }
-
-  t = time(NULL);
+  time_t t = time(NULL);
 
   /* abusing the ternary operator a bit :( */
   controlreply(sender, "Name:            : %s", tg->name->content);
@@ -147,6 +134,44 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   array_free(&parents);
 
   controlreply(sender, "End of list.");
+}
+
+static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  char *name;
+  trustgroup *tg = NULL;
+  int id, found = 0, remaining = 50;
+
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  name = cargv[0];
+
+  if(name[0] == '#')
+    tg = tg_strtotg(name + 1);
+
+  if((id = strtol(name, NULL, 10)))
+    tg = tg_getbyid(id);
+
+  if(tg) {
+    displaygroup(sender, tg);
+    return CMD_OK;
+  }
+
+  for(tg=tglist;tg;tg=tg->next) {
+    if(match(tg->name->content, name))
+      continue;
+
+    displaygroup(sender, tg);
+    if(--remaining == 0) {
+      controlreply(sender, "Maximum number of matches reached.");
+      return CMD_OK;
+    }
+    found = 1;
+  }
+
+  if(!found)
+    controlreply(sender, "No matches found.");
 
   return CMD_OK;
 }
