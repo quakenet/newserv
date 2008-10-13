@@ -14,17 +14,17 @@ void trusts_newnick(nick *sender, int moving) {
   settrusthost(sender, th);
   if(!th) {
     setnextbytrust(sender, NULL);
-    return;
+  } else {
+    setnextbytrust(sender, th->users);
+    th->users = sender;
   }
-
-  setnextbytrust(sender, th->users);
-  th->users = sender;
-
-  /* sucks we have to do this, at least until we get priority hooks */
-  __counthandler(HOOK_TRUSTS_NEWNICK, sender);
 
   arg[0] = sender;
   arg[1] = (void *)(long)moving;
+
+  /* sucks we have to do this, at least until we get priority hooks */
+  __counthandler(HOOK_TRUSTS_NEWNICK, arg);
+
   triggerhook(HOOK_TRUSTS_NEWNICK, arg);
 }
 
@@ -37,14 +37,14 @@ void trusts_lostnick(nick *sender, int moving) {
   trusthost *th = gettrusthost(sender);
   void *arg[2];
 
-  if(!th)
-    return;
-
-  __counthandler(HOOK_TRUSTS_LOSTNICK, sender);
-
   arg[0] = sender;
   arg[1] = (void *)(long)moving;
+
+  __counthandler(HOOK_TRUSTS_LOSTNICK, arg);
   triggerhook(HOOK_TRUSTS_LOSTNICK, arg);
+
+  if(!th)
+    return;
 
   /*
    * we need to erase this nick from the trusthost list
@@ -71,9 +71,14 @@ static void __lostnick(int hooknum, void *arg) {
 
 static void __counthandler(int hooknum, void *arg) {
   time_t t = time(NULL);
-  trusthost *th = gettrusthost((nick *)arg);
-  trustgroup *tg = th->group;
+  void **args = arg;
+  trusthost *th = gettrusthost((nick *)args[0]);
+  trustgroup *tg;
 
+  if(!th)
+    return;
+
+  tg = th->group;
   tg->lastseen = th->lastseen = t;
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
     th->count++;

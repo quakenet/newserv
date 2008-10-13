@@ -25,76 +25,6 @@ void migration_stop(trustmigration *tm) {
   tm_fini(tm, MIGRATION_STOPPED);
 }
 
-static int tm_parsegroup(trustmigration *tm, unsigned int id, const char *oline) {
-  char *line, *createdby, *contact, *comment, *name;
-  unsigned int trustedfor, maxperident, mode, maxusage;
-  unsigned long expires, lastseen, lastmaxusereset;
-  char xbuf[1024];
-  int pos;
-
-/* ticket35153,14,20,1,1,17,1879854575,1222639249,0,nterfacer,Qwhois&2120764,Non-Commercial Bouncer (Created by: doomie)
-   name       ,current
-                 ,trustedfor
-                    ,mode
-                      ,maxperident
-                        ,maxusage
-                           ,expires  ,lastseen   ,lastmaxusereset
-                                                   ,createdby,contact       ,comment
-*/
-  int r;
-
-  strlcpy(xbuf, oline, sizeof(xbuf));
-  name = xbuf;
-
-  line = strchr(name, ',');
-  if(!line)
-    return 1;
-  *line++ = '\0';
-
-  r = sscanf(line, "%*u,%u,%u,%u,%u,%lu,%lu,%lu,%n",
-             /*current, */ &trustedfor, &mode, &maxperident, 
-             &maxusage, &expires, &lastseen, &lastmaxusereset, &pos);
-  if(r != 7)
-    return 2;
-
-  createdby = &line[pos];
-  contact = strchr(createdby, ',');
-  if(!contact)
-    return 3;
-  *contact++ = '\0';
-
-  comment = strchr(contact, ',');
-  if(!comment)
-    return 4;
-  *comment++ = '\0';  
-
-  tm->group(tm->tag, id, name, trustedfor, mode, maxperident, maxusage, (time_t)expires, (time_t)lastseen, (time_t)lastmaxusereset, createdby, contact, comment);
-  return 0;
-}
-
-static int tm_parsehost(trustmigration *tm, unsigned int id, char *line) {
-  unsigned int max;
-  unsigned long lastseen;
-  char *ip, xbuf[1024];
-
-/* 213.230.192.128/26,20,23,1222732944
-   ip                ,cur,max,lastseen */
-
-  strlcpy(xbuf, line, sizeof(xbuf));
-  ip = line = xbuf;
-
-  line = strchr(line, ',');
-  if(!line)
-    return 5;
-  *line++ = '\0';
-
-  if(sscanf(line, "%*u,%u,%lu", /*current, */&max, &lastseen) != 2)
-    return 6;
-
-  tm->host(tm->tag, id, ip, max, lastseen);
-  return 0;
-}
-
 static void tm_stage2(int failure, int linec, char **linev, void *tag) {
   trustmigration *tm = tag;
   char *finishline;
@@ -132,34 +62,47 @@ static void tm_stage2(int failure, int linec, char **linev, void *tag) {
 
   for(i=0;i<linec-1;i++) {
     char *linestart = &linev[i][2], type = linev[i][0];
-    if(type == 'G' || type == 'H') {
-      char *realline;
-      unsigned int id;
-      int pos, ret;
+    if(type == 'G') {
+      trustgroup tg;
 
-      if(sscanf(linestart, "#%u,%n", &id, &pos) != 1) {
-        tm_fini(tm, 10);
+      if(!parsetg(linestart, &tg, 1)) {
+        tm_fini(tm, 150);
         return;
       }
 
-      if(id > tm->cur) {
-        /* this one is missing and we've received a later one instead, update tm->cur to point to this one */
-        tm->cur = id;
-      } else if(id < tm->cur) {
+      if(tg.id >= tm->cur)
+        tm->group(tm->tag, &tg);
+          
+      freesstring(tg.name);
+      freesstring(tg.createdby);
+      freesstring(tg.contact);
+      freesstring(tg.comment);
+
+      if(tg.id < tm->cur) {
         tm_fini(tm, 11);
         return;
       }
 
-      realline = &linestart[pos];
-      if(type == 'G') {
-        ret = tm_parsegroup(tm, id, realline);
-      } else {
-        ret = tm_parsehost(tm, id, realline);
-      }
-      if(ret) {
-        tm_fini(tm, ret);
+      if(tg.id > tm->cur)
+        tm->cur = tg.id;
+    } else if (type == 'H') {
+      trusthost th;
+      unsigned int groupid;
+
+      if(!parseth(linestart, &th, &groupid, 1)) {
+        tm_fini(tm, 151);
         return;
       }
+
+      if(groupid < tm->cur) {
+        tm_fini(tm, 11);
+        return;
+      }
+
+      if(groupid > tm->cur)
+        tm->cur = groupid;
+
+      tm->host(tm->tag, &th, groupid);
     } else {
       tm_fini(tm, 11);
       return;
@@ -219,5 +162,10 @@ trustmigration *migration_start(TrustMigrationGroup group, TrustMigrationHost ho
   tm->tag = tag;
 
   tm->schedule = nterfacer_sendline("R", "relay", 4, (char *[]){"1", "1", "O", "trustdump #9999999 1"}, tm_stage1, tm);
+  if(!tm->schedule) {
+    nsfree(POOL_TRUSTS, tm);
+    return NULL;
+  }
+
   return tm;
 }

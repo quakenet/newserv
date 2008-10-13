@@ -1,5 +1,6 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
+#include "../core/config.h"
 #include "trusts.h"
 
 int trusts_migration_start(TrustDBMigrationCallback, void *);
@@ -66,7 +67,18 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustmigrate", trusts_cmdmigrate);
 }
 
+static int loaded = 0;
 void _init(void) {
+  sstring *m;
+
+  m = getconfigitem("trusts", "master");
+  if(!m || (atoi(m->content) != 1)) {
+    Error("trusts_migrationr", ERR_ERROR, "Not a master server, not loaded.");
+    return;
+  }
+
+  loaded = 1;
+
   registerhook(HOOK_TRUSTS_DB_LOADED, registercommands);
   registerhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
@@ -75,6 +87,9 @@ void _init(void) {
 }
 
 void _fini(void) {
+  if(!loaded)
+    return;
+
   deregisterhook(HOOK_TRUSTS_DB_LOADED, registercommands);
   deregisterhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
