@@ -272,7 +272,7 @@ void xsb_broadcast(const char *command, server *service, const char *format, ...
       if(!serverlist[j].name || serverlist[j].marker == marker)
         continue;
 
-      if(match(mask, serverlist[j].name->content)) {
+      if(!match(mask, serverlist[j].name->content)) {
         serverlist[j].marker = marker;
 
         np = getnickbynick(servicenick(serverlist[j].name->content));

@@ -408,6 +408,8 @@ void _init(void) {
     return;
   }
 
+  masternumeric = findserver(smasterserver->content);
+
   loaded = 1;
 
   registercontrolhelpcmd("trustresync", NO_DEVELOPER, 0, trusts_cmdtrustresync, "Usage: trustresync");
