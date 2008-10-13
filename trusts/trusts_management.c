@@ -84,7 +84,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host added.");
   triggerhook(HOOK_TRUSTS_ADDHOST, th);
 
-  /* TODO: controlwall */
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTADD'ed host %s to group '%s'", controlid(sender), host, th->group->name->content);
 
   return CMD_OK;
 }
@@ -174,7 +174,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   controlreply(sender, "Group added.");
   triggerhook(HOOK_TRUSTS_ADDGROUP, tg);
 
-  /* TODO: controlwall */
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPADD'ed '%s'", controlid(sender), tg->name->content);
 
   return CMD_OK;
 }
@@ -197,11 +197,14 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  controlreply(sender, "TODO: NOT IMPLEMENTED");
+
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPDEL'ed '%s'.", controlid(sender), tg->name->content);
+
   triggerhook(HOOK_TRUSTS_DELGROUP, tg);
   tg_delete(tg);
   controlreply(sender, "Group deleted.");
 
-  /* TODO: controlwall */
   return CMD_OK;
 }
 
@@ -210,6 +213,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   trusthost *th;
   uint32_t ip, mask;
   nick *sender = source;
+  char *host;
 
   if(cargc < 2)
     return CMD_USAGE;
@@ -220,7 +224,8 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(!trusts_str2cidr(cargv[1], &ip, &mask)) {
+  host = cargv[1];
+  if(!trusts_str2cidr(host, &ip, &mask)) {
     controlreply(sender, "Invalid IP/mask.");
     return CMD_ERROR;
   }
@@ -234,23 +239,15 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  controlreply(sender, "TODO: NOT IMPLEMENTED");
+
   triggerhook(HOOK_TRUSTS_DELHOST, th);
   th_delete(th);
   controlreply(sender, "Host deleted.");
 
-  /* TODO: controlwall */
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTDEL'ed %s from group '%s'.", controlid(sender), host, tg->name->content);
+
   return CMD_OK;
-}
-
-static int modifyname(trustgroup *tg, char *name) {
-  sstring *n = getsstring(name, TRUSTNAMELEN);
-  if(!n)
-    return 0;
-
-  freesstring(tg->name);
-  tg->name = n;
-
-  return 1;
 }
 
 static int modifycomment(trustgroup *tg, char *comment) {
@@ -326,7 +323,7 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *what, *to, validfields[512];
-  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperuser), MS(name), MS(contact), MS(comment), MS(trustedfor) };
+  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperuser), MS(contact), MS(comment), MS(trustedfor) };
   int modcount = sizeof(mods) / sizeof(struct trustmodification);
   int i;
   StringBuf b;
@@ -369,7 +366,8 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   tg_update(tg);
   controlreply(sender, "Group modified.");
 
-  /* TODO: controlwall */
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed group '%s' (field: %s, value: %s)", controlid(sender), tg->name->content, what, to);
+
   return CMD_OK;
 }
 
