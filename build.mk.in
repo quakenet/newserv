@@ -45,12 +45,6 @@ HOOK_ENGINE=old
 @endif@ ## SSTRING_NEW == 1
 @endif@ # USE_VALGRIND == 1
 
-@ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
-HOOK_ENGINE=old
-@else@
-HOOK_ENGINE=new
-@endif@
-
 @ifdef@ IMPOSSIBLE
 @error@ impossible combination of settings: ${IMPOSSIBLE}@errorend@
 @endif@
