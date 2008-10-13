@@ -1,5 +1,6 @@
 #include "../core/hooks.h"
 #include "../control/control.h"
+#include "../lib/irc_string.h"
 #include "trusts.h"
 
 static int countext;
@@ -16,7 +17,7 @@ static void policycheck(int hooknum, void *arg) {
 
   if(!th) {
     if(np->ipnode->usercount > 5)
-      controlwall(NO_OPER, NL_TRUSTS, "Hard limit exceeded on IP: %s (untrusted) %d connected, 5 max.", IPtostr(np->p_ipaddr), np->ipnode->usercount);
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (untrusted) %d connected, 5 max.", IPtostr(np->p_ipaddr), np->ipnode->usercount);
     return;
   }
 
@@ -29,12 +30,34 @@ static void policycheck(int hooknum, void *arg) {
    */
 
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
-    if(tg->count > tg->maxusage) {
+    if(tg->count > tg->trustedfor) {
+/*
       if(tg->count > (long)tg->exts[countext]) {
-        tg->exts[countext] = (void *)(long)tg->count;
 
-        controlwall(NO_OPER, NL_TRUSTS, "Hard limit exceeded: '%s', %d connected, %d max.", tg->name->content, tg->count, tg->maxusage);
+        tg->exts[countext] = (void *)(long)tg->count;
+*/
+        controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded: '%s', %d connected, %d max.", tg->name->content, tg->count, tg->trustedfor);
       }
+/*
+    }
+*/
+    if((tg->mode == 1) && (np->ident[0] == '~'))
+      controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
+
+    if(tg->maxperident > 0) {
+      int identcount = 0;
+      trusthost *th2;
+      nick *tnp;
+
+      for(th2=tg->hosts;th2;th2=th2->next) {
+        for(tnp=th2->users;tnp;tnp=nextbytrust(tnp)) {
+          if(!ircd_strcmp(tnp->ident, np->ident))
+            identcount++;
+        }
+      }
+
+      if(identcount > tg->maxperident)
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s', %d connected, %d max.", tg->name->content, identcount, tg->maxperident);
     }
   } else {
     if(tg->count < tg->maxusage)
