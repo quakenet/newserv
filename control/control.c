@@ -720,3 +720,12 @@ void controldestroycmdext(void *ext) {
     free( ((cmdhelp *)ext)->helpstr);
   free(ext);
 }
+
+char *controlid(nick *np) {
+  static char buf[512];
+
+  snprintf(buf, sizeof(buf), "%s!%s@%s/%s", np->nick, np->ident, np->host->name->content, np->authname);
+
+  return buf;
+}
+
