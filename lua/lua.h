@@ -116,22 +116,6 @@ void lua_debugoutput(char *p, ...) __attribute__ ((format (printf, 1, 2)));
 
 #endif
 
-#ifndef INLINE
-
-#ifdef __GNUC__
-#define INLINE __attribute((always_inline)) inline
-#endif
-
-#ifdef _MSC_VER
-#define INLINE __forceinline
-#endif
-
-#ifndef INLINE
-#define INLINE inline
-#endif
-
-#endif /* INLINE */
-
-INLINE int lua_debugpcall(lua_State *l, char *message, int a, int b, int c);
+int lua_debugpcall(lua_State *l, char *message, int a, int b, int c);
 
 #endif

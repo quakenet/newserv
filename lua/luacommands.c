@@ -38,8 +38,8 @@ struct lua_pusher nickpusher[MAX_PUSHER];
 struct lua_pusher chanpusher[MAX_PUSHER];
 int nickpushercount, chanpushercount;
 
-INLINE void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount);
-INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np);
+void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount);
+int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np);
 
 void lua_initnickpusher(void);
 void lua_initchanpusher(void);
@@ -973,7 +973,7 @@ void lua_initnickpusher(void) {
   nickpusher[i].argtype = 0;
 }
 
-INLINE void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount) {
+void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int index, struct lua_pusher **lp, int max, int pcount) {
   int current = 0;
 
   if(max > 0)
@@ -1002,7 +1002,7 @@ INLINE void lua_setuppusher(struct lua_pusher *pusherlist, lua_State *l, int ind
   lp[current] = NULL;
 }
 
-INLINE int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
+int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
   int i = 0;
 
   while(*lp) {

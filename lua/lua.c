@@ -438,7 +438,7 @@ int lua_lineok(const char *data) {
   return 1;
 }
 
-INLINE int lua_debugpcall(lua_State *l, char *message, int a, int b, int c) {
+int lua_debugpcall(lua_State *l, char *message, int a, int b, int c) {
   lua_list *l2 = lua_listfromstate(l);
   int ret;
 
