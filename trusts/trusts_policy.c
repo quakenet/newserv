@@ -9,11 +9,18 @@ static void policycheck(int hooknum, void *arg) {
   nick *np = args[0];
   long moving = (long)args[1];
   trusthost *th = gettrusthost(np);
-  trustgroup *tg = th->group;
+  trustgroup *tg;
 
   if(moving)
     return;
 
+  if(!th) {
+    if(np->ipnode->usercount > 5)
+      controlwall(NO_OPER, NL_TRUSTS, "Hard limit exceeded on IP: %s (untrusted) %d connected, 5 max.", IPtostr(np->p_ipaddr), np->ipnode->usercount);
+    return;
+  }
+
+  tg = th->group;
   /*
    * the purpose of this logic is to avoid spam like this:
    * WARNING: tgX exceeded limit: 11 connected vs 10 max
