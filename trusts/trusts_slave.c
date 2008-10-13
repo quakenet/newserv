@@ -39,7 +39,7 @@ static void __abandonreplication(const char *fn, int line, char *error, ...) {
 
   Error("trusts_slave", ERR_ERROR, "%s", buf2);
 
-  syncing = 0;
+  syncing = synced = 0;
 
   controlwall(NO_DEVELOPER, NL_TRUSTS, "Warning: %s", buf2);
 }

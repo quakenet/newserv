@@ -439,7 +439,7 @@ int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
   vnewtg.createdby = getsstring(newtg->createdby->content, CREATEDBYLEN);
   vnewtg.contact = getsstring(newtg->contact->content, CONTACTLEN);
   vnewtg.comment = getsstring(newtg->comment->content, COMMENTLEN);
-  if(!vnewtg.name || !vnewtg.createdby || !vnewtg.contact || vnewtg.comment) {
+  if(!vnewtg.name || !vnewtg.createdby || !vnewtg.contact || !vnewtg.comment) {
     freesstring(vnewtg.name);
     freesstring(vnewtg.createdby);
     freesstring(vnewtg.contact);
