@@ -1,6 +1,7 @@
 @include@ @includel@../build.mk@includel@
 
 GEOIPDIRS=libGeoIP
+LDFLAGS+=-lc
 
 .PHONY: all clean distclean $(GEOIPDIRS) dirs
 
