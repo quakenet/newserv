@@ -130,7 +130,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   controlreply(sender, "ID:              : %u", tg->id);
   controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":((tg->lastseen>0)?trusts_timetostr(tg->lastseen):"(never)"));
   controlreply(sender, "Max usage        : %d", tg->maxusage);
-  controlreply(sender, "Last max reset   : %s", tg->lastmaxuserreset?trusts_timetostr(tg->lastmaxuserreset):"(never)");
+  controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
   controlreply(sender, "Host                 Current    Max        Last seen            Group ID   Group name");
 

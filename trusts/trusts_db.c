@@ -30,8 +30,8 @@ void createtrusttables(int mode) {
   }
 
   trustsdb->createtable(trustsdb, NULL, NULL,
-    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxuserreset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
-    "Tdddd", groups, TRUSTNAMELEN, NICKLEN, CONTACTLEN, COMMENTLEN
+    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxusereset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
+    "Tdddd", groups, TRUSTNAMELEN, CREATEDBYLEN, CONTACTLEN, COMMENTLEN
   );
 
   /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
@@ -155,8 +155,8 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
     tg.maxusage = strtoul(result->get(result, 5), NULL, 10);
     tg.expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
     tg.lastseen = (time_t)strtoul(result->get(result, 7), NULL, 10);
-    tg.lastmaxuserreset = (time_t)strtoul(result->get(result, 8), NULL, 10);
-    tg.createdby = getsstring(rtrim(result->get(result, 9)), NICKLEN);
+    tg.lastmaxusereset = (time_t)strtoul(result->get(result, 8), NULL, 10);
+    tg.createdby = getsstring(rtrim(result->get(result, 9)), CREATEDBYLEN);
     tg.contact = getsstring(rtrim(result->get(result, 10)), CONTACTLEN);
     tg.comment = getsstring(rtrim(result->get(result, 11)), COMMENTLEN);
 
@@ -289,7 +289,7 @@ trustgroup *tg_new(trustgroup *itg) {
   itg->id = tgmaxid + 1;
   itg->maxusage = 0;
   itg->lastseen = 0;
-  itg->lastmaxuserreset = 0;
+  itg->lastmaxusereset = 0;
 
   tg = tg_copy(itg);
   if(!tg)
@@ -309,15 +309,15 @@ void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
 
 void trustsdb_inserttg(char *table, trustgroup *tg) {
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxuserreset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tusuuuutttsss", table, tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content
+    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxusereset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tusuuuutttsss", table, tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content
   );
 }
 
 void tg_update(trustgroup *tg) {
   trustsdb->squery(trustsdb,
-    "UPDATE ? SET name = ?, trustedfor = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxuserreset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
-    "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
+    "UPDATE ? SET name = ?, trustedfor = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxusereset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
+    "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
   );
 }
 

@@ -89,9 +89,9 @@ char *dumptg(trustgroup *tg, int oformat) {
   static char buf[512];
 
   if(oformat) {
-    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->count, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content);
+    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->count, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content);
+    snprintf(buf, sizeof(buf), "%u,%s,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
   }
 
   return buf;
@@ -159,7 +159,7 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
 
   tg->expires = (time_t)expires;
   tg->lastseen = (time_t)lastseen;
-  tg->lastmaxuserreset = (time_t)lastmaxusereset;
+  tg->lastmaxusereset = (time_t)lastmaxusereset;
 
   createdby = &line[pos];
   contact = strchr(createdby, ',');
@@ -173,7 +173,7 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
   *comment++ = '\0';
 
   tg->name = getsstring(name, TRUSTNAMELEN);
-  tg->createdby = getsstring(createdby, NICKLEN);
+  tg->createdby = getsstring(createdby, CREATEDBYLEN);
   tg->comment = getsstring(comment, COMMENTLEN);
   tg->contact = getsstring(contact, CONTACTLEN);
   if(!tg->name || !tg->createdby || !tg->comment || !tg->contact) {

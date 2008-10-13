@@ -121,7 +121,7 @@ trustgroup *tg_add(trustgroup *itg) {
   memcpy(tg, itg, sizeof(trustgroup));
 
   tg->name = getsstring(tg->name->content, TRUSTNAMELEN);
-  tg->createdby = getsstring(tg->createdby->content, NICKLEN);
+  tg->createdby = getsstring(tg->createdby->content, CREATEDBYLEN);
   tg->contact = getsstring(tg->contact->content, CONTACTLEN);
   tg->comment = getsstring(tg->comment->content, COMMENTLEN);
   if(!tg->name || !tg->createdby || !tg->contact || !tg->comment) {
@@ -436,7 +436,7 @@ int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
   /* unfortunately we can't just memcpy the new one over */
 
   vnewtg.name = getsstring(newtg->name->content, TRUSTNAMELEN);
-  vnewtg.createdby = getsstring(newtg->createdby->content, NICKLEN);
+  vnewtg.createdby = getsstring(newtg->createdby->content, CREATEDBYLEN);
   vnewtg.contact = getsstring(newtg->contact->content, CONTACTLEN);
   vnewtg.comment = getsstring(newtg->comment->content, COMMENTLEN);
   if(!vnewtg.name || !vnewtg.createdby || !vnewtg.contact || vnewtg.comment) {
@@ -454,7 +454,7 @@ int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
   vnewtg.maxusage = newtg->maxusage;
   vnewtg.expires = newtg->expires;
   vnewtg.lastseen = newtg->lastseen;
-  vnewtg.lastmaxuserreset = newtg->lastmaxuserreset;
+  vnewtg.lastmaxusereset = newtg->lastmaxusereset;
 
   memcpy(oldtg, &vnewtg, sizeof(trustgroup));
 

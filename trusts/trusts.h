@@ -13,6 +13,8 @@
 #define COMMENTLEN 300
 #define TRUSTNAMELEN 100
 #define TRUSTHOSTLEN 100
+#define CREATEDBYLEN NICKLEN + 1
+
 #define MAXTGEXTS 5
 
 #define MAXTRUSTEDFOR 50000
@@ -39,7 +41,6 @@ typedef struct trusthost {
 
   unsigned int count;
 
-
   struct trusthost *parent, *children;
   unsigned int marker;
 
@@ -57,7 +58,7 @@ typedef struct trustgroup {
   unsigned int maxusage;
   time_t expires;
   time_t lastseen;
-  time_t lastmaxuserreset;
+  time_t lastmaxusereset;
   sstring *createdby, *contact, *comment;
 
   trusthost *hosts;

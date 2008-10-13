@@ -150,7 +150,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   itg.mode = enforceident;
   itg.maxperident = maxperident;
   itg.expires = howlong + time(NULL);
-  itg.createdby = getsstring(createdby, NICKLEN);
+  itg.createdby = getsstring(createdby, CREATEDBYLEN);
   itg.contact = getsstring(contact, CONTACTLEN);
   itg.comment = getsstring(comment, COMMENTLEN);
   itg.name = getsstring(name, TRUSTNAMELEN);
@@ -283,13 +283,13 @@ static int modifytrustedfor(trustgroup *tg, char *num) {
   return 1;
 }
 
-static int modifymaxperuser(trustgroup *tg, char *num) {
-  unsigned int maxperuser = strtoul(num, NULL, 10);
+static int modifymaxperident(trustgroup *tg, char *num) {
+  unsigned int maxperident = strtoul(num, NULL, 10);
 
-  if(maxperuser > MAXPERIDENT)
+  if(maxperident > MAXPERIDENT)
     return 0;
 
-  tg->maxperident = maxperuser;
+  tg->maxperident = maxperident;
 
   return 1;
 }
@@ -323,7 +323,7 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *what, *to, validfields[512];
-  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperuser), MS(contact), MS(comment), MS(trustedfor) };
+  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperident), MS(contact), MS(comment), MS(trustedfor) };
   int modcount = sizeof(mods) / sizeof(struct trustmodification);
   int i;
   StringBuf b;
