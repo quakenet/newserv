@@ -57,7 +57,7 @@ void _init(void) {
 
   servicemasks = getconfigitems("xsb", "servicemask");
   if(!servicemasks || !servicemasks->cursi)
-    Error("xsb", ERR_WARNING, "No service masks in config file (xsb/servicemask), using defaults");
+    Error("xsb", ERR_WARNING, "No service masks in config file (xsb/servicemask), using defaults.");
 }
 
 void _fini(void) {

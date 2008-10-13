@@ -3,4 +3,4 @@
 .PHONY: all
 all: xsb.so
 
-xsb.so: xsb.o
+xsb.so: xsb-${XSB_ENGINE}ircd.o xsb.o
