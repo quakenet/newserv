@@ -159,7 +159,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   }
 
   for(tg=tglist;tg;tg=tg->next) {
-    if(match(tg->name->content, name))
+    if(match(name, tg->name->content))
       continue;
 
     displaygroup(sender, tg);
