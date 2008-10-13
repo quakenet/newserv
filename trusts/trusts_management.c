@@ -13,7 +13,7 @@ static void deregistercommands(int, void *);
 typedef int (*trustmodificationfn)(trustgroup *, char *arg);
 
 struct trustmodification {
-  char *name;
+  char name[50];
   trustmodificationfn fn;
 };
 
@@ -317,17 +317,15 @@ static int modifyexpires(trustgroup *tg, char *expires) {
   return 1;
 }
 
-#define MS(x) (struct trustmodification){ .name = # x, .fn = modify ## x }
+static array trustmods_a;
+static struct trustmodification *trustmods;
 
 static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *what, *to, validfields[512];
-  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperident), MS(contact), MS(comment), MS(trustedfor) };
-  int modcount = sizeof(mods) / sizeof(struct trustmodification);
   int i;
   StringBuf b;
-#undef MS
 
   if(cargc < 3)
     return CMD_USAGE;
@@ -342,9 +340,9 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   to = cargv[2];
 
   sbinit(&b, validfields, sizeof(validfields));
-  for(i=0;i<modcount;i++) {
-    if(!strcmp(what, mods[i].name)) {
-      if(!(mods[i].fn)(tg, to)) {
+  for(i=0;i<trustmods_a.cursi;i++) {
+    if(!strcmp(what, trustmods[i].name)) {
+      if(!(trustmods[i].fn)(tg, to)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
@@ -353,10 +351,10 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
 
     if(i > 0)
       sbaddstr(&b, ", ");
-    sbaddstr(&b, mods[i].name);
+    sbaddstr(&b, trustmods[i].name);
   }
 
-  if(i == modcount) {
+  if(i == trustmods_a.cursi) {
     sbterminate(&b);
     controlreply(sender, "No such field, valid fields are: %s", validfields);
     return CMD_ERROR;
@@ -399,8 +397,23 @@ static void deregistercommands(int hooknum, void *arg) {
 
 static int loaded;
 
+#define _ms_(x) (struct trustmodification){ .name = # x, .fn = modify ## x }
+#define MS(x) { int slot = array_getfreeslot(&trustmods_a); trustmods = (struct trustmodification *)trustmods_a.content; memcpy(&trustmods[slot], &_ms_(x), sizeof(struct trustmodification)); }
+
+static void setupmods(void) {
+  MS(expires);
+  MS(enforceident);
+  MS(maxperident);
+  MS(contact);
+  MS(comment);
+  MS(trustedfor);
+}
+
 void _init(void) {
   sstring *m;
+
+  array_init(&trustmods_a, sizeof(struct trustmodification));
+  setupmods();
 
   m = getconfigitem("trusts", "master");
   if(!m || (atoi(m->content) != 1)) {
@@ -418,6 +431,8 @@ void _init(void) {
 }
 
 void _fini(void) {
+  array_free(&trustmods_a);
+
   if(!loaded)
     return;
 
