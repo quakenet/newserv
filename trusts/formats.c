@@ -132,6 +132,9 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
     return 0;
   *line++ = '\0';
 
+  if(oformat && (id[0] == '#'))
+    id++;
+
   tg->id = strtoul(id, NULL, 10);
   if(!tg->id)
     return 0;
@@ -198,6 +201,9 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
   if(!line)
     return 0;
   *line++ = '\0';
+
+  if(oformat && (id[0] == '#'))
+    id++;
 
   *tgid = strtoul(id, NULL, 10);
   if(!*tgid)
