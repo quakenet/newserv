@@ -16,7 +16,7 @@
 #include "trusts.h"
 
 static int syncing, synced;
-static sstring *masterserver;
+static sstring *smasterserver;
 
 static unsigned int curlineno, totallines;
 static SHA1_CTX s;
@@ -25,12 +25,14 @@ void trusts_replication_createtables(void);
 void trusts_replication_swap(void);
 void trusts_replication_complete(int);
 
+static int masterserver(void *source);
+
 static void __abandonreplication(const char *fn, int line, char *error, ...) {
   va_list ap;
   char buf[512], buf2[600];
 
   va_start(ap, error);
-  vsnprintf(buf, sizeof(buf), "%s", ap);
+  vsnprintf(buf, sizeof(buf), error, ap);
   va_end(ap);
 
   snprintf(buf2, sizeof(buf2), "Error replicating (function: %s, line: %d): %s", fn, line, buf);
@@ -91,13 +93,11 @@ static char *extractline(char *buf, int reset, int update, int final) {
         return NULL;
 
       if(lineno != curlineno) {
-        abandonreplication("unexpected line number");
-        Error("trusts_slave", ERR_ERROR, "Didn't get expected line number (%u vs. %u).", lineno, curlineno);
+        abandonreplication("unexpected line number (%u vs. %u)", lineno, curlineno);
         return NULL;
       }
       if(lineno > totallines) {
         abandonreplication("too many lines");
-        Error("trusts_slave", ERR_ERROR, "Too many lines received!");
         return NULL;
       }
 
@@ -119,6 +119,9 @@ static int xsb_trinit(void *source, int argc, char **argv) {
   char *buf;
   unsigned int forced;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of args");
     return CMD_ERROR;
@@ -138,7 +141,7 @@ static int xsb_trinit(void *source, int argc, char **argv) {
     return CMD_ERROR;
   }
 
-  if(!forced || synced)
+  if(!forced && synced)
     return CMD_OK;
 
   if(!extractline(argv[0], 1, 1, 0))
@@ -159,6 +162,9 @@ static int xsb_trdata(void *source, int argc, char **argv) {
   if(!syncing)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of args");
     return CMD_ERROR;
@@ -172,8 +178,7 @@ static int xsb_trdata(void *source, int argc, char **argv) {
     if(buf[0] == 'G') {
       trustgroup tg;
       if(!parsetg(&buf[2], &tg, 0)) {
-        abandonreplication("bad trustgroup line");
-        Error("trusts_slave", ERR_ERROR, "Bad trustgroup line: %s", buf);
+        abandonreplication("bad trustgroup line: %s", buf);
         return CMD_ERROR;
       }
       trustsdb_inserttg("replication_groups", &tg);
@@ -188,21 +193,17 @@ static int xsb_trdata(void *source, int argc, char **argv) {
       trusthost th;
 
       if(!parseth(&buf[2], &th, &tgid, 0)) {
-        abandonreplication("bad trusthost line");
-        Error("trusts_slave", ERR_ERROR, "Bad trusthost line: %s", buf);
+        abandonreplication("bad trusthost line: %s", buf);
         return CMD_ERROR;
       }
       trustsdb_insertth("replication_hosts", &th, tgid);
     } else {
-      abandonreplication("bad trust type");
+      abandonreplication("bad trust type: %c", buf[0]);
 
-      Error("trusts_slave", ERR_ERROR, "Bad trust type: %c", buf[0]);
       return CMD_ERROR;
     }
   } else {
-    abandonreplication("malformed line");
-
-    Error("trusts_slave", ERR_ERROR, "Malformed data line: %s", buf);
+    abandonreplication("malformed line: %s", buf);
   }
 
   return CMD_OK;
@@ -216,6 +217,9 @@ static int xsb_trfini(void *source, int argc, char **argv) {
   if(!syncing)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of args");
     return CMD_ERROR;
@@ -226,15 +230,13 @@ static int xsb_trfini(void *source, int argc, char **argv) {
     return CMD_ERROR;
 
   if((totallines + 1) != curlineno) {
-    abandonreplication("wrong number of lines received");
-    Error("trusts_slave", ERR_ERROR, "Wrong number of lines received (%u vs. %u).", totallines, curlineno - 1);
+    abandonreplication("wrong number of lines received: %u vs. %u", totallines, curlineno - 1);
     return CMD_ERROR;
   }
 
   SHA1Final(digest, &s);
   if(strcasecmp(hmac_printhex(digest, digestbuf, SHA1_DIGESTSIZE), buf)) {
     abandonreplication("digest mismatch");
-    Error("trusts_slave", ERR_ERROR, "Digest mismatch.");
     return CMD_ERROR;
   }
 
@@ -243,6 +245,7 @@ static int xsb_trfini(void *source, int argc, char **argv) {
   trusts_replication_swap();
 
   synced = 1;
+  syncing = 0;
 
   return CMD_OK;
 }
@@ -253,14 +256,16 @@ static int xsb_traddgroup(void *source, int argc, char **argv) {
   if(!synced)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
   }
 
   if(!parsetg(argv[0], &tg, 0)) {
-    abandonreplication("bad trustgroup line");
-    Error("trusts_slave", ERR_ERROR, "Bad trustgroup line: %s", argv[0]);
+    abandonreplication("bad trustgroup line: %s", argv[0]);
     return CMD_ERROR;
   }
 
@@ -286,14 +291,16 @@ static int xsb_traddhost(void *source, int argc, char **argv) {
   if(!synced)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
   }
 
   if(!parseth(argv[0], &th, &tgid, 0)) {
-    abandonreplication("bad trusthost line");
-    Error("trusts_slave", ERR_ERROR, "Bad trusthost line: %s", argv[0]);
+    abandonreplication("bad trusthost line: %s", argv[0]);
     return CMD_ERROR;
   }
 
@@ -315,6 +322,9 @@ static int xsb_trdelhost(void *source, int argc, char **argv) {
   if(!synced)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
@@ -327,6 +337,9 @@ static int xsb_trdelgroup(void *source, int argc, char **argv) {
   if(!synced)
     return CMD_OK;
 
+  if(!masterserver(source))
+    return CMD_ERROR;
+
   if(argc < 1) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
@@ -335,23 +348,34 @@ static int xsb_trdelgroup(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
-static int loaded;
+static int loaded, masternumeric = -1;
 static void *syncsched;
 
+static int masterserver(void *source) {
+  nick *np = source;
+  int home = homeserver(np->numeric);
+
+  if(home < 0)
+    return 0;
+
+  if(home != masternumeric) {
+    Error("trusts_slave", ERR_WARNING, "Command from server that isn't a master: %s", serverlist[home].name->content);
+    return 0;
+  }
+
+  return 1;
+}
+
 static void checksynced(void *arg) {
-  if(!synced || !syncing)
-    xsb_broadcast("trrequestsync", NULL, "%s", "");
+  if(!synced && !syncing)
+    xsb_broadcast("trrequeststart", NULL, "%s", "");
 }
 
 static int trusts_cmdtrustresync(void *source, int argc, char **argv) {
   nick *np = source;
 
-  if(syncing) {
-    controlreply(np, "Synchronisation is already in progress.");
-    return CMD_ERROR;
-  }
+  syncing = synced = 0;
 
-  synced = 0;
   checksynced(NULL);
   controlreply(np, "Synchronisation request sent.");
 
@@ -359,9 +383,10 @@ static int trusts_cmdtrustresync(void *source, int argc, char **argv) {
 }
 
 static void __serverlinked(int hooknum, void *arg) {
-  int servernum = (int)arg;
+  int servernum = (int)(long)arg;
 
-  if(!ircd_strcmp(serverlist[servernum].name->content, masterserver->content)) {
+  if(!ircd_strcmp(serverlist[servernum].name->content, smasterserver->content)) {
+    masternumeric = servernum;
     syncing = synced = 0;
     checksynced(NULL);
   }
@@ -376,10 +401,10 @@ void _init(void) {
     return;
   }
 
-  masterserver = getcopyconfigitem("trusts", "masterserver", "", 255);
-  if(!masterserver || !masterserver->content || !masterserver->content[0]) {
+  smasterserver = getcopyconfigitem("trusts", "masterserver", "", 255);
+  if(!smasterserver || !smasterserver->content || !smasterserver->content[0]) {
     Error("trusts_slave", ERR_ERROR, "No master server defined.");
-    freesstring(masterserver);
+    freesstring(smasterserver);
     return;
   }
 
@@ -406,7 +431,7 @@ void _fini(void) {
   if(!loaded)
     return;
 
-  freesstring(masterserver);
+  freesstring(smasterserver);
 
   deregistercontrolcmd("trustresync", trusts_cmdtrustresync);
 
