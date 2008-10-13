@@ -43,6 +43,7 @@ void controlspecialrmmod(void *arg);
 void controlspecialreloadmod(void *arg);
 void controlhelp(nick *np, Command *cmd);
 void controlnswall(int noticelevel, char *format, ...) __attribute__ ((format (printf, 2, 3)));
+char *controlid(nick *);
 
 /* NEVER USE THE FOLLOWING IN COMMANDS, you'll end up missing bits off and users'll end up being able to gline people */
 #define __NO_ANYONE      0x000
