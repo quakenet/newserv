@@ -57,7 +57,7 @@ static void policycheck(int hooknum, void *arg) {
       }
 
       if(identcount > tg->maxperident)
-        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s', %d connected, %d max.", tg->name->content, identcount, tg->maxperident);
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident);
     }
   } else {
     if(tg->count < tg->maxusage)
