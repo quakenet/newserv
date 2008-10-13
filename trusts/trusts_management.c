@@ -4,10 +4,18 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/config.h"
+#include "../lib/stringbuf.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
+
+typedef int (*trustmodificationfn)(trustgroup *, char *arg);
+
+struct trustmodification {
+  char *name;
+  trustmodificationfn fn;
+};
 
 static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   trustgroup *tg;
@@ -93,19 +101,19 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
 
   name = cargv[0];
   howmany = strtoul(cargv[1], NULL, 10);
-  if(!howmany || (howmany > 50000)) {
+  if(!howmany || (howmany > MAXTRUSTEDFOR)) {
     controlreply(sender, "Bad value maximum number of clients.");
     return CMD_ERROR;
   }
 
   howlong = durationtolong(cargv[2]);
-  if((howlong <= 0) || (howlong > 365 * 86400 * 20)) {
+  if((howlong <= 0) || (howlong > MAXDURATION)) {
     controlreply(sender, "Invalid duration supplied.");
     return CMD_ERROR;
   }
 
   maxperident = strtoul(cargv[3], NULL, 10);
-  if(!howmany || (maxperident > 1000)) {
+  if(!howmany || (maxperident > MAXPERIDENT)) {
     controlreply(sender, "Bad value for max per ident.");
     return CMD_ERROR;
   }
@@ -171,6 +179,200 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  nick *sender = source;
+
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  if(tg->hosts) {
+    controlreply(sender, "Delete all hosts before deleting the group.");
+    return CMD_ERROR;
+  }
+
+  triggerhook(HOOK_TRUSTS_DELGROUP, tg);
+  tg_delete(tg);
+  controlreply(sender, "Group deleted.");
+
+  /* TODO: controlwall */
+  return CMD_OK;
+}
+
+static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  trusthost *th;
+  uint32_t ip, mask;
+  nick *sender = source;
+
+  if(cargc < 2)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  if(!trusts_str2cidr(cargv[1], &ip, &mask)) {
+    controlreply(sender, "Invalid IP/mask.");
+    return CMD_ERROR;
+  }
+
+  for(th=tg->hosts;th;th=th->next)
+    if((th->ip == ip) && (th->mask == mask))
+      break;
+
+  if(!th) {
+    controlreply(sender, "Couldn't find that host in that group.");
+    return CMD_ERROR;
+  }
+
+  triggerhook(HOOK_TRUSTS_DELHOST, th);
+  th_delete(th);
+  controlreply(sender, "Host deleted.");
+
+  /* TODO: controlwall */
+  return CMD_OK;
+}
+
+static int modifyname(trustgroup *tg, char *name) {
+  sstring *n = getsstring(name, TRUSTNAMELEN);
+  if(!n)
+    return 0;
+
+  freesstring(tg->name);
+  tg->name = n;
+
+  return 1;
+}
+
+static int modifycomment(trustgroup *tg, char *comment) {
+  sstring *n = getsstring(comment, COMMENTLEN);
+  if(!n)
+    return 0;
+
+  freesstring(tg->comment);
+  tg->comment = n;
+
+  return 1;
+}
+
+static int modifycontact(trustgroup *tg, char *contact) {
+  sstring *n = getsstring(contact, CONTACTLEN);
+  if(!n)
+    return 0;
+
+  freesstring(tg->contact);
+  tg->contact = n;
+
+  return 1;
+}
+
+static int modifytrustedfor(trustgroup *tg, char *num) {
+  unsigned int trustedfor = strtoul(num, NULL, 10);
+
+  if(trustedfor > MAXTRUSTEDFOR)
+    return 0;
+
+  tg->trustedfor = trustedfor;
+
+  return 1;
+}
+
+static int modifymaxperuser(trustgroup *tg, char *num) {
+  unsigned int maxperuser = strtoul(num, NULL, 10);
+
+  if(maxperuser > MAXPERIDENT)
+    return 0;
+
+  tg->maxperident = maxperuser;
+
+  return 1;
+}
+
+static int modifyenforceident(trustgroup *tg, char *num) {
+  if(num[0] == '1') {
+    tg->mode = 1;
+  } else if(num[0] == '0') {
+    tg->mode = 0;
+  } else {
+    return 0;
+  }
+
+  return 1;
+}
+
+static int modifyexpires(trustgroup *tg, char *expires) {
+  int howlong = durationtolong(expires);
+
+  if((howlong <= 0) || (howlong > MAXDURATION))
+    return 0;
+
+  tg->expires = time(NULL) + howlong;
+
+  return 1;
+}
+
+#define MS(x) (struct trustmodification){ .name = # x, .fn = modify ## x }
+
+static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  nick *sender = source;
+  char *what, *to, validfields[512];
+  struct trustmodification *mods = (struct trustmodification []){ MS(expires), MS(enforceident), MS(maxperuser), MS(name), MS(contact), MS(comment), MS(trustedfor) };
+  int modcount = sizeof(mods) / sizeof(struct trustmodification);
+  int i;
+  StringBuf b;
+#undef MS
+
+  if(cargc < 3)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  what = cargv[1];
+  to = cargv[2];
+
+  sbinit(&b, validfields, sizeof(validfields));
+  for(i=0;i<modcount;i++) {
+    if(!strcmp(what, mods[i].name)) {
+      if(!(mods[i].fn)(tg, to)) {
+        controlreply(sender, "An error occured changing that property, check the syntax.");
+        return CMD_ERROR;
+      }
+      break;
+    }
+
+    if(i > 0)
+      sbaddstr(&b, ", ");
+    sbaddstr(&b, mods[i].name);
+  }
+
+  if(i == modcount) {
+    sbterminate(&b);
+    controlreply(sender, "No such field, valid fields are: %s", validfields);
+    return CMD_ERROR;
+  }
+
+  triggerhook(HOOK_TRUSTS_MODIFYGROUP, tg);
+  tg_update(tg);
+  controlreply(sender, "Group modified.");
+
+  /* TODO: controlwall */
+  return CMD_OK;
+}
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -180,6 +382,9 @@ static void registercommands(int hooknum, void *arg) {
 
   registercontrolhelpcmd("trustgroupadd", NO_OPER, 6, trusts_cmdtrustgroupadd, "Usage: trustgroupadd <name> <howmany> <howlong> <maxperident> <enforceident> <contact> ?comment?");
   registercontrolhelpcmd("trustadd", NO_OPER, 2, trusts_cmdtrustadd, "Usage: trustadd <#id|name|id> <host>");
+  registercontrolhelpcmd("trustgroupdel", NO_OPER, 1, trusts_cmdtrustgroupdel, "Usage: trustgroupdel <#id|name|id>");
+  registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");
+  registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, "Usage: trustgroupmodify <#id|name|id> <field> <new value>");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -189,6 +394,9 @@ static void deregistercommands(int hooknum, void *arg) {
 
   deregistercontrolcmd("trustgroupadd", trusts_cmdtrustgroupadd);
   deregistercontrolcmd("trustadd", trusts_cmdtrustadd);
+  deregistercontrolcmd("trustgroupdel", trusts_cmdtrustgroupdel);
+  deregistercontrolcmd("trustdel", trusts_cmdtrustdel);
+  deregistercontrolcmd("trustgroupmodify", trusts_cmdtrustgroupmodify);
 }
 
 static int loaded;

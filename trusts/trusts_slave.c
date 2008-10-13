@@ -41,7 +41,7 @@ static void __abandonreplication(const char *fn, int line, char *error, ...) {
 
   syncing = 0;
 
-  /* TODO: warn IRC */
+  controlwall(NO_DEVELOPER, NL_TRUSTS, "Warning: %s", buf2);
 }
 
 #define abandonreplication(x, ...) __abandonreplication(__FUNCTION__, __LINE__, x , # __VA_ARGS__)
@@ -304,7 +304,7 @@ static int xsb_traddhost(void *source, int argc, char **argv) {
     return CMD_ERROR;
   }
 
-  th.group = tg_inttotg(tgid);
+  th.group = tg_getbyid(tgid);
   if(!th.group) {
     abandonreplication("unable to lookup trustgroup");
     return CMD_ERROR;
@@ -319,6 +319,9 @@ static int xsb_traddhost(void *source, int argc, char **argv) {
 }
 
 static int xsb_trdelhost(void *source, int argc, char **argv) {
+  unsigned int id;
+  trusthost *th;
+
   if(!synced)
     return CMD_OK;
 
@@ -329,11 +332,28 @@ static int xsb_trdelhost(void *source, int argc, char **argv) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
   }
+
+  id = strtoul(argv[0], NULL, 10);
+  if(!id) {
+    abandonreplication("unable to convert id to integer");
+    return CMD_ERROR;
+  }
+
+  th = th_getbyid(id);
+  if(!th) {
+    abandonreplication("unable to lookup id");
+    return CMD_ERROR;
+  }
+
+  th_delete(th);
 
   return CMD_OK;
 }
 
 static int xsb_trdelgroup(void *source, int argc, char **argv) {
+  unsigned int id;
+  trustgroup *tg;
+
   if(!synced)
     return CMD_OK;
 
@@ -344,6 +364,61 @@ static int xsb_trdelgroup(void *source, int argc, char **argv) {
     abandonreplication("bad number of arguments");
     return CMD_ERROR;
   }
+
+  id = strtoul(argv[0], NULL, 10);
+  if(!id) {
+    abandonreplication("unable to convert id to integer");
+    return CMD_ERROR;
+  }
+
+  tg = tg_getbyid(id);
+  if(!tg) {
+    abandonreplication("unable to lookup id");
+    return CMD_ERROR;
+  }
+
+  tg_delete(tg);
+
+  return CMD_OK;
+}
+
+static int xsb_trmodifygroup(void *source, int argc, char **argv) {
+  trustgroup tg, *otg;
+
+  if(!synced)
+    return CMD_OK;
+
+  if(!masterserver(source))
+    return CMD_ERROR;
+
+  if(argc < 1) {
+    abandonreplication("bad number of arguments");
+    return CMD_ERROR;
+  }
+
+  if(!parsetg(argv[0], &tg, 0)) {
+    abandonreplication("bad trustgroup line: %s", argv[0]);
+    return CMD_ERROR;
+  }
+
+  otg = tg_getbyid(tg.id);
+
+  if(otg && !tg_modify(otg, &tg)) {
+    abandonreplication("unable to modify database");
+    return CMD_ERROR;
+  }
+
+  freesstring(tg.name);
+  freesstring(tg.createdby);
+  freesstring(tg.contact);
+  freesstring(tg.comment);
+
+  if(!otg) {
+    abandonreplication("unable to lookup id");
+    return CMD_ERROR;
+  }
+
+  tg_update(otg);
 
   return CMD_OK;
 }
@@ -421,6 +496,7 @@ void _init(void) {
   xsb_addcommand("traddgroup", 1, xsb_traddgroup);
   xsb_addcommand("trdelhost", 1, xsb_trdelhost);
   xsb_addcommand("trdelgroup", 1, xsb_trdelgroup);
+  xsb_addcommand("trmodifygroup", 1, xsb_trmodifygroup);
 
   registerhook(HOOK_SERVER_LINKED, __serverlinked);
   syncsched = schedulerecurring(time(NULL)+5, 0, 60, checksynced, NULL);
@@ -444,6 +520,7 @@ void _fini(void) {
   xsb_delcommand("traddgroup", xsb_traddgroup);
   xsb_delcommand("trdelhost", xsb_trdelhost);
   xsb_delcommand("trdelgroup", xsb_trdelgroup);
+  xsb_delcommand("trmodifygroup", xsb_trmodifygroup);
 
   deregisterhook(HOOK_SERVER_LINKED, __serverlinked);
 

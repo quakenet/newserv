@@ -314,6 +314,21 @@ void trustsdb_inserttg(char *table, trustgroup *tg) {
   );
 }
 
+void tg_update(trustgroup *tg) {
+  trustsdb->squery(trustsdb,
+    "UPDATE ? SET name = ?, trustedfor = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxuserreset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
+    "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxuserreset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
+  );
+}
+
+void tg_delete(trustgroup *tg) {
+  /* TODO */
+}
+
+void th_delete(trusthost *th) {
+  /* TODO */
+}
+
 void _init(void) {
   trusts_connectdb();
 }

@@ -15,6 +15,10 @@
 #define TRUSTHOSTLEN 100
 #define MAXTGEXTS 5
 
+#define MAXTRUSTEDFOR 50000
+#define MAXDURATION 365 * 86400 * 20
+#define MAXPERIDENT 1000
+
 #define TABLES_REGULAR 0
 #define TABLES_MIGRATION 1
 #define TABLES_REPLICATION 2
@@ -78,17 +82,6 @@ int registertgext(const char *);
 void releasetgext(int);
 int trusts_fullyonline(void);
 
-/* db.c */
-extern int trustsdbloaded;
-int trusts_loaddb(void);
-void trusts_closedb(int);
-trustgroup *tg_new(trustgroup *);
-trusthost *th_new(trustgroup *, char *);
-void trustsdb_insertth(char *, trusthost *, unsigned int);
-void trustsdb_inserttg(char *, trustgroup *);
-trustgroup *tg_copy(trustgroup *);
-trusthost *th_copy(trusthost *);
-
 /* formats.c */
 char *trusts_timetostr(time_t);
 int trusts_parsecidr(const char *, uint32_t *, short *);
@@ -105,7 +98,7 @@ extern trustgroup *tglist;
 trustgroup *tg_getbyid(unsigned int);
 void th_free(trusthost *);
 trusthost *th_add(trusthost *);
-void tg_free(trustgroup *);
+void tg_free(trustgroup *, int);
 trustgroup *tg_add(trustgroup *);
 trusthost *th_getbyhost(uint32_t);
 trusthost *th_getbyhostandmask(uint32_t, uint32_t);
@@ -118,12 +111,27 @@ trusthost *th_getnextsubsetbyhost(trusthost *th, uint32_t ip, uint32_t mask);
 void th_linktree(void);
 unsigned int nexttgmarker(void);
 unsigned int nextthmarker(void);
-trustgroup *tg_inttotg(unsigned int);
+trusthost *th_getbyid(unsigned int);
+int tg_modify(trustgroup *, trustgroup *);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, trustgroup *);
 typedef void (*TrustMigrationHost)(void *, trusthost *, unsigned int);
 typedef void (*TrustMigrationFini)(void *, int);
+
+/* trusts_db.c */
+extern int trustsdbloaded;
+int trusts_loaddb(void);
+void trusts_closedb(int);
+trustgroup *tg_new(trustgroup *);
+trusthost *th_new(trustgroup *, char *);
+void trustsdb_insertth(char *, trusthost *, unsigned int);
+void trustsdb_inserttg(char *, trustgroup *);
+trustgroup *tg_copy(trustgroup *);
+trusthost *th_copy(trusthost *);
+void tg_update(trustgroup *);
+void tg_delete(trustgroup *);
+void th_delete(trusthost *);
 
 typedef struct trustmigration {
   int count, cur;

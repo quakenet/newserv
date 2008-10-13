@@ -85,6 +85,8 @@
 #define HOOK_TRUSTS_DELGROUP       907 /* Argument is trustgroup* */
 #define HOOK_TRUSTS_ADDHOST        908 /* Argument is trusthost* */
 #define HOOK_TRUSTS_DELHOST        909 /* Argument is trusthost* */
+#define HOOK_TRUSTS_MODIFYGROUP    910 /* Argument is trustgroup* */
+#define HOOK_TRUSTS_LOSTHOST       911 /* Argument is trusthost* */
 
 #define PRIORITY_DEFAULT           0
 

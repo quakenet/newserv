@@ -27,7 +27,7 @@ void trusts_freeall(void) {
       th_free(th);
     }
 
-    tg_free(tg);
+    tg_free(tg, 1);
   }
 
   tglist = NULL;
@@ -44,6 +44,8 @@ trustgroup *tg_getbyid(unsigned int id) {
 }
 
 void th_free(trusthost *th) {
+  triggerhook(HOOK_TRUSTS_LOSTHOST, th);
+
   nsfree(POOL_TRUSTS, th);
 }
 
@@ -100,8 +102,9 @@ trusthost *th_add(trusthost *ith) {
   return th;
 }
 
-void tg_free(trustgroup *tg) {
-  triggerhook(HOOK_TRUSTS_LOSTGROUP, tg);
+void tg_free(trustgroup *tg, int created) {
+  if(created)
+    triggerhook(HOOK_TRUSTS_LOSTGROUP, tg);
 
   freesstring(tg->name);
   freesstring(tg->createdby);
@@ -122,7 +125,7 @@ trustgroup *tg_add(trustgroup *itg) {
   tg->contact = getsstring(tg->contact->content, CONTACTLEN);
   tg->comment = getsstring(tg->comment->content, COMMENTLEN);
   if(!tg->name || !tg->createdby || !tg->contact || !tg->comment) {
-    tg_free(tg);
+    tg_free(tg, 0);
     return NULL;
   }
 
@@ -413,13 +416,47 @@ unsigned int nextthmarker(void) {
   return thmarker;
 }
 
-trustgroup *tg_inttotg(unsigned int id) {
+trusthost *th_getbyid(unsigned int id) {
   trustgroup *tg;
+  trusthost *th;
 
   for(tg=tglist;tg;tg=tg->next)
-    if(tg->id == id)
-      return tg;
+    for(th=tg->hosts;th;th=th->next)
+      if(th->id == id)
+        return th;
 
   return NULL;
 }
 
+int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
+  trustgroup vnewtg;
+
+  memcpy(&vnewtg, oldtg, sizeof(trustgroup));
+
+  /* unfortunately we can't just memcpy the new one over */
+
+  vnewtg.name = getsstring(newtg->name->content, TRUSTNAMELEN);
+  vnewtg.createdby = getsstring(newtg->createdby->content, NICKLEN);
+  vnewtg.contact = getsstring(newtg->contact->content, CONTACTLEN);
+  vnewtg.comment = getsstring(newtg->comment->content, COMMENTLEN);
+  if(!vnewtg.name || !vnewtg.createdby || !vnewtg.contact || vnewtg.comment) {
+    freesstring(vnewtg.name);
+    freesstring(vnewtg.createdby);
+    freesstring(vnewtg.contact);
+    freesstring(vnewtg.comment);
+    return 0;
+  }
+
+  /* id remains the same, count/hosts/marker/next/exts are ignored */
+  vnewtg.trustedfor = newtg->trustedfor;
+  vnewtg.mode = newtg->mode;
+  vnewtg.maxperident = newtg->maxperident;
+  vnewtg.maxusage = newtg->maxusage;
+  vnewtg.expires = newtg->expires;
+  vnewtg.lastseen = newtg->lastseen;
+  vnewtg.lastmaxuserreset = newtg->lastmaxuserreset;
+
+  memcpy(oldtg, &vnewtg, sizeof(trustgroup));
+
+  return 1;
+}
