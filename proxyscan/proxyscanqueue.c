@@ -19,42 +19,22 @@ unsigned long countpendingscan=0;
 void queuescan(patricia_node_t *node, short scantype, unsigned short port, char class, time_t when) {
   pendingscan *psp, *psp2;
 
-  /* check if the IP/port combo is already queued - don't queue up
-   * multiple identical scans
+  /* we can just blindly queue the scans as node extension cleanhost cache blocks duplicate scans normally.
+   * Scans may come from:
+   * a) scan <node> (from an oper)
+   * b) newnick handler - which ignores clean hosts, only scans new hosts or dirty hosts
+   * c) adding a new scan type (rare) 
    */
-  psp = ps_prioqueue;
-  while (psp != NULL)
-  {
-    if (psp->node == node && psp->type == scantype &&
-      psp->port == port && psp->class == class)
-    {
-      /* found it, ignore */
-      return;
-    }
-    psp = psp->next;
-  }
-
-  psp = ps_normalqueue;
-  while (psp != NULL)
-  {
-    if (psp->node == node && psp->type == scantype &&
-      psp->port == port && psp->class == class)
-    {
-      /* found it, ignore */
-      return;
-    }
-    psp = psp->next;
-  }
   
   /* If there are scans spare, just start it immediately.. 
    * provided we're not supposed to wait */
-  if (activescans < maxscans && when<=time(NULL) && (ps_start_ts+120 <= time(NULL))) {
+  if (activescans < maxscans && when<=time(NULL) && ps_ready) {
     startscan(node, scantype, port, class);
     return;
   }
 
   /* We have to queue it */
-  if (!(psp=(struct pendingscan *)malloc(sizeof(pendingscan))))
+  if (!(psp=getpendingscan()))
     Error("proxyscan",ERR_STOP,"Unable to allocate memory");
 
   countpendingscan++;
@@ -95,9 +75,6 @@ void queuescan(patricia_node_t *node, short scantype, unsigned short port, char 
 void startqueuedscans() {
   pendingscan *psp=NULL;
 
-  if (ps_start_ts+120 > time(NULL))
-	return;
-
   while (activescans < maxscans) {
     if (ps_prioqueue && (ps_prioqueue->when <= time(NULL))) {
       psp=ps_prioqueue;
@@ -113,7 +90,7 @@ void startqueuedscans() {
     
     if (psp) {
       startscan(psp->node, psp->type, psp->port, psp->class);
-      free(psp);
+      freependingscan(psp);
       countpendingscan--;
       psp=NULL;
     } else {

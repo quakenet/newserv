@@ -39,6 +39,8 @@ MODULE_VERSION("")
 
 scan *scantable[SCANHASHSIZE];
 
+CommandTree *ps_commands;
+
 int listenfd;
 int activescans;
 int maxscans;
@@ -50,6 +52,7 @@ int glinedhosts;
 time_t ps_starttime;
 int ps_cache_ext;
 int ps_extscan_ext;
+int ps_ready;
 
 int numscans; /* number of scan types currently valid */
 scantype thescans[PSCAN_MAXSCANS];
@@ -81,17 +84,26 @@ void handlescansock(int fd, short events);
 void timeoutscansock(void *arg);
 void proxyscan_newnick(int hooknum, void *arg);
 void proxyscan_lostnick(int hooknum, void *arg);
+void proxyscan_onconnect(int hooknum, void *arg);
 void proxyscanuserhandler(nick *target, int message, void **params);
 void registerproxyscannick();
 void killsock(scan *sp, int outcome);
 void killallscans();
 void proxyscanstats(int hooknum, void *arg);
 void sendlagwarning();
-void proxyscandostatus(nick *np);
-void proxyscandebug(nick *np);
 void proxyscan_newip(nick *np, unsigned long ip);
 int proxyscan_addscantype(int type, int port);
 int proxyscan_delscantype(int type, int port);
+
+int proxyscandostatus(void *sender, int cargc, char **cargv);
+int proxyscandebug(void *sender, int cargc, char **cargv);
+int proxyscandosave(void *sender, int cargc, char **cargv);
+int proxyscandospew(void *sender, int cargc, char **cargv);
+int proxyscandoshowkill(void *sender, int cargc, char **cargv);
+int proxyscandoscan(void *sender, int cargc, char **cargv);
+int proxyscandoaddscan(void *sender, int cargc, char **cargv);
+int proxyscandodelscan(void *sender, int cargc, char **cargv);
+int proxyscandoshowcommands(void *sender, int cargc, char **cargv);
 
 int proxyscan_addscantype(int type, int port) {
   /* Check we have a spare scan slot */
@@ -129,6 +141,8 @@ void _init(void) {
   int ipbits[4];
 
   ps_start_ts = time(NULL);
+  ps_ready = 0;
+  ps_commands = NULL;
 
   ps_cache_ext = registernodeext("proxyscancache");
   if( ps_cache_ext == -1 ) {
@@ -149,7 +163,7 @@ void _init(void) {
   warningsent=0;
   ps_starttime=time(NULL);
   glinedhosts=0;
-
+ 
   scanspermin=0;
   lastscants=time(NULL);
 
@@ -201,6 +215,8 @@ void _init(void) {
   /* Set up our nick on the network */
   scheduleoneshot(time(NULL),&registerproxyscannick,NULL);
 
+  registerhook(HOOK_SERVER_END_OF_BURST, &proxyscan_onconnect);
+
   registerhook(HOOK_NICK_NEWNICK,&proxyscan_newnick);
 
   registerhook(HOOK_CORE_STATSREQUEST,&proxyscanstats);
@@ -217,6 +233,17 @@ void _init(void) {
   } else {
     brokendb=0;
   }
+
+  ps_commands = newcommandtree();
+  addcommandtotree(ps_commands, "showcommands", 0, 0, &proxyscandoshowcommands);
+  addcommandtotree(ps_commands, "status", 0, 0, &proxyscandostatus);
+  addcommandtotree(ps_commands, "listopen", 0, 0, &proxyscandolistopen);
+  addcommandtotree(ps_commands, "save", 0, 0, &proxyscandosave);
+  addcommandtotree(ps_commands, "spew", 0, 0, &proxyscandospew);
+  addcommandtotree(ps_commands, "showkill", 0, 0, &proxyscandoshowkill);
+  addcommandtotree(ps_commands, "scan", 0, 0, &proxyscandoscan);
+  addcommandtotree(ps_commands, "addscan", 0, 0, &proxyscandoaddscan);
+  addcommandtotree(ps_commands, "delscan", 0, 0, &proxyscandodelscan);
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
@@ -252,11 +279,17 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
-  
+ 
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
+ 
+  ps_logfile=fopen("logs/proxyscan.log","a");
 
-  ps_logfile=fopen("proxyscan.log","a");
+  if (connected) {
+    /* if we're already connected, assume we're just reloading module (i.e. have a completed burst) */
+    ps_ready = 1;
+    startqueuedscans();
+  }
 }
 
 void registerproxyscannick(void *arg) {
@@ -292,20 +325,25 @@ void _fini(void) {
 
   deregisterlocaluser(proxyscannick,NULL);
   
-  releasenodeext(ps_cache_ext);
-  releasenodeext(ps_extscan_ext);
+  deregisterhook(HOOK_SERVER_END_OF_BURST, &proxyscan_onconnect);
 
   deregisterhook(HOOK_NICK_NEWNICK,&proxyscan_newnick);
 
   deregisterhook(HOOK_CORE_STATSREQUEST,&proxyscanstats);
 
   deleteschedule(NULL,&dumpcachehosts,NULL);
-  
+ 
+  destroycommandtree(ps_commands);
+ 
   /* Kill any scans in progress */
   killallscans();
 
   /* Dump the database - AFTER killallscans() which prunes it */
   dumpcachehosts(NULL);
+
+  /* dump any cached hosts before deleting the extensions */
+  releasenodeext(ps_cache_ext);
+  releasenodeext(ps_extscan_ext);
 
   /* free() all our structures */
   nsfreeall(POOL_PROXYSCAN);
@@ -323,11 +361,9 @@ void _fini(void) {
 
 void proxyscanuserhandler(nick *target, int message, void **params) {
   nick *sender;
-  char *msg;
-  int i;
-  struct irc_in_addr sin;
-  unsigned char bits;
-  patricia_node_t *node;
+  Command *ps_command;
+  char *cargv[20];
+  int cargc;
 
   switch(message) {
   case LU_KILLED:
@@ -338,93 +374,27 @@ void proxyscanuserhandler(nick *target, int message, void **params) {
   case LU_PRIVMSG:
   case LU_SECUREMSG:
     sender=(nick *)params[0];
-    msg=(char *)params[1];
     
     if (IsOper(sender)) {
-      if (!ircd_strncmp(msg,"listopen",8)) {
-	proxyscandolistopen(proxyscannick,sender,time(NULL)-rescaninterval);
-      }
-      
-      if (!ircd_strncmp(msg,"status",6)) {
-	proxyscandostatus(sender);
-      }
-      
-      if (!ircd_strncmp(msg,"save",4)) {
-	dumpcachehosts(NULL);
-	sendnoticetouser(proxyscannick,sender,"Done.");
-      }
-      
-      if (!ircd_strncmp(msg,"debug",5)) {
-	proxyscandebug(sender);
+      cargc = splitline((char *)params[1], cargv, 20, 0);
+
+      if ( cargc == 0 )
+        return;
+
+      ps_command = findcommandintree(ps_commands, cargv[0], 1);
+
+      if ( !ps_command ) {
+        sendnoticetouser(proxyscannick,sender, "Unknown command.");
+        return;
       }
 
-      if (!ircd_strncmp(msg,"spew ",5)) {
-        /* check our database for the ip supplied */
-        unsigned long a,b,c,d;
-        if (4 != sscanf(&msg[5],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
-          sendnoticetouser(proxyscannick,sender,"Usage: spew x.x.x.x");
-        } else {
-          /* check db */
-          proxyscanspewip(proxyscannick,sender,a,b,c,d);
-        }
+      if ( ps_command->maxparams < (cargc-1) ) {
+        rejoinline(cargv[ps_command->maxparams], cargc - (ps_command->maxparams));
+        cargc = (ps_command->maxparams) + 1;
       }
 
-      if (!ircd_strncmp(msg,"showkill ",9)) {
-        /* check our database for the id supplied */
-        unsigned long a;
-        if (1 != sscanf(&msg[9],"%lu",&a)) {
-          sendnoticetouser(proxyscannick,sender,"Usage: showkill <id>");
-        } else {
-          /* check db */
-          proxyscanshowkill(proxyscannick,sender,a);
-        }
-      }
-
-      if (!ircd_strncmp(msg,"scan ",5)) {
-        if (0 == ipmask_parse(&msg[5],&sin, &bits)) {
-          sendnoticetouser(proxyscannick,sender,"Usage: scan <ip>");
-        } else {
-          sendnoticetouser(proxyscannick,sender,"Forcing scan of %s",IPtostr(sin));
-	  // * Just queue the scans directly here.. plonk them on the priority queue * /
-          node = refnode(iptree, &sin, bits); /* node leaks node here - should only allow to scan a nick? */
-          for(i=0;i<numscans;i++) {
-	    queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
-	  }
-        }      
-      }
-
-      if (!ircd_strncmp(msg,"addscan ",8)) {
-	unsigned int a,b;
-	if (sscanf(msg+8,"%u %u",&a,&b) != 2) {
-	  sendnoticetouser(proxyscannick,sender,"Usage: addscan <type> <port>");
-	} else {
-	  sendnoticetouser(proxyscannick,sender,"Added scan type %u port %u",a,b);
-	  proxyscan_addscantype(a,b);
-	  scanall(a,b);
-	}
-      }
-
-      if (!ircd_strncmp(msg,"delscan ",8)) {
-	unsigned int a,b;
-	if (sscanf(msg+8,"%u %u",&a,&b) != 2) {
-	  sendnoticetouser(proxyscannick,sender,"Usage: delscan <type> <port>");
-	} else {
-	  sendnoticetouser(proxyscannick,sender,"Delete scan type %u port %u",a,b);
-	  proxyscan_delscantype(a,b);
-	}
-      }	  
-
-      if ((!ircd_strncmp(msg,"help",4)) || (!ircd_strncmp(msg,"showcommands",12))) {
-	sendnoticetouser(proxyscannick,sender,"Proxyscan commands:");
-	sendnoticetouser(proxyscannick,sender,"----------------------------------------------------------------------");
-	sendnoticetouser(proxyscannick,sender,"help              Shows this help");
-	sendnoticetouser(proxyscannick,sender,"status            Prints status information");
-	sendnoticetouser(proxyscannick,sender,"listopen          Shows open proxies found recently");
-	sendnoticetouser(proxyscannick,sender,"save              Saves the clean host database");
-	sendnoticetouser(proxyscannick,sender,"scan <ip>         Force scan of the supplied IP");
-	sendnoticetouser(proxyscannick,sender,"spew <ip>         Find <ip> in our list of open proxies");
-	sendnoticetouser(proxyscannick,sender,"showkill <id>     Shows details of a kill or gline made by the service");
-      }
+      (ps_command->handler)((void *)sender, cargc - 1, &(cargv[1]));
+      break;
     }
 
   default:
@@ -833,7 +803,8 @@ int pscansort(const void *a, const void *b) {
   return thescans[ra].hits - thescans[rb].hits;
 }
 
-void proxyscandostatus(nick *np) {
+int proxyscandostatus(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *) sender;
   int i;
   int totaldetects=0;
   int ord[PSCAN_MAXSCANS];
@@ -870,16 +841,16 @@ void proxyscandostatus(nick *np) {
                      scantostr(thescans[ord[i]].type), thescans[ord[i]].port, thescans[ord[i]].hits, ((float)thescans[ord[i]].hits*100)/totaldetects);
   
   sendnoticetouser(proxyscannick,np,"End of list.");
+  return CMD_OK;
 }
 
-void proxyscandebug(nick *np) {
+int proxyscandebug(void *sender, int cargc, char **cargv) {
   /* Dump all scans.. */
   int i;
   int activescansfound=0;
   int totalscansfound=0;
   scan *sp;
-  patricia_node_t *node;
-  cachehost *chp;
+  nick *np = (nick *)sender;
 
   sendnoticetouser(proxyscannick,np,"Active scans : %d",activescans);
   
@@ -894,13 +865,113 @@ void proxyscandebug(nick *np) {
     }
   }
 
-  PATRICIA_WALK (iptree->head, node) {
-    if ( node->exts[ps_cache_ext] ) {
-      chp = (cachehost *) node->exts[ps_cache_ext];
-      if (chp)
-        sendnoticetouser(proxyscannick,np,"node: %s , chp: %p", IPtostr(((patricia_node_t *)node)->prefix->sin), chp);
-    }
-  } PATRICIA_WALK_END;
-
   sendnoticetouser(proxyscannick,np,"Total %d scans actually found (%d active)",totalscansfound,activescansfound);
+  return CMD_OK;
+}
+
+void proxyscan_onconnect(int hooknum, void *arg) {
+  ps_ready = 1;
+
+  /* kick the queue.. */
+  startqueuedscans();
+}
+
+int proxyscandosave(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+
+  sendnoticetouser(proxyscannick,np,"Saving cached hosts...");
+  dumpcachehosts(NULL);
+  sendnoticetouser(proxyscannick,np,"Done.");
+  return CMD_OK;
+}
+
+int proxyscandospew(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+
+  /* check our database for the ip supplied */
+  unsigned long a,b,c,d;
+  if (4 != sscanf(cargv[0],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
+    sendnoticetouser(proxyscannick,np,"Usage: spew x.x.x.x");
+  } else {
+    /* check db */
+    proxyscanspewip(proxyscannick,np,a,b,c,d);
+  }
+  return CMD_OK;
+}
+
+int proxyscandoshowkill(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+
+  /* check our database for the id supplied */
+  unsigned long a;
+  if (1 != sscanf(cargv[0],"%lu",&a)) {
+    sendnoticetouser(proxyscannick,np,"Usage: showkill <id>");
+  } else {
+    /* check db */
+    proxyscanshowkill(proxyscannick,np,a);
+  }
+  return CMD_OK;
+}
+
+int proxyscandoscan(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  patricia_node_t *node;
+  struct irc_in_addr sin;
+  unsigned char bits;
+  int i;
+
+  if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
+    sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
+  } else {
+    sendnoticetouser(proxyscannick,np,"Forcing scan of %s",IPtostr(sin));
+    // * Just queue the scans directly here.. plonk them on the priority queue * /
+    node = refnode(iptree, &sin, bits); /* node leaks node here - should only allow to scan a nick? */
+    for(i=0;i<numscans;i++) {
+      /* @@@TODO: we allow a forced scan to scan the same IP multiple times atm */
+      queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
+    }
+  }
+  return CMD_OK;
+}
+
+int proxyscandoaddscan(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+
+  unsigned int a,b;
+  if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {
+    sendnoticetouser(proxyscannick,np,"Usage: addscan <type> <port>");
+  } else {
+    sendnoticetouser(proxyscannick,np,"Added scan type %u port %u",a,b);
+    proxyscan_addscantype(a,b);
+    scanall(a,b);
+  }
+  return CMD_OK;
+}
+
+int proxyscandodelscan(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+
+  unsigned int a,b;
+  if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {
+    sendnoticetouser(proxyscannick,np,"Usage: delscan <type> <port>");
+  } else {
+    sendnoticetouser(proxyscannick,np,"Delete scan type %u port %u",a,b);
+    proxyscan_delscantype(a,b);
+  }
+  return CMD_OK;
+}
+
+int proxyscandoshowcommands(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  Command *cmdlist[100];
+  int i,n;
+
+  n=getcommandlist(ps_commands,cmdlist,100);
+
+  sendnoticetouser(proxyscannick,np,"The following commands are registered at present:");
+  for(i=0;i<n;i++) {
+    sendnoticetouser(proxyscannick,np,"%s",cmdlist[i]->command->content);
+  }
+  sendnoticetouser(proxyscannick,np,"End of list.");
+  return CMD_OK;
 }

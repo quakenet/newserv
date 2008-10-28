@@ -75,21 +75,20 @@ void dumpcachehosts(void *arg) {
   foundproxy *fpp;
   patricia_node_t *node;
 
-  if ((fp=fopen("cleanhosts","w"))==NULL) {
+  if ((fp=fopen("data/cleanhosts","w"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for writing!");
     return;
   }
 
-  PATRICIA_WALK (iptree->head, node) {
+  PATRICIA_WALK_CLEAR (iptree->head, node) {
     if (node->exts[ps_cache_ext] ) {
       chp = (cachehost *) node->exts[ps_cache_ext];
       if (chp) { 
         if (chp->proxies) {
           if (chp->lastscan < (now-dirtyscaninterval)) {
-            //derefnode(iptree,node); 
-	    //delcachehost(chp);
-  	    //node->exts[ps_cache_ext] = NULL;
-            //continue;
+            derefnode(iptree,node); 
+	    delcachehost(chp);
+  	    node->exts[ps_cache_ext] = NULL;
           } else
         
           for (fpp=chp->proxies;fpp;fpp=fpp->next) 
@@ -97,17 +96,17 @@ void dumpcachehosts(void *arg) {
         } else {
           if (chp->lastscan < (now-cleanscaninterval)) {
             /* Needs rescan anyway, so delete it */
-	    //derefnode(iptree,node); 
-	    //delcachehost(chp);
-            //node->exts[ps_cache_ext] = NULL;          
-            //continue;
+	    derefnode(iptree,node); 
+	    delcachehost(chp);
+            node->exts[ps_cache_ext] = NULL;          
           } else
           fprintf(fp,"%s %lu\n",IPtostr(node->prefix->sin),chp->lastscan);
         }
       }
     }
-  } PATRICIA_WALK_END;
-  
+  } PATRICIA_WALK_CLEAR_END;
+
+//  patricia_tidy_tree(iptree); 
 
   fclose(fp);
 }
@@ -128,8 +127,9 @@ void loadcachehosts() {
   struct irc_in_addr sin;
   unsigned char bits;
   patricia_node_t *node;
+  int i=0;
 
-  if ((fp=fopen("cleanhosts","r"))==NULL) {
+  if ((fp=fopen("data/cleanhosts","r"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open cleanhosts file for reading!");
     return;
   }
@@ -151,6 +151,7 @@ void loadcachehosts() {
     } else {
       node = refnode(iptree, &sin, bits);
       if( node ) {
+        i++;
         chp=addcleanhost(timestamp);
         node->exts[ps_cache_ext] = chp;
       
@@ -165,7 +166,8 @@ void loadcachehosts() {
       }
     }
   }
-  
+ 
+  Error("proxyscan",ERR_INFO, "Loaded %d entries from cache", i); 
 }
 
 /*

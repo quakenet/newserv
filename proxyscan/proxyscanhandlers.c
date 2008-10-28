@@ -19,12 +19,14 @@ void proxyscan_newnick(int hooknum, void *arg) {
   if ((esp=findextrascan(np->ipnode))) {
     Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
     for (espp=esp;espp;espp=espp->nextbynode) { 
+      /* we force a scan on any hosts that may be an open proxy, even if they are:
+       * a) already in the queue, b) we've been running < 120 seconds */
       queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
     }
   }
 
-  /* ignore newnick for first 120s */
-  if (ps_start_ts+120 > time(NULL))
+  /* ignore newnick until initial burst complete */
+  if (!ps_ready)
     return;
 
   /*
@@ -40,7 +42,6 @@ void proxyscan_newnick(int hooknum, void *arg) {
    *
    * If they're not in the cache, we queue up their scans
    */
-
   if ((chp=findcachehost(np->ipnode))) {
     if (!chp->proxies)
       return;
@@ -84,4 +85,3 @@ void proxyscan_newnick(int hooknum, void *arg) {
       queuescan(np->ipnode, thescans[i].type, thescans[i].port, SCLASS_NORMAL, 0);
   }
 }
-
