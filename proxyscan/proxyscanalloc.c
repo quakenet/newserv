@@ -67,12 +67,12 @@ pendingscan *getpendingscan() {
   if (!freependingscans) {
     freependingscans=(pendingscan *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT * sizeof(pendingscan));
     for (i=0;i<(ALLOCUNIT-1);i++)
-      freependingscans[i].next = freependingscans+i+1;
+      freependingscans[i].next = (pendingscan *)&(freependingscans[i+1]);
     freependingscans[ALLOCUNIT-1].next=NULL;
   }
 
   psp=freependingscans;
-  freependingscans=psp->next;
+  freependingscans=(pendingscan *)psp->next;
 
   return psp;
 }
@@ -89,12 +89,12 @@ foundproxy *getfoundproxy() {
   if (!freefoundproxies) {
     freefoundproxies=(foundproxy *)nsmalloc(POOL_PROXYSCAN,ALLOCUNIT * sizeof(foundproxy));
     for (i=0;i<(ALLOCUNIT-1);i++)
-      freefoundproxies[i].next = freefoundproxies+i+1;
+      freefoundproxies[i].next = (foundproxy *)&(freefoundproxies[i+1]);
     freefoundproxies[ALLOCUNIT-1].next=NULL;
   }
 
   fpp=freefoundproxies;
-  freefoundproxies=fpp->next;
+  freefoundproxies=(foundproxy *)fpp->next;
 
   return fpp;
 }

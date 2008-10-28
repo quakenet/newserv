@@ -3,6 +3,7 @@
 #define __PROXYSCAN_H
 
 #include "../nick/nick.h"
+#include "../lib/splitline.h"
 #include <time.h>
 
 #define MAGICSTRING         "NOTICE AUTH :*** Looking up your hostname\r\n"
@@ -102,7 +103,8 @@ extern int brokendb;
 extern int ps_cache_ext;
 extern int ps_scan_ext;
 extern int ps_extscan_ext;
-
+extern int ps_ready;
+extern int rescaninterval;
 
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;
@@ -148,7 +150,7 @@ int createconnectsocket(long ip, int socknum);
 void loggline(cachehost *chp, patricia_node_t *node);
 void proxyscandbclose();
 int proxyscandbinit();
-void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce);
+int proxyscandolistopen(void *sender, int cargc, char **cargv);
 void proxyscanspewip(nick *mynick, nick *usernick, unsigned long a, unsigned long b, unsigned long c, unsigned long d);
 void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a);
 const char *scantostr(int type);

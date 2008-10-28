@@ -53,7 +53,7 @@ void loadextrascans() {
   unsigned char bits;
   patricia_node_t *node;
 
-  if ((fp=fopen("ports.txt","r"))==NULL) {
+  if ((fp=fopen("data/ports.txt","r"))==NULL) {
     Error("proxyscan",ERR_ERROR,"Unable to open ports file for reading!");
     return;
   }

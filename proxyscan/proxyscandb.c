@@ -199,10 +199,12 @@ void proxyscandolistopen_real(DBConn *dbconn, void *arg) {
   sendnoticetouser(proxyscannick,np,"--- End of list ---");
 }
 
-void proxyscandolistopen(nick *mynick, nick *usernick, time_t snce) {
-
+int proxyscandolistopen(void *sender, int cargc, char **cargv) {
+  nick *usernick = (nick *)sender;
+   
   dbasyncquery(proxyscandolistopen_real,(void *)usernick->numeric, 
-               "SELECT IP,TS,RH FROM openproxies WHERE TS>'%lu' ORDER BY TS",snce);
+               "SELECT IP,TS,RH FROM openproxies WHERE TS>'%lu' ORDER BY TS",time(NULL)-rescaninterval);
+  return CMD_OK;
 }
 
 /*
@@ -284,7 +286,6 @@ void proxyscanshowkill_real(DBConn *dbconn, void *arg) {
   dbclear(pgres);
   sendnoticetouser(proxyscannick,np,"--- End of list ---");
 }
-
 
 void proxyscanshowkill(nick *mynick, nick *usernick, unsigned long a) {
   dbasyncquery(proxyscanspewip_real,(void *)usernick->numeric,
