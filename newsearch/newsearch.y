@@ -149,16 +149,23 @@ argument:
 	{
     sstring *str = $1;
     parserlist *l = malloc(sizeof(parserlist));
-    stringlist *sl = malloc(sizeof(stringlist));
-    
-    l->expr = NSASTLiteral(str->content);
+
+    if(str) {
+      stringlist *sl;
+      l->expr = NSASTLiteral(str->content);
+
+      sl = malloc(sizeof(stringlist));
+      sl->data = str;
+      sl->next = (*presult)->strlist;
+      (*presult)->strlist = sl;
+    } else {
+      l->expr = NSASTLiteral("");
+    }
+
     l->next = stack[stackpos - 1];
     stack[stackpos - 1] = l;
     stackcount[stackpos - 1]++;
 
-    sl->data = str;
-    sl->next = (*presult)->strlist;
-    (*presult)->strlist = sl;
 	}
 	;
 
