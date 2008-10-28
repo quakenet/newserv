@@ -261,7 +261,7 @@ static int lua_gline(lua_State *ps) {
     snprintf(mask, sizeof(mask), "*@%s", IPtostr(target->p_ipaddr));
   }
 
-  irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)time(NULL), reason);
+  irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
 }
 

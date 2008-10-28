@@ -544,8 +544,8 @@ void killsock(scan *sp, int outcome) {
     if (!chp->glineid) {
       glinedhosts++;
       loggline(chp, sp->node);
-      irc_send("%s GL * +*@%s 1800 :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),chp->glineid);
+      irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
+	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),(intmax_t)getnettime(), chp->glineid);
       Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
     } else {
       loggline(chp, sp->node);  /* Update log only */
