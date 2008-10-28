@@ -156,4 +156,27 @@ do { \
         } \
     } while (0)
 
+#define PATRICIA_WALK_CLEAR(Xhead, Xnode) \
+    patricia_node_t *Xstack[PATRICIA_MAXBITS+1]; \
+    patricia_node_t **Xsp = Xstack; \
+    patricia_node_t *Xrn = (Xhead); \
+    while ((Xnode = Xrn)) { \
+      patricia_node_t *l = Xrn->l; \
+      patricia_node_t *r = Xrn->r; \
+
+#define PATRICIA_WALK_CLEAR_END \
+            if (l) { \
+                if (r) { \
+                    *Xsp++ = r; \
+                } \
+                Xrn = l; \
+            } else if (r) { \
+                Xrn = r; \
+            } else if (Xsp != Xstack) { \
+                Xrn = *(--Xsp); \
+            } else { \
+                Xrn = (patricia_node_t *) 0; \
+            } \
+        } 
+   
 #endif /* _PATRICIA_H */

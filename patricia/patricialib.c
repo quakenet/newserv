@@ -90,8 +90,8 @@ patricia_deref_prefix (prefix_t * prefix)
 
     prefix->ref_count--;
     if (prefix->ref_count <= 0) {
-	freeprefix(prefix);
-	return;
+      freeprefix(prefix);
+      return;
     }
 }
 

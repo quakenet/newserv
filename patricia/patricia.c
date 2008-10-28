@@ -121,9 +121,18 @@ void releasenodeext(int index) {
 
   head = iptree->head;
 
-  PATRICIA_WALK_ALL(head, node)
+  PATRICIA_WALK_CLEAR(head, node)
   {
-      node->exts[index]=NULL;
-  } PATRICIA_WALK_END;
+    if ( node->exts[index] ) { 
+      if (node->prefix) {
+        if (node->prefix->ref_count == 1) {
+          patricia_remove(iptree, node);
+        } else {
+          patricia_deref_prefix(node->prefix);
+        }
+      }
+    }
+    node->exts[index]=NULL;
+  } PATRICIA_WALK_CLEAR_END;
 }
 
