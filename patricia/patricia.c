@@ -124,15 +124,9 @@ void releasenodeext(int index) {
   PATRICIA_WALK_CLEAR(head, node)
   {
     if ( node->exts[index] ) { 
-      if (node->prefix) {
-        if (node->prefix->ref_count == 1) {
-          patricia_remove(iptree, node);
-        } else {
-          patricia_deref_prefix(node->prefix);
-        }
-      }
+      derefnode(iptree,node);
+      node->exts[index]=NULL;
     }
-    node->exts[index]=NULL;
   } PATRICIA_WALK_CLEAR_END;
 }
 
