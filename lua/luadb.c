@@ -14,7 +14,7 @@ static int lua_dbcreatequery(lua_State *ps) {
   if(!s)
     LUA_RETURN(ps, LUA_FAIL);
 
-  dbcreatequery(s);
+  dbcreatequery("%s", s);
   LUA_RETURN(ps, LUA_OK);
 }
 
@@ -94,7 +94,7 @@ static int lua_dbquery(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   if(!lua_isfunction(ps, 2)) {
-    dbquery(q);
+    dbquery("%s", q);
     LUA_RETURN(ps, LUA_OK);
   }
 
@@ -106,7 +106,7 @@ static int lua_dbquery(lua_State *ps) {
   cb->args = luaL_ref(ps, LUA_REGISTRYINDEX);
   cb->handler = luaL_ref(ps, LUA_REGISTRYINDEX);
 
-  dbasyncquery(lua_dbcallback, cb, q);
+  dbasyncquery(lua_dbcallback, cb, "%s", q);
 
   LUA_RETURN(ps, LUA_OK);
 }

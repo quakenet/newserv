@@ -761,11 +761,11 @@ void versionscan_handler(nick* me, int type, void** args) {
           hcount++;
           switch (v->action) {
           case VS_WARN:
-            sendnoticetouser(versionscan_nick, sender, v->data);
+            sendnoticetouser(versionscan_nick, sender, "%s", v->data);
             wcount++;
             break;
           case VS_KILL:
-            killuser(versionscan_nick, sender, v->data);
+            killuser(versionscan_nick, sender, "%s", v->data);
             kcount++;
             break;
           case VS_GLUSER:
