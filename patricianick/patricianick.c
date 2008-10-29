@@ -86,6 +86,8 @@ patricianick_t *getpatricianick() {
 void addnicktonode(patricia_node_t *node, nick *np) {
   unsigned long hash;
 
+  patricia_ref_prefix(node->prefix);
+
   if (!(node->exts[pnode_ext])) {
     node->exts[pnode_ext] = getpatricianick();
   }
