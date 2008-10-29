@@ -106,7 +106,7 @@ int controlkill(void *sender, int cargc, char **cargv) {
   }
 
   controlwall(NO_OPER, NL_KICKKILLS, "%s/%s sent KILL for %s!%s@%s (%s)", np->nick, np->authname, target->nick, target->ident, target->host->name->content, (cargc>1)?cargv[1]:"Killed");
-  killuser(NULL, target, (cargc>1)?cargv[1]:"Killed");
+  killuser(NULL, target, "%s", (cargc>1)?cargv[1]:"Killed");
   controlreply(np, "KILL sent.");
 
   return CMD_OK;
