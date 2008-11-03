@@ -215,6 +215,7 @@ BeginMessages() {
   msg(QM_CHANLEV_SUSPENDREASON, "Suspended: $0", "s"),
   msg(QM_CHANLEV_SUSPENDSINCE, "Suspended since: $0", "T"),
   msg(QM_CHANLEV_SUSPENDBY, "Suspended by: $0", "s"),
+  msg(QM_TRUNCATED, "Warning: list truncated to $0 items.", "d"),
 } 
 EndMessages()
 #endif

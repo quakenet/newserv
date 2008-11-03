@@ -195,6 +195,7 @@ retry:
 	if (!pcre_exec(csg_curpat, NULL, linestart, strlen(linestart), 0, 0, NULL, 0)) {
 	  chanservsendmessage(np, "%s", linestart);
 	  if (++csg_matches >= csg_maxmatches) {
+	    chanservstdmessage(np, QM_TRUNCATED, csg_maxmatches);
 	    chanservstdmessage(np, QM_ENDOFLIST);
 	    free(csg_curpat);
 	    deregisterhandler(fd, 1);
