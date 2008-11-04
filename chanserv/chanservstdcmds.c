@@ -118,6 +118,10 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
     if ((cmdlist[i]->level & QCMD_NOTAUTHED) && rup)
       continue;
 
+    if ((cmdlist[i]->level & QCMD_STAFF) && 
+	(!rup || !UHasStaffPriv(rup)))
+      continue;
+
     if ((cmdlist[i]->level & QCMD_HELPER) && 
 	(!rup || !UHasHelperPriv(rup)))
       continue;
@@ -145,6 +149,8 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
         sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
       } else if(cmdlist[i]->level & QCMD_HELPER) {
         sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_STAFF) {
+        sprintf(cmdbuf,"+q %s",cmdlist[i]->command->content);
       } else {
         sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
       }

@@ -143,6 +143,12 @@ void chanservuserhandler(nick *target, int message, void **params) {
 	break;
       }
       
+      if ((cmd->level & QCMD_STAFF) && 
+	  (!(rup=getreguserfromnick(sender)) || !UHasStaffPriv(rup))) {
+	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);
+	break;
+      }
+      
       if ((cmd->level & QCMD_HELPER) && 
 	  (!(rup=getreguserfromnick(sender)) || !UHasHelperPriv(rup))) {
 	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);

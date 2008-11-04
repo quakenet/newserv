@@ -393,6 +393,7 @@
 #define   QCMD_OPER           0x0020 /* Only available to opers */
 #define   QCMD_ADMIN          0x0040 /* Only available to admins */
 #define   QCMD_DEV            0x0080 /* Only available to developers */
+#define   QCMD_STAFF          0x0200 /* Only available to staff */
 
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
 
