@@ -396,6 +396,7 @@
 #define   QCMD_STAFF          0x0200 /* Only available to staff */
 
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
+#define   QCMD_HIDDEN         QCMD_ALIAS
 
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
@@ -785,6 +786,7 @@ CRAlgorithm cs_cralgorithm(const char *algorithm);
 const char *cs_cralgorithmlist(void);
 int cs_checkhashpass(const char *username, const char *password, const char *junk, const char *hash);
 char *csc_generateresetcode(time_t lockuntil, char *username);
+int csc_verifyqticket(char *data, char *digest);
 
 /* chanservuser.c */
 void chanservreguser(void *arg);

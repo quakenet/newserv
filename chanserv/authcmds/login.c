@@ -23,16 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 
+int csa_completeauth(nick *sender, reguser *rup, char *authtype);
+
 int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   reguser *rup;
   activeuser *aup;
-  nick *sender=source, *onp;
-  char userhost[USERLEN+HOSTLEN+2];
+  nick *sender=source;
   int challenge=0;
   char *authtype = "AUTH";
-  authname *anp;
-  int toomanyauths=0;
-  time_t now;
 
   if (alg) {
     challenge=1;
@@ -74,6 +72,16 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
       return CMD_ERROR;
     }
   }
+
+  return csa_completeauth(sender, rup, authtype);
+}
+
+int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
+  int toomanyauths=0;
+  time_t now;
+  char userhost[USERLEN+HOSTLEN+2];
+  nick *onp;
+  authname *anp;
 
   /* This should never fail but do something other than crashing if it does. */
   if (!(anp=findauthname(rup->ID))) {
