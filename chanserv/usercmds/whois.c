@@ -173,6 +173,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   if (target->email && (rup==target || cs_privcheck(QPRIV_VIEWEMAIL, sender))) {
     chanservstdmessage(sender, QM_WHOIS_EMAIL, target->email->content);
     chanservstdmessage(sender, QM_WHOIS_EMAILSET, target->lastemailchange);
+    chanservstdmessage(sender, QM_WHOIS_PASSSET, target->lastpasschange);
   }
 
   if (target->info && *target->info->content) {

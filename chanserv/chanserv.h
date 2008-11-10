@@ -549,6 +549,8 @@ typedef struct reguser {
   int                 stealcount;    /* How many times we've had to free the nick up */
   nick               *fakeuser;      /* If we had to "take" the nick, here's the pointer */
 
+  time_t             lastpasschange;
+
   struct reguser     *nextbydomain;
   struct reguser     *nextbyname;
   struct reguser     *nextbyID;

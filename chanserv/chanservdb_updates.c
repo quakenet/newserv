@@ -216,9 +216,11 @@ void csdb_updateuser(reguser *rup) {
 
   dbquery("UPDATE chanserv.users SET lastauth=%lu, lastemailchng=%lu, flags=%u,"
 		  "language=%u, suspendby=%u, suspendexp=%lu, suspendtime=%lu, lockuntil=%lu, password='%s', email='%s',"
-		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s', lastemail='%s' WHERE ID=%u",
+		  "lastuserhost='%s', suspendreason='%s', comment='%s', info='%s', lastemail='%s', lastpasschng=%lu "
+                  " WHERE ID=%u",
 		  rup->lastauth, rup->lastemailchange, rup->flags, rup->languageid, rup->suspendby, rup->suspendexp,
 		  rup->suspendtime, rup->lockuntil, escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo, esclastemail,
+                  rup->lastpasschange,
 		  rup->ID);
 }  
 
@@ -267,11 +269,12 @@ void csdb_createuser(reguser *rup) {
 
   dbquery("INSERT INTO chanserv.users (ID, username, created, lastauth, lastemailchng, "
 		  "flags, language, suspendby, suspendexp, suspendtime, lockuntil, password, email, lastuserhost, "
-		  "suspendreason, comment, info, lastemail) VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s',"
-		  "'%s','%s','%s','%s','%s')",
+		  "suspendreason, comment, info, lastemail, lastpasschng)"
+		  "VALUES (%u,'%s',%lu,%lu,%lu,%u,%u,%u,%lu,%lu,%lu,'%s','%s','%s','%s','%s','%s','%s',%lu)",
 		  rup->ID, escusername, rup->created, rup->lastauth, rup->lastemailchange, rup->flags, 
 		  rup->languageid, rup->suspendby, rup->suspendexp, rup->suspendtime, rup->lockuntil,
-		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo, esclastemail);
+		  escpassword, escemail, esclastuserhost, escreason, esccomment, escinfo, esclastemail,
+                  rup->lastpasschange);
 }  
 
 

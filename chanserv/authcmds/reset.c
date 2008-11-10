@@ -19,12 +19,14 @@
 #include "../../lib/irc_string.h"
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 int csa_doreset(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
   char newpassword[PASSLEN+1];
-  
+  time_t t;
+
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "reset");
     return CMD_ERROR;
@@ -33,7 +35,8 @@ int csa_doreset(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(UHasHelperPriv(rup) || (!rup->lockuntil || rup->lockuntil <= time(NULL))) {
+  t=time(NULL);
+  if(UHasHelperPriv(rup) || (!rup->lockuntil || rup->lockuntil <= t)) {
     chanservstdmessage(sender, QM_ACCOUNTNOTLOCKED);
     return CMD_ERROR;
   }
@@ -54,10 +57,11 @@ int csa_doreset(void *source, int cargc, char **cargv) {
   } else {
     csdb_accounthistory_insert(sender, rup->password, newpassword, NULL, NULL);
   }
-  
   setpassword(rup, newpassword);
   
   rup->lockuntil=0;
+  rup->lastpasschange=t;
+
   cs_log(sender,"RESET OK username %s", rup->username);
   csdb_updateuser(rup);
   csdb_createmail(rup, QMAIL_RESET);

@@ -72,8 +72,8 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  t=time(NULL);
   if(!UHasHelperPriv(rup)) {
-    t=time(NULL);
     if(rup->lockuntil && rup->lockuntil > t) {
       chanservstdmessage(sender, QM_ACCOUNTLOCKED, rup->lockuntil);
       return CMD_ERROR;
@@ -88,6 +88,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     rup->lastemail=NULL;
   }
 
+  rup->lastpasschange=t;
   csdb_accounthistory_insert(sender, rup->password, cargv[1], NULL, NULL);
   setpassword(rup, cargv[1]);
 

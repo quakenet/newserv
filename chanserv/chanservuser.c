@@ -586,6 +586,7 @@ void cs_checknick(nick *np) {
       rup->created=time(NULL);
       rup->lastauth=0;
       rup->lastemailchange=0;
+      rup->lastpasschange=0;
       rup->flags=QUFLAG_NOTICE;
       rup->languageid=0;
       rup->suspendby=0;
