@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: requestpassword
+ * CMDALIASES: requestpass
  * CMDLEVEL: QCMD_NOTAUTHED
  * CMDARGS: 1
  * CMDDESC: Requests the current password by email.
  * CMDFUNC: csa_doreqpw
  * CMDPROTO: int csa_doreqpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: REQUESTPASSWORD <email>
+ * CMDHELP: Usage: @UCOMMAND@ <email>
  * CMDHELP: Sends your current password to your registered email address, where:
  * CMDHELP: email    - your registered email address
  */

@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: sendpassword
+ * CMDALIASES: sendpass
  * CMDLEVEL: QCMD_HELPER
  * CMDARGS: 1
  * CMDDESC: Sends the users current password by email.
  * CMDFUNC: csa_dosendpw
  * CMDPROTO: int csa_dosendpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: SENDPASSWORD <username>
+ * CMDHELP: Usage: @UCOMMAND@ <username>
  * CMDHELP: Sends the password for the specified account to the specified users email address.
  */
 

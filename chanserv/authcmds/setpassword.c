@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: setpassword
+ * CMDALIASES: setpass
  * CMDLEVEL: QCMD_OPER
  * CMDARGS: 2
  * CMDDESC: Set a new password.
  * CMDFUNC: csa_dosetpw
  * CMDPROTO: int csa_dosetpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: setpassword <username> <password>
+ * CMDHELP: Usage: @UCOMMAND@ <username> <password>
  * CMDHELP: Sets the password for the specified username.
  */
 
