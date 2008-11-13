@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: bandel
+ * CMDALIASES: unban
  * CMDLEVEL: QCMD_AUTHED
  * CMDARGS: 2
  * CMDDESC: Removes a single ban from a channel.
  * CMDFUNC: csc_dobandel
  * CMDPROTO: int csc_dobandel(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: BANDEL <channel> <ban>
+ * CMDHELP: Usage: @UCOMMAND@ <channel> <ban>
  * CMDHELP: Removes the specified persistent or channel ban, where:
  * CMDHELP: channel - the channel to use
  * CMDHELP: ban     - either a ban mask (nick!user@host), or #number (see BANLIST)
