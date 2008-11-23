@@ -2037,12 +2037,14 @@ static void helpmod_cmd_activestaff (huser *sender, channel* returntype, char* o
     switch (listtype)
     {
     case 0:
-        for (i=0;i < arr.arrlen && arr.array[i].prime_time_spent > H_ACTIVE_LIMIT;i++)
-            helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s", i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
+        for (i=0;i < arr.arrlen;i++)
+            if (arr.array[i].prime_time_spent > H_ACTIVE_LIMIT)
+                helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s", i+1,((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
         break;
     case 1:
-        for (i=arr.arrlen-1;i >= 0 && arr.array[i].prime_time_spent < H_ACTIVE_LIMIT;i--)
-            helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s", (arr.arrlen - i),((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
+        for (i=arr.arrlen-1;i >= 0;i--)
+            if (arr.array[i].prime_time_spent < H_ACTIVE_LIMIT)
+                helpmod_reply(sender, returntype, "#%-2d %-20s %-20s %-20s", (arr.arrlen - i),((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
         break;
     }
 
@@ -3510,7 +3512,8 @@ static void helpmod_cmd_weekstats (huser *sender, channel* returntype, char* ost
 
     helpmod_reply(sender, returntype, "Weekly statistics for %ss on channel %s", hlevel_name(lvl), hchannel_get_name(hchan));
 
-    for (i=0;i < arr.arrlen && arr.array[i].time_spent > HDEF_m;i++)
+    for (i=0;i < arr.arrlen;i++)
+      if (arr.array[i].time_spent > HDEF_m)
 	helpmod_reply(sender, returntype, "%-20s %-20s %-20s",((haccount*)(arr.array[i].owner))->name->content, helpmod_strtime(arr.array[i].prime_time_spent), helpmod_strtime(arr.array[i].time_spent));
 
     free(arr.array);
