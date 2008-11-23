@@ -335,7 +335,7 @@ hstat_channel_entry hstat_channel_last_month(hstat_channel *hs_chan)
 
 static int hstat_account_compare(hstat_account_entry_sum *e1, hstat_account_entry_sum *e2)
 {
-    return e2->prime_time_spent - e1->prime_time_spent;
+    return e2->time_spent - e1->time_spent;
 }
 
 hstat_accounts_array create_hstat_account_array(hchannel *hchan, hlevel lvl, hstat_account_array_type type)
