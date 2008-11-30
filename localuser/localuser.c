@@ -562,7 +562,7 @@ void checkpendingkills(int hooknum, void *arg) {
 }
 
 void sendaccountmessage(nick *np) {
-  if (connected) {
+  if (connected && IsAccount(np)) {
     if (np->auth) {
       if (np->auth->flags) {
         irc_send("%s AC %s %s %ld %lu %"PRIu64,mynumeric->content, longtonumeric(np->numeric,5), np->authname, np->accountts, np->auth->userid, np->auth->flags);
@@ -620,7 +620,7 @@ void localusersetaccountflags(authname *anp, u_int64_t accountflags) {
   arg[1] = &oldflags;
   anp->flags = accountflags;
 
-  for(np=anp->nicks;np;np=np->next)
+  for(np=anp->nicks;np;np=np->nextbyauthname)
     sendaccountmessage(np);
 
   triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);
