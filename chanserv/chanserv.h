@@ -175,7 +175,7 @@
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
-#define UHasStaffPriv(x)    ((x)->flags * (QUFLAG_STAFF | QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
+#define UHasStaffPriv(x)    ((x)->flags & (QUFLAG_STAFF | QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasHelperPriv(x)   ((x)->flags & (QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
