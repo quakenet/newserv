@@ -100,9 +100,11 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     }
     csdb_updateuser(target);
 
+/* Disabled this for now as live ircu doesn't support it - splidge
     if ((anp=findauthname(rup->ID)))
       localusersetaccountflags(anp, cs_accountflagmap(target));
-
+ */
+ 
     chanservstdmessage(sender, QM_DONE);
   }
 
