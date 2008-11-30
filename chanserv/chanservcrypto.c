@@ -275,7 +275,7 @@ char *csc_generateresetcode(time_t lockuntil, char *username) {
 int csc_verifyqticket(char *data, char *digest) {
   hmacsha256 hmac;
   unsigned char digestbuf[32];
-  char hexbuf[sizeof(digest) * 2 + 1];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
 
   if(!ticketsecret)
     return -1;
