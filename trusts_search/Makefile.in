@@ -6,5 +6,5 @@ LDFLAGS+=$(LIBPGSQL) $(LIBPCRE)
 .PHONY: all
 all: trusts_search.so
 
-trusts_search.so: formats.o trusts_search.o
+trusts_search.so: formats.o trusts_search.o newsearch_ast.o
 

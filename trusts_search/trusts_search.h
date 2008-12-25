@@ -12,6 +12,7 @@
 #include "../lib/stringbuf.h"
 #include "../lib/strlfunc.h"
 #include "../trusts2/trusts.h"
+#include "../newsearch/parser.h"
 
 extern searchCmd *reg_tgsearch;
 extern searchCmd *reg_thsearch;

@@ -18,7 +18,7 @@ typedef void (*THDisplayFunc)(struct searchCtx *, nick *, trusthost_t *);
 
 int do_tgsearch(void *source, int cargc, char **cargv);
 int do_tgsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
-void tgsearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, TGDisplayFunc display, int limit, patricia_node_t *subset);
+void tgsearch_exe(struct searchNode *search, searchCtx *ctx);
 int do_thsearch(void *source, int cargc, char **cargv);
 int do_thsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 void thsearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, THDisplayFunc display, int limit, patricia_node_t *subset);
@@ -59,16 +59,18 @@ static void controlwallwrapper(int level, char *format, ...) {
 
 int do_tgsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
   nick *sender = senderNSExtern = source;
-  struct searchNode *search;
   int limit=500;
   int arg=0;
   TGDisplayFunc display=defaulttgfn;
-  searchCtx ctx;
   int ret;
   patricia_node_t *subset = iptree->head;
+  parsertree *tree;
 
-  if (cargc<1)
-    return CMD_USAGE;
+  if (cargc<1) {
+    reply( sender, "Usage: [flags] <criteria>");
+    reply( sender, "For help, see help nicksearch");
+    return CMD_OK;
+  }
 
   ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, reg_tgsearch->outputtree, reply, sender);
   if(ret != CMD_OK)
@@ -83,16 +85,15 @@ int do_tgsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, ch
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_tgsearch, sender, display, limit);
-
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
+  tree = parse_string(reg_tgsearch, cargv[arg]);
+  if(!tree) {
+    displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
-  tgsearch_exe(search, &ctx, sender, display, limit, subset);
+  ast_tgsearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
 
-  (search->free)(&ctx, search);
+  parse_free(tree);
 
   return CMD_OK;
 }
@@ -101,10 +102,14 @@ int do_tgsearch(void *source, int cargc, char **cargv) {
   return do_tgsearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
 }
 
-void tgsearch_exe(struct searchNode *search, searchCtx *ctx, nick *sender, TGDisplayFunc display, int limit, patricia_node_t *subset) {
+void tgsearch_exe(struct searchNode *search, searchCtx *ctx) {
   int matches = 0;
   trustgroup_t *tg;
   int i;
+  nick *np, *sender = ctx->sender;
+  senderNSExtern = sender;
+  TGDisplayFunc display = ctx->displayfn;
+  int limit = ctx->limit;
 
   /* Get a marker value to mark "seen" channels for unique count */
   //nmarker=nextnodemarker();
