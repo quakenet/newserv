@@ -1,6 +1,7 @@
 #include "../newsearch/newsearch.h"
 #include "../patricia/patricia.h"
 #include "../patricianick/patricianick.h"
+#include "../newsearch/parser.h"
 
 typedef void (*NodeDisplayFunc)(struct searchCtx *, nick *, patricia_node_t *);
 
@@ -20,3 +21,4 @@ extern searchCmd *reg_nodesearch;
  
 struct searchNode *ps_nick_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *ps_users_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ps_ipv6_parse(searchCtx *ctx, int argc, char **argv);
