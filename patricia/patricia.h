@@ -98,6 +98,7 @@ void releasenodeext(int index);
 
 void node_increment_usercount( patricia_node_t *node);
 void node_decrement_usercount( patricia_node_t *node);
+int is_normalized_ipmask( struct irc_in_addr *sin, unsigned char bitlen );
 
 /* alloc */
 void freeprefix (prefix_t *prefix);

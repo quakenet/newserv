@@ -586,3 +586,14 @@ void node_decrement_usercount( patricia_node_t *node) {
     node=node->parent;
   }
 }
+
+int is_normalized_ipmask( struct irc_in_addr *sin, unsigned char bitlen ) {
+  u_char *addr = (u_char *)sin;
+
+  while (bitlen < PATRICIA_MAXBITS) {
+    if (is_bit_set(addr,bitlen))
+       return 0;
+    bitlen++;
+  }
+  return 1;
+}
