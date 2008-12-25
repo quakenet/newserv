@@ -11,12 +11,6 @@ typedef union exprunion {
   char *literal;
 } exprunion;
 
-typedef struct searchASTCache {
-  searchASTExpr *tree;
-  searchASTExpr *cache[AST_RECENT];
-  int nextpos;
-} searchASTCache;
-
 /* comares either a string and a string or an expression and an expression */
 static searchASTExpr *compareloc(searchASTExpr *expr, exprunion *loc) {
   if(expr->type == AST_NODE_LITERAL) {
