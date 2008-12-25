@@ -23,6 +23,7 @@ void _init() {
 
   registersearchterm(reg_nodesearch, "users", ps_users_parse, 0, "");
   registersearchterm(reg_nodesearch, "nick", ps_nick_parse, 0, "");
+  registersearchterm(reg_nodesearch, "ipvsix", ps_ipv6_parse, 0, "");
 }
 
 void _fini() {
@@ -40,17 +41,19 @@ static void controlwallwrapper(int level, char *format, ...) {
 }
 
 int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
-  nick *sender = senderNSExtern = source;
-  struct searchNode *search;
+  nick *sender = source;
   int limit=500;
   int arg=0;
   NodeDisplayFunc display=defaultpnodefn;
-  searchCtx ctx;
   int ret;
   patricia_node_t *subset = iptree->head;
+  parsertree *tree;
 
-  if (cargc<1)
-    return CMD_USAGE;
+  if (cargc<1) { 
+    reply( sender, "Usage: [flags] <criteria>");
+    reply( sender, "For help, see help nicksearch");
+    return CMD_OK;
+  }
 
   ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void *)&display, reg_nodesearch->outputtree, reply, sender);
   if(ret != CMD_OK)
@@ -65,16 +68,15 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
     rejoinline(cargv[arg],cargc-arg);
   }
 
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nodesearch, sender, display, limit);
-
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
+  tree = parse_string(reg_nodesearch, cargv[arg]);
+  if(!tree) {
+    displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
-  pnodesearch_exe(search, &ctx, subset);
+  ast_nodesearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
 
-  (search->free)(&ctx, search);
+  parse_free(tree);
 
   return CMD_OK;
 }
@@ -87,6 +89,7 @@ void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, patricia_node_t 
   int matches = 0;
   patricia_node_t *node;
   nick *sender = ctx->sender;
+  senderNSExtern = sender;
   int limit = ctx->limit;
   NodeDisplayFunc display = ctx->displayfn;
 
