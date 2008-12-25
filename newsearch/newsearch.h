@@ -138,6 +138,7 @@ struct searchNode *channels_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *ipv6_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
@@ -184,6 +185,10 @@ void unregdisp( searchCmd *cmd, const char *name, void *handler);
 
 /* Special nick* printf */
 void nssnprintf(char *, size_t, const char *, nick *);
+
+#ifdef NEWSEARCH_NEWPARSER
+void displaystrerror(replyFunc reply, nick *np, const char *input);
+#endif
 
 extern const char *parseError;
 extern nick *senderNSExtern;
@@ -235,6 +240,12 @@ typedef struct searchASTExpr {
     struct searchASTNode child;
   } u;
 } searchASTExpr;
+
+typedef struct searchASTCache {
+  searchASTExpr *tree;
+  searchASTExpr *cache[AST_RECENT];
+  int nextpos;
+} searchASTCache;
 
 #define __NSASTSizeOfArray(x) (sizeof(x) / sizeof(x[0]))
 

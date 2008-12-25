@@ -190,6 +190,7 @@ void _init() {
   registersearchterm(reg_nicksearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");         /* nick only */
   registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "User's Auth ID");         /* nick only */
   registersearchterm(reg_nicksearch, "cidr",cidr_parse, 0, "CIDR matching");         /* nick only */
+  registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");         /* nick only */
 
   /* Channel operations */
   registersearchterm(reg_chansearch, "exists",exists_parse, 0, "Returns if channel exists on network. Note: newserv may store data on empty channels");         /* channel only */
