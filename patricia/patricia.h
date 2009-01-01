@@ -42,7 +42,7 @@ typedef void (*void_fn_t)();
 
 /* { from mrt.h */
 
-#define PATRICIA_MAXSLOTS 5
+#define PATRICIA_MAXSLOTS 7 
 
 
 typedef struct _prefix_t {
