@@ -5,7 +5,7 @@
 #include <string.h>
 #include "patriciasearch.h"
 
-int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
+int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
