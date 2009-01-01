@@ -6,11 +6,12 @@
 
 int tgh_ext;
 int tgb_ext;
+int tgn_ext;
 
 unsigned long trusts_lasttrustgroupid;
 unsigned long trusts_lasttrusthostid;
 unsigned long trusts_lasttrustblockid;
-int trusts_loaded;
+int trusts_loaded = 0;
 int removeusers = 0;
 
 static void trusts_status(int hooknum, void *arg);
@@ -31,21 +32,23 @@ void _init(void) {
     return;
   }
 
+  tgn_ext = registernickext("trustnick");
+  if ( !tgn_ext ) {
+    Error("trusts", ERR_FATAL, "Could not register a required nick extension (trustnick)");
+    return;
+  }
+
+  registerhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
+
   if ( !trusts_load_db()) {
     return;
   }
  
-  registerhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
-
   if (trusts_loaded) 
     trustsfinishinit(HOOK_TRUSTS_DBLOADED, NULL);
 }
 
 void trustsfinishinit(int hooknum, void *arg) {
-  Error("trusts",ERR_INFO,"Database loaded, finishing initialisation.");
-
-  deregisterhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
-
   registerhook(HOOK_NICK_NEWNICK, &trusts_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &trusts_hook_lostuser);
 
@@ -57,15 +60,8 @@ void _fini(void) {
   trustgroupidentcount_t *t;
 
   int i;
-  for ( i = 0; i < TRUSTS_HASH_HOSTSIZE ; i++ ) {
-    for ( thptr = trusthostidtable[i]; thptr; thptr = thptr-> nextbyid ) {
-      derefnode(iptree,thptr->node);
-    }
-  }
-  if (tgh_ext)
-    releasenodeext(tgh_ext); 
-  if (tgb_ext)
-    releasenodeext(tgb_ext);
+
+  deregisterhook(HOOK_TRUSTS_DBLOADED, trustsfinishinit);
 
   if ( trusts_loaded ) {
     deregisterhook(HOOK_NICK_NEWNICK, &trusts_hook_newuser);
@@ -82,7 +78,20 @@ void _fini(void) {
     }
   }
 
-  trustblock_freeall();
+  patricia_node_t *node;
+  PATRICIA_WALK_CLEAR(iptree->head,node) {
+    if (node && node->exts[tgb_ext]) {
+      trustblock_free(node->exts[tgb_ext]);
+      node->exts[tgb_ext] = NULL;      
+    }
+  } PATRICIA_WALK_CLEAR_END;
+
+  if (tgh_ext)
+    releasenodeext(tgh_ext);
+  if (tgb_ext)
+    releasenodeext(tgb_ext);
+  if (tgn_ext)
+    releasenodeext(tgn_ext);
 
   /* @@@ CLOSE DB */
 
@@ -130,18 +139,6 @@ void decrement_trust_ipnode(patricia_node_t *node) {
   }
 }
 
-void trust_debug(char *format, ...) {
-  char buf[512];
-  va_list va;
-  channel *debugcp = findchannel("#qnet.trusts");
-  if(debugcp) {
-     va_start(va, format);
-     vsnprintf(buf, sizeof(buf), format, va);
-     va_end(va);
-    controlchanmsg(debugcp,buf);
-  }
-}
-
 static void trusts_status(int hooknum, void *arg) {
   if((long)arg > 10) {
     char message[100];
@@ -162,5 +159,13 @@ static void trusts_status(int hooknum, void *arg) {
     snprintf(message, sizeof(message), "Trusts  :%7d groups, %7d hosts", tgcount, thcount);
     triggerhook(HOOK_CORE_STATSREPLY, message);
   }
+}
 
+int trusts_ignore_np(nick *np) {
+  if(SIsService(&serverlist[homeserver(np->numeric)])) {
+    /* ANY user created by a server (nterface,fakeusers,Q) are ignored in relation to trusts */
+    /* NOTE: we might need to review this if we ever used newserv to handle client/user connections in some way */
+    return 1;
+  }
+  return 0;
 }

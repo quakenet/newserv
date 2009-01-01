@@ -3,7 +3,7 @@
 trustgroupidentcount_t *getnewtrustgroupidentcount(trustgroup_t *tg, char *ident) {
   trustgroupidentcount_t *tgic = newtrustgroupidentcount();
   tgic->ident = getsstring(ident,USERLEN);
-  tgic->currenton = 1;
+  tgic->currenton = 1; 
   tgic->trustgroup = tg;
 
   trusts_addtrustgroupidenttohash(tgic);

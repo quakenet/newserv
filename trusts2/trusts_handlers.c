@@ -7,6 +7,10 @@ void trusts_hook_newuser(int hook, void *arg) {
   trustgroup_t *tg = NULL;
   patricia_node_t *parent;
 
+  if (trusts_ignore_np(np)) {
+    return;
+  }
+
   if(np->ipnode->exts[tgh_ext]) {
     /* we have a new user on a trust group host */
     tgh = (trusthost_t *)np->ipnode->exts[tgh_ext];
@@ -79,6 +83,10 @@ void trusts_hook_newuser(int hook, void *arg) {
     }
     /* Trust Checks Passed: OK - increment counters */
     increment_trust_ipnode(np->ipnode);
+
+    /* set nick extension for user for future use */
+    np->exts[tgn_ext] = tgh; 
+
     return;
   }
   /* non trusted user - OK */
@@ -99,6 +107,10 @@ void trusts_hook_lostuser(int hook, void *arg) {
   }
   if(!np->ipnode->exts) {
     Error("nodecount", ERR_ERROR, "np->ipnode->exts was NULL");
+  }
+
+  if (trusts_ignore_np(np)) {
+    return;
   }
 
   decrement_trust_ipnode(np->ipnode);
@@ -123,5 +135,8 @@ void trusts_hook_lostuser(int hook, void *arg) {
       decrement_ident_count(np, tg);
     }
   }
+
+  /* clear nick extension */
+  np->exts[tgn_ext] = NULL;
 }
 

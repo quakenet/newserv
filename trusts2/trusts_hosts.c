@@ -31,6 +31,7 @@ trusthost_t *createtrusthost(unsigned long id, patricia_node_t* node, time_t exp
 void trusthost_free(trusthost_t* t)
 {
   trusts_removetrusthostfromhash(t);
+
   derefnode(iptree,t->node);
   freetrusthost(t);
 }
@@ -44,6 +45,7 @@ trusthost_t* trusthostadd(patricia_node_t *node, trustgroup_t* tg, time_t expire
   time_t timenow;
 
   if(!tgh) {
+    Error("trusts", ERR_FATAL, "trusthostadd failed to createtrusthost");
     return NULL;
   }
 
@@ -61,6 +63,9 @@ trusthost_t* trusthostadd(patricia_node_t *node, trustgroup_t* tg, time_t expire
     if (pnp ) {
       for (i = 0; i < PATRICIANICK_HASHSIZE; i++) {
         for (np = pnp->identhash[i]; np; np=np->exts[pnick_ext]) {
+          if (trusts_ignore_np(np)) {
+            continue;
+          }
           increment_ident_count(np, tg);
         }
       }
@@ -90,7 +95,11 @@ void trusthost_addcounters(trusthost_t* tgh) {
     if (pnp ) {
       for (i = 0; i < PATRICIANICK_HASHSIZE; i++) {
         for (np = pnp->identhash[i]; np; np=np->exts[pnick_ext]) {
+          if (trusts_ignore_np(np)) {
+            continue;
+          }
           increment_ident_count(np, tg);
+          np->exts[tgn_ext] = tgh;
         }
       }
     }

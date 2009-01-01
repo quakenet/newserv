@@ -41,6 +41,7 @@ void trustblock_free(trustblock_t* t)
     if (pst) {
       pst->next = st->next;
     } 
+
     derefnode(iptree,st->node);
     if (st->reason_public ) {
       freesstring(st->reason_public);
@@ -65,6 +66,7 @@ void trustblock_freeall() {
   while(tb) {
     ptb=tb;
     tb=tb->next;
+
     derefnode(iptree,ptb->node);
     if (ptb->reason_public ) {
       freesstring(ptb->reason_public);
@@ -72,5 +74,6 @@ void trustblock_freeall() {
     if (ptb->reason_private) {
       freesstring(ptb->reason_private);
     }
+    ptb->node->exts[tgb_ext] = NULL;
   }
 }

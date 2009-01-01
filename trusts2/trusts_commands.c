@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+static int commandsregistered;
+
 void _init(void) {
   registerhook(HOOK_TRUSTS_DBLOADED, trusts_cmdinit);
 
@@ -18,10 +20,12 @@ void _init(void) {
 
 void _fini(void) {
   deregisterhook(HOOK_TRUSTS_DBLOADED, trusts_cmdinit);
-  trusts_cmdfini();
+  trusts_cmdfini(0, NULL);
 }
 
 void trusts_cmdinit(int hooknum, void *arg) {
+  if(commandsregistered)
+    return;
   registercontrolcmd("trustgroupadd",10,7,trust_groupadd);
   registercontrolcmd("trustgroupmodify",10,4,trust_groupmodify);
   registercontrolcmd("trustgroupdel",10,2,trust_groupdel);
@@ -38,10 +42,16 @@ void trusts_cmdinit(int hooknum, void *arg) {
   registercontrolcmd("truststats",10,2,trust_stats);
   registercontrolcmd("trustdump",10,2,trust_dump);
 
+  registercontrolcmd("trustlog", 10,2, trust_dotrustlog);
+
+  commandsregistered = 1;
   removeusers = 0;
 }
 
 void trusts_cmdfini() {
+  if(!commandsregistered)
+    return;
+
   deregistercontrolcmd("trustgroupadd",trust_groupadd);
   deregistercontrolcmd("trustgroupmodify",trust_groupmodify);
   deregistercontrolcmd("trustgroupdel",trust_groupdel);
@@ -58,6 +68,9 @@ void trusts_cmdfini() {
   deregistercontrolcmd("truststats",trust_stats);
   deregistercontrolcmd("trustdump",trust_dump);
 
+  deregistercontrolcmd("trustlog", trust_dotrustlog);
+
+  commandsregistered = 0;
   removeusers = 0;
 }
 
@@ -87,7 +100,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
   }
   expiry = durationtolong(cargv[1]);
   if (expiry > (365 * 86400) ) {
-    controlreply(sender,"ERROR: Invalid duration given - temporary trusts can not be longer then 1 year");
+    controlreply(sender,"ERROR: Invalid duration given - temporary trusts must be less than 1 year");
     return CMD_ERROR;
   }
   ownerid  = strtoul(cargv[6],NULL,10);
@@ -160,6 +173,11 @@ int trust_del(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (!is_normalized_ipmask(&sin,bits)) {
+    controlreply(sender, "ERROR: non-normalized mask.");
+    return CMD_ERROR;
+  }
+
   node = refnode(iptree, &sin, bits);
   if(!node->exts[tgh_ext]) {
     controlreply(sender,"ERROR: That CIDR was not trusted.");
@@ -210,6 +228,11 @@ int trust_add(void *source, int cargc, char **cargv) {
 
   if (ipmask_parse(cargv[1], &sin, &bits) == 0) {
     controlreply(sender, "ERROR: Invalid mask.");
+    return CMD_ERROR;
+  }
+
+  if (!is_normalized_ipmask(&sin,bits)) {
+    controlreply(sender, "ERROR: non-normalized mask.");
     return CMD_ERROR;
   }
 
@@ -288,6 +311,7 @@ int trust_add(void *source, int cargc, char **cargv) {
   th = trusthostadd(node, tg, expiry );
   if ( !th ) {
     controlreply(sender,"ERROR: Unable to add trusted host");
+    return CMD_ERROR;
   }
  
   trustsdb_addtrusthost(th);
@@ -400,6 +424,11 @@ int trust_denyadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (!is_normalized_ipmask(&sin,bits)) {
+    controlreply(sender, "ERROR: non-normalized mask.");
+    return CMD_ERROR;
+  }
+
   if ( irc_in_addr_is_ipv4(&sin) ) {
     if (bits>128 || bits<112) {
       controlreply(sender,"ERROR: Not a valid netmask (needs to be between 8 and 32)");
@@ -454,6 +483,11 @@ int trust_denycomment(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (!is_normalized_ipmask(&sin,bits)) {
+    controlreply(sender, "ERROR: non-normalized mask.");
+    return CMD_ERROR;
+  }
+
   if ( irc_in_addr_is_ipv4(&sin) ) {
     if (bits>128 || bits<112) {
       controlreply(sender,"ERROR: Not a valid netmask (needs to be between 8 and 32)");
@@ -495,6 +529,11 @@ int trust_denydel(void *source, int cargc, char **cargv) {
 
   if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
     controlreply(sender, "ERROR: Invalid mask.");
+    return CMD_ERROR;
+  }
+
+  if (!is_normalized_ipmask(&sin,bits)) {
+    controlreply(sender, "ERROR: non-normalized mask.");
     return CMD_ERROR;
   }
   
@@ -791,6 +830,7 @@ int trust_stats(void *source, int cargc, char **cargv) {
           maxthmask4 = (((patricia_node_t *)thptr->node)->prefix->bitlen-96);
         }
       } else {
+        controlreply(sender, "%s", IPtostr(((patricia_node_t *)thptr->node)->prefix->sin)); 
         netcount6[((patricia_node_t *)thptr->node)->prefix->bitlen]++;
         netucount6[((patricia_node_t *)thptr->node)->prefix->bitlen]+=thptr->node->usercount;
         netmcount6[((patricia_node_t *)thptr->node)->prefix->bitlen]+=thptr->maxused;
@@ -857,6 +897,29 @@ int trust_comment(void *source, int cargc, char **cargv) {
   controlwall(NO_OPER, NL_TRUSTS, "Comment: %s for trustgroup %lu", cargv[1], tg->id);
 
   return CMD_OK;
-
 }
 
+int trust_dotrustlog(void *source, int cargc, char **cargv) {
+  nick *np=source;
+  unsigned long interval;
+  int trustid; 
+
+  if (cargc < 1) {
+    controlreply(np,"Syntax: trustlog <#groupid> [duration]");
+    return CMD_ERROR;
+  }
+
+  if(cargv[0][0]== '#'){
+    trustid = strtol(&cargv[0][1],NULL,10);
+  } else {
+    trustid = strtol(cargv[0],NULL,10);
+  }
+
+  if (cargc > 1)
+    interval=getnettime() - durationtolong(cargv[1]);
+  else
+    interval=0;
+
+  trustsdb_retrievetrustlog(np, trustid, interval);
+  return CMD_OK;
+}

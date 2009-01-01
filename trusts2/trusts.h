@@ -26,8 +26,13 @@
 
 #define TRUSTS_MAXGROUPNAMELEN 20
 
+/* node extensions */
 extern int tgh_ext;
 extern int tgb_ext;
+
+/* nick extensions */
+extern int tgn_ext;
+
 extern int removeusers;
 extern int trusts_loaded;
 
@@ -129,8 +134,6 @@ trustgroupidentcount_t *getnewtrustgroupidentcount(trustgroup_t *tg, char *ident
 
 extern unsigned long trusts_lasttrustgroupid, trusts_lasttrusthostid, trusts_lasttrustblockid;
 
-void trust_debug(char *format, ...);
-
 /* trusts alloc */
 trustgroup_t *newtrustgroup();
 void freetrustgroup (trustgroup_t *trustgroup);
@@ -146,7 +149,9 @@ int trusts_load_db(void);
 void trusts_create_tables(void);
 void trusts_cleanup_db(void);
 void trusts_loadtrustgroups(DBConn *dbconn, void *arg);
+void trusts_loadtrustgroupsmax(DBConn *dbconn, void *arg);
 void trusts_loadtrusthosts(DBConn *dbconn, void *arg);
+void trusts_loadtrusthostsmax(DBConn *dbconn, void *arg);
 void trusts_loadtrustblocks(DBConn *dbconn, void *arg);
 void trustsdb_addtrustgroup(trustgroup_t *t);
 void trustsdb_updatetrustgroup(trustgroup_t *t);
@@ -191,6 +196,7 @@ void decrement_ident_count(nick *np, trustgroup_t *tg);
 /* trusts */
 void decrement_trust_ipnode(patricia_node_t *node);
 void increment_trust_ipnode(patricia_node_t *node);
+int trusts_ignore_np(nick *np);
 
 /* trusts cmds */
 void trusts_cmdinit();
@@ -208,5 +214,7 @@ int trust_comment(void *source, int cargc, char **cargv);
 
 int trust_stats(void *source, int cargc, char **cargv);
 int trust_dump(void *source, int cargc, char **cargv);
+int trust_dotrustlog(void *source, int cargc, char **cargv);
+
 #endif
 
