@@ -51,7 +51,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
 
   if (cargc<1) { 
     reply( sender, "Usage: [flags] <criteria>");
-    reply( sender, "For help, see help nicksearch");
+    reply( sender, "For help, see help nodesearch");
     return CMD_OK;
   }
 
