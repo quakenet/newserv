@@ -81,11 +81,15 @@ void initsstring() {
   registerhook(HOOK_CORE_STATSREQUEST,&sstringstats);
 }
 
-#ifndef SSTRING_MMAP
 void finisstring() {
+  deregisterhook(HOOK_CORE_STATSREQUEST,&sstringstats);
+
+  #ifndef SSTRING_MMAP
   nsfreeall(POOL_SSTRING);
+  #endif /* SSTRING_MMAP */ 
 }
 
+#ifndef SSTRING_MMAP
 static void salloc(void) {
   ssmem=(char *)nsmalloc(POOL_SSTRING, SSTRING_ALLOC);
   ssmemfree=SSTRING_ALLOC;
