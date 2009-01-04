@@ -65,6 +65,10 @@ int main(int argc, char **argv) {
   freeconfig();
   finisstring();  
 
+  fini_logfile();
+  finischedule();
+  finihandlers();
+
   nsexit();
 }
 
