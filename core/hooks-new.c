@@ -17,8 +17,6 @@ typedef struct Hook {
 } Hook;
 
 typedef struct HookHead {
-  int count;
-  int alive;
   int dirty;
   Hook *head;
 } HookHead;
@@ -29,7 +27,7 @@ static int dirtyhookcount;
 
 unsigned int hookqueuelength = 0;
 
-static void defraghook(HookHead *h);
+static void collectgarbage(HookHead *h);
 static void markdirty(int hook);
 
 void inithooks() {
@@ -69,12 +67,6 @@ int registerpriorityhook(int hooknum, HookCallback callback, long priority) {
     pred->next = n;
   }
 
-  if(h->count > 0)
-    markdirty(hooknum);
-
-  h->count++;
-  h->alive++;
-
   return 0;
 }
 
@@ -92,7 +84,6 @@ int deregisterhook(int hooknum, HookCallback callback) {
     if(hp->callback==callback) {
       markdirty(hooknum);
       hp->callback = NULL;
-      h->alive--;
       return 0;
     }
   }
@@ -114,13 +105,14 @@ void triggerhook(int hooknum, void *arg) {
   }
   hookqueuelength--;
 
-  for(i=0;i<dirtyhookcount;i++) {
-    defraghook(&hooks[dirtyhooks[i]]);
-  }
-  dirtyhookcount=0;
-
-  if (!hookqueuelength && hooknum!=HOOK_CORE_ENDOFHOOKSQUEUE)
+  if (!hookqueuelength && hooknum!=HOOK_CORE_ENDOFHOOKSQUEUE) {
     triggerhook(HOOK_CORE_ENDOFHOOKSQUEUE, 0);
+
+    for(i=0;i<dirtyhookcount;i++) {
+      collectgarbage(&hooks[dirtyhooks[i]]);
+    }
+    dirtyhookcount=0;
+  }
 }
 
 static void markdirty(int hook) {
@@ -131,8 +123,7 @@ static void markdirty(int hook) {
   dirtyhooks[dirtyhookcount++] = hook;
 }
 
-/* Non compacting version
-static void defraghook(HookHead *h) {
+static void collectgarbage(HookHead *h) {
   Hook *hp, *pp, *np;
 
   for(pp=NULL,hp=h->head;hp;hp=np) {
@@ -155,49 +146,4 @@ static void defraghook(HookHead *h) {
   }
 
   h->dirty = 0;
-  h->count = h->alive;
-}
-*/
-
-static void defraghook(HookHead *h) {
-  Hook *hp, *pp, *np;
-  Hook *n, *nstart;
-  Hook *contig = NULL;
-
-  if(h->alive != 0) {
-    nstart = n = malloc(sizeof(Hook) * h->alive);
-  } else {
-    nstart = n = NULL;
-  }
-
-  for(pp=NULL,hp=h->head;hp;hp=np) {
-    np=hp->next;
-    if(!contig && (hp->flags & HF_CONTIGUOUS))
-      contig = hp;
-
-    if(hp->callback==NULL) {
-      if(!(hp->flags & HF_CONTIGUOUS))
-        free(hp);
-    } else {
-      memcpy(n, hp, sizeof(Hook));
-
-      n->flags|=HF_CONTIGUOUS;
-
-      if(pp!=NULL)
-        pp->next = n;
-      pp = n++;
-    }
-  }
-
-  if(contig)
-    free(contig);
-
-  assert(!(nstart && !pp) && !(!nstart && pp));
-
-  h->head = nstart;
-  if(pp)
-    pp->next = NULL;
-
-  h->dirty = 0;
-  h->count = h->alive;
 }
