@@ -4,9 +4,9 @@
 #include <stdarg.h>
 #include "../core/nsmalloc.h"
 
-int tgh_ext;
-int tgb_ext;
-int tgn_ext;
+int tgh_ext = -1;
+int tgb_ext = -1;
+int tgn_ext = -1;
 
 unsigned long trusts_lasttrustgroupid;
 unsigned long trusts_lasttrusthostid;
@@ -21,19 +21,19 @@ void _init(void) {
   trusts_hash_init();
 
   tgh_ext = registernodeext("trusthost");
-  if ( !tgh_ext ) {
+  if ( tgh_ext == -1 ) {
     Error("trusts", ERR_FATAL, "Could not register a required node extension (trusthost)");
     return;
   }
 
   tgb_ext = registernodeext("trustblock");
-  if ( !tgb_ext ) {
+  if ( tgb_ext == -1 ) {
     Error("trusts", ERR_FATAL, "Could not register a required node extension (trustblock)");
     return;
   }
 
   tgn_ext = registernickext("trustnick");
-  if ( !tgn_ext ) {
+  if ( tgn_ext == -1 ) {
     Error("trusts", ERR_FATAL, "Could not register a required nick extension (trustnick)");
     return;
   }
@@ -86,11 +86,11 @@ void _fini(void) {
     }
   } PATRICIA_WALK_CLEAR_END;
 
-  if (tgh_ext)
+  if (tgh_ext != -1)
     releasenodeext(tgh_ext);
-  if (tgb_ext)
+  if (tgb_ext != -1)
     releasenodeext(tgb_ext);
-  if (tgn_ext)
+  if (tgn_ext != -1)
     releasenodeext(tgn_ext);
 
   /* @@@ CLOSE DB */

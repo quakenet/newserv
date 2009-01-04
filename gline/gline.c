@@ -19,6 +19,7 @@
 #include "../lib/base64.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
+#include "../core/nsmalloc.h"
 
 #include "gline.h"
 
@@ -27,7 +28,7 @@ gline* glinelist = 0, *glinelistnonnode = 0;
 int glinecount = 0;
 int badchancount = 0;
 int rnglinecount = 0;
-int gl_nodeext = 0;
+int gl_nodeext = -1;
 
 /* 
   <prefix> GL <target> [!][+|-|>|<]<mask> [<expiration>] [<lastmod>]
@@ -38,7 +39,7 @@ int gl_nodeext = 0;
 void _init() {
   gl_nodeext = registernodeext("gline");
 
-  if ( !gl_nodeext ) {
+  if ( gl_nodeext == -1 ) {
     Error("gline", ERR_FATAL, "Could not register a required node extension (gline)");
     return;
   }
@@ -60,8 +61,10 @@ void _fini() {
   }
   glinelist = NULL;
  
-  if (gl_nodeext) 
+  if (gl_nodeext != -1) 
     releasenodeext(gl_nodeext);
+
+  nsfreeall(POOL_GLINE);
 }
 
 int gline_setnick(nick *np, int duration, char *reason ) {

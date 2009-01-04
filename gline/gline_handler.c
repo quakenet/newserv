@@ -39,6 +39,9 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
 
   /* valid GL tokens have X params */
   switch ( cargc ) {
+    case 2:
+      /* local modification which we reject later */
+      break;
     case 5:
       /* 1.3.x GL Token */
       break;
@@ -95,7 +98,7 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
       break;
     case '>':
     case '<':
-      Error("gline", ERR_WARNING, "Received local modification from %s.", sender);
+      Error("gline", ERR_WARNING, "Received local modification from %s - do they realise we're a service?", sender);
       return CMD_ERROR;
   } 
 
@@ -208,7 +211,28 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
     }
   } else {
     /* modification - only snircd 1.4.x */
-    Error("gline", ERR_WARNING, "Not Implemented");
+    if ((agline = gline_find(mask))) {
+      expires = abs_expire(atoi(cargv[2]));
+      lastmod = atoi(cargv[3]);
+      lifetime = atoi(cargv[4]);
+      reason = cargv[5];
+
+      if ( lastmod > agline->lastmod ) {
+        agline->lastmod = lastmod;
+        agline->expires = expires;
+        agline->lifetime = lifetime;
+        agline->creator = creator;
+        freesstring(agline->reason);
+        agline->reason = getsstring(reason, 255);
+      } else {
+        Error("debuggline", ERR_WARNING, "received a gline modification with a lower lastmod");
+        /* @@@TODO resend our gline ? */
+      }
+      return CMD_OK;
+    } else {
+      Error("gline", ERR_WARNING, "Received modification for gline that does not exist for mask %s", mask);
+      return CMD_ERROR;
+    }
   }
 
   Error("debuggline", ERR_WARNING, "Creator %s", creator->content);
