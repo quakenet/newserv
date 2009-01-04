@@ -263,7 +263,12 @@ void irc_connect(void *arg) {
     Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto);
     exit(1);
   }
+
+#if !defined(h_addr) /* h_addr is deprecated */
+  memcpy(&sockaddress.sin_addr, host->h_addr_list[0], sizeof(struct in_addr));
+#else
   memcpy(&sockaddress.sin_addr, host->h_addr, sizeof(struct in_addr));
+#endif
   
   if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
