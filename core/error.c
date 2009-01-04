@@ -48,6 +48,11 @@ void init_logfile() {
   registerhook(HOOK_CORE_SIGUSR1, reopen_logfile);
 }
 
+void fini_logfile() {
+  deregisterhook(HOOK_CORE_SIGUSR1, reopen_logfile);
+  fclose(logfile);
+}
+
 void Error(char *source, int severity, char *reason, ... ) {
   char buf[512];
   va_list va;

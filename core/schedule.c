@@ -36,6 +36,11 @@ void initschedule() {
   events=(schedule **)malloc(INITSCHEDSIZE*sizeof(schedule *));
 }
 
+void finischedule() {
+  deregisterhook(HOOK_CORE_STATSREQUEST, &schedulestats);
+  free(events);
+}
+
 void schedule_heapify(int index) {
   int firstindex=index;
   schedule *ep;
@@ -166,7 +171,7 @@ void *scheduleoneshot(time_t when, ScheduleCallback callback, void *arg) {
   insertschedule(sp);
   
 #ifdef SCHEDDEBUG
-  Error("schedule",ERR_DEBUG,"scheduleoneshot: (%ld, %x, %x) = %x",when, callback, arg, sp);
+  Error("schedule",ERR_DEBUG,"scheduleoneshot: (%ld, %x, %x) = %x",when, (unsigned int)callback, (unsigned int)arg, (unsigned int)sp);
 #endif
 
   return (void *)sp;
@@ -201,7 +206,7 @@ void deleteschedule(void *sch, ScheduleCallback callback, void *arg) {
    * pass it in here for an O(1) *cough* O(lg n) delete */
 
 #ifdef SCHEDDEBUG
-  Error("schedule",ERR_DEBUG,"deleteschedule(%x,%x,%x)",sch,callback, arg);
+  Error("schedule",ERR_DEBUG,"deleteschedule(%x,%x,%x)",(unsigned int)sch,(unsigned int)callback, (unsigned int)arg);
 #endif
 
   if (sch) {
@@ -296,7 +301,7 @@ void doscheduledevents(time_t when) {
       break;
     }
 #ifdef SCHEDDEBUG
-    Error("schedule",ERR_DEBUG,"exec schedule:(%x, %x, %x)", sp, sc, arg);
+    Error("schedule",ERR_DEBUG,"exec schedule:(%x, %x, %x)", (unsigned int)sp, (unsigned int)sc, (unsigned int)arg);
 #endif
     (sc)(arg);
 #ifdef SCHEDDEBUG

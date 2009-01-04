@@ -52,6 +52,11 @@ void inithandlers() {
   registerhook(HOOK_CORE_STATSREQUEST, &eventstats);
 }
 
+void finihandlers() {
+  deregisterhook(HOOK_CORE_STATSREQUEST, &eventstats);
+  free(eventhandlers);
+}
+
 /*
  * checkindex():
  *  Given the number of a new file descriptor, makes sure that the array
