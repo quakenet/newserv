@@ -43,7 +43,7 @@ void _fini() {
   deregistersearchterm(reg_usersearch, "qemail", qemail_parse);
   deregistersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse);
   deregistersearchterm(reg_usersearch, "qusername", qusername_parse);
-  deregistersearchterm(reg_usersearch, "qchanflags", qchanflags_parse);
+  deregistersearchterm(reg_chansearch, "qchanflags", qchanflags_parse);
 
   chanservremovecommand("nicksearch", cs_donicksearch);
   chanservremovecommand("chansearch", cs_dochansearch);
