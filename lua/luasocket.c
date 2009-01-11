@@ -2,10 +2,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/poll.h>
-#include <netinet/in.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+
+#define __USE_MISC /* inet_aton */
+
+#include <arpa/inet.h>
 #include <sys/un.h>
+#include <sys/poll.h>
 #include <errno.h>
 #include <fcntl.h>
 #include "../lib/strlfunc.h"
@@ -23,16 +28,8 @@
 static long nextidentifier = 0;
 static void lua_socket_poll_event(int fd, short events);
 
-static int getunixsocket(char *path, struct sockaddr_un *r) {
-  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+static int setnonblock(int fd) {
   int ret;
-
-  if(fd <= -1)
-    return -1;
-
-  memset(r, 0, sizeof(struct sockaddr_un));
-  r->sun_family = AF_UNIX;
-  strlcpy(r->sun_path, path, sizeof(r->sun_path));
 
   /* WTB exceptions */
   ret = fcntl(fd, F_GETFL, 0);
@@ -49,6 +46,46 @@ static int getunixsocket(char *path, struct sockaddr_un *r) {
 
   return fd;
 }
+static int getunixsocket(char *path, struct sockaddr_un *r) {
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+
+  if(fd <= -1)
+    return -1;
+
+  memset(r, 0, sizeof(struct sockaddr_un));
+  r->sun_family = PF_UNIX;
+  strlcpy(r->sun_path, path, sizeof(r->sun_path));
+
+  return setnonblock(fd);
+}
+
+/* note ADDRESS not HOSTNAME */
+static int getipsocket(char *address, int port, int protocol, struct sockaddr_in *r) {
+  int fd;
+  int val = 1;
+
+  memset(r, 0, sizeof(struct sockaddr_in));
+  r->sin_family = PF_INET;
+
+  if(address) {
+    if(!inet_aton(address, &r->sin_addr)) {
+      Error("lua", ERR_ERROR, "Could not parse address: %s", address);
+      return -1;
+    }
+  } else {
+    address = INADDR_ANY;
+  }
+
+  fd = socket(AF_INET, protocol, 0);
+
+  if(fd <= -1)
+    return -1;
+
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+
+  r->sin_port = htons(port);
+  return setnonblock(fd);
+}
 
 static void registerluasocket(lua_list *ll, lua_socket *ls, int mask, int settag) {
   /* this whole identifier thing should probably use userdata stuff */
@@ -64,6 +101,25 @@ static void registerluasocket(lua_list *ll, lua_socket *ls, int mask, int settag
   ll->sockets = ls;
 
   registerhandler(ls->fd, mask, lua_socket_poll_event);
+}
+
+static int handleconnect(int ret, lua_State *l, lua_list *ll, lua_socket *ls) {
+  if(ret == 0) {
+    ls->state = SOCKET_CONNECTED;
+  } else if(ret == -1 && (errno == EINPROGRESS)) {
+    ls->state = SOCKET_CONNECTING;
+  } else {
+    luafree(ls);
+    close(ls->fd);
+    return 0;
+  }
+
+  ls->parent = NULL;
+  registerluasocket(ll, ls, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, 1);
+
+  lua_pushboolean(l, ls->state==SOCKET_CONNECTED?1:0);
+  lua_pushlong(l, ls->identifier);
+  return 2;
 }
 
 static int lua_socket_unix_connect(lua_State *l) {
@@ -88,6 +144,7 @@ static int lua_socket_unix_connect(lua_State *l) {
   if(!ls)
     return 0;
 
+  ls->sockettype = PF_UNIX;
   ls->fd = getunixsocket(path, &r);
   if(ls->fd < 0) {
     luafree(ls);
@@ -95,22 +152,7 @@ static int lua_socket_unix_connect(lua_State *l) {
   }
 
   ret = connect(ls->fd, (struct sockaddr *)&r, sizeof(r.sun_family) + strlen(r.sun_path));
-  if(ret == 0) {
-    ls->state = SOCKET_CONNECTED;
-  } else if(ret == -1 && (errno == EINPROGRESS)) {
-    ls->state = SOCKET_CONNECTING;
-  } else {
-    luafree(ls);
-    close(ls->fd);
-    return 0;
-  }
-
-  ls->parent = NULL;
-  registerluasocket(ll, ls, (ls->state==SOCKET_CONNECTED?POLLIN:POLLOUT) | POLLERR | POLLHUP, 1);
-
-  lua_pushboolean(l, ls->state==SOCKET_CONNECTED?1:0);
-  lua_pushlong(l, ls->identifier);
-  return 2;
+  return handleconnect(ret, l, ll, ls);
 }
 
 static int lua_socket_unix_bind(lua_State *l) {
@@ -134,6 +176,7 @@ static int lua_socket_unix_bind(lua_State *l) {
   if(!ls)
     return 0;
 
+  ls->sockettype = PF_UNIX;
   ls->fd = getunixsocket(path, &r);
   if(ls->fd <= -1) {
     luafree(ls);
@@ -158,6 +201,108 @@ static int lua_socket_unix_bind(lua_State *l) {
 
   lua_pushlong(l, ls->identifier);
   return 1;
+}
+
+static int lua_socket_ip_connect(lua_State *l, int protocol) {
+  int ret;
+  struct sockaddr_in r;
+  char *address;
+  int port;
+  lua_socket *ls;
+  lua_list *ll;
+
+  ll = lua_listfromstate(l);
+  if(!ll)
+    return 0;
+
+  if(!lua_isfunction(l, 3) || !lua_islong(l, 2))
+    return 0;
+
+  address = (char *)lua_tostring(l, 1);
+  if(!address)
+    return 0;
+
+  port = lua_tolong(l, 2);
+
+  ls = (lua_socket *)luamalloc(sizeof(lua_socket));
+  if(!ls)
+    return 0;
+
+  ls->sockettype = PF_INET;
+  ls->fd = getipsocket(address, port, protocol, &r);
+  if(ls->fd < 0) {
+    luafree(ls);
+    return 0;
+  }
+
+  ret = connect(ls->fd, (struct sockaddr *)&r, sizeof(struct sockaddr_in));
+  return handleconnect(ret, l, ll, ls);
+}
+
+static int lua_socket_ip_bind(lua_State *l, int protocol) {
+  lua_list *ll;
+  char *address;
+  int port;
+  lua_socket *ls;
+  struct sockaddr_in r;
+
+  ll = lua_listfromstate(l);
+  if(!ll)
+    return 0;
+
+  if(!lua_isfunction(l, 3) || !lua_islong(l, 2))
+    return 0;
+
+  /* address can be nil or a string */
+  if(!lua_isnil(l, 1) && !lua_isstring(l, 1))
+    return 0;
+
+  address = (char *)lua_tostring(l, 1);
+  port = lua_tolong(l, 2);
+
+  ls = (lua_socket *)luamalloc(sizeof(lua_socket));
+  if(!ls)
+    return 0;
+
+  ls->sockettype = PF_INET;
+  ls->fd = getipsocket(address, port, protocol, &r);
+  if(ls->fd <= -1) {
+    luafree(ls);
+    return 0;
+  }
+
+  if(
+    (bind(ls->fd, (struct sockaddr *)&r, sizeof(struct sockaddr_in)) == -1) ||
+    (listen(ls->fd, 5) == -1)
+  ) {
+    close(ls->fd);
+    luafree(ls);
+    return 0;
+  }
+
+  ls->state = SOCKET_LISTENING;
+  ls->parent = NULL;
+
+  registerluasocket(ll, ls, POLLIN, 1);
+
+  lua_pushlong(l, ls->identifier);
+  return 1;
+}
+
+static int lua_socket_tcp_connect(lua_State *l) {
+  return lua_socket_ip_connect(l, SOCK_STREAM);
+}
+
+static int lua_socket_tcp_bind(lua_State *l) {
+  return lua_socket_ip_bind(l, SOCK_STREAM);
+}
+
+static int lua_socket_udp_connect(lua_State *l) {
+  return lua_socket_ip_connect(l, SOCK_DGRAM);
+}
+
+static int lua_socket_udp_bind(lua_State *l) {
+  return lua_socket_ip_bind(l, SOCK_DGRAM);
 }
 
 static lua_socket *socketbyfd(int fd) {
@@ -321,11 +466,19 @@ static void lua_socket_poll_event(int fd, short events) {
       break;
     case SOCKET_LISTENING:
       if(events & POLLIN) {
-        struct sockaddr_un r;
+        struct sockaddr_in rip;
+        struct sockaddr_un run;
         lua_socket *ls2;
-        unsigned int len = sizeof(r);
+        unsigned int len;
+        int fd2;
 
-        int fd2 = accept(fd, (struct sockaddr *)&r, &len);
+        if(ls->sockettype == PF_INET) {
+          len = sizeof(rip);
+          fd2 = accept(fd, (struct sockaddr *)&rip, &len);
+        } else {
+          len = sizeof(run);
+          fd2 = accept(fd, (struct sockaddr *)&run, &len);
+        }
         if(fd2 == -1)
           return;
 
@@ -340,6 +493,7 @@ static void lua_socket_poll_event(int fd, short events) {
         ls2->tag = ls->tag;
         ls2->handler = ls->handler;
         ls2->parent = ls;
+        ls2->sockettype = ls->sockettype;
 
         registerluasocket(ls->l, ls2, POLLIN | POLLERR | POLLHUP, 0);
         lua_vnpcall(ls, "accept", "l", ls2->identifier);
@@ -356,6 +510,10 @@ void lua_socket_closeall(lua_list *l) {
 void lua_registersocketcommands(lua_State *l) {
   lua_register(l, "socket_unix_connect", lua_socket_unix_connect);
   lua_register(l, "socket_unix_bind", lua_socket_unix_bind);
+  lua_register(l, "socket_tcp_connect", lua_socket_tcp_connect);
+  lua_register(l, "socket_tcp_bind", lua_socket_tcp_bind);
+  lua_register(l, "socket_udp_connect", lua_socket_udp_connect);
+  lua_register(l, "socket_udp_bind", lua_socket_udp_bind);
   lua_register(l, "socket_close", lua_socket_close);
   lua_register(l, "socket_write", lua_socket_write);
 }
