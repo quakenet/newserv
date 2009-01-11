@@ -399,14 +399,14 @@ void noperserv_handle_messages(nick *target, int messagetype, void **args) {
        	
       cmd = findcommandintree(controlcmds,cargv[0],1);
       if(!cmd) {
-        controlreply(sender, "Unknown command.");
+        controlreply(sender, "Unknown command or access denied.");
         return;
       }
       
       /* If we were doing "authed user tracking" here we'd put a check in for authlevel */
       /* Here it is! */
       if (!noperserv_policy_command_permitted(cmd->level, sender)) {
-        controlreply(sender, "Access denied.");
+        controlreply(sender, "Unknown command or access denied.");
         return;
       }
 
