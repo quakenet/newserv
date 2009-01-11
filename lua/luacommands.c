@@ -16,6 +16,7 @@
 #include "../localuser/localuserchannel.h"
 #include "../lib/irc_string.h"
 #include "../lib/flags.h"
+#include "../authext/authext.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -376,24 +377,21 @@ static int lua_botnick(lua_State *ps) {
   return 1;
 }
 
-/* O(n) */
 static int lua_getuserbyauth(lua_State *l) {
-  const char *acc;
   nick *np;
-  int i, found = 0;
+  int found = 0;
+  authname *au;
 
   if(!lua_isstring(l, 1))
     return 0;
 
-  acc = lua_tostring(l, 1);
+  au = getauthbyname(lua_tostring(l, 1));
+  if(!au)
+    return 0;
 
-  for(i=0;i<NICKHASHSIZE;i++) {
-    for(np=nicktable[i];np;np=np->next) {
-      if(np && np->authname[0] && !ircd_strcmp(np->authname, acc)) {  
-        lua_pushnumeric(l, np->numeric);
-        found++;
-      }
-    }
+  for(np=au->nicks;np;np=np->nextbyauthname) {
+    lua_pushnumeric(l, np->numeric);
+    found++;
   }
 
   return found;
