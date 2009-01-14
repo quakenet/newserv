@@ -34,7 +34,7 @@ int csa_doreqpw(void *source, int cargc, char **cargv) {
       if(!rup->email || strcasecmp(cargv[0],rup->email->content))
         continue;
 
-      if(UHasHelperPriv(rup)) {
+      if(UHasStaffPriv(rup)) {
         cs_log(sender,"REQUESTPASSWORD FAIL privileged email %s",cargv[0]);
         continue;
       }

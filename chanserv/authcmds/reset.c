@@ -36,7 +36,7 @@ int csa_doreset(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
 
   t=time(NULL);
-  if(UHasHelperPriv(rup) || (!rup->lockuntil || rup->lockuntil <= t)) {
+  if(UHasStaffPriv(rup) || (!rup->lockuntil || rup->lockuntil <= t)) {
     chanservstdmessage(sender, QM_ACCOUNTNOTLOCKED);
     return CMD_ERROR;
   }

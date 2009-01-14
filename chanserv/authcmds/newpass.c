@@ -74,7 +74,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
   }
 
   t=time(NULL);
-  if(!UHasHelperPriv(rup)) {
+  if(!UHasStaffPriv(rup)) {
     if(rup->lockuntil && rup->lockuntil > t) {
       chanservstdmessage(sender, QM_ACCOUNTLOCKED, rup->lockuntil);
       return CMD_ERROR;

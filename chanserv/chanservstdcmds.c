@@ -140,7 +140,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
     
     summary=(cmdsummary *)cmdlist[i]->ext;
     
-    if (rup && UHasHelperPriv(rup)) {
+    if (rup && UHasStaffPriv(rup)) {
       if (cmdlist[i]->level & QCMD_DEV) {
         sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
       } else if(cmdlist[i]->level & QCMD_ADMIN) {
@@ -191,7 +191,8 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
   rup=getreguserfromnick(sender);
   
   /* Don't showhelp for privileged users to others.. */
-  if (((cmd->level & QCMD_HELPER) && (!rup || !UHasHelperPriv(rup))) ||
+  if (((cmd->level & QCMD_STAFF) && (!rup || !UHasStaffPriv(rup))) ||
+      ((cmd->level & QCMD_HELPER) && (!rup || !UHasHelperPriv(rup))) ||
       ((cmd->level & QCMD_OPER) && (!rup || !UHasOperPriv(rup))) ||
       ((cmd->level & QCMD_ADMIN) && (!rup || !UHasAdminPriv(rup))) ||
       ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup)))) {

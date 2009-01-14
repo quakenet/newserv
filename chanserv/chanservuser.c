@@ -1291,7 +1291,7 @@ reguser *findreguser(nick *sender, const char *str) {
     }
     if (!(rup=findreguserbynick(str+1)) && sender)
       chanservstdmessage(sender, QM_UNKNOWNUSER, str);
-  } else if (*str=='&' && vrup && UHasHelperPriv(vrup)) {
+  } else if (*str=='&' && vrup && UHasStaffPriv(vrup)) {
     if (str[1]=='\0') {
       if (sender)
       	chanservstdmessage(sender, QM_UNKNOWNUSER, str);

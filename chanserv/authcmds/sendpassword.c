@@ -30,7 +30,7 @@ int csa_dosendpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(UHasHelperPriv(rup)) {
+  if(UHasStaffPriv(rup)) {
     chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
     cs_log(sender,"SENDPASSWORD FAIL privilidged user %s",rup->username);
     return CMD_ERROR;

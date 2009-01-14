@@ -30,7 +30,7 @@ int csa_dosetpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(UHasHelperPriv(rup)) {
+  if(UHasStaffPriv(rup)) {
     cs_log(sender,"GETPASSWORD FAILED username %s",rup->username);
     chanservwallmessage("%s (%s) just FAILED using SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
     chanservsendmessage(sender, "Sorry, that user is privileged.");

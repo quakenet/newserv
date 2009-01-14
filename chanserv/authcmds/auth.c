@@ -92,7 +92,7 @@ int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
 
   /* Check for too many auths.  Don't return immediately, since we will still warn
    * other users on the acct in this case. */
-  if (!UHasHelperPriv(rup) && !UIsNoAuthLimit(rup)) {
+  if (!UHasStaffPriv(rup) && !UIsNoAuthLimit(rup)) {
     if (anp->usercount >= MAXAUTHCOUNT) {
       chanservstdmessage(sender, QM_TOOMANYAUTHS);
       toomanyauths=1;
