@@ -26,7 +26,7 @@ static authname *authnametablebyname[AUTHNAMEHASHSIZE];
 
 static struct {
   sstring *name;
-  int persistant;
+  int persistent;
 } authnameexts[MAXAUTHNAMEEXTS];
 
 static void authextstats(int hooknum, void *arg);
@@ -66,7 +66,7 @@ void freeauthname (authname *anp) {
   freeauthnames=anp;
 }
 
-int registerauthnameext(const char *name, int persistant) {
+int registerauthnameext(const char *name, int persistent) {
   int i;
 
   if (findauthnameext(name)!=-1) {
@@ -77,7 +77,7 @@ int registerauthnameext(const char *name, int persistant) {
   for (i=0;i<MAXAUTHNAMEEXTS;i++) {
     if (authnameexts[i].name==NULL) {
       authnameexts[i].name=getsstring(name,100);
-      authnameexts[i].persistant=persistant;
+      authnameexts[i].persistent=persistent;
       return i;
     }
   }
@@ -176,7 +176,7 @@ void releaseauthname(authname *anp) {
     anp->nicks = NULL;
 
     for(i=0;i<MAXAUTHNAMEEXTS;i++)
-      if(authnameexts[i].persistant && anp->exts[i]!=NULL)
+      if(authnameexts[i].persistent && anp->exts[i]!=NULL)
         return;
 
     triggerhook(HOOK_AUTH_LOSTAUTHNAME, (void *)anp);
