@@ -216,12 +216,12 @@ void trojanscan_connect(void *arg) {
   trojanscan_database.glines = 0;
   trojanscan_database.detections = 0;
     
-  dbhost = getcopyconfigitem("trojanscan", "dbhost", "localhost", HOSTLEN);
-  dbuser = getcopyconfigitem("trojanscan", "dbuser", "", NICKLEN);
-  dbpass = getcopyconfigitem("trojanscan", "dbpass", "", REALLEN);
-  db = getcopyconfigitem("trojanscan", "db", "", NICKLEN);
+  dbhost = getcopyconfigitem("trojanscan", "dbhost", "localhost", 100);
+  dbuser = getcopyconfigitem("trojanscan", "dbuser", "moo", 100);
+  dbpass = getcopyconfigitem("trojanscan", "dbpass", "changeme", 100);
+  db = getcopyconfigitem("trojanscan", "db", "moo", 100);
   
-  dbport = getcopyconfigitem("trojanscan", "dbport", "3306", ACCOUNTLEN);
+  dbport = getcopyconfigitem("trojanscan", "dbport", "3306", 10);
   
   length = snprintf(buf, sizeof(buf) - 1, "%d", TROJANSCAN_DEFAULT_MAXCHANS);
   temp = getcopyconfigitem("trojanscan", "maxchans", buf, length);
