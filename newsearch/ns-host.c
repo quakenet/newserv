@@ -42,9 +42,9 @@ struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv) {
     /* Allow "host real" to match realhost */
     if (!ircd_strcmp(p,"real"))
       thenode->exe = host_exe_real;
-  }
 
-  argsn->free(ctx, argsn);
+    argsn->free(ctx, argsn);
+  }
 
   return thenode;
 }
