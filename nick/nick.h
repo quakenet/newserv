@@ -108,6 +108,8 @@
 #define ClearAdmin(x)        ((x)->flags &= ~AFLAG_ADMIN)
 #define ClearOperFlag(x)     ((x)->flags &= ~AFLAG_OPER)
 
+#define NickOnServiceServer(target)   SIsService(&serverlist[homeserver((target)->numeric)])
+
 typedef struct host {
   sstring *name;
   int clonecount;
