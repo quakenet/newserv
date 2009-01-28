@@ -1,7 +1,7 @@
 /*
  * Trojanscan version 2
  *
- * Trojanscan  copyright (C) Chris Porter 2002-2007
+ * Trojanscan  copyright (C) Chris Porter 2002-2009
  * Newserv bits copyright (C) David Mansell 2002-2003
  * 
  * TODO: CHECK::
@@ -216,12 +216,12 @@ void trojanscan_connect(void *arg) {
   trojanscan_database.glines = 0;
   trojanscan_database.detections = 0;
     
-  dbhost = getcopyconfigitem("trojanscan", "dbhost", "localhost", HOSTLEN);
-  dbuser = getcopyconfigitem("trojanscan", "dbuser", "", NICKLEN);
-  dbpass = getcopyconfigitem("trojanscan", "dbpass", "", REALLEN);
-  db = getcopyconfigitem("trojanscan", "db", "", NICKLEN);
+  dbhost = getcopyconfigitem("trojanscan", "dbhost", "localhost", 100);
+  dbuser = getcopyconfigitem("trojanscan", "dbuser", "moo", 100);
+  dbpass = getcopyconfigitem("trojanscan", "dbpass", "changeme", 100);
+  db = getcopyconfigitem("trojanscan", "db", "moo", 100);
   
-  dbport = getcopyconfigitem("trojanscan", "dbport", "3306", ACCOUNTLEN);
+  dbport = getcopyconfigitem("trojanscan", "dbport", "3306", 10);
   
   length = snprintf(buf, sizeof(buf) - 1, "%d", TROJANSCAN_DEFAULT_MAXCHANS);
   temp = getcopyconfigitem("trojanscan", "maxchans", buf, length);
@@ -2382,6 +2382,16 @@ host *trojanscan_selecthost(void) {
   return NULL;
 }
 
+static int specialuseronhost(host *hp) {
+  nick *np;
+
+  for(np=hp->nicks;np;np=np->nextbyhost)
+    if(IsOper(np) || IsService(np) || IsXOper(np) || NickOnServiceServer(np))
+      return 1;
+
+  return 0;
+}
+
 void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeip) {
   struct irc_in_addr ipaddress;
 
@@ -2393,7 +2403,7 @@ void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeip) {
 
     do {
       hp = trojanscan_selecthost();
-      if(hp && (hp->clonecount <= TROJANSCAN_MAX_CLONE_COUNT) && !trojanscan_isip(hp->name->content)) {
+      if(hp && (hp->clonecount <= TROJANSCAN_MAX_CLONE_COUNT) && !trojanscan_isip(hp->name->content) && !specialuseronhost(hp)) {
         strlcpy(buf, hp->name->content, maxsize + 1);
         if(hp->nicks) {
           *fakeip = hp->nicks->ipnode;

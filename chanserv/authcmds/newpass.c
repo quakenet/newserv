@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: newpass
+ * CMDALIASES: newpassword
  * CMDLEVEL: QCMD_SECURE | QCMD_AUTHED
  * CMDARGS: 3
  * CMDDESC: Change your password.
  * CMDFUNC: csa_donewpw
  * CMDPROTO: int csa_donewpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: NEWPASS <oldpassword> <newpassword> <newpassword>
+ * CMDHELP: Usage: @UCOMMAND@ <oldpassword> <newpassword> <newpassword>
  * CMDHELP: Changes your account password.  Your new password must be at least 6 characters
  * CMDHELP: long, contain at least one number and one letter, and may not contain sequences
  * CMDHELP: of letters or numbers.  Your new password will be sent to your registered email
@@ -72,8 +73,8 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(!UHasHelperPriv(rup)) {
-    t=time(NULL);
+  t=time(NULL);
+  if(!UHasStaffPriv(rup)) {
     if(rup->lockuntil && rup->lockuntil > t) {
       chanservstdmessage(sender, QM_ACCOUNTLOCKED, rup->lockuntil);
       return CMD_ERROR;
@@ -88,6 +89,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     rup->lastemail=NULL;
   }
 
+  rup->lastpasschange=t;
   csdb_accounthistory_insert(sender, rup->password, cargv[1], NULL, NULL);
   setpassword(rup, cargv[1]);
 

@@ -32,6 +32,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   char *dupemail;
   activeuser *aup;
   maillock *mlp;
+  time_t t;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -115,13 +116,15 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   aup->helloattempts++;
   
+  t=time(NULL);
   rup=getreguser();
   rup->status=0;
   rup->ID=++lastuserID;
   strncpy(rup->username,sender->nick,NICKLEN); rup->username[NICKLEN]='\0';
-  rup->created=time(NULL);
+  rup->created=t;
   rup->lastauth=0;
-  rup->lastemailchange=time(NULL);
+  rup->lastemailchange=t;
+  rup->lastpasschange=t;
   rup->flags=QUFLAG_NOTICE;
   rup->languageid=0;
   rup->suspendby=0;

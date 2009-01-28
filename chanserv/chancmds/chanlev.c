@@ -316,6 +316,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       oldflags=rcuplist->flags;
       if (setflags(&(rcuplist->flags), changemask, cargv[2], rcuflags, REJECT_UNKNOWN | REJECT_DISALLOWED)) {
 	chanservstdmessage(sender, QM_INVALIDCHANLEVCHANGE);
+        if (newuser)
+          freeregchanuser(rcuplist);
 	return CMD_ERROR;
       }
 
@@ -323,6 +325,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       if (!cs_privcheck(QPRIV_CHANGECHANLEV, sender) && !(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
         rcuplist->flags=oldflags;
 	chanservstdmessage(sender, QM_USEGIVEOWNER);
+        if (newuser)
+          freeregchanuser(rcuplist);
 	return CMD_ERROR;
       }
 
@@ -335,10 +339,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
       if(rcuplist->flags == oldflags) {
         chanservstdmessage(sender, QM_CHANLEVNOCHANGE);
-        if (newuser) {
+        if (newuser)
           freeregchanuser(rcuplist);
-          rcuplist=NULL;
-        }
         return CMD_OK;
       }
 

@@ -37,7 +37,7 @@ int csu_dospewpass(void *source, int cargc, char **cargv) {
   chanservstdmessage(sender, QM_SPEWHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (dbrup=regusernicktable[i]; dbrup; dbrup=dbrup->nextbyname) {
-      if (!UHasHelperPriv(dbrup) && !match(cargv[0], dbrup->password)) {
+      if (!UHasStaffPriv(dbrup) && !match(cargv[0], dbrup->password)) {
         chanservsendmessage(sender, "%-15s %-10s %-30s %s", dbrup->username, UHasSuspension(dbrup)?"yes":"no", dbrup->email?dbrup->email->content:"none set", dbrup->lastuserhost?dbrup->lastuserhost->content:"none");
         count++;
         if (count >= 2000) {

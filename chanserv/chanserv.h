@@ -175,7 +175,7 @@
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
-#define UHasStaffPriv(x)    ((x)->flags * (QUFLAG_STAFF | QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
+#define UHasStaffPriv(x)    ((x)->flags & (QUFLAG_STAFF | QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasHelperPriv(x)   ((x)->flags & (QUFLAG_HELPER | QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
@@ -393,8 +393,10 @@
 #define   QCMD_OPER           0x0020 /* Only available to opers */
 #define   QCMD_ADMIN          0x0040 /* Only available to admins */
 #define   QCMD_DEV            0x0080 /* Only available to developers */
+#define   QCMD_STAFF          0x0200 /* Only available to staff */
 
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
+#define   QCMD_HIDDEN         QCMD_ALIAS
 
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
@@ -547,6 +549,8 @@ typedef struct reguser {
   void               *checkshd;      /* When we're going to check for an imposter */
   int                 stealcount;    /* How many times we've had to free the nick up */
   nick               *fakeuser;      /* If we had to "take" the nick, here's the pointer */
+
+  time_t             lastpasschange;
 
   struct reguser     *nextbydomain;
   struct reguser     *nextbyname;
@@ -782,6 +786,7 @@ CRAlgorithm cs_cralgorithm(const char *algorithm);
 const char *cs_cralgorithmlist(void);
 int cs_checkhashpass(const char *username, const char *password, const char *junk, const char *hash);
 char *csc_generateresetcode(time_t lockuntil, char *username);
+int csc_verifyqticket(char *data, char *digest);
 
 /* chanservuser.c */
 void chanservreguser(void *arg);

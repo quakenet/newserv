@@ -10,10 +10,13 @@ my @cmdfunc;
 my @protos;
 my @files;
 my @help;
+my @cmdaliases;
 
 my @filelist = <*.c>;
 
 my $modname;
+
+my %cmdhash;
 
 unless (@ARGV) {
   print "Usage: $0 <module name>\n";
@@ -36,8 +39,9 @@ for (@filelist) {
   next if ($_ eq $cname);
   
   my $fname = $_;
-  my ($cn, $cl, $ca, $cd, $cf, $cp, $ch);
+  my ($cn, $cl, $ca, $cd, $cf, $cp, $ch, $cal);
   $ch="";
+  $cal="";
 
   open INFILE,"<$fname";
   
@@ -71,10 +75,16 @@ for (@filelist) {
     if (/CMDHELP: (.*)/) {
       $ch.=$1."\\n";
     }
+
+    if (/CMDALIASES: (.*)/) {
+      $cal=$1;
+    }
   }
   
   if (defined $cn and defined $cl and defined $ca and defined $cd and defined $cf and defined $cp) {
     # valid command found 
+    $cmdhash{$cn} = scalar @cmdnames;
+
     push @files, $fname;
     push @cmdnames, $cn;
     push @cmdlevels, $cl;
@@ -83,6 +93,7 @@ for (@filelist) {
     push @cmdfunc, $cf;
     push @protos, $cp;
     push @help, $ch;
+    push @cmdaliases, $cal;
   } else {
     print "Warning: found source file $fname without complete tags, skipping...\n";
   }
@@ -106,25 +117,65 @@ foreach (@protos) {
   print CL "$_\n";
 }
 
-my @names2 = @cmdnames;
-my @func2 = @cmdfunc;
-
 print CL "void ".$smallname."_init(void);\n";
 print CL "void ".$smallname."_fini(void);\n\n";
 
 print CL "\nvoid _init() {\n";
 print CL "  ".$smallname."_init();\n";
 
-while (my $cn = shift @cmdnames) {
-  print CL "  chanservaddcommand(\"".$cn."\", ".(shift @cmdlevels).", ".(shift @cmdargs).", ";
-  print CL (shift @cmdfunc).", \"".(shift @cmddesc)."\", \"".(shift @help),"\");\n";
+sub generate_help_text {
+  my ($cn, $ch) = @_;
+
+  my %SUBS;
+
+  $SUBS{"COMMAND"} = $cn;
+  $SUBS{"UCOMMAND"} = uc($cn);
+
+  my %realsubs;
+  while(my ($key, $value) = each(%SUBS)) {
+    $key = '@'.quotemeta($key).'@';
+    $value = quotemeta($value);
+    $ch =~ s/$key/$value/g;
+  }
+
+  return $ch;
+}
+
+sub writecmd {
+  my ($cn, $i, $isalias) = @_;
+
+  my $cl = $cmdlevels[$i];
+  if ($isalias) {
+    $cl .= " | " if ($cl ne "");
+    $cl .= "QCMD_ALIAS";
+  }
+
+  print CL "  chanservaddcommand(\"".$cn."\", ".($cl).", ".($cmdargs[$i]).", ";
+  print CL ($cmdfunc[$i]).", \"".($cmddesc[$i])."\", \"".(generate_help_text($cn,$help[$i])),"\");\n";
+}
+
+for (my $i=0;$i<scalar @cmdnames;$i++) {
+  writecmd($cmdnames[$i], $i, 0);
+
+  foreach (split / /, $cmdaliases[$i]) {
+    writecmd($_, $i, 1);
+  }
 }
 
 print CL "}\n\nvoid _fini() {\n";
 print CL "  ".$smallname."_fini();\n";
 
-while (my $cn = shift @names2) {
-  print CL "  chanservremovecommand(\"".$cn."\", ".(shift @func2).");\n";
+sub writercmd {
+  my ($cn, $i) = @_;
+  print CL "  chanservremovecommand(\"".$cn."\", ".($cmdfunc[$i]).");\n";
+}
+
+for (my $i=0;$i<scalar @cmdnames;$i++) {
+  writercmd($cmdnames[$i], $i);
+
+  foreach (split / /, $cmdaliases[$i]) {
+    writercmd($_, $i);
+  }
 }
 
 print CL "}\n";

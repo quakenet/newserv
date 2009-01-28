@@ -32,7 +32,7 @@ int csu_dodeluser(void *source, int cargc, char **cargv) {
   if (!(target=findreguser(sender, cargv[0])))
     return CMD_ERROR;
   
-  if(UHasHelperPriv(target)) {
+  if(UHasStaffPriv(target)) {
     cs_log(sender,"DELUSER FAILED username %s (%s)",target->username,cargc>1?cargv[1]:"");
     chanservwallmessage("%s (%s) just FAILED using DELUSER on %s (%s)", sender->nick, rup->username, target->username, cargv[1]);
     chanservsendmessage(sender, "Sorry, that user is privileged.");

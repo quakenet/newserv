@@ -33,16 +33,18 @@ struct searchNode *host_parse(searchCtx *ctx, int argc, char **argv) {
   thenode->exe = host_exe;
   thenode->free = host_free;
 
-  if (!(argsn=argtoconststr("host", ctx, argv[0], &p))) {
-    free(thenode);
-    return NULL;
-  }
+  if (argc>0) {
+    if (!(argsn=argtoconststr("host", ctx, argv[0], &p))) {
+      free(thenode);
+      return NULL;
+    }
   
-  /* Allow "host real" to match realhost */
-  if (argc>0 && !ircd_strcmp(p,"real"))
-    thenode->exe = host_exe_real;
-    
-  argsn->free(ctx, argsn);
+    /* Allow "host real" to match realhost */
+    if (!ircd_strcmp(p,"real"))
+      thenode->exe = host_exe_real;
+
+    argsn->free(ctx, argsn);
+  }
 
   return thenode;
 }

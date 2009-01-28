@@ -11,7 +11,7 @@
 #include "../lib/hmac.h"
 
 static prngctx rng;
-static sstring *secret, *codesecret;
+static sstring *secret, *codesecret, *ticketsecret;
 
 static sstring *combinesecret(char *str) {
   SHA256_CTX ctx;
@@ -63,12 +63,20 @@ void chanservcryptoinit(void) {
     secret=getsstring(hexbuf, strlen(hexbuf));
   }
   codesecret=combinesecret("codegenerator");
+
+  ticketsecret=getcopyconfigitem("chanserv","ticketsecret","",256);
+  if(!ticketsecret || !ticketsecret->content || !ticketsecret->content[0]) {
+    Error("chanserv",ERR_WARNING,"Ticket secret not set, ticketauth disabled.");
+    freesstring(ticketsecret);
+    ticketsecret = NULL;
+  }
 }
 
 
 void chanservcryptofree(void) {
   freesstring(secret);
   freesstring(codesecret);
+  freesstring(ticketsecret);
 }
 
 ub4 cs_getrandint(void) {
@@ -262,4 +270,24 @@ char *csc_generateresetcode(time_t lockuntil, char *username) {
   hmac_printhex(digest, hexbuf, sizeof(digest));
 
   return hexbuf;
+}
+
+int csc_verifyqticket(char *data, char *digest) {
+  hmacsha256 hmac;
+  unsigned char digestbuf[32];
+  char hexbuf[sizeof(digestbuf) * 2 + 1];
+
+  if(!ticketsecret)
+    return -1;
+
+  hmacsha256_init(&hmac, (unsigned char *)ticketsecret->content, ticketsecret->length);
+  hmacsha256_update(&hmac, (unsigned char *)data, strlen(data));
+  hmacsha256_final(&hmac, digestbuf);
+
+  hmac_printhex(digestbuf, hexbuf, sizeof(digestbuf));
+
+  if(!strcasecmp(hexbuf, digest))
+    return 0;
+
+  return 1;
 }

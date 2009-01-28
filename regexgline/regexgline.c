@@ -147,6 +147,12 @@ void _fini(void) {
   }
 }
 
+static int ignorable_nick(nick *np) {
+  if(IsOper(np) || IsService(np) || IsXOper(np) || SIsService(&serverlist[homeserver(np->numeric)]))
+    return 1;
+  return 0;
+}
+
 void rg_checkexpiry(void *arg) {
   struct rg_struct *rp = rg_list, *lp = NULL;
   time_t current = time(NULL);
@@ -413,7 +419,7 @@ void rg_nick(int hooknum, void *arg) {
 
   hostlen = RGBuildHostname(hostname, np);
 
-  if(IsOper(np) || IsService(np) || IsXOper(np))
+  if(ignorable_nick(np))
     return;
 
   for(rp=rg_list;rp;rp=rp->next) {
@@ -505,7 +511,7 @@ int rg_gline(void *source, int cargc, char **cargv) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(tnp=nicktable[j];tnp;tnp=tnp->next) {
-      if(IsOper(tnp) || IsService(tnp) || IsXOper(tnp))
+      if(ignorable_nick(tnp))
         continue;
 
       hostlen = RGBuildHostname(hostname, tnp);
@@ -883,7 +889,7 @@ void rg_startup(void) {
 
   for(j=0;j<NICKHASHSIZE;j++) {
     for(np=nicktable[j];np;np=np->next) {
-      if(IsOper(np) || IsService(np) || IsXOper(np))
+      if(ignorable_nick(np))
         continue;
       hostlen = RGBuildHostname(hostname, np);
       for(rp=rg_list;rp;rp=rp->next) {

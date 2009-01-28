@@ -42,7 +42,7 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
       if (!(anp=findauthname(vrup->ID)))
         continue; /* should maybe raise hell instead */
 
-      if(!anp->nicks && !UHasHelperPriv(vrup) && !UIsCleanupExempt(vrup)) {
+      if(!anp->nicks && !UHasStaffPriv(vrup) && !UIsCleanupExempt(vrup)) {
         if(vrup->lastauth && (vrup->lastauth < to_age)) {
           expired++;
           cs_log(sender, "CLEANUPDB inactive user %s %u", vrup->username, vrup->ID);

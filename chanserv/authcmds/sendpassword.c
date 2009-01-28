@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: sendpassword
+ * CMDALIASES: sendpass
  * CMDLEVEL: QCMD_HELPER
  * CMDARGS: 1
  * CMDDESC: Sends the users current password by email.
  * CMDFUNC: csa_dosendpw
  * CMDPROTO: int csa_dosendpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: SENDPASSWORD <username>
+ * CMDHELP: Usage: @UCOMMAND@ <username>
  * CMDHELP: Sends the password for the specified account to the specified users email address.
  */
 
@@ -29,7 +30,7 @@ int csa_dosendpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(UHasHelperPriv(rup)) {
+  if(UHasStaffPriv(rup)) {
     chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
     cs_log(sender,"SENDPASSWORD FAIL privilidged user %s",rup->username);
     return CMD_ERROR;

@@ -8,6 +8,7 @@
 typedef struct lua_socket {
   int fd;
   int state;
+  int sockettype;
   long handler;
   long tag;
   unsigned long identifier;

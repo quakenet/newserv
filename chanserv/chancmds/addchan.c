@@ -117,7 +117,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   rcp->lastcountersync=0;
   
   rcp->limit=0;
-  rcp->forcemodes=CHANMODE_NOEXTMSG | CHANMODE_TOPICLIMIT;
+  rcp->forcemodes=CHANMODE_DEFAULT;
   rcp->denymodes=0;
 
   if (CIsAutoLimit(rcp)) {

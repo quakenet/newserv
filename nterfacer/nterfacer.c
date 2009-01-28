@@ -189,7 +189,7 @@ int load_permits(void) {
       continue;
     }
 
-    item->ihost = (*(struct in_addr *)host->h_addr).s_addr;
+    item->ihost = (*(struct in_addr *)host->h_addr_list[0]).s_addr;
     for(j=0;j<loaded_lines;j++) {
       if(new_permits[j].ihost == item->ihost) {
         nterface_log(nrl, NL_WARNING, "Host with items %d and %d is identical, dropping item %d.", j + 1, i + 1, i + 1);

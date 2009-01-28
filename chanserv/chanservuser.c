@@ -143,6 +143,12 @@ void chanservuserhandler(nick *target, int message, void **params) {
 	break;
       }
       
+      if ((cmd->level & QCMD_STAFF) && 
+	  (!(rup=getreguserfromnick(sender)) || !UHasStaffPriv(rup))) {
+	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);
+	break;
+      }
+      
       if ((cmd->level & QCMD_HELPER) && 
 	  (!(rup=getreguserfromnick(sender)) || !UHasHelperPriv(rup))) {
 	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);
@@ -580,6 +586,7 @@ void cs_checknick(nick *np) {
       rup->created=time(NULL);
       rup->lastauth=0;
       rup->lastemailchange=0;
+      rup->lastpasschange=0;
       rup->flags=QUFLAG_NOTICE;
       rup->languageid=0;
       rup->suspendby=0;
@@ -1284,7 +1291,7 @@ reguser *findreguser(nick *sender, const char *str) {
     }
     if (!(rup=findreguserbynick(str+1)) && sender)
       chanservstdmessage(sender, QM_UNKNOWNUSER, str);
-  } else if (*str=='&' && vrup && UHasHelperPriv(vrup)) {
+  } else if (*str=='&' && vrup && UHasStaffPriv(vrup)) {
     if (str[1]=='\0') {
       if (sender)
       	chanservstdmessage(sender, QM_UNKNOWNUSER, str);

@@ -88,6 +88,7 @@ static void setuptables() {
                "suspendreason VARCHAR(250),"
                "comment       VARCHAR(250),"
                "info          VARCHAR(100),"
+               "lastpasschng  INT               NOT NULL,"
                "PRIMARY KEY (ID))");
 
   dbcreatequery("CREATE INDEX user_username_index ON chanserv.users (username)");
@@ -302,7 +303,7 @@ void loadsomeusers(DBConn *dbconn, void *arg) {
     return;
   }
 
-  if (dbnumfields(pgres)!=18) {
+  if (dbnumfields(pgres)!=19) {
     Error("chanserv",ERR_ERROR,"User DB format error");
     return;
   }
@@ -343,6 +344,7 @@ void loadsomeusers(DBConn *dbconn, void *arg) {
     rup->suspendreason=getsstring(dbgetvalue(pgres,15),250);
     rup->comment=getsstring(dbgetvalue(pgres,16),250);
     rup->info=getsstring(dbgetvalue(pgres,17),100);
+    rup->lastpasschange=strtoul(dbgetvalue(pgres,18),NULL,10);
     rup->knownon=NULL;
     rup->checkshd=NULL;
     rup->stealcount=0;

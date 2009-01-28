@@ -3,7 +3,7 @@
 
 #define Q9_FORMAT_TIME "%d/%m/%y %H:%M"
 
-#define MAXMESSAGES  200
+#define MAXMESSAGES  250
 
 #ifdef COMPILING_MESSAGES
 #define msg(token, message, args) message, args
@@ -215,6 +215,13 @@ BeginMessages() {
   msg(QM_CHANLEV_SUSPENDREASON, "Suspended: $0", "s"),
   msg(QM_CHANLEV_SUSPENDSINCE, "Suspended since: $0", "T"),
   msg(QM_CHANLEV_SUSPENDBY, "Suspended by: $0", "s"),
+  msg(QM_TRUNCATED, "Warning: list truncated to $0 items.", "d"),
+  msg(QM_WHOIS_PASSSET, "Pass last set  : $0", "T"),
+  msg(QM_TICKETEXPIRED, "Sorry, you've taken too long to log in (ticket has expired).", ""),
+  msg(QM_TICKETNOTYETVALID, "The supplied login credentials are not valid (ticket not yet valid).", ""),
+  msg(QM_CONFIGURATIONERROR, "Configuration error, contact an IRC Operator.", ""),
+  msg(QM_INVALIDHMAC, "The supplied login credentials are not valid (bad HMAC).", ""),
+  msg(QM_PASSEMAILCHANGED, "Auth failed: account password has been changed since you logged in.", ""),
 } 
 EndMessages()
 #endif

@@ -101,7 +101,7 @@ static int lua_deregisterlocaluser(lua_State *ps) {
   l = lua_listfromstate(ps);
 
   for(l2=l->nicks;l2;lp=l2,l2=l2->next) {
-    if(l2->nick->numeric == numeric) {
+    if(l2->nick && l2->nick->numeric == numeric) {
       if(lp) {
         lp->next = l2->next;
       } else {
@@ -119,7 +119,9 @@ static int lua_deregisterlocaluser(lua_State *ps) {
 void lua_deregisternicks(lua_list *l) {
   struct lua_localnick *ln, *pn;
 
-  for(ln=l->nicks;ln;ln=pn) {
+  ln = l->nicks;
+  l->nicks = NULL;
+  for(;ln;ln=pn) {
     pn = ln->next;
 
     lua_freelocalnick(l->l, ln, "Script unloaded.");
@@ -528,6 +530,24 @@ static int lua_localkick(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localrename(lua_State *ps) {
+  nick *np;
+  char *changeto;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) )
+    LUA_RETURN(ps, LUA_FAIL);
+
+  np = getnickbynumeric(lua_tolong(ps, 1));
+  changeto = (char *)lua_tostring(ps, 2);
+
+  if(!lua_lineok(changeto))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  renamelocaluser(np, changeto);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localregisteruser", lua_registerlocaluser);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
@@ -543,5 +563,7 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localban", lua_localban);
   lua_register(l, "irc_localkick", lua_localkick);
   lua_register(l, "irc_localumodes", lua_localumodes);
+
+  lua_register(l, "irc_localrename", lua_localrename);
 }
 

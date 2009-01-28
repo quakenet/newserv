@@ -66,6 +66,9 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
 
     /* Warning, policy ahead */
 
+    if (UHasStaffPriv(rup))
+      changemask |= QUFLAG_PROTECT;
+
     if (UHasOperPriv(rup))
       changemask |= QUFLAG_PROTECT | QUFLAG_TRUST | QCFLAG_NOINFO;
 
@@ -80,7 +83,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     wasorisoper |= UHasOperPriv(target);
 
     /* More policy */
-    if (!UHasHelperPriv(target)) {
+    if (!UHasStaffPriv(target)) {
       target->flags &= ~QUFLAG_PROTECT;
     }
 
@@ -97,9 +100,11 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     }
     csdb_updateuser(target);
 
+/* Disabled this for now as live ircu doesn't support it - splidge
     if ((anp=findauthname(rup->ID)))
       localusersetaccountflags(anp, cs_accountflagmap(target));
-
+ */
+ 
     chanservstdmessage(sender, QM_DONE);
   }
 

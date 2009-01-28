@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: getpassword
+ * CMDALIASES: getpass
  * CMDLEVEL: QCMD_OPER
  * CMDARGS: 2
  * CMDDESC: Gets a users password
  * CMDFUNC: csa_dogetpw
  * CMDPROTO: int csa_dogetpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: getpassword <username>
+ * CMDHELP: Usage: @UCOMMAND@ <username>
  * CMDHELP: Fetches the password for the specified username.
  */
 
@@ -30,7 +31,7 @@ int csa_dogetpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
-  if(UHasHelperPriv(rup)) {
+  if(UHasStaffPriv(rup)) {
     cs_log(sender,"GETPASSWORD FAILED username %s",rup->username);
     chanservwallmessage("%s (%s) just FAILED using GETPASSWORD on %s", sender->nick, srup->username, rup->username);
     chanservsendmessage(sender, "Sorry, that user is privileged.");

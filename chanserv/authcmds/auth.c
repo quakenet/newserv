@@ -2,12 +2,13 @@
  *
  *
  * CMDNAME: auth
+ * CMDALIASES: login
  * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED
  * CMDARGS: 2
  * CMDDESC: Authenticates you on the bot.
  * CMDFUNC: csa_doauth
  * CMDPROTO: int csa_doauth(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: AUTH <username> <password>
+ * CMDHELP: Usage: @UCOMMAND@ <username> <password>
  * CMDHELP: Authenticates you on the bot, where:
  * CMDHELP: username - your username
  * CMDHELP: password - your password
@@ -17,4 +18,142 @@
  * CMDHELP: Note: the preferred way to authenticate is to use the /AUTH command.
  */
 
-/* Actual function is in login.c */
+#include "../chanserv.h"
+#include "../authlib.h"
+#include "../../lib/irc_string.h"
+#include <stdio.h>
+#include <string.h>
+
+int csa_completeauth(nick *sender, reguser *rup, char *authtype);
+
+int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
+  reguser *rup;
+  activeuser *aup;
+  nick *sender=source;
+  int challenge=0;
+  char *authtype = "AUTH";
+
+  if (alg) {
+    challenge=1;
+    authtype = "CHALLENGEAUTH";
+  } else if (cargc<2) {
+    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "auth");
+    return CMD_ERROR;
+  }
+  
+  if (!(aup = getactiveuserfromnick(sender)))
+    return CMD_ERROR;
+  
+  aup->authattempts++;
+  if (aup->authattempts > MAXAUTHATTEMPT) {
+    if ((aup->authattempts % 100) == 0)
+      chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: %s %s %s",
+        sender->nick, sender->ident, sender->host->name->content, aup->authattempts, authtype, cargv[0], cargv[1]);
+    chanservstdmessage(sender, QM_AUTHFAIL);
+    cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
+    return CMD_ERROR;
+  }
+
+  if (!(rup=findreguserbynick(cargv[0]))) {
+    chanservstdmessage(sender, QM_AUTHFAIL);
+    cs_log(sender,"%s FAIL bad username %s",authtype,cargv[0]); 
+    return CMD_ERROR;
+  }
+
+  if (!challenge) {
+    if (!checkpassword(rup, cargv[1])) {
+      chanservstdmessage(sender, QM_AUTHFAIL);
+      cs_log(sender,"%s FAIL username %s bad password %s",authtype,rup->username,cargv[1]);
+      return CMD_ERROR;
+    }
+  } else {
+    if (!checkresponse(rup, aup->entropy, cargv[1], alg)) {
+      chanservstdmessage(sender, QM_AUTHFAIL);
+      cs_log(sender,"%s FAIL username %s bad response",authtype,rup->username);
+      return CMD_ERROR;
+    }
+  }
+
+  return csa_completeauth(sender, rup, authtype);
+}
+
+int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
+  int toomanyauths=0;
+  time_t now;
+  char userhost[USERLEN+HOSTLEN+2];
+  nick *onp;
+  authname *anp;
+
+  /* This should never fail but do something other than crashing if it does. */
+  if (!(anp=findauthname(rup->ID))) {
+    chanservstdmessage(sender, QM_AUTHFAIL);
+    return CMD_ERROR;
+  }
+
+  /* Check for too many auths.  Don't return immediately, since we will still warn
+   * other users on the acct in this case. */
+  if (!UHasStaffPriv(rup) && !UIsNoAuthLimit(rup)) {
+    if (anp->usercount >= MAXAUTHCOUNT) {
+      chanservstdmessage(sender, QM_TOOMANYAUTHS);
+      toomanyauths=1;
+    }
+  }
+  
+  for (onp=anp->nicks;onp;onp=onp->nextbyauthname) {
+    if (toomanyauths) {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHEDLIMIT, sender->nick, sender->ident, sender->host->name->content, MAXAUTHCOUNT);
+    } else {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHED, sender->nick, sender->ident, sender->host->name->content);
+    }
+  }
+  
+  if (toomanyauths)
+    return CMD_ERROR;
+
+  now=time(NULL);
+
+  if (UHasSuspension(rup) && rup->suspendexp && (now >= rup->suspendexp)) {
+    /* suspension has expired, remove it */
+    rup->flags&=(~(QUFLAG_SUSPENDED|QUFLAG_GLINE|QUFLAG_DELAYEDGLINE));
+    rup->suspendby=0;
+    rup->suspendexp=0;
+    freesstring(rup->suspendreason);
+    rup->suspendreason=0;
+    csdb_updateuser(rup);  
+  }
+  
+  if (UIsSuspended(rup)) {
+    /* plain suspend */
+    chanservstdmessage(sender, QM_AUTHSUSPENDED);
+    if(rup->suspendreason)
+      chanservstdmessage(sender, QM_REASON, rup->suspendreason->content);
+    if (rup->suspendexp)
+      chanservstdmessage(sender, QM_EXPIRES, rup->suspendexp);
+    return CMD_ERROR;
+  }
+  
+  /* Guarantee a unique auth timestamp for each account */
+  if (rup->lastauth < now) 
+    rup->lastauth=now;
+  else
+    rup->lastauth++;
+
+  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
+  if (rup->lastuserhost)
+    freesstring(rup->lastuserhost);
+  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
+  
+  csdb_updateuser(rup);  
+
+  cs_log(sender,"%s OK username %s", authtype,rup->username);
+
+  localusersetaccount(sender, rup->username, rup->ID, cs_accountflagmap(rup), rup->lastauth);
+
+  chanservstdmessage(sender, QM_AUTHOK, rup->username);
+
+  return CMD_OK;
+}
+
+int csa_doauth(void *source, int cargc, char **cargv) {
+  return csa_auth(source, cargc, cargv, NULL);
+}

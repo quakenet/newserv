@@ -356,7 +356,10 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
     now_ts = time(NULL);
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
-    fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_QNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+    fprintf(rq_logfd, "%s: request (%s) for %s from %s!%s@%s%s%s: Request was %s.\n",
+      now, RQ_QNICK, cp->index->name->content,
+      np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"",
+      (retval == RQ_OK) ? "accepted" : "denied");
     fflush(rq_logfd);
   }
 

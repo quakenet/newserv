@@ -52,7 +52,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(!UHasHelperPriv(rup) && (rup->lockuntil && rup->lockuntil > t)) {
+  if(!UHasStaffPriv(rup) && (rup->lockuntil && rup->lockuntil > t)) {
     chanservstdmessage(sender, QM_ACCOUNTLOCKED, rup->lockuntil);
     return CMD_ERROR;
   }
@@ -122,7 +122,7 @@ int csa_doemail(void *source, int cargc, char **cargv) {
   rup->email=getsstring(cargv[1],EMAILLEN);
   rup->lastemailchange=t;
   rup->domain=findorcreatemaildomain(rup->email->content);
-  if(!UHasHelperPriv(rup)) {
+  if(!UHasStaffPriv(rup)) {
     rup->lockuntil=t+7*24*3600;
   } else {
     rup->lockuntil=0;
