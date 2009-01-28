@@ -170,9 +170,10 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
 
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
     fprintf(rq_logfd, "%s: request (%s) for %s (%d unique users, "
-            "%d total users) from %s: Request was %s (%c).\n", now,
+            "%d total users) from %s!%s@%s%s%s: Request was %s (%c).\n", now,
             (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK,
-            req->cip->name->content, unique, total, tnp->nick,
+            req->cip->name->content, unique, total,
+            tnp->nick, tnp->ident, tnp->host->name->content, IsAccount(tnp)?"/":"", IsAccount(tnp)?tnp->authname:"",
             (outcome == QR_OK) ? "accepted" : "denied", failcode);
     fflush(rq_logfd);
   }
