@@ -21,7 +21,7 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   int i, rocount;
 
   if (strlen(cp->index->name->content) > LR_MAXCHANLEN) {
-    sendnoticetouser(svc, np, "Channel name is too long. You will have to "
+    sendnoticetouser(svc, np, "Sorry, your channel name is too long. You will have to "
           "create a channel with a name less than %d characters long.",
           LR_MAXCHANLEN + 1);
 
@@ -31,7 +31,8 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   cf = cf_findchanfix(cp->index);
 
   if (cf == NULL) {
-    sendnoticetouser(svc, np, "Error: Sorry, Your channel '%s' was created recently. Please Try again in an hour.", cp->index->name->content);
+    sendnoticetouser(svc, np, "Sorry, your channel '%s' was created recently. "
+          "Please try again in an hour.", cp->index->name->content);
 
     lr_noregops++;
 
@@ -50,8 +51,8 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   }
 
   if (ro == NULL) {
-    sendnoticetouser(svc, np, "Error: Sorry, You must be one of the top %d ops "
-          "for the channel %s.", LR_TOPX, cp->index->name->content);
+    sendnoticetouser(svc, np, "Sorry, you must be one of the top %d ops "
+          "for the channel '%s'.", LR_TOPX, cp->index->name->content);
 
     lr_top5++;
 
@@ -61,7 +62,7 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   /* treat blocked users as if their score is too low */
   if (ro->score < LR_CFSCORE || rq_findblock(np->authname)) {
     if (rq_isspam(np)) {
-      sendnoticetouser(svc, np, "Error: Do not flood the request system. "
+      sendnoticetouser(svc, np, "Do not flood the request system. "
             "Try again in %s.", rq_longtoduration(rq_blocktime(np)));
 
       lr_floodattempts++;
@@ -69,9 +70,9 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
       return RQ_ERROR;
     }
 
-    sendnoticetouser(svc, np, "Sorry You do not meet the "
-          "requirements to request %s. Please Try again in an hour. "
-          "(see http://www.quakenet.org/faq/faq.php?c=1&f=239#239 )", RQ_QNICK);
+    sendnoticetouser(svc, np, "Sorry, you do not meet the "
+          "%s request requirements; please try again in an hour, "
+          "see http://www.quakenet.org/faq/faq.php?c=1&f=6#6", RQ_QNICK);
 
     lr_scoretoolow++;
 
@@ -82,8 +83,9 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   sendmessagetouser(svc, qnick, "addchan %s #%s +jp upgrade %s", cp->index->name->content,
         np->authname, np->nick);
 
-  sendnoticetouser(svc, np, "Requirements met, %s should be added. Contact #help"
-        " should further assistance be required.", RQ_QNICK);
+  sendnoticetouser(svc, np, "Success! %s has been added to '%s' "
+        "(contact #help if you require further assistance).", 
+        RQ_QNICK, cp->index->name->content);
 
   return RQ_OK;
 }
