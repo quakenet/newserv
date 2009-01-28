@@ -214,12 +214,12 @@ static int hlc_check_flood(hlc_profile *hlc_prof, huser *husr, const char *line)
 
 static int hlc_check_spam(hlc_profile *hlc_prof, huser *husr, const char *line)
 {
-    if (husr->spam_val < (float)time(NULL))
-        husr->spam_val = (float)time(NULL);
+    if (husr->spam_val < (double)time(NULL))
+        husr->spam_val = (double)time(NULL);
 
-    husr->spam_val += (hlc_prof->constant_spam * (double)strlen(line));
+    husr->spam_val += ((double)(hlc_prof->constant_spam) * (double)strlen(line));
 
-    if (((int)husr->spam_val - time(NULL)) >= (hlc_prof->tolerance_spam))
+    if (((int)(husr->spam_val) - time(NULL)) >= (hlc_prof->tolerance_spam))
     {
         husr->spam_val = time(NULL);
         return ++husr->lc[HLC_SPAM];
