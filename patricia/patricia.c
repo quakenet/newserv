@@ -34,7 +34,7 @@ void patriciastats(int hooknum, void *arg) {
   long level=(long)arg;
   char buf[100];
   patricia_node_t *head, *node;
-  int i,j,k,l;
+  int i,j,k,l,refcnt;
 
   if (level <= 5) 
     return; 
@@ -44,29 +44,31 @@ void patriciastats(int hooknum, void *arg) {
 
   head = iptree->head;
 
-  i=0;j=0;
+  i=0;j=0,refcnt=0;
   PATRICIA_WALK_ALL(head, node) {
-     if ( node->prefix ) 
+     if ( node->prefix ) {
+       refcnt+=node->prefix->ref_count;
        j++;
-     else 
+     } else
        i++; 
   } PATRICIA_WALK_END;
-  sprintf(buf, "Patricia: %6d Nodes,   %6d Prefix (walk all)", i,j);
+  sprintf(buf, "Patricia: %6d Nodes,   %6d Prefix (walk all), references %6d", i,j, refcnt);
   triggerhook(HOOK_CORE_STATSREPLY,buf);
 
   head = iptree->head;
-  i=0;j=0;k=0;l=0;
+  i=0;j=0;k=0;l=0,refcnt=0;
   PATRICIA_WALK(head, node) {
      if ( node->prefix ) {
        if (irc_in_addr_is_ipv4(&(node->prefix->sin)))
          k++;
        else
          l++;
+       refcnt+=node->prefix->ref_count;
        j++;
      } else
        i++;
   } PATRICIA_WALK_END;
-  sprintf(buf, "Patricia: %6d Nodes,   %6d Prefix (walk prefixes only)", i,j);
+  sprintf(buf, "Patricia: %6d Nodes,   %6d Prefix (walk prefixes only), references %6d", i,j, refcnt);
   triggerhook(HOOK_CORE_STATSREPLY,buf);
   sprintf(buf, "Patricia: %6d IP4Node, %6d IP6Node", k, l);
   triggerhook(HOOK_CORE_STATSREPLY,buf);
