@@ -6,6 +6,7 @@
 #include "proxyscan.h"
 #include "../irc/irc.h"
 #include "../core/error.h"
+#include <assert.h>
 
 pendingscan *ps_normalqueue=NULL;
 pendingscan *ps_prioqueue=NULL;
@@ -25,6 +26,11 @@ void queuescan(patricia_node_t *node, short scantype, unsigned short port, char 
    * b) newnick handler - which ignores clean hosts, only scans new hosts or dirty hosts
    * c) adding a new scan type (rare) 
    */
+
+  /* we should never have an internal node */
+  assert(node->prefix);
+  /* reference the node - we either start a or queue a single scan */
+  patricia_ref_prefix(node->prefix);
   
   /* If there are scans spare, just start it immediately.. 
    * provided we're not supposed to wait */
