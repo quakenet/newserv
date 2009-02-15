@@ -911,6 +911,7 @@ void csdb_updatemaillock(maillock *mlp);
 /* q9snprintf.c */
 void q9snprintf(char *buf, size_t size, const char *format, const char *args, ...);
 void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap);
+void q9strftime(char *buf, size_t size, time_t t);
 
 /* chanserv_flags.c */
 u_int64_t cs_accountflagmap(reguser *rup);

@@ -1,7 +1,10 @@
 #ifndef __CHANSERV_MESSAGES_H
 #define __CHANSERV_MESSAGES_H
 
-#define Q9_FORMAT_TIME "%d/%m/%y %H:%M"
+#define Q9_FORMAT_TIME "%d/%m/%y %H:%M GMT"
+#define TIMELEN 30
+
+#define Q9_LOG_FORMAT_TIME "%d/%m/%y %H:%M:%S"
 
 #define MAXMESSAGES  250
 
@@ -146,11 +149,11 @@ BeginMessages() {
   msg(QM_RESULTCOUNT, "Found $0 $1$2.", "uss"),
   msg(QM_SUSPENDKILL, "Attention: Your Q account has been suspended. You are being disconnected.", ""),
   msg(QM_LISTFLAGSHEADER, "Username:       Flags:            Suspended: Email:                         Last user@host:", ""),
-  msg(QM_SUSPENDUSERLISTHEADER, "Username:       Suspend type: Suspended by:   Date suspended: Expires:        Reason:", ""),
-  msg(QM_SUSPENDCHANLISTHEADER, "Channel:                       Suspended by:   Date suspended: Reason:", ""),
+  msg(QM_SUSPENDUSERLISTHEADER, "Username:       Suspend type: Suspended by:   Date suspended:     Expires:        Reason:", ""), /* @TIMELEN */
+  msg(QM_SUSPENDCHANLISTHEADER, "Channel:                       Suspended by:   Date suspended:     Reason:", ""), /* @TIMELEN */
   msg(QM_NOREQUESTOWNER, "You cannot request ownership of $0 as there is a channel $1 present.", "ss"),
   msg(QM_GRANTEDOWNER, "You have been granted ownership of $0.", "s"),
-  msg(QM_AUTHHISTORYHEADER, "#:  User:                                              Authed:         Disconnected:   Reason:", ""),
+  msg(QM_AUTHHISTORYHEADER, "#:  User:                                              Authed:             Disconnected:       Reason:", ""), /* @TIMELEN */
   msg(QM_CURDOMAINMODES, "Current modes on $0: $1", "ss"),
   msg(QM_SPEWDOMAINHEADER, "Domain:             Users:  Flags:", ""),
   msg(QM_DOMAINLIMIT, "Sorry, no more accounts are allowed from this email domain.", ""),

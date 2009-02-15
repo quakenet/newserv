@@ -53,8 +53,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
   int kill=1, gline=0, email=0, password=0, hitcount=0;
   time_t expires=0;
   int duration=0;
-  struct tm *tmp;
-  char buf[200]="";
+  char expiresbuf[TIMELEN]="";
   int dgwait;
   
   if (!rup)
@@ -145,10 +144,8 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     }
   }
   
-  if (expires) {
-    tmp=gmtime(&expires);
-    strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
-  }
+  if (expires)
+    q9strftime(expiresbuf,sizeof(expiresbuf),expires);
   
   if (email) {
     int i;
@@ -175,7 +172,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       }
     }
     
-    chanservwallmessage("%s (%s) bulk suspended <%s>, hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?buf:"never");
+    chanservwallmessage("%s (%s) bulk suspended <%s>, hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?expiresbuf:"never");
   }
   else if (password) {
     int i;
@@ -202,7 +199,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       }
     }
     
-    chanservwallmessage("%s (%s) bulk suspended password \"%s\", hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?buf:"never");
+    chanservwallmessage("%s (%s) bulk suspended password \"%s\", hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?expiresbuf:"never");
   }
   else {
     if (!(vrup=findreguser(sender, victim)))
@@ -219,7 +216,8 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     }
     
     if (UHasStaffPriv(vrup)) {
-      snprintf(buf, 199, "suspenduser on %s", vrup->username);
+      char buf[200];
+      snprintf(buf, sizeof(buf), "suspenduser on %s", vrup->username);
       chanservstdmessage(sender, QM_NOACCESS, buf);
       chanservwallmessage("%s (%s) FAILED to suspend %s", sender->nick, rup->username, vrup->username);
       return CMD_ERROR;
@@ -236,7 +234,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     vrup->suspendtime=time(NULL);
     vrup->suspendreason=getsstring(reason, strlen(reason)+1);
     
-    chanservwallmessage("%s (%s) %s %s (expires: %s)", sender->nick, rup->username, (gline)?((gline == 2)?"instantly glined":"delayed glined"):"suspended", vrup->username, expires?buf:"never");
+    chanservwallmessage("%s (%s) %s %s (expires: %s)", sender->nick, rup->username, (gline)?((gline == 2)?"instantly glined":"delayed glined"):"suspended", vrup->username, expires?expiresbuf:"never");
     if (gline) {
       dgwait=(gline==2)?0:rand()%900;
       chanservsendmessage(sender, "Scheduling delayed GLINE for account %s in %d %s", 
