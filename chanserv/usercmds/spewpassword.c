@@ -2,13 +2,14 @@
  *
  *
  * CMDNAME: spewpassword
+ * CMDALIASES: spewpass
  * CMDLEVEL: QCMD_OPER
  * CMDARGS: 2
  * CMDDESC: Search for a password in the database.
  * CMDFUNC: csu_dospewpass
  * CMDPROTO: int csu_dospewpass(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: spewpassword <pattern> <reason>
- * CMDHELP: Displays all users with a password that matches the specified pattern.
+ * CMDHELP: Usage: @UCOMMAND@ <pattern> <reason>
+ * CMDHELP: Displays all users with the specified password.
  */
 
 #include "../chanserv.h"
@@ -28,7 +29,7 @@ int csu_dospewpass(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   
   if (cargc < 2) {
-    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "spewpass");
+    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "spewpassword");
     return CMD_ERROR;
   }
 
@@ -36,13 +37,13 @@ int csu_dospewpass(void *source, int cargc, char **cargv) {
   if(!checkreason(sender, reason))
     return CMD_ERROR;
 
-  cs_log(sender, "SPEWPASS %s (reason: %s)", cargv[0], reason);
-  chanservwallmessage("%s (%s) using SPEWPASS (see log for password), reason: %s", sender->nick, rup->username, reason);
+  cs_log(sender, "SPEWPASSWORD %s (reason: %s)", cargv[0], reason);
+  chanservwallmessage("%s (%s) using SPEWPASSWORD (see log for password), reason: %s", sender->nick, rup->username, reason);
   
   chanservstdmessage(sender, QM_SPEWHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (dbrup=regusernicktable[i]; dbrup; dbrup=dbrup->nextbyname) {
-      if (!UHasStaffPriv(dbrup) && !match(cargv[0], dbrup->password)) {
+      if (!UHasStaffPriv(dbrup) && !strcmp(cargv[0], dbrup->password)) {
         chanservsendmessage(sender, "%-15s %-10s %-30s %s", dbrup->username, UHasSuspension(dbrup)?"yes":"no", dbrup->email?dbrup->email->content:"none set", dbrup->lastuserhost?dbrup->lastuserhost->content:"none");
         count++;
         if (count >= 2000) {
