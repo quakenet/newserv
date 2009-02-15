@@ -267,9 +267,11 @@ void chanservjoinchan(channel *cp) {
 
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
     if(rcp->suspendreason) {
-      localpartchannel(chanservnick, cp, rcp->suspendreason->content);
+      char buf[512];
+      snprintf(buf, sizeof(buf), "Channel suspended: %s", rcp->suspendreason->content);
+      localpartchannel(chanservnick, cp, buf);
     } else {
-      localpartchannel(chanservnick, cp, NULL);
+      localpartchannel(chanservnick, cp, "Channel suspended");
     }
   }
   
