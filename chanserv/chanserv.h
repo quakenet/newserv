@@ -53,10 +53,10 @@
 #define   MAXSUSPENDHIT       500
 
 /* Maximum number of times a user may attempt to auth */
-#define   MAXAUTHATTEMPT      5
+#define   MAXAUTHATTEMPT      10
 
 /* Maximum number of hellos in a session */
-#define   MAXHELLOS           3
+#define   MAXHELLOS           2
 
 /* Maximum number of times a user may actually be authed */
 #define   MAXAUTHCOUNT        2
