@@ -64,21 +64,22 @@ int csu_dounsuspenduser(void *source, int cargc, char **cargv) {
   if (UHasOperPriv(vrup) && !UHasAdminPriv(rup)) {
     snprintf(action, 99, "unsuspenduser on %s", vrup->username);
     chanservstdmessage(sender, QM_NOACCESS, action);
-    chanservwallmessage("%s (%s) FAILED to unsuspend %s", sender->nick, rup->username, vrup->username);
+    chanservwallmessage("%s (%s) FAILED to UNSUSPENDUSER %s", sender->nick, rup->username, vrup->username);
+    cs_log(sender, "UNSUSPENDUSER FAILED (not admin) %s", vrup->username);
     return CMD_ERROR;
   }
   
   if (UIsDelayedGline(vrup)) {
-    strcpy(action, "removed delayed gline on");
+    strcpy(action, "delayed gline");
   }
   else if (UIsGline(vrup)) {
-    strcpy(action, "removed instant gline on");
+    strcpy(action, "instant gline");
   }
   else if (UIsSuspended(vrup)) {
-    strcpy(action, "unsuspended");
+    strcpy(action, "normal");
   }
   else {
-    chanservsendmessage(sender, "Unknown suspend type encountered.");
+    chanservsendmessage(sender, "Unknown suspension type encountered.");
     return CMD_ERROR;
   }
 
@@ -86,8 +87,8 @@ int csu_dounsuspenduser(void *source, int cargc, char **cargv) {
   csuspendedby = suspendedby?suspendedby->username:"(unknown)";
   csuspendreason = vrup->suspendreason?vrup->suspendreason->content:"(no reason)";
 
-  chanservwallmessage("%s (%s) %s %s (suspended by: %s, suspension reason: %s), unsuspension reason: %s", sender->nick, rup->username, action, vrup->username, csuspendedby, csuspendreason, unsuspendreason);
-  cs_log(sender,"UNSUSPENDUSER %s %s (suspended by: %s, suspension reason: %s), unsuspension reason: %s", action, vrup->username, csuspendedby, csuspendreason, unsuspendreason);
+  chanservwallmessage("%s (%s) used UNSUSPENDUSER on %s (type: %s, suspended by: %s, suspension reason: %s), unsuspension reason: %s", sender->nick, rup->username, action, vrup->username, csuspendedby, csuspendreason, unsuspendreason);
+  cs_log(sender,"UNSUSPENDUSER %s (type: %s, suspended by: %s, suspension reason: %s), unsuspension reason: %s", action, vrup->username, csuspendedby, csuspendreason, unsuspendreason);
 
   vrup->flags&=(~(QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED));
   vrup->suspendby=0;
