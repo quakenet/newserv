@@ -467,16 +467,23 @@ void chanservwallmessage(char *message, ... ) {
   va_list va;
   nick *np;
   unsigned int i=0;
-  
+
   va_start(va,message);
   vsnprintf(buf,5000,message,va);
   va_end(va);
   
   /* Scan for users */
-  for (i=0;i<NICKHASHSIZE;i++)
-    for (np=nicktable[i];np;np=np->next)
-      if (IsOper(np))
-        chanservsendmessage(np, "%s", buf);
+  for (i=0;i<NICKHASHSIZE;i++) {
+    for (np=nicktable[i];np;np=np->next) {
+      if (!IsOper(np)) /* optimisation, if VIEWWALLMESSAGE changes change this */
+        continue;
+
+      if (!cs_privcheck(QPRIV_VIEWWALLMESSAGE, np))
+        continue;
+
+      chanservsendmessage(np, "%s", buf);
+    }
+  }
 }
 
 void chanservkillstdmessage(nick *target, int messageid, ... ) {
