@@ -175,8 +175,8 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
 
   stype = (gline)?((gline == 2)?"instant gline":"delayed gline"):"normal";    
 
-  chanservwallmessage("%s (%s) used SUSPENDUSER (%s) on %s (expires: %s), reason: %s", sender->nick, rup->username, stype, vrup->username, expires?expiresbuf:"never", reason);
-  cs_log(sender, "SUSPENDUSER (%s) %s (expires: %s), reason: %s", stype, vrup->username, expires?expiresbuf:"never", reason);
+  chanservwallmessage("%s (%s) used SUSPENDUSER on %s, type: %s, expires: %s, reason: %s", sender->nick, rup->username, vrup->username, stype, expires?expiresbuf:"never", reason);
+  cs_log(sender, "SUSPENDUSER %s (%s, expires: %s, reason: %s)", vrup->username, stype, expires?expiresbuf:"never", reason);
 
   if (gline) {
     dgwait=(gline==2)?0:rand()%900;
