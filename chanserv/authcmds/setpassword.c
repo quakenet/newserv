@@ -4,11 +4,11 @@
  * CMDNAME: setpassword
  * CMDALIASES: setpass
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 2
+ * CMDARGS: 3
  * CMDDESC: Set a new password.
  * CMDFUNC: csa_dosetpw
  * CMDPROTO: int csa_dosetpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: @UCOMMAND@ <username> <password>
+ * CMDHELP: Usage: @UCOMMAND@ <username> <password> <reason for use>
  * CMDHELP: Sets the password for the specified username.
  */
 
@@ -21,8 +21,9 @@
 int csa_dosetpw(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup, *vrup=getreguserfromnick(sender);
+  char *reason;
 
-  if (cargc<2) {
+  if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setpassword");
     return CMD_ERROR;
   }
@@ -30,15 +31,19 @@ int csa_dosetpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
+  reason = cargv[2];
+  if(!checkreason(sender, reason))
+    return CMD_ERROR;
+
   if(UHasStaffPriv(rup)) {
-    cs_log(sender,"GETPASSWORD FAILED username %s",rup->username);
-    chanservwallmessage("%s (%s) just FAILED using SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
+    cs_log(sender,"GETPASSWORD FAILED username %s (reason: %s)",rup->username, reason);
+    chanservwallmessage("%s (%s) just FAILED using SETPASSWORD on %s (reason: %s)", sender->nick, vrup->username, rup->username, reason);
     chanservsendmessage(sender, "Sorry, that user is privileged.");
     return CMD_ERROR;
   }
 
-  cs_log(sender,"SETPASSWORD OK username %s",rup->username);
-  chanservwallmessage("%s (%s) just used SETPASSWORD on %s", sender->nick, vrup->username, rup->username);
+  cs_log(sender,"SETPASSWORD OK username %s (reason: %s)",rup->username, reason);
+  chanservwallmessage("%s (%s) just used SETPASSWORD on %s (reason: %s)", sender->nick, vrup->username, rup->username, reason);
 
   if(rup->lastemail) {
     freesstring(rup->lastemail);

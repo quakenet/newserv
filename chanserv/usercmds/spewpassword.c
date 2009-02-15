@@ -3,11 +3,11 @@
  *
  * CMDNAME: spewpassword
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 1
+ * CMDARGS: 2
  * CMDDESC: Search for a password in the database.
  * CMDFUNC: csu_dospewpass
  * CMDPROTO: int csu_dospewpass(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: spewpassword <pattern>
+ * CMDHELP: Usage: spewpassword <pattern> <reason>
  * CMDHELP: Displays all users with a password that matches the specified pattern.
  */
 
@@ -22,17 +22,22 @@ int csu_dospewpass(void *source, int cargc, char **cargv) {
   reguser *dbrup;
   int i;
   unsigned int count=0;
-  
+  char *reason;
+
   if (!rup)
     return CMD_ERROR;
   
-  if (cargc < 1) {
+  if (cargc < 2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "spewpass");
     return CMD_ERROR;
   }
 
-  cs_log(sender, "SPEWPASS %s", cargv[0]);
-  chanservwallmessage("%s (%s) using SPEWPASS (see log for password)", sender->nick, rup->username);
+  reason = cargv[1];
+  if(!checkreason(sender, reason))
+    return CMD_ERROR;
+
+  cs_log(sender, "SPEWPASS %s (reason: %s)", cargv[0], reason);
+  chanservwallmessage("%s (%s) using SPEWPASS (see log for password), reason: %s", sender->nick, rup->username, reason);
   
   chanservstdmessage(sender, QM_SPEWHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {

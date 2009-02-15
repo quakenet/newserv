@@ -90,6 +90,9 @@
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
 
+/* Minimum acceptable reason length for stuff like deluser */
+#define MIN_REASONLEN 20
+
 #include "chanserv_messages.h"
 
 #define CSMIN(a, b) ((a)<(b)?(a):(b))
@@ -828,6 +831,7 @@ flag_t cs_sanitisechanlev(flag_t flags);
 typedef int (*UnbanFN)(void *arg, struct chanban *ban);
 int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
+int checkreason(nick *np, char *reason);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

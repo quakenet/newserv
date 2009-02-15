@@ -1390,3 +1390,12 @@ void cs_logchanop(regchan *rcp, char *nick, reguser *rup) {
   rcp->chanopaccts[rcp->chanoppos]=rup->ID;
   rcp->chanoppos=(rcp->chanoppos+1)%CHANOPHISTORY;
 }
+
+int checkreason(nick *np, char *reason) {
+  if((strlen(reason) < MIN_REASONLEN) || !strchr(reason, ' ')) {
+    chanservstdmessage(np, QM_REASONREQUIRED);
+    return 0;
+  }
+
+  return 1;
+}
