@@ -230,7 +230,7 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
   rq_block *block;
 
   if (!IsAccount(np)) {
-    sendnoticetouser(rqnick, np, "Error: You must be authed.");
+    sendnoticetouser(rqnick, np, "Error: You must be authed to perform a service request.");
 
     return RQ_ERROR;
   }
@@ -238,7 +238,7 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
   *cp = findchannel(channelname);
 
   if (*cp == NULL) {
-    sendnoticetouser(rqnick, np, "Error: Channel %s does not exist.",
+    sendnoticetouser(rqnick, np, "Error: Channel '%s' does not exist on the network.",
           channelname);
 
     return RQ_ERROR;
@@ -248,7 +248,7 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
 
   if (*qnick == NULL || findserver(RQ_QSERVER) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-          "Try again later.", RQ_QNICK);
+          "Please try again later.", RQ_QNICK);
 
     return RQ_ERROR;
   }
@@ -274,14 +274,14 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
      /* only say when block expires if <7 days */
      if ( block->expires < getnettime() + 3600 * 24 * 7) {
        sendnoticetouser(rqnick, np, "Error: You are not allowed to request a "
-            "service to this channel. Keep waiting for at least %s before you try again.",
-            rq_longtoduration(block->expires - getnettime()));
+            "service to '%s'. Keep waiting for at least %s before you try again.",
+            channelname, rq_longtoduration(block->expires - getnettime()));
        /* give them another 5 minutes to think about it */
        block->expires += 300;
        rq_saveblocks();
      } else {
        sendnoticetouser(rqnick, np, "Error: You are not allowed to request a "
-          "service to this channel.");
+          "service to '%s'.", channelname);
      }
     sendnoticetouser(rqnick, np, "Reason: %s", block->reason->content);
 
@@ -356,7 +356,10 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
     now_ts = time(NULL);
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
-    fprintf(rq_logfd, "%s: request (%s) for %s from %s: Request was %s.\n", now, RQ_QNICK, cp->index->name->content, np->nick, (retval == RQ_OK) ? "accepted" : "denied");
+    fprintf(rq_logfd, "%s: request (%s) for %s from %s!%s@%s%s%s: Request was %s.\n",
+      now, RQ_QNICK, cp->index->name->content,
+      np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"",
+      (retval == RQ_OK) ? "accepted" : "denied");
     fflush(rq_logfd);
   }
 
@@ -393,7 +396,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
 
   if (snick == NULL || findserver(RQ_SSERVER) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-            "Try again later.", RQ_SNICK);
+            "Please try again later.", RQ_SNICK);
 
     rq_failed++;
 
@@ -453,7 +456,8 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
   cp = findchannel(cargv[0]);
 
   if (cp == NULL) {
-    sendnoticetouser(rqnick, np, "Error: No such channel.");
+    sendnoticetouser(rqnick, np, "Error: Channel '%s' does not exist on the network.",
+      cargv[0]);
 
     return CMD_ERROR;
   }
@@ -489,7 +493,7 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
   hand = getnumerichandlefromchanhash(cp->users, user->numeric);
 
   if (!hand) {
-    sendnoticetouser(rqnick, np, "Error: User %s is not on channel %s.", user->nick, cargv[0]);
+    sendnoticetouser(rqnick, np, "Error: User %s is not on channel '%s'.", user->nick, cargv[0]);
 
     return CMD_ERROR;
   }
@@ -524,7 +528,7 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
 
   for (a=0;a<cp->users->hashsize;a++) {
     if ((cp->users->content[a] != nouser) && (cp->users->content[a] & CUMODE_OP)) {
-      sendnoticetouser(rqnick, np, "There are ops on channel %s. This command can only be"
+      sendnoticetouser(rqnick, np, "There are ops on channel '%s'. This command can only be"
 		      " used if there are no ops.", cargv[0]);
 
       return CMD_ERROR;

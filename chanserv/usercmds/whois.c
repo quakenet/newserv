@@ -16,6 +16,7 @@
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
 #include "../../lib/strlfunc.h"
+#include "../../lib/ccassert.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,12 +25,13 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender), *target;
   char buf[200];
   char nbpos=0;
-  struct tm *tmp;
   regchanuser *rcup, *rcup2;
   flag_t flagmask, flags;
   int doneheader=0;
   authname *anp;
   nick *tnp;
+
+  CCASSERT(sizeof(buf) > TIMELEN);
 
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
@@ -69,6 +71,8 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
       char expiresbuf[100];
       char *reason, *suspendtype, *whom;
 
+      CCASSERT(sizeof(expiresbuf) > TIMELEN);
+
       if(UIsDelayedGline(target)) {
         suspendtype = "delayed gline";
       } else if(UIsGline(target)) {
@@ -83,7 +87,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
         if(time(NULL) >= target->suspendexp) {
           strlcpy(expiresbuf, "(next auth)", sizeof(expiresbuf));
         } else {
-          strftime(expiresbuf, sizeof(expiresbuf), Q9_FORMAT_TIME, gmtime(&(target->suspendexp)));
+          q9strftime(expiresbuf, sizeof(expiresbuf), target->suspendexp);
         }
       } else {
         strlcpy(expiresbuf, "(never)", sizeof(expiresbuf));
@@ -158,8 +162,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   if (target->lastauth == 0) {
     snprintf(buf,sizeof(buf),"(never)");
   } else {
-    tmp=gmtime(&(target->lastauth));
-    strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
+    q9strftime(buf,sizeof(buf),target->lastauth);
   }
   chanservstdmessage(sender, QM_WHOIS_LASTAUTH, buf);
   

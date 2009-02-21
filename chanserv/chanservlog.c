@@ -36,10 +36,9 @@ void cs_log(nick *np, char *event, ... ) {
   char buf2[1024];
   char userbuf[512];
   va_list va;
-  struct tm *tm;
-  time_t now;
-  char timebuf[100];
+  char timebuf[TIMELEN];
   int len;
+  time_t now;
 
   if (logfd<0)
     return; 
@@ -56,8 +55,7 @@ void cs_log(nick *np, char *event, ... ) {
   }
 
   now=time(NULL);
-  tm=gmtime(&now);
-  strftime(timebuf,sizeof(timebuf),"%Y-%m-%d %H:%M:%S",tm);
+  strftime(timebuf,sizeof(timebuf),Q9_LOG_FORMAT_TIME, gmtime(&now));
   len=snprintf(buf2,sizeof(buf2),"[%s] %s %s\n",timebuf,userbuf,buf);
   write(logfd, buf2, len);
 }

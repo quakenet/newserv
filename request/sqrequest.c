@@ -170,9 +170,10 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
 
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
     fprintf(rq_logfd, "%s: request (%s) for %s (%d unique users, "
-            "%d total users) from %s: Request was %s (%c).\n", now,
+            "%d total users) from %s!%s@%s%s%s: Request was %s (%c).\n", now,
             (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK,
-            req->cip->name->content, unique, total, tnp->nick,
+            req->cip->name->content, unique, total,
+            tnp->nick, tnp->ident, tnp->host->name->content, IsAccount(tnp)?"/":"", IsAccount(tnp)?tnp->authname:"",
             (outcome == QR_OK) ? "accepted" : "denied", failcode);
     fflush(rq_logfd);
   }
@@ -183,16 +184,16 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
 
       if (!(snp=getnickbynick(RQ_SNICK))) {
         sendnoticetouser(rqnick, tnp,
-                         "Error: Cannot find %s on the network. "
-                         "Please request again later.", RQ_SNICK);
+                         "Cannot find %s on the network. "
+                         "Please try your request again later.", RQ_SNICK);
 
         free(req);
         return;
       }
 
-      sendnoticetouser(rqnick, tnp, "Requirements met, %s should be added. "
-                        "Contact #help should further assistance be required.",
-                        RQ_SNICK);
+      sendnoticetouser(rqnick, tnp, "Success! %s has been added to '%s' "
+                        "(contact #help if you require further assistance).",
+                        RQ_SNICK, req->cip->name->content);
 
       /* auth */
       user = (sstring *)getcopyconfigitem("request", "user", "R", 30);
@@ -733,7 +734,7 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   requestrec *nextreq, *lastreq;
 
   if (rq_isspam(sender)) {
-      sendnoticetouser(rqnick, sender, "Error: Do not flood the request system."
+      sendnoticetouser(rqnick, sender, "Do not flood the request system."
           " Try again in %s.", rq_longtoduration(rq_blocktime(sender)));
     
       return RQ_ERROR;
@@ -771,9 +772,9 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   lastreqq = lastreq;
 
   sendnoticetouser(rqnick, sender,
-                   "Checking your %s access. "
+                   "Checking your %s access in '%s'. "
                    "This may take a while, please be patient...",
-                   RQ_QNICK);
+                   RQ_QNICK, cip->name->content);
 
   return RQ_UNKNOWN;
 }

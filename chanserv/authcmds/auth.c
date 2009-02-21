@@ -46,9 +46,12 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   
   aup->authattempts++;
   if (aup->authattempts > MAXAUTHATTEMPT) {
+/*
     if ((aup->authattempts % 100) == 0)
       chanservwallmessage("Warning: User %s!%s@%s attempted to auth %d times. Last attempt: %s %s %s",
         sender->nick, sender->ident, sender->host->name->content, aup->authattempts, authtype, cargv[0], cargv[1]);
+*/
+
     chanservstdmessage(sender, QM_AUTHFAIL);
     cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
     return CMD_ERROR;

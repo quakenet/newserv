@@ -33,8 +33,7 @@ void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
   flag_t oldflags, newflags;
   DBResult *pgres;
   int count=0;
-  struct tm *tmp;
-  char tbuf[15], fbuf[18];
+  char tbuf[TIMELEN], fbuf[18];
 
   if(!dbconn)
     return;
@@ -63,7 +62,8 @@ void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
     return;
   }
 
-  chanservsendmessage(np, "Number: Time:           Changing user:  Changed user:   Old flags:      New flags:");
+  /* @TIMELEN */
+  chanservsendmessage(np, "Number: Time:               Changing user:  Changed user:   Old flags:      New flags:");
   while(dbfetchrow(pgres)) {
     userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
     channelID=strtoul(dbgetvalue(pgres, 1), NULL, 10);
@@ -72,13 +72,12 @@ void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
     authtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
     oldflags=strtoul(dbgetvalue(pgres, 5), NULL, 10);
     newflags=strtoul(dbgetvalue(pgres, 6), NULL, 10);
-    tmp=gmtime(&changetime);
-    strftime(tbuf, sizeof(tbuf), Q9_FORMAT_TIME, tmp);
+    q9strftime(tbuf, sizeof(tbuf), changetime);
     strncpy(fbuf, printflags(oldflags, rcuflags), 17);
     fbuf[17]='\0';
-    chanservsendmessage(np, "#%-6d %-15s %-15s %-15s %-15s %s", ++count, tbuf,
+    chanservsendmessage(np, "#%-6d %-19s %-15s %-15s %-15s %s", ++count, tbuf,
       (crup1=findreguserbyID(userID))?crup1->username:"Unknown", (crup2=findreguserbyID(targetID))?crup2->username:"Unknown",
-      fbuf, printflags(newflags, rcuflags));
+      fbuf, printflags(newflags, rcuflags)); /* @TIMELEN */
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 
