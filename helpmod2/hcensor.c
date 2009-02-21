@@ -95,14 +95,14 @@ int hcensor_match(hchannel *hchan, huser *husr, hcensor *hcens)
     {
     case HCENSOR_WARN:
         if (hcens->reason)
-	    helpmod_reply(husr, NULL, "%s", hcens->reason->content);
+	    helpmod_reply(husr, NULL, hcens->reason->content);
 	return 0;
     case HCENSOR_KICK:
-	helpmod_kick(hchan, husr, "%s", hcens->reason?hcens->reason->content:"Improper user");
+	helpmod_kick(hchan, husr, hcens->reason?hcens->reason->content:"Improper user");
 	return !0;
     case HCENSOR_CHANBAN:
 	helpmod_setban(hchan, hban_ban_string(husr->real_user, HBAN_HOST), HCMD_OUT_DEFAULT + time(NULL), MCB_ADD, HNOW);
-	helpmod_kick(hchan, husr, "%s", hcens->reason?hcens->reason->content:"Censor violation");
+	helpmod_kick(hchan, husr, hcens->reason?hcens->reason->content:"Censor violation");
 	return !0;
     case HCENSOR_BAN:
 	hban_add(hban_ban_string(husr->real_user, HBAN_HOST), hcens->reason?hcens->reason->content:"Censor violation", HCMD_OUT_DEFAULT + time(NULL), 1);

@@ -52,7 +52,7 @@ hban *hban_add(const char* pat, const char* rsn, time_t exp, int now)
                     }
                     assert_hchan = tmpu->hchannels->hchan;
                     helpmod_setban(tmpu->hchannels->hchan, bantostring(ptr->real_ban), HELPMOD_BAN_DURATION, MCB_ADD, now);
-                    helpmod_kick(tmpu->hchannels->hchan, tmpu, "%s", hban_get_reason(ptr));
+                    helpmod_kick(tmpu->hchannels->hchan, tmpu, hban_get_reason(ptr));
                 }
 	    }
     }

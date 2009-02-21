@@ -74,7 +74,7 @@ void tutorspam(void *arg) {
   spammsg *smp;
 
   if (tutornick && (cp=findchannel(PUBLICCHAN))) {
-    sendmessagetochannel(tutornick, cp, "%s", nextspam->message->content);
+    sendmessagetochannel(tutornick, cp, nextspam->message->content);
   }
   
   smp=nextspam;
@@ -330,7 +330,7 @@ void tutorhandler(nick *me, int type, void **args) {
 	  if (spamtime + SPAMINTERVAL < time(NULL)) {
 	    /* Spam it directly */
 	    if ((cp=findchannel(PUBLICCHAN))) {
-	      sendmessagetochannel(me, cp, "%s", text);
+	      sendmessagetochannel(me, cp, text);
 	    }
 	    spamtime=time(NULL);
 	  } else {
