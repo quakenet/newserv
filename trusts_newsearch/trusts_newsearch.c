@@ -119,6 +119,6 @@ void _fini(void) {
   deregistersearchterm(reg_nicksearch, "istrusted", tsns_istrusted_parse);
 
   deregistercontrolcmd("trustlist",tsns_dotrustlist);
-
+  deregistercontrolcmd("trustdenylist",tsns_dotrustdenylist);
 }
 
