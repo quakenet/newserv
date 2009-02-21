@@ -91,7 +91,7 @@ void _fini(void) {
   if (tgb_ext != -1)
     releasenodeext(tgb_ext);
   if (tgn_ext != -1)
-    releasenodeext(tgn_ext);
+    releasenickext(tgn_ext);
 
   /* @@@ CLOSE DB */
 
