@@ -267,9 +267,11 @@ void chanservjoinchan(channel *cp) {
 
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
     if(rcp->suspendreason) {
-      localpartchannel(chanservnick, cp, rcp->suspendreason->content);
+      char buf[512];
+      snprintf(buf, sizeof(buf), "Channel suspended: %s", rcp->suspendreason->content);
+      localpartchannel(chanservnick, cp, buf);
     } else {
-      localpartchannel(chanservnick, cp, NULL);
+      localpartchannel(chanservnick, cp, "Channel suspended");
     }
   }
   
@@ -467,16 +469,23 @@ void chanservwallmessage(char *message, ... ) {
   va_list va;
   nick *np;
   unsigned int i=0;
-  
+
   va_start(va,message);
   vsnprintf(buf,5000,message,va);
   va_end(va);
   
   /* Scan for users */
-  for (i=0;i<NICKHASHSIZE;i++)
-    for (np=nicktable[i];np;np=np->next)
-      if (IsOper(np))
-        chanservsendmessage(np, "%s", buf);
+  for (i=0;i<NICKHASHSIZE;i++) {
+    for (np=nicktable[i];np;np=np->next) {
+      if (!IsOper(np)) /* optimisation, if VIEWWALLMESSAGE changes change this */
+        continue;
+
+      if (!cs_privcheck(QPRIV_VIEWWALLMESSAGE, np))
+        continue;
+
+      chanservsendmessage(np, "%s", buf);
+    }
+  }
 }
 
 void chanservkillstdmessage(nick *target, int messageid, ... ) {
@@ -1389,4 +1398,13 @@ void cs_logchanop(regchan *rcp, char *nick, reguser *rup) {
   rcp->chanopnicks[rcp->chanoppos][NICKLEN]='\0';
   rcp->chanopaccts[rcp->chanoppos]=rup->ID;
   rcp->chanoppos=(rcp->chanoppos+1)%CHANOPHISTORY;
+}
+
+int checkreason(nick *np, char *reason) {
+  if((strlen(reason) < MIN_REASONLEN) || !strchr(reason, ' ')) {
+    chanservstdmessage(np, QM_REASONREQUIRED);
+    return 0;
+  }
+
+  return 1;
 }

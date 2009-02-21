@@ -53,10 +53,10 @@
 #define   MAXSUSPENDHIT       500
 
 /* Maximum number of times a user may attempt to auth */
-#define   MAXAUTHATTEMPT      5
+#define   MAXAUTHATTEMPT      10
 
 /* Maximum number of hellos in a session */
-#define   MAXHELLOS           3
+#define   MAXHELLOS           2
 
 /* Maximum number of times a user may actually be authed */
 #define   MAXAUTHCOUNT        2
@@ -90,6 +90,9 @@
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
 
+/* Minimum acceptable reason length for stuff like deluser */
+#define MIN_REASONLEN 20
+
 #include "chanserv_messages.h"
 
 #define CSMIN(a, b) ((a)<(b)?(a):(b))
@@ -110,6 +113,7 @@
 #define   QPRIV_VIEWEMAIL           109
 #define   QPRIV_VIEWCHANSUSPENSION  110
 #define   QPRIV_VIEWSUSPENDEDBY     111
+#define   QPRIV_VIEWWALLMESSAGE     112
 
 #define   QPRIV_CHANGECHANFLAGS     200
 #define   QPRIV_CHANGECHANLEV       201
@@ -828,6 +832,7 @@ flag_t cs_sanitisechanlev(flag_t flags);
 typedef int (*UnbanFN)(void *arg, struct chanban *ban);
 int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
+int checkreason(nick *np, char *reason);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);
@@ -911,6 +916,7 @@ void csdb_updatemaillock(maillock *mlp);
 /* q9snprintf.c */
 void q9snprintf(char *buf, size_t size, const char *format, const char *args, ...);
 void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap);
+void q9strftime(char *buf, size_t size, time_t t);
 
 /* chanserv_flags.c */
 u_int64_t cs_accountflagmap(reguser *rup);

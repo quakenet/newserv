@@ -31,7 +31,7 @@ int csu_domaillock(void *source, int cargc, char **cargv) {
   pattern = cargv[1];
 
   if(!strcasecmp(cargv[0], "-list")) {
-    char timebuf[100];
+    char timebuf[TIMELEN];
     reguser *rup;
 
     chanservstdmessage(sender, QM_MAILLOCKHEADER);
@@ -40,7 +40,7 @@ int csu_domaillock(void *source, int cargc, char **cargv) {
         continue;
 
       rup=findreguserbyID(mlp->createdby);
-      strftime(timebuf,sizeof(timebuf),Q9_FORMAT_TIME,gmtime(&mlp->created));
+      q9strftime(timebuf,sizeof(timebuf),mlp->created);
 
       chanservsendmessage(sender, "%-50s %-15s %-25s %s", mlp->pattern->content, rup?rup->username:"??", mlp->reason?mlp->reason->content:"(none)", timebuf);
     }

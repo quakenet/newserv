@@ -3,11 +3,11 @@
  *
  * CMDNAME: unsuspendchan
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 1
+ * CMDARGS: 2
  * CMDDESC: Unsuspends a channel from the bot.
  * CMDFUNC: csc_dounsuspendchan
  * CMDPROTO: int csc_dounsuspendchan(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: unsuspendchan <channel>
+ * CMDHELP: Usage: unsuspendchan <channel> <reason>
  * CMDHELP: Unsuspends specified channel.
  */
 
@@ -27,14 +27,21 @@ int csc_dounsuspendchan(void *source, int cargc, char **cargv) {
   reguser *rup=getreguserfromnick(sender);
   chanindex *cip;
   regchan *rcp;
+  reguser *suspendedby;
+  char *csuspendedby, *csuspendedreason;
+  char *unsuspendreason;
 
   if (!rup)
     return CMD_ERROR;
 
-  if (cargc<1) {
+  if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "unsuspendchan");
     return CMD_ERROR;
   }
+
+  unsuspendreason = cargv[1];
+  if(!checkreason(sender, unsuspendreason))
+    return CMD_ERROR;
 
   if (!(cip=findchanindex(cargv[0])) || !(rcp=cip->exts[chanservext])) {
     chanservstdmessage(sender, QM_UNKNOWNCHAN, cargv[0]);
@@ -48,7 +55,14 @@ int csc_dounsuspendchan(void *source, int cargc, char **cargv) {
   }
 
   CClearSuspended(rcp);
-  cs_log(sender,"UNSUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
+
+  suspendedby = findreguserbyID(rcp->suspendby);
+  csuspendedby = suspendedby?suspendedby->username:"(unknown)";
+  csuspendedreason = rcp->suspendreason?rcp->suspendreason->content:"(no reason)";
+
+  chanservwallmessage("%s (%s) used UNSUSPENDCHAN on %s (suspended by: %s, suspension reason: %s), unsuspension reason: %s", sender->nick, rup->username, cip->name->content, csuspendedby, csuspendedreason, unsuspendreason);
+  cs_log(sender,"UNSUSPENDCHAN %s (suspended by: %s, suspension reason: %s), unsuspension reason: %s", cip->name->content, csuspendedby, csuspendedreason, unsuspendreason);
+
   freesstring(rcp->suspendreason);
   rcp->suspendreason = NULL;
   rcp->suspendby = 0;

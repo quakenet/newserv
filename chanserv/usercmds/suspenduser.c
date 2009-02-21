@@ -4,17 +4,14 @@
  * CMDNAME: suspenduser
  * CMDLEVEL: QCMD_OPER
  * CMDARGS: 1
- * CMDDESC: Suspend/Delay GLINE/Instantly GLINE a user.
+ * CMDDESC: Suspend/delay GLINE/instantly GLINE a user.
  * CMDFUNC: csu_dosuspenduser
  * CMDPROTO: int csu_dosuspenduser(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: suspenduser <username> [<duration>] <reason>
  * CMDHELP:                    -nokill <username> [<duration>] <reason>
  * CMDHELP:                    -gline <username> [<duration>] <reason>
  * CMDHELP:                    -instantgline <username> [<duration>] <reason>
- * CMDHELP:                    -password <password> [<duration>] <reason>
- * CMDHELP:                    -email <email address> [<duration>] <reason>
- * CMDHELP: Suspends one or more users, either based on username, email
- * CMDHELP: address or password.
+ * CMDHELP: Suspends the user with the specified username.
  * CMDHELP: By default the user will be immediately disconnected unless
  * CMDHELP: nokill is specified.
  * CMDHELP: gline will gline the user at some random period of time after
@@ -49,12 +46,11 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
   char *flag;
   char *victim;
   char *dur_p;
-  char *reason;
-  int kill=1, gline=0, email=0, password=0, hitcount=0;
+  char *reason, *stype;
+  int kill=1, gline=0;
   time_t expires=0;
   int duration=0;
-  struct tm *tmp;
-  char buf[200]="";
+  char expiresbuf[TIMELEN]="";
   int dgwait;
   
   if (!rup)
@@ -96,7 +92,7 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
       reason=dur_p;
       expires=0;
     }
-    
+
     if (!ircd_strcmp(flag, "-nokill")) {
       kill=0;
     }
@@ -105,12 +101,6 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     }
     else if (!ircd_strcmp(flag, "-instantgline")) {
       gline=2;
-    }
-    else if (!ircd_strcmp(flag, "-email")) {
-      email=1;
-    }
-    else if (!ircd_strcmp(flag, "-password")) {
-      password=1;
     }
     else {
       chanservstdmessage(sender, QM_INVALIDCHANLEVCHANGE);
@@ -145,111 +135,61 @@ int csu_dosuspenduser(void *source, int cargc, char **cargv) {
     }
   }
   
-  if (expires) {
-    tmp=gmtime(&expires);
-    strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
-  }
+  if(!checkreason(sender, reason))
+    return CMD_ERROR;
+    
+  if (expires)
+    q9strftime(expiresbuf,sizeof(expiresbuf),expires);
   
-  if (email) {
-    int i;
+  if (!(vrup=findreguser(sender, victim)))
+    return CMD_ERROR;
     
-    for (i=0;i<REGUSERHASHSIZE;i++) {
-      for (vrup=regusernicktable[i]; vrup; vrup=vrup->nextbyname) {
-        if (!strcasecmp(vrup->email->content, victim)) {
-          if (UHasSuspension(vrup))
-            continue;
-          
-          if (UHasStaffPriv(vrup))
-            continue;
-          
-          hitcount++;
-          vrup->flags|=QUFLAG_SUSPENDED;
-          vrup->suspendby=rup->ID;
-          vrup->suspendexp=expires;
-          vrup->suspendtime=time(NULL);
-          vrup->suspendreason=getsstring(reason, strlen(reason)+1);
-          
-          killtheusers(sender,vrup);
-          csdb_updateuser(vrup);
-        }
-      }
-    }
-    
-    chanservwallmessage("%s (%s) bulk suspended <%s>, hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?buf:"never");
+  if (!ircd_strcmp(vrup->username, rup->username)) {
+    chanservsendmessage(sender, "You can't suspend yourself, silly.");
+    return CMD_ERROR;
   }
-  else if (password) {
-    int i;
     
-    for (i=0;i<REGUSERHASHSIZE;i++) {
-      for (vrup=regusernicktable[i]; vrup; vrup=vrup->nextbyname) {
-        if (!strcmp(vrup->password, victim)) {
-          if (UHasSuspension(vrup))
-            continue;
-          
-          if (UHasStaffPriv(vrup))
-            continue;
-          
-          hitcount++;
-          vrup->flags|=QUFLAG_SUSPENDED;
-          vrup->suspendby=rup->ID;
-          vrup->suspendexp=expires;
-          vrup->suspendtime=time(NULL);
-          vrup->suspendreason=getsstring(reason, strlen(reason)+1);
-          
-          killtheusers(sender,vrup);
-          csdb_updateuser(vrup);
-        }
-      }
-    }
-    
-    chanservwallmessage("%s (%s) bulk suspended password \"%s\", hit %d account/s (expires: %s)", sender->nick, rup->username, victim, hitcount, expires?buf:"never");
+  if (UHasSuspension(vrup)) {
+    chanservstdmessage(sender, QM_USERALREADYSUSPENDED);
+    return CMD_ERROR;
   }
-  else {
-    if (!(vrup=findreguser(sender, victim)))
-      return CMD_ERROR;
     
-    if (!ircd_strcmp(vrup->username, rup->username)) {
-      chanservsendmessage(sender, "You can't suspend yourself, silly.");
-      return CMD_ERROR;
-    }
+  if (UHasStaffPriv(vrup)) {
+    char buf[200];
+    snprintf(buf, sizeof(buf), "suspenduser on %s (reason: %s)", vrup->username, reason);
+    chanservstdmessage(sender, QM_NOACCESS, buf);
+    chanservwallmessage("%s (%s) FAILED to SUSPENDUSER %s (reason: %s)", sender->nick, rup->username, vrup->username, reason);
+    return CMD_ERROR;
+  }
     
-    if (UHasSuspension(vrup)) {
-      chanservstdmessage(sender, QM_USERALREADYSUSPENDED);
-      return CMD_ERROR;
-    }
-    
-    if (UHasStaffPriv(vrup)) {
-      snprintf(buf, 199, "suspenduser on %s", vrup->username);
-      chanservstdmessage(sender, QM_NOACCESS, buf);
-      chanservwallmessage("%s (%s) FAILED to suspend %s", sender->nick, rup->username, vrup->username);
-      return CMD_ERROR;
-    }
-    
-    if (gline == 2)
-      vrup->flags|=QUFLAG_GLINE;
-    else if (gline == 1)
-      vrup->flags|=QUFLAG_DELAYEDGLINE;
-    else
-      vrup->flags|=QUFLAG_SUSPENDED;
-    vrup->suspendby=rup->ID;
-    vrup->suspendexp=expires;
-    vrup->suspendtime=time(NULL);
-    vrup->suspendreason=getsstring(reason, strlen(reason)+1);
-    
-    chanservwallmessage("%s (%s) %s %s (expires: %s)", sender->nick, rup->username, (gline)?((gline == 2)?"instantly glined":"delayed glined"):"suspended", vrup->username, expires?buf:"never");
-    if (gline) {
-      dgwait=(gline==2)?0:rand()%900;
-      chanservsendmessage(sender, "Scheduling delayed GLINE for account %s in %d %s", 
-        vrup->username, (dgwait>60)?(dgwait/60):dgwait, (dgwait>60)?"minutes":"seconds");
-      deleteschedule(NULL, &chanservdgline, (void*)vrup);
-      scheduleoneshot(time(NULL)+dgwait, &chanservdgline, (void*)vrup);
-    }
-    else if (kill) {
-      hitcount += killtheusers(sender,vrup);
-    }
+  if (gline == 2)
+    vrup->flags|=QUFLAG_GLINE;
+  else if (gline == 1)
+    vrup->flags|=QUFLAG_DELAYEDGLINE;
+  else
+    vrup->flags|=QUFLAG_SUSPENDED;
+  vrup->suspendby=rup->ID;
+  vrup->suspendexp=expires;
+  vrup->suspendtime=time(NULL);
+  vrup->suspendreason=getsstring(reason, strlen(reason)+1);
 
-    csdb_updateuser(vrup);
+  stype = (gline)?((gline == 2)?"instant gline":"delayed gline"):"normal";    
+
+  chanservwallmessage("%s (%s) used SUSPENDUSER on %s, type: %s, expires: %s, reason: %s", sender->nick, rup->username, vrup->username, stype, expires?expiresbuf:"never", reason);
+  cs_log(sender, "SUSPENDUSER %s (%s, expires: %s, reason: %s)", vrup->username, stype, expires?expiresbuf:"never", reason);
+
+  if (gline) {
+    dgwait=(gline==2)?0:rand()%900;
+    chanservsendmessage(sender, "Scheduling delayed GLINE for account %s in %d %s", 
+      vrup->username, (dgwait>60)?(dgwait/60):dgwait, (dgwait>60)?"minutes":"seconds");
+    deleteschedule(NULL, &chanservdgline, (void*)vrup);
+    scheduleoneshot(time(NULL)+dgwait, &chanservdgline, (void*)vrup);
   }
+  else if (kill) {
+    killtheusers(sender,vrup);
+  }
+
+  csdb_updateuser(vrup);
   
   return CMD_OK;
 }

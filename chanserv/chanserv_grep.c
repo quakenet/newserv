@@ -47,6 +47,10 @@ void _fini() {
 
 int csg_dogrep(void *source, int cargc, char **cargv) {
   nick *sender=source;
+  reguser *rup=getreguserfromnick(sender);
+
+  if (!rup)
+    return CMD_ERROR;
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "grep");
@@ -55,12 +59,20 @@ int csg_dogrep(void *source, int cargc, char **cargv) {
 
   csg_curfile=0;
   csg_direction=0;
+
+  chanservwallmessage("%s (%s) used GREP %s", sender->nick, rup->username, cargv[0]);
+  cs_log(sender, "GREP %s", cargv[0]);
+
   return csg_execgrep(sender, cargv[0]);
 }
 
 int csg_dorgrep(void *source, int cargc, char **cargv) {
   int startpoint;
   nick *sender=source;
+  reguser *rup=getreguserfromnick(sender);
+
+  if (!rup)
+    return CMD_ERROR;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "rgrep");
@@ -81,6 +93,9 @@ int csg_dorgrep(void *source, int cargc, char **cargv) {
     chanservsendmessage(sender, "Sorry, the maximum starting day is %d days.", CSG_MAXSTARTPOINT);
     return CMD_ERROR;
   }
+
+  chanservwallmessage("%s (%s) used RGREP %s %s", sender->nick, rup->username, cargv[0], cargv[1]);
+  cs_log(sender, "RGREP %s %s", cargv[0], cargv[1]);
 
   csg_curfile=startpoint;
   csg_direction=1;

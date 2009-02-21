@@ -3,11 +3,11 @@
  *
  * CMDNAME: setemail
  * CMDLEVEL: QCMD_OPER
- * CMDARGS: 2
+ * CMDARGS: 3
  * CMDDESC: Set the email address.
  * CMDFUNC: csa_dosetmail
  * CMDPROTO: int csa_dosetmail(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: setemail <username> <email address>
+ * CMDHELP: Usage: setemail <username> <email address> <reason for modification>
  * CMDHELP: Sets the email address for the specified username.
  */
 
@@ -22,8 +22,9 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   reguser *rup, *vrup = getreguserfromnick(sender);
   char *dupemail;
   char *local;
+  char *reason;
 
-  if (cargc<2) {
+  if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "setemail");
     return CMD_ERROR;
   }
@@ -39,9 +40,13 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   if (csa_checkeboy(sender, cargv[1]))
     return CMD_ERROR;
 
+  reason = cargv[2];
+  if(!checkreason(sender, reason))
+    return CMD_ERROR;
+
   if(UHasStaffPriv(rup)) {
-    cs_log(sender,"SETEMAIL FAILED username %s",rup->username);
-    chanservwallmessage("%s (%s) just FAILED using SETEMAIL on %s: %s", sender->nick, vrup->username, rup->username, cargv[1]);
+    cs_log(sender,"SETEMAIL FAILED username %s (reason: %s)",rup->username, reason);
+    chanservwallmessage("%s (%s) just FAILED using SETEMAIL on %s: %s (reason: %s)", sender->nick, vrup->username, rup->username, cargv[1], reason);
     chanservsendmessage(sender, "Sorry, that user is privileged.");
     return CMD_ERROR;
   }
@@ -68,8 +73,8 @@ int csa_dosetmail(void *source, int cargc, char **cargv) {
   free(dupemail);
 
   chanservstdmessage(sender, QM_EMAILCHANGED, cargv[1]);
-  cs_log(sender,"SETEMAIL OK username %s <%s>",rup->username,rup->email->content);
-  chanservwallmessage("%s (%s) just used SETEMAIL on %s: %s", sender->nick, vrup->username, rup->username, rup->email->content);
+  cs_log(sender,"SETEMAIL OK username %s <%s> (reason: %s)",rup->username,rup->email->content, reason);
+  chanservwallmessage("%s (%s) just used SETEMAIL on %s: %s (reason: %s)", sender->nick, vrup->username, rup->username, rup->email->content, reason);
 
   csdb_updateuser(rup);
 

@@ -36,6 +36,9 @@ int csc_dosuspendchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if(!checkreason(sender, cargv[1]))
+    return CMD_ERROR;
+
   if (!(cip=findchanindex(cargv[0])) || !(rcp=cip->exts[chanservext])) {
     chanservstdmessage(sender, QM_UNKNOWNCHAN, cargv[0]);
     return CMD_ERROR;
@@ -50,6 +53,9 @@ int csc_dosuspendchan(void *source, int cargc, char **cargv) {
   rcp->suspendreason = getsstring(cargv[1], 250);
   rcp->suspendby = rup->ID;
   rcp->suspendtime = time(NULL);
+
+  chanservwallmessage("%s (%s) used SUSPENDCHAN on %s (reason: %s)", sender->nick, rup->username, cip->name->content, rcp->suspendreason->content);
+
   cs_log(sender,"SUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason->content);
   if(cip->channel)
     chanservjoinchan(cip->channel);

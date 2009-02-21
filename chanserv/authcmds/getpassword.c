@@ -8,7 +8,7 @@
  * CMDDESC: Gets a users password
  * CMDFUNC: csa_dogetpw
  * CMDPROTO: int csa_dogetpw(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: @UCOMMAND@ <username>
+ * CMDHELP: Usage: @UCOMMAND@ <username> <reason>
  * CMDHELP: Fetches the password for the specified username.
  */
 
@@ -22,8 +22,9 @@ int csa_dogetpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
   reguser *srup=getreguserfromnick(sender);
+  char *reason;
 
-  if (cargc<1) {
+  if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "getpassword");
     return CMD_ERROR;
   }
@@ -31,15 +32,19 @@ int csa_dogetpw(void *source, int cargc, char **cargv) {
   if (!(rup=findreguser(sender, cargv[0])))
     return CMD_ERROR;
 
+  reason = cargv[1];
+  if(!checkreason(sender, reason))
+    return CMD_ERROR;
+
   if(UHasStaffPriv(rup)) {
-    cs_log(sender,"GETPASSWORD FAILED username %s",rup->username);
-    chanservwallmessage("%s (%s) just FAILED using GETPASSWORD on %s", sender->nick, srup->username, rup->username);
+    cs_log(sender,"GETPASSWORD FAILED username %s (reason: %s)",rup->username, reason);
+    chanservwallmessage("%s (%s) just FAILED using GETPASSWORD on %s (reason: %s)", sender->nick, srup->username, rup->username, reason);
     chanservsendmessage(sender, "Sorry, that user is privileged.");
     return CMD_ERROR;
   }
 
-  cs_log(sender,"GETPASSWORD OK username %s",rup->username);
-  chanservwallmessage("%s (%s) just used GETPASSWORD on %s", sender->nick, srup->username, rup->username);
+  cs_log(sender,"GETPASSWORD OK username %s (reason: %s)",rup->username, reason);
+  chanservwallmessage("%s (%s) just used GETPASSWORD on %s (reason: %s)", sender->nick, srup->username, rup->username, reason);
 
   chanservsendmessage(sender, "Password is currently: %s",rup->password);
   return CMD_OK;

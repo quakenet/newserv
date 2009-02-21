@@ -26,8 +26,7 @@ void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
   time_t changetime, authtime;
   DBResult *pgres;
   int count=0;
-  struct tm *tmp;
-  char tbuf[15];
+  char tbuf[TIMELEN];
 
   if(!dbconn)
     return;
@@ -56,7 +55,8 @@ void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
     return;
   }
 
-  chanservsendmessage(np, "Number: Time:           Old password:  New password:  Old email:                     New email:");
+  /* @TIMELEN */
+  chanservsendmessage(np, "Number: Time:               Old password:  New password:  Old email:                     New email:");
   while(dbfetchrow(pgres)) {
     userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
     changetime=strtoul(dbgetvalue(pgres, 1), NULL, 10);
@@ -65,9 +65,8 @@ void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
     newpass=dbgetvalue(pgres, 4);
     oldemail=dbgetvalue(pgres, 5);
     newemail=dbgetvalue(pgres, 6);
-    tmp=gmtime(&changetime);
-    strftime(tbuf, sizeof(tbuf), Q9_FORMAT_TIME, tmp);
-    chanservsendmessage(np, "#%-6d %-15s %-14s %-14s %-30s %s", ++count, tbuf, oldpass, newpass, oldemail, newemail);
+    q9strftime(tbuf, sizeof(tbuf), changetime);
+    chanservsendmessage(np, "#%-6d %-19s %-14s %-14s %-30s %s", ++count, tbuf, oldpass, newpass, oldemail, newemail); /* @TIMELEN */
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 
