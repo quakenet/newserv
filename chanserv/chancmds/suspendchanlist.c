@@ -28,9 +28,8 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
   chanindex *cip;
   regchan *rcp;
   int i, seewhom;
-  char *bywhom, buf[200];
+  char *bywhom, buf[TIMELEN];
   unsigned int count=0;
-  struct tm *tmp;
   if (!rup)
     return CMD_ERROR;
   
@@ -43,6 +42,7 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
   if(!seewhom)
     bywhom = "(hidden)";
 
+  /* @TIMELEN */
   chanservstdmessage(sender, QM_SUSPENDCHANLISTHEADER);
   for (i=0; i<CHANNELHASHSIZE; i++) {
     for (cip=chantable[i]; cip; cip=cip->next) {
@@ -68,10 +68,10 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
       }
       count++;
 
-      tmp=gmtime(&(rcp->suspendtime));
-      strftime(buf,sizeof(buf),Q9_FORMAT_TIME,tmp);
+      q9strftime(buf,sizeof(buf),rcp->suspendtime);
 
-      chanservsendmessage(sender, "%-30s %-15s %-15s %s", cip->name->content, bywhom, buf, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
+      /* @TIMELEN */
+      chanservsendmessage(sender, "%-30s %-15s %-19s %s", cip->name->content, bywhom, buf, rcp->suspendreason?rcp->suspendreason->content:"(no reason)");
       if (count >= 2000) {
         chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "channels");
         return CMD_ERROR;

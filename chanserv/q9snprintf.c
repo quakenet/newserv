@@ -5,17 +5,25 @@
 #include <time.h>
 #include "../lib/sstring.h"
 #include "../lib/stringbuf.h"
+#include "../lib/ccassert.h"
 #include "../core/error.h"
 #include "chanserv_messages.h"
 
 #define MAXARGS 10
 #define CONVBUF 512
 
+void q9strftime(char *buf, size_t size, time_t t) {
+  strftime(buf, size, Q9_FORMAT_TIME, gmtime(&t));
+}
+
 void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, va_list ap) {
   StringBuf b;
   const char *p;
   char *c;
+
   char convbuf[MAXARGS][CONVBUF];
+
+  CCASSERT(CONVBUF > TIMELEN);
 
   if(size == 0)
     return;
@@ -54,7 +62,7 @@ void q9vsnprintf(char *buf, size_t size, const char *format, const char *args, v
           break;
         case 'T':
           t = va_arg(ap, time_t);
-          strftime(cb, 15, Q9_FORMAT_TIME, gmtime(&t));
+          q9strftime(cb, CONVBUF, t);
           break;
         default:
           /* calls exit(0) */
