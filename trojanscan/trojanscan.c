@@ -777,9 +777,9 @@ void trojanscan_privmsg_chan_or_nick(channel *cp, nick *np, char *message, ...) 
   va_end(va);
   
   if (cp) {
-    sendmessagetochannel(trojanscan_nick, cp, "%s", buf);
+    sendmessagetochannel(trojanscan_nick, cp, buf);
   } else {
-    sendmessagetouser(trojanscan_nick, np, "%s", buf);
+    sendmessagetouser(trojanscan_nick, np, buf);
   }
 
 }
