@@ -3,6 +3,9 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../localuser/localuserchannel.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 int ch_clonehistogram(void *source, int cargc, char **cargv);
 int ch_chanhistogram(void *source, int cargc, char **cargv);

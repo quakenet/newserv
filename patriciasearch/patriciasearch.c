@@ -11,6 +11,9 @@
 #include "../lib/stringbuf.h"
 #include "../lib/strlfunc.h"
 #include "patriciasearch.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 searchCmd *reg_nodesearch;
 

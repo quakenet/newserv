@@ -1,5 +1,8 @@
 #include "../chanserv.h"
 #include "chanserv_newsearch.h"
+#include "../../lib/version.h"
+
+MODULE_VERSION(QVERSION);
 
 int cs_donicksearch(void *source, int cargc, char **cargv);
 int cs_dochansearch(void *source, int cargc, char **cargv);

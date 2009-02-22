@@ -1,4 +1,7 @@
 #include "versionscan.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 CommandTree* versionscan_commands;
 nick* versionscan_nick;

@@ -4,6 +4,9 @@
 #include "../../core/nsmalloc.h"
 #include "../../core/hooks.h"
 #include "../../core/error.h"
+#include "../../lib/version.h"
+
+MODULE_VERSION(QVERSION);
 
 void at_newnick(int, void *);
 DBModuleIdentifier authtrackerdb;

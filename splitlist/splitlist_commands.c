@@ -4,6 +4,9 @@
 #include "../irc/irc.h"
 #include "../splitlist/splitlist.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 int spcmd_splitlist(void *source, int cargc, char **cargv);
 int spcmd_splitdel(void *source, int cargc, char **cargv);

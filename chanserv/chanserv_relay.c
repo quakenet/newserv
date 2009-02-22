@@ -1,5 +1,8 @@
 #include "chanserv.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION(QVERSION);
 
 int csa_docheckhashpass(void *source, int cargc, char **cargv);
 

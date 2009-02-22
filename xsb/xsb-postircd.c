@@ -13,7 +13,10 @@
 #include "../core/error.h"
 #include "../localuser/localuser.h"
 #include "../lib/strlfunc.h"
+#include "../lib/version.h"
 #include "xsb.h"
+
+MODULE_VERSION("");
 
 static const char *DEFAULT_SERVICE_MASKS[] = { "services*.*.quakenet.org", (char *)0 };
 

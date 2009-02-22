@@ -13,6 +13,9 @@
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 FILE* dumpip_logfp;
 int nc_cmd_dumptree(void *source, int cargc, char **cargv);

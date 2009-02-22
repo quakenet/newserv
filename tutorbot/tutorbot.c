@@ -5,6 +5,9 @@
 #include "../localuser/localuserchannel.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 #include <stdio.h>
 
