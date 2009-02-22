@@ -252,6 +252,11 @@ void trojanscan_connect(void *arg) {
 
   if ((trojanscan_cycletime / trojanscan_maxchans) < 1) {
     Error("trojanscan", ERR_FATAL, "Cycletime / maxchans < 1, increase cycletime or decrease maxchans else cycling breaks.");
+    freesstring(dbhost);
+    freesstring(dbuser);
+    freesstring(dbpass);
+    freesstring(db);
+    freesstring(dbport);
     return; /* PPA: module failed to load */
   }
   
@@ -264,6 +269,11 @@ void trojanscan_connect(void *arg) {
 
   if (trojanscan_database_connect(dbhost->content, dbuser->content, dbpass->content, db->content, atoi(dbport->content)) < 0) {
     Error("trojanscan", ERR_FATAL, "Cannot connect to database host!");
+    freesstring(dbhost);
+    freesstring(dbuser);
+    freesstring(dbpass);
+    freesstring(db);
+    freesstring(dbport);
     return; /* PPA: module failed to load */
   }
   
