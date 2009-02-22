@@ -12,6 +12,9 @@
 #include "../lib/strlfunc.h"
 #include "../trusts2/trusts.h"
 #include "trusts_search.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 typedef void (*TGDisplayFunc)(struct searchCtx *, nick *, trustgroup_t *);
 typedef void (*THDisplayFunc)(struct searchCtx *, nick *, trusthost_t *);

@@ -6,6 +6,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 static int commandsregistered;
 

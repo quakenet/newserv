@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include "../core/nsmalloc.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 int tgh_ext = -1;
 int tgb_ext = -1;

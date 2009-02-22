@@ -4,6 +4,9 @@
 
 #include "trusts_newsearch.h"
 #include "../trusts2/trusts.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 
 void _init(void) {
