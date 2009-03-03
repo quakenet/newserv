@@ -75,6 +75,8 @@
 #define CLEANUP_ACCOUNT_UNUSED    10
 #define CLEANUP_CHANNEL_INACTIVE  40
 
+#define CLEANUP_AUTHHISTORY	  60
+
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
 #define   MAILDOMAINHASHSIZE  60000
@@ -908,7 +910,7 @@ void csdb_createmaildomain(maildomain *mdp);
 void csdb_updatemaildomain(maildomain *mdp);
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *oldemail, char *newemail);
-void csdb_cleanuphistories();
+void csdb_cleanuphistories(time_t);
 void csdb_deletemaillock(maillock *mlp);
 void csdb_createmaillock(maillock *mlp);
 void csdb_updatemaillock(maillock *mlp);

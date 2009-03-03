@@ -22,8 +22,7 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   regchanuser *rcup, *nrcup;
   authname *anp;
   int i,j;
-  time_t t;
-  long to_age, unused_age, maxchan_age;
+  time_t t, to_age, unused_age, maxchan_age, authhistory_age;
   int expired = 0, unauthed = 0, chansvaped = 0;
   chanindex *cip, *ncip;
   regchan *rcp;
@@ -32,6 +31,7 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   to_age = t - (CLEANUP_ACCOUNT_INACTIVE * 3600 * 24);  
   unused_age = t - (CLEANUP_ACCOUNT_UNUSED * 3600 * 24);
   maxchan_age = t - (CLEANUP_CHANNEL_INACTIVE * 3600 * 24);
+  authhistory_age = t - (CLEANUP_AUTHHISTORY * 3600 * 24);
 
   cs_log(sender, "CLEANUPDB started");
 
@@ -90,6 +90,9 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
       }
     }
   }
+  
+  chanservsendmessage(sender, "Starting history database cleanup (will run in background).");
+  csdb_cleanuphistories(authhistory_age);
   
   cs_log(sender, "CLEANUPDB complete %d inactive accounts %d unused accounts %d channels", expired, unauthed, chansvaped);
   chanservsendmessage(sender, "Cleanup complete, %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE);
