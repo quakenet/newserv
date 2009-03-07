@@ -1,0 +1,6 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: glines.so
+
+glines.so: glines.o
