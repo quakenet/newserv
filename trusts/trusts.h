@@ -151,4 +151,7 @@ typedef void (*TrustDBMigrationCallback)(int, void *);
 void trusts_newnick(nick *, int);
 void trusts_lostnick(nick *, int);
 
+/* trusts_api.c */
+int istrusted(nick *);
+
 #endif
