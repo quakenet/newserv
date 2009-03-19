@@ -16,8 +16,10 @@
 #include <stdio.h>
 #include <string.h>
 
-int csu_docleanupdb(void *source, int cargc, char **cargv) {
-  nick *sender=source;
+unsigned int cleanupdb_active;
+
+void csu_docleanupdb_real(DBConn *dbconn, void *arg) {
+  nick *sender=getnickbynumeric((unsigned long)arg);
   reguser *vrup, *srup, *founder;
   regchanuser *rcup, *nrcup;
   authname *anp;
@@ -26,21 +28,56 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
   int expired = 0, unauthed = 0, chansvaped = 0;
   chanindex *cip, *ncip;
   regchan *rcp;
-
+  DBResult *pgres;
+  unsigned int themarker;
+  unsigned int id;
+  
   t = time(NULL);
   to_age = t - (CLEANUP_ACCOUNT_INACTIVE * 3600 * 24);  
   unused_age = t - (CLEANUP_ACCOUNT_UNUSED * 3600 * 24);
   maxchan_age = t - (CLEANUP_CHANNEL_INACTIVE * 3600 * 24);
   authhistory_age = t - (CLEANUP_AUTHHISTORY * 3600 * 24);
 
+  themarker=nextauthnamemarker();
+  
+  if (!dbconn) {
+    if (sender)
+      chanservsendmessage(sender, "No DB connection, aborting cleanup.");
+    goto out;
+  }
+
+  pgres=dbgetresult(dbconn);
+  
+  if (!dbquerysuccessful(pgres)) {
+    Error("chanserv", ERR_ERROR, "Error loading cleanupdb data.");
+    if (sender) 
+      chanservsendmessage(sender, "DB error, aborting cleanup.");
+    goto out;
+  }
+  
+  while (dbfetchrow(pgres)) {
+    id=strtoul(dbgetvalue(pgres, 0), NULL, 10);
+    anp=findauthname(id);
+    if (anp)
+      anp->marker=themarker;
+  }
+  
+  dbclear(pgres);
+
   cs_log(sender, "CLEANUPDB started");
 
-  chanservsendmessage(sender, "Scanning regusers...");
+  if (sender)
+    chanservsendmessage(sender, "Scanning regusers...");
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (vrup=regusernicktable[i]; vrup; vrup=srup) {
       srup=vrup->nextbyname;
       if (!(anp=findauthname(vrup->ID)))
         continue; /* should maybe raise hell instead */
+
+      /* If this user has the right marker, this means the authtracker data
+       * indicates that they have been active recently */
+      if (anp->marker == themarker)
+        continue;
 
       if(!anp->nicks && !UHasStaffPriv(vrup) && !UIsCleanupExempt(vrup)) {
         if(vrup->lastauth && (vrup->lastauth < to_age)) {
@@ -58,7 +95,9 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
     }
   }
 
-  chanservsendmessage(sender, "Scanning chanindicies...");
+  if (sender)
+    chanservsendmessage(sender, "Scanning chanindicies...");
+    
   for (i=0;i<CHANNELHASHSIZE;i++) {
     for (cip=chantable[i];cip;cip=ncip) {
       ncip=cip->next;
@@ -82,7 +121,8 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
           nrcup=rcup->nextbychan;
           
           if (!rcup->flags) {
-            chanservsendmessage(sender, "Removing user %s from channel %s (no flags)",rcup->user->username,rcp->index->name->content);
+            if (sender)
+              chanservsendmessage(sender, "Removing user %s from channel %s (no flags)",rcup->user->username,rcp->index->name->content);
             csdb_deletechanuser(rcup);
             delreguserfromchannel(rcp, rcup->user);
           }
@@ -91,10 +131,40 @@ int csu_docleanupdb(void *source, int cargc, char **cargv) {
     }
   }
   
-  chanservsendmessage(sender, "Starting history database cleanup (will run in background).");
+  if (sender)
+    chanservsendmessage(sender, "Starting history database cleanup (will run in background).");
+    
   csdb_cleanuphistories(authhistory_age);
   
   cs_log(sender, "CLEANUPDB complete %d inactive accounts %d unused accounts %d channels", expired, unauthed, chansvaped);
-  chanservsendmessage(sender, "Cleanup complete, %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE);
+  if (sender)
+    chanservsendmessage(sender, "Cleanup complete, %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE);
+
+out:
+  cleanupdb_active=0;
+}
+
+int csu_docleanupdb(void *source, int cargc, char **cargv) {
+  nick *sender=source;
+  unsigned int to_age;
+  
+  to_age = time(NULL) - (CLEANUP_ACCOUNT_INACTIVE * 3600 * 24);
+  
+  if (cleanupdb_active) {
+    chanservsendmessage(sender, "Cleanup already in progress.\n");
+    return CMD_ERROR;
+  }
+
+  /* This query returns a single column containing the userids of all users
+   * who have active sessions now, or sessions which ended in the last
+   * CLEANUP_ACCOUNT_INACTIVE days.  */
+  q9u_asyncquery(csu_docleanupdb_real, (void *)sender->numeric,
+    "SELECT userID from chanserv.authhistory WHERE disconnecttime=0 OR disconnecttime > %d GROUP BY userID", to_age);
+  
+  chanservsendmessage(sender, "Retrieving auth history data, cleanup will proceed when done.");
+  
+  cleanupdb_active=1;
+  
   return CMD_OK;
 }
+
