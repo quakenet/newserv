@@ -513,6 +513,8 @@ void sethostuser(nick *target, char *ident, char *host) {
 void _killuser(nick *source, nick *target, char *reason) {
   char senderstr[6];
   char sourcestring[HOSTLEN+NICKLEN+3];
+  char reasonstr[512];
+  void *args[2];
 
   if (!source) {
     /* If we have a null nick, use the server.. */
@@ -523,7 +525,15 @@ void _killuser(nick *source, nick *target, char *reason) {
     sprintf(sourcestring,"%s!%s",source->host->name->content, source->nick);
   }
 
-  irc_send("%s D %s :%s (%s)",senderstr,longtonumeric(target->numeric,5),sourcestring,reason);
+  snprintf(reasonstr,512,"%s (%s)",sourcestring,reason);
+  reasonstr[511]='\0';
+
+  irc_send("%s D %s :%s",senderstr,longtonumeric(target->numeric,5),reasonstr);
+  
+  args[0]=target;
+  args[1]=reasonstr;
+  triggerhook(HOOK_NICK_KILL, args);
+
   deletenick(target);
 }
 
