@@ -59,7 +59,7 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
   rcup=findreguseronchannel(rcp, target);
 
   /* Can't promote if already owner */
-  if (rcup->flags & QCUFLAG_OWNER) {
+  if (rcup && (rcup->flags & QCUFLAG_OWNER)) {
     chanservstdmessage(sender,QM_GIVEOWNERALREADYOWNER,target->username,cip->name->content);
     return CMD_ERROR;
   }
