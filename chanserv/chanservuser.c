@@ -243,6 +243,18 @@ void chanservremovecommand(char *command, CommandHandler handler) {
   deletecommandfromtree(cscommands, command, handler);
 }
 
+void chanservpartchan(channel *cp, char *reason) {
+  /* Sanity check that we exist and are on the channel.
+   *
+   * Note that we don't do any of the other usual sanity checks here; if
+   * this channel is unregged or suspended or whatever then all the more
+   * reason to get Q off it ASAP! */
+  if (!chanservnick || !cp || !cp->users || !getnumerichandlefromchanhash(cp->users, chanservnick->numeric))
+    return;  
+  
+  localpartchannel(chanservnick, cp, reason);
+}
+
 void chanservjoinchan(channel *cp) {
   regchan *rcp;
   unsigned int i;
@@ -265,14 +277,10 @@ void chanservjoinchan(channel *cp) {
   if (!chanservnick)
     return;
 
+  /* In gerenal this function shouldn't be used any more as a reason to get
+   * Q to leave, but if it should be leaving then just part with no reason. */
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
-    if(rcp->suspendreason) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "Channel suspended: %s", rcp->suspendreason->content);
-      localpartchannel(chanservnick, cp, buf);
-    } else {
-      localpartchannel(chanservnick, cp, "Channel suspended");
-    }
+    localpartchannel(chanservnick, cp, NULL);
   }
   
   /* Right, we are definately going to either join the channel or at least
@@ -1037,7 +1045,7 @@ void cs_timerfunc(void *arg) {
   localsetmodeflush(&changes, 1);
 }
 
-void cs_removechannel(regchan *rcp) {
+void cs_removechannel(regchan *rcp, char *reason) {
   int i;
   chanindex *cip;
   regchanuser *rcup, *nrcup;
@@ -1066,8 +1074,7 @@ void cs_removechannel(regchan *rcp) {
     deleteschedule(rcp->checksched, cs_timerfunc, rcp->index);
     
   if (cip->channel) {
-    rcp->flags=QCFLAG_SUSPENDED;
-    chanservjoinchan(cip->channel); /* Force off the channel */
+    chanservpartchan(cip->channel, reason);
   }
   
   csdb_deletechannel(rcp);
@@ -1097,7 +1104,7 @@ int cs_removechannelifempty(nick *sender, regchan *rcp) {
   }
   
   cs_log(sender,"DELCHAN %s (Empty)",rcp->index->name->content);
-  cs_removechannel(rcp);
+  cs_removechannel(rcp, "Last user removed - channel deleted.");
   
   return 1;
 }

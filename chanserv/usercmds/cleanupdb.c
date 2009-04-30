@@ -111,7 +111,7 @@ void csu_docleanupdb_real(DBConn *dbconn, void *arg) {
           continue;
 
         cs_log(sender, "CLEANUPDB inactive channel %s", cip->name?cip->name->content:"??");
-        cs_removechannel(rcp);
+        cs_removechannel(rcp, "Channel deleted due to lack of activity.");
         chansvaped++;
       }
       
