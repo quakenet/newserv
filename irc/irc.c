@@ -448,6 +448,7 @@ int parseline() {
       return 0;
     }
     for (;c!=NULL;c=c->next) {
+      c->calls++;
       if (((c->handler)("INIT",cargc-1,&cargv[1]))==CMD_LAST)
         return 0;
     }  
@@ -457,6 +458,7 @@ int parseline() {
       long numeric = strtol(cargv[1], NULL, 0);
       if((numeric >= MIN_NUMERIC) && (numeric <= MAX_NUMERIC)) {
         for(c=numericcommands[numeric];c;c=c->next) {
+          c->calls++;
           if (((c->handler)((void *)numeric,cargc,cargv))==CMD_LAST)
             return 0;
         }
@@ -467,6 +469,7 @@ int parseline() {
         return 0;
       }
       for (;c!=NULL;c=c->next) {
+        c->calls++;
         if (((c->handler)(cargv[0],cargc-2,cargv+2))==CMD_LAST)
           return 0;
       }
@@ -600,5 +603,15 @@ void ircstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,buf);
     sprintf(buf,"Time    : %lu (current time is %lu, offset %ld)",getnettime(),time(NULL),timeoffset);
     triggerhook(HOOK_CORE_STATSREPLY,buf);
+  }
+}
+void stats_m(char *str1, char *str2) {
+  Command *cmds[500];
+  unsigned int c,i;
+  
+  c=getcommandlist(servercommands,cmds,500);
+  
+  for (i=0;i<c;i++) {
+    irc_send(":%s 212 %s %s %u 0", str1, str2, cmds[i]->command->content, cmds[i]->calls);
   }
 }

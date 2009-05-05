@@ -39,6 +39,7 @@ typedef struct Command {
   CommandHandler  handler;       /* Function to deal with the message */
   void           *ext;           /* Pointer to some arbitrary other data */
   DestroyExt      destroyext;    /* Function to destroy ->ext on destroycommandtree (if necessary) */
+  unsigned int    calls;         /* How many times this command has been called */
   struct Command *next;          /* Next handler chained onto this command */
 } Command;
   

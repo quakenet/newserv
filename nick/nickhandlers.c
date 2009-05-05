@@ -489,7 +489,10 @@ int handlestatsmsg(void *source, int cargc, char **cargv) {
   case 'P':
     irc_send(":%s 217 %s P none 0 :0x2000",fromstring,replytarget);
     break;
-    
+   
+  case 'm':
+    stats_m(fromstring, replytarget);
+    break; 
   }
 
   irc_send(":%s 219 %s %c :End of /STATS report",fromstring,replytarget,cargv[0][0]);

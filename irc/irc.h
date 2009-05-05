@@ -31,6 +31,7 @@ int deregisternumerichandler(const int numeric, CommandHandler handler);
 char *getmynumeric();
 time_t getnettime();
 void setnettime(time_t newtime);
+void stats_m(char *, char *);
 
 /* Functions from irchandlers.c */
 int handleping(void *sender, int cargc, char **cargv);
