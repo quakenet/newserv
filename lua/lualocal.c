@@ -13,13 +13,14 @@
 void lua_localnickhandler(nick *target, int type, void **args);
 void lua_reconnectlocal(void *arg);
 
-static int lua_registerlocaluser(lua_State *ps) {
+static int lua_registerlocaluserid(lua_State *ps) {
   lua_list *l;
   lua_localnick *ln;
   char *nickname, *ident, *hostname, *realname, *account;
   flag_t modes = 0;
+  long userid;
   
-  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3) || !lua_isstring(ps, 4) || !lua_isstring(ps, 5) || !lua_isstring(ps, 6) || !lua_isfunction(ps, 7))
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3) || !lua_isstring(ps, 4) || !lua_isstring(ps, 5) || !lua_isstring(ps, 7) || !lua_isfunction(ps, 8))
     return 0;
 
   nickname = (char *)lua_tostring(ps, 1);
@@ -27,8 +28,13 @@ static int lua_registerlocaluser(lua_State *ps) {
   hostname = (char *)lua_tostring(ps, 3);
   realname = (char *)lua_tostring(ps, 4);
   account = (char *)lua_tostring(ps, 5);
+  if(lua_islong(ps, 6)) {
+    userid = lua_tolong(ps, 6);
+  } else {
+    userid = 0;
+  }
 
-  setflags(&modes, UMODE_ALL, (char *)lua_tostring(ps, 6), umodeflags, REJECT_NONE);
+  setflags(&modes, UMODE_ALL, (char *)lua_tostring(ps, 7), umodeflags, REJECT_NONE);
 
   if(!lua_lineok(nickname) || !lua_lineok(ident) || !lua_lineok(hostname) || !lua_lineok(realname) || !lua_lineok(account))
     return 0;
@@ -43,7 +49,7 @@ static int lua_registerlocaluser(lua_State *ps) {
 
   ln->reconnect = NULL;
 
-  ln->nick = registerlocaluser(nickname, ident, hostname, realname, account, modes, &lua_localnickhandler);
+  ln->nick = registerlocaluserflags(nickname, ident, hostname, realname, account, userid, 0, modes, &lua_localnickhandler);
   if(!ln->nick) {
     luafree(ln);
     return 0;
@@ -549,7 +555,7 @@ static int lua_localrename(lua_State *ps) {
 }
 
 void lua_registerlocalcommands(lua_State *l) {
-  lua_register(l, "irc_localregisteruser", lua_registerlocaluser);
+  lua_register(l, "irc_localregisteruserid", lua_registerlocaluserid);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
   lua_register(l, "irc_localjoin", lua_localjoin);
   lua_register(l, "irc_localpart", lua_localpart);
