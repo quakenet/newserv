@@ -111,6 +111,7 @@ void chanservuserhandler(nick *target, int message, void **params) {
       }
       cmd=findcommandintree(csctcpcommands, cargv[0]+1, 1);
       if (cmd) {
+	cmd->calls++;
 	rejoinline(cargv[1],cargc-1);
 	cmd->handler((void *)sender, cargc-1, &(cargv[1]));
       }      
@@ -172,6 +173,8 @@ void chanservuserhandler(nick *target, int message, void **params) {
 	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);
 	break;
       }
+      
+      cmd->calls++;
       
       if (cmd->maxparams < (cargc-1)) {
 	rejoinline(cargv[cmd->maxparams],cargc-(cmd->maxparams));
