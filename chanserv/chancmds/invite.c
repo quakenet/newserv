@@ -28,9 +28,36 @@ int csc_doinvite(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
 
+  /* If no argument supplied, try and invite the user to every channel
+   * we can. */
   if (cargc<1) {
-    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "invite");
-    return CMD_ERROR;
+    reguser *rup=getreguserfromnick(sender);
+    regchanuser *rcup;
+
+    if (!rup)
+      return CMD_ERROR;
+
+    for (rcup=rup->knownon;rcup;rcup=rcup->nextbyuser) {
+      /* skip empty or suspended channels */
+      if (!rcup->chan->index->channel || CIsSuspended(rcup->chan)) {
+        continue;
+      }
+      
+      /* skip channels the user is already on */
+      if (getnumerichandlefromchanhash(rcup->chan->index->channel->users, sender->numeric)) {
+        continue;
+      }
+
+      /* skip channels where the user can't do INVITE */
+      if (!CUKnown(rcup)) {
+        continue;
+      }
+      
+      localinvite(chanservnick, rcup->chan->index->channel, sender);
+    }
+    
+    chanservstdmessage(sender, QM_DONE);
+    return CMD_OK;
   }
 
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_KNOWN | CA_OFFCHAN, 
