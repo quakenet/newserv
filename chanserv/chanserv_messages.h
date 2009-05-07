@@ -226,6 +226,7 @@ BeginMessages() {
   msg(QM_INVALIDHMAC, "The supplied login credentials are not valid (bad HMAC).", ""),
   msg(QM_PASSEMAILCHANGED, "Auth failed: account password has been changed since you logged in.", ""),
   msg(QM_REASONREQUIRED, "Supply a decent reason.", ""),
+  msg(QM_BYPASSINGSUSPEND,"NOTE: $0 is suspended, bypassing suspension.", "s"),
 } 
 EndMessages()
 #endif
