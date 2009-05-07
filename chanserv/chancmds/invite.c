@@ -4,12 +4,14 @@
  * CMDNAME: invite
  * CMDLEVEL: QCMD_AUTHED
  * CMDARGS: 1
- * CMDDESC: Invites you to a channel.
+ * CMDDESC: Invites you to a channel or channels.
  * CMDFUNC: csc_doinvite
  * CMDPROTO: int csc_doinvite(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: INVITE <channel>
- * CMDHELP: Invites you to the named channel, where:
- * CMDHELP: channel - channel to be invited to.
+ * CMDHELP: Usage: INVITE [<channel>]
+ * CMDHELP: Invites you to one or more channels, where:
+ * CMDHELP: channel - channel to be invited to.  If no channel is specified,
+ * CMDHELP:           you will be invited to all channels where you have
+ * CMDHELP:           appropriate access and are not already joined.
  * CMDHELP: INVITE requires you to be known (+k) on the named channel.
  */
 
