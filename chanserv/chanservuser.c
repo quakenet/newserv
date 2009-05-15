@@ -522,7 +522,7 @@ void chanservkillstdmessage(nick *target, int messageid, ... ) {
   va_start(va, messageid);
   q9vsnprintf(buf, 511, message, messageargs, va);
   va_end(va);
-  killuser(chanservnick, target, buf);
+  killuser(chanservnick, target, "%s", buf);
 }
 
 int checkpassword(reguser *rup, const char *pass) {
