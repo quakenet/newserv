@@ -312,7 +312,7 @@ void helpmod_chan_privmsg(void **args)
     }
     huser_activity(sender_huser, hchan);
 
-    if (huser_get_level(sender_huser) < H_TRIAL) /* staff and staff trials are not subject to any control */
+    if (huser_get_level(sender_huser) < H_FRIEND) /* staff, staff trials and friends are not subject to any control */
     {
         if ((hchan->flags & H_CENSOR) && (tmp = hcensor_check(hchan->censor, (char*)message)))
         { /* censor match */
