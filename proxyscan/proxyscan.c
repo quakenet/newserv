@@ -279,6 +279,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6666);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6667);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6668);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);

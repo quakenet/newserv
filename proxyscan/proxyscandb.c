@@ -101,7 +101,7 @@ const char *scantostr(int type) {
       break;
 
     case STYPE_DIRECT_IRC:
-      reason="forward (irc)";
+      reason="fwdirc";
       break;
   }
    
