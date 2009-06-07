@@ -5,9 +5,13 @@
 #include "../nick/nick.h"
 #include "../lib/splitline.h"
 #include <time.h>
+#include <stdint.h>
 
 #define MAGICSTRING         "NOTICE AUTH :*** Looking up your hostname\r\n"
 #define MAGICSTRINGLENGTH   42
+
+#define MAGICIRCSTRING      ".quakenet.org 451 *  :Register first.\r\n"
+#define MAGICIRCSTRINGLENGTH 38
 
 #define PSCAN_MAXSCANS      50
 #define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
@@ -21,7 +25,8 @@
 #define STYPE_HTTP          2
 #define STYPE_WINGATE       3
 #define STYPE_CISCO         4
-#define STYPE_DIRECT        5
+#define STYPE_DIRECT        5 /* not sure what this is so I'm leaving it alone */
+#define STYPE_DIRECT_IRC    6
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1
