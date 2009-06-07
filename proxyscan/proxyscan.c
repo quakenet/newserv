@@ -480,6 +480,7 @@ void startscan(patricia_node_t *node, int type, int port, int class) {
   sp->state=SSTATE_CONNECTING;
   if (sp->fd<0) {
     /* Couldn't set up the socket? */
+    derefnode(iptree,sp->node);
     freescan(sp);
     return;
   }
