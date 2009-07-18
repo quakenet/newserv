@@ -20,7 +20,6 @@
  */
 
 int nickmatchban_visible(nick *np, chanban *bp) {
-  const char *ipstring;
   char fakehost[HOSTLEN+1];
   char *visibleident;
 
@@ -145,7 +144,6 @@ int nickmatchban_visible(nick *np, chanban *bp) {
  */
 
 int nickmatchban(nick *np, chanban *bp) {
-  const char *ipstring;
   char fakehost[HOSTLEN+1];
 
   /* nick/ident section: return 0 (no match) if they don't match */
