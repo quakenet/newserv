@@ -20,7 +20,6 @@
  */
 
 int nickmatchban_visible(nick *np, chanban *bp) {
-  const char *ipstring;
   char fakehost[HOSTLEN+1];
   char *visibleident;
 
@@ -83,7 +82,7 @@ int nickmatchban_visible(nick *np, chanban *bp) {
       return 0;
       
     if (bp->flags & CHANBAN_HOSTEXACT) {
-      /* If it's an exact IP ban we can compare it numerically */
+      /* Only exact IP bans are valid */
       unsigned int cip;
       unsigned char *ch;
 
@@ -96,12 +95,6 @@ int nickmatchban_visible(nick *np, chanban *bp) {
       cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
 
       if (cip==bp->ipaddr) 
-        return 1;
-    } else {
-      /* It's not an exact IP ban so let's generate the string */
-      ipstring=IPtostr(np->p_ipaddr);
- 
-      if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,ipstring))
         return 1;
     }
   } else {
@@ -151,7 +144,6 @@ int nickmatchban_visible(nick *np, chanban *bp) {
  */
 
 int nickmatchban(nick *np, chanban *bp) {
-  const char *ipstring;
   char fakehost[HOSTLEN+1];
 
   /* nick/ident section: return 0 (no match) if they don't match */
@@ -204,7 +196,7 @@ int nickmatchban(nick *np, chanban *bp) {
   
   if (bp->flags & CHANBAN_IP) {
     if (bp->flags & CHANBAN_HOSTEXACT) {
-      /* If it's an exact IP ban we can compare it numerically */
+      /* Only exact matches for IP bans */
       unsigned int cip;
       unsigned char *ch;
 
@@ -217,12 +209,6 @@ int nickmatchban(nick *np, chanban *bp) {
       cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
 
       if (cip==bp->ipaddr) 
-        return 1;
-    } else {
-      /* It's not an exact IP ban so let's generate the string */
-      ipstring=IPtostr(np->p_ipaddr);
- 
-      if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,ipstring))
         return 1;
     }
   } else {

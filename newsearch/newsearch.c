@@ -399,6 +399,10 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
         break;
 
       case 's':
+        if (subset == NULL) {
+          reply(sender,"Error: -s switch not supported for this search.");
+          return CMD_ERROR;
+        }
         if (cargc<*arg) {
           reply(sender,"Error: -s switch requires an argument (for help, see help <searchcmd>)");
           return CMD_ERROR;

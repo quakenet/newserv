@@ -12,5 +12,6 @@ void inithandlers();
 int registerhandler(int fd, short events, FDHandler handler);
 int deregisterhandler(int fd, int doclose);
 int handleevents(int timeout);
+void finihandlers();
 
 #endif

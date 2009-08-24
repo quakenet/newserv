@@ -35,5 +35,6 @@ void *schedulerecurring(time_t first, int count, time_t interval, ScheduleCallba
 void deleteschedule(void *sch, ScheduleCallback callback, void *arg);
 void deleteallschedules(ScheduleCallback callback);
 void doscheduledevents(time_t when);
+void finischedule();
   
 #endif

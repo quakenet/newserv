@@ -60,10 +60,19 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags,
     return NULL;
   }
   
-  if (!(rcp=cip->exts[chanservext]) || 
-      (CIsSuspended(rcp) && !cs_privcheck(QPRIV_SUSPENDBYPASS, np))) {
+  if (!(rcp=cip->exts[chanservext])) {
     if (!quiet) chanservstdmessage(np, QM_UNKNOWNCHAN, cip->name->content);
     return NULL;
+  }
+  
+  
+  if (CIsSuspended(rcp)) {
+    if (cs_privcheck(QPRIV_SUSPENDBYPASS, np)) {
+      if (!quiet) chanservstdmessage(np, QM_BYPASSINGSUSPEND, cip->name->content);
+    } else {
+      if (!quiet) chanservstdmessage(np, QM_UNKNOWNCHAN, cip->name->content);
+      return NULL;
+    }
   }
 
   if (rcp && rup)

@@ -4,12 +4,14 @@
  * CMDNAME: invite
  * CMDLEVEL: QCMD_AUTHED
  * CMDARGS: 1
- * CMDDESC: Invites you to a channel.
+ * CMDDESC: Invites you to a channel or channels.
  * CMDFUNC: csc_doinvite
  * CMDPROTO: int csc_doinvite(void *source, int cargc, char **cargv);
- * CMDHELP: Usage: INVITE <channel>
- * CMDHELP: Invites you to the named channel, where:
- * CMDHELP: channel - channel to be invited to.
+ * CMDHELP: Usage: INVITE [<channel>]
+ * CMDHELP: Invites you to one or more channels, where:
+ * CMDHELP: channel - channel to be invited to.  If no channel is specified,
+ * CMDHELP:           you will be invited to all channels where you have
+ * CMDHELP:           appropriate access and are not already joined.
  * CMDHELP: INVITE requires you to be known (+k) on the named channel.
  */
 
@@ -28,9 +30,36 @@ int csc_doinvite(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
 
+  /* If no argument supplied, try and invite the user to every channel
+   * we can. */
   if (cargc<1) {
-    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "invite");
-    return CMD_ERROR;
+    reguser *rup=getreguserfromnick(sender);
+    regchanuser *rcup;
+
+    if (!rup)
+      return CMD_ERROR;
+
+    for (rcup=rup->knownon;rcup;rcup=rcup->nextbyuser) {
+      /* skip empty or suspended channels */
+      if (!rcup->chan->index->channel || CIsSuspended(rcup->chan)) {
+        continue;
+      }
+      
+      /* skip channels the user is already on */
+      if (getnumerichandlefromchanhash(rcup->chan->index->channel->users, sender->numeric)) {
+        continue;
+      }
+
+      /* skip channels where the user can't do INVITE */
+      if (!CUKnown(rcup)) {
+        continue;
+      }
+      
+      localinvite(chanservnick, rcup->chan->index->channel, sender);
+    }
+    
+    chanservstdmessage(sender, QM_DONE);
+    return CMD_OK;
   }
 
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_KNOWN | CA_OFFCHAN, 

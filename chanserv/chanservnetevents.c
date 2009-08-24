@@ -430,10 +430,8 @@ void cs_handletopicchange(int hooknum, void *arg) {
     return;
  
   if (CIsForceTopic(rcp)) {
-    if (rcp->topic) {
-      /* Forced topic: change it back */
-      localsettopic(chanservnick, cp, rcp->topic->content);
-    }
+    /* Forced topic: change it back even if blank */
+    localsettopic(chanservnick, cp, (rcp->topic)?rcp->topic->content:"");
   } else if (CIsTopicSave(rcp)) {
     if (rcp->topic) {
       freesstring(rcp->topic);

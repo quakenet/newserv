@@ -279,6 +279,11 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6666);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6667);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6668);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);
+  proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
  
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
@@ -476,6 +481,7 @@ void startscan(patricia_node_t *node, int type, int port, int class) {
   sp->state=SSTATE_CONNECTING;
   if (sp->fd<0) {
     /* Couldn't set up the socket? */
+    derefnode(iptree,sp->node);
     freescan(sp);
     return;
   }
@@ -693,6 +699,16 @@ void handlescansock(int fd, short events) {
     case STYPE_DIRECT:
       /* Do nothing */
       break;    
+
+    case STYPE_DIRECT_IRC:
+      sprintf(buf,"PRIVMSG\r\n");
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+	killsock(sp, SOUTCOME_CLOSED);
+        return;
+      }
+      
+      /* Do nothing */
+      break;    
     }                
     break;
     
@@ -709,24 +725,38 @@ void handlescansock(int fd, short events) {
     
     sp->bytesread+=res;
     sp->totalbytesread+=res;
-    for (i=0;i<sp->bytesread - MAGICSTRINGLENGTH;i++) {
-      if (!strncmp(sp->readbuf+i, MAGICSTRING, MAGICSTRINGLENGTH)) {
-        /* Found the magic string */
-        /* If the offset is 0, this means it was the first thing we got from the socket, 
-         * so it's an actual IRCD (sheesh).  Note that when the buffer is full and moved,
-         * the thing moved to offset 0 would previously have been tested as offset 
-         * PSCAN_READBUFSIZE/2. 
-         *
-         * Skip this checking for STYPE_DIRECT scans, which are used to detect trojans setting
-         * up portforwards (which will therefore show up as ircds, we rely on the port being
-         * strange enough to avoid false positives */
-        if (i==0 && (sp->type != STYPE_DIRECT)) {
-          killsock(sp, SOUTCOME_CLOSED);
+
+    {
+      char *magicstring;
+      int magicstringlength;
+
+      if(sp->type != STYPE_DIRECT_IRC) {
+        magicstring = MAGICSTRING;
+        magicstringlength = MAGICSTRINGLENGTH;
+      } else {
+        magicstring = MAGICIRCSTRING;
+        magicstringlength = MAGICIRCSTRINGLENGTH;
+      }
+
+      for (i=0;i<sp->bytesread - magicstringlength;i++) {
+        if (!strncmp(sp->readbuf+i, magicstring, magicstringlength)) {
+          /* Found the magic string */
+          /* If the offset is 0, this means it was the first thing we got from the socket, 
+           * so it's an actual IRCD (sheesh).  Note that when the buffer is full and moved,
+           * the thing moved to offset 0 would previously have been tested as offset 
+           * PSCAN_READBUFSIZE/2. 
+           *
+           * Skip this checking for STYPE_DIRECT scans, which are used to detect trojans setting
+           * up portforwards (which will therefore show up as ircds, we rely on the port being
+           * strange enough to avoid false positives */
+          if (i==0 && (sp->type != STYPE_DIRECT)) {
+            killsock(sp, SOUTCOME_CLOSED);
+            return;
+          }
+        
+          killsock(sp, SOUTCOME_OPEN);
           return;
         }
-        
-        killsock(sp, SOUTCOME_OPEN);
-        return;
       }
     }
     

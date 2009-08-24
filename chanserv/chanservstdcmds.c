@@ -219,9 +219,9 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
 
   if (sum->defhelp && *(sum->defhelp)) {
     if (oneline) {
-      chanservsendmessageoneline(sender, sum->defhelp);
+      chanservsendmessageoneline(sender, "%s", sum->defhelp);
     } else {
-      chanservsendmessage(sender, sum->defhelp);
+      chanservsendmessage(sender, "%s", sum->defhelp);
     }
   } else {
     if (!oneline)
@@ -345,11 +345,11 @@ void csdb_dohelp_real(DBConn *dbconn, void *arg) {
   }
 
   if (result) {
-    chanservsendmessage(np, result);
+    chanservsendmessage(np, "%s", result);
   } else {
     cmdsummary *sum=hip->cmd->ext;
     if (sum->defhelp && *(sum->defhelp)) {
-      chanservsendmessage(np, sum->defhelp);
+      chanservsendmessage(np, "%s", sum->defhelp);
     } else {
       chanservstdmessage(np, QM_NOHELP, hip->commandname->content);
     }
