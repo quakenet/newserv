@@ -40,7 +40,7 @@ hban *hban_add(const char* pat, const char* rsn, time_t exp, int now)
     { /* additional logic here */
         huser* tmpu;
 	for (tmpu = husers;tmpu;tmpu = tmpu->next)
-	    if (nickmatchban(tmpu->real_user, tmp) && !IsOper(tmpu->real_user))
+	    if (nickmatchban(tmpu->real_user, tmp, 0) && !IsOper(tmpu->real_user))
             {
                 hchannel *assert_hchan = NULL;
                 while (tmpu->hchannels)
@@ -114,7 +114,7 @@ hban *hban_check(nick *nck)
 {
     hban *ptr = hbans;
     for (;ptr;ptr = ptr->next)
-        if (nickmatchban(nck, ptr->real_ban))
+        if (nickmatchban(nck, ptr->real_ban, 0))
             return ptr;
     return NULL;
 }

@@ -9,161 +9,39 @@
 #include "../lib/irc_string.h"
 #include "../irc/irc_config.h"
 #include "../irc/irc.h"
-
-/*
- * nickmatchban_visible:
- *  Returns true iff the supplied nick* matches the supplied ban* 
- *  Doesn't check "invisible" things like true hosts and IPs for 
- *  +x/+h users.
- *
- * copy & pasted this, touch and go whether this was a good idea.
- */
-
-int nickmatchban_visible(nick *np, chanban *bp) {
-  char fakehost[HOSTLEN+1];
-  char *visibleident;
-
-  /* Don't waste time on invalid bans */
-  if (bp->flags & CHANBAN_INVALID)
-    return 0;
-
-  /* nick/ident section: return 0 (no match) if they don't match */
-
-  /* Determine the visible ident for sethost users.  Don't test the real one. */  
-  if (IsSetHost(np) && np->shident && *np->shident->content)
-    visibleident=np->shident->content;
-  else
-    visibleident=np->ident;
-  
-  if (bp->flags & CHANBAN_USEREXACT && ircd_strcmp(visibleident,bp->user->content))
-    return 0;
-  
-  if (bp->flags & CHANBAN_NICKEXACT && ircd_strcmp(np->nick,bp->nick->content))
-    return 0;
-  
-  if (bp->flags & CHANBAN_USERMASK && !match2strings(bp->user->content,visibleident))
-    return 0;
-  
-  if (bp->flags & CHANBAN_NICKMASK && !match2strings(bp->nick->content,np->nick))
-    return 0;
-  
-  /* host section.  Return 1 (match) if they do match
-   * Note that if user or ident was specified, they've already been checked
-   */
-
-  if (bp->flags & CHANBAN_HOSTANY)
-    return 1;
-
-  if ((bp->flags & CHANBAN_CIDR) && (bp->flags & CHANBAN_HOSTEXACT)) {
-    unsigned int cip;
-    unsigned char *ch;
-
-    /* CIDR bans don't visibly match sethosted users */
-    if (IsSetHost(np) || (IsAccount(np) && IsHideHost(np)))
-      return 0;
-
-    /* CIDR bans don't match IPv6 hosts */
-    if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
-      return 0;
-
-    /* Extract the client's IP address into a usable format */
-    ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
-    cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
-    
-    if ((cip & bp->mask) == bp->ipaddr)
-      return 1;
-    
-    return 0; /* A CIDR ban won't match any other way */
-  }
-  
-  if (bp->flags & CHANBAN_IP) {
-    /* IP bans don't match sethosted users */
-    if (IsSetHost(np) || (IsAccount(np) && IsHideHost(np)))
-      return 0;
-      
-    if (bp->flags & CHANBAN_HOSTEXACT) {
-      /* Only exact IP bans are valid */
-      unsigned int cip;
-      unsigned char *ch;
-
-      /* Well, it won't match if it's not an IPv4 host */
-      if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
-        return 0;
-
-      /* Extract the client's IP address into a usable format */
-      ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
-      cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
-
-      if (cip==bp->ipaddr) 
-        return 1;
-    }
-  } else {
-    /* Hostname bans need to be checked against +x host, +h host (if set) 
-     * and actual host.  Note that the +x host is only generated (and checked) if it's
-     * possible for the ban to match a hidden host.. */
-
-    if ((bp->flags & CHANBAN_HIDDENHOST) && IsAccount(np)) {
-      sprintf(fakehost,"%s.%s",np->authname, HIS_HIDDENHOST);
-      
-      if ((bp->flags & CHANBAN_HOSTEXACT) && 
-	  !ircd_strcmp(fakehost, bp->host->content))
-	return 1;
-      
-      if ((bp->flags & CHANBAN_HOSTMASK) &&
-	  match2strings(bp->host->content, fakehost))
-	return 1;
-    }
-    
-    if (IsSetHost(np)) {
-      if ((bp->flags & CHANBAN_HOSTEXACT) &&
-	  !ircd_strcmp(np->sethost->content, bp->host->content))
-	return 1;
-      
-      if ((bp->flags & CHANBAN_HOSTMASK) &&
-	  match2strings(bp->host->content, np->sethost->content))
-	return 1;
-    }
-
-    /* If the user is +h or +rx don't check their real host */
-    if (IsSetHost(np) || (IsHideHost(np) && IsAccount(np)))
-      return 0;
-      
-    if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(np->host->name->content,bp->host->content))
-      return 1;
-    
-    if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,np->host->name->content))
-      return 1;
-  }
-  
-  return 0;
-}
+#include "../lib/irc_ipv6.h"
 
 /*
  * nickmatchban:
  *  Returns true iff the supplied nick* matches the supplied ban* 
+ *
+ * "visibleonly" flag indicates that we shouldn't check against the real
+ * host if it's masked.
  */
 
-int nickmatchban(nick *np, chanban *bp) {
+int nickmatchban(nick *np, chanban *bp, int visibleonly) {
   char fakehost[HOSTLEN+1];
+  char *ident;
 
   /* nick/ident section: return 0 (no match) if they don't match */
-
   if (bp->flags & CHANBAN_INVALID)
     return 0;
+
+  /* Pick up the visible username.  If a sethost username is set, the real 
+   * username is not checked. */
+  ident=np->ident;
+  if (IsSetHost(np) && np->shident) 
+    ident=np->shident->content;
   
   if (bp->flags & CHANBAN_USEREXACT && 
-      ircd_strcmp(np->ident,bp->user->content) && 
-      (!IsSetHost(np) || !np->shident || 
-       ircd_strcmp(np->shident->content,bp->user->content)))
+      ircd_strcmp(ident,bp->user->content))
     return 0;
   
   if (bp->flags & CHANBAN_NICKEXACT && ircd_strcmp(np->nick,bp->nick->content))
     return 0;
   
   if (bp->flags & CHANBAN_USERMASK && 
-      !match2strings(bp->user->content,np->ident) && 
-      (!IsSetHost(np) || !np->shident || 
-       !match2strings(bp->user->content, np->shident->content)))
+      !match2strings(bp->user->content,ident)) 
     return 0;
   
   if (bp->flags & CHANBAN_NICKMASK && !match2strings(bp->nick->content,np->nick))
@@ -176,74 +54,47 @@ int nickmatchban(nick *np, chanban *bp) {
   if (bp->flags & CHANBAN_HOSTANY)
     return 1;
 
-  if ((bp->flags & CHANBAN_CIDR) && (bp->flags & CHANBAN_HOSTEXACT)) {
-    unsigned int cip;
-    unsigned char *ch;
-
-    /* CIDR bans don't match IPv6 hosts */
-    if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
-      return 0;
-
-    /* Extract the client's IP address into a usable format */
-    ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
-    cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
-
-    if ((cip & bp->mask) == bp->ipaddr)
+  if ((bp->flags & CHANBAN_IP) && !(visibleonly && (IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))) {
+    if (ipmask_check(&(np->ipnode->prefix->sin), &(bp->ipaddr), bp->prefixlen))
       return 1;
-    
-    return 0; /* A CIDR ban won't match any other way */
   }
   
-  if (bp->flags & CHANBAN_IP) {
-    if (bp->flags & CHANBAN_HOSTEXACT) {
-      /* Only exact matches for IP bans */
-      unsigned int cip;
-      unsigned char *ch;
+  /* Hostname bans need to be checked against +x host, +h host (if set) 
+   * and actual host.  Note that the +x host is only generated (and checked) if it's
+   * possible for the ban to match a hidden host.. */
 
-      /* Well, it won't match if it's not an IPv4 host */
-      if (!irc_in_addr_is_ipv4(&(np->p_ipaddr)))
-        return 0;
-
-      /* Extract the client's IP address into a usable format */
-      ch=(unsigned char *)&(np->p_ipaddr.in6_16[6]);
-      cip=(ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | (ch[3]);
-
-      if (cip==bp->ipaddr) 
-        return 1;
-    }
-  } else {
-    /* Hostname bans need to be checked against +x host, +h host (if set) 
-     * and actual host.  Note that the +x host is only generated (and checked) if it's
-     * possible for the ban to match a hidden host.. */
-
-    if ((bp->flags & CHANBAN_HIDDENHOST) && IsAccount(np)) {
-      sprintf(fakehost,"%s.%s",np->authname, HIS_HIDDENHOST);
-      
-      if ((bp->flags & CHANBAN_HOSTEXACT) && 
-	  !ircd_strcmp(fakehost, bp->host->content))
-	return 1;
-      
-      if ((bp->flags & CHANBAN_HOSTMASK) &&
-	  match2strings(bp->host->content, fakehost))
-	return 1;
-    }
+  if ((bp->flags & CHANBAN_HIDDENHOST) && IsAccount(np)) {
+    sprintf(fakehost,"%s.%s",np->authname, HIS_HIDDENHOST);
     
-    if (IsSetHost(np)) {
-      if ((bp->flags & CHANBAN_HOSTEXACT) &&
-	  !ircd_strcmp(np->sethost->content, bp->host->content))
-	return 1;
-      
-      if ((bp->flags & CHANBAN_HOSTMASK) &&
-	  match2strings(bp->host->content, np->sethost->content))
-	return 1;
-    }
-    
-    if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(np->host->name->content,bp->host->content))
+    if ((bp->flags & CHANBAN_HOSTEXACT) && 
+         !ircd_strcmp(fakehost, bp->host->content))
       return 1;
-    
-    if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,np->host->name->content))
+
+    if ((bp->flags & CHANBAN_HOSTMASK) &&
+         match2strings(bp->host->content, fakehost))
       return 1;
   }
+    
+  if (IsSetHost(np)) {
+    if ((bp->flags & CHANBAN_HOSTEXACT) &&
+	  !ircd_strcmp(np->sethost->content, bp->host->content))
+      return 1;
+      
+    if ((bp->flags & CHANBAN_HOSTMASK) &&
+	  match2strings(bp->host->content, np->sethost->content))
+      return 1;
+  }
+  
+  /* If we are only checking visible host and the host is somehow masked, don't check
+   * against the real one. */
+  if (visibleonly && (IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))
+    return 0;
+  
+  if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(np->host->name->content,bp->host->content))
+    return 1;
+  
+  if (bp->flags & CHANBAN_HOSTMASK && match2strings(bp->host->content,np->host->name->content))
+    return 1;
   
   return 0;
 }
@@ -252,26 +103,17 @@ int nickmatchban(nick *np, chanban *bp) {
  * nickbanned:
  *  Returns true iff the supplied nick* is banned on the supplied chan*
  * 
- * Also nickbanned_visible - doesn't violate privacy by checking hidden
- * hosts and idents.  Factored into one function to reduce copy&paste.
+ * Pass the visibleonly flag on to nickbanned().
  */
-static int nickbanned_real(nick *np, channel *cp, int (*cmpfunc)(nick *, chanban *)) {
+int nickbanned(nick *np, channel *cp, int visibleonly) {
   chanban *cbp;
 
   for (cbp=cp->bans;cbp;cbp=cbp->next) {
-    if (cmpfunc(np,cbp))
+    if (nickmatchban(np,cbp,visibleonly))
       return 1; 
   }
 
   return 0;
-}
-
-int nickbanned(nick *np, channel *cp) {
-  return nickbanned_real(np,cp,nickmatchban);
-}
-
-int nickbanned_visible(nick *np, channel *cp) {
-  return nickbanned_real(np,cp,nickmatchban_visible);
 }
               
 /*
