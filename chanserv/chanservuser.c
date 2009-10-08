@@ -768,6 +768,14 @@ void cs_doallautomodes(nick *np) {
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
         /* User is on channel.. */
 
+        /* Update last use time.  Do early in case of ban. */
+        rcup->usetime=getnettime();
+        
+        if (CUIsBanned(rcup)) {
+          cs_banuser(NULL, rcup->chan->index, np, NULL);
+          continue;
+        }
+
         if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
           /* This meets the channel use criteria, update. */
           rcup->chan->lastactive=time(NULL);
@@ -779,8 +787,6 @@ void cs_doallautomodes(nick *np) {
           }
         }
 
-        /* Update last use time */
-        rcup->usetime=getnettime();
 
 	localsetmodeinit(&changes, rcup->chan->index->channel, chanservnick);
 	if (*lp & CUMODE_OP) {
