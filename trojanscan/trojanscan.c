@@ -1098,7 +1098,7 @@ int trojanscan_nickbanned(trojanscan_clones *np, channel *cp) {
 
   np->clone->ipnode = np->fakeipnode;
 
-  ret = nickbanned(np->clone, cp);
+  ret = nickbanned(np->clone, cp, 0);
 
   np->clone->ipnode = realipnode;
 

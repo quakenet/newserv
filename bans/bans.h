@@ -3,6 +3,7 @@
 
 #include "../lib/flags.h"
 #include "../lib/sstring.h"
+#include "../lib/irc_ipv6.h"
 #include <time.h>
 
 #define CHANBAN_NICKEXACT   0x0001  /* Ban includes an exact nick (no wildcards) */
@@ -29,8 +30,8 @@ typedef struct chanban {
   sstring        *user;
   sstring        *host;
   time_t          timeset;
-  unsigned int    ipaddr;
-  unsigned int	  mask;
+  struct irc_in_addr ipaddr;
+  unsigned char   prefixlen;
   struct chanban *next;
 } chanban;
             

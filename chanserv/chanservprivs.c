@@ -81,7 +81,7 @@ chanindex *cs_checkaccess(nick *np, const char *chan, unsigned int flags,
   if (!cs_privcheck(priv,np)) {
     if ((flags & CA_VOICEPRIV) &&
 	!(rcp && (CIsVoiceAll(rcp)) && 
-	  !(cip->channel && (nickbanned_visible(np, cip->channel) || IsInviteOnly(cip->channel)))) &&
+	  !(cip->channel && (nickbanned(np, cip->channel, 1) || IsInviteOnly(cip->channel)))) &&
 	!(rcup && (CUHasVoicePriv(rcup)))) {
       if (!quiet) chanservstdmessage(np, QM_NOACCESSONCHAN, cip->name->content, cmdname);
       return NULL;

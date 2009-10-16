@@ -2300,7 +2300,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
             return;
         }
 
-        if (nickbanned(sender->real_user, hchan->real_channel))
+        if (nickbanned(sender->real_user, hchan->real_channel, 0))
         {
             helpmod_reply(sender, returntype, "Cannot invite: You are banned from channel %s", argv[0]);
             return;

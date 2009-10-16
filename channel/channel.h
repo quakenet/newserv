@@ -167,10 +167,8 @@ void freechanuserhash(chanuserhash *cuhp);
 int setban(channel *cp, const char *ban);
 int clearban(channel *cp, const char *ban, int optional);
 void clearallbans(channel *cp);
-int nickmatchban(nick *np, chanban *bp);
-int nickbanned(nick *np, channel *cp);
-int nickmatchban_visible(nick *np, chanban *bp);
-int nickbanned_visible(nick *np, channel *cp);
+int nickmatchban(nick *np, chanban *bp, int visibleonly);
+int nickbanned(nick *np, channel *cp, int visibleonly);
 
 /* functions from channelindex.c */
 void initchannelindex();

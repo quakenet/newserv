@@ -768,6 +768,14 @@ void cs_doallautomodes(nick *np) {
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
         /* User is on channel.. */
 
+        /* Update last use time.  Do early in case of ban. */
+        rcup->usetime=getnettime();
+        
+        if (CUIsBanned(rcup)) {
+          cs_banuser(NULL, rcup->chan->index, np, NULL);
+          continue;
+        }
+
         if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
           /* This meets the channel use criteria, update. */
           rcup->chan->lastactive=time(NULL);
@@ -779,8 +787,6 @@ void cs_doallautomodes(nick *np) {
           }
         }
 
-        /* Update last use time */
-        rcup->usetime=getnettime();
 
 	localsetmodeinit(&changes, rcup->chan->index->channel, chanservnick);
 	if (*lp & CUMODE_OP) {
@@ -828,7 +834,7 @@ void cs_checknickbans(nick *np) {
 
   for (j=0;j<i;j++) {
     if ((rcp=ca[j]->index->exts[chanservext]) && !CIsSuspended(rcp) && 
-	CIsEnforce(rcp) && nickbanned_visible(np, ca[j]))
+	CIsEnforce(rcp) && nickbanned(np, ca[j], 1))
       localkickuser(chanservnick, ca[j], np, "Banned.");
   }
 
@@ -869,8 +875,8 @@ void cs_checkbans(channel *cp) {
 
     for (rbp=rcp->bans;rbp;rbp=rbp->next) {
       if (((!rbp->expiry) || (rbp->expiry <= now)) &&
-	  nickmatchban_visible(np, rbp->cbp)) {
-	if (!nickbanned_visible(np, cp)) {
+	  nickmatchban(np, rbp->cbp, 1)) {
+	if (!nickbanned(np, cp, 1)) {
 	  localdosetmode_ban(&changes, bantostring(rbp->cbp), MCB_ADD);
 	}
 	localkickuser(chanservnick,cp,np,rbp->reason?rbp->reason->content:"Banned.");
@@ -883,7 +889,7 @@ void cs_checkbans(channel *cp) {
 
     if (CIsEnforce(rcp)) {
       for (cbp=cp->bans;cbp;cbp=cbp->next) {
-	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban_visible(np, cbp))
+	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban(np, cbp, 1))
 	  localkickuser(chanservnick,cp,np,"Banned.");
       }
       rcp->lastbancheck=time(NULL);
@@ -1166,9 +1172,9 @@ int cs_bancheck(nick *np, channel *cp) {
       freesstring(rbp->reason);
       freechanban(rbp->cbp);
       freeregban(rbp);
-    } else if (nickmatchban_visible(np,(*rbh)->cbp)) {
+    } else if (nickmatchban(np,(*rbh)->cbp,1)) {
       /* This user matches this ban.. */
-      if (!nickbanned_visible(np,cp)) {
+      if (!nickbanned(np,cp,1)) {
 	/* Only bother putting the ban on the channel if they're not banned already */
 	/* (might be covered by this ban or a different one.. doesn't really matter */
 	localsetmodeinit(&changes, cp, chanservnick);
@@ -1202,7 +1208,7 @@ void cs_setregban(chanindex *cip, regban *rbp) {
     if (cip->channel->users->content[i]!=nouser &&
 	(np=getnickbynumeric(cip->channel->users->content[i])) &&
 	!IsService(np) && !IsOper(np) && !IsXOper(np) &&
-	nickmatchban_visible(np, rbp->cbp))
+	nickmatchban(np, rbp->cbp, 1))
       localkickuser(chanservnick, cip->channel, np, rbp->reason ? rbp->reason->content : "Banned.");
   }
 
@@ -1216,7 +1222,7 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
   if (!cip->channel)
     return;
 
-  if (nickbanned_visible(np, cip->channel)) {
+  if (nickbanned(np, cip->channel, 1)) {
     localkickuser(chanservnick, cip->channel, np, reason?reason:"Banned.");
     return;
   }

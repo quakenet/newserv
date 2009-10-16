@@ -185,7 +185,7 @@ void cs_handlejoin(int hooknum, void *arg) {
     }
 
     /* Check for other ban lurking on channel which we are enforcing */
-    if (CIsEnforce(rcp) && nickbanned_visible(np,cp)) {
+    if (CIsEnforce(rcp) && nickbanned(np,cp,1)) {
       localkickuser(chanservnick,cp,np,"Banned.");
       return;
     }
@@ -409,7 +409,7 @@ void cs_handlenewban(int hooknum, void *arg) {
 	  Error("chanserv",ERR_WARNING,"Found user on channel %s who doesn't exist!",cp->index->name->content);
 	  continue;
 	}
-	if (!IsService(np) && nickmatchban_visible(np,cbp)) {
+	if (!IsService(np) && nickmatchban(np,cbp,1)) {
 	  localkickuser(chanservnick,cp,np,"Banned.");
 	}
       }
