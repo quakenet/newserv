@@ -61,7 +61,7 @@ int nickmatchban(nick *np, chanban *bp, int visibleonly) {
    * clearing it to 0 if the user isn't sethosted or +x.  Simplifies logic
    * later.  */
   
-  if (!(IsSetHost(np) || (IsAccount(np) && IsHideHost(np)))
+  if (!(IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))
     visibleonly=0;
 
   if ((bp->flags & CHANBAN_IP) && !visibleonly) {
