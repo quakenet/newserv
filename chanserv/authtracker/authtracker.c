@@ -11,12 +11,15 @@ DBModuleIdentifier authtrackerdb;
 void _init() {
   authtrackerdb = dbgetid();
 
+  chanservaddcommand("dumpauthtracker",QCMD_DEV,1,at_dumpdb,"Shows servers with dangling authtracker entries.\n","");
   at_finddanglingsessions();
 }
 
 void _fini() {
   at_hookfini();
   nsfreeall(POOL_AUTHTRACKER);
+  
+  chanservremovecommand("dumpauthtracker",at_dumpdb);
 
   dbfreeid(authtrackerdb);
 }
