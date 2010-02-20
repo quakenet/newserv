@@ -114,15 +114,28 @@ int csa_doauthhistory(void *source, int cargc, char **cargv) {
     if (!(trup=findreguser(sender, cargv[0])))
       return CMD_ERROR;
 
-    /* don't allow non-opers to view oper auth history, but allow helpers to view non-oper history */
-    if ((trup != rup) && ((UHasOperPriv(trup) && !UHasOperPriv(rup)) || !UHasHelperPriv(rup))) {
-      chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[0]);
-      return CMD_ERROR;
+    /* if target != command issuer */
+    if (trup != rup) {
+      /* only opers and helpers can view authhistory of other users */
+      if (!UHasHelperPriv(rup)) {
+        chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[0]);
+        return CMD_ERROR;
+      }
+
+      /* and only opers can view opers history */
+      if (UHasOperPriv(trup) && !UHasOperPriv(rup)) {
+        chanservwallmessage("%s (%s) just FAILED using AUTHHISTORY on %s", sender->nick, rup->username, trup->username);
+        chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[0]);
+        return CMD_ERROR;
+      }
+
+      /* checks passed */
+
+      chanservwallmessage("%s (%s) used AUTHHISTORY on %s", sender->nick, rup->username, trup->username);
     }
   } else {
     trup=rup;
   }
-  
   csdb_retreiveauthhistory(sender, trup, 10);
 
   return CMD_OK;
