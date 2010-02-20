@@ -247,6 +247,7 @@ void _init(void) {
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
+  proxyscan_addscantype(STYPE_HTTP, 8118);
   proxyscan_addscantype(STYPE_HTTP, 80);
   proxyscan_addscantype(STYPE_HTTP, 6588);
   proxyscan_addscantype(STYPE_HTTP, 8000);
