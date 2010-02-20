@@ -944,6 +944,15 @@ int proxyscandoshowkill(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void startnickscan(nick *np) {
+  time_t t = time(NULL);
+  int i;
+  for(i=0;i<numscans;i++) {
+    /* @@@TODO: we allow a forced scan to scan the same IP multiple times atm */
+    queuescan(np->ipnode,thescans[i].type,thescans[i].port,SCLASS_NORMAL,t);
+  }
+}
+
 int proxyscandoscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
   patricia_node_t *node;
@@ -954,12 +963,14 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
+    time_t t;
     sendnoticetouser(proxyscannick,np,"Forcing scan of %s",IPtostr(sin));
     // * Just queue the scans directly here.. plonk them on the priority queue * /
     node = refnode(iptree, &sin, bits); /* node leaks node here - should only allow to scan a nick? */
+    t = time(NULL);
     for(i=0;i<numscans;i++) {
       /* @@@TODO: we allow a forced scan to scan the same IP multiple times atm */
-      queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
+      queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,t);
     }
   }
   return CMD_OK;

@@ -171,6 +171,7 @@ void startqueuedscans();
 
 /* proxyscan.c */
 void startscan(patricia_node_t *node, int type, int port, int class);
+void startnickscan(nick *nick);
 
 /* proxyscanext.c */
 unsigned int extrascancount();
