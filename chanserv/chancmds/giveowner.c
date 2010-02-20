@@ -91,7 +91,8 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
   /* OK, hash matches, do it. */
   oldflags = rcup->flags;
   rcup->flags |= QCUFLAG_OWNER;
-  
+  rcup->changetime=time(NULL);
+          
   chanservstdmessage(sender,QM_DONE);
 
   strcpy(flagbuf,printflags(oldflags,rcuflags));

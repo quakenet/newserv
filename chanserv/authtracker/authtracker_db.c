@@ -11,6 +11,7 @@
  */ 
 
 #include "authtracker.h"
+#include "../chanserv.h"
 #include "../../core/nsmalloc.h"
 #include "../../server/server.h"
 #include "../../irc/irc_config.h"
@@ -137,4 +138,26 @@ void at_flushghosts() {
     if (serverlist[i].linkstate == LS_LINKED)
       at_serverback(i);
   }
+}
+
+int at_dumpdb(void *source, int argc, char **argv) {
+  nick *np=source;
+  struct dangling_entry *dep;
+  unsigned int i,j,k;
+  
+  for(i=0;i<MAXSERVERS;i++) {
+    if (ds[i]) {
+      k=0;
+      for(j=0;j<DANGLING_HASHSIZE;j++) {
+        for (dep=ds[i]->de[j];dep;dep=dep->next) {
+          k++;
+        }
+      }
+      chanservsendmessage(np, "Server %d (%s) has %d entries.",i,longtonumeric(i,2),k);
+    }
+  }
+
+  chanservstdmessage(np,QM_ENDOFLIST);
+  
+  return CMD_OK;
 }
