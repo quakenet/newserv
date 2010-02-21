@@ -15,6 +15,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
   if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
     return;
 
+  /* slug: why is this here? why isn't it with the other queuing stuff? */
   /* before we look at a normal host, see if we think we have an open proxy */
   if ((esp=findextrascan(np->ipnode))) {
     Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
@@ -25,9 +26,11 @@ void proxyscan_newnick(int hooknum, void *arg) {
     }
   }
 
-  /* ignore newnick until initial burst complete */
-  if (!ps_ready)
+/* slug: this BREAKS all of P's design assumptions, do NOT REENABLE THIS UNDER ANY CIRCUMSTANCES */
+/* ignore newnick until initial burst complete */
+/*  if (!ps_ready)
     return;
+*/
 
   /*
    * Logic for connecting hosts:
