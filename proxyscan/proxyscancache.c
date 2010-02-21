@@ -24,6 +24,7 @@ cachehost *addcleanhost(time_t timestamp) {
   chp->lastscan=timestamp;
   chp->proxies=NULL;
   chp->glineid=0;
+  chp->lastgline=0;  
   
   return chp;
 }
@@ -92,7 +93,7 @@ void dumpcachehosts(void *arg) {
           } else
         
           for (fpp=chp->proxies;fpp;fpp=fpp->next) 
-            fprintf(fp, "%s %lu %u %i %u\n",IPtostr(node->prefix->sin),chp->lastscan,chp->glineid,fpp->type,fpp->port);
+            fprintf(fp, "%s %lu %u %i %u %lu\n",IPtostr(node->prefix->sin),chp->lastscan,chp->glineid,fpp->type,fpp->port,chp->lastgline);
         } else {
           if (chp->lastscan < (now-cleanscaninterval)) {
             /* Needs rescan anyway, so delete it */
@@ -118,7 +119,7 @@ void dumpcachehosts(void *arg) {
 
 void loadcachehosts() {
   FILE *fp;
-  unsigned long timestamp,glineid,ptype,pport;
+  unsigned long timestamp,glineid,ptype,pport,lastgline;
   char buf[512];
   cachehost *chp=NULL;
   foundproxy *fpp;
@@ -141,7 +142,7 @@ void loadcachehosts() {
       break;
     }
 
-    res=sscanf(buf,"%s %lu %lu %lu %lu",ip,&timestamp,&glineid,&ptype,&pport);
+    res=sscanf(buf,"%s %lu %lu %lu %lu %lu",ip,&timestamp,&glineid,&ptype,&pport,&lastgline);
 
     if (res<2)
       continue;
@@ -155,8 +156,9 @@ void loadcachehosts() {
         chp=addcleanhost(timestamp);
         node->exts[ps_cache_ext] = chp;
       
-        if (res==5) {
+        if (res==6) {
           chp->glineid=glineid;
+          chp->lastgline=lastgline;
           fpp=getfoundproxy();
           fpp->type=ptype;
           fpp->port=pport;

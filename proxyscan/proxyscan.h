@@ -70,6 +70,7 @@ typedef struct cachehost {
   time_t lastscan;
   foundproxy *proxies;
   int glineid;
+  time_t lastgline;
   unsigned char marker;
 #if defined(PROXYSCAN_MAIL)
   sstring *lasthostmask; /* Not saved to disk */

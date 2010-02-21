@@ -503,6 +503,7 @@ void killsock(scan *sp, int outcome) {
   int i;
   cachehost *chp;
   foundproxy *fpp;
+  time_t now;
 
   scansdone++;
   scansbyclass[sp->class]++;
@@ -547,10 +548,13 @@ void killsock(scan *sp, int outcome) {
       fpp->next=chp->proxies;
       chp->proxies=fpp;
     }
-    
-    if (!chp->glineid) {
+
+    now=time(NULL);    
+    /* the purpose of this lastgline stuff is to stop gline spam from one scan */
+    if (!chp->glineid || (now>=chp->lastgline+SCANTIMEOUT)) {
+      chp->lastgline=now;
       glinedhosts++;
-      loggline(chp, sp->node);
+      loggline(chp, sp->node);   
       irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
 	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),(intmax_t)getnettime(), chp->glineid);
       Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
