@@ -16,15 +16,19 @@ void proxyscan_newnick(int hooknum, void *arg) {
     return;
 
   /* slug: why is this here? why isn't it with the other queuing stuff? */
-  /* before we look at a normal host, see if we think we have an open proxy */
-  if ((esp=findextrascan(np->ipnode))) {
-    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
-    for (espp=esp;espp;espp=espp->nextbynode) { 
-      /* we force a scan on any hosts that may be an open proxy, even if they are:
-       * a) already in the queue, b) we've been running < 120 seconds */
-      queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
-    }
-  }
+  /* we're given a list of ip/subnets and port pairs which someone else has
+     seen a proxy on in the past, so we scan these very aggressively
+     (even ignoring the cache)
+   */
+  /* disabled as the list is hopelessly out of date */
+//  if ((esp=findextrascan(np->ipnode))) {
+//    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
+//    for (espp=esp;espp;espp=espp->nextbynode) { 
+//      /* we force a scan on any hosts that may be an open proxy, even if they are:
+//       * a) already in the queue, b) we've been running < 120 seconds */
+//      queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
+//    }
+//  }
 
 /* slug: this BREAKS all of P's design assumptions, do NOT REENABLE THIS UNDER ANY CIRCUMSTANCES */
 /* ignore newnick until initial burst complete */
