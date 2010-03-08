@@ -126,6 +126,7 @@ struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv);
 /* Nick functions (various types) */
 struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *realname_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *away_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authname_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authts_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *ident_parse(searchCtx *ctx, int argc, char **argv);

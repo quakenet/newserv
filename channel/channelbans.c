@@ -23,9 +23,11 @@ int nickmatchban(nick *np, chanban *bp, int visibleonly) {
   char fakehost[HOSTLEN+1];
   char *ident;
 
-  /* nick/ident section: return 0 (no match) if they don't match */
+  /* If it's not valid, don't bother */
   if (bp->flags & CHANBAN_INVALID)
     return 0;
+
+  /* nick/ident section: return 0 (no match) if they don't match */
 
   /* Pick up the visible username.  If a sethost username is set, the real 
    * username is not checked. */
@@ -53,15 +55,24 @@ int nickmatchban(nick *np, chanban *bp, int visibleonly) {
 
   if (bp->flags & CHANBAN_HOSTANY)
     return 1;
+    
+  /* "visibleonly" means don't check IP/realhost if they are sethosted/+x. 
+   * We change this to mean "Don't check IP/realhost unconditionally" - by
+   * clearing it to 0 if the user isn't sethosted or +x.  Simplifies logic
+   * later.  */
+  
+  if (!(IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))
+    visibleonly=0;
 
-  if ((bp->flags & CHANBAN_IP) && !(visibleonly && (IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))) {
+  if ((bp->flags & CHANBAN_IP) && !visibleonly) {
     if (ipmask_check(&(np->ipnode->prefix->sin), &(bp->ipaddr), bp->prefixlen))
       return 1;
   }
   
   /* Hostname bans need to be checked against +x host, +h host (if set) 
    * and actual host.  Note that the +x host is only generated (and checked) if it's
-   * possible for the ban to match a hidden host.. */
+   * possible for the ban to match a hidden host.  And it's checked regardless
+   * of whether the user is actually +x. */
 
   if ((bp->flags & CHANBAN_HIDDENHOST) && IsAccount(np)) {
     sprintf(fakehost,"%s.%s",np->authname, HIS_HIDDENHOST);
@@ -87,7 +98,7 @@ int nickmatchban(nick *np, chanban *bp, int visibleonly) {
   
   /* If we are only checking visible host and the host is somehow masked, don't check
    * against the real one. */
-  if (visibleonly && (IsSetHost(np) || (IsAccount(np) && IsHideHost(np))))
+  if (visibleonly)
     return 0;
   
   if (bp->flags & CHANBAN_HOSTEXACT && !ircd_strcmp(np->host->name->content,bp->host->content))

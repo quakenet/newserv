@@ -143,6 +143,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
     node_increment_usercount(np->ipnode);
 
+    np->away=NULL;
     np->shident=NULL;
     np->sethost=NULL;
     np->opername=NULL;
@@ -527,3 +528,22 @@ int handleprivmsg(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+int handleawaymsg(void *source, int cargc, char **cargv) {
+  nick *sender;
+    
+  /* Check source is a valid user */ 
+  if (!(sender=getnickbynumericstr(source))) {
+    return CMD_OK;
+  }
+
+  /* Done with the old away message either way */
+  freesstring(sender->away);
+  sender->away=NULL;
+  
+  /* If we have an arg and it isn't an empty string, this sets a new message */
+  if (cargc > 0 && *(cargv[0])) {
+    sender->away=getsstring(cargv[0], AWAYLEN);
+  }
+
+  return CMD_OK;
+}

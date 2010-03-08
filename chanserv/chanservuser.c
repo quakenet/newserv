@@ -787,7 +787,6 @@ void cs_doallautomodes(nick *np) {
           }
         }
 
-
 	localsetmodeinit(&changes, rcup->chan->index->channel, chanservnick);
 	if (*lp & CUMODE_OP) {
 	  if (!IsService(np) && (CUIsDeny(rcup) || (CIsBitch(rcup->chan) && !CUHasOpPriv(rcup))))
@@ -812,11 +811,16 @@ void cs_doallautomodes(nick *np) {
       } else {
 	/* Channel exists but user is not joined: invite if they are +j-b */
 	if (CUIsAutoInvite(rcup) && CUKnown(rcup) && !CUIsBanned(rcup)) {
-	  localinvite(chanservnick, rcup->chan->index->channel, np);
+	  localinvite(chanservnick, rcup->chan->index, np);
 	}
       }
-    }
-  }
+    } /* if (rcup->chan->index->channel) */ else {
+      /* Channel doesn't currently exist - send invite anyway for +j */
+      if (CUIsAutoInvite(rcup) && CUKnown(rcup) && !CUIsBanned(rcup)) {
+        localinvite(chanservnick, rcup->chan->index, np);
+      }
+    } 
+  } /* for */
 }
 
 void cs_checknickbans(nick *np) {

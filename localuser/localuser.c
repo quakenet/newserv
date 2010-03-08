@@ -114,6 +114,7 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   newuser->timestamp=getnettime();
   newuser->shident=NULL;
   newuser->sethost=NULL;
+  newuser->away=NULL;
   newuser->marker=0;
   memset(newuser->exts, 0, MAXNICKEXTS * sizeof(void *));
 
