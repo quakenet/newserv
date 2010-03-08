@@ -185,7 +185,7 @@ void helpmod_invite(hchannel *hchan, huser *husr)
     if (hchan->flags & H_PASSIVE)
         return;
 
-    localinvite(helpmodnick, hchan->real_channel, husr->real_user);
+    localinvite(helpmodnick, hchan->real_channel->index, husr->real_user);
 }
 
 static void hmode_set_channel(hchannel  *hchan)

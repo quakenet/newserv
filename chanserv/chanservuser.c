@@ -812,7 +812,7 @@ void cs_doallautomodes(nick *np) {
       } else {
 	/* Channel exists but user is not joined: invite if they are +j-b */
 	if (CUIsAutoInvite(rcup) && CUKnown(rcup) && !CUIsBanned(rcup)) {
-	  localinvite(chanservnick, rcup->chan->index->channel, np);
+	  localinvite(chanservnick, rcup->chan->index, np);
 	}
       }
     }
