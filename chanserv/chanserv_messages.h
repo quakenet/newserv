@@ -229,7 +229,7 @@ BeginMessages() {
   msg(QM_BYPASSINGSUSPEND,"NOTE: $0 is suspended, bypassing suspension.", "s"),
   msg(QM_ACHIEVEMENTUNLOCKED,"[ACHIEVEMENT UNLOCKED!] $0 ($1 points).","sd"),
   msg(QM_ACHIEVEMENTLISTHEADER,"You have unlocked the following achievements:",""),
-  msg(QM_ACHIEVEMENTLIST,"$0 ($1 points)","sd"),
+  msg(QM_ACHIEVEMENTLIST,"- $0 ($1 points)","sd"),
   msg(QM_ACHIEVEMENTLISTEND,"End of list ($0 total achievement points).","d"),
   msg(QM_NOACHIEVEMENTS,"You do not have any achievements yet.",""),
 } 
