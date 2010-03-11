@@ -182,6 +182,8 @@ void chanservuserhandler(nick *target, int message, void **params) {
       }
       
       cmd->handler((void *)sender, cargc-1, &(cargv[1]));
+      
+      triggerhook(HOOK_CHANSERV_CMD, sender);
     }
     break;
 

@@ -101,6 +101,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   int i,j;
   int newuser=0;
   int usercount;
+  void *args[2];
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "chanlev");
@@ -242,6 +243,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     } else {
       chanservstdmessage(sender, QM_NOUSERSONCHANLEV, cip->name->content);
     }
+    
+    triggerhook(HOOK_CHANSERV_CHANLEVDUMP, sender);
 
     free(rusers);
   } else {
@@ -345,6 +348,12 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       cs_log(sender,"CHANLEV %s #%s %s (%s -> %s)",cip->name->content,rcuplist->user->username,cargv[2],
 	     flagbuf,printflags(rcuplist->flags,rcuflags));
       csdb_chanlevhistory_insert(rcp, sender, rcuplist->user, oldflags, rcuplist->flags);
+
+      args[0]=sender;
+      args[1]=rcuplist;
+      args[2]=(void *)oldflags;
+      
+      triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
 
       /* Now see what we do next */
       if (rcuplist->flags) {

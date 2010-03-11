@@ -22,6 +22,7 @@
 #include "../chanserv.h"
 #include "../authlib.h"
 #include "../../lib/irc_string.h"
+#include "../../core/hooks.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -30,6 +31,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
   int i, cntweak = 0, cntdigits = 0, cntletters = 0;
+  unsigned int same=0;
   time_t t;
 
   if (cargc<3) {
@@ -56,6 +58,11 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_PWTOSHORT); /* new password to short */
     cs_log(sender,"NEWPASS FAIL username %s password to short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
     return CMD_ERROR;
+  }
+
+  if (!strcmp(cargv[0],cargv[1])) {
+    /* If they are the same then continue anyway but don't send the hook later. */
+    same=1;
   }
 
   for ( i = 0; cargv[1][i] && i < PASSLEN; i++ ) {
@@ -104,6 +111,9 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 
   csdb_updateuser(rup);
   csdb_createmail(rup, QMAIL_NEWPW);
+  
+  if (!same)
+    triggerhook(HOOK_CHANSERV_PWCHANGE, sender);
 
   return CMD_OK;
 }
