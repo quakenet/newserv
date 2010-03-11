@@ -798,9 +798,9 @@ int csc_verifyqticket(char *data, char *digest);
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
 void chanservpartchan(channel *cp, char *reason);
-#define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
-#define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
-void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));;
+#define chanservsendmessage(np, fmt, ...) chanservsendmessage_real(np, 0, fmt , ##__VA_ARGS__)
+#define chanservsendmessageoneline(np, fmt, ...) chanservsendmessage_real(np, 1, fmt , ##__VA_ARGS__)
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));
 void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1, 2)));
 void chanservcommandinit();
 void chanservcommandclose();
