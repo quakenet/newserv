@@ -227,11 +227,13 @@ BeginMessages() {
   msg(QM_PASSEMAILCHANGED, "Auth failed: account password has been changed since you logged in.", ""),
   msg(QM_REASONREQUIRED, "Supply a decent reason.", ""),
   msg(QM_BYPASSINGSUSPEND,"NOTE: $0 is suspended, bypassing suspension.", "s"),
-  msg(QM_ACHIEVEMENTUNLOCKED,"[ACHIEVEMENT UNLOCKED!] $0 ($1 points).","sd"),
-  msg(QM_ACHIEVEMENTLISTHEADER,"You have unlocked the following achievements:",""),
-  msg(QM_ACHIEVEMENTLIST,"- $0 ($1 points)","sd"),
+  msg(QM_ACHIEVEMENTUNLOCKED,"ACHIEVEMENT UNLOCKED: [$1] $0","sd"),
+  msg(QM_ACHIEVEMENTLISTHEADER,"User $0 has unlocked the following achievements:","s"),
+  msg(QM_ACHIEVEMENTLISTMEHEADER,"You have unlocked the following achievements:",""),
   msg(QM_ACHIEVEMENTLISTEND,"End of list ($0 total achievement points).","d"),
-  msg(QM_NOACHIEVEMENTS,"You do not have any achievements yet.",""),
+  msg(QM_NOACHIEVEMENTS,"User $0 does not have any achievements yet.","s"),
+  msg(QM_ACHIEVEMENTCOMPARETIE,"End of list.  It's a tie!",""),
+  msg(QM_ACHIEVEMENTCOMPARERESULT,"End of list.  User $0 is ahead by $1 points!", "sd"),
 } 
 EndMessages()
 #endif
