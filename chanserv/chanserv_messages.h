@@ -234,6 +234,7 @@ BeginMessages() {
   msg(QM_NOACHIEVEMENTS,"User $0 does not have any achievements yet.","s"),
   msg(QM_ACHIEVEMENTCOMPARETIE,"End of list.  It's a tie!",""),
   msg(QM_ACHIEVEMENTCOMPARERESULT,"End of list.  User $0 is ahead by $1 points!", "sd"),
+  msg(QM_FEATOFSTRENGTHUNLOCKED,"FEAT OF STRENGTH: $0", "s"),
 } 
 EndMessages()
 #endif

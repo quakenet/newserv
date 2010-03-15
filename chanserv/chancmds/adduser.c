@@ -41,6 +41,7 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
   unsigned int count=0;
   int added=0;
   int i, foundflags=0;
+  void *args[3];
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "adduser");
@@ -108,6 +109,12 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
     rcup->changetime=time(NULL);
     rcup->usetime=0;
     rcup->info=NULL;
+    
+    args[0]=sender;
+    args[1]=rcup;
+    args[2]=(void *)0;
+    
+    triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
    
     cs_log(sender,"CHANLEV %s #%s %s (+ -> %s)",cip->name->content,rup->username, flagbuf, flagbuf);
     addregusertochannel(rcup);

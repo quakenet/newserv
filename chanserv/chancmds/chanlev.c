@@ -349,17 +349,22 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	     flagbuf,printflags(rcuplist->flags,rcuflags));
       csdb_chanlevhistory_insert(rcp, sender, rcuplist->user, oldflags, rcuplist->flags);
 
+      /* The user has to be on the relevant chanlev list before we trigger the hook.
+       * So that enlisting has been hoisted to here. */
+      if (newuser && rcuplist->flags) {
+        addregusertochannel(rcuplist);
+      }
+
       args[0]=sender;
       args[1]=rcuplist;
       args[2]=(void *)oldflags;
-      
+
       triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
 
       /* Now see what we do next */
       if (rcuplist->flags) {
 	/* User still valid: update or create */
 	if (newuser) {
-	  addregusertochannel(rcuplist);
 	  csdb_createchanuser(rcuplist);
 	} else {
 	  csdb_updatechanuser(rcuplist);
@@ -395,6 +400,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       }
     }
   }
+
   
   return CMD_OK;
 }
