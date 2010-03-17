@@ -235,6 +235,7 @@ BeginMessages() {
   msg(QM_ACHIEVEMENTCOMPARETIE,"End of list.  It's a tie!",""),
   msg(QM_ACHIEVEMENTCOMPARERESULT,"End of list.  User $0 is ahead by $1 points!", "sd"),
   msg(QM_FEATOFSTRENGTHUNLOCKED,"FEAT OF STRENGTH: $0", "s"),
+  msg(QM_ACHCHANNELHEADER,"Achievement points for users on $0:\n  #  Nick            Username        Points","s"),
 } 
 EndMessages()
 #endif
