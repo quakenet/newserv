@@ -11,7 +11,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#define __USE_GNU
+#define _GNU_SOURCE
 #include <string.h>
 
 /* List of free stuff */
