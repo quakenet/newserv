@@ -377,6 +377,14 @@ static int lua_botnick(lua_State *ps) {
   return 1;
 }
 
+static int lua_numerictobase64(lua_State *ps) {
+  if(!lua_islong(ps, 1))
+    return 0;
+
+  lua_pushstring(ps, longtonumeric(lua_tolong(ps, 1), 5));
+  return 1;
+}
+
 static int lua_getuserbyauth(lua_State *l) {
   nick *np;
   int found = 0;
@@ -898,6 +906,8 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
   lua_register(l, "irc_sethost", lua_sethost);
+
+  lua_register(l, "irc_numerictobase64", lua_numerictobase64);
 }
 
 /* --- */
