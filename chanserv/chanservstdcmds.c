@@ -197,7 +197,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
      *  Only valid on 01/04/2010. */
     if ((cmdlist[i]->level & QCMD_TITLES) && 
         ((time(NULL) < ACHIEVEMENTS_START) ||
-         (time(NULL) > ACHIEVEMENTS_END))))
+         (time(NULL) > ACHIEVEMENTS_END)))
       continue;
     
     /* We passed all the checks, send the message */    

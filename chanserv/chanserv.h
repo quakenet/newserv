@@ -34,6 +34,12 @@
 /* Q9 Version */
 #define QVERSION "1.00"
 
+/* Achievements: Nothing before ACHIEVEMENTS_START
+ * opt-in only after ACHIEVEMENTS_END
+ * Titles are valid only between ACHIEVEMENTS_START and ACHIEVEMENTS_END */
+#define ACHIEVEMENTS_START      1270076400
+#define ACHIEVEMENTS_END        1270162800
+
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */
 #define   REGCHANUSERHASHSIZE 5
@@ -408,7 +414,8 @@
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
 #define   QCMD_HIDDEN         QCMD_ALIAS
 
-#define   QCMD_ACHIEVEMENTS   0x0400 /* Allows access to achievement commands */
+#define   QCMD_ACHIEVEMENTS   0x0400 /* Achievement-related commands */
+#define   QCMD_TITLES         0x0800 /* Title-related commands */
 
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
