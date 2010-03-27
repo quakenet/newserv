@@ -188,7 +188,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
       if (time(NULL) < ACHIEVEMENTS_START)
         continue;
       
-      if ((time(NULL) > 1270162800) && 
+      if ((time(NULL) > ACHIEVEMENTS_END) && 
         !UIsAchievements(rup))
         continue;
     }

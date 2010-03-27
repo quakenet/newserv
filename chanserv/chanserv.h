@@ -37,8 +37,25 @@
 /* Achievements: Nothing before ACHIEVEMENTS_START
  * opt-in only after ACHIEVEMENTS_END
  * Titles are valid only between ACHIEVEMENTS_START and ACHIEVEMENTS_END */
-#define ACHIEVEMENTS_START      1270076400
-#define ACHIEVEMENTS_END        1270162800
+
+//#define ACH_TEST_APRIL1
+
+#ifdef ACH_TEST_APRIL1 
+
+#define ACHIEVEMENTS_START      1269702917
+#define ACHIEVEMENTS_END	1270162800
+
+#elif defined(ACH_TEST_POSTAPRIL1)
+
+#define ACHIEVEMENTS_START	0
+#define ACHIEVEMENTS_END 	1269702917
+
+#else
+
+#define ACHIEVEMENTS_START	1270076400
+#define ACHIEVEMENTS_END	1270162800
+
+#endif
 
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */
@@ -303,7 +320,7 @@
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
 			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY|QCFLAG_ACHIEVEMENTS )
 
-#define   QCFLAG_ALL          0x7fff
+#define   QCFLAG_ALL          0xffff
 
 
 /* Channel user ("chanlev") flags */

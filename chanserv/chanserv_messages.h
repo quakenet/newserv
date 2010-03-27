@@ -236,6 +236,11 @@ BeginMessages() {
   msg(QM_ACHIEVEMENTCOMPARERESULT,"End of list.  User $0 is ahead by $1 points!", "sd"),
   msg(QM_FEATOFSTRENGTHUNLOCKED,"FEAT OF STRENGTH: $0", "s"),
   msg(QM_ACHCHANNELHEADER,"Achievement points for users on $0:\n  #  Nick            Username        Points","s"),
+  msg(QM_TITLEUNLOCKED,"TITLE UNLOCKED: $0", "s"),
+  msg(QM_NOTITLES,"You have not unlocked any titles.",""),
+  msg(QM_TITLEHEADER,"Available titles:\n  #  Title",""),
+  msg(QM_INVALIDTITLE,"Invalid title ID.",""),
+  msg(QM_TITLETOOFAST,"You have already changed your title recently.  Please wait a while and try again.",""),
 } 
 EndMessages()
 #endif

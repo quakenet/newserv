@@ -28,7 +28,7 @@
  * CMDHELP:                command must be used instead.
  * CMDHELP:  +g AUTOVOICE  Automatically voices any user who has voice access when they join
  * CMDHELP:                the channel.  Same effect as giving all voices the +g chanlev flag.
- * CMDHELP:  +h ACH'MENTS  Display achievement announcements in channel.
+ * DISHELP:  +h ACH'MENTS  Display achievement announcements in channel.
  * CMDHELP:  +j JOINED     Causes Q to remain on the channel.  Cannot be removed.
  * CMDHELP:  +k KNOWNONLY  Any user who joins the channel who is not known (+k) will be kicked.  
  * CMDHELP:                Unless channel mode +i is set they will be banned as well.
@@ -82,6 +82,12 @@ int csc_dochanflags(void *source, int cargc, char **cargv) {
 
     oldflags=rcp->flags;
     changemask=QCFLAG_USERCONTROL;
+    
+    /* Disable achievements flag before April 1 */
+    if (time(NULL) < ACHIEVEMENTS_START)
+      changemask &= ~QCFLAG_ACHIEVEMENTS;
+ 
+    /* Developer override! */  
     if (UIsDev(rup)) {
       changemask=QCFLAG_ALL;
     }
