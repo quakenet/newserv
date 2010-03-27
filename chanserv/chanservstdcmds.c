@@ -181,6 +181,25 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 	(!rup || !UIsDev(rup) || !IsOper(sender)))
       continue;
     
+    /* Commands flagged QCMD_ACHIEVEMENTS:
+     *  Always invalid before 01/04/2010.
+     *  Valid after 02/04/2010 only if you have the flag set */
+    if (cmdlist[i]->level & QCMD_ACHIEVEMENTS) {
+      if (time(NULL) < ACHIEVEMENTS_START)
+        continue;
+      
+      if ((time(NULL) > 1270162800) && 
+        !UIsAchievements(rup))
+        continue;
+    }
+    
+    /* Commands flagged QCMD_TITLES:
+     *  Only valid on 01/04/2010. */
+    if ((cmdlist[i]->level & QCMD_TITLES) && 
+        ((time(NULL) < ACHIEVEMENTS_START) ||
+         (time(NULL) > ACHIEVEMENTS_END))))
+      continue;
+    
     /* We passed all the checks, send the message */    
     chanservsendmessage(sender, "%-20s %s",ct, message);
   }

@@ -160,9 +160,10 @@
 #define   QUFLAG_INFO          0x0400  /* +i */
 #define   QUFLAG_DELAYEDGLINE  0x0800  /* +G */
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
+#define   QUFLAG_ACHIEVEMENTS  0x2000  /* +c */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdfff
+#define   QUFLAG_ALL           0xffff
 
 #define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
@@ -178,6 +179,7 @@
 #define UIsNoAuthLimit(x)   ((x)->flags & QUFLAG_NOAUTHLIMIT)
 #define UIsCleanupExempt(x) ((x)->flags & QUFLAG_CLEANUPEXEMPT)
 #define UIsStaff(x)         ((x)->flags & QUFLAG_STAFF)
+#define UIsAchievements(x)  ((x)->flags & QUFLAG_ACHIEVEMENTS)
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
@@ -243,6 +245,7 @@
 #define   QCFLAG_VOICEALL     0x1000  /* +v */
 #define   QCFLAG_WELCOME      0x2000  /* +w */
 #define   QCFLAG_SUSPENDED    0x4000  /* +z */
+#define   QCFLAG_ACHIEVEMENTS 0x8000  /* +h */
 
 #define CIsAutoOp(x)        ((x)->flags & QCFLAG_AUTOOP)
 #define CIsBitch(x)         ((x)->flags & QCFLAG_BITCH)
@@ -259,6 +262,7 @@
 #define CIsSuspended(x)     ((x)->flags & QCFLAG_SUSPENDED)
 #define CIsInfo(x)          ((x)->flags & QCFLAG_INFO)
 #define CIsNoInfo(x)        ((x)->flags & QCFLAG_NOINFO)
+#define CIsAchievements(x)  ((x)->flags & QCFLAG_ACHIEVEMENTS)
 
 #define CSetAutoOp(x)        ((x)->flags |= QCFLAG_AUTOOP)
 #define CSetBitch(x)         ((x)->flags |= QCFLAG_BITCH)
@@ -291,7 +295,7 @@
 #define   QCFLAG_USERCONTROL (QCFLAG_AUTOOP|QCFLAG_BITCH|QCFLAG_AUTOLIMIT| \
 			       QCFLAG_ENFORCE|QCFLAG_FORCETOPIC|QCFLAG_AUTOVOICE| \
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
-			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
+			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY|QCFLAG_ACHIEVEMENTS )
 
 #define   QCFLAG_ALL          0x7fff
 
@@ -404,6 +408,8 @@
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
 #define   QCMD_HIDDEN         QCMD_ALIAS
 
+#define   QCMD_ACHIEVEMENTS   0x0400 /* Allows access to achievement commands */
+
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
 #define   CS_INIT_READY       0x3    /* Ready for action! */
@@ -514,6 +520,8 @@ typedef struct regchan {
   unsigned int        chanopaccts[CHANOPHISTORY];             /* Which account was responsible for each one */
   short               chanoppos;                              /* Position in the array */  
 } regchan;
+
+struct achievement_record;
 
 /* Registered user */
 typedef struct reguser {
