@@ -3,7 +3,7 @@
  *
  * CMDNAME: authhistory
  * CMDLEVEL: QCMD_AUTHED
- * CMDARGS: 1
+ * CMDARGS: 2
  * CMDDESC: View auth history for an account.
  * CMDFUNC: csa_doauthhistory
  * CMDPROTO: int csa_doauthhistory(void *source, int cargc, char **cargv);
@@ -94,36 +94,67 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
 
 void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit) {
   struct authhistoryinfo *ahi;
+  char limitstr[30];
+
+  if (limit) {
+    sprintf(limitstr, " limit %d",limit);
+  } else {
+    limitstr[0]='\0';
+  }
 
   ahi=(struct authhistoryinfo *)malloc(sizeof(struct authhistoryinfo));
   ahi->numeric=np->numeric;
   ahi->userID=rup->ID;
   q9a_asyncquery(csdb_doauthhistory_real, (void *)ahi,
     "SELECT userID, nick, username, host, authtime, disconnecttime, quitreason from chanserv.authhistory where "
-    "userID=%u order by authtime desc limit %d", rup->ID, limit);
+    "userID=%u order by authtime desc%s", rup->ID, limitstr);
 }
 
 int csa_doauthhistory(void *source, int cargc, char **cargv) {
   reguser *rup, *trup;
   nick *sender=source;
-
+  unsigned int arg=0;
+  unsigned int limit=10;
+  
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
 
-  if (cargc >= 1) {
-    if (!(trup=findreguser(sender, cargv[0])))
+  if (cargc) {
+    if (!ircd_strcmp(cargv[0], "-a")) {
+      if (UHasOperPriv(rup))
+        limit=0;
+      
+      arg++;
+    }
+  }
+
+  if (cargc > arg) {
+    if (!(trup=findreguser(sender, cargv[arg])))
       return CMD_ERROR;
 
-    /* don't allow non-opers to view oper auth history, but allow helpers to view non-oper history */
-    if ((trup != rup) && ((UHasOperPriv(trup) && !UHasOperPriv(rup)) || !UHasHelperPriv(rup))) {
-      chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[0]);
-      return CMD_ERROR;
+    /* if target != command issuer */
+    if (trup != rup) {
+      /* only opers and helpers can view authhistory of other users */
+      if (!UHasHelperPriv(rup)) {
+        chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[arg]);
+        return CMD_ERROR;
+      }
+
+      /* and only opers can view opers history */
+      if (UHasOperPriv(trup) && !UHasOperPriv(rup)) {
+        chanservwallmessage("%s (%s) just FAILED using AUTHHISTORY on %s", sender->nick, rup->username, trup->username);
+        chanservstdmessage(sender, QM_NOACCESSONUSER, "authhistory", cargv[arg]);
+        return CMD_ERROR;
+      }
+
+      /* checks passed */
+      chanservwallmessage("%s (%s) used AUTHHISTORY on %s", sender->nick, rup->username, trup->username);
     }
   } else {
     trup=rup;
   }
-  
-  csdb_retreiveauthhistory(sender, trup, 10);
+
+  csdb_retreiveauthhistory(sender, trup, limit);
 
   return CMD_OK;
 }

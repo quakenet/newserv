@@ -247,6 +247,7 @@ void _init(void) {
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
+  proxyscan_addscantype(STYPE_HTTP, 8118);
   proxyscan_addscantype(STYPE_HTTP, 80);
   proxyscan_addscantype(STYPE_HTTP, 6588);
   proxyscan_addscantype(STYPE_HTTP, 8000);
@@ -502,6 +503,7 @@ void killsock(scan *sp, int outcome) {
   int i;
   cachehost *chp;
   foundproxy *fpp;
+  time_t now;
 
   scansdone++;
   scansbyclass[sp->class]++;
@@ -546,10 +548,13 @@ void killsock(scan *sp, int outcome) {
       fpp->next=chp->proxies;
       chp->proxies=fpp;
     }
-    
-    if (!chp->glineid) {
+
+    now=time(NULL);    
+    /* the purpose of this lastgline stuff is to stop gline spam from one scan */
+    if (!chp->glineid || (now>=chp->lastgline+SCANTIMEOUT)) {
+      chp->lastgline=now;
       glinedhosts++;
-      loggline(chp, sp->node);
+      loggline(chp, sp->node);   
       irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
 	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),(intmax_t)getnettime(), chp->glineid);
       Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
@@ -943,6 +948,15 @@ int proxyscandoshowkill(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void startnickscan(nick *np) {
+  time_t t = time(NULL);
+  int i;
+  for(i=0;i<numscans;i++) {
+    /* @@@TODO: we allow a forced scan to scan the same IP multiple times atm */
+    queuescan(np->ipnode,thescans[i].type,thescans[i].port,SCLASS_NORMAL,t);
+  }
+}
+
 int proxyscandoscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
   patricia_node_t *node;
@@ -953,12 +967,14 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
+    time_t t;
     sendnoticetouser(proxyscannick,np,"Forcing scan of %s",IPtostr(sin));
     // * Just queue the scans directly here.. plonk them on the priority queue * /
     node = refnode(iptree, &sin, bits); /* node leaks node here - should only allow to scan a nick? */
+    t = time(NULL);
     for(i=0;i<numscans;i++) {
       /* @@@TODO: we allow a forced scan to scan the same IP multiple times atm */
-      queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,time(NULL));
+      queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,t);
     }
   }
   return CMD_OK;

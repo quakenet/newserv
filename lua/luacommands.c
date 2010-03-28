@@ -210,7 +210,7 @@ static int lua_invite(lua_State *ps) {
   if(!cp)
     LUA_RETURN(ps, LUA_FAIL);
 
-  localinvite(lua_nick, cp, np);
+  localinvite(lua_nick, cp->index, np);
 
   LUA_RETURN(ps, LUA_OK);
 }

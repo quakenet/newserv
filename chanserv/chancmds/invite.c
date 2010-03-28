@@ -55,7 +55,7 @@ int csc_doinvite(void *source, int cargc, char **cargv) {
         continue;
       }
       
-      localinvite(chanservnick, rcup->chan->index->channel, sender);
+      localinvite(chanservnick, rcup->chan->index, sender);
     }
     
     chanservstdmessage(sender, QM_DONE);
@@ -67,7 +67,7 @@ int csc_doinvite(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
 
   if (cip->channel) {
-    localinvite(chanservnick, cip->channel, sender);
+    localinvite(chanservnick, cip, sender);
   }
   chanservstdmessage(sender, QM_DONE);
  
