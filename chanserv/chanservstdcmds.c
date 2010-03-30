@@ -229,8 +229,9 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
       ((cmd->level & QCMD_HELPER) && (!rup || !UHasHelperPriv(rup))) ||
       ((cmd->level & QCMD_OPER) && (!rup || !UHasOperPriv(rup))) ||
       ((cmd->level & QCMD_ADMIN) && (!rup || !UHasAdminPriv(rup))) ||
-      ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup)))) {
-    chanservstdmessage(sender, QM_NOHELP, cmd->command->content);
+      ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup))) ||
+      ((cmd->level & (QCMD_TITLES | QCMD_ACHIEVEMENTS)) && (time(NULL) < ACHIEVEMENTS_START))) {
+    chanservstdmessage(sender, QM_UNKNOWNCMD, thecmd);
     return CMD_OK;
   }
 
