@@ -1,12 +1,13 @@
+require("lib/class")
 require("lib/quakenet")
 require("lib/missing")
-require("lib/schedule")
+require("lib/scheduler")
+require("lib/schedule-legacy")
 require("lib/serialise")
 require("lib/country")
 require("lib/db")
 require("lib/socket")
 require("lib/json")
-require("lib/class")
 
 local LASTERROR = 0
 local NOTREPORTING = false

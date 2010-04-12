@@ -23,6 +23,7 @@
 
 #include "lualocal.h"
 #include "luasocket.h"
+#include "luascheduler.h"
 
 #define luamalloc(x) nsmalloc(POOL_LUA, x)
 #define luarealloc(x, y) nsrealloc(POOL_LUA, x, y)
@@ -30,7 +31,7 @@
 
 /*** defines ************************************/
 
-#define LUA_BOTVERSION "1.91"
+#define LUA_BOTVERSION "1.92"
 #define LUA_CHANFIXBOT "D"
 #define LUA_OPERCHAN "#twilightzone"
 
@@ -64,6 +65,7 @@ typedef struct lua_list {
   struct lua_list *prev;
   lua_localnick *nicks;
   lua_socket *sockets;
+  lua_scheduler *schedulers;
 } lua_list;
 
 #define LUA_STARTLOOP(l) { lua_list *ll; for(ll=lua_head;ll;ll=ll->next) {  l = ll->l
