@@ -6,6 +6,7 @@
 #include "channel.h"
 #include "../server/server.h"
 #include "../nick/nick.h"
+#include "../miscreply/numeric.h"
 #include "../lib/irc_string.h"
 #include "../irc/irc_config.h"
 #include "../parser/parser.h"
@@ -966,8 +967,13 @@ void handlewhoischannels(int hooknum, void *arg) {
       bufpos=0;
     }
 
+    /*
+     * 319 RPL_WHOISCHANNELS "source 319 target nick :channels"
+     *                       "irc.netsplit.net 319 foobar barfoo :@#chan1 +#chan2 #chan3"
+     *                       "irc.netsplit.net 319 foobar barfoo :-@#chan1 -+#chan2 -#chan3"
+     */
     if(buffer[0] == '\0')
-      bufpos=snprintf(buffer, sizeof(buffer), ":%s 319 %s %s :", myserver->content, sender->nick, target->nick);
+      bufpos=snprintf(buffer, sizeof(buffer), "%s %d %s %s :", getmynumeric(), RPL_WHOISCHANNELS, longtonumeric(sender->numeric, 5), target->nick);
 
     num = getnumerichandlefromchanhash(chans[i]->users, target->numeric);
 

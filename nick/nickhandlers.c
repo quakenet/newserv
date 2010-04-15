@@ -332,60 +332,6 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int handlewhoismsg(void *source, int cargc, char **cargv) {
-  nick *sender,*target;
-  nick *nicks[2];
-  
-  if (cargc<2)
-    return CMD_OK;
-  
-  if (strncmp(cargv[0],mynumeric->content,2)) {
-    return CMD_OK;
-  }
-  
-  /* Find the sender... */  
-  if ((sender=getnickbynumericstr((char *)source))==NULL) {
-    Error("localuser",ERR_WARNING,"WHOIS message from non existent numeric %s",(char *)source);
-    return CMD_OK;
-  }
-  
-  /* :hub.splidge.netsplit.net 311 moo splidge splidge ground.stbarnab.as * :splidge
-     :hub.splidge.netsplit.net 312 moo splidge splidge.netsplit.net :splidge's netsplit leaf
-     :hub.splidge.netsplit.net 313 moo splidge :is an IRC Operator
-     :hub.splidge.netsplit.net 318 moo splidge :End of /WHOIS list.
-  */
-  
-  /* And the target... */
-  if ((target=getnickbynick(cargv[1]))==NULL) {
-    irc_send(":%s 401 %s %s :No such nick",myserver->content,sender->nick,cargv[1]);
-  } else {
-    irc_send(":%s 311 %s %s %s %s * :%s",myserver->content,sender->nick,target->nick,target->ident,
-        target->host->name->content, target->realname->name->content);
-    nicks[0]=sender; nicks[1]=target;
-    triggerhook(HOOK_NICK_WHOISCHANNELS,nicks);
-    if (IsOper(sender) || !HIS_SERVER ) {
-      irc_send(":%s 312 %s %s %s :%s",myserver->content,sender->nick,target->nick,
-          serverlist[homeserver(target->numeric)].name->content,
-          serverlist[homeserver(target->numeric)].description->content);
-    } else {
-      irc_send(":%s 312 %s %s " HIS_SERVERNAME " :" HIS_SERVERDESC,myserver->content,sender->nick,target->nick);
-    }
-    if (IsOper(target)) {
-      irc_send(":%s 313 %s %s :is an IRC Operator",myserver->content,sender->nick,target->nick);
-    }
-    if (IsAccount(target)) {
-      irc_send(":%s 330 %s %s %s :is authed as",myserver->content,sender->nick,target->nick,target->authname);
-    }
-    if (homeserver(target->numeric)==mylongnum && !IsService(target) && !IsHideIdle(target)) {
-      irc_send(":%s 317 %s %s %ld %ld :seconds idle, signon time",myserver->content,sender->nick,target->nick,
-         (getnettime() - target->timestamp) % (((target->numeric + target->timestamp) % 983) + 7),target->timestamp);
-    }
-  }
-  
-  irc_send(":%s 318 %s %s :End of /WHOIS list.",myserver->content,sender->nick,cargv[1]);
-  return CMD_OK;
-}  
-
 int handleaccountmsg(void *source, int cargc, char **cargv) {
   nick *target;
   unsigned long userid;
@@ -443,60 +389,6 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
   }
 
   triggerhook(HOOK_NICK_ACCOUNT, (void *)target);
-
-  return CMD_OK;
-}
-
-int handlestatsmsg(void *source, int cargc, char **cargv) {
-  int sourceserver;
-  char *sender=(char *)source;
-  char *replytarget;
-  char *fromstring;
-  nick *np;
-  
-  if (cargc<2) {
-    Error("nick",ERR_WARNING,"STATS request without enough parameters!");
-    return CMD_OK;
-  }
-  
-  if (strlen(sender)==5) {
-    /* client */
-    np=getnickbynumericstr(sender);
-    if (!np) {
-      Error("nick",ERR_WARNING,"STATS request from unknown client %s",sender);
-      return CMD_OK;
-    }
-    replytarget=np->nick;
-  } else {
-    Error("nick",ERR_WARNING,"STATS request from odd source %s",sender);
-    return CMD_OK;
-  }
-
-  /* Reply to stats for ANY server.. including any we are juping */
-  sourceserver=numerictolong(cargv[1],2);
-  if (serverlist[sourceserver].maxusernum==0) {
-    Error("nick",ERR_WARNING,"Stats request for bad server %s",cargv[1]);
-    return CMD_OK;
-  }
-  fromstring=serverlist[sourceserver].name->content;
-
-  switch(cargv[0][0]) {
-  case 'u':
-    irc_send(":%s 242 %s :Server Up %s",fromstring,replytarget,
-	     longtoduration(time(NULL)-starttime, 0));
-    irc_send(":%s 250 %s :Highest connection count: 10 (9 clients)",fromstring,replytarget);
-    break;
-
-  case 'P':
-    irc_send(":%s 217 %s P none 0 :0x2000",fromstring,replytarget);
-    break;
-   
-  case 'm':
-    stats_m(fromstring, replytarget);
-    break; 
-  }
-
-  irc_send(":%s 219 %s %c :End of /STATS report",fromstring,replytarget,cargv[0][0]);
 
   return CMD_OK;
 }
