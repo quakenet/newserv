@@ -103,14 +103,6 @@ void _init() {
 }
 
 void _fini() {
-  if (cfext >= 0) {
-    releasechanext(cfext);
-  }
-
-  if (cfnext >= 0) {
-    releasenickext(cfnext);
-  }
-
   if (cffailedinit == 0) {
     deleteschedule(NULL, &cfsched_dosample, NULL);
     deleteschedule(NULL, &cfsched_doexpire, NULL);
@@ -145,6 +137,14 @@ void _fini() {
 
     deregisterhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
     deregisterhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
+  }
+
+  if (cfext >= 0) {
+    releasechanext(cfext);
+  }
+
+  if (cfnext >= 0) {
+    releasenickext(cfnext);
   }
 }
 
