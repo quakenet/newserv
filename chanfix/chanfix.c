@@ -44,7 +44,6 @@ void cfsched_dosave(void *arg);
 void cfhook_autofix(int hook, void *arg);
 void cfhook_statsreport(int hook, void *arg);
 void cfhook_auth(int hook, void *arg);
-void cfhook_lostnick(int hook, void *arg);
 
 /* helper functions */
 regop *cf_createregop(nick *np, chanindex *cip);
@@ -72,7 +71,7 @@ void _init() {
     registercontrolhelpcmd("cfdebug", NO_DEVELOPER, 1, &cfcmd_debug, "Display Debug Information on chanfix data for channel");
     registercontrolhelpcmd("cfhistogram", NO_DEVELOPER, 1, &cfcmd_debughistogram, "Display Debug Histogram of chanfix data for channel");
 #if CFDEBUG
-    registercontrolhelpcmd("cfsample", NO_DEVELOPER, &cfcmd_debugsample, "DEBUG Command - must not be loaded on live instances");
+    registercontrolhelpcmd("cfsample", NO_DEVELOPER, 1, &cfcmd_debugsample, "DEBUG Command - must not be loaded on live instances");
     registercontrolhelpcmd("cfexpire", NO_DEVELOPER, 1, &cfcmd_debugexpire, "DEBUG Command - must not be loaded on live instances");
 #endif
     registercontrolhelpcmd("chanopstat", NO_OPER, 1, &cfcmd_chanopstat, "Shows chanop statistics for a given channel");
@@ -96,7 +95,6 @@ void _init() {
 
     registerhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
     registerhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
-    registerhook(HOOK_NICK_LOSTNICK, &cfhook_lostnick);
 
     cf_loadchanfix();
 
@@ -105,8 +103,13 @@ void _init() {
 }
 
 void _fini() {
-  int i;
-  nick *nip;
+  if (cfext >= 0) {
+    releasechanext(cfext);
+  }
+
+  if (cfnext >= 0) {
+    releasenickext(cfnext);
+  }
 
   if (cffailedinit == 0) {
     deleteschedule(NULL, &cfsched_dosample, NULL);
@@ -116,13 +119,6 @@ void _fini() {
     cf_storechanfix();
 
     cf_free();
-
-    for (i=0; i<NICKHASHSIZE; i++)
-      for (nip=nicktable[i]; nip; nip=nip->next)
-        free(nip->exts[cfnext]);
-
-    releasechanext(cfext);
-    releasenickext(cfnext);
 
     deregistercontrolcmd("cfdebug", &cfcmd_debug);
     deregistercontrolcmd("cfhistogram", &cfcmd_debughistogram);
@@ -149,7 +145,6 @@ void _fini() {
 
     deregisterhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
     deregisterhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
-    deregisterhook(HOOK_NICK_LOSTNICK, &cfhook_lostnick);
   }
 }
 
@@ -187,7 +182,7 @@ int cfcmd_debug(void *source, int cargc, char **cargv) {
   for (i=0;i<cf->regops.cursi;i++) {
     ro = ((regop**)cf->regops.content)[i];
 
-    controlreply(np, "%d. type: %s hash: 0x%x lastopped: %d uh: %s score: %d",
+    controlreply(np, "%d. type: %s hash: 0x%lx lastopped: %lu uh: %s score: %d",
                  i + 1, ro->type == CFACCOUNT ? "CFACCOUNT" : "CFHOST", ro->hash,
                  ro->lastopped, ro->uh ? ro->uh->content : "(unknown)", ro->score);
   }
@@ -202,7 +197,6 @@ int cfcmd_debughistogram(void *source, int cargc, char **cargv) {
   int i,a,score;
   chanindex* cip;
   chanfix *cf;
-  char buf[400];
   int histogram[10001]; /* 625 (lines) * 16 (columns/line) + 1 (for histogram[0]) */
 
   for (i = 0; i < 10001; i++)
@@ -224,16 +218,11 @@ int cfcmd_debughistogram(void *source, int cargc, char **cargv) {
   controlreply(np, "--- Histogram of chanfix scores");
 
   for (i = 1; i < 10001; i += 16) {
-    buf[0] = '\0';
-
-    for (a = 0; a < 16; a++) {
-      if (a != 0)
-        strcat(buf, " ");
-
-      sprintf(buf+strlen(buf),"%d", histogram[i+a]);
-    }
-
-    controlreply(np, "%6d: %s", i, buf);
+    controlreply(np, "%6d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", 
+      i, histogram[i], histogram[i+1], histogram[i+2], histogram[i+3], histogram[i+4],
+      histogram[i+5], histogram[i+6], histogram[i+7], histogram[i+8], histogram[i+9],
+      histogram[i+10], histogram[i+11], histogram[i+12], histogram[i+13], histogram[i+14],
+      histogram[i+15]);
   }
 
   controlreply(np, "--- End of histogram");
@@ -307,7 +296,6 @@ int cfcmd_chanopstat(void *source, int cargc, char **cargv) {
   regop *rolist[10];
   int i, a, count;
   int *scores;
-  char buf[400];
 
   if (cargc < 1) {
     controlreply(np, "Syntax: chanopstat <#channel>");
@@ -333,17 +321,11 @@ int cfcmd_chanopstat(void *source, int cargc, char **cargv) {
 
   /* known ops */
   count = cf_getsortedregops(cf, 10, rolist);
-
-  buf[0] = '\0';
+  controlreply(np, "Scores of \"best ops\" on %s are:", cargv[0]);
 
   for (i=0;i<count;i++) {
-    if (i != 0)
-      strcat(buf, " ");
-
-    sprintf(buf+strlen(buf),"%d", rolist[i]->score);
+    controlreply(np, "  %d", rolist[i]->score);
   }
-
-  controlreply(np, "Scores of \"best ops\" on %s are: %s", cargv[0], buf);
 
   /* current ops */
   scores = (int*)malloc(sizeof(int) * cp->users->hashsize);
@@ -362,23 +344,16 @@ int cfcmd_chanopstat(void *source, int cargc, char **cargv) {
   }
 
   qsort(scores, i, sizeof(int), &cmpint);
-
-  buf[0] = '\0';
+  controlreply(np, "Scores of current ops on %s are:", cargv[0]);
 
   for (a=0;a<min(i,20);a++) {
     if (scores[a] == 0)
       break;
 
-    if (a != 0)
-      strcat(buf, " ");
-
-    sprintf(buf+strlen(buf),"%d", scores[a]);
+    controlreply(np, "  %d", scores[a]);
   }
 
   free(scores);
-
-  controlreply(np, "Scores of current ops on %s are: %s", cargv[0], buf);
-
   controlreply(np, "Done.");
 
   return CMD_OK;
@@ -390,10 +365,10 @@ int cfcmd_chanoplist(void *source, int cargc, char **cargv) {
   chanindex *cip;
   chanfix *cf;
   regop *rolist[50];
-  int i,a,count;
+  int i,count;
   time_t ct;
-  const char* cdate;
-  char* date;
+  struct tm *tm;
+  char date[50];
   unsigned long *hand;
 
   if (cargc < 1) {
@@ -436,25 +411,11 @@ int cfcmd_chanoplist(void *source, int cargc, char **cargv) {
                      np2->host->name->content, np2->realname->name->content);
     } else {
       ct = rolist[i]->lastopped;
-
-      cdate = ctime(&ct);
-
-      date = (char*)malloc(strlen(cdate) + 1);
-      strcpy(date, cdate);
-
-      for (a=0;a<strlen(date);a++) {
-        if (date[a] == '\n') {
-          date[a] = '\0';
-          break;
-        }
-      }
-
+      tm = gmtime(&ct);
+      strftime(date,sizeof(date),"%d-%m-%Y %H:%M:%S",tm);
       controlreply(np, "%3d %5d %-7s %1s%-16s %s Last seen: %s", i + 1, rolist[i]->score,
-                   (rolist[i]->type == CFACCOUNT) ? "account" : "host",
-                   "", "!NONE!",
+                   (rolist[i]->type == CFACCOUNT) ? "account" : "host", "", "!NONE!",
                    rolist[i]->uh ? rolist[i]->uh->content : "!UNKNOWN!", date);
-
-      free(date);
     }
   }
 
@@ -513,7 +474,7 @@ int cfcmd_showregs(void *source, int cargc, char **cargv) {
   nick *np2;
   chanfix *cf;
   channel *cp;
-  int a, i, count, ops;
+  int i, count, ops;
   regop *rolist[50];
 
   if (cargc < 1) {
@@ -540,9 +501,9 @@ int cfcmd_showregs(void *source, int cargc, char **cargv) {
 
   count = 0;
 
-  for(a=0;a<cp->users->hashsize;a++) {
-    if(cp->users->content[a] != nouser) {
-      np2 = getnickbynumeric(cp->users->content[a]);
+  for(i=0;i<cp->users->hashsize;i++) {
+    if(cp->users->content[i] != nouser) {
+      np2 = getnickbynumeric(cp->users->content[i]);
 
       if (IsService(np2)) {
         controlreply(np, "%s (service)", np2->nick);
@@ -776,10 +737,7 @@ void cfsched_dosample(void *arg) {
               if (ro->type == CFACCOUNT)
                 ro->uh = getsstring(np->authname, ACCOUNTLEN);
               else {
-                strcpy(buf, np->ident);
-                strcat(buf, "@");
-                strcat(buf, np->host->name->content);
-
+                snprintf(buf, sizeof(buf), "%s@%s", np->ident, np->host->name->content);
                 roh->uh = getsstring(buf, USERLEN+1+HOSTLEN);
               }
 
@@ -834,19 +792,19 @@ void cfsched_doexpire(void *arg) {
         for (a=0;a<cf->regops.cursi;a++) {
           ro = rolist[a];
 
-          if ((currenttime - ro->lastopped > 2 * CFSAMPLEINTERVAL) && ro->score) {
+          if (((currenttime - ro->lastopped) > (2 * CFSAMPLEINTERVAL)) && ro->score) {
             ro->score--;
             cfscore++;
           }
 
-          if (ro->score < CFMINSCOREUH && ro->uh) {
+          if ((ro->score < CFMINSCOREUH) && ro->uh) {
             freesstring(ro->uh);
             ro->uh = NULL;
 
             cffreeuh++;
           }
 
-          if (ro->score == 0 || ro->lastopped < currenttime - CFREMEMBEROPS) {
+          if (ro->score == 0 || ro->lastopped < (currenttime - CFREMEMBEROPS)) {
             cf_deleteregop(cip, ro);
             cfregop++;
           }
@@ -922,7 +880,6 @@ void cfhook_statsreport(int hook, void *arg) {
   char buf[300];
   int i,a,rc,mc,memory;
   chanindex *cip;
-  nick *nip;
   chanfix *cf;
 
   if ((long)arg > 2) {
@@ -947,15 +904,8 @@ void cfhook_statsreport(int hook, void *arg) {
       }
     }
 
-    for (i=0; i<NICKHASHSIZE; i++) {
-      for (nip=nicktable[i]; nip; nip=nip->next) {
-        if (nip->exts[cfnext])
-          memory += sizeof(int);
-      }
-    }
-
-    sprintf(buf, "Chanfix : %6d registered ops, %9d monitored channels. %9d"
-            " kbytes of memory used", rc, mc, memory / 1024);
+    snprintf(buf, sizeof(buf), "Chanfix : %6d registered ops, %9d monitored channels. %9d"
+            " kbytes of memory used", rc, mc, (memory / 1024));
     triggerhook(HOOK_CORE_STATSREPLY, buf);
   }
 }
@@ -964,18 +914,10 @@ void cfhook_auth(int hook, void *arg) {
   nick *np = (nick*)arg;
 
   /* Invalidate the user's hash */
-  free(np->exts[cfnext]);
-
   np->exts[cfnext] = NULL;
   
   /* Calculate the new hash */
   cf_gethash(np, CFACCOUNT);
-}
-
-void cfhook_lostnick(int hook, void *arg) {
-  nick *np = (nick*)arg;
-
-  free(np->exts[cfnext]);
 }
 
 /* Returns the hash of a specific user (np), type can be either CFACCOUNT,
@@ -985,30 +927,25 @@ unsigned long cf_gethash(nick *np, int type) {
   char buf[USERLEN+1+HOSTLEN+1];
   unsigned long hash;
 
-  if (IsAccount(np) && type & CFACCOUNT) {
+  if (IsAccount(np) && (type & CFACCOUNT)) {
     if (np->exts[cfnext] == NULL) {
-      np->exts[cfnext] = (int*)malloc(sizeof(int));
-      *(int*)np->exts[cfnext] = crc32(np->authname);
+      np->exts[cfnext] = (void *)crc32(np->authname);
     }
 
-    return *(int*)np->exts[cfnext];
+    return (unsigned long)np->exts[cfnext];
   } else if (type == CFACCOUNT)
     return 0; /* this should not happen */
 
   if (type & CFHOST) {
     if (!IsAccount(np) && np->exts[cfnext])
-      return *(int*)np->exts[cfnext];
+      return (unsigned long)np->exts[cfnext];
     else {
-      strcpy(buf, np->ident);
-      strcat(buf, "@");
-      strcat(buf, np->host->name->content);
+      snprintf(buf, sizeof(buf), "%s@%s", np->ident, np->host->name->content);
       hash = crc32(buf);
 
       /* if the user is not authed, update the hash */
       if (!IsAccount(np)) {
-        np->exts[cfnext] = (int*)malloc(sizeof(int));
-
-        *(int*)np->exts[cfnext] = hash;
+        np->exts[cfnext] = (void *)hash;
       }
 
       return hash;
@@ -1099,7 +1036,7 @@ regop *cf_findregop(nick *np, chanindex *cip, int type) {
   if (cf == NULL)
     return NULL;
 
-  if (IsAccount(np) && type & CFACCOUNT)
+  if (IsAccount(np) && (type & CFACCOUNT))
     ty = CFACCOUNT;
   else
     ty = CFHOST;
@@ -1112,7 +1049,7 @@ regop *cf_findregop(nick *np, chanindex *cip, int type) {
   }
 
   /* try using the uhost if we didn't find a user with the right account */
-  if (ty == CFACCOUNT && type & CFHOST)
+  if (ty == CFACCOUNT && (type & CFHOST))
     return cf_findregop(np, cip, CFHOST);
   else
     return NULL;
@@ -1222,7 +1159,7 @@ int cf_fixchannel(channel *cp) {
 
   /* and op some of them */
   for (i=0;i<ops;i++) {
-    if (count >= CFMAXOPS || rolist[i]->score < rolist[0]->score / 2)
+    if (count >= CFMAXOPS || rolist[i]->score < (rolist[0]->score / 2))
       break;
 
     if (rolist[i]->score < CFMINSCORE && i != 0 )
@@ -1257,16 +1194,16 @@ int cf_storechanfix(void) {
   char dstfile[300];
   int a, i, count = 0;
 
-  snprintf(dstfile, 300, "%s.%d", CFSTORAGE, CFSAVEFILES);
+  snprintf(dstfile, sizeof(dstfile), "%s.%d", CFSTORAGE, CFSAVEFILES);
   unlink(dstfile);
 
   for (i = CFSAVEFILES; i > 0; i--) {
-    snprintf(srcfile, 300, "%s.%i", CFSTORAGE, i - 1);
-    snprintf(dstfile, 300, "%s.%i", CFSTORAGE, i);
+    snprintf(srcfile, sizeof(srcfile), "%s.%i", CFSTORAGE, i - 1);
+    snprintf(dstfile, sizeof(dstfile), "%s.%i", CFSTORAGE, i);
     rename(srcfile, dstfile);
   }
 
-  snprintf(srcfile, 300, "%s.0", CFSTORAGE);
+  snprintf(srcfile, sizeof(srcfile), "%s.0", CFSTORAGE);
   cfdata = fopen(srcfile, "w");
 
   if (cfdata == NULL)
@@ -1279,14 +1216,11 @@ int cf_storechanfix(void) {
           ro = ((regop**)cf->regops.content)[a];
 
           if (ro->uh)
-            fprintf(cfdata, "%s %lu %lu %lu %lu %s\n", cip->name->content,
-                    (unsigned long)ro->type, (unsigned long)ro->hash,
-                    (unsigned long)ro->lastopped, (unsigned long)ro->score,
-                    ro->uh->content);
+            fprintf(cfdata, "%s %d %lu %lu %d %s\n", cip->name->content,
+                    ro->type, ro->hash, ro->lastopped, ro->score, ro->uh->content);
           else
-            fprintf(cfdata, "%s %lu %lu %lu %lu\n", cip->name->content,
-                    (unsigned long)ro->type, (unsigned long)ro->hash,
-                    (unsigned long)ro->lastopped, (unsigned long)ro->score);
+            fprintf(cfdata, "%s %d %lu %lu %d\n", cip->name->content,
+                    ro->type, ro->hash, ro->lastopped, ro->score);
           count++;
         }
       }
@@ -1305,11 +1239,13 @@ int cf_parseline(char *line) {
   int count;
   int slot;
   char chan[CHANNELLEN+1];
+  int type, score;
+  unsigned long hash;
+  time_t lastopped;
   char host[USERLEN+1+HOSTLEN+1];
-  unsigned long type,hash,lastopped,score;
   regop **rolist;
 
-  count = sscanf(line, "%s %lu %lu %lu %lu %s", chan, &type, &hash, &lastopped, &score, host);
+  count = sscanf(line, "%s %d %lu %lu %d %s", chan, &type, &hash, &lastopped, &score, host);
 
   if (count < 5)
     return 0; /* invalid chanfix record */
@@ -1338,7 +1274,7 @@ int cf_parseline(char *line) {
   rolist[slot]->lastopped = lastopped;
   rolist[slot]->score = score;
 
-  if (count >= 6 && strchr(host, '@') != NULL)
+  if (count >= 6)
     rolist[slot]->uh = getsstring(host, USERLEN+1+HOSTLEN);
   else
     rolist[slot]->uh = NULL;
@@ -1354,7 +1290,7 @@ int cf_loadchanfix(void) {
 
   cf_free();
 
-  snprintf(srcfile, 300, "%s.0", CFSTORAGE);
+  snprintf(srcfile, sizeof(srcfile), "%s.0", CFSTORAGE);
   cfdata = fopen(srcfile, "r");
 
   if (cfdata == NULL)
