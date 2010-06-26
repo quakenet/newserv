@@ -14,7 +14,7 @@ int lua_notice(nick *np, char *message, ...) __attribute__ ((format (printf, 2, 
 int _lua_vpcall(lua_State *l, void *function, int mode, const char *sig, ...);
 char *printallmodes(channel *cp);
 
-nick *lua_nick;
+extern nick *lua_nick;
 extern sstring *luabotnick;
 
 #define LUA_OK 0
