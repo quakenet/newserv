@@ -130,6 +130,7 @@ Command *addcommandexttotree(CommandTree *ct, const char *cmdname, int level, in
   nc->handler=handler;
   nc->ext=NULL;
   nc->next=NULL;
+  nc->calls=0;
   nc->destroyext=NULL;
 
   if ((c=findcommandintree(ct,cmdname,1))!=NULL) {

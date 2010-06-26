@@ -21,6 +21,7 @@ void at_lostnick(unsigned int numeric, unsigned long userid, time_t accountts, t
 int at_foundnick(unsigned int numeric, unsigned long userid, time_t accountts);
 void at_serverback(unsigned int server);
 void at_flushghosts();
+int at_dumpdb(void *source, int argc, char **argv);
 
 /* authtracker_hooks.c */
 unsigned long at_getuserid(nick *np);

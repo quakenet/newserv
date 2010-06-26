@@ -111,6 +111,7 @@ void chanservuserhandler(nick *target, int message, void **params) {
       }
       cmd=findcommandintree(csctcpcommands, cargv[0]+1, 1);
       if (cmd) {
+	cmd->calls++;
 	rejoinline(cargv[1],cargc-1);
 	cmd->handler((void *)sender, cargc-1, &(cargv[1]));
       }      
@@ -172,6 +173,8 @@ void chanservuserhandler(nick *target, int message, void **params) {
 	chanservstdmessage(sender, QM_NOACCESS, cargv[0]);
 	break;
       }
+      
+      cmd->calls++;
       
       if (cmd->maxparams < (cargc-1)) {
 	rejoinline(cargv[cmd->maxparams],cargc-(cmd->maxparams));
@@ -243,6 +246,18 @@ void chanservremovecommand(char *command, CommandHandler handler) {
   deletecommandfromtree(cscommands, command, handler);
 }
 
+void chanservpartchan(channel *cp, char *reason) {
+  /* Sanity check that we exist and are on the channel.
+   *
+   * Note that we don't do any of the other usual sanity checks here; if
+   * this channel is unregged or suspended or whatever then all the more
+   * reason to get Q off it ASAP! */
+  if (!chanservnick || !cp || !cp->users || !getnumerichandlefromchanhash(cp->users, chanservnick->numeric))
+    return;  
+  
+  localpartchannel(chanservnick, cp, reason);
+}
+
 void chanservjoinchan(channel *cp) {
   regchan *rcp;
   unsigned int i;
@@ -265,14 +280,10 @@ void chanservjoinchan(channel *cp) {
   if (!chanservnick)
     return;
 
+  /* In gerenal this function shouldn't be used any more as a reason to get
+   * Q to leave, but if it should be leaving then just part with no reason. */
   if ((CIsSuspended(rcp) || !CIsJoined(rcp)) && getnumerichandlefromchanhash(cp->users, chanservnick->numeric)) {
-    if(rcp->suspendreason) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "Channel suspended: %s", rcp->suspendreason->content);
-      localpartchannel(chanservnick, cp, buf);
-    } else {
-      localpartchannel(chanservnick, cp, "Channel suspended");
-    }
+    localpartchannel(chanservnick, cp, NULL);
   }
   
   /* Right, we are definately going to either join the channel or at least
@@ -511,7 +522,7 @@ void chanservkillstdmessage(nick *target, int messageid, ... ) {
   va_start(va, messageid);
   q9vsnprintf(buf, 511, message, messageargs, va);
   va_end(va);
-  killuser(chanservnick, target, buf);
+  killuser(chanservnick, target, "%s", buf);
 }
 
 int checkpassword(reguser *rup, const char *pass) {
@@ -757,6 +768,14 @@ void cs_doallautomodes(nick *np) {
       if ((lp=getnumerichandlefromchanhash(rcup->chan->index->channel->users, np->numeric))) {
         /* User is on channel.. */
 
+        /* Update last use time.  Do early in case of ban. */
+        rcup->usetime=getnettime();
+        
+        if (CUIsBanned(rcup)) {
+          cs_banuser(NULL, rcup->chan->index, np, NULL);
+          continue;
+        }
+
         if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
           /* This meets the channel use criteria, update. */
           rcup->chan->lastactive=time(NULL);
@@ -767,9 +786,6 @@ void cs_doallautomodes(nick *np) {
             rcup->chan->lastcountersync=time(NULL);
           }
         }
-
-        /* Update last use time */
-        rcup->usetime=getnettime();
 
 	localsetmodeinit(&changes, rcup->chan->index->channel, chanservnick);
 	if (*lp & CUMODE_OP) {
@@ -795,11 +811,16 @@ void cs_doallautomodes(nick *np) {
       } else {
 	/* Channel exists but user is not joined: invite if they are +j-b */
 	if (CUIsAutoInvite(rcup) && CUKnown(rcup) && !CUIsBanned(rcup)) {
-	  localinvite(chanservnick, rcup->chan->index->channel, np);
+	  localinvite(chanservnick, rcup->chan->index, np);
 	}
       }
-    }
-  }
+    } /* if (rcup->chan->index->channel) */ else {
+      /* Channel doesn't currently exist - send invite anyway for +j */
+      if (CUIsAutoInvite(rcup) && CUKnown(rcup) && !CUIsBanned(rcup)) {
+        localinvite(chanservnick, rcup->chan->index, np);
+      }
+    } 
+  } /* for */
 }
 
 void cs_checknickbans(nick *np) {
@@ -817,7 +838,7 @@ void cs_checknickbans(nick *np) {
 
   for (j=0;j<i;j++) {
     if ((rcp=ca[j]->index->exts[chanservext]) && !CIsSuspended(rcp) && 
-	CIsEnforce(rcp) && nickbanned_visible(np, ca[j]))
+	CIsEnforce(rcp) && nickbanned(np, ca[j], 1))
       localkickuser(chanservnick, ca[j], np, "Banned.");
   }
 
@@ -858,8 +879,8 @@ void cs_checkbans(channel *cp) {
 
     for (rbp=rcp->bans;rbp;rbp=rbp->next) {
       if (((!rbp->expiry) || (rbp->expiry <= now)) &&
-	  nickmatchban_visible(np, rbp->cbp)) {
-	if (!nickbanned_visible(np, cp)) {
+	  nickmatchban(np, rbp->cbp, 1)) {
+	if (!nickbanned(np, cp, 1)) {
 	  localdosetmode_ban(&changes, bantostring(rbp->cbp), MCB_ADD);
 	}
 	localkickuser(chanservnick,cp,np,rbp->reason?rbp->reason->content:"Banned.");
@@ -872,7 +893,7 @@ void cs_checkbans(channel *cp) {
 
     if (CIsEnforce(rcp)) {
       for (cbp=cp->bans;cbp;cbp=cbp->next) {
-	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban_visible(np, cbp))
+	if ((cbp->timeset>=rcp->lastbancheck) && nickmatchban(np, cbp, 1))
 	  localkickuser(chanservnick,cp,np,"Banned.");
       }
       rcp->lastbancheck=time(NULL);
@@ -1037,7 +1058,7 @@ void cs_timerfunc(void *arg) {
   localsetmodeflush(&changes, 1);
 }
 
-void cs_removechannel(regchan *rcp) {
+void cs_removechannel(regchan *rcp, char *reason) {
   int i;
   chanindex *cip;
   regchanuser *rcup, *nrcup;
@@ -1066,8 +1087,7 @@ void cs_removechannel(regchan *rcp) {
     deleteschedule(rcp->checksched, cs_timerfunc, rcp->index);
     
   if (cip->channel) {
-    rcp->flags=QCFLAG_SUSPENDED;
-    chanservjoinchan(cip->channel); /* Force off the channel */
+    chanservpartchan(cip->channel, reason);
   }
   
   csdb_deletechannel(rcp);
@@ -1097,7 +1117,7 @@ int cs_removechannelifempty(nick *sender, regchan *rcp) {
   }
   
   cs_log(sender,"DELCHAN %s (Empty)",rcp->index->name->content);
-  cs_removechannel(rcp);
+  cs_removechannel(rcp, "Last user removed - channel deleted.");
   
   return 1;
 }
@@ -1156,9 +1176,9 @@ int cs_bancheck(nick *np, channel *cp) {
       freesstring(rbp->reason);
       freechanban(rbp->cbp);
       freeregban(rbp);
-    } else if (nickmatchban_visible(np,(*rbh)->cbp)) {
+    } else if (nickmatchban(np,(*rbh)->cbp,1)) {
       /* This user matches this ban.. */
-      if (!nickbanned_visible(np,cp)) {
+      if (!nickbanned(np,cp,1)) {
 	/* Only bother putting the ban on the channel if they're not banned already */
 	/* (might be covered by this ban or a different one.. doesn't really matter */
 	localsetmodeinit(&changes, cp, chanservnick);
@@ -1192,7 +1212,7 @@ void cs_setregban(chanindex *cip, regban *rbp) {
     if (cip->channel->users->content[i]!=nouser &&
 	(np=getnickbynumeric(cip->channel->users->content[i])) &&
 	!IsService(np) && !IsOper(np) && !IsXOper(np) &&
-	nickmatchban_visible(np, rbp->cbp))
+	nickmatchban(np, rbp->cbp, 1))
       localkickuser(chanservnick, cip->channel, np, rbp->reason ? rbp->reason->content : "Banned.");
   }
 
@@ -1206,7 +1226,7 @@ void cs_banuser(modechanges *changes, chanindex *cip, nick *np, const char *reas
   if (!cip->channel)
     return;
 
-  if (nickbanned_visible(np, cip->channel)) {
+  if (nickbanned(np, cip->channel, 1)) {
     localkickuser(chanservnick, cip->channel, np, reason?reason:"Banned.");
     return;
   }

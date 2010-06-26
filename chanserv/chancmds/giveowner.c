@@ -58,15 +58,15 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
 
   rcup=findreguseronchannel(rcp, target);
 
+  /* Can't promote if already owner */
+  if (rcup && (rcup->flags & QCUFLAG_OWNER)) {
+    chanservstdmessage(sender,QM_GIVEOWNERALREADYOWNER,target->username,cip->name->content);
+    return CMD_ERROR;
+  }
+
   /* You can only promote a master */
   if (!rcup || !(rcup->flags & QCUFLAG_MASTER)) {
     chanservstdmessage(sender,QM_GIVEOWNERNOTMASTER,target->username,cip->name->content);
-    return CMD_ERROR;
-  }
-  
-  /* Can't promote if already owner */
-  if (rcup->flags & QCUFLAG_OWNER) {
-    chanservstdmessage(sender,QM_GIVEOWNERALREADYOWNER,target->username,cip->name->content);
     return CMD_ERROR;
   }
    
@@ -91,7 +91,8 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
   /* OK, hash matches, do it. */
   oldflags = rcup->flags;
   rcup->flags |= QCUFLAG_OWNER;
-  
+  rcup->changetime=time(NULL);
+          
   chanservstdmessage(sender,QM_DONE);
 
   strcpy(flagbuf,printflags(oldflags,rcuflags));

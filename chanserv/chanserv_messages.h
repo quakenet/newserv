@@ -65,7 +65,7 @@ BeginMessages() {
   msg(QM_NOTPROTECTED, "Sorry, your nick $0 is not protected.", "s"),
   msg(QM_SAMEAUTH, "$0 is authed as $1. Cannot reclaim nick.", "ss"),
   msg(QM_AUTHFAIL, "Username or password incorrect.", ""),
-  msg(QM_AUTHOK, "You are now logged in as $0.", "s"),
+  msg(QM_AUTHOK, "You are now logged in as $0.\nRemember: NO-ONE from QuakeNet will ever ask for your password.  NEVER send your password to ANYONE except Q@CServe.quakenet.org.", "s"),
   msg(QM_NEWACCOUNT, "Account $0 created successfully.\nInformation about how to access and use your new account will be sent to your email address, $1.\nIf you do not see an email soon be sure to check your spam folder.", "ss"),
   msg(QM_AUTHNAMEINUSE, "Someone already has the account name $0!\nIf this is your account use AUTH to login, otherwise please change your nick using /NICK and try again.", "s"),
   msg(QM_ALREADYONCHAN, "You're already on $0.", "s"),
@@ -226,6 +226,7 @@ BeginMessages() {
   msg(QM_INVALIDHMAC, "The supplied login credentials are not valid (bad HMAC).", ""),
   msg(QM_PASSEMAILCHANGED, "Auth failed: account password has been changed since you logged in.", ""),
   msg(QM_REASONREQUIRED, "Supply a decent reason.", ""),
+  msg(QM_BYPASSINGSUSPEND,"NOTE: $0 is suspended, bypassing suspension.", "s"),
 } 
 EndMessages()
 #endif

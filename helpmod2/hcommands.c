@@ -1685,7 +1685,7 @@ static void helpmod_cmd_everyoneout (huser *sender, channel* returntype, char* o
 	if (huser_get_level((*hchanuser)->husr) < H_TRIAL)
 	    if (kickmode == HELPMOD_KICKMODE_ALL || (kickmode == HELPMOD_KICKMODE_UNAUTHED && !IsAccount((*hchanuser)->husr->real_user)))
 	    {
-		helpmod_kick(hchan, (*hchanuser)->husr, reason);
+		helpmod_kick(hchan, (*hchanuser)->husr, "%s", reason);
 		continue;
 	    }
 	hchanuser = &(*hchanuser)->next;
@@ -1758,7 +1758,7 @@ static void helpmod_cmd_kick (huser *sender, channel* returntype, char* ostr, in
     }
 
     for (i=0;i<ntargets;i++)
-        helpmod_kick(hchan, targets[i], reason);
+        helpmod_kick(hchan, targets[i], "%s", reason);
 }
 
 static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
@@ -2300,7 +2300,7 @@ static void helpmod_cmd_invite (huser *sender, channel *returntype, char* arg, i
             return;
         }
 
-        if (nickbanned(sender->real_user, hchan->real_channel))
+        if (nickbanned(sender->real_user, hchan->real_channel, 0))
         {
             helpmod_reply(sender, returntype, "Cannot invite: You are banned from channel %s", argv[0]);
             return;
@@ -3236,13 +3236,13 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 
 	    if (bufpos > (384 - (HED_FILENAME_LENGTH+1)))
 	    {
-		helpmod_reply(sender, returntype, buffer);
+		helpmod_reply(sender, returntype, "%s", buffer);
 		bufpos = 0;
 	    }
 	}
 
 	if (bufpos)
-	    helpmod_reply(sender, returntype, buffer);
+	    helpmod_reply(sender, returntype, "%s", buffer);
 
 	free(start);
         free(lines);

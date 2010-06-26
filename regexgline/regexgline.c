@@ -24,7 +24,9 @@
 #define DELAYED_HOST_GLINE   5
 #define DELAYED_KILL         6
 
-MODULE_VERSION("1.43");
+#define RESERVED_NICK_GLINE_DURATION 3600 /* 1h */
+
+MODULE_VERSION("1.44");
 
 typedef struct rg_glinenode {
   nick *np;
@@ -57,14 +59,17 @@ void rg_dodelay(void *arg);
 void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched);
 void rg_flush_schedule(void *arg);
 
+static char *gvhost(nick *np);
+
 static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
 static int attached = 0, started = 0;
 
 static unsigned int getrgmarker(void);
 
+#define RESERVED_NICK_CLASS "reservednick"
 /* shadowserver only reports classes[0] */
-static const char *classes[] = { "drone", "proxy", "spam", "fakeauth", "other", (char *)0 };
+static const char *classes[] = { "drone", "proxy", "spam", "other", RESERVED_NICK_CLASS, (char *)0 };
 
 void _init(void) {
   sstring *max_casualties, *max_spew, *expiry_time, *max_per_gline;
@@ -259,11 +264,7 @@ void rg_dodelay(void *arg) {
   }
   
   if ((delay->reason->type == DELAYED_KILL) || (usercount > rg_max_per_gline)) {
-    if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed kill regex %08lx (class: %s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class);
-    } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed kill regex %08lx (class: %s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class);
-    }
+    controlwall(NO_OPER, NL_HITS, "%s matched delayed kill regex %08lx (class: %s)", gvhost(delay->np), delay->reason->glineid, delay->reason->class);
 
     rg_shadowserver(delay->np, delay->reason, DELAYED_KILL);
     killuser(NULL, delay->np, "%s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
@@ -271,17 +272,9 @@ void rg_dodelay(void *arg) {
   }
   
   if (delay->reason->type == DELAYED_IDENT_GLINE) {
-    if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed user@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
-    } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed user@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
-    }
+    controlwall(NO_OPER, NL_HITS, "%s matched delayed user@host gline regex %08lx (class: %s, hit %d user%s)", gvhost(delay->np), delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
   } else if (delay->reason->type == DELAYED_HOST_GLINE) {
-    if (IsAccount(delay->np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched delayed *@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->np->authname, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
-    } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched delayed *@host gline regex %08lx (class: %s, hit %d user%s)", delay->np->nick, delay->np->ident, delay->np->host->name->content, delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
-    }
+    controlwall(NO_OPER, NL_HITS, "%s matched delayed *@host gline regex %08lx (class: %s, hit %d user%s)", gvhost(delay->np), delay->reason->glineid, delay->reason->class, usercount, (usercount!=1)?"s":"");
   } else {
     return;
   }
@@ -301,11 +294,7 @@ void rg_flushglines(struct rg_glinelist *gll) {
   for(nn=gll->start;nn;nn=pn) {
     pn = nn->next;
     if(nn->punish == INSTANT_KILL) {
-      if ( IsAccount(nn->np) ) {
-        controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->np->authname, nn->reason->glineid, nn->reason->class);
-      } else {
-        controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched kill regex %08lx (class: %s)", nn->np->nick, nn->np->ident, nn->np->host->name->content, nn->reason->glineid, nn->reason->class);
-      }
+      controlwall(NO_OPER, NL_HITS, "%s matched kill regex %08lx (class: %s)", gvhost(nn->np), nn->reason->glineid, nn->reason->class);
 
       rg_shadowserver(nn->np, nn->reason, nn->punish);
       killuser(NULL, nn->np, "%s (ID: %08lx)", nn->reason->reason->content, nn->reason->glineid);
@@ -381,7 +370,8 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
                          "3 - Instant KILL (ik)\n"
                          "4 - Delayed USER@IP GLINE (dgu)\n"
                          "5 - Delayed *@IP GLINE (dgh)\n"
-                         "6 - Delayed KILL (dk)",
+                         "6 - Delayed KILL (dk)\n"
+                         "Note that some classes may have additional side effects (e.g. 'reservednick' also sets nick style glines).",
                          allclasses);
 
   registercontrolhelpcmd("regexgline", NO_OPER, 5, &rg_gline, helpbuf);
@@ -1073,6 +1063,9 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     snprintf(hostname, sizeof(hostname), "%s@%s", np->ident, IPtostr(np->p_ipaddr));
   }
 
+  if(!strcmp(rp->class, RESERVED_NICK_CLASS))
+    irc_send("%s GL * +%s!*@* %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, np->nick, RESERVED_NICK_GLINE_DURATION, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
+
   validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
   if (validdelay || (usercount > rg_max_per_gline)) {
     struct rg_glinenode *nn = (struct rg_glinenode *)malloc(sizeof(struct rg_glinenode));
@@ -1098,17 +1091,9 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   if (rp->type == INSTANT_IDENT_GLINE) {
-    if (IsAccount(np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched user@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
-    } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched user@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
-    }
+    controlwall(NO_OPER, NL_HITS, "%s matched user@host gline regex %08lx (class: %s, hit %d user%s)", gvhost(np), rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
   } else if(rp->type == INSTANT_HOST_GLINE) {
-    if (IsAccount(np)) {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s/%s matched *@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, np->authname, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
-    } else {
-      controlwall(NO_OPER, NL_HITS, "%s!%s@%s matched *@host gline regex %08lx (class: %s, hit %d user%s)", np->nick, np->ident, np->host->name->content, rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
-    }
+    controlwall(NO_OPER, NL_HITS, "%s matched *@host gline regex %08lx (class: %s, hit %d user%s)", gvhost(np), rp->glineid, rp->class, usercount, (usercount!=1)?"s":"");
   } else {
     return 0;
   }
@@ -1116,6 +1101,18 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   rg_shadowserver(np, rp, rp->type);
   irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
   return usercount;
+}
+
+static char *gvhost(nick *np) {
+  static char buf[NICKLEN+1+USERLEN+1+HOSTLEN+1+ACCOUNTLEN+4+REALLEN+1+10];
+
+  if(IsAccount(np)) {
+    snprintf(buf, sizeof(buf), "%s!%s@%s/%s r(%s)", np->nick, np->ident, np->host->name->content, np->authname, np->realname->name->content);
+  } else {
+    snprintf(buf, sizeof(buf), "%s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+  }
+
+  return buf;
 }
 
 static int floodprotection = 0;

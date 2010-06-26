@@ -127,7 +127,7 @@ static void helpmod_hook_channel_newnick(int unused, void *args)
 	helpmod_setban(hchan, banmask, time(NULL) + 1 * HDEF_d, MCB_ADD, HNOW);
 
 	if (hb)
-	    helpmod_kick(hchan, husr,hban_get_reason(hb));
+	    helpmod_kick(hchan, husr, "%s", hban_get_reason(hb));
 	else
 	    helpmod_kick(hchan, husr, "Your presence on channel %s is not wanted", hchannel_get_name(hchan));
 

@@ -91,6 +91,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
   cmdsummary *summary;
   char cmdbuf[50];
   char *ct;
+  unsigned int dumpcount=0;
   
   n=getcommandlist(cscommands, cmdlist, 200);
   rup=getreguserfromnick(sender);
@@ -102,7 +103,49 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_COMMANDLIST);
 
+  if (cargc>0 && rup && UIsDev(rup) && !ircd_strcmp(cargv[0], "-v")) {
+    dumpcount=1;
+  }
+
   for (i=0;i<n;i++) {
+    /* Generate the appropriate strings for the command name (including 
+     * prefixes for privileged users) and the summary text.
+     *
+     * We do this before we're sure we will print the command to make things
+     * easier when we are doing -v */    
+    summary=(cmdsummary *)cmdlist[i]->ext;
+    
+    if (rup && UHasStaffPriv(rup)) {
+      if (cmdlist[i]->level & QCMD_DEV) {
+        sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_ADMIN) {
+        sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_OPER) {
+        sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_HELPER) {
+        sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_STAFF) {
+        sprintf(cmdbuf,"+q %s",cmdlist[i]->command->content);
+      } else {
+        sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
+      }
+      ct=cmdbuf;
+    } else {
+      ct=cmdlist[i]->command->content;
+    }
+    
+    if (summary->bylang[lang]) {
+      message=summary->bylang[lang]->content;
+    } else if (summary->bylang[0]) {
+      message=summary->bylang[0]->content;
+    } else {
+      message=summary->def->content;
+    }
+    
+    if (dumpcount) {
+      chanservsendmessage(sender,"%-20s %u", cmdbuf, cmdlist[i]->calls);
+      continue;
+    }
     
     if (cargc>0 && !match2strings(cargv[0],cmdlist[i]->command->content))
       continue;
@@ -138,35 +181,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 	(!rup || !UIsDev(rup) || !IsOper(sender)))
       continue;
     
-    summary=(cmdsummary *)cmdlist[i]->ext;
-    
-    if (rup && UHasStaffPriv(rup)) {
-      if (cmdlist[i]->level & QCMD_DEV) {
-        sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_ADMIN) {
-        sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_OPER) {
-        sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_HELPER) {
-        sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_STAFF) {
-        sprintf(cmdbuf,"+q %s",cmdlist[i]->command->content);
-      } else {
-        sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
-      }
-      ct=cmdbuf;
-    } else {
-      ct=cmdlist[i]->command->content;
-    }
-    
-    if (summary->bylang[lang]) {
-      message=summary->bylang[lang]->content;
-    } else if (summary->bylang[0]) {
-      message=summary->bylang[0]->content;
-    } else {
-      message=summary->def->content;
-    }
-    
+    /* We passed all the checks, send the message */    
     chanservsendmessage(sender, "%-20s %s",ct, message);
   }
 
@@ -204,9 +219,9 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
 
   if (sum->defhelp && *(sum->defhelp)) {
     if (oneline) {
-      chanservsendmessageoneline(sender, sum->defhelp);
+      chanservsendmessageoneline(sender, "%s", sum->defhelp);
     } else {
-      chanservsendmessage(sender, sum->defhelp);
+      chanservsendmessage(sender, "%s", sum->defhelp);
     }
   } else {
     if (!oneline)
@@ -330,11 +345,11 @@ void csdb_dohelp_real(DBConn *dbconn, void *arg) {
   }
 
   if (result) {
-    chanservsendmessage(np, result);
+    chanservsendmessage(np, "%s", result);
   } else {
     cmdsummary *sum=hip->cmd->ext;
     if (sum->defhelp && *(sum->defhelp)) {
-      chanservsendmessage(np, sum->defhelp);
+      chanservsendmessage(np, "%s", sum->defhelp);
     } else {
       chanservstdmessage(np, QM_NOHELP, hip->commandname->content);
     }

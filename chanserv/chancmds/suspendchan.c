@@ -57,9 +57,15 @@ int csc_dosuspendchan(void *source, int cargc, char **cargv) {
   chanservwallmessage("%s (%s) used SUSPENDCHAN on %s (reason: %s)", sender->nick, rup->username, cip->name->content, rcp->suspendreason->content);
 
   cs_log(sender,"SUSPENDCHAN %s (%s)",cip->name->content,rcp->suspendreason->content);
-  if(cip->channel)
-    chanservjoinchan(cip->channel);
+  if(cip->channel) {
+    char reasonbuf[512];
+    
+    snprintf(reasonbuf,511,"Channel suspended: %s",rcp->suspendreason->content);
+    reasonbuf[511]=0;
 
+    chanservpartchan(cip->channel, reasonbuf);
+  }
+  
   csdb_updatechannel(rcp);
   chanservstdmessage(sender, QM_DONE);
 

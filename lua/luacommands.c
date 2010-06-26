@@ -210,7 +210,7 @@ static int lua_invite(lua_State *ps) {
   if(!cp)
     LUA_RETURN(ps, LUA_FAIL);
 
-  localinvite(lua_nick, cp, np);
+  localinvite(lua_nick, cp->index, np);
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -374,6 +374,14 @@ static int lua_basepath(lua_State *ps) {
 static int lua_botnick(lua_State *ps) {
   lua_pushstring(ps, luabotnick->content);
 
+  return 1;
+}
+
+static int lua_numerictobase64(lua_State *ps) {
+  if(!lua_islong(ps, 1))
+    return 0;
+
+  lua_pushstring(ps, longtonumeric(lua_tolong(ps, 1), 5));
   return 1;
 }
 
@@ -898,6 +906,8 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
   lua_register(l, "irc_sethost", lua_sethost);
+
+  lua_register(l, "irc_numerictobase64", lua_numerictobase64);
 }
 
 /* --- */

@@ -797,6 +797,7 @@ int csc_verifyqticket(char *data, char *digest);
 /* chanservuser.c */
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
+void chanservpartchan(channel *cp, char *reason);
 #define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
 #define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
 void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));;
@@ -820,7 +821,7 @@ void cs_docheckopvoice(channel *cp, modechanges *changes);
 void cs_checkbans(channel *cp);
 void cs_schedupdate(chanindex *cip, int mintime, int maxtime);
 void cs_timerfunc(void *arg);
-void cs_removechannel(regchan *rcp);
+void cs_removechannel(regchan *rcp, char *reason);
 int cs_removechannelifempty(nick *sender, regchan *rcp);
 void cs_doallautomodes(nick *np);
 void cs_checknickbans(nick *np);

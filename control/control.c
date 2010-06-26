@@ -267,6 +267,10 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     }
   }
 
+  if (target->away) {
+    controlreply((nick *)sender, "Away      : %s",target->away->content);
+  }
+
   hooknick=(nick *)sender;
   registerhook(HOOK_CONTROL_WHOISREPLY,&handlewhois);
   triggerhook(HOOK_CONTROL_WHOISREQUEST,target);

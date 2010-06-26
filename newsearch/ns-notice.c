@@ -123,7 +123,7 @@ void notice_free(searchCtx *ctx, struct searchNode *thenode) {
       for(np=nicktable[i];np;np=nnp) {
         nnp = np->next;
         if (np->marker == nickmarker)
-          controlnotice(np, localdata->message);
+          controlnotice(np, "%s", localdata->message);
       }
     }
   }
@@ -132,7 +132,7 @@ void notice_free(searchCtx *ctx, struct searchNode *thenode) {
       for (np=nicktable[i];np;np=nnp) {
         nnp = np->next;
         if (np->marker == localdata->marker)
-         controlnotice(np, localdata->message);
+         controlnotice(np, "%s", localdata->message);
       }
     }
   }
