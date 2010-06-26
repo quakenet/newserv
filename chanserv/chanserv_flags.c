@@ -2,6 +2,10 @@
 #include "../chanserv/chanserv.h"
 #undef CS_NODB
 
+#include "../lib/version.h"
+
+MODULE_VERSION(QVERSION);
+
 const flag rcflags[] = {
   { 'a', QCFLAG_AUTOOP },
   { 'b', QCFLAG_BITCH },

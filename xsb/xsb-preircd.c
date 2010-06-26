@@ -15,7 +15,10 @@
 #include "../irc/irc.h"
 #include "../lib/hmac.h"
 #include "../core/schedule.h"
+#include "../lib/version.h"
 #include "xsb.h"
+
+MODULE_VERSION("");
 
 static const char *DEFAULT_SERVICE_MASKS[] = { "services*.*.quakenet.org", (char *)0 };
 

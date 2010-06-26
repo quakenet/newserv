@@ -22,6 +22,9 @@
 #include "hdef.h"
 #include "hticket.h"
 #include "hed.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 int HELPMOD_ACCOUNT_EXPIRATION[] =
 {

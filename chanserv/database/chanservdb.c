@@ -11,11 +11,14 @@
 #include "../../core/nsmalloc.h"
 #include "../../lib/strlfunc.h"
 #include "../../dbapi/dbapi.h"
+#include "../../lib/version.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <stdarg.h>
+
+MODULE_VERSION(QVERSION);
 
 int chanservdb_ready;
 

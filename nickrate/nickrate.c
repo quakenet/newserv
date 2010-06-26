@@ -14,6 +14,9 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string.h>
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 unsigned int nicks;
 unsigned int quits;

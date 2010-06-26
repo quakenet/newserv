@@ -6,6 +6,9 @@
 #include "../core/nsmalloc.h"
 #include "../core/hooks.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 void nsmstats(int hookhum, void *arg);
 int nsmhistogram(void *sender, int cargc, char **cargv);

@@ -5,6 +5,9 @@
 #include "../irc/irc.h"
 #include "../localuser/localuser.h"
 #include "../lib/flags.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 /* we allow reauthing for flag changing, as well as testing purposes */
 int au_auth(void *source, int cargc, char **cargv) {

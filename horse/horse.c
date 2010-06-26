@@ -1,6 +1,9 @@
 #include "../control/control.h"
 #include "../nick/nick.h"
 #include "../channel/channel.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 int ho_horse(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;

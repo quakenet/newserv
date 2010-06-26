@@ -4,6 +4,9 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 #include "../server/server.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 int dofsck(void *source, int cargc, char **cargv);
 

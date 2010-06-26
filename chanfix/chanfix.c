@@ -14,6 +14,9 @@
 #include "../nick/nick.h"
 #include "../lib/irc_string.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 /* control's nick */
 extern nick *mynick;

@@ -11,6 +11,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "../lib/version.h"
+
+MODULE_VERSION(QVERSION)
 
 #define CSG_BUFSIZE    1024
 #define CSG_MAXSTARTPOINT    30

@@ -3,6 +3,9 @@
 #include "../channel/channel.h"
 #include "../control/control.h"
 #include "../newsearch/newsearch.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 #include <stdio.h>
 #include <string.h>

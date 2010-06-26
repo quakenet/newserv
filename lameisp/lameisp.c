@@ -3,6 +3,9 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../localuser/localuserchannel.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("");
 
 #define LI_CLONEMAX 2
 #define LI_KILL_MESSAGE "excess clones from your host"

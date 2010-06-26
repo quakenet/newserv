@@ -7,11 +7,14 @@
 #include "../core/nsmalloc.h"
 #include "../control/control.h"
 #include "../core/schedule.h"
+#include "../lib/version.h"
 
 #include <stdio.h>
 #include <string.h>
 
 #define ALLOCUNIT	100
+
+MODULE_VERSION("")
 
 patricianick_t *freepatricianicks;
 int pnode_ext;

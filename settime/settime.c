@@ -5,6 +5,9 @@
 #include "../irc/irc.h"
 #include "../core/schedule.h"
 #include "../control/control.h"
+#include "../lib/version.h"
+
+MODULE_VERSION("")
 
 schedule *settime_schedule;
 int settime_cmd(void *sender, int cargc, char **cargv);
