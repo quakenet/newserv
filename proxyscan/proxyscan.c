@@ -285,6 +285,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6668);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
+  proxyscan_addscantype(STYPE_ROUTER, 3128);
  
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
@@ -716,6 +717,16 @@ void handlescansock(int fd, short events) {
       
       /* Do nothing */
       break;    
+
+    case STYPE_ROUTER:
+      sprintf(buf,"GET /nonexistent HTTP/1.0\r\n\r\n");
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+	killsock(sp, SOUTCOME_CLOSED);
+        return;
+      }
+      
+      /* Do nothing */
+      break;    
     }                
     break;
     
@@ -737,12 +748,15 @@ void handlescansock(int fd, short events) {
       char *magicstring;
       int magicstringlength;
 
-      if(sp->type != STYPE_DIRECT_IRC) {
-        magicstring = MAGICSTRING;
-        magicstringlength = MAGICSTRINGLENGTH;
-      } else {
+      if(sp->type == STYPE_DIRECT_IRC) {
         magicstring = MAGICIRCSTRING;
         magicstringlength = MAGICIRCSTRINGLENGTH;
+      } else if(sp->type == STYPE_ROUTER) {
+        magicstring = MAGICROUTERSTRING;
+        magicstringlength = MAGICROUTERSTRINGLENGTH;
+      } else {
+        magicstring = MAGICSTRING;
+        magicstringlength = MAGICSTRINGLENGTH;
       }
 
       for (i=0;i<sp->bytesread - magicstringlength;i++) {
