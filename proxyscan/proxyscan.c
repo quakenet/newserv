@@ -571,6 +571,8 @@ void killsock(scan *sp, int outcome) {
     }
   }
 
+  /* deref prefix (referenced in queuescan) */
+  derefnode(iptree,sp->node);
   freescan(sp);
 
   /* kick the queue.. */
@@ -967,6 +969,11 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
+    if (bits != 128 || !irc_in_addr_is_ipv4(&sin) || irc_in_addr_is_loopback(&sin)) {
+      sendnoticetouser(proxyscannick,np,"You may only scan single IPv4 IP's");
+      return CMD_OK;
+    }
+
     time_t t;
     sendnoticetouser(proxyscannick,np,"Forcing scan of %s",IPtostr(sin));
     // * Just queue the scans directly here.. plonk them on the priority queue * /
