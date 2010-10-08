@@ -958,6 +958,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_CHANMODES 12
 #define PUSHER_TIMESTAMP 13
 #define PUSHER_STRING_INDIRECT 14
+#define PUSHER_ACC_ID 15
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -976,6 +977,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_LONG, accountts);
   PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
   PUSH_NICKPUSHER_CUSTOM(PUSHER_COUNTRY, "country");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1047,6 +1049,16 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
       case PUSHER_CHANMODES:
         lua_pushstring(l, printallmodes(*((channel **)offset)));
         break;
+      case PUSHER_ACC_ID:
+        {
+          nick *tnp = (nick *)np;
+          if(IsAccount(tnp) && tnp->auth) {
+            lua_pushlong(l, tnp->auth->userid);
+          } else {
+            lua_pushnil(l);
+          }
+          break;
+        }
       case PUSHER_REALUSERS:
         {
           channel *cp = *((channel **)offset);
