@@ -13,6 +13,7 @@ MODULE_VERSION("");
 int au_auth(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;
   char *authname;
+  int authts;
   int authid;
   flag_t flags;
 
@@ -24,8 +25,8 @@ int au_auth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargc > 2) {
-    if(setflags(&flags, AFLAG_ALL, cargv[2], accountflags, REJECT_UNKNOWN) != REJECT_NONE) {
+  if(cargc > 3) {
+    if(setflags(&flags, AFLAG_ALL, cargv[3], accountflags, REJECT_UNKNOWN) != REJECT_NONE) {
       controlreply(sender, "Bad flag(s) supplied.");
       return CMD_ERROR;
     }
@@ -34,18 +35,19 @@ int au_auth(void *source, int cargc, char **cargv) {
   }
 
   authname = cargv[0];
-  authid = atoi(cargv[1]);
+  authts = atoi(cargv[1]);
+  authid = atoi(cargv[2]);
 
-  controlwall(NO_OPER, NL_OPERATIONS, "AUTH'ed at %s:%d:%s", authname, authid, printflags(flags, accountflags));
+  controlwall(NO_OPER, NL_OPERATIONS, "AUTH'ed at %s:%d:%d:%s", authname, authts, authid, printflags(flags, accountflags));
 
-  localusersetaccount(sender, authname, authid, flags, 0);
+  localusersetaccount(sender, authname, authid, flags, authts);
   controlreply(sender, "Done.");
 
   return CMD_OK;
 }
 
 void _init() {
-  registercontrolhelpcmd("auth", NO_OPERED, 3, au_auth, "Usage: auth <authname> <authid> ?accountflags?");
+  registercontrolhelpcmd("auth", NO_OPERED, 3, au_auth, "Usage: auth <authname> <authts> <authid> ?accountflags?");
 }
 
 void _fini() {
