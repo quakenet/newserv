@@ -241,7 +241,7 @@
 
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
-#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgo]|fo|me|seum|op|ro)?$"
+#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgol]|fo|me|seum|op|ro)?$"
 
 #define VALID_ACCOUNT_NAME  "^[-a-z0-9]*$"
 
