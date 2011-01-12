@@ -60,6 +60,8 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
 void rg_flush_schedule(void *arg);
 
 static char *gvhost(nick *np);
+static void rg_scannick(nick *np, void (*fn)(struct rg_struct *, nick *, char *, void *), void *arg);
+static void rg_gline_match(struct rg_struct *rp, nick *np, char *hostname, void *arg);
 
 static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
@@ -398,26 +400,37 @@ void rg_dbload(void) {
   dbloadtable("regexgline.glines", NULL, dbloaddata, dbloadfini);
 }
 
-void rg_nick(int hooknum, void *arg) {
-  nick *np = (nick *)arg;
+static void rg_scannick(nick *np, void (*fn)(struct rg_struct *, nick *, char *, void *), void *arg) {
   struct rg_struct *rp;
   char hostname[RG_MASKLEN];
   int hostlen;
-  struct rg_glinelist gll;
-
-  rg_initglinelist(&gll);
-
-  hostlen = RGBuildHostname(hostname, np);
 
   if(ignorable_nick(np))
     return;
 
+  hostlen = RGBuildHostname(hostname, np);
+
   for(rp=rg_list;rp;rp=rp->next) {
     if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
-      rg_dogline(&gll, np, rp, hostname);
+      fn(rp, np, hostname, arg);
       break;
     }
   }
+}
+
+static void rg_gline_match(struct rg_struct *rp, nick *np, char *hostname, void *arg) {
+  struct rg_glinelist *gll = (struct rg_glinelist *)arg;
+
+  rg_dogline(gll, np, rp, hostname);
+}
+
+void rg_nick(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  struct rg_glinelist gll;
+
+  rg_initglinelist(&gll);
+
+  rg_scannick(np, rg_gline_match, &gll);
 
   rg_flushglines(&gll);
 }
@@ -869,27 +882,15 @@ int rg_spew(void *source, int cargc, char **cargv) {
 }
 
 void rg_startup(void) {
-  int j, hostlen;
+  int j;
   nick *np;
-  struct rg_struct *rp;
   struct rg_glinelist gll;
-  char hostname[RG_MASKLEN];
 
   rg_initglinelist(&gll);
 
-  for(j=0;j<NICKHASHSIZE;j++) {
-    for(np=nicktable[j];np;np=np->next) {
-      if(ignorable_nick(np))
-        continue;
-      hostlen = RGBuildHostname(hostname, np);
-      for(rp=rg_list;rp;rp=rp->next) {
-        if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
-          rg_dogline(&gll, np, rp, hostname);
-          break;
-        }
-      }
-    }
-  }
+  for(j=0;j<NICKHASHSIZE;j++)
+    for(np=nicktable[j];np;np=np->next)
+      rg_scannick(np, rg_gline_match, &gll);
   
   rg_flushglines(&gll);
 }
