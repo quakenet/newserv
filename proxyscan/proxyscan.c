@@ -286,6 +286,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
+  proxyscan_addscantype(STYPE_SOCKS5, 27977);
  
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
