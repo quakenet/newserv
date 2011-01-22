@@ -60,6 +60,9 @@ void rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *
 void rg_flush_schedule(void *arg);
 
 static char *gvhost(nick *np);
+typedef void (scannick_fn)(struct rg_struct *, nick *, char *, void *);
+static void rg_scannick(nick *np, scannick_fn *fn, void *arg);
+static void rg_gline_match(struct rg_struct *rp, nick *np, char *hostname, void *arg);
 
 static DBModuleIdentifier dbid;
 static unsigned long highestid = 0;
@@ -70,6 +73,9 @@ static unsigned int getrgmarker(void);
 #define RESERVED_NICK_CLASS "reservednick"
 /* shadowserver only reports classes[0] */
 static const char *classes[] = { "drone", "proxy", "spam", "other", RESERVED_NICK_CLASS, (char *)0 };
+
+void rg_initglinelist(struct rg_glinelist *gll);
+void rg_flushglines(struct rg_glinelist *gll);
 
 void _init(void) {
   sstring *max_casualties, *max_spew, *expiry_time, *max_per_gline;
@@ -108,7 +114,60 @@ void _init(void) {
     Error("regexgline", ERR_STOP, "Could not connect to database.");
   }
 }
-    
+
+static void rg_count_match(struct rg_struct *rp, nick *np, char *hostname, void *arg) {
+  void **varg = (void **)arg;
+  int *count = (int *)varg[0];
+
+  (*count)++;
+}
+
+static void rg_gline_reply_match(struct rg_struct *rp, nick *np, char *hostname, void *arg) {
+  void **varg = (void **)arg;
+
+  rg_count_match(rp, np, hostname, arg);
+  rg_gline_match(rp, np, hostname, varg[1]);
+}
+
+int rg_rescan(void *source, int cargc, char **cargv) {
+  int gline = 0;
+  int j;
+  nick *np = (nick *)source, *tnp;
+  void *arg[2];
+  int count = 0;
+  struct rg_glinelist gll;
+  scannick_fn *fn;
+
+  if(cargc > 0)
+    gline = !strcmp(cargv[0], "-g");
+
+  arg[0] = &count;
+
+  if(gline == 0) {
+    fn = rg_count_match;
+  } else {
+    controlreply(np, "G-line mode activated.");
+
+    rg_initglinelist(&gll);
+    arg[1] = &gll;
+
+    fn = rg_gline_reply_match;
+  }
+
+  controlreply(np, "Beginning scan, this may take a while...");
+
+  for(j=0;j<NICKHASHSIZE;j++)
+    for(tnp=nicktable[j];tnp;tnp=tnp->next)
+      rg_scannick(tnp, fn, arg);
+
+  controlreply(np, "Scan completed, %d hits.", count);
+
+  if(gline)
+    rg_flushglines(&gll);
+
+  return CMD_OK;
+}
+
 void _fini(void) {
   struct rg_struct *gp = rg_list, *oldgp;
   rg_delay *delay, *delaynext;
@@ -122,6 +181,7 @@ void _fini(void) {
     deregistercontrolcmd("regexdelgline", rg_delgline);
     deregistercontrolcmd("regexgline", rg_gline);
     deregistercontrolcmd("regexidlookup", rg_idlist);
+    deregistercontrolcmd("regexrescan", rg_rescan);
   }
 
   if(rg_delays) {
@@ -379,6 +439,7 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
   registercontrolhelpcmd("regexglist", NO_OPER, 1, &rg_glist, "Usage: regexglist <pattern>\nLists regular expression patterns.");
   registercontrolhelpcmd("regexspew", NO_OPER, 1, &rg_spew, "Usage: regexspew <pattern>\nLists users currently on the network which match the given pattern.");
   registercontrolhelpcmd("regexidlookup", NO_OPER, 1, &rg_idlist, "Usage: regexidlookup <id>\nFinds a regular expression pattern by it's ID number.");
+  registercontrolhelpcmd("regexrescan", NO_OPER, 1, &rg_rescan, "Usage: regexrescan ?-g?\nRescans the net for missed clients, optionally glining matches (used for debugging).");
 
   registerhook(HOOK_NICK_NEWNICK, &rg_nick);
   registerhook(HOOK_NICK_RENAME, &rg_nick);
@@ -398,26 +459,37 @@ void rg_dbload(void) {
   dbloadtable("regexgline.glines", NULL, dbloaddata, dbloadfini);
 }
 
-void rg_nick(int hooknum, void *arg) {
-  nick *np = (nick *)arg;
+static void rg_scannick(nick *np, scannick_fn *fn, void *arg) {
   struct rg_struct *rp;
   char hostname[RG_MASKLEN];
   int hostlen;
-  struct rg_glinelist gll;
-
-  rg_initglinelist(&gll);
-
-  hostlen = RGBuildHostname(hostname, np);
 
   if(ignorable_nick(np))
     return;
 
+  hostlen = RGBuildHostname(hostname, np);
+
   for(rp=rg_list;rp;rp=rp->next) {
     if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
-      rg_dogline(&gll, np, rp, hostname);
+      fn(rp, np, hostname, arg);
       break;
     }
   }
+}
+
+static void rg_gline_match(struct rg_struct *rp, nick *np, char *hostname, void *arg) {
+  struct rg_glinelist *gll = (struct rg_glinelist *)arg;
+
+  rg_dogline(gll, np, rp, hostname);
+}
+
+void rg_nick(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+  struct rg_glinelist gll;
+
+  rg_initglinelist(&gll);
+
+  rg_scannick(np, rg_gline_match, &gll);
 
   rg_flushglines(&gll);
 }
@@ -869,27 +941,15 @@ int rg_spew(void *source, int cargc, char **cargv) {
 }
 
 void rg_startup(void) {
-  int j, hostlen;
+  int j;
   nick *np;
-  struct rg_struct *rp;
   struct rg_glinelist gll;
-  char hostname[RG_MASKLEN];
 
   rg_initglinelist(&gll);
 
-  for(j=0;j<NICKHASHSIZE;j++) {
-    for(np=nicktable[j];np;np=np->next) {
-      if(ignorable_nick(np))
-        continue;
-      hostlen = RGBuildHostname(hostname, np);
-      for(rp=rg_list;rp;rp=rp->next) {
-        if(pcre_exec(rp->regex, rp->hint, hostname, hostlen, 0, 0, NULL, 0) >= 0) {
-          rg_dogline(&gll, np, rp, hostname);
-          break;
-        }
-      }
-    }
-  }
+  for(j=0;j<NICKHASHSIZE;j++)
+    for(np=nicktable[j];np;np=np->next)
+      rg_scannick(np, rg_gline_match, &gll);
   
   rg_flushglines(&gll);
 }
