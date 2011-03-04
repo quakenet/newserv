@@ -11,8 +11,8 @@
  * CMDHELP: Changes your current user flags, where:
  * CMDHELP: flags - changes to apply, in the usual flag letters preceded by +/- format.
  * CMDHELP: Valid user flags are:
- * DISHELP:  +c ACH'MENTS - enables achievements system - allows use of achievement commands
- * DISHELP:                 and sends achievement messages.
+ * CMDHELP:  +c ACH'MENTS - enables achievements system - allows use of achievement commands
+ * CMDHELP:                 and sends achievement messages.
  * CMDHELP:  +n NOTICE    - causes the bot to sent you NOTICEs.  If this flag is not set the
  * CMDHELP:                 bot will communicate using PRIVMSG.
  */
