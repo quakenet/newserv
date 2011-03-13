@@ -1,12 +1,8 @@
 /* privs.c */
 
 #include "miscreply.h"
-#include "numeric.h"
 #include "../irc/irc.h"
 #include "../core/error.h"
-#include "../nick/nick.h"
-
-#include <string.h>
 
 
 
@@ -21,12 +17,11 @@
  */
 int handleprivsmsg(void *source, int cargc, char **cargv) {
 
-  nick *snick;                                                  /* struct nick for source nick */
-  nick *tnick;                                                  /* struct nick for target nick */
-
-  char *sourcenum = (char *)source;                             /* source user numeric */
-  char *targetnum = getmynumeric();                             /* target server numeric */
-  char *privs = "IDDQD IDKFA IDCLIP IDDT IDCHOPPERS";           /* privileges */
+  nick *snick;                                          /* struct nick for source nick */
+  nick *tnick;                                          /* struct nick for target nick */
+  char *sourcenum = (char *)source;                     /* source user numeric */
+  char *targetnum;                                      /* target user numeric */
+  char *privs = "IDDQD IDKFA IDCLIP IDDT IDCHOPPERS";   /* privileges */
 
   /*
    * cheat codes from DOOM I & II
@@ -49,10 +44,6 @@ int handleprivsmsg(void *source, int cargc, char **cargv) {
   /* get the parameter */
   targetnum = cargv[0];
 
-  /* from a server? */
-  if (IsServer(sourcenum))
-    return CMD_OK;
-
   /* find source user */ 
   if (!(snick = miscreply_finduser(sourcenum, "PRIVS")))
     return CMD_OK;
@@ -65,9 +56,6 @@ int handleprivsmsg(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  /* get numeric of target's server */
-  targetnum = longtonumeric(homeserver((tnick)->numeric), 2);
-
   if (!IsOper(tnick))
     privs = "";
 
@@ -76,7 +64,7 @@ int handleprivsmsg(void *source, int cargc, char **cargv) {
    * 270 RPL_PRIVS "source 270 target nick :privs"
    *               "irc.netsplit.net 270 foobar barfoo :CHAN_LIMIT SHOW_INVIS SHOW_ALL_INVIS KILL"
    */
-  send_reply(targetnum, RPL_PRIVS, sourcenum, "%s :%s", tnick->nick, privs);
+  irc_send("%s 270 %s %s :%s", getmynumeric(), sourcenum, tnick->nick, privs);
 
   return CMD_OK;
 }

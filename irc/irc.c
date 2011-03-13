@@ -13,7 +13,6 @@
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
-#include "../miscreply/numeric.h"
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -610,10 +609,9 @@ void ircstats(int hooknum, void *arg) {
 
 /* list stats commands / m to a user
  *
- *  targetnum     stats request for server numeric
  *  sourcenum     numeric of the user requesting the listing
  */
-void stats_commands(char *targetnum, char *sourcenum) {
+void stats_commands(char *sourcenum) {
   Command *cmds[500];
   unsigned int c,i;
   
@@ -624,6 +622,6 @@ void stats_commands(char *targetnum, char *sourcenum) {
      * 212 RPL_STATSCOMMANDS "source 212 target command used_count bytes_count"
      *                       "irc.netsplit.net 212 foobar ACCOUNT 41 462"
      */
-    irc_send("%s %d %s %s %u 0", targetnum, RPL_STATSCOMMANDS, sourcenum, cmds[i]->command->content, cmds[i]->calls);
+    irc_send("%s 212 %s %s %u 0", getmynumeric(), sourcenum, cmds[i]->command->content, cmds[i]->calls);
   }
 }

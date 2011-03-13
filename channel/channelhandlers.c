@@ -6,7 +6,6 @@
 #include "channel.h"
 #include "../server/server.h"
 #include "../nick/nick.h"
-#include "../miscreply/numeric.h"
 #include "../lib/irc_string.h"
 #include "../irc/irc_config.h"
 #include "../parser/parser.h"
@@ -941,10 +940,16 @@ void handlewhoischannels(int hooknum, void *arg) {
   sstring *name;
   unsigned long *num;
   int i;
-  void **args = (void **)arg;
-  nick *sender = (nick *)args[0], *target = (nick *)args[1];
+  char **args = (char **)arg;
+  nick *sender = (nick *)args[0]; /* sender nick */
+  nick *target = (nick *)args[1]; /* target nick */
+  char *sourcenum = args[2];      /* source numeric */
 
-  if(IsService(target) || IsHideChan(target))
+  /* do not show channels for +k service clients or IRC Operators
+   * do not show channels for +n users
+   * unless they whois themselves
+   */
+  if ((IsService(target) || IsHideChan(target)) && sender != target)
     return;
 
   chans = (channel **)(target->channels->content);
@@ -973,7 +978,7 @@ void handlewhoischannels(int hooknum, void *arg) {
      *                       "irc.netsplit.net 319 foobar barfoo :-@#chan1 -+#chan2 -#chan3"
      */
     if(buffer[0] == '\0')
-      bufpos=snprintf(buffer, sizeof(buffer), "%s %d %s %s :", getmynumeric(), RPL_WHOISCHANNELS, longtonumeric(sender->numeric, 5), target->nick);
+      bufpos=snprintf(buffer, sizeof(buffer), "%s 319 %s %s :", getmynumeric(), sourcenum, target->nick);
 
     num = getnumerichandlefromchanhash(chans[i]->users, target->numeric);
 

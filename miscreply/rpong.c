@@ -1,15 +1,11 @@
 /* rpong.c */
 
 #include "miscreply.h"
-#include "msg.h"
-#include "numeric.h"
 #include "../irc/irc.h"
 #include "../core/error.h"
-#include "../nick/nick.h"
 #include "../server/server.h"
 
 #include <stdio.h>
-#include <string.h>
 #include <sys/time.h>
 
 
@@ -37,24 +33,16 @@
  */
 int handlerpongmsg(void *source, int cargc, char **cargv) {
 
-  nick *snick;                                          /* struct nick for source oper nick */
-
-  int i;                                                /* index for serverlist[] */
-  char *sourcenum = (char *)source;                     /* source numeric */
-  char *targetnum = getmynumeric();                     /* target server numeric */
-  char *server;                                         /* target server parameter */
-  char *servername = myserver->content;                 /* servername */
-  char *sourceoper;                                     /* requesting oper numeric */
-  char *time_s;                                         /* time in seconds */
-  char *time_us;                                        /* time in milliseconds */
-  char *rping;                                          /* ping returned to my client? */
-  char *comment;                                        /* comment by client */
-  struct timeval tv;                                    /* get time */
-  static char ping[18];                                 /* elapsed time */
-
-  /* not from server? */
-  if (!IsServer(sourcenum))
-    return CMD_OK;
+  nick *snick;                        /* struct nick for source oper nick */
+  long i;                             /* index for serverlist[]  */
+  char *sourcenum = (char *)source;   /* source numeric */
+  char *sourceoper;                   /* requesting operator numeric */
+  char *time_s;                       /* time in seconds */
+  char *time_us;                      /* time in milliseconds */
+  char *comment;                      /* comment by client */
+  char *servername;                   /* name of source server */
+  struct timeval tv;                  /* get time */
+  static char ping[18];               /* elapsed time */
 
   /* check parameters */
   if (cargc < 4) {
@@ -65,27 +53,20 @@ int handlerpongmsg(void *source, int cargc, char **cargv) {
   /* from pinged server to source server */
   if (cargc > 4) {
 
-    /* set the parameters */
-    server = cargv[0];
+    /* get the parameters */
     sourceoper = cargv[1];
     time_s = cargv[2];
     time_us = cargv[3];
     comment = cargv[4];
 
     /* find source server */
-    if (miscreply_findserver(sourcenum, "RPING") == -1)
+    if ((i = miscreply_findserver(sourcenum, "RPING")) == -1)
       return CMD_OK;
+    servername = serverlist[i].name->content;
 
     /* find requesting oper */
     if (!(snick = miscreply_finduser(sourceoper, "RPONG")))
       return CMD_OK;
-
-    /* find destination server */
-    else if ((i = miscreply_findservermatch(sourceoper, server)) == -1)
-      return CMD_OK;
-
-    targetnum = longtonumeric(i, 2);
-    servername = serverlist[i].name->content;
 
     /* get time */
     gettimeofday(&tv, NULL);
@@ -94,22 +75,8 @@ int handlerpongmsg(void *source, int cargc, char **cargv) {
     sprintf(ping, "%ld", (tv.tv_sec - atoi(time_s)) * 1000 + (tv.tv_usec - atoi(time_us)) / 1000);
 
     /* send */
-    irc_send("%s %s %s %s %s :%s", targetnum, TOK_RPONG, sourceoper,
+    irc_send("%s RO %s %s %s :%s", getmynumeric(), sourceoper,
       servername, ping, comment);
-  }
-
-  /* returned from source server to client */
-  else {
-
-    sourceoper = cargv[0];
-    servername = cargv[1];
-    rping = cargv[2];
-    comment = cargv[3];
-
-    /* should not happen, unless a client on my server sent RPING */
-    Error("miscreply", ERR_WARNING,
-      "RPONG returned from source server to client? %s RPONG %s %s %s :%s",
-      sourcenum, sourceoper, servername, rping, comment);
   }
 
   return CMD_OK;
