@@ -75,6 +75,7 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
     
     cs_log(sender,"CHANLEV %s #%s -%s (%s -> +)",cip->name->content,rup->username,
 	   printflags_noprefix(rcup->flags, rcuflags), printflags(rcup->flags, rcuflags));
+    csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
 
     oldflags=rcup->flags;
     rcup->flags=0;
@@ -87,7 +88,6 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
 
     csdb_deletechanuser(rcup);
     delreguserfromchannel(rcp, rup);
-    csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
     removed++;
   }
 
