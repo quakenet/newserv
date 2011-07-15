@@ -21,6 +21,7 @@ void _init() {
   registersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse, 0, "");
   registersearchterm(reg_usersearch, "qusername", qusername_parse, 0, "");
   registersearchterm(reg_chansearch, "qchanflags", qchanflags_parse, 0, "");
+  registersearchterm(reg_usersearch, "qsuspended", qsuspended_parse, 0, "");
 
   chanservaddcommand("nicksearch", QCMD_OPER, 5, cs_donicksearch, "Wrapper for standard newserv nicksearch command.", "");
   chanservaddcommand("chansearch", QCMD_OPER, 5, cs_dochansearch, "Wrapper for standard newserv chansearch command.", "");
