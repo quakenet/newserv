@@ -34,6 +34,29 @@
 /* Q9 Version */
 #define QVERSION "1.00"
 
+/* Achievements: Nothing before ACHIEVEMENTS_START
+ * opt-in only after ACHIEVEMENTS_END
+ * Titles are valid only between ACHIEVEMENTS_START and ACHIEVEMENTS_END */
+
+//#define ACH_TEST_APRIL1
+
+#ifdef ACH_TEST_APRIL1 
+
+#define ACHIEVEMENTS_START      1269702917
+#define ACHIEVEMENTS_END	1270162800
+
+#elif defined(ACH_TEST_POSTAPRIL1)
+
+#define ACHIEVEMENTS_START	0
+#define ACHIEVEMENTS_END 	1269702917
+
+#else
+
+#define ACHIEVEMENTS_START	1270076400
+#define ACHIEVEMENTS_END	1270162800
+
+#endif
+
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */
 #define   REGCHANUSERHASHSIZE 5
@@ -160,9 +183,10 @@
 #define   QUFLAG_INFO          0x0400  /* +i */
 #define   QUFLAG_DELAYEDGLINE  0x0800  /* +G */
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
+#define   QUFLAG_ACHIEVEMENTS  0x2000  /* +c */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdfff
+#define   QUFLAG_ALL           0xffff
 
 #define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
@@ -178,6 +202,7 @@
 #define UIsNoAuthLimit(x)   ((x)->flags & QUFLAG_NOAUTHLIMIT)
 #define UIsCleanupExempt(x) ((x)->flags & QUFLAG_CLEANUPEXEMPT)
 #define UIsStaff(x)         ((x)->flags & QUFLAG_STAFF)
+#define UIsAchievements(x)  ((x)->flags & QUFLAG_ACHIEVEMENTS)
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
@@ -216,7 +241,7 @@
 
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
-#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgo]|fo|me|seum|op|ro)?$"
+#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgol]|fo|me|seum|op|ro)?$"
 
 #define VALID_ACCOUNT_NAME  "^[-a-z0-9]*$"
 
@@ -243,6 +268,7 @@
 #define   QCFLAG_VOICEALL     0x1000  /* +v */
 #define   QCFLAG_WELCOME      0x2000  /* +w */
 #define   QCFLAG_SUSPENDED    0x4000  /* +z */
+#define   QCFLAG_ACHIEVEMENTS 0x8000  /* +h */
 
 #define CIsAutoOp(x)        ((x)->flags & QCFLAG_AUTOOP)
 #define CIsBitch(x)         ((x)->flags & QCFLAG_BITCH)
@@ -259,6 +285,7 @@
 #define CIsSuspended(x)     ((x)->flags & QCFLAG_SUSPENDED)
 #define CIsInfo(x)          ((x)->flags & QCFLAG_INFO)
 #define CIsNoInfo(x)        ((x)->flags & QCFLAG_NOINFO)
+#define CIsAchievements(x)  ((x)->flags & QCFLAG_ACHIEVEMENTS)
 
 #define CSetAutoOp(x)        ((x)->flags |= QCFLAG_AUTOOP)
 #define CSetBitch(x)         ((x)->flags |= QCFLAG_BITCH)
@@ -291,9 +318,9 @@
 #define   QCFLAG_USERCONTROL (QCFLAG_AUTOOP|QCFLAG_BITCH|QCFLAG_AUTOLIMIT| \
 			       QCFLAG_ENFORCE|QCFLAG_FORCETOPIC|QCFLAG_AUTOVOICE| \
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
-			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
+			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY|QCFLAG_ACHIEVEMENTS )
 
-#define   QCFLAG_ALL          0x7fff
+#define   QCFLAG_ALL          0xffff
 
 
 /* Channel user ("chanlev") flags */
@@ -403,6 +430,9 @@
 
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
 #define   QCMD_HIDDEN         QCMD_ALIAS
+
+#define   QCMD_ACHIEVEMENTS   0x0400 /* Achievement-related commands */
+#define   QCMD_TITLES         0x0800 /* Title-related commands */
 
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
@@ -514,6 +544,8 @@ typedef struct regchan {
   unsigned int        chanopaccts[CHANOPHISTORY];             /* Which account was responsible for each one */
   short               chanoppos;                              /* Position in the array */  
 } regchan;
+
+struct achievement_record;
 
 /* Registered user */
 typedef struct reguser {
@@ -798,9 +830,9 @@ int csc_verifyqticket(char *data, char *digest);
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
 void chanservpartchan(channel *cp, char *reason);
-#define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
-#define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
-void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));;
+#define chanservsendmessage(np, fmt, ...) chanservsendmessage_real(np, 0, fmt , ##__VA_ARGS__)
+#define chanservsendmessageoneline(np, fmt, ...) chanservsendmessage_real(np, 1, fmt , ##__VA_ARGS__)
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));
 void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1, 2)));
 void chanservcommandinit();
 void chanservcommandclose();

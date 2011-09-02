@@ -4,7 +4,7 @@
  * CMDNAME: requestpassword
  * CMDALIASES: requestpass
  * CMDLEVEL: QCMD_NOTAUTHED
- * CMDARGS: 1
+ * CMDARGS: 2
  * CMDDESC: Requests the current password by email.
  * CMDFUNC: csa_doreqpw
  * CMDPROTO: int csa_doreqpw(void *source, int cargc, char **cargv);

@@ -38,6 +38,8 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
   int isowner=0;
   int removed=0;
   int i;
+  void *args[3];
+  flag_t oldflags;
 
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "removeuser");
@@ -73,10 +75,19 @@ int csc_doremoveuser(void *source, int cargc, char **cargv) {
     
     cs_log(sender,"CHANLEV %s #%s -%s (%s -> +)",cip->name->content,rup->username,
 	   printflags_noprefix(rcup->flags, rcuflags), printflags(rcup->flags, rcuflags));
+    csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
+
+    oldflags=rcup->flags;
+    rcup->flags=0;
+
+    args[0]=sender;
+    args[1]=rcup;
+    args[2]=(void *)oldflags;
+                       
+    triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
 
     csdb_deletechanuser(rcup);
     delreguserfromchannel(rcp, rup);
-    csdb_chanlevhistory_insert(rcp, sender, rcup->user, rcup->flags, 0);
     removed++;
   }
 

@@ -38,6 +38,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   flag_t flags;
   short type=0;
   unsigned int i;
+  void *args[3];
   
   if (!rup)
     return CMD_ERROR;
@@ -171,6 +172,12 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   addregusertochannel(rcup);
   csdb_createchanuser(rcup);
   csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);
+
+  args[0]=sender;
+  args[1]=rcup;
+  args[2]=(void *)0;
+  
+  triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
 
   /* If the channel exists, get the ball rolling */
   if (cip->channel) {

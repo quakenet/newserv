@@ -82,9 +82,10 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
 
 int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
   int toomanyauths=0;
-  time_t now;
+  time_t now, oldlastauth;
   char userhost[USERLEN+HOSTLEN+2];
   nick *onp;
+  void *args[2];
   authname *anp;
 
   /* This should never fail but do something other than crashing if it does. */
@@ -136,6 +137,8 @@ int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
   }
   
   /* Guarantee a unique auth timestamp for each account */
+  oldlastauth=rup->lastauth;
+  
   if (rup->lastauth < now) 
     rup->lastauth=now;
   else
@@ -153,6 +156,10 @@ int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
   localusersetaccount(sender, rup->username, rup->ID, cs_accountflagmap(rup), rup->lastauth);
 
   chanservstdmessage(sender, QM_AUTHOK, rup->username);
+
+  args[0]=sender;
+  args[1]=(void *)oldlastauth;
+  triggerhook(HOOK_CHANSERV_AUTH, args);
 
   return CMD_OK;
 }

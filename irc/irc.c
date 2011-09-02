@@ -239,7 +239,7 @@ void irc_connect(void *arg) {
   sstring *mydesc;
   char *conto,*conpass;
   long portnum,pingfreq;
-/*  socklen_t opt=1460;*/
+  socklen_t opt=1460;
 
   nextline=inbuf;
   bytesleft=0;
@@ -270,10 +270,7 @@ void irc_connect(void *arg) {
   memcpy(&sockaddress.sin_addr, host->h_addr, sizeof(struct in_addr));
 #endif
   
-  /* slug: this makes some servers link really quite slowly
-   * (not that surprising I guess...)
-   *
-  if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
+/*  if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
   }
   */

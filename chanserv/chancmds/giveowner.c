@@ -40,6 +40,7 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
   flag_t oldflags;
   unsigned int thehash;
   char hashstr[100];
+  void *args[3];
   
   if (cargc<2) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "giveowner");
@@ -92,7 +93,13 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
   oldflags = rcup->flags;
   rcup->flags |= QCUFLAG_OWNER;
   rcup->changetime=time(NULL);
-          
+  
+  args[0]=sender;
+  args[1]=rcup;
+  args[2]=(void *)oldflags;
+
+  triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
+  
   chanservstdmessage(sender,QM_DONE);
 
   strcpy(flagbuf,printflags(oldflags,rcuflags));
