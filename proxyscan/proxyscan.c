@@ -286,6 +286,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
+  proxyscan_addscantype(STYPE_SOCKS5, 27977);
  
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
@@ -553,12 +554,20 @@ void killsock(scan *sp, int outcome) {
     now=time(NULL);    
     /* the purpose of this lastgline stuff is to stop gline spam from one scan */
     if (!chp->glineid || (now>=chp->lastgline+SCANTIMEOUT)) {
+      char buf[512];
+      const char *ip;
+
       chp->lastgline=now;
       glinedhosts++;
+
       loggline(chp, sp->node);   
+      ip = IPtostr(((patricia_node_t *)sp->node)->prefix->sin);
       irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	       mynumeric->content,IPtostr(((patricia_node_t *)sp->node)->prefix->sin),(intmax_t)getnettime(), chp->glineid);
-      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
+	       mynumeric->content,ip,(intmax_t)getnettime(), chp->glineid);
+      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",ip);
+
+      snprintf(buf, sizeof(buf), "proxy-gline %lu %s %s %hu %s", time(NULL), ip, scantostr(sp->type), sp->port, "irc.quakenet.org");
+      triggerhook(HOOK_SHADOW_SERVER, (void *)buf);
     } else {
       loggline(chp, sp->node);  /* Update log only */
     }

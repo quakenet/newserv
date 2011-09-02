@@ -57,7 +57,7 @@ struct searchNode *cumodes_parse(searchCtx *ctx, int argc, char **argv) {
   fset=0;
   fclear=~0;
   
-  if (!(flagstr=argtoconststr("cumodes", ctx, argv[0], &p))) {
+  if (!(flagstr=argtoconststr("cumodes", ctx, argv[1], &p))) {
     localdata->xnode->free(ctx, localdata->xnode);
     free(localdata);
     return NULL;
