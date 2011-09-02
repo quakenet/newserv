@@ -138,20 +138,16 @@ static void displaygroup(nick *sender, trustgroup *tg) {
 
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   nick *sender = source;
-  char *name;
   trustgroup *tg = NULL;
-  int id, found = 0, remaining = 50;
+  int found = 0, remaining = 50;
+  char *name;
 
   if(cargc < 1)
     return CMD_USAGE;
 
   name = cargv[0];
 
-  if(name[0] == '#')
-    tg = tg_strtotg(name + 1);
-
-  if((id = strtol(name, NULL, 10)))
-    tg = tg_getbyid(id);
+  tg = tg_strtotg(name);
 
   if(tg) {
     displaygroup(sender, tg);
