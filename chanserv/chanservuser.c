@@ -174,6 +174,20 @@ void chanservuserhandler(nick *target, int message, void **params) {
 	break;
       }
       
+      if ((cmd->level & QCMD_ACHIEVEMENTS) && !UIsDev(rup) &&
+          ((time(NULL) < ACHIEVEMENTS_START) || 
+           ((time(NULL) > ACHIEVEMENTS_END) && !UIsAchievements(rup)))) {
+        chanservstdmessage(sender, QM_UNKNOWNCMD, cargv[0]);
+        break;
+      } 
+    
+      if ((cmd->level & QCMD_TITLES) && !UIsDev(rup) &&
+          ((time(NULL) < ACHIEVEMENTS_START) ||
+           (time(NULL) > ACHIEVEMENTS_END))) {
+        chanservstdmessage(sender, QM_UNKNOWNCMD, cargv[0]);
+        break;
+      }
+      
       cmd->calls++;
       
       if (cmd->maxparams < (cargc-1)) {
@@ -182,6 +196,8 @@ void chanservuserhandler(nick *target, int message, void **params) {
       }
       
       cmd->handler((void *)sender, cargc-1, &(cargv[1]));
+      
+      triggerhook(HOOK_CHANSERV_CMD, sender);
     }
     break;
 

@@ -225,5 +225,11 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_ENDOFLIST);
 
+  if (rup==target) {
+    triggerhook(HOOK_CHANSERV_WHOAMI, sender);
+  } else {
+    triggerhook(HOOK_CHANSERV_WHOIS, sender);
+  }
+
   return CMD_OK;
 }
