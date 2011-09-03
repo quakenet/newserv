@@ -83,7 +83,7 @@ local function socket_ip_connect(fn, address, port, handler, tag)
 end
 
 local function socket_ip_bind(fn, address, port, handler, tag)
-  local socket = fn(address, port, socket_handler, tag)
+  local socket = fn(address, port, handler, tag)
   if not socket then
     return nil
   end
