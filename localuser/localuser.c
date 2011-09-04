@@ -178,7 +178,9 @@ int renamelocaluser(nick *np, char *newnick) {
   nick *np2;
   char ipbuf[25];
   time_t timestamp=getnettime();
-  
+  void *harg[2];
+  char oldnick[NICKLEN+1];
+
   if (!np)
     return -1;
   
@@ -188,13 +190,18 @@ int renamelocaluser(nick *np, char *newnick) {
   if (homeserver(np->numeric)!=mylongnum) 
     return -1;
 
+  strncpy(oldnick,np->nick,NICKLEN);
+  oldnick[NICKLEN]='\0';
+  harg[0]=(void *)np;
+  harg[1]=(void *)oldnick;
+
   if ((np2=getnickbynick(newnick))) {
     if (np2==np) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
       irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
-      triggerhook(HOOK_NICK_RENAME,np);     
+      triggerhook(HOOK_NICK_RENAME,harg);     
       return 0;
     } else {
       /* Kill other user and drop through */
@@ -209,7 +216,7 @@ int renamelocaluser(nick *np, char *newnick) {
   np->nick[NICKLEN]='\0';
   addnicktohash(np);
   irc_send("%s N %s %jd",longtonumeric(np->numeric,5),np->nick,(intmax_t)np->timestamp);
-  triggerhook(HOOK_NICK_RENAME,np);
+  triggerhook(HOOK_NICK_RENAME,harg);
   
   return 0;
 }

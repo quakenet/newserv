@@ -360,12 +360,14 @@ void lua_onpart(int hooknum, void *arg) {
 }
 
 void lua_onrename(int hooknum, void *arg) {
-  nick *np = (void *)arg;
+  void **harg = (void **)arg;
+  nick *np = harg[0];
+  char *oldnick = harg[1];
 
   if(!np)
     return;
 
-  lua_avpcall("irc_onrename", "l", np->numeric);
+  lua_avpcall("irc_onrename", "ls", np->numeric, oldnick);
 }
 
 void lua_onquit(int hooknum, void *arg) {

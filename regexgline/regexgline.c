@@ -174,7 +174,7 @@ void _fini(void) {
   
   if(started) {
     deregisterhook(HOOK_NICK_NEWNICK, &rg_nick);
-    deregisterhook(HOOK_NICK_RENAME, &rg_nick);
+    deregisterhook(HOOK_NICK_RENAME, &rg_rename);
     deregisterhook(HOOK_NICK_LOSTNICK, &rg_lostnick);
     deregistercontrolcmd("regexspew", rg_spew);
     deregistercontrolcmd("regexglist", rg_glist);
@@ -442,7 +442,7 @@ static void dbloadfini(DBConn *dbconn, void *arg) {
   registercontrolhelpcmd("regexrescan", NO_OPER, 1, &rg_rescan, "Usage: regexrescan ?-g?\nRescans the net for missed clients, optionally glining matches (used for debugging).");
 
   registerhook(HOOK_NICK_NEWNICK, &rg_nick);
-  registerhook(HOOK_NICK_RENAME, &rg_nick);
+  registerhook(HOOK_NICK_RENAME, &rg_rename);
   registerhook(HOOK_NICK_LOSTNICK, &rg_lostnick);
   rg_startup();
 
@@ -481,6 +481,11 @@ static void rg_gline_match(struct rg_struct *rp, nick *np, char *hostname, void 
   struct rg_glinelist *gll = (struct rg_glinelist *)arg;
 
   rg_dogline(gll, np, rp, hostname);
+}
+
+void rg_rename(int hooknum, void *arg) {
+  void **harg = (void **)arg;
+  rg_nick(hooknum, harg[0]);
 }
 
 void rg_nick(int hooknum, void *arg) {
