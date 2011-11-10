@@ -154,7 +154,7 @@ int openlistensocket(int portnum);
 void handlelistensocket(int fd, short events);
 
 /* proxyscanconnect.c */
-int createconnectsocket(long ip, int socknum);
+int createconnectsocket(struct irc_in_addr *ip, int socknum);
 
 /* proxyscandb.c */
 void loggline(cachehost *chp, patricia_node_t *node);

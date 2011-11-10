@@ -480,7 +480,7 @@ void startscan(patricia_node_t *node, int type, int port, int class) {
   sp->totalbytesread=0;
   memset(sp->readbuf, '\0', PSCAN_READBUFSIZE);
 
-  sp->fd=createconnectsocket(irc_in_addr_v4_to_int(&((patricia_node_t *)sp->node)->prefix->sin),sp->port);
+  sp->fd=createconnectsocket(&((patricia_node_t *)sp->node)->prefix->sin,sp->port);
   sp->state=SSTATE_CONNECTING;
   if (sp->fd<0) {
     /* Couldn't set up the socket? */
@@ -1001,8 +1001,8 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
-    if (bits != 128 || !irc_in_addr_is_ipv4(&sin) || irc_in_addr_is_loopback(&sin)) {
-      sendnoticetouser(proxyscannick,np,"You may only scan single IPv4 IP's");
+    if (bits != 128 || irc_in_addr_is_loopback(&sin)) {
+      sendnoticetouser(proxyscannick,np,"You may only scan single IP's");
       return CMD_OK;
     }
 

@@ -10,19 +10,31 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
-int createconnectsocket(long ip, int socknum) {
-  int fd;
-  struct sockaddr_in sin;
+int createconnectsocket(struct irc_in_addr *ip, int socknum) {
+  union {
+    struct sockaddr_in sin;
+    struct sockaddr_in6 sin6;
+  } u;
+
+  int proto;
+  int s;
   int res=1;
   unsigned int opt=1;
-  
-  memset(&sin,0,sizeof(sin));
-  
-  sin.sin_family=AF_INET;
-  sin.sin_port=htons(socknum);
-  sin.sin_addr.s_addr=htonl(ip);
-  
-  if ((fd=socket(AF_INET,SOCK_STREAM,0))<0) {
+  int fd;
+
+  if(irc_in_addr_is_ipv4(ip)) {
+    s = sizeof(u.sin);
+    proto=u.sin.sin_family=AF_INET;
+    u.sin.sin_port=htons(socknum);
+    u.sin.sin_addr.s_addr=htonl(irc_in_addr_v4_to_int(ip));
+  } else {
+    s = sizeof(u.sin6);
+    proto=u.sin6.sin6_family=AF_INET6;
+    u.sin6.sin6_port=htons(socknum);
+    memcpy(&u.sin6.sin6_addr.s6_addr, ip->in6_16, sizeof(ip->in6_16));
+  }
+
+  if ((fd=socket(proto,SOCK_STREAM,0))<0) {
     Error("proxyscan",ERR_ERROR,"Unable to create socket (%d)",errno);
     return -1;
   }
@@ -40,12 +52,13 @@ int createconnectsocket(long ip, int socknum) {
     Error("proxyscan",ERR_WARNING,"Error selecting high port range.");
   }
 #endif
-  if (connect(fd,(const struct sockaddr *) &sin, sizeof(sin))) {
+
+  if (connect(fd,(const struct sockaddr *) &u, s)) {
     if (errno != EINPROGRESS) {
       Error("proxyscan",ERR_ERROR,"Unable to connect socket (%d)",errno);
       return -1;
     }
-  }  
+  }
+
   return fd;
 }
-

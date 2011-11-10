@@ -12,7 +12,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
+  if (irc_in_addr_is_loopback(&np->p_ipaddr))
     return;
 
   /* slug: why is this here? why isn't it with the other queuing stuff? */
