@@ -14,13 +14,14 @@ MODULE_VERSION(QVERSION)
 #define PROTECTTIME    60 /* How long you have to renick if you encroach.. */
 
 void csp_handlenick(int hooknum, void *arg);
+void csp_handlerename(int hooknum, void *arg);
 void csp_freenick(int hooknum, void *arg);
 void csp_timerfunc (void *arg);
 int csp_doclaimnick(void *source, int cargc, char **cargv);
 
 void _init() {
   registerhook(HOOK_NICK_NEWNICK, csp_handlenick);
-  registerhook(HOOK_NICK_RENAME, csp_handlenick);
+  registerhook(HOOK_NICK_RENAME, csp_handlerename);
 
   registerhook(HOOK_NICK_NEWNICK, csp_freenick);
   registerhook(HOOK_NICK_ACCOUNT, csp_freenick);
@@ -33,7 +34,7 @@ void _fini() {
   int i;
 
   deregisterhook(HOOK_NICK_NEWNICK, csp_handlenick);
-  deregisterhook(HOOK_NICK_RENAME, csp_handlenick);
+  deregisterhook(HOOK_NICK_RENAME, csp_handlerename);
 
   deregisterhook(HOOK_NICK_NEWNICK, csp_freenick);
   deregisterhook(HOOK_NICK_ACCOUNT, csp_freenick);
@@ -50,6 +51,11 @@ void _fini() {
 	}
 	rup->fakeuser=NULL;
       }
+}
+
+void csp_handlerename(int hooknum, void *arg) {
+  void **harg = (void **)arg;
+  csp_handlenick(hooknum, harg[0]);
 }
 
 void csp_handlenick(int hooknum, void *arg) {
