@@ -173,7 +173,7 @@ void _init(void) {
   freesstring(cfgstr);
   
   /* Max concurrent scans */
-  cfgstr=getcopyconfigitem("proxyscan","maxscans","200",5);
+  cfgstr=getcopyconfigitem("proxyscan","maxscans","200",10);
   maxscans=strtol(cfgstr->content,NULL,10);
   freesstring(cfgstr);
 
@@ -239,11 +239,11 @@ void _init(void) {
   addcommandtotree(ps_commands, "status", 0, 0, &proxyscandostatus);
   addcommandtotree(ps_commands, "listopen", 0, 0, &proxyscandolistopen);
   addcommandtotree(ps_commands, "save", 0, 0, &proxyscandosave);
-  addcommandtotree(ps_commands, "spew", 0, 0, &proxyscandospew);
-  addcommandtotree(ps_commands, "showkill", 0, 0, &proxyscandoshowkill);
-  addcommandtotree(ps_commands, "scan", 0, 0, &proxyscandoscan);
-  addcommandtotree(ps_commands, "addscan", 0, 0, &proxyscandoaddscan);
-  addcommandtotree(ps_commands, "delscan", 0, 0, &proxyscandodelscan);
+  addcommandtotree(ps_commands, "spew", 0, 1, &proxyscandospew);
+  addcommandtotree(ps_commands, "showkill", 0, 1, &proxyscandoshowkill);
+  addcommandtotree(ps_commands, "scan", 0, 1, &proxyscandoscan);
+  addcommandtotree(ps_commands, "addscan", 0, 1, &proxyscandoaddscan);
+  addcommandtotree(ps_commands, "delscan", 0, 1, &proxyscandodelscan);
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
@@ -948,6 +948,9 @@ int proxyscandosave(void *sender, int cargc, char **cargv) {
 int proxyscandospew(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
 
+  if(cargc < 1)
+    return CMD_USAGE;
+
   /* check our database for the ip supplied */
   unsigned long a,b,c,d;
   if (4 != sscanf(cargv[0],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
@@ -961,6 +964,9 @@ int proxyscandospew(void *sender, int cargc, char **cargv) {
 
 int proxyscandoshowkill(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return CMD_USAGE;
 
   /* check our database for the id supplied */
   unsigned long a;
@@ -989,6 +995,9 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   unsigned char bits;
   int i;
 
+  if(cargc < 1)
+    return CMD_USAGE;
+
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
@@ -1013,6 +1022,9 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
 int proxyscandoaddscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
 
+  if(cargc < 1)
+    return CMD_USAGE;
+
   unsigned int a,b;
   if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {
     sendnoticetouser(proxyscannick,np,"Usage: addscan <type> <port>");
@@ -1026,6 +1038,9 @@ int proxyscandoaddscan(void *sender, int cargc, char **cargv) {
 
 int proxyscandodelscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return CMD_USAGE;
 
   unsigned int a,b;
   if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {
