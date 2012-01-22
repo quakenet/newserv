@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
+/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
 int csa_dohello(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup;
@@ -76,8 +77,10 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   dupemail = strdup(cargv[0]);
   local=strchr(dupemail, '@');
-  if(!local)
+  if(!local) {
+    free(dupemail);
     return CMD_ERROR;
+  }
   *(local++)='\0';
 
   mdp=findnearestmaildomain(local);
@@ -116,6 +119,10 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   aup->helloattempts++;
   
+/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
+/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
+/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
+
   t=time(NULL);
   rup=getreguser();
   rup->status=0;
