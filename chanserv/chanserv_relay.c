@@ -68,21 +68,21 @@ static char *email_to_error(char *email) {
   maillock *mlp;
   reguser *ruh;
 
-  switch(cs_checkeboy_r(email)) {
+  switch(csa_checkeboy_r(email)) {
     case -1:               break;
-    case QM_EMAILTOOSHORT: return "short";
-    case QM_EMAILNOAT:     return "invalid";
-    case QM_EMAILATEND:    return "invalid";
-    case QM_EMAILINVCHR:   return "invalid";
-    case QM_NOTYOUREMAIL:  return "notyours";
-    case QM_INVALIDEMAIL:  return "invalid";
-    default:               return "unknown";
+    case QM_EMAILTOOSHORT: return "emailshort";
+    case QM_EMAILNOAT:     return "emailinvalid";
+    case QM_EMAILATEND:    return "emailinvalid";
+    case QM_EMAILINVCHR:   return "emailinvalid";
+    case QM_NOTYOUREMAIL:  return "emailnotyours";
+    case QM_INVALIDEMAIL:  return "emailinvalid";
+    default:               return "emailunknown";
   }
 
   /* maildomain BS... c&p from hello.c */
   for(mlp=maillocks;mlp;mlp=mlp->next) {
     if(!match(mlp->pattern->content, email)) {
-      return "maillocked";
+      return "emaillocked";
     }
   }
 
@@ -90,7 +90,7 @@ static char *email_to_error(char *email) {
   local=strchr(dupemail, '@');
   if(!local) {
     free(dupemail);
-    return "unknown";
+    return "emailunknown";
   }
   *(local++)='\0';
 
@@ -99,11 +99,11 @@ static char *email_to_error(char *email) {
     for(smdp=mdp; smdp; smdp=smdp->parent) {
       if(MDIsBanned(smdp)) {
         free(dupemail);
-        return "maillocked";
+        return "emaillocked";
       }
       if((smdp->count >= smdp->limit) && (smdp->limit > 0)) {
         free(dupemail);
-        return "domainlimit";
+        return "emaildomainlimit";
       }
     }
   }
@@ -119,7 +119,7 @@ static char *email_to_error(char *email) {
 
     if((found >= mdp->actlimit) && (mdp->actlimit > 0)) {
       free(dupemail);
-      return "addresslimit";
+      return "emailaddresslimit";
     }
   }
 
@@ -152,9 +152,9 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
 
   if(username) {
     if (findreguserbynick(username)) {
-      error_username = "exists";
+      error_username = "usernameinuse";
     } else if(csa_checkaccountname_r(username)) {
-      error_username = "invalid";
+      error_username = "usernameinvalid";
     }
   }
 
@@ -164,11 +164,11 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
   if(password) {
     int r = csa_checkpasswordquality(password);
     if(r == QM_PWTOSHORT) {
-      error_password = "short";
+      error_password = "passwordshort";
     } else if(r == QM_PWTOWEAK) {
-      error_password = "weak";
+      error_password = "passwordweak";
     } else if(r != -1) {
-      error_password = "unknown";
+      error_password = "passwordunknown";
     }
   }
 
@@ -187,11 +187,11 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     do_create = 0;
   }
 
-  controlreply(sender, "CREATEACCOUNT %s email=%s password=%s username=%s",
+  controlreply(sender, "CREATEACCOUNT %s%s%s%s%s%s%s",
     do_create ? "TRUE" : "FALSE",
-    email ? (error_email ? error_email : "valid") : "notsupplied",
-    password ? (error_password ? error_password : "valid") : "notsupplied",
-    username ? (error_username ? error_username : "valid") : "notsupplied"
+    email && error_email ? " " : "", email && error_email ? error_email : "",
+    password && error_password ? " " : "", password && error_password ? error_password : "",
+    username && error_username ? " " : "", username && error_username ? error_username : ""
   );
 
   return CMD_OK;
@@ -210,12 +210,12 @@ int csa_dosettempemail(void *source, int cargc, char **cargv) {
 
   rup = findreguserbynick(cargv[0]);
   if(rup == NULL) {
-    controlreply(sender, "SETTEMPEMAIL FALSE invalidaccount");
+    controlreply(sender, "SETTEMPEMAIL FALSE usernamenotexist");
     return CMD_ERROR;
   }
 
   if(!UIsInactive(rup)) {
-    controlreply(sender, "SETTEMPEMAIL FALSE notinactive");
+    controlreply(sender, "SETTEMPEMAIL FALSE accountactive");
     return CMD_ERROR;
   }
 
@@ -249,12 +249,12 @@ int csa_doresendemail(void *source, int cargc, char **cargv) {
 
   rup = findreguserbynick(cargv[0]);
   if(rup == NULL) {
-    controlreply(sender, "RESENDEMAIL FALSE invalidaccount");
+    controlreply(sender, "RESENDEMAIL FALSE usernamenotexist");
     return CMD_ERROR;
   }
 
   if(!UIsInactive(rup)) {
-    controlreply(sender, "RESENDEMAIL FALSE notinactive");
+    controlreply(sender, "RESENDEMAIL FALSE accountactive");
     return CMD_ERROR;
   }
 
@@ -276,12 +276,12 @@ int csa_doactivateuser(void *source, int cargc, char **cargv) {
 
   rup = findreguserbynick(cargv[0]);
   if(rup == NULL) {
-    controlreply(sender, "ACTIVATEUSER FALSE invalidaccount");
+    controlreply(sender, "ACTIVATEUSER FALSE usernamenotexist");
     return CMD_ERROR;
   }
 
   if(!UIsInactive(rup)) {
-    controlreply(sender, "ACTIVATEUSER FALSE notinactive");
+    controlreply(sender, "ACTIVATEUSER FALSE accountactive");
     return CMD_ERROR;
   }
 
