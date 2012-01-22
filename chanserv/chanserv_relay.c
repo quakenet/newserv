@@ -18,9 +18,9 @@ int csa_doactivateuser(void *source, int cargc, char **cargv);
 void _init(void) {
   registercontrolhelpcmd("checkhashpass", NO_RELAY, 3, csa_docheckhashpass, "Usage: checkhashpass <username> <digest> ?junk?");
   registercontrolhelpcmd("createaccount", NO_RELAY, 4, csa_docreateaccount, "Usage: createaccount <execute> <username> <email address> <password>");
-  registercontrolhelpcmd("settempemail", NO_RELAY, 2, csa_dosettempemail, "Usage: settempemail <username> <email address>");
-  registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <username>");
-  registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <username>");
+  registercontrolhelpcmd("settempemail", NO_RELAY, 2, csa_dosettempemail, "Usage: settempemail <userid> <email address>");
+  registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <userid>");
+  registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <userid>");
 }
 
 void _fini(void) {
@@ -135,6 +135,7 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
   int execute;
   char *error_username = NULL, *error_password = NULL, *error_email = NULL;
   char *username = NULL, *password = NULL, *email = NULL;
+  char account_info[512];
   int do_create;
 
   if(cargc<4) {
@@ -181,14 +182,17 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
 
     cs_log(sender,"CREATEACCOUNT created auth %s (%s)",rup->username,rup->email->content);
     csdb_createuser(rup);
+    snprintf(account_info, sizeof(account_info), " %u", rup->ID);
 
     sendemail(rup);
   } else {
+    account_info[0] = '\0';
     do_create = 0;
   }
 
-  controlreply(sender, "CREATEACCOUNT %s%s%s%s%s%s%s",
+  controlreply(sender, "CREATEACCOUNT %s%s%s%s%s%s%s%s",
     do_create ? "TRUE" : "FALSE",
+    account_info,
     email && error_email ? " " : "", email && error_email ? error_email : "",
     password && error_password ? " " : "", password && error_password ? error_password : "",
     username && error_username ? " " : "", username && error_username ? error_username : ""
@@ -208,9 +212,9 @@ int csa_dosettempemail(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  rup = findreguserbynick(cargv[0]);
+  rup = findreguserbyID(atoi(cargv[0]));
   if(rup == NULL) {
-    controlreply(sender, "SETTEMPEMAIL FALSE usernamenotexist");
+    controlreply(sender, "SETTEMPEMAIL FALSE useridnotexist");
     return CMD_ERROR;
   }
 
@@ -247,9 +251,9 @@ int csa_doresendemail(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  rup = findreguserbynick(cargv[0]);
+  rup = findreguserbyID(atoi(cargv[0]));
   if(rup == NULL) {
-    controlreply(sender, "RESENDEMAIL FALSE usernamenotexist");
+    controlreply(sender, "RESENDEMAIL FALSE useridnotexist");
     return CMD_ERROR;
   }
 
@@ -274,9 +278,9 @@ int csa_doactivateuser(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  rup = findreguserbynick(cargv[0]);
+  rup = findreguserbyID(atoi(cargv[0]));
   if(rup == NULL) {
-    controlreply(sender, "ACTIVATEUSER FALSE usernamenotexist");
+    controlreply(sender, "ACTIVATEUSER FALSE useridnotexist");
     return CMD_ERROR;
   }
 
