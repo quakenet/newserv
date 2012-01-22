@@ -256,6 +256,7 @@
 #define QMAIL_NEWPW                3  /* new password */
 #define QMAIL_RESET                4  /* reset account */
 #define QMAIL_NEWEMAIL             5  /* new email address */
+#define QMAIL_ACTIVATEEMAIL        6  /* new style new account */
 
 
 /* Channel flags */
