@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
 int csa_dohello(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup;
@@ -33,7 +32,6 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   char *dupemail;
   activeuser *aup;
   maillock *mlp;
-  time_t t;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -115,19 +113,39 @@ int csa_dohello(void *source, int cargc, char **cargv) {
     }
   }
 
-  mdp=findorcreatemaildomain(cargv[0]);
+  free(dupemail);
 
   aup->helloattempts++;
-  
-/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
-/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
-/* REMEMBER YOU CAN ALSO CREATE ACCOUNTS IN CHANSERV_RELAY.C */
 
-  t=time(NULL);
-  rup=getreguser();
+  rup=csa_createaccount(sender->nick,"", cargv[0]);
+  csa_createrandompw(rup->password, PASSLEN);
+  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
+  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
+
+  chanservstdmessage(sender, QM_NEWACCOUNT, rup->username,rup->email->content);
+  cs_log(sender,"HELLO OK created auth %s (%s)",rup->username,rup->email->content); 
+  csdb_createuser(rup);
+  csdb_createmail(rup, QMAIL_NEWACCOUNT);
+
+  return CMD_OK;
+}
+
+reguser *csa_createaccount(char *username, char *password, char *email) {
+  time_t t = time(NULL);
+  char *local, *dupemail;
+
+  dupemail = strdup(email);
+  local=strchr(dupemail, '@');
+  if(!local) {
+    free(dupemail);
+    return NULL;
+  }
+  *(local++)='\0';
+
+  reguser *rup=getreguser();
   rup->status=0;
   rup->ID=++lastuserID;
-  strncpy(rup->username,sender->nick,NICKLEN); rup->username[NICKLEN]='\0';
+  strncpy(rup->username,username,NICKLEN); rup->username[NICKLEN]='\0';
   rup->created=t;
   rup->lastauth=0;
   rup->lastemailchange=t;
@@ -138,18 +156,17 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->suspendexp=0;
   rup->suspendtime=0;
   rup->lockuntil=0;
-  rup->password[0]='\0';
-  rup->email=getsstring(cargv[0],EMAILLEN);
+  strncpy(rup->password,password,PASSLEN); rup->password[PASSLEN]='\0';
+  rup->email=getsstring(email,EMAILLEN);
   rup->lastemail=NULL;
 
   rup->localpart=getsstring(dupemail,EMAILLEN);
   free(dupemail);
 
-  rup->domain=mdp;
+  rup->domain=findorcreatemaildomain(email);
   addregusertomaildomain(rup, rup->domain);
   rup->info=NULL;
-  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
-  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
+  rup->lastuserhost=NULL;
   rup->suspendreason=NULL;
   rup->comment=NULL;
   rup->knownon=NULL;
@@ -157,11 +174,7 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   rup->stealcount=0;
   rup->fakeuser=NULL;
   addregusertohash(rup);
-  csa_createrandompw(rup->password, PASSLEN);
-  chanservstdmessage(sender, QM_NEWACCOUNT, rup->username,rup->email->content);
-  cs_log(sender,"HELLO OK created auth %s (%s)",rup->username,rup->email->content); 
-  csdb_createuser(rup);
-  csdb_createmail(rup, QMAIL_NEWACCOUNT);
- 
-  return CMD_OK;
+
+  return rup;
 }
+

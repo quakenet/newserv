@@ -1,9 +1,10 @@
 /* authlib.c */
 
-#include "authlib.h"
 #include "chanserv.h"
 #include "../lib/irc_string.h"
+#include "authlib.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -40,36 +41,28 @@ void csa_freeregex(void) {
 /*
  * use regex matching to determine if it's a valid eboy or not
  */
-int csa_checkeboy(nick *sender, char *eboy)
-{ 
+int csa_checkeboy_r(char *eboy)
+{
   int i, len;
 
   len = (((strlen(eboy)) < (EMAILLEN)) ? (strlen(eboy)) : (EMAILLEN));
   if (len <= 4) {
-    if (sender)
-      chanservstdmessage(sender, QM_EMAILTOOSHORT, eboy);
-    return (1);
+    return QM_EMAILTOOSHORT;
   }
 
   if (strstr(&eboy[1], "@") == NULL) {
-    if (sender)
-      chanservstdmessage(sender, QM_EMAILNOAT, eboy);
-    return (1);
+    return QM_EMAILNOAT;
   }
 
   if (eboy[len - 1] == '@') {
-    if (sender)
-      chanservstdmessage(sender, QM_EMAILATEND, eboy);
-    return (1);
+    return QM_EMAILATEND;
   }
 
   for (i = 0; i < len; i++) {
     if (!isalpha(eboy[i]) && !isdigit(eboy[i])
         && !(eboy[i] == '@') && !(eboy[i] == '.')
         && !(eboy[i] == '_') && !(eboy[i] == '-')) {
-      if (sender)
-        chanservstdmessage(sender, QM_EMAILINVCHR, eboy);
-      return (1);
+      return QM_EMAILINVCHR;
     }
   }
 
@@ -77,33 +70,47 @@ int csa_checkeboy(nick *sender, char *eboy)
   if (!ircd_strncmp("user@mymailhost.xx", eboy, len) || !ircd_strncmp("info@quakenet.org", eboy, len)
       || !ircd_strncmp("user@mymail.xx", eboy, len) || !ircd_strncmp("user@mail.cc", eboy, len)
       || !ircd_strncmp("user@host.com", eboy, len) || !ircd_strncmp("Jackie@your.isp.com", eboy, len)
-      || !ircd_strncmp("QBot@QuakeNet.org", eboy, len) || !ircd_strncmp("Q@CServe.quakenet.org", eboy, len)) {
-    if (sender)
-      chanservstdmessage(sender, QM_NOTYOUREMAIL, eboy);
-    return (1);
+      || !ircd_strncmp("QBot@QuakeNet.org", eboy, len) || !ircd_strncmp("Q@CServe.quakenet.org", eboy, len)
+      || !ircd_strncmp("badger@example.com", eboy, len)) {
+    return QM_NOTYOUREMAIL;
   }
 
   if (regexec(&remail, eboy, (size_t) 0, NULL, 0)) {
-    if (sender)
-      chanservstdmessage(sender, QM_INVALIDEMAIL, eboy);
-    return (1);
+    return QM_INVALIDEMAIL;
   }
 
-  return (0);
+  return -1;
+}
+
+int csa_checkeboy(nick *sender, char *eboy)
+{
+  int r = csa_checkeboy_r(eboy);
+  if (r == -1)
+    return 0;
+
+  if(sender)
+    chanservstdmessage(sender, r, eboy);
+
+  return 1;
 }
 
 /*
  * use regex matching to determine if it's a valid account name or not
  */
-int csa_checkaccountname(nick *sender, char *accountname) {
+int csa_checkaccountname_r(char *accountname) {
   if (regexec(&raccount, accountname, (size_t) 0, NULL, 0)) {
-    if (sender)
-      chanservstdmessage(sender, QM_INVALIDACCOUNTNAME);
     return (1);
   }
   return (0);
 }
 
+int csa_checkaccountname(nick *sender, char *accountname) {
+  int r = csa_checkaccountname_r(accountname);
+  if(r && sender)
+    chanservstdmessage(sender, QM_INVALIDACCOUNTNAME);
+
+  return r;
+}
 
 /*
  * create a random pw. code stolen from fox's O
@@ -141,4 +148,72 @@ int csa_checkthrottled(nick *sender, reguser *rup, char *s)
     return 1;
   }
   return 0;
+}
+
+int csa_checkpasswordquality(char *password) {
+  int i, cntweak = 0, cntdigits = 0, cntletters = 0;
+  if (strlen(password) < 6)
+    return QM_PWTOSHORT;
+
+  for ( i = 0; password[i] && i < PASSLEN; i++ ) {
+    if ( password[i] == password[i+1] || password[i] + 1 == password[i+1] || password[i] - 1 == password[i+1] )
+      cntweak++;
+    if(isdigit(password[i]))
+      cntdigits++;
+    if(islower(password[i]) || isupper(password[i]))
+      cntletters++;
+  }
+
+  if( cntweak > 3 || !cntdigits || !cntletters)
+    return QM_PWTOWEAK;
+
+  return -1;
+}
+
+reguser *csa_createaccount(char *username, char *password, char *email) {
+  time_t t = time(NULL);
+  char *local, *dupemail;
+
+  dupemail = strdup(email);
+  local=strchr(dupemail, '@');
+  if(!local) {
+    free(dupemail);
+    return NULL;
+  }
+  *(local++)='\0';
+
+  reguser *rup=getreguser();
+  rup->status=0;
+  rup->ID=++lastuserID;
+  strncpy(rup->username,username,NICKLEN); rup->username[NICKLEN]='\0';
+  rup->created=t;
+  rup->lastauth=0;
+  rup->lastemailchange=t;
+  rup->lastpasschange=t;
+  rup->flags=QUFLAG_NOTICE;
+  rup->languageid=0;
+  rup->suspendby=0;
+  rup->suspendexp=0;
+  rup->suspendtime=0;
+  rup->lockuntil=0;
+  strncpy(rup->password,password,PASSLEN); rup->password[PASSLEN]='\0';
+  rup->email=getsstring(email,EMAILLEN);
+  rup->lastemail=NULL;
+
+  rup->localpart=getsstring(dupemail,EMAILLEN);
+  free(dupemail);
+
+  rup->domain=findorcreatemaildomain(email);
+  addregusertomaildomain(rup, rup->domain);
+  rup->info=NULL;
+  rup->lastuserhost=NULL;
+  rup->suspendreason=NULL;
+  rup->comment=NULL;
+  rup->knownon=NULL;
+  rup->checkshd=NULL;
+  rup->stealcount=0;
+  rup->fakeuser=NULL;
+  addregusertohash(rup);
+
+  return rup;
 }
