@@ -170,7 +170,9 @@
 
 
 /* User flags */
-#define   QUFLAG_NOINFO        0x0001  /* +s */
+/* to reenable this also grep for NOINFO... as some code has been commented out */
+//#define   QUFLAG_NOINFO        0x0001  /* +s */
+#define   QUFLAG_INACTIVE      0x0001  /* +I */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
 #define   QUFLAG_STAFF         0x0008  /* +q */
@@ -188,7 +190,9 @@
 #define   QUFLAG_TRUST         0x8000  /* +T */
 #define   QUFLAG_ALL           0xffff
 
-#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+//#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+#define UIsNoInfo(x)        0
+#define UIsInactive(x)      ((x)->flags & QUFLAG_INACTIVE)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
 #define UIsNotice(x)        ((x)->flags & QUFLAG_NOTICE)
 #define UIsSuspended(x)     ((x)->flags & QUFLAG_SUSPENDED)
@@ -211,6 +215,7 @@
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
 
+#define USetInactive(x)      ((x)->flags |= QUFLAG_INACTIVE)
 #define USetGline(x)         ((x)->flags |= QUFLAG_GLINE)
 #define USetNotice(x)        ((x)->flags |= QUFLAG_NOTICE)
 #define USetSuspended(x)     ((x)->flags |= QUFLAG_SUSPENDED)
@@ -225,6 +230,7 @@
 #define USetCleanupExempt(x) ((x)->flags |= QUFLAG_CLEANUPEXEMPT)
 #define USetTrust(x)         ((x)->flags |= QUFLAG_TRUST)
 
+#define UClearInactive(x)      ((x)->flags &= ~QUFLAG_INACTIVE)
 #define UClearGline(x)         ((x)->flags &= ~QUFLAG_GLINE)
 #define UClearNotice(x)        ((x)->flags &= ~QUFLAG_NOTICE)
 #define UClearSuspended(x)     ((x)->flags &= ~QUFLAG_SUSPENDED)

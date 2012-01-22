@@ -16,7 +16,7 @@ void _fini(void) {
 
 int csa_docheckhashpass(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;
-  reguser *rup;  
+  reguser *rup;
   char *flags;
 
   if(cargc<3) {
@@ -32,6 +32,8 @@ int csa_docheckhashpass(void *source, int cargc, char **cargv) {
   flags = printflags(QUFLAG_ALL & rup->flags, ruflags);
   if(UHasSuspension(rup)) {
     controlreply(sender, "CHECKHASHPASS FAIL suspended %s %s %u", rup->username, flags, rup->ID);
+  } else if(UIsInactive(rup)) {
+    controlreply(sender, "CHECKHASHPASS FAIL inactive %s %s %u", rup->username, flags, rup->ID);
   } else if(!checkhashpass(rup, cargc<3?NULL:cargv[2], cargv[1])) {
     controlreply(sender, "CHECKHASHPASS FAIL digest %s %s %u", rup->username, flags, rup->ID);
   } else {

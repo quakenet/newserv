@@ -135,6 +135,10 @@ int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
       chanservstdmessage(sender, QM_EXPIRES, rup->suspendexp);
     return CMD_ERROR;
   }
+  if (UIsInactive(rup)) {
+    chanservstdmessage(sender, QM_INACTIVEACCOUNT);
+    return CMD_ERROR;
+  }
   
   /* Guarantee a unique auth timestamp for each account */
   oldlastauth=rup->lastauth;
