@@ -101,6 +101,7 @@ int proxyscandosave(void *sender, int cargc, char **cargv);
 int proxyscandospew(void *sender, int cargc, char **cargv);
 int proxyscandoshowkill(void *sender, int cargc, char **cargv);
 int proxyscandoscan(void *sender, int cargc, char **cargv);
+int proxyscandoscanfile(void *sender, int cargc, char **cargv);
 int proxyscandoaddscan(void *sender, int cargc, char **cargv);
 int proxyscandodelscan(void *sender, int cargc, char **cargv);
 int proxyscandoshowcommands(void *sender, int cargc, char **cargv);
@@ -242,6 +243,7 @@ void _init(void) {
   addcommandtotree(ps_commands, "spew", 0, 1, &proxyscandospew);
   addcommandtotree(ps_commands, "showkill", 0, 1, &proxyscandoshowkill);
   addcommandtotree(ps_commands, "scan", 0, 1, &proxyscandoscan);
+  addcommandtotree(ps_commands, "scanfile", 0, 1, &proxyscandoscanfile);
   addcommandtotree(ps_commands, "addscan", 0, 1, &proxyscandoaddscan);
   addcommandtotree(ps_commands, "delscan", 0, 1, &proxyscandodelscan);
 
@@ -1020,6 +1022,78 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
       queuescan(node,thescans[i].type,thescans[i].port,SCLASS_NORMAL,t);
     }
   }
+  return CMD_OK;
+}
+
+int proxyscandoscanfile(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  int i;
+  time_t t = time(NULL);
+  int pscantypes[PSCAN_MAXSCANS];
+  int maxtypes;
+  FILE *fp;
+  int count;
+
+  if ((fp=fopen("data/doscan.txt","r"))==NULL) {
+    sendnoticetouser(proxyscannick,np,"Unable to open file for reading!");
+    return CMD_ERROR;
+  }
+
+  {
+    int *tscantypes;
+    int maxno = -1;
+
+    for(i=0;i<numscans;i++)
+      if(thescans[i].type > maxno)
+        maxno = thescans[i].type;
+
+    tscantypes = malloc(sizeof(int) * maxno);
+    for(i=0;i<maxno;i++)
+      tscantypes[i] = 0;
+
+    for(i=0;i<numscans;i++)
+      tscantypes[thescans[i].type] = 1;
+
+    for(i=0,maxtypes=0;i<maxno;i++)
+      if(tscantypes[i])
+        pscantypes[maxtypes++] = i;
+
+    free(tscantypes);
+  }
+
+  count = 0;
+  while (!feof(fp)) {
+    patricia_node_t *node;
+    struct irc_in_addr sin;
+    unsigned char bits;
+    unsigned short port;
+    char buf[512], ip[512];
+    int res;
+
+    fgets(buf,512,fp);
+    if (feof(fp)) {
+      break;
+    }
+
+    res=sscanf(buf,"%s %hu",ip,&port);
+
+    if (res<2)
+      continue;
+
+    if (0 == ipmask_parse(ip,&sin, &bits)) {
+      /* invalid mask */
+    } else {
+      node = refnode(iptree, &sin, bits); /* LEAKS */
+      if( node ) {
+        for(i=0;i<maxtypes;i++) {
+          queuescan(node,pscantypes[i],port,SCLASS_NORMAL,t);
+          count++;
+        }
+      }
+    }
+  }
+
+  sendnoticetouser(proxyscannick,np,"Started %d scans...", count);
   return CMD_OK;
 }
 
