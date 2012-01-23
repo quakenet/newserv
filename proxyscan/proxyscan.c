@@ -287,7 +287,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
   proxyscan_addscantype(STYPE_SOCKS5, 27977);
- 
+
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
  
@@ -637,7 +637,7 @@ void handlescansock(int fd, short events) {
 
     switch(sp->type) {
     case STYPE_HTTP:
-      sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n",myipstr->content,listenport);
+      sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n\r\n",myipstr->content,listenport);
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
 	/* We didn't write the full amount, DIE */
 	killsock(sp,SOUTCOME_CLOSED);
@@ -766,6 +766,10 @@ void handlescansock(int fd, short events) {
       } else {
         magicstring = MAGICSTRING;
         magicstringlength = MAGICSTRINGLENGTH;
+        if(sp->totalbytesread - res == 0) {
+          buf[0] = '\n';
+          write(fd,buf,1);
+        }
       }
 
       for (i=0;i<sp->bytesread - magicstringlength;i++) {
