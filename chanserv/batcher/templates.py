@@ -19,11 +19,14 @@ def generate_url(config, obj):
 
 def generate_activation_url(config, obj):
   r = os.urandom(16).encode("hex")
-  uid = int(obj["user.userid"])
-  h = hmac.HMAC(config["activationkey"])
-  h.update("%d %s" % (uid, r))
+  uid = int(obj["user.id"])
+  h = hmac.HMAC(sha256("hmac %s %s" % (r, config["activationkey"])).hexdigest())
+  h.update("%d %s %s" % (uid, obj["user.username"], obj["user.password"]))
   hd = h.hexdigest()
-  obj["url"] = "%s?id=%d&h=%s&r=%s" % (config["activationurl"], uid, hd, r)
+
+  r2 = RC4(sha256("rc4 %s %s" % (r, config["activationkey"])).hexdigest())
+  a = r2.crypt(obj["user.password"])
+  obj["url"] = "%s?id=%d&h=%s&r=%s&u=%s&p=%s" % (config["activationurl"], uid, hd, r, obj["user.username"].encode("hex"), a.encode("hex"))
 
 def generate_resetcode(config, obj):
   if obj["user.lockuntil"] == 0:
