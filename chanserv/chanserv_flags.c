@@ -59,7 +59,8 @@ const flag ruflags[] = {
   { 'o',  QUFLAG_OPER },
   { 'p',  QUFLAG_PROTECT },
   { 'q',  QUFLAG_STAFF },
-  { 's',  QUFLAG_NOINFO },
+//  { 's',  QUFLAG_NOINFO },
+  { 'I',  QUFLAG_INACTIVE },
   { 'T',  QUFLAG_TRUST },
   { 'z',  QUFLAG_SUSPENDED },
   { '\0', 0 } };
