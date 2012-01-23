@@ -2514,7 +2514,14 @@ void trojanscan_generaterealname(char *buf, int maxsize) {
 }
 
 static void db_ping(void *arg) {
-  trojanscan_database_query("SELECT 1");
+  if (!(trojanscan_database_query("SELECT 1"))) {
+    trojanscan_database_res *res;
+    if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
+      trojanscan_database_free_result(res);
+    }
+  } 
+
+  db_ping_schedule = scheduleoneshot(time(NULL) + 60, &db_ping, NULL);
 }
 
 void trojanscan_database_close(void) {
