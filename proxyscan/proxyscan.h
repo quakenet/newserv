@@ -16,7 +16,7 @@
 #define MAGICROUTERSTRING        "\r\nServer: Mikrotik HttpProxy\r\n"
 #define MAGICROUTERSTRINGLENGTH  30
 
-#define PSCAN_MAXSCANS      50
+#define PSCAN_MAXSCANS      100
 #define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
 
 #define SSTATE_CONNECTING   0
