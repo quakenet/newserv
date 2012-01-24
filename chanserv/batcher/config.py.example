@@ -14,5 +14,7 @@ CONFIG = {
   "url": "http://webdev.quakenet.org/~slug/q9dev/",
   "urlkey": "keyere",
   "urlsecret": secretere",
+  "activationurl": "http://webdev.quakenet.org/~slug/q9dev/activate/",
+  "activationkey": "123",
   "q9secret": "moo",
 }

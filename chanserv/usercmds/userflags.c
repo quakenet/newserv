@@ -71,7 +71,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       changemask |= QUFLAG_PROTECT;
 
     if (UHasOperPriv(rup))
-      changemask |= QUFLAG_PROTECT | QUFLAG_TRUST | QCFLAG_NOINFO;
+      changemask |= QUFLAG_PROTECT | QUFLAG_TRUST; /* QUFLAG_NOINFO; */
 
     if (UHasAdminPriv(rup))
       changemask |= (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_CLEANUPEXEMPT | QUFLAG_STAFF);

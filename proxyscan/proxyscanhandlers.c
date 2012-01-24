@@ -12,7 +12,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
+  if (irc_in_addr_is_loopback(&np->p_ipaddr))
     return;
 
   /* slug: why is this here? why isn't it with the other queuing stuff? */
@@ -21,14 +21,14 @@ void proxyscan_newnick(int hooknum, void *arg) {
      (even ignoring the cache)
    */
   /* disabled as the list is hopelessly out of date */
-//  if ((esp=findextrascan(np->ipnode))) {
-//    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
-//    for (espp=esp;espp;espp=espp->nextbynode) { 
-//      /* we force a scan on any hosts that may be an open proxy, even if they are:
-//       * a) already in the queue, b) we've been running < 120 seconds */
-//      queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
-//    }
-//  }
+  if ((esp=findextrascan(np->ipnode))) {
+    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
+    for (espp=esp;espp;espp=espp->nextbynode) { 
+      /* we force a scan on any hosts that may be an open proxy, even if they are:
+       * a) already in the queue, b) we've been running < 120 seconds */
+      queuescan(np->ipnode, espp->type, espp->port, SCLASS_NORMAL, time(NULL));
+    }
+  }
 
 /* slug: this BREAKS all of P's design assumptions, do NOT REENABLE THIS UNDER ANY CIRCUMSTANCES */
 /* ignore newnick until initial burst complete */

@@ -34,6 +34,9 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   unsigned long userid;
   
   if (cargc==2) { /* rename */
+    char oldnick[NICKLEN+1];
+    void *harg[2];
+
     /* Nyklon 1017697578 */
     timestamp=strtol(cargv[1],NULL,10);
     np=getnickbynumericstr(sender);
@@ -41,6 +44,12 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
       Error("nick",ERR_ERROR,"Rename from non-existent sender %s",sender);
       return CMD_OK;
     }
+
+    strncpy(oldnick,np->nick,NICKLEN);
+    oldnick[NICKLEN]='\0';
+    harg[0]=(void *)np;
+    harg[1]=(void *)oldnick;
+
     np2=getnickbynick(cargv[0]);
     if (np==np2) {
       /* The new and old nickname have the same hash, this means a rename to the same name in 
@@ -53,7 +62,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
       }
       strncpy(np->nick,cargv[0],NICKLEN);
       np->nick[NICKLEN]='\0';
-      triggerhook(HOOK_NICK_RENAME,np);        
+      triggerhook(HOOK_NICK_RENAME,harg);
       return CMD_OK;
     }
     if (np2!=NULL) {
@@ -84,7 +93,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     strncpy(np->nick,cargv[0],NICKLEN);
     np->nick[NICKLEN]='\0';
     addnicktohash(np);
-    triggerhook(HOOK_NICK_RENAME,np);
+    triggerhook(HOOK_NICK_RENAME,harg);
   } else if (cargc>=8) { /* new nick */
     /* Jupiler 2 1016645147 ~Jupiler www.iglobal.be +ir moo [FUTURE CRAP HERE] DV74O] BNBd7 :Jupiler */
     timestamp=strtol(cargv[2],NULL,10);

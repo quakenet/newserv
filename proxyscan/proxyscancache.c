@@ -238,9 +238,6 @@ void scanall(int type, int port) {
 
       np->host->marker=hostmarker;
 
-      if (!irc_in_addr_is_ipv4(&np->p_ipaddr))
-        continue;
-
       if ((chp=findcachehost(np->ipnode)))
 	chp->marker=1;
 
