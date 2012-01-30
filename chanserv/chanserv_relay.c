@@ -2,10 +2,17 @@
 #include "../control/control.h"
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
+#include "../core/config.h"
+#include "../lib/hmac.h"
+#include "../lib/strlfunc.h"
+#include "../lib/cbc.h"
 #include "authlib.h"
 
 #include <stdio.h>
 #include <string.h>
+
+#define KEY_BITS 256
+#define BLOCK_SIZE 16
 
 MODULE_VERSION(QVERSION);
 
@@ -14,21 +21,70 @@ int csa_docreateaccount(void *source, int cargc, char **cargv);
 int csa_dosettempemail(void *source, int cargc, char **cargv);
 int csa_doresendemail(void *source, int cargc, char **cargv);
 int csa_doactivateuser(void *source, int cargc, char **cargv);
+static int decrypt_password(unsigned char *secret, int keybits, char *buf, int bufsize, char *encrypted);
+static int hex_to_int(char *input, unsigned char *buf, int buflen);
+
+static unsigned char createaccountsecret[KEY_BITS / 8];
+static int createaccountsecret_ok = 0;
+
+static unsigned char hexlookup[256] = {
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x01,
+                       0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+                       0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0a, 0x0b, 0x0c,
+                       0x0d, 0x0e, 0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                       0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+                                  };
 
 void _init(void) {
+  sstring *s;
+
   registercontrolhelpcmd("checkhashpass", NO_RELAY, 3, csa_docheckhashpass, "Usage: checkhashpass <username> <digest> ?junk?");
-  registercontrolhelpcmd("createaccount", NO_RELAY, 4, csa_docreateaccount, "Usage: createaccount <execute> <username> <email address> <password>");
   registercontrolhelpcmd("settempemail", NO_RELAY, 2, csa_dosettempemail, "Usage: settempemail <userid> <email address>");
   registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <userid>");
   registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <userid>");
+
+  s=getcopyconfigitem("chanserv","createaccountsecret","",128);
+  if(!s || !s->content || !s->content[0]) {
+    Error("chanserv_relay",ERR_WARNING,"createaccountsecret not set, createaccount disabled.");
+  } else if(s->length != KEY_BITS / 8 * 2 || !hex_to_int(s->content, createaccountsecret, sizeof(createaccountsecret))) {
+    Error("chanserv_relay",ERR_WARNING,"createaccountsecret must be a %d character hex string.", KEY_BITS / 8 * 2);
+  } else {
+    registercontrolhelpcmd("createaccount", NO_RELAY, 4, csa_docreateaccount, "Usage: createaccount <execute> <username> <email address> <encrypted password>");
+    createaccountsecret_ok = 1;
+  }
+
+  freesstring(s);
 }
 
 void _fini(void) {
   deregistercontrolcmd("checkhashpass", csa_docheckhashpass);
-  deregistercontrolcmd("createaccount", csa_docreateaccount);
   deregistercontrolcmd("settempemail", csa_dosettempemail);
   deregistercontrolcmd("resendemail", csa_doresendemail);
   deregistercontrolcmd("activateuser", csa_doactivateuser);
+
+  if(createaccountsecret_ok)
+    deregistercontrolcmd("createaccount", csa_docreateaccount);
 }
 
 int csa_docheckhashpass(void *source, int cargc, char **cargv) {
@@ -136,6 +192,7 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
   char *error_username = NULL, *error_password = NULL, *error_email = NULL;
   char *username = NULL, *password = NULL, *email = NULL;
   char account_info[512];
+  char passbuf[512];
   int do_create;
 
   if(cargc<4) {
@@ -148,8 +205,15 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     username = cargv[1];
   if(strcmp(cargv[2], "0"))
     email = cargv[2];
-  if(strcmp(cargv[3], "0"))
-    password = cargv[3];
+  if(strcmp(cargv[3], "0")) {
+    int errorcode = decrypt_password(createaccountsecret, KEY_BITS, passbuf, sizeof(passbuf), cargv[3]);
+    if(errorcode) {
+      Error("chanserv_relay",ERR_WARNING,"createaccount unable to decrypt password, error code: %d", errorcode);
+      controlreply(sender, "CREATEACCOUNT FALSE args");
+      return CMD_ERROR;
+    }
+    password = passbuf;
+  }
 
   if(username) {
     if (findreguserbynick(username)) {
@@ -296,4 +360,57 @@ int csa_doactivateuser(void *source, int cargc, char **cargv) {
   controlreply(sender, "ACTIVATEUSER TRUE");
 
   return CMD_OK;
+}
+
+static int hex_to_int(char *input, unsigned char *buf, int buflen) {
+  int i;
+  for(i=0;i<buflen;i++) {
+    if((0xff == hexlookup[(int)input[i * 2]]) || (0xff == hexlookup[(int)input[i * 2 + 1]])) {
+      return 0;
+    } else {
+      buf[i] = (hexlookup[(int)input[i * 2]] << 4) | hexlookup[(int)input[i * 2 + 1]];
+    }
+  }
+  return 1;
+}
+
+static int decrypt_password(unsigned char *secret, int keybits, char *buf, int bufsize, char *encrypted) {
+  size_t ciphertextlen, datalen;
+  unsigned char iv[BLOCK_SIZE];
+  rijndaelcbc *c;
+  int i, j;
+
+  datalen = strlen(encrypted);
+  if(datalen % 2 != 0)
+    return 1;
+  if(datalen < BLOCK_SIZE * 2 * 2)
+    return 2;
+
+  if(!hex_to_int(encrypted, iv, BLOCK_SIZE))
+    return 3;
+
+  ciphertextlen = (datalen - (BLOCK_SIZE * 2)) / 2;
+  if(ciphertextlen > bufsize || ciphertextlen % BLOCK_SIZE != 0)
+    return 4;
+
+  if(!hex_to_int(encrypted + BLOCK_SIZE * 2, (unsigned char *)buf, ciphertextlen))
+    return 5;
+
+  c = rijndaelcbc_init(secret, keybits, iv, 1);
+
+  for(i=0;i<ciphertextlen;i+=BLOCK_SIZE) {
+    char *p = &buf[i];
+    unsigned char *r = rijndaelcbc_decrypt(c, (unsigned char *)p);
+    memcpy(p, r, BLOCK_SIZE);
+
+    for(j=0;j<BLOCK_SIZE;j++) {
+      if(*(p + j) == '\0') {
+        rijndaelcbc_free(c);
+        return 0;
+      }
+    }
+  }
+
+  rijndaelcbc_free(c);
+  return 6;
 }
