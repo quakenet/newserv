@@ -147,7 +147,7 @@ void cs_handlejoin(int hooknum, void *arg) {
   if (rup && (rup->status & QUSTAT_DEAD))
     rup=NULL;
   
-  if (rup && (rcup=findreguseronchannel(rcp,rup)) && CUKnown(rcup) && cp->users->totalusers >= 3)
+  if (rup && (rcup=findreguseronchannel(rcp,rup)) && CUHasOpPriv(rcup) && cp->users->totalusers >= 3)
     rcp->lastactive=time(NULL);
 
   /* Update last use time */
