@@ -19,6 +19,8 @@ void dodump(void *arg) {
   if(!fp)
     return;
 
+  fprintf(fp, "M T %lld\n", (unsigned long long)time(NULL));
+
   for(i=0;i<CHANNELHASHSIZE;i++)
     for(c=chantable[i];c;c=c->next)
       if(c->channel && !IsSecret(c->channel))
