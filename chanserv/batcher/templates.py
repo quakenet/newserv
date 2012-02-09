@@ -17,6 +17,17 @@ def generate_url(config, obj):
   b = md5.md5(md5.md5("%s %s %s %s" % (config["urlsecret"], obj["user.username"], a, s)).hexdigest()).hexdigest()
   obj["url"] = "%s?m=%s&h=%s&u=%s&r=%s" % (config["url"], a.encode("hex"), b, obj["user.username"].encode("hex"), s.encode("hex"))
 
+def generate_activation_url(config, obj):
+  r = os.urandom(16).encode("hex")
+  uid = int(obj["user.id"])
+  h = hmac.HMAC(sha256("hmac %s %s" % (r, config["activationkey"])).hexdigest())
+  h.update("%d %s %s" % (uid, obj["user.username"], obj["user.password"]))
+  hd = h.hexdigest()
+
+  r2 = RC4(sha256("rc4 %s %s" % (r, config["activationkey"])).hexdigest())
+  a = r2.crypt(obj["user.password"])
+  obj["url"] = "%s?id=%d&h=%s&r=%s&u=%s&p=%s" % (config["activationurl"], uid, hd, r, obj["user.username"].encode("hex"), a.encode("hex"))
+
 def generate_resetcode(config, obj):
   if obj["user.lockuntil"] == 0:
     obj["resetline"] = "LOCK UNTIL NOT SET. STAFF ACCOUNT'S CAN'T USE RESET"
@@ -38,6 +49,7 @@ MAILTEMPLATES = {
     1: generate_url,
     3: generate_resetcode,
     5: generate_resetcode,
+    6: generate_activation_url,
   },
   "sendto": {
     5: "prevemail",
@@ -102,6 +114,23 @@ If you did not request this please use:
 %(resetline)s
 
 You have until %(lockuntil)s to perform this command.
+""", },
+      6: { "subject": "Please complete your QuakeNet account registration", "body": """
+Hi %(user.username)s,
+
+You're just one click away from completing your registration for a QuakeNet account!
+
+Just visit the link below to complete the process:
+%(url)s
+
+For reference, your username/password is:
+
+Username: %(user.username)s
+Password: %(user.password)s
+
+After activation you can auth yourself to QuakeNet by typing the following command:
+
+   /AUTH %(user.username)s %(user.password)s
 """, },
     },
   },

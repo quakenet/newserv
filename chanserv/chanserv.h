@@ -170,7 +170,9 @@
 
 
 /* User flags */
-#define   QUFLAG_NOINFO        0x0001  /* +s */
+/* to reenable this also grep for NOINFO... as some code has been commented out */
+//#define   QUFLAG_NOINFO        0x0001  /* +s */
+#define   QUFLAG_INACTIVE      0x0001  /* +I */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
 #define   QUFLAG_STAFF         0x0008  /* +q */
@@ -188,7 +190,9 @@
 #define   QUFLAG_TRUST         0x8000  /* +T */
 #define   QUFLAG_ALL           0xffff
 
-#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+//#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+#define UIsNoInfo(x)        0
+#define UIsInactive(x)      ((x)->flags & QUFLAG_INACTIVE)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
 #define UIsNotice(x)        ((x)->flags & QUFLAG_NOTICE)
 #define UIsSuspended(x)     ((x)->flags & QUFLAG_SUSPENDED)
@@ -211,6 +215,7 @@
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
 
+#define USetInactive(x)      ((x)->flags |= QUFLAG_INACTIVE)
 #define USetGline(x)         ((x)->flags |= QUFLAG_GLINE)
 #define USetNotice(x)        ((x)->flags |= QUFLAG_NOTICE)
 #define USetSuspended(x)     ((x)->flags |= QUFLAG_SUSPENDED)
@@ -225,6 +230,7 @@
 #define USetCleanupExempt(x) ((x)->flags |= QUFLAG_CLEANUPEXEMPT)
 #define USetTrust(x)         ((x)->flags |= QUFLAG_TRUST)
 
+#define UClearInactive(x)      ((x)->flags &= ~QUFLAG_INACTIVE)
 #define UClearGline(x)         ((x)->flags &= ~QUFLAG_GLINE)
 #define UClearNotice(x)        ((x)->flags &= ~QUFLAG_NOTICE)
 #define UClearSuspended(x)     ((x)->flags &= ~QUFLAG_SUSPENDED)
@@ -243,13 +249,14 @@
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
 #define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgol]|fo|me|seum|op|ro)?$"
 
-#define VALID_ACCOUNT_NAME  "^[-a-z0-9]*$"
+#define VALID_ACCOUNT_NAME  "^[a-z][-a-z0-9]+$"
 
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */
 #define QMAIL_NEWPW                3  /* new password */
 #define QMAIL_RESET                4  /* reset account */
 #define QMAIL_NEWEMAIL             5  /* new email address */
+#define QMAIL_ACTIVATEEMAIL        6  /* new style new account */
 
 
 /* Channel flags */

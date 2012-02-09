@@ -4,6 +4,7 @@
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <signal.h>
 #include <netdb.h>
 #include "../core/error.h"
 #include "../core/events.h"
@@ -101,6 +102,7 @@ int proxyscandosave(void *sender, int cargc, char **cargv);
 int proxyscandospew(void *sender, int cargc, char **cargv);
 int proxyscandoshowkill(void *sender, int cargc, char **cargv);
 int proxyscandoscan(void *sender, int cargc, char **cargv);
+int proxyscandoscanfile(void *sender, int cargc, char **cargv);
 int proxyscandoaddscan(void *sender, int cargc, char **cargv);
 int proxyscandodelscan(void *sender, int cargc, char **cargv);
 int proxyscandoshowcommands(void *sender, int cargc, char **cargv);
@@ -136,9 +138,15 @@ int proxyscan_delscantype(int type, int port) {
   return 0;
 }
 
+void ignorepipe(int signal_) {
+  signal(SIGPIPE, ignorepipe); /* HACK */
+}
+
 void _init(void) {
   sstring *cfgstr;
   int ipbits[4];
+
+  signal(SIGPIPE, ignorepipe); /* HACK */
 
   ps_start_ts = time(NULL);
   ps_ready = 0;
@@ -173,7 +181,7 @@ void _init(void) {
   freesstring(cfgstr);
   
   /* Max concurrent scans */
-  cfgstr=getcopyconfigitem("proxyscan","maxscans","200",5);
+  cfgstr=getcopyconfigitem("proxyscan","maxscans","200",10);
   maxscans=strtol(cfgstr->content,NULL,10);
   freesstring(cfgstr);
 
@@ -239,11 +247,12 @@ void _init(void) {
   addcommandtotree(ps_commands, "status", 0, 0, &proxyscandostatus);
   addcommandtotree(ps_commands, "listopen", 0, 0, &proxyscandolistopen);
   addcommandtotree(ps_commands, "save", 0, 0, &proxyscandosave);
-  addcommandtotree(ps_commands, "spew", 0, 0, &proxyscandospew);
-  addcommandtotree(ps_commands, "showkill", 0, 0, &proxyscandoshowkill);
-  addcommandtotree(ps_commands, "scan", 0, 0, &proxyscandoscan);
-  addcommandtotree(ps_commands, "addscan", 0, 0, &proxyscandoaddscan);
-  addcommandtotree(ps_commands, "delscan", 0, 0, &proxyscandodelscan);
+  addcommandtotree(ps_commands, "spew", 0, 1, &proxyscandospew);
+  addcommandtotree(ps_commands, "showkill", 0, 1, &proxyscandoshowkill);
+  addcommandtotree(ps_commands, "scan", 0, 1, &proxyscandoscan);
+  addcommandtotree(ps_commands, "scanfile", 0, 1, &proxyscandoscanfile);
+  addcommandtotree(ps_commands, "addscan", 0, 1, &proxyscandoaddscan);
+  addcommandtotree(ps_commands, "delscan", 0, 1, &proxyscandodelscan);
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
@@ -258,6 +267,16 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 808);
   proxyscan_addscantype(STYPE_HTTP, 3332);
   proxyscan_addscantype(STYPE_HTTP, 2282);
+
+  proxyscan_addscantype(STYPE_HTTP, 1644);
+  proxyscan_addscantype(STYPE_HTTP, 8081);
+  proxyscan_addscantype(STYPE_HTTP, 443);
+  proxyscan_addscantype(STYPE_HTTP, 1337);
+  proxyscan_addscantype(STYPE_HTTP, 8888);
+  proxyscan_addscantype(STYPE_HTTP, 8008);
+  proxyscan_addscantype(STYPE_HTTP, 6515);
+  proxyscan_addscantype(STYPE_HTTP, 27977);
+
   proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 1080);
   proxyscan_addscantype(STYPE_SOCKS5, 1080);
@@ -287,7 +306,7 @@ void _init(void) {
   proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
   proxyscan_addscantype(STYPE_SOCKS5, 27977);
- 
+
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
  
@@ -480,7 +499,7 @@ void startscan(patricia_node_t *node, int type, int port, int class) {
   sp->totalbytesread=0;
   memset(sp->readbuf, '\0', PSCAN_READBUFSIZE);
 
-  sp->fd=createconnectsocket(irc_in_addr_v4_to_int(&((patricia_node_t *)sp->node)->prefix->sin),sp->port);
+  sp->fd=createconnectsocket(&((patricia_node_t *)sp->node)->prefix->sin,sp->port);
   sp->state=SSTATE_CONNECTING;
   if (sp->fd<0) {
     /* Couldn't set up the socket? */
@@ -637,7 +656,7 @@ void handlescansock(int fd, short events) {
 
     switch(sp->type) {
     case STYPE_HTTP:
-      sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n",myipstr->content,listenport);
+      sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n\r\n",myipstr->content,listenport);
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
 	/* We didn't write the full amount, DIE */
 	killsock(sp,SOUTCOME_CLOSED);
@@ -766,6 +785,10 @@ void handlescansock(int fd, short events) {
       } else {
         magicstring = MAGICSTRING;
         magicstringlength = MAGICSTRINGLENGTH;
+        if(sp->totalbytesread - res == 0) {
+          buf[0] = '\n';
+          write(fd,buf,1);
+        }
       }
 
       for (i=0;i<sp->bytesread - magicstringlength;i++) {
@@ -948,6 +971,9 @@ int proxyscandosave(void *sender, int cargc, char **cargv) {
 int proxyscandospew(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
 
+  if(cargc < 1)
+    return CMD_USAGE;
+
   /* check our database for the ip supplied */
   unsigned long a,b,c,d;
   if (4 != sscanf(cargv[0],"%lu.%lu.%lu.%lu",&a,&b,&c,&d)) {
@@ -961,6 +987,9 @@ int proxyscandospew(void *sender, int cargc, char **cargv) {
 
 int proxyscandoshowkill(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return CMD_USAGE;
 
   /* check our database for the id supplied */
   unsigned long a;
@@ -989,11 +1018,14 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   unsigned char bits;
   int i;
 
+  if(cargc < 1)
+    return CMD_USAGE;
+
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
-    if (bits != 128 || !irc_in_addr_is_ipv4(&sin) || irc_in_addr_is_loopback(&sin)) {
-      sendnoticetouser(proxyscannick,np,"You may only scan single IPv4 IP's");
+    if (bits != 128 || irc_in_addr_is_loopback(&sin)) {
+      sendnoticetouser(proxyscannick,np,"You may only scan single IP's");
       return CMD_OK;
     }
 
@@ -1010,8 +1042,83 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+int proxyscandoscanfile(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  int i;
+  time_t t = time(NULL);
+  int pscantypes[PSCAN_MAXSCANS];
+  int maxtypes;
+  FILE *fp;
+  int count;
+
+  if ((fp=fopen("data/doscan.txt","r"))==NULL) {
+    sendnoticetouser(proxyscannick,np,"Unable to open file for reading!");
+    return CMD_ERROR;
+  }
+
+  {
+    int *tscantypes;
+    int maxno = -1;
+
+    for(i=0;i<numscans;i++)
+      if(thescans[i].type > maxno)
+        maxno = thescans[i].type;
+
+    tscantypes = malloc(sizeof(int) * maxno);
+    for(i=0;i<maxno;i++)
+      tscantypes[i] = 0;
+
+    for(i=0;i<numscans;i++)
+      tscantypes[thescans[i].type] = 1;
+
+    for(i=0,maxtypes=0;i<maxno;i++)
+      if(tscantypes[i])
+        pscantypes[maxtypes++] = i;
+
+    free(tscantypes);
+  }
+
+  count = 0;
+  while (!feof(fp)) {
+    patricia_node_t *node;
+    struct irc_in_addr sin;
+    unsigned char bits;
+    unsigned short port;
+    char buf[512], ip[512];
+    int res;
+
+    fgets(buf,512,fp);
+    if (feof(fp)) {
+      break;
+    }
+
+    res=sscanf(buf,"%s %hu",ip,&port);
+
+    if (res<2)
+      continue;
+
+    if (0 == ipmask_parse(ip,&sin, &bits)) {
+      /* invalid mask */
+    } else {
+      node = refnode(iptree, &sin, bits); /* LEAKS */
+      if( node ) {
+        for(i=0;i<maxtypes;i++) {
+          queuescan(node,pscantypes[i],port,SCLASS_NORMAL,t);
+          count++;
+        }
+      }
+    }
+  }
+
+  sendnoticetouser(proxyscannick,np,"Started %d scans...", count);
+  return CMD_OK;
+}
+
 int proxyscandoaddscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return CMD_USAGE;
 
   unsigned int a,b;
   if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {
@@ -1026,6 +1133,9 @@ int proxyscandoaddscan(void *sender, int cargc, char **cargv) {
 
 int proxyscandodelscan(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return CMD_USAGE;
 
   unsigned int a,b;
   if (sscanf(cargv[0],"%u %u",&a,&b) != 2) {

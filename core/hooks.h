@@ -32,7 +32,7 @@
 #define HOOK_SERVER_LINKED         204  /* Argument is number of server */
 
 #define HOOK_NICK_NEWNICK          300  /* Argument is nick* */
-#define HOOK_NICK_RENAME           301  /* Argument is nick* */
+#define HOOK_NICK_RENAME           301  /* Argument is void*[2] (nick *, oldnick) */
 #define HOOK_NICK_LOSTNICK         302  /* Argument is nick* */
 #define HOOK_NICK_WHOISCHANNELS    303  /* Argument is nick*[2] (sender, target) */
 #define HOOK_NICK_ACCOUNT          304  /* Argument is nick* */

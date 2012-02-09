@@ -241,6 +241,7 @@ BeginMessages() {
   msg(QM_TITLEHEADER,"Available titles:\n  #  Title",""),
   msg(QM_INVALIDTITLE,"Invalid title ID.",""),
   msg(QM_TITLETOOFAST,"You have already changed your title recently.  Please wait a while and try again.",""),
+  msg(QM_INACTIVEACCOUNT,"This account has not yet been activated.",""),
 } 
 EndMessages()
 #endif

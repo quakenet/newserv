@@ -41,6 +41,8 @@ static char *versionreply;
 static int hooksregistered = 0;
 static void *trojanscan_connect_nick_schedule;
 
+static void *db_ping_schedule;
+
 void _init() {
   trojanscan_cmds = newcommandtree();
 
@@ -129,6 +131,7 @@ void _fini(void) {
 
   for (i=0;i<trojanscan_tailpoolsize;i++)
     freesstring(trojanscan_tailpool[i]);
+
   trojanscan_database_close();
 
   deletecommandfromtree(trojanscan_cmds, "showcommands", &trojanscan_showcommands);
@@ -2510,7 +2513,21 @@ void trojanscan_generaterealname(char *buf, int maxsize) {
     strlcpy(buf, np->realname->name->content, maxsize + 1);
 }
 
+static void db_ping(void *arg) {
+  if (!(trojanscan_database_query("SELECT 1"))) {
+    trojanscan_database_res *res;
+    if ((res = trojanscan_database_store_result(&trojanscan_sql))) {
+      trojanscan_database_free_result(res);
+    }
+  } 
+
+  db_ping_schedule = scheduleoneshot(time(NULL) + 60, &db_ping, NULL);
+}
+
 void trojanscan_database_close(void) {
+  if(db_ping_schedule)
+    deleteschedule(db_ping_schedule, db_ping, NULL);
+
   mysql_close(&trojanscan_sql);
 }
 
@@ -2518,6 +2535,10 @@ int trojanscan_database_connect(char *dbhost, char *dbuser, char *dbpass, char *
   mysql_init(&trojanscan_sql);
   if (!mysql_real_connect(&trojanscan_sql, dbhost, dbuser, dbpass, db, port, NULL, 0))
     return -1;
+
+
+  db_ping_schedule = scheduleoneshot(time(NULL) + 60, &db_ping, NULL);
+
   return 0;
 }
 
