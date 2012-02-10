@@ -104,6 +104,21 @@ void csu_docleanupdb_real(DBConn *dbconn, void *arg) {
       if (!(rcp=cip->exts[chanservext]))
         continue;
 
+      /* there's a bug here... if no joins or modes are done within the threshold
+       * and someone leaves just before the cleanup then the channel will be nuked.
+       */
+
+      /* this is one possible soln but relies on cleanupdb being run more frequently than
+       * the threshold:
+       */ 
+      if(cip->channel && cs_ischannelactive(cip->channel, rcp)) {
+        rcp->lastactive = t;
+        if (rcp->lastcountersync < (t - COUNTERSYNCINTERVAL)) {
+          csdb_updatechannelcounters(rcp);
+          rcp->lastcountersync=t;
+        }
+      }
+
       if(rcp->lastactive < maxchan_age) {
         /* don't remove channels with the original founder as an oper */
         founder=findreguserbyID(rcp->founder);

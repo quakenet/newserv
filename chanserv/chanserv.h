@@ -100,6 +100,8 @@
 
 #define CLEANUP_AUTHHISTORY	  60
 
+#define CLEANUP_MIN_CHAN_SIZE     2
+
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
 #define   MAILDOMAINHASHSIZE  60000
@@ -902,6 +904,7 @@ void cs_handletopicchange(int hooknum, void *arg);
 void cs_handleopchange(int hooknum, void *arg);
 void cs_handlenewban(int hooknum, void *arg);
 void cs_handlechanlostuser(int hooknum, void *arg);
+int cs_ischannelactive(channel *cp, regchan *rcp);
 
 /* chanservmessages.c */
 void initmessages();

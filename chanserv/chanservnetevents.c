@@ -147,7 +147,7 @@ void cs_handlejoin(int hooknum, void *arg) {
   if (rup && (rup->status & QUSTAT_DEAD))
     rup=NULL;
   
-  if (rup && (rcup=findreguseronchannel(rcp,rup)) && CUHasOpPriv(rcup) && cp->users->totalusers >= 3)
+  if (rup && (rcup=findreguseronchannel(rcp,rup)) && CUHasOpPriv(rcup) && cs_ischannelactive(cp, NULL))
     rcp->lastactive=time(NULL);
 
   /* Update last use time */
@@ -444,3 +444,48 @@ void cs_handletopicchange(int hooknum, void *arg) {
     csdb_updatetopic(rcp);
   }
 }
+
+/*
+ * active is defined as at least 2 real users (no snailbot) currently present
+ * and at least one op/master/owner.
+ * this is O(n) worst case, but very very likely to just be 2 checks.
+ */
+int cs_ischannelactive(channel *cp, regchan *rcp) {
+  int real_users = 0;
+  int seen_op = 0;
+  nick *np;
+  int i;
+
+  for (i=0;i<cp->users->hashsize;i++) {
+    if(cp->users->content[i]==nouser)
+      continue;
+
+    if((np=getnickbynumeric(cp->users->content[i]))==NULL)
+      continue;
+
+    if(NickOnServiceServer(np)) /* bad snailbot */
+      continue;
+
+    real_users++;
+
+    if(rcp && !seen_op) { /* only look for ops if we haven't seen one yet */
+      reguser *rup = getreguserfromnick(np); /* O(1) */
+      if(rup) {
+        regchanuser *rcup = findreguseronchannel(rcp, rup); /* O(1) */
+        if(rcup && CUHasOpPriv(rcup))
+          seen_op = 1;
+      }
+    }
+
+    /* so once we've seen X real users AND:
+     * - we're not looking for ops as a check had already been done by the caller
+     * - OR we're looking for ops AND we found them
+     * then the channel is active, and we're done
+     */
+    if((real_users >= CLEANUP_MIN_CHAN_SIZE) && (!rcp || (rcp && seen_op)))
+      return 1;
+  }
+
+  return 0;
+}
+

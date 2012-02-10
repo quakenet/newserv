@@ -792,7 +792,7 @@ void cs_doallautomodes(nick *np) {
           continue;
         }
 
-        if (CUKnown(rcup) && rcup->chan->index->channel->users->totalusers >= 3) {
+        if (CUHasOpPriv(rcup) && cs_ischannelactive(rcup->chan->index->channel, NULL)) {
           /* This meets the channel use criteria, update. */
           rcup->chan->lastactive=time(NULL);
           
