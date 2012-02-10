@@ -20,6 +20,8 @@ sstring *cs_quitreason;
 
 void chanservfreestuff();
 void chanservfinishinit(int hooknum, void *arg);
+static void cs_hourlyfunc(void *arg);
+static void cs_dailyfunc(void *arg);
 
 DBModuleIdentifier q9dbid;
 
@@ -117,12 +119,29 @@ void chanserv_finalinit() {
 
   chanserv_init_status = CS_INIT_READY;
   triggerhook(HOOK_CHANSERV_RUNNING, NULL);  
+
+  /* run every 60 minutes, first one 5 minutes after start */
+  schedulerecurring(time(NULL)+60*5,0,3600,cs_hourlyfunc,NULL);
+
+  {
+    /* run at midnight but only if we're more than 1h away from it, otherwise run tomorrow */
+
+    time_t t = time(NULL);
+    time_t next_midnight = (t / 86400) * 86400 + 86400;
+    if(next_midnight - t < 3600)
+      next_midnight+=86400;
+
+    schedulerecurring(next_midnight,0,86400,cs_dailyfunc,NULL);
+  }
+
   Error("chanserv",ERR_INFO,"Ready to roll.");
 }
 
 void _fini() {
   dbfreeid(q9dbid);
 
+  deleteallschedules(cs_dailyfunc);
+  deleteallschedules(cs_hourlyfunc);
   deleteallschedules(cs_timerfunc);
   deleteallschedules(chanservreguser);
   deleteallschedules(chanservdumpstuff);
@@ -181,3 +200,38 @@ void _fini() {
 
   cs_closelog();
 }
+
+static void cs_hourlyfunc(void *arg) {
+  int i, total = 0, touched = 0, toorecent = 0;
+  chanindex *cip, *ncip;
+  regchan *rcp;
+  time_t t = time(NULL);
+
+  for (i=0;i<CHANNELHASHSIZE;i++) {
+    for (cip=chantable[i];cip;cip=ncip) {
+      ncip=cip->next;
+      if (!(rcp=cip->exts[chanservext]))
+        continue;
+
+      total++;
+
+      if(cip->channel && cs_ischannelactive(cip->channel, rcp)) {
+        rcp->lastactive = t;
+        if (rcp->lastcountersync < (t - COUNTERSYNCINTERVAL)) {
+          csdb_updatechannelcounters(rcp);
+          rcp->lastcountersync=t;
+          touched++;
+        } else {
+          toorecent++;
+        }
+      }
+
+    }
+  }
+  cs_log(NULL,"hourly update active completed, %d seen, %d touched, %d too recent to update.",total,touched,toorecent);
+}
+
+static void cs_dailyfunc(void *arg) {
+  /* TODO: run cleanup */
+}
+
