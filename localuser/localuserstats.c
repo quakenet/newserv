@@ -38,6 +38,7 @@ int handleserverstatsend(void *source, int cargc, char **cargv);
 #define RPL_STATSTLINE       246        /* Undernet extension */
 #define RPL_STATSGLINE       247        /* Undernet extension */
 #define RPL_STATSULINE       248        /* Undernet extension */
+#define RPL_STATSDEBUG       249        /* Extension to RFC1459 */
 #define RPL_STATSCONN        250        /* Undernet extension */
 #define RPL_STATSDLINE       275        /* Undernet extension */
 #define RPL_STATSRLINE       276        /* Undernet extension */
@@ -48,7 +49,7 @@ int handleserverstatsend(void *source, int cargc, char **cargv);
 const int numerics[] = { RPL_STATSLINKINFO, RPL_STATSCOMMANDS, RPL_STATSCLINE, RPL_STATSNLINE, RPL_STATSILINE, RPL_STATSKLINE, 
                          RPL_STATSPLINE, RPL_STATSYLINE, RPL_STATSJLINE, RPL_STATSALINE, RPL_STATSQLINE, RPL_STATSVERBOSE, 
                          RPL_STATSENGINE, RPL_STATSFLINE, RPL_STATSLLINE, RPL_STATSUPTIME, RPL_STATSOLINE, RPL_STATSHLINE,
-                         RPL_STATSTLINE, RPL_STATSGLINE,RPL_STATSULINE, RPL_STATSCONN, RPL_STATSDLINE, RPL_STATSRLINE, 
+                         RPL_STATSTLINE, RPL_STATSGLINE, RPL_STATSULINE, RPL_STATSDEBUG, RPL_STATSCONN, RPL_STATSDLINE, RPL_STATSRLINE, 
                          RPL_STATSSLINE, 0 };
 
 void _init() {
