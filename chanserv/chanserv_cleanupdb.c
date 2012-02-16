@@ -24,15 +24,14 @@ void _fini() {
 }
 
 static void schedulecleanup(int hooknum, void *arg) {
-  /* run at midnight but only if we're more than 1h away from it, otherwise run tomorrow */
+  /* run at 1am but only if we're more than 15m away from it, otherwise run tomorrow */
 
   time_t t = time(NULL);
-  time_t next_midnight = (t / 86400) * 86400 + 86400;
-  if(next_midnight - t < 3600)
-    next_midnight+=86400;
-
-//  schedulerecurring(next_midnight,0,86400,cleanupdb,NULL);
-//  scheduleoneshot(time(NULL)+5,cleanupdb,NULL);
+  time_t next_run = ((t / 86400) * 86400 + 86400) + 3600;
+  if(next_run - t < 900)
+    next_run+=86400;
+  
+  schedulerecurring(next_run,0,86400,cleanupdb,NULL);
 }
 
 __attribute__ ((format (printf, 1, 2)))
@@ -134,6 +133,8 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
       /* this is one possible soln but relies on cleanupdb being run more frequently than
        * the threshold:
        */ 
+      /* slug: no longer required as we scan the entire network every 1h (cs_hourlyfunc) */
+/*
       if(cip->channel && cs_ischannelactive(cip->channel, rcp)) {
         rcp->lastactive = t;
         if (rcp->lastcountersync < (t - COUNTERSYNCINTERVAL)) {
@@ -141,6 +142,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
           rcp->lastcountersync=t;
         }
       }
+*/
 
       if(rcp->lastactive < maxchan_age) {
         /* don't remove channels with the original founder as an oper */
