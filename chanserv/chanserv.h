@@ -822,6 +822,7 @@ void csdb_dohelp(nick *np, Command *cmd);
 #define q9a_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9adbid, handler, tag, format , ##__VA_ARGS__)
 #define q9u_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9udbid, handler, tag, format , ##__VA_ARGS__)
 #define q9c_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9cdbid, handler, tag, format , ##__VA_ARGS__)
+#define q9cleanup_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9cleanupdbid, handler, tag, format , ##__VA_ARGS__)
 
 /* chanservcrypto.c */
 typedef int (*CRAlgorithm)(char *, const char *, const char *, const char *);
@@ -966,5 +967,8 @@ void q9strftime(char *buf, size_t size, time_t t);
 /* chanserv_flags.c */
 u_int64_t cs_accountflagmap(reguser *rup);
 u_int64_t cs_accountflagmap_str(char *flags);
+
+/* chanserv_cleanupdb.c */
+void cs_cleanupdb(nick *np);
 
 #endif

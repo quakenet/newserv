@@ -21,7 +21,6 @@ sstring *cs_quitreason;
 void chanservfreestuff();
 void chanservfinishinit(int hooknum, void *arg);
 static void cs_hourlyfunc(void *arg);
-static void cs_dailyfunc(void *arg);
 
 DBModuleIdentifier q9dbid;
 
@@ -123,24 +122,12 @@ void chanserv_finalinit() {
   /* run every 60 minutes, first one 5 minutes after start */
   schedulerecurring(time(NULL)+60*5,0,3600,cs_hourlyfunc,NULL);
 
-  {
-    /* run at midnight but only if we're more than 1h away from it, otherwise run tomorrow */
-
-    time_t t = time(NULL);
-    time_t next_midnight = (t / 86400) * 86400 + 86400;
-    if(next_midnight - t < 3600)
-      next_midnight+=86400;
-
-    schedulerecurring(next_midnight,0,86400,cs_dailyfunc,NULL);
-  }
-
   Error("chanserv",ERR_INFO,"Ready to roll.");
 }
 
 void _fini() {
   dbfreeid(q9dbid);
 
-  deleteallschedules(cs_dailyfunc);
   deleteallschedules(cs_hourlyfunc);
   deleteallschedules(cs_timerfunc);
   deleteallschedules(chanservreguser);
@@ -230,8 +217,3 @@ static void cs_hourlyfunc(void *arg) {
   }
   cs_log(NULL,"hourly update active completed, %d seen, %d touched, %d too recent to update.",total,touched,toorecent);
 }
-
-static void cs_dailyfunc(void *arg) {
-  /* TODO: run cleanup */
-}
-
