@@ -1,9 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-CFLAGS+=$(INCPGSQL) ${INCPCRE}
-LDFLAGS+=$(LIBPGSQL) ${LIBPCRE}
-
-.PHONY: all
-all: gline.so
-
-gline.so: gline_hash.o gline_alloc.o gline_handler.o gline.o

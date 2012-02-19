@@ -96,10 +96,6 @@
 #define HOOK_TRUSTS_MODIFYGROUP    910 /* Argument is trustgroup* */
 #define HOOK_TRUSTS_LOSTHOST       911 /* Argument is trusthost* */
 
-#define HOOK_TRUSTS_DBLOADED       1000
-
-#define HOOK_TRUSTS_DBLOADED       1000
-
 #define PRIORITY_DEFAULT           0
 
 #define PRIORITY_MAX               LONG_MIN
