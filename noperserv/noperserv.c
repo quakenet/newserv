@@ -170,6 +170,7 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
         controlreply(np, "Cannot find anyone with that authname on the network.");
         return CMD_ERROR;
       }
+      newaccount = a->name;
       target = a->nicks;
     } else {
       target = getnickbynick(cargv[0]);

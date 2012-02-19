@@ -33,8 +33,7 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
   time_t ahauthtime, ahdisconnecttime;
   DBResult *pgres;
   int count=0;
-  struct tm *tmp;
-  char tbuf1[15], tbuf2[15], uhbuf[51];
+  char tbuf1[TIMELEN], tbuf2[TIMELEN], uhbuf[NICKLEN+HOSTLEN+USERLEN+5];
 
   if(!dbconn) {
     free(ahi);
@@ -67,7 +66,7 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
     free(ahi);
     return;
   }
-  chanservstdmessage(np, QM_AUTHHISTORYHEADER);
+  chanservstdmessage(np, QM_AUTHHISTORYHEADER); /* @TIMELEN */
   while(dbfetchrow(pgres)) {
     if (!UHasHelperPriv(rup) && (strtoul(dbgetvalue(pgres, 0), NULL, 10) != rup->ID)) {
       dbclear(pgres);
@@ -79,14 +78,13 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
     ahhost=dbgetvalue(pgres, 3);
     ahauthtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
     ahdisconnecttime=strtoul(dbgetvalue(pgres, 5), NULL, 10);
-    tmp=gmtime(&ahauthtime);
-    strftime(tbuf1, sizeof(tbuf1), Q9_FORMAT_TIME, tmp);
-    if (ahdisconnecttime) {
-      tmp=gmtime(&ahdisconnecttime);
-      strftime(tbuf2, sizeof(tbuf2), Q9_FORMAT_TIME, tmp);
-    }
-    snprintf(uhbuf,50,"%s!%s@%s", ahnick, ahuser, ahhost);
-    chanservsendmessage(np, "#%-2d %-50s %-15s %-15s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", dbgetvalue(pgres,6));
+
+    q9strftime(tbuf1, sizeof(tbuf1), ahauthtime);
+    if (ahdisconnecttime)
+      q9strftime(tbuf2, sizeof(tbuf2), ahdisconnecttime);
+
+    snprintf(uhbuf,sizeof(uhbuf),"%s!%s@%s", ahnick, ahuser, ahhost);
+    chanservsendmessage(np, "#%-2d %-50s %-19s %-19s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", dbgetvalue(pgres,6)); /* @TIMELEN */
   }
   chanservstdmessage(np, QM_ENDOFLIST);
 

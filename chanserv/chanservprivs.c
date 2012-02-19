@@ -33,6 +33,7 @@ int cs_privcheck(int privnum, nick *np) {
   case QPRIV_CHANGEBANTIMER:
   case QPRIV_CHANGEUSERFLAGS:
   case QPRIV_VIEWSUSPENDEDBY:
+  case QPRIV_VIEWWALLMESSAGE: /* if you change VIEWWALLMESSAGE alter chanservwallmessage too */
     return (np && rup && IsOper(np) && UHasOperPriv(rup));
     
   default: /* By default opers can override anything */

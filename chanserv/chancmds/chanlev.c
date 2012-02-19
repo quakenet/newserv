@@ -93,9 +93,8 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   regchanuser *rcup, *rcuplist;
   regchanuser **rusers;
   reguser *rup=getreguserfromnick(sender), *target;
-  char time1[15],time2[15];
+  char time1[TIMELEN],time2[TIMELEN];
   char flagbuf[30];
-  struct tm *tmp;
   flag_t flagmask, changemask, flags, oldflags;
   int showtimes=0;
   int donehead=0;
@@ -224,14 +223,12 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 	if (!rcuplist->usetime) {
 	  strcpy(time1,"Never");
 	} else {
-	  tmp=gmtime(&(rcuplist->usetime));
-	  strftime(time1,sizeof(time1),Q9_FORMAT_TIME,tmp);
+	  q9strftime(time1,sizeof(time1),rcuplist->usetime);
 	}
 	if (!rcuplist->changetime) {
 	  strcpy(time2, "Unknown");
 	} else {
-	  tmp=gmtime(&(rcuplist->changetime));
-	  strftime(time2,sizeof(time2),Q9_FORMAT_TIME,tmp);
+	  q9strftime(time2,sizeof(time2),rcuplist->changetime);
 	}
 	chanservsendmessage(sender, " %-15s %-13s %-14s  %-14s  %s", rcuplist->user->username, 
 			    printflags(flags, rcuflags), time1, time2, rcuplist->info?rcuplist->info->content:"");
