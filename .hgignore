@@ -31,3 +31,5 @@ silly
 y.tab.{c,h}
 lex.yy.c
 .settings.mk
+core.*
+core
