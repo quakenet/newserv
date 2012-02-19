@@ -90,6 +90,8 @@
 
 #define HOOK_TRUSTS_DBLOADED       1000
 
+#define HOOK_TRUSTS_DBLOADED       1000
+
 #define PRIORITY_DEFAULT           0
 
 #define PRIORITY_MAX               LONG_MIN
