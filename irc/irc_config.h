@@ -10,6 +10,7 @@
 #define TOPICLEN    250
 #define CHANNELLEN  200
 #define KEYLEN      23 
+#define AWAYLEN     160
 
 #define MAXSERVERS 4096
 

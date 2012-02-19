@@ -52,6 +52,8 @@ void init_logfile() {
 }
 
 void fini_logfile() {
+  if (logfile) 
+    fclose(logfile);
   deregisterhook(HOOK_CORE_SIGUSR1, reopen_logfile);
   if (logfile)
     fclose(logfile);
@@ -79,8 +81,12 @@ void Error(char *source, int severity, char *reason, ... ) {
     tm=gmtime(&now);
     strftime(timebuf,100,"%Y-%m-%d %H:%M:%S",tm);
     fprintf(stderr,"[%s] %s(%s): %s\n",timebuf,sevtostring(severity),source,buf);
-    if (logfile) 
+    fflush(stderr);
+
+    if (logfile)  {
       fprintf(logfile,"[%s] %s(%s): %s\n",timebuf,sevtostring(severity),source,buf);
+      fflush(logfile);
+    }
   }
   
   if (severity>=ERR_STOP) {

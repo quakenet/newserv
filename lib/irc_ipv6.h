@@ -62,6 +62,7 @@ extern const char* ircd_ntoa(const struct irc_in_addr* addr);
 extern const char* ircd_ntoa_r(char* buf, const struct irc_in_addr* addr);
 #define ircd_aton(ADDR, STR) ipmask_parse((STR), (ADDR), NULL)
 extern int ipmask_parse(const char *in, struct irc_in_addr *mask, unsigned char *bits_ptr);
+extern int ipmask_check(const struct irc_in_addr *, const struct irc_in_addr *, unsigned char);
 
 #define IPtostr(ipaddr) ircd_ntoa(&(ipaddr))
 #define irc_in_addr_v4_to_int(ADDR) ((ntohs((ADDR)->in6_16[6]) << 16) | ntohs((ADDR)->in6_16[7]))

@@ -15,6 +15,7 @@
 
 void initseed();
 void init_logfile();
+void fini_logfile();
 void siginthandler(int sig);
 void sigusr1handler(int sig);
 void sigsegvhandler(int sig);

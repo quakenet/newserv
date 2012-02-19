@@ -22,6 +22,7 @@
 #include "../chanserv.h"
 #include "../authlib.h"
 #include "../../lib/irc_string.h"
+#include "../../core/hooks.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -29,8 +30,9 @@
 int csa_donewpw(void *source, int cargc, char **cargv) {
   reguser *rup;
   nick *sender=source;
-  int i, cntweak = 0, cntdigits = 0, cntletters = 0;
+  unsigned int same=0;
   time_t t;
+  int pq;
 
   if (cargc<3) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "newpass");
@@ -52,24 +54,24 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (strlen(cargv[1]) < 6) {
+  if (!strcmp(cargv[0],cargv[1])) {
+    /* If they are the same then continue anyway but don't send the hook later. */
+    same=1;
+  }
+
+  pq = csa_checkpasswordquality(cargv[1]);
+  if(pq == QM_PWTOSHORT) {
     chanservstdmessage(sender, QM_PWTOSHORT); /* new password to short */
     cs_log(sender,"NEWPASS FAIL username %s password to short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
     return CMD_ERROR;
-  }
-
-  for ( i = 0; cargv[1][i] && i < PASSLEN; i++ ) {
-    if ( cargv[1][i] == cargv[1][i+1] || cargv[1][i] + 1 == cargv[1][i+1] || cargv[1][i] - 1 == cargv[1][i+1] )
-      cntweak++;
-    if(isdigit(cargv[1][i]))
-      cntdigits++;
-    if(islower(cargv[1][i]) || isupper(cargv[1][i]))
-      cntletters++;
-  }
-
-  if( cntweak > 3 || !cntdigits || !cntletters) {
+  } else if(pq == QM_PWTOWEAK) {
     chanservstdmessage(sender, QM_PWTOWEAK); /* new password is weak */
     cs_log(sender,"NEWPASS FAIL username %s password to weak %s",rup->username,cargv[1]);
+    return CMD_ERROR;
+  } else if(pq == -1) {
+    /* all good */
+  } else {
+    chanservsendmessage(sender, "unknown error in newpass.c... contact #help");
     return CMD_ERROR;
   }
 
@@ -104,6 +106,9 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 
   csdb_updateuser(rup);
   csdb_createmail(rup, QMAIL_NEWPW);
+  
+  if (!same)
+    triggerhook(HOOK_CHANSERV_PWCHANGE, sender);
 
   return CMD_OK;
 }

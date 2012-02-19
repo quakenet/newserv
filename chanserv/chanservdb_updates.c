@@ -425,13 +425,11 @@ void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *ol
     escoldemail, escnewemail);
 }
 
-void csdb_cleanuphistories() {
-  time_t expire_time=getnettime()-604800;
-
+void csdb_cleanuphistories(time_t expire_time) {
   Error("chanserv", ERR_INFO, "Cleaning histories.");
-  dbquery("DELETE FROM chanserv.authhistory WHERE authtime < %lu", expire_time);
-  dbquery("DELETE FROM chanserv.chanlevhistory WHERE changetime < %lu", expire_time);
-  dbquery("DELETE FROM chanserv.accounthistory WHERE changetime < %lu", expire_time);
+  dbquery("DELETE FROM chanserv.authhistory WHERE disconnecttime < %lu AND disconnecttime <> 0", expire_time);
+  dbquery("DELETE FROM chanserv.chanlevhistory WHERE authtime < %lu", expire_time);
+  dbquery("DELETE FROM chanserv.accounthistory WHERE authtime < %lu", expire_time);
 }
 
 void csdb_deletemaillock(maillock *mlp) {

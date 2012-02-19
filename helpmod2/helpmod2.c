@@ -188,7 +188,7 @@ void helpmod_invite(hchannel *hchan, huser *husr)
     if (hchan->flags & H_PASSIVE)
         return;
 
-    localinvite(helpmodnick, hchan->real_channel, husr->real_user);
+    localinvite(helpmodnick, hchan->real_channel->index, husr->real_user);
 }
 
 static void hmode_set_channel(hchannel  *hchan)
@@ -315,7 +315,7 @@ void helpmod_chan_privmsg(void **args)
     }
     huser_activity(sender_huser, hchan);
 
-    if (huser_get_level(sender_huser) < H_TRIAL) /* staff and staff trials are not subject to any control */
+    if (huser_get_level(sender_huser) < H_FRIEND) /* staff, staff trials and friends are not subject to any control */
     {
         if ((hchan->flags & H_CENSOR) && (tmp = hcensor_check(hchan->censor, (char*)message)))
         { /* censor match */

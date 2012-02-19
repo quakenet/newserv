@@ -11,8 +11,10 @@
  * CMDHELP: Changes your current user flags, where:
  * CMDHELP: flags - changes to apply, in the usual flag letters preceded by +/- format.
  * CMDHELP: Valid user flags are:
- * CMDHELP:  +n NOTICE  - causes the bot to sent you NOTICEs.  If this flag is not set the
- * CMDHELP:               bot will communicate using PRIVMSG.
+ * CMDHELP:  +c ACH'MENTS - enables achievements system - allows use of achievement commands
+ * CMDHELP:                 and sends achievement messages.
+ * CMDHELP:  +n NOTICE    - causes the bot to sent you NOTICEs.  If this flag is not set the
+ * CMDHELP:                 bot will communicate using PRIVMSG.
  */
 
 #include "../chanserv.h"
@@ -23,7 +25,6 @@
 int csu_douserflags(void *source, int cargc, char **cargv) {
   nick *sender=source;
   reguser *rup=getreguserfromnick(sender), *target;
-  authname *anp;
   int arg=0, wasorisoper;
   flag_t flagmask, changemask, oldflags;
   char flagbuf[30];
@@ -70,13 +71,17 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
       changemask |= QUFLAG_PROTECT;
 
     if (UHasOperPriv(rup))
-      changemask |= QUFLAG_PROTECT | QUFLAG_TRUST | QCFLAG_NOINFO;
+      changemask |= QUFLAG_PROTECT | QUFLAG_TRUST; /* QUFLAG_NOINFO; */
 
     if (UHasAdminPriv(rup))
       changemask |= (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_CLEANUPEXEMPT | QUFLAG_STAFF);
     
     if (UIsDev(rup))
       changemask=QUFLAG_ALL;
+    
+    if (time(NULL) > ACHIEVEMENTS_START) {
+      changemask |= QUFLAG_ACHIEVEMENTS;
+    }
     
     wasorisoper = UHasOperPriv(target);
     setflags(&target->flags, changemask, cargv[arg], ruflags, REJECT_NONE);
@@ -90,7 +95,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
     cs_log(sender,"USERFLAGS #%s %s (%s -> %s)",target->username,cargv[arg],flagbuf,printflags(target->flags, ruflags));
 
     /* only warn about interesting changes */
-    if((target->flags ^ oldflags) & ~(QUFLAG_NOTICE | QUFLAG_INFO | QUFLAG_TRUST)) {
+    if((target->flags ^ oldflags) & ~(QUFLAG_NOTICE | QUFLAG_INFO | QUFLAG_TRUST | QUFLAG_ACHIEVEMENTS)) {
       chanservwallmessage("%s (%s) just used USERFLAGS on %s %s (%s -> %s)",sender->nick,rup->username,target->username,cargv[arg],flagbuf,printflags(target->flags,ruflags));
 
 #ifdef AUTHGATE_WARNINGS
@@ -111,7 +116,7 @@ int csu_douserflags(void *source, int cargc, char **cargv) {
   if (cs_privcheck(QPRIV_VIEWUSERFLAGS, sender))
     flagmask=QUFLAG_ALL;
   else
-    flagmask=QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_DEV | QUFLAG_ADMIN | QUFLAG_STAFF;
+    flagmask=QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_DEV | QUFLAG_ADMIN | QUFLAG_STAFF | QUFLAG_ACHIEVEMENTS;
   
   chanservstdmessage(sender, QM_CURUSERFLAGS, target->username, printflagsornone(target->flags & flagmask, ruflags));
 

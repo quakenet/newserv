@@ -210,7 +210,7 @@ static int lua_invite(lua_State *ps) {
   if(!cp)
     LUA_RETURN(ps, LUA_FAIL);
 
-  localinvite(lua_nick, cp, np);
+  localinvite(lua_nick, cp->index, np);
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -374,6 +374,14 @@ static int lua_basepath(lua_State *ps) {
 static int lua_botnick(lua_State *ps) {
   lua_pushstring(ps, luabotnick->content);
 
+  return 1;
+}
+
+static int lua_numerictobase64(lua_State *ps) {
+  if(!lua_islong(ps, 1))
+    return 0;
+
+  lua_pushstring(ps, longtonumeric(lua_tolong(ps, 1), 5));
   return 1;
 }
 
@@ -898,6 +906,8 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_simplechanmode", lua_simplechanmode);
   lua_register(l, "irc_sethost", lua_sethost);
+
+  lua_register(l, "irc_numerictobase64", lua_numerictobase64);
 }
 
 /* --- */
@@ -948,6 +958,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_CHANMODES 12
 #define PUSHER_TIMESTAMP 13
 #define PUSHER_STRING_INDIRECT 14
+#define PUSHER_ACC_ID 15
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -966,6 +977,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_LONG, accountts);
   PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
   PUSH_NICKPUSHER_CUSTOM(PUSHER_COUNTRY, "country");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1037,6 +1049,16 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
       case PUSHER_CHANMODES:
         lua_pushstring(l, printallmodes(*((channel **)offset)));
         break;
+      case PUSHER_ACC_ID:
+        {
+          nick *tnp = (nick *)np;
+          if(IsAccount(tnp) && tnp->auth) {
+            lua_pushlong(l, tnp->auth->userid);
+          } else {
+            lua_pushnil(l);
+          }
+          break;
+        }
       case PUSHER_REALUSERS:
         {
           channel *cp = *((channel **)offset);

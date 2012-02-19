@@ -34,6 +34,29 @@
 /* Q9 Version */
 #define QVERSION "1.00"
 
+/* Achievements: Nothing before ACHIEVEMENTS_START
+ * opt-in only after ACHIEVEMENTS_END
+ * Titles are valid only between ACHIEVEMENTS_START and ACHIEVEMENTS_END */
+
+//#define ACH_TEST_APRIL1
+
+#ifdef ACH_TEST_APRIL1 
+
+#define ACHIEVEMENTS_START      1269702917
+#define ACHIEVEMENTS_END	1270162800
+
+#elif defined(ACH_TEST_POSTAPRIL1)
+
+#define ACHIEVEMENTS_START	0
+#define ACHIEVEMENTS_END 	1269702917
+
+#else
+
+#define ACHIEVEMENTS_START	1270076400
+#define ACHIEVEMENTS_END	1270162800
+
+#endif
+
 /* Mini-hash of known users on channels to make lookups faster;
  * how big do we make it?  */
 #define   REGCHANUSERHASHSIZE 5
@@ -72,8 +95,12 @@
 
 /* Cleanup options */
 #define CLEANUP_ACCOUNT_INACTIVE  80
-#define CLEANUP_ACCOUNT_UNUSED    10
+#define CLEANUP_ACCOUNT_UNUSED    3
 #define CLEANUP_CHANNEL_INACTIVE  40
+
+#define CLEANUP_AUTHHISTORY	  60
+
+#define CLEANUP_MIN_CHAN_SIZE     2
 
 /* Sizes of the main hashes */
 #define   REGUSERHASHSIZE     60000
@@ -145,7 +172,9 @@
 
 
 /* User flags */
-#define   QUFLAG_NOINFO        0x0001  /* +s */
+/* to reenable this also grep for NOINFO... as some code has been commented out */
+//#define   QUFLAG_NOINFO        0x0001  /* +s */
+#define   QUFLAG_INACTIVE      0x0001  /* +I */
 #define   QUFLAG_GLINE         0x0002  /* +g */
 #define   QUFLAG_NOTICE        0x0004  /* +n */
 #define   QUFLAG_STAFF         0x0008  /* +q */
@@ -158,11 +187,14 @@
 #define   QUFLAG_INFO          0x0400  /* +i */
 #define   QUFLAG_DELAYEDGLINE  0x0800  /* +G */
 #define   QUFLAG_NOAUTHLIMIT   0x1000  /* +L */
+#define   QUFLAG_ACHIEVEMENTS  0x2000  /* +c */
 #define   QUFLAG_CLEANUPEXEMPT 0x4000  /* +D */
 #define   QUFLAG_TRUST         0x8000  /* +T */
-#define   QUFLAG_ALL           0xdfff
+#define   QUFLAG_ALL           0xffff
 
-#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+//#define UIsNoInfo(x)        ((x)->flags & QUFLAG_NOINFO)
+#define UIsNoInfo(x)        0
+#define UIsInactive(x)      ((x)->flags & QUFLAG_INACTIVE)
 #define UIsGline(x)         ((x)->flags & QUFLAG_GLINE)
 #define UIsNotice(x)        ((x)->flags & QUFLAG_NOTICE)
 #define UIsSuspended(x)     ((x)->flags & QUFLAG_SUSPENDED)
@@ -176,6 +208,7 @@
 #define UIsNoAuthLimit(x)   ((x)->flags & QUFLAG_NOAUTHLIMIT)
 #define UIsCleanupExempt(x) ((x)->flags & QUFLAG_CLEANUPEXEMPT)
 #define UIsStaff(x)         ((x)->flags & QUFLAG_STAFF)
+#define UIsAchievements(x)  ((x)->flags & QUFLAG_ACHIEVEMENTS)
 
 #define UHasSuspension(x)   ((x)->flags & (QUFLAG_GLINE|QUFLAG_DELAYEDGLINE|QUFLAG_SUSPENDED))
 
@@ -184,6 +217,7 @@
 #define UHasOperPriv(x)     ((x)->flags & (QUFLAG_OPER | QUFLAG_ADMIN | QUFLAG_DEV))
 #define UHasAdminPriv(x)    ((x)->flags & (QUFLAG_ADMIN | QUFLAG_DEV))
 
+#define USetInactive(x)      ((x)->flags |= QUFLAG_INACTIVE)
 #define USetGline(x)         ((x)->flags |= QUFLAG_GLINE)
 #define USetNotice(x)        ((x)->flags |= QUFLAG_NOTICE)
 #define USetSuspended(x)     ((x)->flags |= QUFLAG_SUSPENDED)
@@ -198,6 +232,7 @@
 #define USetCleanupExempt(x) ((x)->flags |= QUFLAG_CLEANUPEXEMPT)
 #define USetTrust(x)         ((x)->flags |= QUFLAG_TRUST)
 
+#define UClearInactive(x)      ((x)->flags &= ~QUFLAG_INACTIVE)
 #define UClearGline(x)         ((x)->flags &= ~QUFLAG_GLINE)
 #define UClearNotice(x)        ((x)->flags &= ~QUFLAG_NOTICE)
 #define UClearSuspended(x)     ((x)->flags &= ~QUFLAG_SUSPENDED)
@@ -214,15 +249,16 @@
 
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
-#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgo]|fo|me|seum|op|ro)?$"
+#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgol]|fo|me|seum|op|ro)?$"
 
-#define VALID_ACCOUNT_NAME  "^[-a-z0-9]*$"
+#define VALID_ACCOUNT_NAME  "^[a-z][-a-z0-9]+$"
 
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */
 #define QMAIL_NEWPW                3  /* new password */
 #define QMAIL_RESET                4  /* reset account */
 #define QMAIL_NEWEMAIL             5  /* new email address */
+#define QMAIL_ACTIVATEEMAIL        6  /* new style new account */
 
 
 /* Channel flags */
@@ -241,6 +277,7 @@
 #define   QCFLAG_VOICEALL     0x1000  /* +v */
 #define   QCFLAG_WELCOME      0x2000  /* +w */
 #define   QCFLAG_SUSPENDED    0x4000  /* +z */
+#define   QCFLAG_ACHIEVEMENTS 0x8000  /* +h */
 
 #define CIsAutoOp(x)        ((x)->flags & QCFLAG_AUTOOP)
 #define CIsBitch(x)         ((x)->flags & QCFLAG_BITCH)
@@ -257,6 +294,7 @@
 #define CIsSuspended(x)     ((x)->flags & QCFLAG_SUSPENDED)
 #define CIsInfo(x)          ((x)->flags & QCFLAG_INFO)
 #define CIsNoInfo(x)        ((x)->flags & QCFLAG_NOINFO)
+#define CIsAchievements(x)  ((x)->flags & QCFLAG_ACHIEVEMENTS)
 
 #define CSetAutoOp(x)        ((x)->flags |= QCFLAG_AUTOOP)
 #define CSetBitch(x)         ((x)->flags |= QCFLAG_BITCH)
@@ -289,9 +327,9 @@
 #define   QCFLAG_USERCONTROL (QCFLAG_AUTOOP|QCFLAG_BITCH|QCFLAG_AUTOLIMIT| \
 			       QCFLAG_ENFORCE|QCFLAG_FORCETOPIC|QCFLAG_AUTOVOICE| \
 			       QCFLAG_PROTECT|QCFLAG_TOPICSAVE|QCFLAG_VOICEALL| \
-			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY)
+			       QCFLAG_WELCOME|QCFLAG_KNOWNONLY|QCFLAG_ACHIEVEMENTS )
 
-#define   QCFLAG_ALL          0x7fff
+#define   QCFLAG_ALL          0xffff
 
 
 /* Channel user ("chanlev") flags */
@@ -401,6 +439,9 @@
 
 #define   QCMD_ALIAS          0x0100 /* Don't list on SHOWCOMMANDS */
 #define   QCMD_HIDDEN         QCMD_ALIAS
+
+#define   QCMD_ACHIEVEMENTS   0x0400 /* Achievement-related commands */
+#define   QCMD_TITLES         0x0800 /* Title-related commands */
 
 #define   CS_INIT_DB          0x1    /* Loading database.. */
 #define   CS_INIT_NOUSER      0x2    /* Loaded DB, waiting for user to be created */
@@ -512,6 +553,8 @@ typedef struct regchan {
   unsigned int        chanopaccts[CHANOPHISTORY];             /* Which account was responsible for each one */
   short               chanoppos;                              /* Position in the array */  
 } regchan;
+
+struct achievement_record;
 
 /* Registered user */
 typedef struct reguser {
@@ -779,6 +822,7 @@ void csdb_dohelp(nick *np, Command *cmd);
 #define q9a_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9adbid, handler, tag, format , ##__VA_ARGS__)
 #define q9u_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9udbid, handler, tag, format , ##__VA_ARGS__)
 #define q9c_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9cdbid, handler, tag, format , ##__VA_ARGS__)
+#define q9cleanup_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9cleanupdbid, handler, tag, format , ##__VA_ARGS__)
 
 /* chanservcrypto.c */
 typedef int (*CRAlgorithm)(char *, const char *, const char *, const char *);
@@ -795,9 +839,10 @@ int csc_verifyqticket(char *data, char *digest);
 /* chanservuser.c */
 void chanservreguser(void *arg);
 void chanservjoinchan(channel *cp);
-#define chanservsendmessage(np, fmt, args...) chanservsendmessage_real(np, 0, fmt , ## args)
-#define chanservsendmessageoneline(np, fmt, args...) chanservsendmessage_real(np, 1, fmt , ## args)
-void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));;
+void chanservpartchan(channel *cp, char *reason);
+#define chanservsendmessage(np, fmt, ...) chanservsendmessage_real(np, 0, fmt , ##__VA_ARGS__)
+#define chanservsendmessageoneline(np, fmt, ...) chanservsendmessage_real(np, 1, fmt , ##__VA_ARGS__)
+void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) __attribute__ ((format (printf, 3, 4)));
 void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1, 2)));
 void chanservcommandinit();
 void chanservcommandclose();
@@ -818,7 +863,7 @@ void cs_docheckopvoice(channel *cp, modechanges *changes);
 void cs_checkbans(channel *cp);
 void cs_schedupdate(chanindex *cip, int mintime, int maxtime);
 void cs_timerfunc(void *arg);
-void cs_removechannel(regchan *rcp);
+void cs_removechannel(regchan *rcp, char *reason);
 int cs_removechannelifempty(nick *sender, regchan *rcp);
 void cs_doallautomodes(nick *np);
 void cs_checknickbans(nick *np);
@@ -860,6 +905,7 @@ void cs_handletopicchange(int hooknum, void *arg);
 void cs_handleopchange(int hooknum, void *arg);
 void cs_handlenewban(int hooknum, void *arg);
 void cs_handlechanlostuser(int hooknum, void *arg);
+int cs_ischannelactive(channel *cp, regchan *rcp);
 
 /* chanservmessages.c */
 void initmessages();
@@ -908,7 +954,7 @@ void csdb_createmaildomain(maildomain *mdp);
 void csdb_updatemaildomain(maildomain *mdp);
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags);
 void csdb_accounthistory_insert(nick *np, char *oldpass, char *newpass, char *oldemail, char *newemail);
-void csdb_cleanuphistories();
+void csdb_cleanuphistories(time_t);
 void csdb_deletemaillock(maillock *mlp);
 void csdb_createmaillock(maillock *mlp);
 void csdb_updatemaillock(maillock *mlp);
@@ -921,5 +967,8 @@ void q9strftime(char *buf, size_t size, time_t t);
 /* chanserv_flags.c */
 u_int64_t cs_accountflagmap(reguser *rup);
 u_int64_t cs_accountflagmap_str(char *flags);
+
+/* chanserv_cleanupdb.c */
+void cs_cleanupdb(nick *np);
 
 #endif

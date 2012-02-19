@@ -91,6 +91,7 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
   cmdsummary *summary;
   char cmdbuf[50];
   char *ct;
+  unsigned int dumpcount=0;
   
   n=getcommandlist(cscommands, cmdlist, 200);
   rup=getreguserfromnick(sender);
@@ -102,7 +103,49 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 
   chanservstdmessage(sender, QM_COMMANDLIST);
 
+  if (cargc>0 && rup && UIsDev(rup) && !ircd_strcmp(cargv[0], "-v")) {
+    dumpcount=1;
+  }
+
   for (i=0;i<n;i++) {
+    /* Generate the appropriate strings for the command name (including 
+     * prefixes for privileged users) and the summary text.
+     *
+     * We do this before we're sure we will print the command to make things
+     * easier when we are doing -v */    
+    summary=(cmdsummary *)cmdlist[i]->ext;
+    
+    if (rup && UHasStaffPriv(rup)) {
+      if (cmdlist[i]->level & QCMD_DEV) {
+        sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_ADMIN) {
+        sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_OPER) {
+        sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_HELPER) {
+        sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
+      } else if(cmdlist[i]->level & QCMD_STAFF) {
+        sprintf(cmdbuf,"+q %s",cmdlist[i]->command->content);
+      } else {
+        sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
+      }
+      ct=cmdbuf;
+    } else {
+      ct=cmdlist[i]->command->content;
+    }
+    
+    if (summary->bylang[lang]) {
+      message=summary->bylang[lang]->content;
+    } else if (summary->bylang[0]) {
+      message=summary->bylang[0]->content;
+    } else {
+      message=summary->def->content;
+    }
+    
+    if (dumpcount) {
+      chanservsendmessage(sender,"%-20s %u", cmdbuf, cmdlist[i]->calls);
+      continue;
+    }
     
     if (cargc>0 && !match2strings(cargv[0],cmdlist[i]->command->content))
       continue;
@@ -138,35 +181,26 @@ int cs_doshowcommands(void *source, int cargc, char **cargv) {
 	(!rup || !UIsDev(rup) || !IsOper(sender)))
       continue;
     
-    summary=(cmdsummary *)cmdlist[i]->ext;
-    
-    if (rup && UHasStaffPriv(rup)) {
-      if (cmdlist[i]->level & QCMD_DEV) {
-        sprintf(cmdbuf,"+d %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_ADMIN) {
-        sprintf(cmdbuf,"+a %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_OPER) {
-        sprintf(cmdbuf,"+o %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_HELPER) {
-        sprintf(cmdbuf,"+h %s",cmdlist[i]->command->content);
-      } else if(cmdlist[i]->level & QCMD_STAFF) {
-        sprintf(cmdbuf,"+q %s",cmdlist[i]->command->content);
-      } else {
-        sprintf(cmdbuf,"   %s",cmdlist[i]->command->content);
-      }
-      ct=cmdbuf;
-    } else {
-      ct=cmdlist[i]->command->content;
+    /* Commands flagged QCMD_ACHIEVEMENTS:
+     *  Always invalid before 01/04/2010.
+     *  Valid after 02/04/2010 only if you have the flag set */
+    if (cmdlist[i]->level & QCMD_ACHIEVEMENTS) {
+      if (time(NULL) < ACHIEVEMENTS_START)
+        continue;
+      
+      if ((time(NULL) > ACHIEVEMENTS_END) && 
+        !UIsAchievements(rup))
+        continue;
     }
     
-    if (summary->bylang[lang]) {
-      message=summary->bylang[lang]->content;
-    } else if (summary->bylang[0]) {
-      message=summary->bylang[0]->content;
-    } else {
-      message=summary->def->content;
-    }
+    /* Commands flagged QCMD_TITLES:
+     *  Only valid on 01/04/2010. */
+    if ((cmdlist[i]->level & QCMD_TITLES) && 
+        ((time(NULL) < ACHIEVEMENTS_START) ||
+         (time(NULL) > ACHIEVEMENTS_END)))
+      continue;
     
+    /* We passed all the checks, send the message */    
     chanservsendmessage(sender, "%-20s %s",ct, message);
   }
 
@@ -195,8 +229,9 @@ int cs_sendhelp(nick *sender, char *thecmd, int oneline) {
       ((cmd->level & QCMD_HELPER) && (!rup || !UHasHelperPriv(rup))) ||
       ((cmd->level & QCMD_OPER) && (!rup || !UHasOperPriv(rup))) ||
       ((cmd->level & QCMD_ADMIN) && (!rup || !UHasAdminPriv(rup))) ||
-      ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup)))) {
-    chanservstdmessage(sender, QM_NOHELP, cmd->command->content);
+      ((cmd->level & QCMD_DEV) && (!rup || !UIsDev(rup))) ||
+      ((cmd->level & (QCMD_TITLES | QCMD_ACHIEVEMENTS)) && (time(NULL) < ACHIEVEMENTS_START))) {
+    chanservstdmessage(sender, QM_UNKNOWNCMD, thecmd);
     return CMD_OK;
   }
 

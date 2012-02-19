@@ -1066,7 +1066,7 @@ void sendopnoticetochannel(nick *source, channel *cp, char *format, ... ) {
   }
 }
 
-void localinvite(nick *source, channel *cp, nick *target) {
+void localinvite(nick *source, chanindex *cip, nick *target) {
 
   /* Servers can't send invites */
   if (!source) 
@@ -1078,7 +1078,7 @@ void localinvite(nick *source, channel *cp, nick *target) {
    * argument */
   if (connected) {
     irc_send("%s I %s :%s",longtonumeric(source->numeric,5),
-	     target->nick, cp->index->name->content);
+	     target->nick, cip->name->content);
   }
 }
   

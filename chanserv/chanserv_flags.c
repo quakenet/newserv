@@ -13,6 +13,7 @@ const flag rcflags[] = {
   { 'e', QCFLAG_ENFORCE },
   { 'f', QCFLAG_FORCETOPIC },
   { 'g', QCFLAG_AUTOVOICE },
+  { 'h', QCFLAG_ACHIEVEMENTS },
   { 'i', QCFLAG_INFO },
   { 'j', QCFLAG_JOINED },
   { 'k', QCFLAG_KNOWNONLY },
@@ -46,6 +47,7 @@ const flag rcuflags[] = {
 
 const flag ruflags[] = {
   { 'a',  QUFLAG_ADMIN },
+  { 'c',  QUFLAG_ACHIEVEMENTS },
   { 'd',  QUFLAG_DEV },
   { 'D',  QUFLAG_CLEANUPEXEMPT },
   { 'g',  QUFLAG_GLINE },
@@ -57,7 +59,8 @@ const flag ruflags[] = {
   { 'o',  QUFLAG_OPER },
   { 'p',  QUFLAG_PROTECT },
   { 'q',  QUFLAG_STAFF },
-  { 's',  QUFLAG_NOINFO },
+//  { 's',  QUFLAG_NOINFO },
+  { 'I',  QUFLAG_INACTIVE },
   { 'T',  QUFLAG_TRUST },
   { 'z',  QUFLAG_SUSPENDED },
   { '\0', 0 } };

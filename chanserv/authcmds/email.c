@@ -74,8 +74,10 @@ int csa_doemail(void *source, int cargc, char **cargv) {
 
   dupemail = strdup(cargv[1]);
   local=strchr(dupemail, '@');
-  if(!local)
+  if(!local) {
+    free(dupemail);
     return CMD_ERROR;
+  }
   *(local++)='\0';
 
   mdp=findnearestmaildomain(local);

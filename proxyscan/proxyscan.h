@@ -5,11 +5,18 @@
 #include "../nick/nick.h"
 #include "../lib/splitline.h"
 #include <time.h>
+#include <stdint.h>
 
 #define MAGICSTRING         "NOTICE AUTH :*** Looking up your hostname\r\n"
 #define MAGICSTRINGLENGTH   42
 
-#define PSCAN_MAXSCANS      50
+#define MAGICIRCSTRING      ".quakenet.org 451 *  :Register first.\r\n"
+#define MAGICIRCSTRINGLENGTH 38
+
+#define MAGICROUTERSTRING        "\r\nServer: Mikrotik HttpProxy\r\n"
+#define MAGICROUTERSTRINGLENGTH  30
+
+#define PSCAN_MAXSCANS      100
 #define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
 
 #define SSTATE_CONNECTING   0
@@ -21,7 +28,9 @@
 #define STYPE_HTTP          2
 #define STYPE_WINGATE       3
 #define STYPE_CISCO         4
-#define STYPE_DIRECT        5
+#define STYPE_DIRECT        5 /* not sure what this is so I'm leaving it alone */
+#define STYPE_DIRECT_IRC    6
+#define STYPE_ROUTER        7
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1
@@ -65,6 +74,7 @@ typedef struct cachehost {
   time_t lastscan;
   foundproxy *proxies;
   int glineid;
+  time_t lastgline;
   unsigned char marker;
 #if defined(PROXYSCAN_MAIL)
   sstring *lasthostmask; /* Not saved to disk */
@@ -144,7 +154,7 @@ int openlistensocket(int portnum);
 void handlelistensocket(int fd, short events);
 
 /* proxyscanconnect.c */
-int createconnectsocket(long ip, int socknum);
+int createconnectsocket(struct irc_in_addr *ip, int socknum);
 
 /* proxyscandb.c */
 void loggline(cachehost *chp, patricia_node_t *node);
@@ -166,6 +176,7 @@ void startqueuedscans();
 
 /* proxyscan.c */
 void startscan(patricia_node_t *node, int type, int port, int class);
+void startnickscan(nick *nick);
 
 /* proxyscanext.c */
 unsigned int extrascancount();

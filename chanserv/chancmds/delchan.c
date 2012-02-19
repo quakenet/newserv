@@ -42,7 +42,7 @@ int csc_dodelchan(void *source, int cargc, char **cargv) {
   }
 
   cs_log(sender,"DELCHAN %s (%s)",cip->name->content,cargc>1?cargv[1]:"");
-  cs_removechannel(rcp);
+  cs_removechannel(rcp, "Channel deleted.");
   chanservstdmessage(sender, QM_DONE);
 
   return CMD_OK;

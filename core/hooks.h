@@ -32,9 +32,9 @@
 #define HOOK_SERVER_LINKED         204  /* Argument is number of server */
 
 #define HOOK_NICK_NEWNICK          300  /* Argument is nick* */
-#define HOOK_NICK_RENAME           301  /* Argument is nick* */
+#define HOOK_NICK_RENAME           301  /* Argument is void*[2] (nick *, oldnick) */
 #define HOOK_NICK_LOSTNICK         302  /* Argument is nick* */
-#define HOOK_NICK_WHOISCHANNELS    303  /* Argument is nick*[2] (sender, target) */
+#define HOOK_NICK_WHOISCHANNELS    303  /* Argument is void*[3] (sender, target, sourcenum) */
 #define HOOK_NICK_ACCOUNT          304  /* Argument is nick* */
 #define HOOK_NICK_QUIT             305  /* Argument is void*[2] (nick, reason) */
 #define HOOK_NICK_SETHOST          306  /* Argument is nick* */
@@ -65,6 +65,14 @@
 #define HOOK_CHANSERV_DBLOADED     500 /* No arg */
 /* 501 spare for now */
 #define HOOK_CHANSERV_RUNNING      502 /* No arg */
+
+#define HOOK_CHANSERV_AUTH         503 /* Argument is void*[2] (nick *, lastauth) */
+#define HOOK_CHANSERV_PWCHANGE     504 /* Argument is nick * */
+#define HOOK_CHANSERV_CHANLEVMOD   505 /* Argument is void*[3] (nick *, regchanuser *, oldflags) */
+#define HOOK_CHANSERV_CHANLEVDUMP  506 /* Argument is nick * */
+#define HOOK_CHANSERV_WHOIS        507 /* Argument is nick * */
+#define HOOK_CHANSERV_WHOAMI       508 /* Argument is nick * */
+#define HOOK_CHANSERV_CMD          509 /* Argument is nick * */
 
 #define HOOK_CONTROL_REGISTERED    600 /* Argument is nick* */
 #define HOOK_CONTROL_WHOISREQUEST  601 /* Argument is nick* */

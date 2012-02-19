@@ -12,10 +12,15 @@ void proxyscan_newnick(int hooknum, void *arg) {
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if (irc_in_addr_is_loopback(&np->p_ipaddr) || !irc_in_addr_is_ipv4(&np->p_ipaddr)) 
+  if (irc_in_addr_is_loopback(&np->p_ipaddr))
     return;
 
-  /* before we look at a normal host, see if we think we have an open proxy */
+  /* slug: why is this here? why isn't it with the other queuing stuff? */
+  /* we're given a list of ip/subnets and port pairs which someone else has
+     seen a proxy on in the past, so we scan these very aggressively
+     (even ignoring the cache)
+   */
+  /* disabled as the list is hopelessly out of date */
   if ((esp=findextrascan(np->ipnode))) {
     Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
     for (espp=esp;espp;espp=espp->nextbynode) { 
@@ -25,9 +30,11 @@ void proxyscan_newnick(int hooknum, void *arg) {
     }
   }
 
-  /* ignore newnick until initial burst complete */
-  if (!ps_ready)
+/* slug: this BREAKS all of P's design assumptions, do NOT REENABLE THIS UNDER ANY CIRCUMSTANCES */
+/* ignore newnick until initial burst complete */
+/*  if (!ps_ready)
     return;
+*/
 
   /*
    * Logic for connecting hosts:

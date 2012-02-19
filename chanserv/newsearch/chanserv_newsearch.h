@@ -14,5 +14,6 @@ struct searchNode *qemail_parse(searchCtx *, int argc, char **argv);
 struct searchNode *qsuspendreason_parse(searchCtx *, int argc, char **argv);
 struct searchNode *qusername_parse(searchCtx *, int argc, char **argv);
 struct searchNode *qchanflags_parse(searchCtx *, int argc, char **argv);
+struct searchNode *qsuspended_parse(searchCtx *, int argc, char **argv);
 
 #endif

@@ -178,6 +178,7 @@ void _init() {
   /* Nickname operations */
   registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");     /* nick only */
   registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "User's current realname");     /* nick only */
+  registersearchterm(reg_nicksearch, "away",away_parse, 0, "User's current away message");       /* nick only */
   registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "User's current authname or false");     /* nick only */
   registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "User's Auth timestamp");         /* nick only */
   registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "User's current ident");           /* nick only */
@@ -399,6 +400,10 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
         break;
 
       case 's':
+        if (subset == NULL) {
+          reply(sender,"Error: -s switch not supported for this search.");
+          return CMD_ERROR;
+        }
         if (cargc<*arg) {
           reply(sender,"Error: -s switch requires an argument (for help, see help <searchcmd>)");
           return CMD_ERROR;

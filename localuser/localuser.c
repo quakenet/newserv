@@ -114,6 +114,7 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   newuser->timestamp=getnettime();
   newuser->shident=NULL;
   newuser->sethost=NULL;
+  newuser->away=NULL;
   newuser->marker=0;
   memset(newuser->exts, 0, MAXNICKEXTS * sizeof(void *));
 
@@ -177,7 +178,9 @@ int renamelocaluser(nick *np, char *newnick) {
   nick *np2;
   char ipbuf[25];
   time_t timestamp=getnettime();
-  
+  void *harg[2];
+  char oldnick[NICKLEN+1];
+
   if (!np)
     return -1;
   
@@ -187,13 +190,18 @@ int renamelocaluser(nick *np, char *newnick) {
   if (homeserver(np->numeric)!=mylongnum) 
     return -1;
 
+  strncpy(oldnick,np->nick,NICKLEN);
+  oldnick[NICKLEN]='\0';
+  harg[0]=(void *)np;
+  harg[1]=(void *)oldnick;
+
   if ((np2=getnickbynick(newnick))) {
     if (np2==np) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
       irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
-      triggerhook(HOOK_NICK_RENAME,np);     
+      triggerhook(HOOK_NICK_RENAME,harg);     
       return 0;
     } else {
       /* Kill other user and drop through */
@@ -208,7 +216,7 @@ int renamelocaluser(nick *np, char *newnick) {
   np->nick[NICKLEN]='\0';
   addnicktohash(np);
   irc_send("%s N %s %jd",longtonumeric(np->numeric,5),np->nick,(intmax_t)np->timestamp);
-  triggerhook(HOOK_NICK_RENAME,np);
+  triggerhook(HOOK_NICK_RENAME,harg);
   
   return 0;
 }
@@ -513,6 +521,8 @@ void sethostuser(nick *target, char *ident, char *host) {
 void _killuser(nick *source, nick *target, char *reason) {
   char senderstr[6];
   char sourcestring[HOSTLEN+NICKLEN+3];
+  char reasonstr[512];
+  void *args[2];
 
   if (!source) {
     /* If we have a null nick, use the server.. */
@@ -523,7 +533,15 @@ void _killuser(nick *source, nick *target, char *reason) {
     sprintf(sourcestring,"%s!%s",source->host->name->content, source->nick);
   }
 
-  irc_send("%s D %s :%s (%s)",senderstr,longtonumeric(target->numeric,5),sourcestring,reason);
+  snprintf(reasonstr,512,"%s (%s)",sourcestring,reason);
+  reasonstr[511]='\0';
+
+  irc_send("%s D %s :%s",senderstr,longtonumeric(target->numeric,5),reasonstr);
+  
+  args[0]=target;
+  args[1]=reasonstr;
+  triggerhook(HOOK_NICK_KILL, args);
+
   deletenick(target);
 }
 

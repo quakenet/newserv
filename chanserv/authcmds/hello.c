@@ -32,7 +32,6 @@ int csa_dohello(void *source, int cargc, char **cargv) {
   char *dupemail;
   activeuser *aup;
   maillock *mlp;
-  time_t t;
 
   if (getreguserfromnick(sender))
     return CMD_ERROR;
@@ -76,8 +75,10 @@ int csa_dohello(void *source, int cargc, char **cargv) {
 
   dupemail = strdup(cargv[0]);
   local=strchr(dupemail, '@');
-  if(!local)
+  if(!local) {
+    free(dupemail);
     return CMD_ERROR;
+  }
   *(local++)='\0';
 
   mdp=findnearestmaildomain(local);
@@ -112,49 +113,19 @@ int csa_dohello(void *source, int cargc, char **cargv) {
     }
   }
 
-  mdp=findorcreatemaildomain(cargv[0]);
-
-  aup->helloattempts++;
-  
-  t=time(NULL);
-  rup=getreguser();
-  rup->status=0;
-  rup->ID=++lastuserID;
-  strncpy(rup->username,sender->nick,NICKLEN); rup->username[NICKLEN]='\0';
-  rup->created=t;
-  rup->lastauth=0;
-  rup->lastemailchange=t;
-  rup->lastpasschange=t;
-  rup->flags=QUFLAG_NOTICE;
-  rup->languageid=0;
-  rup->suspendby=0;
-  rup->suspendexp=0;
-  rup->suspendtime=0;
-  rup->lockuntil=0;
-  rup->password[0]='\0';
-  rup->email=getsstring(cargv[0],EMAILLEN);
-  rup->lastemail=NULL;
-
-  rup->localpart=getsstring(dupemail,EMAILLEN);
   free(dupemail);
 
-  rup->domain=mdp;
-  addregusertomaildomain(rup, rup->domain);
-  rup->info=NULL;
+  aup->helloattempts++;
+
+  rup=csa_createaccount(sender->nick,"", cargv[0]);
+  csa_createrandompw(rup->password, PASSLEN);
   sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
   rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
-  rup->suspendreason=NULL;
-  rup->comment=NULL;
-  rup->knownon=NULL;
-  rup->checkshd=NULL;
-  rup->stealcount=0;
-  rup->fakeuser=NULL;
-  addregusertohash(rup);
-  csa_createrandompw(rup->password, PASSLEN);
+
   chanservstdmessage(sender, QM_NEWACCOUNT, rup->username,rup->email->content);
   cs_log(sender,"HELLO OK created auth %s (%s)",rup->username,rup->email->content); 
   csdb_createuser(rup);
   csdb_createmail(rup, QMAIL_NEWACCOUNT);
- 
+
   return CMD_OK;
 }

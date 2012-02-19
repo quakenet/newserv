@@ -166,7 +166,9 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
   chanservstdmessage(sender, QM_WHOIS_LASTAUTH, buf);
   
-  if (target->lastuserhost && (rup==target || cs_privcheck(QPRIV_VIEWFULLWHOIS, sender))) {
+  /* The third clause of this hides user@host of opers from non-opered staff. */
+  if (target->lastuserhost && (rup==target || cs_privcheck(QPRIV_VIEWFULLWHOIS, sender)) &&
+      (!UHasOperPriv(target) || UHasOperPriv(rup)) ) {
 /* Commenting out language until we implement some - splidge 
     chanservstdmessage(sender, QM_WHOIS_USERLANG, cslanguages[target->languageid] ?
 		       cslanguages[target->languageid]->name->content : "(unknown)");  */
@@ -222,6 +224,12 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
 
   chanservstdmessage(sender, QM_ENDOFLIST);
+
+  if (rup==target) {
+    triggerhook(HOOK_CHANSERV_WHOAMI, sender);
+  } else {
+    triggerhook(HOOK_CHANSERV_WHOIS, sender);
+  }
 
   return CMD_OK;
 }

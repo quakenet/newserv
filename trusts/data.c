@@ -273,26 +273,16 @@ trustgroup *tg_strtotg(char *name) {
 
   /* legacy format */
   if(name[0] == '#') {
-    id = strtoul(&name[1], NULL, 10);
-    if(!id)
+    char *endp;
+    id = strtoul(&name[1], &endp, 10);
+    if(!id || *endp)
       return NULL;
 
-    for(tg=tglist;tg;tg=tg->next)
-      if(tg->id == id)
-        return tg;
+    return tg_getbyid(id);
   }
 
   for(tg=tglist;tg;tg=tg->next)
-    if(!match(name, tg->name->content))
-      return tg;
-
-  id = strtoul(name, NULL, 10);
-  if(!id)
-    return NULL;
-
-  /* legacy format */
-  for(tg=tglist;tg;tg=tg->next)
-    if(tg->id == id)
+    if(!strcmp(name, tg->name->content))
       return tg;
 
   return NULL;

@@ -270,10 +270,11 @@ void irc_connect(void *arg) {
   memcpy(&sockaddress.sin_addr, host->h_addr, sizeof(struct in_addr));
 #endif
   
-  if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
+/*  if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
   }
-  
+  */
+
   Error("irc",ERR_INFO,"Connecting to %s:%lu",conto,portnum);
 
   if (connect(serverfd, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == -1) {
@@ -448,6 +449,7 @@ int parseline() {
       return 0;
     }
     for (;c!=NULL;c=c->next) {
+      c->calls++;
       if (((c->handler)("INIT",cargc-1,&cargv[1]))==CMD_LAST)
         return 0;
     }  
@@ -457,6 +459,7 @@ int parseline() {
       long numeric = strtol(cargv[1], NULL, 0);
       if((numeric >= MIN_NUMERIC) && (numeric <= MAX_NUMERIC)) {
         for(c=numericcommands[numeric];c;c=c->next) {
+          c->calls++;
           if (((c->handler)((void *)numeric,cargc,cargv))==CMD_LAST)
             return 0;
         }
@@ -467,6 +470,7 @@ int parseline() {
         return 0;
       }
       for (;c!=NULL;c=c->next) {
+        c->calls++;
         if (((c->handler)(cargv[0],cargc-2,cargv+2))==CMD_LAST)
           return 0;
       }
@@ -600,5 +604,25 @@ void ircstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,buf);
     sprintf(buf,"Time    : %lu (current time is %lu, offset %ld)",getnettime(),time(NULL),timeoffset);
     triggerhook(HOOK_CORE_STATSREPLY,buf);
+  }
+}
+
+
+/* list stats commands / m to a user
+ *
+ *  sourcenum     numeric of the user requesting the listing
+ */
+void stats_commands(char *sourcenum) {
+  Command *cmds[500];
+  unsigned int c,i;
+  
+  c=getcommandlist(servercommands,cmds,500);
+  
+  for (i=0;i<c;i++) {
+    /*
+     * 212 RPL_STATSCOMMANDS "source 212 target command used_count bytes_count"
+     *                       "irc.netsplit.net 212 foobar ACCOUNT 41 462"
+     */
+    irc_send("%s 212 %s %s %u 0", getmynumeric(), sourcenum, cmds[i]->command->content, cmds[i]->calls);
   }
 }

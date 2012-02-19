@@ -452,13 +452,8 @@ int noperserv_help(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
 
   cmd = findcommandintree(controlcmds, cargv[0], 1);
-  if(!cmd) {
-    controlreply(np, "Unknown command.");
-    return CMD_ERROR;
-  }
-  
-  if(!noperserv_policy_command_permitted(cmd->level, np)) {
-    controlreply(np, "Access denied.");
+  if(!cmd || !noperserv_policy_command_permitted(cmd->level, np)) {
+    controlreply(np, "Unknown command or access denied.");
     return CMD_ERROR;
   }
 

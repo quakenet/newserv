@@ -9,6 +9,7 @@
 #include "../lib/rijndael.h"
 #include "../lib/sha2.h"
 #include "../lib/hmac.h"
+#include "../lib/cbc.h"
 #include "library.h"
 #include <sys/types.h>
 #include <ctype.h>

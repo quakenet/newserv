@@ -22,6 +22,7 @@ chanservlog
 Makefile
 autobuild.mk
 chanserv/*/commandlist.c
+chanserv/achievements/achievementscanners.c
 configure.ac.local
 config.h
 settings.mk
@@ -30,4 +31,3 @@ silly
 y.tab.{c,h}
 lex.yy.c
 .settings.mk
-
