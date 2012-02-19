@@ -606,13 +606,23 @@ void ircstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,buf);
   }
 }
-void stats_m(char *str1, char *str2) {
+
+
+/* list stats commands / m to a user
+ *
+ *  sourcenum     numeric of the user requesting the listing
+ */
+void stats_commands(char *sourcenum) {
   Command *cmds[500];
   unsigned int c,i;
   
   c=getcommandlist(servercommands,cmds,500);
   
   for (i=0;i<c;i++) {
-    irc_send(":%s 212 %s %s %u 0", str1, str2, cmds[i]->command->content, cmds[i]->calls);
+    /*
+     * 212 RPL_STATSCOMMANDS "source 212 target command used_count bytes_count"
+     *                       "irc.netsplit.net 212 foobar ACCOUNT 41 462"
+     */
+    irc_send("%s 212 %s %s %u 0", getmynumeric(), sourcenum, cmds[i]->command->content, cmds[i]->calls);
   }
 }
