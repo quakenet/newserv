@@ -1120,3 +1120,4 @@ void lua_initchanpusher(void) {
   chanpushercount = i;
   chanpusher[i].argtype = 0;
 }
+

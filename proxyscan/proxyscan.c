@@ -1024,6 +1024,10 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
+    if (bits != 128 || !irc_in_addr_is_ipv4(&sin) || irc_in_addr_is_loopback(&sin)) {
+      sendnoticetouser(proxyscannick,np,"You may only scan single IPv4 IP's");
+      return CMD_OK;
+    }
     if (bits != 128 || irc_in_addr_is_loopback(&sin)) {
       sendnoticetouser(proxyscannick,np,"You may only scan single IP's");
       return CMD_OK;

@@ -45,6 +45,9 @@ void reopen_logfile(int hooknum, void *arg) {
 
 void init_logfile() {
   logfile=fopen("logs/newserv.log","a");
+  if (!logfile) {
+    fprintf(stderr,"Failed to open logfile...\n");
+  }
   registerhook(HOOK_CORE_SIGUSR1, reopen_logfile);
 }
 
@@ -52,6 +55,8 @@ void fini_logfile() {
   if (logfile) 
     fclose(logfile);
   deregisterhook(HOOK_CORE_SIGUSR1, reopen_logfile);
+  if (logfile)
+    fclose(logfile);
 }
 
 void Error(char *source, int severity, char *reason, ... ) {
