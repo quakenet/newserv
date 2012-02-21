@@ -81,7 +81,7 @@ realchecksettings:
 @endif@
 MFLAGS+=CHECKEDSETTINGS=1
 
-CFLAGS+=-Wall -g -finline-functions -funroll-loops
+CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
 @ifndef@ NOC99
 CFLAGS+=-std=c99
 @endif@
