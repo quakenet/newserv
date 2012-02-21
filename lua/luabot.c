@@ -352,11 +352,12 @@ void lua_onpart(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
+  char *reason = arglist[2];
 
   if(!ci || !np)
     return;
 
-  lua_avpcall("irc_onpart", "Sl", ci->name, np->numeric);
+  lua_avpcall("irc_onpart", "Sls", ci->name, np->numeric, reason);
 }
 
 void lua_onrename(int hooknum, void *arg) {
