@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "../lib/version.h"
 #include "../lib/ccassert.h"
 #include "../lib/strlfunc.h"
@@ -25,6 +26,7 @@ static void hook_rename(int hook, void *arg);
 static void queue_scan_nick(nick *np);
 static void flush_queue_sched(void *arg);
 static int whois_reply_handler(void *source, int cargc, char **cargv);
+static int cmd_listnosignonusers(void *source, int cargc, char **cargv);
 
 static int nickext = -1;
 
@@ -53,6 +55,8 @@ void _init(void) {
   for(i=0;i<NICKHASHSIZE;i++)
     for(np=nicktable[i];np;np=np->next)
       queue_scan_nick(np);
+
+  registercontrolhelpcmd("listnosignonusers", NO_DEVELOPER, 0, cmd_listnosignonusers, "Shows users without a signed on timestamp.");
 }
 
 void _fini(void) {
@@ -60,6 +64,8 @@ void _fini(void) {
 
   if(nickext < 0)
     return;
+
+  deregistercontrolcmd("listnosignonusers", cmd_listnosignonusers);
 
   deregisterhook(HOOK_NICK_NEWNICK, &hook_newnick);
   deregisterhook(HOOK_NICK_RENAME, &hook_rename);
@@ -116,14 +122,12 @@ static void queue_scan_nick(nick *np) {
 
   server = homeserver(np->numeric);
 
-  if(queue[server].len)
+  if(queue[server].len++)
     strlcat(queue[server].buf, ",", QUEUEBUFLEN);
-
-  queue[server].len++;
 
   strlcat(queue[server].buf, np->nick, QUEUEBUFLEN);
 
-  if(queue[server].len == MAXWHOISLINES) {
+  if(queue[server].len == MAXWHOISLINES || strlen(queue[server].buf) > 480) {
     flush_queue(server);
   } else if(queue[server].sched == NULL) {
     queue[server].sched = scheduleoneshot(time(NULL), flush_queue_sched, (void *)(long)server);
@@ -157,4 +161,24 @@ time_t getnicksignon(nick *np) {
     return 0;
 
   return (time_t)np->exts[nickext];
+}
+
+static int cmd_listnosignonusers(void *source, int cargc, char **cargv) {
+  nick *sender=(nick *)source;
+  int i, found = 0, displayed = 0;
+  nick *np;
+
+  for(i=0;i<NICKHASHSIZE;i++) {
+    for(np=nicktable[i];np;np=np->next) {
+      if(!NickOnServiceServer(np) && !getnicksignon(np)) {
+        if(found++ < 100) {
+          controlreply(sender, "%s%s", np->nick, NickOnServiceServer(np) ? "(S)" : " ");
+          displayed++;
+        }
+      }
+    }
+  }
+
+  controlreply(sender, "Done, %d entries (%d displayed).", found, displayed);
+  return CMD_OK;
 }
