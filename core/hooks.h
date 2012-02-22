@@ -96,6 +96,8 @@
 #define HOOK_TRUSTS_MODIFYGROUP    910 /* Argument is trustgroup* */
 #define HOOK_TRUSTS_LOSTHOST       911 /* Argument is trusthost* */
 
+#define HOOK_SIGNONTRACKER_HAVETIME 1100 /* Argument is nick* */
+
 #define PRIORITY_DEFAULT           0
 
 #define PRIORITY_MAX               LONG_MIN
