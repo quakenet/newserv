@@ -148,7 +148,8 @@ static void hook_newnick(int hook, void *arg) {
 }
 
 static void hook_rename(int hook, void *arg) {
-  nick *np = (nick *)arg;
+  void **harg = (void **)arg;
+  nick *np = (nick *)harg[0];
 
   if(getnicksignon(np))
     return;
