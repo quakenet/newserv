@@ -188,7 +188,8 @@ void dbhandler(int fd, short revents) {
         if(queryhead->identifier != QH_ALREADYFIRED) {
           switch(PQresultStatus(res)) {
             case PGRES_TUPLES_OK:
-              Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
+              if(!(queryhead->flags & DB_CALL))
+                Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
               break;
 
             case PGRES_NONFATAL_ERROR:

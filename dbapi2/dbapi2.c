@@ -151,6 +151,28 @@ static void dbloadtable(const DBAPIConn *db, DBAPIQueryCallback init, DBAPIQuery
   db->__loadtable(db, init, data, fini, tag, db->tablename(db, tablename));
 }
 
+static void dbcall(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *function, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__call(db, cb, data, function, buf);
+}
+
+static void dbsimplecall(const DBAPIConn *db, const char *function, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__call(db, NULL, NULL, function, buf);
+}
+
 DBAPIConn *dbapi2open(const char *provider, const char *database) {
   int i, found = -1;
   DBAPIConn *db;
@@ -197,12 +219,15 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   db->unsafequery = dbunsafequery;
   db->unsafesquery = dbunsafesimplequery;
   db->unsafecreatetable = dbunsafecreatetable;
+  db->call = dbcall;
+  db->scall = dbsimplecall;
 
   db->__query = p->query;
   db->__close = p->close;
   db->__quotestring = p->quotestring;
   db->__createtable = p->createtable;
   db->__loadtable = p->loadtable;
+  db->__call = p->call;
 
   strlcpy(db->name, database, DBNAME_LEN);
 

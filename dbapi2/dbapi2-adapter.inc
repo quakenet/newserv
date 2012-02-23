@@ -22,6 +22,8 @@ static int dbapi2_adapter_quotestring(const DBAPIConn *, char *, size_t, const c
 
 static char *dbapi2_adapter_tablename(const DBAPIConn *, const char *);
 
+static void dbapi2_adapter_call(const DBAPIConn *, DBAPIQueryCallback, DBAPIUserData, const char *, const char *);
+
 static DBAPIProvider adapterprovider = {
   .new = dbapi2_adapter_new,
   .close = dbapi2_adapter_close,
@@ -34,6 +36,8 @@ static DBAPIProvider adapterprovider = {
   .quotestring = dbapi2_adapter_quotestring,
 
   .tablename = dbapi2_adapter_tablename,
+
+  .call = dbapi2_adapter_call,
 };
 
 struct DBAPI2AdapterQueryCallback {
@@ -209,3 +213,22 @@ static char *dbapi2_adapter_tablename(const DBAPIConn *db, const char *tablename
   return buf;
 }
 #endif
+
+static void dbapi2_adapter_call(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *function, const char *query) {
+  struct DBAPI2AdapterQueryCallback *a;
+  char buf[512];
+
+  if(cb) {
+    a = malloc(sizeof(struct DBAPI2AdapterQueryCallback));
+
+    a->db = db;
+    a->data = data;
+    a->callback = cb;
+  } else {
+    a = NULL;
+  }
+
+  snprintf(buf, sizeof(buf), "%s", db->tablename(db, function));
+  dbcall((int)(long)db->handle, cb?dbapi2_adapter_querywrapper:NULL, a, buf, query);
+}
+
