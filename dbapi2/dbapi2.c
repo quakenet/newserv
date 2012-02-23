@@ -256,7 +256,8 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
       switch(*types) {
         case 's':
           s = va_arg(ap, char *);
-          l = strlen(s);
+          if(s)
+            l = strlen(s);
           fallthrough = 1;
 
         /* falling through */
@@ -266,8 +267,10 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
             l = va_arg(ap, size_t);
           }
 
-          /* now... this is a guess, but we should catch it most of the time */
-          if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
+          if(!s) {
+            strlcpy(cb, "NULL", sizeof(convbuf[0]));
+          } else if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
+            /* now... this is a guess, but we should catch it most of the time */
             Error("dbapi2", ERR_STOP, "Long string truncated, format: '%s', database: %s", format, db->name);
             l = VSNPF_MAXARGLEN;
           }
