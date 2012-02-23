@@ -195,7 +195,7 @@ void dbhandler(int fd, short revents) {
             case PGRES_FATAL_ERROR:
               /* if a create query returns an error assume it went ok, paul will winge about this */
               if(!(queryhead->flags & DB_CREATE))
-                Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
+                Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s): %s", queryhead->query, PQresultErrorMessage(res));
               break;
 	  
             default:
