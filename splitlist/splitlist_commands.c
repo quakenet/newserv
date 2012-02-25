@@ -3,6 +3,7 @@
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
 #include "../splitlist/splitlist.h"
+#include "../serverlist/serverlist.h"
 #include "../control/control.h"
 #include "../lib/version.h"
 
@@ -12,7 +13,7 @@ int spcmd_splitlist(void *source, int cargc, char **cargv);
 int spcmd_splitdel(void *source, int cargc, char **cargv);
 
 void _init(void) {
-  registercontrolhelpcmd("splitlist", NO_STAFF, 0, &spcmd_splitlist, "Usage: splitlist\nLists servers currently split from the netowkr");
+  registercontrolhelpcmd("splitlist", NO_STAFF, 0, &spcmd_splitlist, "Usage: splitlist\nLists servers currently split from the network.");
   registercontrolcmd("splitdel", 10, 1, &spcmd_splitdel);
 }
 
@@ -38,7 +39,7 @@ int spcmd_splitlist(void *source, int cargc, char **cargv) {
   for (i = 0; i < splitlist.cursi; i++) {
     srv = ((splitserver*)splitlist.content)[i];
 
-    controlreply(np, "%s M.I.A. %s", srv.name->content, longtoduration(getnettime() - srv.ts, 1));
+    controlreply(np, "%s M.I.A. %s (%s)", srv.name->content, longtoduration(getnettime() - srv.ts, 1), printflags(srv.type, servertypeflags));
   }
 
   controlreply(np, "--- End of splitlist");

@@ -535,7 +535,7 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (sp_countsplitservers() > 0) {
+  if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > 0) {
     sendnoticetouser(rqnick, np, "One or more servers are currently split. Wait until the"
 		    " netsplit is over and try again.");
 
