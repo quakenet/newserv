@@ -52,8 +52,6 @@ void init_logfile() {
 }
 
 void fini_logfile() {
-  if (logfile) 
-    fclose(logfile);
   deregisterhook(HOOK_CORE_SIGUSR1, reopen_logfile);
   if (logfile)
     fclose(logfile);
