@@ -249,6 +249,20 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     }
   }
   controlreply((nick *)sender,"Timestamp : %lu",target->timestamp);
+
+  /* HACK */
+  {
+    int ext = findnickext("signontracker");
+
+    if(ext >= 0) {
+      time_t signedon = (time_t)(target->exts[ext]);
+      if(signedon) {
+        controlreply((nick *)sender,"Signed on : %lu",signedon);
+      } else {
+        controlreply((nick *)sender,"Signed on : ???");
+      }
+    }
+  }
   controlreply((nick *)sender,"IP address: %s",IPtostr(target->p_ipaddr));
   controlreply((nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
   if (target->umodes) {
