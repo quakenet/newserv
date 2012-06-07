@@ -959,6 +959,8 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_TIMESTAMP 13
 #define PUSHER_STRING_INDIRECT 14
 #define PUSHER_ACC_ID 15
+#define PUSHER_SERVER_NAME 16
+#define PUSHER_SERVER_NUMERIC 17
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -978,6 +980,8 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
   PUSH_NICKPUSHER_CUSTOM(PUSHER_COUNTRY, "country");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NAME, "servername");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NUMERIC, "servernumeric");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1095,6 +1099,12 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         } else {
           lua_pushint(l, (long)((nick *)offset)->exts[geoipext]);
         }
+        break;
+      case PUSHER_SERVER_NAME:
+        lua_pushstring(l, serverlist[homeserver(((nick *)offset)->numeric)].name->content);
+        break;
+      case PUSHER_SERVER_NUMERIC:
+        lua_pushint(l, homeserver(((nick *)offset)->numeric));
         break;
     }
 
