@@ -236,7 +236,7 @@ char *rtrim(char *buf) {
   size_t len = strlcpy(obuf, buf, sizeof(obuf));
 
   if((len < sizeof(obuf)) && (len > 0)) {
-    size_t i;
+    int i;
     for(i=len-1;i>=0;i--) {
       if(obuf[i] != ' ')
         break;

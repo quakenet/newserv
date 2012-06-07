@@ -33,10 +33,9 @@ struct nsminfo {
 };
 
 struct nsmpool {
-  struct nsminfo first;
-
   unsigned long count;
   size_t size;
+  struct nsminfo first;
 };
 
 extern struct nsmpool nsmpools[MAXPOOL];

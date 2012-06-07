@@ -101,7 +101,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   int i,j;
   int newuser=0;
   int usercount;
-  void *args[2];
+  void *args[3];
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "chanlev");

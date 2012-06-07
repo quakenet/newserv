@@ -213,7 +213,7 @@ static int trusts_cmdtrustdump(void *source, int argc, char **argv) {
     return CMD_ERROR;
   }
 
-  for(i=0,tg=tglist;i<totalcount&&th;tg=tg->next,i++)
+  for(i=0,tg=tglist;i<totalcount&&tg;tg=tg->next,i++)
     atg[i] = tg;
 
   qsort(atg, totalcount, sizeof(trustgroup *), comparetgs);

@@ -3,7 +3,6 @@ INCPATH=../
 @endif@
 
 CFLAGS=
-CC=gcc
 LEX=flex
 MFLAGS=
 
@@ -81,8 +80,13 @@ realchecksettings:
 @endif@
 MFLAGS+=CHECKEDSETTINGS=1
 
+CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
+
+@ifndef@ CLANG
 @ifndef@ NOC99
 CFLAGS+=-std=c99
 @endif@
-CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC -export-dynamic
+CFLAGS+=-export-dynamic
+@endif@
+
