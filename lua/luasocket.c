@@ -6,7 +6,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#ifndef __USE_MISC
 #define __USE_MISC /* inet_aton */
+#endif
 
 #include <arpa/inet.h>
 #include <sys/un.h>

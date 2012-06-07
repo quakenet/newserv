@@ -239,7 +239,7 @@ void irc_connect(void *arg) {
   sstring *mydesc;
   char *conto,*conpass;
   long portnum,pingfreq;
-  socklen_t opt=1460;
+/*  socklen_t opt=1460;*/
 
   nextline=inbuf;
   bytesleft=0;

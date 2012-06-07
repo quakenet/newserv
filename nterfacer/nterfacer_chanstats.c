@@ -34,7 +34,7 @@ int handle_chanstats(struct rline *li, int argc, char **argv) {
   int i,j,k,l;
   int tot,emp;
   int themax;
-  float details[13];
+  float details[14];
   
   cip=findchanindex(argv[0]);
   
