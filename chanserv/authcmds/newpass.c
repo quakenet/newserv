@@ -63,12 +63,16 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 
   pq = csa_checkpasswordquality(cargv[1]);
   if(pq == QM_PWTOSHORT) {
-    chanservstdmessage(sender, QM_PWTOSHORT); /* new password to short */
-    cs_log(sender,"NEWPASS FAIL username %s password to short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
+    chanservstdmessage(sender, QM_PWTOSHORT); /* new password too short */
+    cs_log(sender,"NEWPASS FAIL username %s password too short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
     return CMD_ERROR;
   } else if(pq == QM_PWTOWEAK) {
     chanservstdmessage(sender, QM_PWTOWEAK); /* new password is weak */
-    cs_log(sender,"NEWPASS FAIL username %s password to weak %s",rup->username,cargv[1]);
+    cs_log(sender,"NEWPASS FAIL username %s password too weak %s",rup->username,cargv[1]);
+    return CMD_ERROR;
+  } else if(pq == QM_PWTOLONG) {
+    chanservstdmessage(sender, QM_PWTOLONG); /* new password too long */
+    cs_log(sender,"NEWPASS FAIL username %s password too long %s",rup->username,cargv[1]);
     return CMD_ERROR;
   } else if(pq == -1) {
     /* all good */
