@@ -11,8 +11,10 @@
  * CMDHELP: Usage: @UCOMMAND@ <oldpassword> <newpassword> <newpassword>
  * CMDHELP: Changes your account password.  Your new password must be at least 6 characters
  * CMDHELP: long, contain at least one number and one letter, and may not contain sequences
- * CMDHELP: of letters or numbers.  Your new password will be sent to your registered email
- * CMDHELP: address.  Where:
+ * CMDHELP: of letters or numbers, also note that your password will be truncated to 10
+ * CMDHELP: characters.
+ * CMDHELP: Your new password will be sent to your registered email address.
+ * CMDHELP: Where:
  * CMDHELP: oldpassword - your existing account password
  * CMDHELP: newpassword - your desired new password.  Must be entered the same both times.
  * CMDHELP: Note: due to the sensitive nature of this command, you must send the message to
