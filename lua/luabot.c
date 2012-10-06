@@ -27,6 +27,7 @@ void lua_onauth(int hooknum, void *arg);
 void lua_ondisconnect(int hooknum, void *arg);
 void lua_onmode(int hooknum, void *arg);
 void lua_onop(int hooknum, void *arg);
+void lua_onprequit(int hooknum, void *arg);
 void lua_onquit(int hooknum, void *arg);
 void lua_onrename(int hooknum, void *arg);
 void lua_onconnect(int hooknum, void *arg);
@@ -45,6 +46,7 @@ void lua_registerevents(void) {
   registerhook(HOOK_CHANNEL_KICK, &lua_onkick);
   registerhook(HOOK_CHANNEL_OPPED, &lua_onop);
   registerhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
+  registerhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   registerhook(HOOK_NICK_LOSTNICK, &lua_onquit);
   registerhook(HOOK_NICK_RENAME, &lua_onrename);
   registerhook(HOOK_IRC_CONNECTED, &lua_onconnect);
@@ -62,6 +64,7 @@ void lua_deregisterevents(void) {
   deregisterhook(HOOK_IRC_CONNECTED, &lua_onconnect);
   deregisterhook(HOOK_NICK_RENAME, &lua_onrename);
   deregisterhook(HOOK_NICK_LOSTNICK, &lua_onquit);
+  deregisterhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   deregisterhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
   deregisterhook(HOOK_CHANNEL_OPPED, &lua_onop);
   deregisterhook(HOOK_CHANNEL_KICK, &lua_onkick);
@@ -378,6 +381,15 @@ void lua_onquit(int hooknum, void *arg) {
     return;
 
   lua_avpcall("irc_onquit", "l", np->numeric);
+}
+
+void lua_onprequit(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+
+  if(!np)
+    return;
+
+  lua_avpcall("irc_onprequit", "l", np->numeric);
 }
 
 void lua_onauth(int hooknum, void *arg) {
