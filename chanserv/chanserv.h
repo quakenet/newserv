@@ -94,7 +94,7 @@
 #define   CHALLENGEAUTHSITE "http://www.quakenet.org/development/challengeauth/"
 
 /* Cleanup options */
-#define CLEANUP_ACCOUNT_INACTIVE  80
+#define CLEANUP_ACCOUNT_INACTIVE  180
 #define CLEANUP_ACCOUNT_UNUSED    3
 #define CLEANUP_CHANNEL_INACTIVE  40
 
