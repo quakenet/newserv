@@ -68,7 +68,7 @@ int ta_ticketauth(void *source, int cargc, char **cargv) {
   /* hahahaha */
   snprintf(buffer, sizeof(buffer), "%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x", digest[0], digest[1],  digest[2], digest[3], digest[4], digest[5], digest[6], digest[7], digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15], digest[16], digest[17], digest[18], digest[19], digest[20], digest[21], digest[22], digest[23], digest[24], digest[25], digest[26], digest[27], digest[28], digest[29], digest[30], digest[31]);
 
-  if(strcasecmp(buffer, uhmac)) {
+  if(hmac_strcmp(buffer, uhmac)) {
     controlwall(NO_OPER, NL_MISC, "%s!%s@%s attempted to TICKETAUTH as %s (bad HMAC)", np->nick, np->ident, np->host->name->content, acc);
     controlreply(np, "Bad HMAC.");
     return CMD_ERROR;

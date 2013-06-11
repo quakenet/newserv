@@ -235,7 +235,7 @@ static int xsb_trfini(void *source, int argc, char **argv) {
   }
 
   SHA1Final(digest, &s);
-  if(strcasecmp(hmac_printhex(digest, digestbuf, SHA1_DIGESTSIZE), buf)) {
+  if(hmac_strcmp(hmac_printhex(digest, digestbuf, SHA1_DIGESTSIZE), buf)) {
     abandonreplication("digest mismatch");
     return CMD_ERROR;
   }

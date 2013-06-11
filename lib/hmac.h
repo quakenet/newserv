@@ -27,3 +27,5 @@ void hmacmd5_update(hmacmd5 *c, unsigned char *message, int messagelen);
 void hmacmd5_init(hmacmd5 *c, unsigned char *key, int keylen);
 
 char *hmac_printhex(unsigned char *data, char *out, size_t len);
+
+int hmac_strcmp(char *a, char *b);

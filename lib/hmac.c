@@ -130,3 +130,19 @@ char *hmac_printhex(unsigned char *data, char *out, size_t len) {
   *o = '\0';
   return out;
 }
+
+int hmac_strcmp(char *a, char *b) {
+  int result = 1;
+
+  if(!a || !b)
+    return 1;
+
+  if(strlen(a) != strlen(b))
+    return 1;
+
+  while(*a)
+    result&=(tolower(*a++) == tolower(*b++));
+
+  return !result;
+}
+

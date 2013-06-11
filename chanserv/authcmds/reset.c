@@ -41,7 +41,7 @@ int csa_doreset(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(strcasecmp(cargv[1], csc_generateresetcode(rup->lockuntil, rup->username))) {
+  if(hmac_strcmp(cargv[1], csc_generateresetcode(rup->lockuntil, rup->username))) {
     chanservstdmessage(sender, QM_BADRESETCODE);
     return CMD_ERROR;
   }
