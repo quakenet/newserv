@@ -13,10 +13,10 @@ int cs_dospewdb(void *source, int cargc, char **cargv);
 UserDisplayFunc previousdefault;
 
 void _init() {
-  regdisp(reg_nicksearch, "auth", printnick_auth, 0, "");
-  regdisp(reg_nicksearch, "authchans", printnick_authchans, 0, "");
-  regdisp(reg_chansearch, "qusers", printchannel_qusers, 0, "");
-  regdisp(reg_usersearch, "auth", printauth, 0, "");
+  regdisp(reg_nicksearch, "auth", printnick_auth, NULL, 0, "");
+  regdisp(reg_nicksearch, "authchans", printnick_authchans, NULL, 0, "");
+  regdisp(reg_chansearch, "qusers", printchannel_qusers, NULL, 0, "");
+  regdisp(reg_usersearch, "auth", printauth, NULL, 0, "");
 
   registersearchterm(reg_usersearch, "qusers", qusers_parse, 0, "");
   registersearchterm(reg_usersearch, "qlasthost", qlasthost_parse, 0, "");

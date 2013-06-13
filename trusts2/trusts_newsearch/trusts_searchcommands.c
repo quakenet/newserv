@@ -1,5 +1,5 @@
 #include "trusts_newsearch.h"
-#include "../newsearch/newsearch.h"
+#include "../../newsearch/newsearch.h"
 
 static void tsnsmessagewrapper(nick *np, char *format, ...) {
   char buf[1024];

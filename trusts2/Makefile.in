@@ -3,10 +3,24 @@
 CFLAGS+=$(INCDBAPI)
 LDFLAGS+=$(LIBDBAPI)
 
-.PHONY: all
+TRUSTSDIRS=trusts_search trusts_newsearch nterfacer_trusts
 
-all: trusts.so trusts_commands.so
+.PHONY: all dirs $(TRUSTSDIRS) clean distclean
+
+all: trusts.so trusts_commands.so dirs
 
 trusts.so: trusts_ident.o trusts_hosts.o trusts_groups.o trusts_alloc.o trusts.o trusts_handlers.o trusts_blocks.o trusts_hash.o trusts_db.o
+
 trusts_commands.so: trusts_commands.o
- 
+
+dirs: $(TRUSTSDIRS)
+	ln -sf */*.so .
+
+$(TRUSTSDIRS):
+	cd $@ && $(MAKE) $(MFLAGS) all
+
+clean:
+	rm -f */*.o */*.so *.o *.so
+
+distclean:
+	rm -f */Makefile Makefile 

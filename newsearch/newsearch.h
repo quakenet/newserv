@@ -43,7 +43,7 @@ typedef void *(*exeFunc)(struct searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(struct searchCtx *, nick *, chanindex *);
 typedef void (*NickDisplayFunc)(struct searchCtx *, nick *, nick *);
 typedef void (*UserDisplayFunc)(struct searchCtx *, nick *, authname *);
-typedef void (*HeaderFunc)(void *sender, void *arg);
+typedef void (*HeaderFunc)(struct searchCtx *, void *sender, void *arg);
 
 struct coercedata {
   struct searchNode *child;
@@ -94,6 +94,11 @@ typedef struct searchCtx {
   void *displayfn;
 } searchCtx;
 
+typedef struct DisplayExt {
+  char *help;
+  void *displayheader;
+} DisplayExt;
+
 /* Core functions */
 /* Logical  (BOOL -> BOOL)*/
 struct searchNode *and_parse(searchCtx *ctx, int argc, char **argv);
@@ -126,7 +131,6 @@ struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv);
 /* Nick functions (various types) */
 struct searchNode *hostmask_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *realname_parse(searchCtx *ctx, int argc, char **argv);
-struct searchNode *away_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authname_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authts_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *ident_parse(searchCtx *ctx, int argc, char **argv);
@@ -181,7 +185,7 @@ void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc);
 void registerglobalsearchterm(char *term, parseFunc parsefunc, char *help);
 void deregisterglobalsearchterm(char *term, parseFunc parsefunc);
 
-void regdisp( searchCmd *cmd, const char *name, void *handler, int level, char *help);
+void regdisp( searchCmd *cmd, const char *name, void *handler, void *header, int level, char *help);
 void unregdisp( searchCmd *cmd, const char *name, void *handler);
 
 /* Special nick* printf */
@@ -194,7 +198,9 @@ void displaystrerror(replyFunc reply, nick *np, const char *input);
 extern const char *parseError;
 extern nick *senderNSExtern;
 
+void printnick_header(searchCtx *, nick *, void *);
 void printnick(searchCtx *, nick *, nick *);
+
 void printuser(searchCtx *, nick *, authname *);
 void printchannel(searchCtx *, nick *, chanindex *);
 
@@ -270,7 +276,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
-int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender);
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, void *header, CommandTree *sl, replyFunc reply, void *sender);
 
 typedef int (*ASTFunc)(searchASTExpr *, replyFunc, void *, wallFunc, void *, HeaderFunc, void *, int limit);
 

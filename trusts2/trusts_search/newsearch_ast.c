@@ -1,6 +1,6 @@
-#include "../lib/sstring.h"
-#include "../lib/strlfunc.h"
-#include "../lib/stringbuf.h"
+#include "../../lib/sstring.h"
+#include "../../lib/strlfunc.h"
+#include "../../lib/stringbuf.h"
 #include <stdarg.h>
 #include <string.h>
 #include "trusts_search.h"
@@ -26,7 +26,7 @@ int ast_tgsearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wa
 
   reply(sender, "Executing...");
   if(header)
-    header(sender, headerarg);
+    header(&ctx, sender, headerarg);
   tgsearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);

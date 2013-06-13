@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#include "../newsearch/newsearch.h"
-#include "../control/control.h"
-#include "../lib/stringbuf.h"
-#include "../trusts2/trusts.h"
+#include "../../newsearch/newsearch.h"
+#include "../../control/control.h"
+#include "../../lib/stringbuf.h"
+#include "../trusts.h"
 
 void printtrust_group(searchCtx *ctx, nick *sender, patricia_node_t *node) {
   trusthost_t *tgh = node->exts[tgh_ext];

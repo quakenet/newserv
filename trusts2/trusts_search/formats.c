@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#include "../newsearch/newsearch.h"
-#include "../control/control.h"
-#include "../lib/stringbuf.h"
-#include "../trusts2/trusts.h"
+#include "../../newsearch/newsearch.h"
+#include "../../control/control.h"
+#include "../../lib/stringbuf.h"
+#include "../trusts.h"
 
 char *trusts_timetostr(time_t t) {
   static char buf[100];

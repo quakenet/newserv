@@ -3,16 +3,16 @@
 #include <stdarg.h>
 
 #include "trusts_newsearch.h"
-#include "../trusts2/trusts.h"
-#include "../lib/version.h"
+#include "../trusts.h"
+#include "../../lib/version.h"
 
 MODULE_VERSION("");
 
 
 void _init(void) {
-  regdisp(reg_nodesearch, "tg", printtrust_group, 0, "");
-  regdisp(reg_nodesearch, "tb", printtrust_block, 0, "");
-  regdisp(reg_nodesearch, "tbprivate", printtrust_blockprivate, 0, "");
+  regdisp(reg_nodesearch, "tg", printtrust_group, NULL, 0, "");
+  regdisp(reg_nodesearch, "tb", printtrust_block, NULL, 0, "");
+  regdisp(reg_nodesearch, "tbprivate", printtrust_blockprivate, NULL, 0, "");
 
   /* TRUSTGROUP */
   registersearchterm(reg_tgsearch, "tgid", tsns_tgid_parse, 0, "Trustgroup ID");

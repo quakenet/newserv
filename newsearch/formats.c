@@ -9,6 +9,10 @@
 #include "../lib/splitline.h"
 #include "../lib/version.h"
 
+void printnick_header(searchCtx *ctx, nick *sender, void *args) {
+  ctx->reply(sender, "Hostmask [IP] (modes) (realname)");
+}
+
 void printnick(searchCtx *ctx, nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
 

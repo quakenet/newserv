@@ -1,8 +1,8 @@
 #ifndef __TRUSTS_NEWSEARCH_H_
 #define __TRUSTS_NEWSEARCH_H
 
-#include "../patriciasearch/patriciasearch.h"
-#include "../trusts2/trusts.h"
+#include "../../patriciasearch/patriciasearch.h"
+#include "../trusts.h"
 #include "../trusts_search/trusts_search.h"
 
 void printtrust_group(searchCtx *ctx, nick *sender, patricia_node_t *node);

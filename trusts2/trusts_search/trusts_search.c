@@ -2,17 +2,17 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "../control/control.h"
-#include "../irc/irc_config.h"
-#include "../lib/irc_string.h"
-#include "../parser/parser.h"
-#include "../lib/splitline.h"
-#include "../lib/version.h"
-#include "../lib/stringbuf.h"
-#include "../lib/strlfunc.h"
-#include "../trusts2/trusts.h"
+#include "../../control/control.h"
+#include "../../irc/irc_config.h"
+#include "../../lib/irc_string.h"
+#include "../../parser/parser.h"
+#include "../../lib/splitline.h"
+#include "../../lib/version.h"
+#include "../../lib/stringbuf.h"
+#include "../../lib/strlfunc.h"
+#include "../trusts.h"
 #include "trusts_search.h"
-#include "../lib/version.h"
+#include "../../lib/version.h"
 
 MODULE_VERSION("");
 
@@ -36,9 +36,9 @@ void _init() {
   reg_tgsearch = (searchCmd *)registersearchcommand("tgsearch",NO_OPER,do_tgsearch, printtg);
   reg_thsearch = (searchCmd *)registersearchcommand("thsearch",NO_OPER,do_thsearch, printth);
 
-  regdisp(reg_tgsearch, "all", printtgfull, 0, "show trustgroup details, including hosts, excludes trust comments");
-  regdisp(reg_tgsearch, "default", printtg, 0, "displays trust group id");
-  regdisp(reg_thsearch, "default", printth, 0, "displays trust host id");
+  regdisp(reg_tgsearch, "all", printtgfull, NULL, 0, "show trustgroup details, including hosts, excludes trust comments");
+  regdisp(reg_tgsearch, "default", printtg, NULL, 0, "displays trust group id");
+  regdisp(reg_thsearch, "default", printth, NULL, 0, "displays trust host id");
 }
 
 void _fini() {
@@ -65,6 +65,7 @@ int do_tgsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, ch
   int limit=500;
   int arg=0;
   TGDisplayFunc display=defaulttgfn;
+  HeaderFunc header=NULL;
   int ret;
   patricia_node_t *subset = iptree->head;
   parsertree *tree;
@@ -75,7 +76,7 @@ int do_tgsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, ch
     return CMD_OK;
   }
 
-  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, reg_tgsearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, (void **)&header, reg_tgsearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -142,6 +143,7 @@ int do_thsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, ch
   int limit=500;
   int arg=0;
   THDisplayFunc display=defaultthfn;
+  HeaderFunc header=NULL;
   searchCtx ctx;
   int ret;
   patricia_node_t *subset = iptree->head;
@@ -149,7 +151,7 @@ int do_thsearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, ch
   if (cargc<1)
     return CMD_USAGE;
 
-  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, reg_tgsearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void **)&display, (void **)&header, reg_tgsearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
