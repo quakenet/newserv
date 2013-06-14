@@ -14,6 +14,7 @@
 #define TRUSTNAMELEN 100
 #define TRUSTHOSTLEN 100
 #define CREATEDBYLEN NICKLEN + 1
+#define TRUSTLOGLEN 200
 
 #define MAXTGEXTS 5
 
@@ -133,6 +134,9 @@ trusthost *th_copy(trusthost *);
 void tg_update(trustgroup *);
 void tg_delete(trustgroup *);
 void th_delete(trusthost *);
+void trustlog(unsigned int groupid, const char *user, const char *format, ...);
+void trustlogspew(nick *np, unsigned int groupid, unsigned int limit);
+void trustloggrep(nick *np, const char *pattern, unsigned int limit);
 
 typedef struct trustmigration {
   int count, cur;

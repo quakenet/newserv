@@ -1,7 +1,10 @@
+#include <stdio.h>
+#include <stdarg.h>
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
 #include "../core/hooks.h"
 #include "../core/schedule.h"
+#include "../control/control.h"
 #include "trusts.h"
 
 DBAPIConn *trustsdb;
@@ -36,6 +39,11 @@ void createtrusttables(int mode) {
 
   /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
   trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
+
+  trustsdb->createtable(trustsdb, NULL, NULL,
+    "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, ts INT, username VARCHAR(?), message VARCHAR(?))",
+    "Tdd", "log", CREATEDBYLEN, TRUSTLOGLEN
+  );
 }
 
 static void flushdatabase(void *arg) {
@@ -367,6 +375,66 @@ void th_delete(trusthost *th) {
   th_free(th);
 
   th_linktree();
+}
+
+void trustlog(unsigned int groupid, const char *user, const char *format, ...) {
+  char buf[TRUSTLOGLEN+1];
+  va_list va;
+  unsigned int now;
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  now = time(NULL);
+
+  trustsdb->squery(trustsdb,
+    "INSERT INTO ? (ts, groupid, username, message) VALUES (?, ?, ?, ?)",
+    "Tuuss", "log", now, groupid, user, buf);
+}
+
+static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) {
+  nick *np = (nick *)arg;
+  int rows = 0;
+
+  if(!result || !result->success) {
+    controlreply(np, "Error querying the log.");
+
+    if(result)
+      result->clear(result);
+
+    return;
+  }
+
+  while(result->next(result)) {
+    unsigned int ts, groupid;
+    char *user, *message;
+
+    ts = strtoul(result->get(result, 0), NULL, 10);
+    groupid = strtoul(result->get(result, 1), NULL, 10);
+    user = result->get(result, 2);
+    message = result->get(result, 3);
+
+    controlreply(np, "[%s] #%d (%s) %s", trusts_timetostr(ts), groupid, user, message);
+    rows++;
+  }
+
+  controlreply(np, "--- Done. Found %d rows.", rows);
+}
+
+void trustlogspew(nick *np, unsigned int groupid, unsigned int limit) {
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, username, message FROM ? WHERE groupid = ? ORDER BY ts DESC LIMIT ?",
+    "Tuu", "log", groupid, limit);
+}
+
+void trustloggrep(nick *np, const char *pattern, unsigned int limit) {
+  char buf[512];
+  snprintf(buf, sizeof(buf), "%%%s%%", pattern);
+
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, username, message FROM ? WHERE message LIKE ? ORDER BY ts DESC LIMIT ?",
+    "Tsu", "log", buf, limit);
 }
 
 void _init(void) {
