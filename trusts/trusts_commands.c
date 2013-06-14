@@ -141,6 +141,9 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   trustgroup *tg = NULL;
   int found = 0, remaining = 50;
   char *name;
+  trusthost *th;
+  uint32_t ip;
+  short mask;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -151,6 +154,18 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   if(tg) {
     displaygroup(sender, tg);
+    return CMD_OK;
+  }
+
+  if(trusts_parsecidr(name, &ip, &mask)) {
+    th = th_getbyhost(ip);
+
+    if(!th) {
+      controlreply(sender, "Specified IP address is not trusted.");
+      return CMD_OK;
+    }
+
+    displaygroup(sender, th->group);
     return CMD_OK;
   }
 
