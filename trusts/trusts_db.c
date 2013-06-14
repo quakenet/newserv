@@ -321,12 +321,52 @@ void tg_update(trustgroup *tg) {
   );
 }
 
+void trustsdb_deletetg(char *table, trustgroup *tg)  {
+  trustsdb->squery(trustsdb,
+    "DELETE FROM ? WHERE id = ?",
+    "Tu", "groups", tg->id);
+}
+
 void tg_delete(trustgroup *tg) {
-  /* TODO */
+  trustgroup **pnext;
+
+  for(pnext=&tglist;*pnext;pnext=&((*pnext)->next)) {
+    if(*pnext == tg) {
+      *pnext = tg->next;
+      break;
+    }
+  }
+
+  trustsdb_deletetg("groups", tg);
+  tg_free(tg, 1);
+}
+
+void trustsdb_deleteth(char *table, trusthost *th) {
+  trustsdb->squery(trustsdb,
+    "DELETE FROM ? WHERE id = ?",
+    "Tu", "hosts", th->id); 
 }
 
 void th_delete(trusthost *th) {
-  /* TODO */
+  trusthost **pnext;
+  nick *np;
+
+  for(pnext=&(th->group->hosts);*pnext;pnext=&((*pnext)->next)) {
+    if(*pnext == th) {
+      *pnext = th->next;
+      break;
+    }
+  }
+
+  for(np=th->users;np;np=nextbytrust(np))
+    settrusthost(np, NULL);
+
+  th->group->count -= th->count;
+
+  trustsdb_deleteth("hosts", th);
+  th_free(th);
+
+  th_linktree();
 }
 
 void _init(void) {

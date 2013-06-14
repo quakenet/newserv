@@ -197,8 +197,6 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  controlreply(sender, "TODO: NOT IMPLEMENTED");
-
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPDEL'ed '%s'.", controlid(sender), tg->name->content);
 
   triggerhook(HOOK_TRUSTS_DELGROUP, tg);
@@ -238,8 +236,6 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
     controlreply(sender, "Couldn't find that host in that group.");
     return CMD_ERROR;
   }
-
-  controlreply(sender, "TODO: NOT IMPLEMENTED");
 
   triggerhook(HOOK_TRUSTS_DELHOST, th);
   th_delete(th);
