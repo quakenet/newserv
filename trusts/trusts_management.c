@@ -464,8 +464,8 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustgroupdel", NO_OPER, 1, trusts_cmdtrustgroupdel, "Usage: trustgroupdel <#id|name|id>");
   registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");
   registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, "Usage: trustgroupmodify <#id|name|id> <field> <new value>");
-  registercontrolhelpcmd("trustlogspew", NO_OPER, 2, trusts_cmdtrustlogspew, "Usage: trustlogspew <#id|name> [limit]\nShows log for the specified trust group.");
-  registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> [limit]\nShows maching log entries.");
+  registercontrolhelpcmd("trustlogspew", NO_OPER, 2, trusts_cmdtrustlogspew, "Usage: trustlogspew <#id|name> ?limit?\nShows log for the specified trust group.");
+  registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> ?limit?\nShows maching log entries.");
   registercontrolhelpcmd("trustcomment", NO_OPER, 2, trusts_cmdtrustcomment, "Usage: trustcomment <#id|name> <comment>\nLogs a comment for a trust.");
 }
 
