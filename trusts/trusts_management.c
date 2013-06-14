@@ -445,6 +445,7 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
+    controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
   trustlog(tg->id, controlid(sender), "Comment: %s", comment);
 
   return CMD_OK;
