@@ -33,9 +33,6 @@ int trusts_load_db(void) {
   dbasyncquery(trusts_loadtrusthostsmax, NULL,
     "SELECT max(hostid) FROM trusts.hosts");
 
-  dbasyncquery(trusts_loadtrustblocks, NULL,
-    "SELECT * FROM trusts.blocks");
-
   return 1;
 }
 
@@ -72,18 +69,6 @@ void trusts_create_tables(void) {
     "expires    INT4 NOT NULL,"
     "modified   INT4,"
     "created    INT4"
-    ") WITHOUT OIDS;"
-    );
-
-  dbcreatequery(
-    "CREATE TABLE trusts.blocks ("
-    "blockid        INT4 NOT NULL PRIMARY KEY,"
-    "block          VARCHAR NOT NULL,"
-    "owner          INT4,"
-    "expires        INT4,"
-    "startdate      INT4,"
-    "reason_private VARCHAR,"
-    "reason_public  VARCHAR"
     ") WITHOUT OIDS;"
     );
 
@@ -134,7 +119,7 @@ void trusts_loadtrustgroups(DBConn *dbconn, void *arg) {
                      /*modified*/    strtoul(dbgetvalue(pgres,12),NULL,10)
                      );
     if (!t) {
-      Error("trusts", ERR_ERROR, "Error loading trustblock.");
+      Error("trusts", ERR_ERROR, "Error loading trust group.");
       return;
     }
 
@@ -262,58 +247,7 @@ void trusts_loadtrusthostsmax(DBConn *dbconn, void *arg) {
   Error("trusts",ERR_INFO,"Loaded Trust Host Max %lu", trusts_lasttrusthostid);
 
   dbclear(pgres);
-}
 
-void trusts_loadtrustblocks(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
-  int rows=0;
-  trustblock_t *t;
-  struct irc_in_addr sin;
-  unsigned char bits;
-  patricia_node_t *node;
-
-  if(!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trustblock list.");
-    dbclear(pgres);
-    return;
-  }
-
-  trusts_lasttrustblockid = 1;
-
-  while(dbfetchrow(pgres)) {
-    /*node*/
-    if( ipmask_parse(dbgetvalue(pgres,1), &sin, &bits) == 0) {
-      Error("trusts", ERR_ERROR, "Failed to parse trustblock: %s", dbgetvalue(pgres,1));
-      continue;
-    } 
-    node  = refnode(iptree, &sin, bits);
-
-    t = createtrustblockfromdb(
-      /* id */      strtoul(dbgetvalue(pgres,0),NULL,10),
-      /* node */    node,
-      /* ownerid */ strtoul(dbgetvalue(pgres,2),NULL,10),
-      /* expire */  strtoul(dbgetvalue(pgres,3),NULL,10), 
-      /* startdate*/ strtoul(dbgetvalue(pgres,4),NULL,10),
-      /* reason_private */ dbgetvalue(pgres,5),
-      /* reason_public */ dbgetvalue(pgres,6)
-     );
-    if (!t) {
-      Error("trusts", ERR_ERROR, "Error loading trustblock.");
-      return;
-    }
-
-    node->exts[tgb_ext] = t;
-
-    if(t->id > trusts_lasttrustblockid)
-      trusts_lasttrustblockid = t->id;
-
-    rows++;
-  }
-
-  Error("trusts",ERR_INFO,"Loaded %d trustblocks (highest ID was %lu)",rows,trusts_lasttrustblockid);
-
-  dbclear(pgres);
-  
   trusts_loaded = 1;
   scheduleoneshot(time(NULL), trusts_dbtriggerdbloaded, NULL);
 }
@@ -346,25 +280,6 @@ void trustsdb_updatetrusthost(trusthost_t *th) {
 
 void trustsdb_deletetrusthost(trusthost_t *th) {
   dbquery("UPDATE trusts.hosts SET enddate = %jd WHERE hostid = %lu", (intmax_t)getnettime(), th->id);
-}
-
-/* trust block */
-void trustsdb_addtrustblock(trustblock_t *tb) {
-  dbquery("INSERT INTO trusts.blocks ( blockid,block,owner,expires,startdate,reason_private,reason_public) VALUES (%lu,'%s/%d',%lu,%lu,%lu,'%s','%s')",tb->id, IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, tb->reason_private ? tb->reason_private->content : "", tb->reason_public ? tb->reason_public->content : "");
-}
-
-void trustsdb_updatetrustblock(trustblock_t *tb) {
-  char escprivate[2*512+1];
-  char escpublic[2*512+1];
-
-  dbescapestring(escprivate,tb->reason_private ? tb->reason_private->content : "", strlen(tb->reason_private ? tb->reason_private->content : ""));
-  dbescapestring(escpublic,tb->reason_public ? tb->reason_public->content : "", strlen(tb->reason_public ? tb->reason_public->content : ""));
-
-  dbquery("UPDATE trusts.blocks SET block='%s/%d',owner=%lu,expires=%lu,startdate=%lu,reason_private='%s',reason_public='%s' WHERE blockid=%lu", IPtostr(tb->node->prefix->sin), irc_bitlen(&(tb->node->prefix->sin),tb->node->prefix->bitlen), tb->ownerid, tb->expire, tb->startdate, escprivate, escpublic, tb->id);
-}
-
-void trustsdb_deletetrustblock(trustblock_t *tb) {
-  dbquery("DELETE from trusts.blocks WHERE blockid = %lu", tb->id);
 }
 
 /* trust log */

@@ -88,17 +88,6 @@ typedef struct trustgroupidentcount_s {
         struct trustgroupidentcount_s* next;
 } trustgroupidentcount_t;
 
-typedef struct trustblock_s {
-  unsigned long id;
-  patricia_node_t* node;
-  unsigned long ownerid;
-  time_t expire;
-  time_t startdate;
-  sstring* reason_private;
-  sstring* reason_public;
-  struct trustblock_s* next;
-} trustblock_t;
-
 /* trusts hash tables */
 extern trustgroup_t *trustgroupidtable[TRUSTS_HASH_GROUPSIZE];
 extern trustgroup_t *trustgroupnametable[TRUSTS_HASH_GROUPSIZE];
@@ -132,7 +121,7 @@ trustgroupidentcount_t* findtrustgroupcountbyident(char *ident, trustgroup_t *t)
 
 trustgroupidentcount_t *getnewtrustgroupidentcount(trustgroup_t *tg, char *ident);
 
-extern unsigned long trusts_lasttrustgroupid, trusts_lasttrusthostid, trusts_lasttrustblockid;
+extern unsigned long trusts_lasttrustgroupid, trusts_lasttrusthostid;
 
 /* trusts alloc */
 trustgroup_t *newtrustgroup();
@@ -141,8 +130,6 @@ trusthost_t *newtrusthost();
 void freetrusthost (trusthost_t *trusthost);
 trustgroupidentcount_t *newtrustgroupidentcount();
 void freetrustgroupidentcount (trustgroupidentcount_t *trustgroupidentcount);
-trustblock_t *newtrustblock();
-void freetrustblock (trustblock_t *trustblock);
 
 /* trusts db */
 int trusts_load_db(void);
@@ -152,16 +139,12 @@ void trusts_loadtrustgroups(DBConn *dbconn, void *arg);
 void trusts_loadtrustgroupsmax(DBConn *dbconn, void *arg);
 void trusts_loadtrusthosts(DBConn *dbconn, void *arg);
 void trusts_loadtrusthostsmax(DBConn *dbconn, void *arg);
-void trusts_loadtrustblocks(DBConn *dbconn, void *arg);
 void trustsdb_addtrustgroup(trustgroup_t *t);
 void trustsdb_updatetrustgroup(trustgroup_t *t);
 void trustsdb_deletetrustgroup(trustgroup_t *t);
 void trustsdb_addtrusthost(trusthost_t *th);
 void trustsdb_updatetrusthost(trusthost_t *th);
 void trustsdb_deletetrusthost(trusthost_t *th);
-void trustsdb_addtrustblock(trustblock_t *tb);
-void trustsdb_updatetrustblock(trustblock_t *tb);
-void trustsdb_deletetrustblock(trustblock_t *tb);
 void trustsdb_logmessage(trustgroup_t *tg, unsigned long userid, int type, char *message);
 
 /* trusts handlers */
@@ -183,12 +166,6 @@ void trusthost_addcounters(trusthost_t* tgh);
 trusthost_t* trusthostadd(patricia_node_t *node, trustgroup_t* tg, time_t expire);
 void trusthost_expire ( trusthost_t *th);
 
-/* trusts blocks */
-trustblock_t *createtrustblock(unsigned long id, patricia_node_t* node, unsigned long ownerid, time_t expire, char *reason_private, char *reason_public);
-trustblock_t *createtrustblockfromdb(unsigned long id, patricia_node_t* node, unsigned long ownerid, time_t expire, time_t startdate, char *reason_private, char *reason_public);
-void trustblock_free(trustblock_t* t);
-void trustblock_expire( trustblock_t *tb);
-
 /* trusts idents */
 void increment_ident_count(nick *np, trustgroup_t *tg);
 void decrement_ident_count(nick *np, trustgroup_t *tg);
@@ -205,9 +182,6 @@ void trusts_cmdfini();
 int trust_groupadd(void *source, int cargc, char **cargv);
 int trust_groupmodify(void *source, int cargc, char **cargv);
 int trust_groupdel(void *source, int cargc, char **cargv);
-int trust_denyadd(void *source, int cargc, char **cargv);
-int trust_denycomment(void *source, int cargc, char **cargv);
-int trust_denydel(void *source, int cargc, char **cargv);
 int trust_del(void *source, int cargc, char **cargv);
 int trust_add(void *source, int cargc, char **cargv);
 int trust_comment(void *source, int cargc, char **cargv);

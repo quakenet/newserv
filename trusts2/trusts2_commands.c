@@ -38,9 +38,6 @@ void trusts_cmdinit(int hooknum, void *arg) {
   registercontrolcmd("trustadd",10,3,trust_add);
   registercontrolcmd("trustdel",10,2,trust_del);
 
-  registercontrolcmd("trustdenyadd",10,2,trust_denyadd);
-  registercontrolcmd("trustdenycomment",10,2,trust_denycomment);
-  registercontrolcmd("trustdenydel",10,2,trust_denydel);
 
   registercontrolcmd("truststats",10,2,trust_stats);
   registercontrolcmd("trustdump",10,2,trust_dump);
@@ -64,9 +61,6 @@ void trusts_cmdfini() {
   deregistercontrolcmd("trustadd",trust_add);
   deregistercontrolcmd("trustdel",trust_del);
 
-  deregistercontrolcmd("trustdenyadd",trust_denyadd);
-  deregistercontrolcmd("trustdenycomment",trust_denycomment);
-  deregistercontrolcmd("trustdenydel",trust_denydel);
 
   deregistercontrolcmd("truststats",trust_stats);
   deregistercontrolcmd("trustdump",trust_dump);
@@ -265,10 +259,6 @@ int trust_add(void *source, int cargc, char **cargv) {
     controlreply(sender,"ERROR: This mask is already trusted by trustgroup %lu.", ((trusthost_t *)node->exts[tgh_ext])->trustgroup->id);
     return CMD_ERROR;
   }
-  if ( node->exts[tgb_ext] ) {
-    controlreply(sender,"ERROR: A trustblock exists on this subnet, as follows: ID: %lu, public reason: %s", ((trustblock_t *)node->exts[tgb_ext])->id, (((trustblock_t *)node->exts[tgb_ext])->reason_public ? ((trustblock_t *)node->exts[tgb_ext])->reason_public->content : "<none>"));
-    return CMD_ERROR;
-  }
 
   /* check child status */
   PATRICIA_WALK(node, inode)
@@ -281,11 +271,6 @@ int trust_add(void *source, int cargc, char **cargv) {
         controlreply(sender,"ERROR: A child subnet is already in this trustgroup, remove that subnet first (%s/%d)", IPtostr(inode->prefix->sin),irc_bitlen(&(inode->prefix->sin),inode->prefix->bitlen));
         return CMD_ERROR;
       } 
-      /* Criteria 2: we can't trust a subnet containing a trustblock (unless you have +d flag, then warn) */
-      if ( inode->exts[tgb_ext] ) { 
-        controlreply(sender,"ERROR: A trustblock exists on a child subnet, as follows: ID: %lu, public reason: %s", ((trustblock_t *)inode->exts[tgb_ext])->id, (((trustblock_t *)inode->exts[tgb_ext])->reason_public ? ((trustblock_t *)inode->exts[tgb_ext])->reason_public->content : "<none>")); 
-        return CMD_ERROR;
-      }
     }
   }
   PATRICIA_WALK_END;
@@ -302,11 +287,6 @@ int trust_add(void *source, int cargc, char **cargv) {
         return CMD_ERROR;
       }
       /* even if we find 1 parent, we continue to the top */
-      /* Criteria 2: we can't trust a subnet containing a trustblock (unless you have +d flag, then warn) */
-      if ( parent->exts[tgb_ext] ) {
-        controlreply(sender,"ERROR: A trustblock exists on a parent subnet, as follows: ID: %lu, public reason: %s", ((trustblock_t *)parent->exts[tgb_ext])->id, (((trustblock_t *)parent->exts[tgb_ext])->reason_public ? ((trustblock_t *)parent->exts[tgb_ext])->reason_public->content : "<none>")); 
-        return CMD_ERROR;
-      }
     }
     parent = parent->parent;
   }
@@ -406,152 +386,6 @@ int trust_dump(void *source, int cargc, char **cargv) {
     startid++;
   }
   controlreply(sender, "End of list, %ld groups and %ld lines returned.", count, lines);
-  return CMD_OK;
-}
-
-int trust_denyadd(void *source, int cargc, char **cargv) {
-  nick *sender=(nick *)source;
-  struct irc_in_addr sin;
-  unsigned char bits;
-  trustblock_t *tb;
-  patricia_node_t *node;
-  int expiry;
-
-  if (cargc<2) {
-    controlreply(sender,"Syntax: trustdenyadd IP[/mask] <expiry> <public reason>");
-    return CMD_OK;
-  }
-
-  if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
-    controlreply(sender, "ERROR: Invalid mask.");
-    return CMD_ERROR;
-  }
-
-  if (!is_normalized_ipmask(&sin,bits)) {
-    controlreply(sender, "ERROR: non-normalized mask.");
-    return CMD_ERROR;
-  }
-
-  if ( irc_in_addr_is_ipv4(&sin) ) {
-    if (bits>128 || bits<112) {
-      controlreply(sender,"ERROR: Not a valid netmask (needs to be between 8 and 32)");
-      return CMD_ERROR;
-    }
-  } else {
-    if ( bits<64) {
-      controlreply(sender,"ERROR: Not a valid ipv6 netmask ");
-      return CMD_ERROR;
-    }
-  }
-
-  expiry = getnettime() + durationtolong(cargv[1]);
-  if (expiry<1) {
-    controlreply(sender,"ERROR: Invalid duration given");
-    return CMD_ERROR;
-  }
-
-  node  = refnode(iptree, &sin, bits);
-  if(node->exts[tgb_ext]) {
-    /* this mask is already blocked */
-    controlreply(sender,"ERROR: This mask is already blocked", ((trustblock_t *)node->exts[tgb_ext])->id);
-    return CMD_ERROR;
-  }
-
-  tb = createtrustblock( ++trusts_lasttrustblockid, node, 0 /*TODO*/, expiry, NULL,cargv[2]); 
-  if (!tb) {
-    controlreply(sender,"ERROR: An error occured adding the trustblock");
-  }
-  node->exts[tgb_ext] = tb;
- 
-  trustsdb_addtrustblock(tb);
-  controlreply(sender,"Added %s to trustblock list",cargv[0]);
-  controlwall(NO_OPER, NL_TRUSTS, "Added %s to trustblock list",cargv[0]);
-  return CMD_OK;
-}
-
-int trust_denycomment(void *source, int cargc, char **cargv) {
-  nick *sender=(nick *)source;
-  struct irc_in_addr sin;
-  unsigned char bits;
-  patricia_node_t *node;
-  trustblock_t *tb;
-
-  if (cargc<2) {
-    controlreply(sender,"Syntax: trustdenycomment IP[/mask] <private reason>");
-    return CMD_OK;
-  }
-
-  if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
-    controlreply(sender, "ERROR: Invalid mask.");
-    return CMD_ERROR;
-  }
-
-  if (!is_normalized_ipmask(&sin,bits)) {
-    controlreply(sender, "ERROR: non-normalized mask.");
-    return CMD_ERROR;
-  }
-
-  if ( irc_in_addr_is_ipv4(&sin) ) {
-    if (bits>128 || bits<112) {
-      controlreply(sender,"ERROR: Not a valid netmask (needs to be between 8 and 32)");
-      return CMD_ERROR;
-    }
-  } else {
-    if ( bits<64) {
-      controlreply(sender,"ERROR: Not a valid ipv6 netmask ");
-      return CMD_ERROR;
-    }
-  }
-
-  node  = refnode(iptree, &sin, bits);
-  if(!node->exts[tgb_ext]) {
-    /* this mask is already blocked */
-    controlreply(sender,"ERROR: This mask is not blocked. Use trustdenyadd to add a new block");
-    return CMD_ERROR;
-  }
-  derefnode(iptree,node); 
-  tb = node->exts[tgb_ext];
-  
-  tb->reason_private = getsstring(cargv[1],512);
-  trustsdb_updatetrustblock(tb);
-  controlreply(sender,"Private Comment added to trustblock %s",cargv[0]);
-  controlwall(NO_OPER, NL_TRUSTS, "Private Comment added to trustblock %s",cargv[0]);
-  return CMD_OK;
-}
-
-int trust_denydel(void *source, int cargc, char **cargv) {
-  nick *sender=(nick *)source;
-  struct irc_in_addr sin;
-  unsigned char bits;
-  patricia_node_t *node;
-
-  if (cargc<1) {
-    controlreply(sender,"Syntax: trustdenydel IP[/mask]");
-    return CMD_OK;
-  }
-
-  if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
-    controlreply(sender, "ERROR: Invalid mask.");
-    return CMD_ERROR;
-  }
-
-  if (!is_normalized_ipmask(&sin,bits)) {
-    controlreply(sender, "ERROR: non-normalized mask.");
-    return CMD_ERROR;
-  }
-  
-  node = refnode(iptree, &sin, bits);
-  if(!node->exts[tgb_ext]) {
-    controlreply(sender,"ERROR: That CIDR was not blocked.");
-    return CMD_ERROR;
-  } else {
-    controlreply(sender,"trustblock removed on %s",cargv[0]);
-    controlwall(NO_OPER, NL_TRUSTS, "trustblock removed on %s", cargv[0]);
-    trustsdb_deletetrustblock( node->exts[tgb_ext]);
-    trustblock_free( node->exts[tgb_ext] );
-    node->exts[tgb_ext] = NULL;
-  }
-  controlreply(sender,"Not Implemented");
   return CMD_OK;
 }
 
