@@ -8,9 +8,10 @@ typedef struct whowas {
   char ident[USERLEN+1];
   char host[HOSTLEN+1];
   char realname[REALLEN+1];
-  char reason[WW_REASONLEN+1];
+  sstring *reason;
 
   time_t seen;
 
   struct whowas *next;
+  struct whowas *prev;
 } whowas;
