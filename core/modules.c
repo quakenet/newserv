@@ -22,7 +22,7 @@
 
 #define DEPFILE	"modules.dep"
 
-#define MAXMODULES 100
+#define MAXMODULES 110
 
 /* Module dependency stuff.
  *
