@@ -48,7 +48,7 @@
 #define HOOK_CHANNEL_PART          403  /* Argument is void*[3] (channel, nick, reason) */
 #define HOOK_CHANNEL_KICK          404  /* Argument is void*[4] (channel, kicked, kicker, reason) ** KICKER COULD BE NULL ***/
 #define HOOK_CHANNEL_TOPIC         405  /* Argument is void*[2] (channel, nick) ** NICK COULD BE NULL ** */
-#define HOOK_CHANNEL_MODECHANGE    406  /* Argument is void*[3] (channel, nick, flags) ** NICK COULD BE NULL ** */
+#define HOOK_CHANNEL_MODECHANGE    406  /* Argument is void*[3] (channel, nick, flags, oldchanmodes) ** NICK COULD BE NULL ** */
 #define HOOK_CHANNEL_BANSET        407  /* Argument is void*[2] (channel, nick) ** NICK COULD BE NULL **, ban will be first ban on channel */
 #define HOOK_CHANNEL_BANCLEAR      408  /* Argument is void*[2] (channel, nick) ** NICK COULD BE NULL **, ban will be gone.  XXX - could we care what the ban was? */
 #define HOOK_CHANNEL_OPPED         409  /* Argument is void*[3] (channel, nick, target) ** NICK COULD BE NULL ** */
@@ -97,8 +97,7 @@
 #define HOOK_TRUSTS_LOSTHOST       911 /* Argument is trusthost* */
 
 #define HOOK_TRUSTS_DBLOADED       1000
-
-#define HOOK_TRUSTS_DBLOADED       1000
+#define HOOK_SIGNONTRACKER_HAVETIME 1100 /* Argument is nick* */
 
 #define PRIORITY_DEFAULT           0
 

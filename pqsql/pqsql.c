@@ -188,14 +188,15 @@ void dbhandler(int fd, short revents) {
         if(queryhead->identifier != QH_ALREADYFIRED) {
           switch(PQresultStatus(res)) {
             case PGRES_TUPLES_OK:
-              Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
+              if(!(queryhead->flags & DB_CALL))
+                Error("pqsql", ERR_WARNING, "Unhandled tuples output (query: %s)", queryhead->query);
               break;
 
             case PGRES_NONFATAL_ERROR:
             case PGRES_FATAL_ERROR:
               /* if a create query returns an error assume it went ok, paul will winge about this */
               if(!(queryhead->flags & DB_CREATE))
-                Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s)", queryhead->query);
+                Error("pqsql", ERR_WARNING, "Unhandled error response (query: %s): %s", queryhead->query, PQresultErrorMessage(res));
               break;
 	  
             default:

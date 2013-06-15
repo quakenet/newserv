@@ -352,11 +352,12 @@ void lua_onpart(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
+  char *reason = arglist[2];
 
   if(!ci || !np)
     return;
 
-  lua_avpcall("irc_onpart", "Sl", ci->name, np->numeric);
+  lua_avpcall("irc_onpart", "Sls", ci->name, np->numeric, reason);
 }
 
 void lua_onrename(int hooknum, void *arg) {
@@ -455,16 +456,25 @@ char *printallmodes(channel *cp) {
   return buf;
 }
 
+static char *printlimitedmodes(channel *cp, flag_t before) {
+  static char buf[1024];
+
+  snprintf(buf, sizeof(buf), "%s", printflags(cp->flags, cmodeflags));
+
+  return buf;
+}
+
 void lua_onmode(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   channel *cp = (channel *)arglist[0];
   chanindex *ci = cp->index;
   nick *np = arglist[1];
+  flag_t beforeflags = (flag_t)(long)arglist[3];
 
   if(np) {
-    lua_avpcall("irc_onmode", "Sls", ci->name, np->numeric, printallmodes(cp));
+    lua_avpcall("irc_onmode", "Slss", ci->name, np->numeric, printallmodes(cp), printlimitedmodes(cp, beforeflags));
   } else {
-    lua_avpcall("irc_onmode", "S0s", ci->name, printallmodes(cp));
+    lua_avpcall("irc_onmode", "S0ss", ci->name, printallmodes(cp), printlimitedmodes(cp, beforeflags));
   }
 }
 

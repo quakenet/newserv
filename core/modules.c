@@ -400,8 +400,7 @@ void preparereload(char *modulename) {
     moduledeps[i].reloading=0;
 
   /* Do nothing if this module is not loaded */
-  i=getindex(modulebuf);
-  if (i<0)
+  if (getindex(modulebuf)<0)
     return;
     
   if ((mdp=getmoduledep(modulebuf))) {

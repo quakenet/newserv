@@ -65,7 +65,7 @@ void join(char *chan) {
 void spawnclones(unsigned int count) {
   nick *np;
   unsigned int i,j;
-  char nick[11], ident[10], host[40];
+  char nick[11], ident[11], host[40];
   channel *cp;
   
   for (i=0;i<count;i++) {

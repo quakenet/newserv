@@ -6,3 +6,4 @@ SSTRING_NEW=0
 SSTRING_MMAP=0
 HOOKS_NEW=0
 XSB_ENGINE=pre
+#CLANG=0   # remember to set CC

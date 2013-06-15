@@ -151,6 +151,28 @@ static void dbloadtable(const DBAPIConn *db, DBAPIQueryCallback init, DBAPIQuery
   db->__loadtable(db, init, data, fini, tag, db->tablename(db, tablename));
 }
 
+static void dbcall(const DBAPIConn *db, DBAPIQueryCallback cb, DBAPIUserData data, const char *function, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__call(db, cb, data, function, buf);
+}
+
+static void dbsimplecall(const DBAPIConn *db, const char *function, const char *format, const char *types, ...) {
+  va_list ap;
+  char buf[QUERYBUFLEN];
+
+  va_start(ap, types);
+  dbvsnprintf(db, buf, sizeof(buf), format, types, ap);
+  va_end(ap);
+
+  db->__call(db, NULL, NULL, function, buf);
+}
+
 DBAPIConn *dbapi2open(const char *provider, const char *database) {
   int i, found = -1;
   DBAPIConn *db;
@@ -197,12 +219,15 @@ DBAPIConn *dbapi2open(const char *provider, const char *database) {
   db->unsafequery = dbunsafequery;
   db->unsafesquery = dbunsafesimplequery;
   db->unsafecreatetable = dbunsafecreatetable;
+  db->call = dbcall;
+  db->scall = dbsimplecall;
 
   db->__query = p->query;
   db->__close = p->close;
   db->__quotestring = p->quotestring;
   db->__createtable = p->createtable;
   db->__loadtable = p->loadtable;
+  db->__call = p->call;
 
   strlcpy(db->name, database, DBNAME_LEN);
 
@@ -256,7 +281,8 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
       switch(*types) {
         case 's':
           s = va_arg(ap, char *);
-          l = strlen(s);
+          if(s)
+            l = strlen(s);
           fallthrough = 1;
 
         /* falling through */
@@ -266,8 +292,10 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
             l = va_arg(ap, size_t);
           }
 
-          /* now... this is a guess, but we should catch it most of the time */
-          if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
+          if(!s) {
+            strlcpy(cb, "NULL", sizeof(convbuf[0]));
+          } else if((l > (VSNPF_MAXARGLEN / 2)) || !db->__quotestring(db, cb, sizeof(convbuf[0]), s, l)) {
+            /* now... this is a guess, but we should catch it most of the time */
             Error("dbapi2", ERR_STOP, "Long string truncated, format: '%s', database: %s", format, db->name);
             l = VSNPF_MAXARGLEN;
           }

@@ -11,7 +11,7 @@ local socket_close_raw = socket_close
 
 local sockets = {}
 
-function socket_handler(socket, event, tag, ...)
+local function socket_handler(socket, event, tag, ...)
   if event == "flush" then
     local buf = sockets[socket].writebuf
     local ret = socket_write_raw(socket, buf)
@@ -69,21 +69,22 @@ function socket_unix_bind(path, handler, tag)
 end
 
 local function socket_ip_connect(fn, address, port, handler, tag)
-  local connected, socket = fn(address, port, handler, tag)
+  local connected, socket = fn(address, port, socket_handler, tag)
+
   if connected == nil then
     return nil
   end
 
   socket_new(socket, handler)
   if connected then
-    handler(socket, "connect", tag)
+    socket_handler(socket, "connect", tag)
   end
 
   return socket
 end
 
 local function socket_ip_bind(fn, address, port, handler, tag)
-  local socket = fn(address, port, handler, tag)
+  local socket = fn(address, port, socket_handler, tag)
   if not socket then
     return nil
   end

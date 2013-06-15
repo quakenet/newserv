@@ -563,11 +563,11 @@ int handlemodemsg(void *source, int cargc, char **cargv) {
   int arg=2;
   char *modestr;
   unsigned long *lp;
-  void *harg[3];
+  void *harg[4];
   nick *np, *target;
   int hooknum;
   int changes=0;
-  
+
   if (cargc<2) {
     return CMD_OK;
   }
@@ -594,6 +594,7 @@ int handlemodemsg(void *source, int cargc, char **cargv) {
   /* Set up the hook data */
   harg[0]=cp;
   harg[1]=np;
+  harg[3]=(void *)(long)(cp->flags);
   
   /* Process the mode string one character at a time */
   /* Maybe I'll write this more intelligently one day if I can comprehend the ircu code that does this */
@@ -775,7 +776,7 @@ int handlemodemsg(void *source, int cargc, char **cargv) {
 
 int handleclearmodemsg(void *source, int cargc, char **cargv) {
   channel *cp;
-  void *harg[3];
+  void *harg[4];
   nick *np, *target;
   char *mcp;
   unsigned long usermask=0;
@@ -802,7 +803,8 @@ int handleclearmodemsg(void *source, int cargc, char **cargv) {
              
   harg[0]=cp;
   harg[1]=np;
-  
+  harg[3]=(void *)(long)(cp->flags);
+
   for (mcp=cargv[1];*mcp;mcp++) {
     switch (*mcp) {
       case 'o':

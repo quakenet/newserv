@@ -554,6 +554,52 @@ static int lua_localrename(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localwallusers(lua_State *ps) {
+  char *msg;
+  nick *source;
+  char senderstr[6];
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  msg = (char *)lua_tostring(ps, 2);
+
+  if(!lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  longtonumeric2(source->numeric,5,senderstr);
+  irc_send("%s WU :%s", senderstr, msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int lua_localwallops(lua_State *ps) {
+  char *msg;
+  nick *source;
+  char senderstr[6];
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  msg = (char *)lua_tostring(ps, 2);
+
+  if(!lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  longtonumeric2(source->numeric,5,senderstr);
+  irc_send("%s WA :%s", senderstr, msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localregisteruserid", lua_registerlocaluserid);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
@@ -571,5 +617,8 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localumodes", lua_localumodes);
 
   lua_register(l, "irc_localrename", lua_localrename);
+
+  lua_register(l, "irc_localwallusers", lua_localwallusers);
+  lua_register(l, "irc_localwallops", lua_localwallops);
 }
 
