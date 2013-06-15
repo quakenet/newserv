@@ -108,7 +108,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   }
 
   howlong = durationtolong(cargv[2]);
-  if((howlong <= 0) || (howlong > MAXDURATION)) {
+  if((howlong < 0) || (howlong > MAXDURATION)) {
     controlreply(sender, "Invalid duration supplied.");
     return CMD_ERROR;
   }
@@ -150,7 +150,10 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   itg.trustedfor = howmany;
   itg.mode = enforceident;
   itg.maxperident = maxperident;
-  itg.expires = howlong + time(NULL);
+  if(howlong)
+    itg.expires = howlong + time(NULL);
+  else
+    itg.expires = 0; /* never */
   itg.createdby = getsstring(createdby, CREATEDBYLEN);
   itg.contact = getsstring(contact, CONTACTLEN);
   itg.comment = getsstring(comment, COMMENTLEN);
@@ -311,10 +314,13 @@ static int modifyenforceident(trustgroup *tg, char *num) {
 static int modifyexpires(trustgroup *tg, char *expires) {
   int howlong = durationtolong(expires);
 
-  if((howlong <= 0) || (howlong > MAXDURATION))
+  if((howlong < 0) || (howlong > MAXDURATION))
     return 0;
 
-  tg->expires = time(NULL) + howlong;
+  if(howlong)
+    tg->expires = time(NULL) + howlong;
+  else
+    tg->expires = 0; /* never */
 
   return 1;
 }
