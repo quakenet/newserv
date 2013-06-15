@@ -32,8 +32,10 @@ int ww_cmdwhowas(void *source, int cargc, char **cargv) {
 
       matches++;
 
-      if(matches>1000)
+      if(matches>1000) {
         controlreply(np, "--- Too many matching entries. Aborting...");
+        break;
+      }
     }
   }
 
