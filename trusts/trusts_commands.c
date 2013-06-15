@@ -4,6 +4,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/nsmalloc.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
@@ -257,6 +258,74 @@ static int trusts_cmdtrustdump(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
+static int trusts_cmdtrustgline(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  nick *sender = source;
+  char *user, *reason;
+  int duration, count = 0;
+  trusthost *th;
+
+  if(cargc < 4)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  user = cargv[1];
+
+  duration = durationtolong(cargv[2]);
+  if((duration <= 0) || (duration > MAXDURATION)) {
+    controlreply(sender, "Invalid duration supplied.");
+    return CMD_ERROR;
+  }
+
+  reason = cargv[3];
+
+  for(th=tg->hosts;th;th=th->next) {
+    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
+    irc_send("%s GL * +%s@%s %d %jd :%s", mynumeric->content, user, cidrstr, duration, (intmax_t)getnettime(), reason);
+    count++;
+  }
+
+  controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTGLINE'd user '%s' on group '%s', %d gline(s) set.", controlid(sender), user, tg->name->content, count);
+  controlreply(sender, "Done. %d gline(s) set.", count);
+
+  return CMD_OK;
+}
+
+static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  nick *sender = source;
+  char *user, *reason;
+  int duration, count = 0;
+  trusthost *th;
+
+  if(cargc < 2)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  user = cargv[1];
+
+  for(th=tg->hosts;th;th=th->next) {
+    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
+    irc_send("%s GL * -%s@%s", mynumeric->content, user, cidrstr);
+    count++;
+  }
+
+  controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTUNGLINE'd user '%s' on group '%s', %d gline(s) removed.", controlid(sender), user, tg->name->content, count);
+  controlreply(sender, "Done. %d gline(s) removed.", count);
+
+  return CMD_OK;
+}
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -266,6 +335,8 @@ static void registercommands(int hooknum, void *arg) {
 
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|IP>\nShows trust data for the specified trust group.");
   registercontrolhelpcmd("trustdump", NO_OPER, 2, trusts_cmdtrustdump, "Usage: trustdump <#id> <number>");
+  registercontrolhelpcmd("trustgline", NO_OPER, 4, trusts_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nGlines a user on all hosts of a trust group.");
+  registercontrolhelpcmd("trustungline", NO_OPER, 4, trusts_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nUnglines a user on all hosts of a trust group.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -275,6 +346,8 @@ static void deregistercommands(int hooknum, void *arg) {
 
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
   deregistercontrolcmd("trustdump", trusts_cmdtrustdump);
+  deregistercontrolcmd("trustgline", trusts_cmdtrustgline);
+  deregistercontrolcmd("trustungline", trusts_cmdtrustungline);
 }
 
 void _init(void) {
