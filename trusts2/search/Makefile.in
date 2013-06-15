@@ -1,0 +1,11 @@
+INCPATH=../../
+@include@ @includel@../../build.mk@includel@
+
+CFLAGS+=$(INCPGSQL) $(INCPCRE)
+LDFLAGS+=$(LIBPGSQL) $(LIBPCRE)
+
+.PHONY: all
+all: trusts2_search.so
+
+trusts2_search.so: formats.o trusts2_search.o newsearch_ast.o
+

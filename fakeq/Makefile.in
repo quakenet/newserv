@@ -2,6 +2,7 @@ CFLAGS+=$(INCDBAPI) $(INCPCRE)
 LDFLAGS+=$(LIBDBAPI) $(LIBPCRE)
 
 @include@ @includel@../build.mk@includel@
+@include@ @includel@../chanserv/build.mk@includel@
 
 .PHONY: all
 all: fakeq.so
