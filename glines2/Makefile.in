@@ -3,7 +3,24 @@
 CFLAGS+=$(INCPGSQL) ${INCPCRE}
 LDFLAGS+=$(LIBPGSQL) ${LIBPCRE}
 
-.PHONY: all
-all: gline.so
+GLINEDIRS=gline_search gline_newsearch nterfacer_gline
+
+.PHONY: all dirs $(GLINEDIRS) clean distclean
+
+all: gline_commands.so gline.so dirs
 
 gline.so: gline_hash.o gline_alloc.o gline_handler.o gline.o
+
+gline_commands.so: gline_commands.o
+
+dirs: $(GLINEDIRS)
+	ln -sf */*.so .
+
+$(GLINEDIRS):
+	cd $@ && $(MAKE) $(MFLAGS) all
+
+clean:
+	rm -f */*.o */*.so *.o *.so
+
+distclean:
+	rm -f */Makefile Makefile

@@ -1,0 +1,11 @@
+INCPATH=../../
+@include@ @includel@../../build.mk@includel@
+
+CFLAGS+=$(INCPGSQL) $(INCPCRE)
+LDFLAGS+=$(LIBPGSQL) $(LIBPCRE)
+
+.PHONY: all
+all: gline_search.so
+
+gline_search.so: formats.o gline_search.o newsearch_ast.o
+

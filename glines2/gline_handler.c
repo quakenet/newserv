@@ -32,10 +32,12 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
 
   nick* np;
 
+  /*
   int i;
   for (i = 0; i <cargc; i++) {
     Error("debuggline", ERR_WARNING, "Token %d is - %s", i, cargv[i]);
   }
+  */
 
   /* valid GL tokens have X params */
   switch ( cargc ) {
@@ -62,7 +64,12 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
         Error("gline", ERR_WARNING, "Failed to resolve numeric to server (%s) when adding G-Line!", sender);
         creator = getsstring("unknown", HOSTLEN);
       } else 
-        creator = getsstring(serverlist[(int)creatornum].name->content, HOSTLEN);
+        if (serverlist[(int)creatornum].name==NULL) {
+          Error("gline", ERR_WARNING, "Received gline from non-existant server");
+          return CMD_ERROR; 
+        } else {
+          creator = getsstring(serverlist[(int)creatornum].name->content, HOSTLEN);
+        }
       break;
     case 5:
       creatornum = numerictolong(sender, 5);
@@ -205,8 +212,10 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
            return CMD_ERROR;
       }
 
-      agline = gline_add( creatornum, creator, mask, reason, expires, lastmod, lifetime);
-      gline_deactivate(agline, lastmod, 0);       
+      if ((agline = gline_add( creatornum, creator, mask, reason, expires, lastmod, lifetime)))
+        gline_deactivate(agline, lastmod, 0);
+      else
+        Error("gline", ERR_WARNING, "gline_add failed");
       return CMD_ERROR;
     }
   } else {
@@ -239,8 +248,3 @@ int handleglinemsg(void* source, int cargc, char** cargv) {
   return CMD_OK;
 }
 
-
-int gline_deactivate(gline *agline, time_t lastmod, int propagate) {
-  agline->flags &= ~GLINE_ACTIVE;
-  agline->lastmod = lastmod;
-}
