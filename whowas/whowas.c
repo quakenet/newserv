@@ -35,7 +35,7 @@ int ww_cmdwhowas(void *source, int cargc, char **cargv) {
         strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
 
         controlreply(np, "[%s] %s (%s): %s", timebuf, hostmask, ww->realname, ww->reason->content);
-      } else if(matches==limit) {
+      } else if(matches==limit+1) {
         controlreply(np, "--- More than %d matches, skipping the rest", limit);
       }
     }
