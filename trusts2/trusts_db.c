@@ -24,7 +24,7 @@ int trusts_load_db(void) {
   trusts_create_tables();
 
   dbasyncquery(trusts_loadtrustgroups, NULL,
-    "SELECT trustid,maxusage,maxclones,maxperident,maxperip,enforceident,startdate,lastused,expires,owneruserid,type,created,modified FROM trusts.groups WHERE enddate = 0");
+    "SELECT trustid,maxusage,maxclones,maxperident,maxperip,enforceident,startdate,lastused,expires,owneruserid,created,modified FROM trusts.groups WHERE enddate = 0");
   dbasyncquery(trusts_loadtrustgroupsmax, NULL,
     "SELECT max(trustid) from trusts.groups");
 
@@ -46,7 +46,6 @@ void trusts_create_tables(void) {
     "owneruserid  INT4,"
     "maxusage     INT4 NOT NULL,"
     "enforceident INT2 NOT NULL,"
-    "type         INT2,"
     "maxclones    INT4 NOT NULL,"
     "maxperident  INT4,"
     "maxperip     INT4,"
@@ -114,9 +113,8 @@ void trusts_loadtrustgroups(DBConn *dbconn, void *arg) {
                      /*lastused*/    strtoul(dbgetvalue(pgres,7),NULL,10),
                      /*expire*/      strtoul(dbgetvalue(pgres,8),NULL,10),
                      /*ownerid*/     strtoul(dbgetvalue(pgres,9),NULL,10),
-                     /*type*/        strtoul(dbgetvalue(pgres,10),NULL,10),
-                     /*created*/     strtoul(dbgetvalue(pgres,11),NULL,10),
-                     /*modified*/    strtoul(dbgetvalue(pgres,12),NULL,10)
+                     /*created*/     strtoul(dbgetvalue(pgres,10),NULL,10),
+                     /*modified*/    strtoul(dbgetvalue(pgres,11),NULL,10)
                      );
     if (!t) {
       Error("trusts", ERR_ERROR, "Error loading trust group.");
@@ -258,11 +256,11 @@ static void trusts_dbtriggerdbloaded(void *arg) {
 
 /* trust group */
 void trustsdb_addtrustgroup(trustgroup_t *t) {
-  dbquery("INSERT INTO trusts.groups (trustid,startdate,enddate,owneruserid,maxusage,enforceident,type,maxclones,maxperident,maxperip,expires,lastused,modified,created ) VALUES (%lu,%lu,0,%lu,%lu,%d,%d,%lu,%lu,%d,%lu,%lu,%lu,%lu )", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->type,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created ); 
+  dbquery("INSERT INTO trusts.groups (trustid,startdate,enddate,owneruserid,maxusage,enforceident,maxclones,maxperident,maxperip,expires,lastused,modified,created ) VALUES (%lu,%lu,0,%lu,%lu,%d,%d,%lu,%lu,%d,%lu,%lu,%lu,%lu )", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created ); 
 }
 
 void trustsdb_updatetrustgroup(trustgroup_t *t) {
-  dbquery("UPDATE trusts.groups SET startdate=%lu,owneruserid=%lu,maxusage=%lu,enforceident=%d,type=%d,maxclones=%lu, maxperident=%lu,maxperip=%d,expires=%lu,lastused=%lu,modified=%lu,created=%lu WHERE trustid = %lu", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->type,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created, t->id);
+  dbquery("UPDATE trusts.groups SET startdate=%lu,owneruserid=%lu,maxusage=%lu,enforceident=%d,maxclones=%lu, maxperident=%lu,maxperip=%d,expires=%lu,lastused=%lu,modified=%lu,created=%lu WHERE trustid = %lu", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created, t->id);
 }
 
 void trustsdb_deletetrustgroup(trustgroup_t *t) {

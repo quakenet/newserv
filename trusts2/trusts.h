@@ -59,13 +59,13 @@ typedef struct trusthost_s {
 typedef struct trustgroup_s {
         /* Details */
         unsigned long id;
+
         unsigned long maxusage, currenton;
         unsigned long maxclones, maxperident;
         unsigned short maxperip;
         int enforceident;
         time_t startdate,lastused, expire;
         unsigned long ownerid;
-        int type;
 
         time_t created;
         time_t modified;
@@ -153,8 +153,8 @@ void trusts_hook_lostuser(int hook, void *arg);
 
 /* trusts groups */
 
-trustgroup_t *createtrustgroupfromdb(unsigned long id, unsigned long maxusage, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t startdate, time_t lastused, time_t expire, unsigned long ownerid, int type, time_t created, time_t modified);
-trustgroup_t *createtrustgroup(unsigned long id, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t expire, unsigned long ownerid, int type);
+trustgroup_t *createtrustgroupfromdb(unsigned long id, unsigned long maxusage, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t startdate, time_t lastused, time_t expire, unsigned long ownerid, time_t created, time_t modified);
+trustgroup_t *createtrustgroup(unsigned long id, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t expire, unsigned long ownerid);
 void trustgroup_expire (trustgroup_t *tg);
 void trustgroup_free(trustgroup_t* t);
 

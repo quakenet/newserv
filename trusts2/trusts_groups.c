@@ -1,8 +1,8 @@
 #include "trusts.h"
 
 trustgroup_t *createtrustgroupfromdb(unsigned long id,
- unsigned long maxusage, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t startdate, time_t lastused, time_t expire, unsigned long ownerid, int type, time_t created, time_t modified){
-  trustgroup_t *tg = createtrustgroup(id, maxclones, maxperident, maxperip, enforceident, expire, ownerid,type);
+ unsigned long maxusage, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t startdate, time_t lastused, time_t expire, unsigned long ownerid, time_t created, time_t modified){
+  trustgroup_t *tg = createtrustgroup(id, maxclones, maxperident, maxperip, enforceident, expire, ownerid);
   tg->maxusage = maxusage;
   // currenton
   tg->startdate = startdate;
@@ -11,7 +11,7 @@ trustgroup_t *createtrustgroupfromdb(unsigned long id,
   tg->modified = modified;
   return tg;
 }
-trustgroup_t *createtrustgroup(unsigned long id, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t expire, unsigned long ownerid, int type) {
+trustgroup_t *createtrustgroup(unsigned long id, unsigned long maxclones, unsigned long maxperident, unsigned short maxperip, int enforceident, time_t expire, unsigned long ownerid) {
   trustgroup_t *tg = newtrustgroup();
 
   time_t timenow = getnettime();
@@ -27,7 +27,6 @@ trustgroup_t *createtrustgroup(unsigned long id, unsigned long maxclones, unsign
   tg->lastused = 0;
   tg->expire = expire;
   tg->ownerid = ownerid;
-  tg->type = type;
   tg->created = timenow;
   tg->modified = timenow;
   trusts_addtrustgrouptohash(tg);

@@ -39,7 +39,6 @@ void printtgfull(searchCtx *ctx, nick *sender, trustgroup_t *g) {
   ctx->reply(sender,"Expiry          : %s", trusts_timetostr(g->expire));
 
   ctx->reply(sender,"Owner           : %lu", g->ownerid);
-  ctx->reply(sender,"Type            : %d", g->type);
 
   ctx->reply(sender,"Trust Hosts:");
   ctx->reply(sender,"ID      Host             Current    Max   Last seen           Expiry");

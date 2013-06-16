@@ -9,7 +9,7 @@ TRUSTSDIRS=search newsearch nterfacer
 
 all: trusts2.so trusts2_commands.so dirs
 
-trusts2.so: trusts_ident.o trusts_hosts.o trusts_groups.o trusts_alloc.o trusts2.o trusts_handlers.o trusts_blocks.o trusts_hash.o trusts_db.o
+trusts2.so: trusts_ident.o trusts_hosts.o trusts_groups.o trusts_alloc.o trusts2.o trusts_handlers.o trusts_hash.o trusts_db.o
 
 trusts2_commands.so: trusts2_commands.o
 

@@ -8,7 +8,6 @@
 trustgroup_t *trustgroup_freelist;
 trustgroupidentcount_t *trustgroupidentcount_freelist;
 trusthost_t *trusthost_freelist;
-trustblock_t *trustblock_freelist;
 
 trustgroup_t *newtrustgroup() {
   trustgroup_t *trustgroup;
@@ -81,29 +80,5 @@ trustgroupidentcount_t *newtrustgroupidentcount() {
 void freetrustgroupidentcount (trustgroupidentcount_t *trustgroupidentcount) {
   trustgroupidentcount->next=(trustgroupidentcount_t *)trustgroupidentcount_freelist;
   trustgroupidentcount_freelist=trustgroupidentcount;
-}
-
-trustblock_t *newtrustblock() {
-  trustblock_t *trustblock;
-  int i;
-
-  if( trustblock_freelist ==NULL ) {
-    trustblock_freelist=(trustblock_t *)nsmalloc(POOL_TRUSTS,ALLOCUNIT*sizeof(trustblock_t));
-
-    for (i=0;i<(ALLOCUNIT-1);i++) {
-      trustblock_freelist[i].next=(trustblock_t *)&(trustblock_freelist[i+1]);
-    }
-    trustblock_freelist[ALLOCUNIT-1].next=NULL;
-  }
-
-  trustblock=trustblock_freelist;
-  trustblock_freelist=(trustblock_t *)trustblock->next;
-
-  return trustblock;
-}
-
-void freetrustblock (trustblock_t *trustblock) {
-  trustblock->next=(trustblock_t *)trustblock_freelist;
-  trustblock_freelist=trustblock;
 }
 

@@ -13,7 +13,6 @@ int tgn_ext = -1;
 
 unsigned long trusts_lasttrustgroupid;
 unsigned long trusts_lasttrusthostid;
-unsigned long trusts_lasttrustblockid;
 int trusts_loaded = 0;
 int removeusers = 0;
 
@@ -26,12 +25,6 @@ void _init(void) {
   tgh_ext = registernodeext("trusthost");
   if ( tgh_ext == -1 ) {
     Error("trusts", ERR_FATAL, "Could not register a required node extension (trusthost)");
-    return;
-  }
-
-  tgb_ext = registernodeext("trustblock");
-  if ( tgb_ext == -1 ) {
-    Error("trusts", ERR_FATAL, "Could not register a required node extension (trustblock)");
     return;
   }
 
@@ -80,14 +73,6 @@ void _fini(void) {
       }
     }
   }
-
-  patricia_node_t *node;
-  PATRICIA_WALK_CLEAR(iptree->head,node) {
-    if (node && node->exts[tgb_ext]) {
-      trustblock_free(node->exts[tgb_ext]);
-      node->exts[tgb_ext] = NULL;      
-    }
-  } PATRICIA_WALK_CLEAR_END;
 
   if (tgh_ext != -1)
     releasenodeext(tgh_ext);

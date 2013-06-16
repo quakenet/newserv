@@ -81,12 +81,11 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
   unsigned short maxperip;
   unsigned long  maxperident;
   int enforceident;
-  int type;
   unsigned long ownerid;
   trustgroup_t *t;
 
-  if (cargc < 7) {
-    controlreply(sender,"Usage: trustgroupadd howmany howlong maxperident maxperip enforceident type ownerid");
+  if (cargc < 6) {
+    controlreply(sender,"Usage: trustgroupadd howmany howlong maxperident maxperip enforceident ownerid");
     return CMD_ERROR;
   }
 
@@ -100,7 +99,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
     controlreply(sender,"ERROR: Invalid duration given - temporary trusts must be less than 1 year");
     return CMD_ERROR;
   }
-  ownerid  = strtoul(cargv[6],NULL,10);
+  ownerid  = strtoul(cargv[5],NULL,10);
   maxperip = strtoul(cargv[3],NULL,10);
   if (maxperip > 500) {
     controlreply(sender, "ERROR: MaxPerIP value should be less then 500 (if set)");
@@ -126,18 +125,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  type = strtoul(cargv[5],NULL,10);
-
-  /* check rules */
-  switch (type ) {
-    case 0:
-      break;
-    default:
-      controlreply(sender, "Invalid Type (%d)", type);
-      return CMD_ERROR;
-  }
-
-  t = createtrustgroup( ++trusts_lasttrustgroupid, maxclones, maxperident, maxperip,  enforceident, getnettime() + expiry, ownerid, type);
+  t = createtrustgroup( ++trusts_lasttrustgroupid, maxclones, maxperident, maxperip,  enforceident, getnettime() + expiry, ownerid);
 
   if(!t) {
     controlreply(sender,"ERROR: An error occured adding trustgroup");
@@ -239,7 +227,7 @@ int trust_add(void *source, int cargc, char **cargv) {
       return CMD_ERROR;
     }
   } else {
-    if ( bits<64) {
+    if ( bits>64) {
       controlreply(sender,"ERROR: Not a valid ipv6 netmask ");
       return CMD_ERROR;
     }

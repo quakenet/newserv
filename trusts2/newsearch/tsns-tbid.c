@@ -21,17 +21,3 @@ struct searchNode *tsns_tbid_parse(searchCtx *ctx, int argc, char **argv) {
 
   return thenode;
 }
-
-void *tsns_tbid_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
-  patricia_node_t *node;
-
-  node = (patricia_node_t *)theinput;
-  if (node->exts[tgb_ext] != NULL)
-    return (void *)(((trustblock_t *)node->exts[tgb_ext])->id);
-  else
-    return (void *)0; /* will cast to a FALSE */
-}
-
-void tsns_tbid_free(searchCtx *ctx, struct searchNode *thenode) {
-  free(thenode);
-}

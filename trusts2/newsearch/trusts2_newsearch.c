@@ -11,8 +11,6 @@ MODULE_VERSION("");
 
 void _init(void) {
   regdisp(reg_nodesearch, "tg", printtrust_group, NULL, 0, "");
-  regdisp(reg_nodesearch, "tb", printtrust_block, NULL, 0, "");
-  regdisp(reg_nodesearch, "tbprivate", printtrust_blockprivate, NULL, 0, "");
 
   /* TRUSTGROUP */
   registersearchterm(reg_tgsearch, "tgid", tsns_tgid_parse, 0, "Trustgroup ID");
@@ -70,8 +68,6 @@ void _init(void) {
 
 void _fini(void) {
   unregdisp(reg_nodesearch, "tg", printtrust_group);
-  unregdisp(reg_nodesearch, "tb", printtrust_block);
-  unregdisp(reg_nodesearch, "tbprivate", printtrust_blockprivate);
 
   deregistersearchterm(reg_tgsearch, "tgid", tsns_tgid_parse);
   deregistersearchterm(reg_tgsearch, "tgstartdate", tsns_tgstartdate_parse);
