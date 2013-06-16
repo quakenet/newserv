@@ -131,7 +131,7 @@ static void __dbloaded(int hooknum, void *arg) {
   registerhook(HOOK_TRUSTS_ADDGROUP, groupadded);
   registerhook(HOOK_TRUSTS_DELGROUP, groupremoved);
   registerhook(HOOK_TRUSTS_ADDHOST, hostadded);
-  registerhook(HOOK_TRUSTS_DELGROUP, hostremoved);
+  registerhook(HOOK_TRUSTS_DELHOST, hostremoved);
   registerhook(HOOK_TRUSTS_MODIFYGROUP, groupmodified);
 
   /* we've just reloaded */
