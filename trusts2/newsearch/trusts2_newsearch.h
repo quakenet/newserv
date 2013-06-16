@@ -37,6 +37,5 @@ struct searchNode *tsns_tbid_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *tsns_istrusted_parse(searchCtx *ctx, int argc, char **argv);
 
 int tsns_dotrustlist(void *source, int cargc, char **cargv);
-int tsns_dotrustdenylist(void *source, int cargc, char **cargv);
 
 #endif

@@ -9,5 +9,5 @@ LDFLAGS+=$(LIBDBAPI)
 
 all: trusts2_newsearch.so
 
-trusts2_newsearch.so: formats.o tsns-ownerid.o tsns-tgmaxperident.o tsns-thcreated.o tsns-thmodified.o trusts2_newsearch.o tsns-tgcreated.o tsns-tgmaxperip.o tsns-thexpire.o tsns-thstartdate.o tsns-currenton.o tsns-tgexpire.o tsns-tgmaxusage.o tsns-thid.o tsns-trusted.o tsns-enforceident.o tsns-tgid.o tsns-tgmodified.o tsns-thlastused.o tsns-maxclones.o tsns-tglastused.o tsns-tgstartdate.o tsns-thmaxusage.o tsns-tbid.o tsns-istrusted.o trusts_searchcommands.o
+trusts2_newsearch.so: formats.o tsns-ownerid.o tsns-tgmaxperident.o tsns-thcreated.o tsns-thmodified.o trusts2_newsearch.o tsns-tgcreated.o tsns-tgmaxperip.o tsns-thexpire.o tsns-thstartdate.o tsns-currenton.o tsns-tgexpire.o tsns-tgmaxusage.o tsns-thid.o tsns-trusted.o tsns-enforceident.o tsns-tgid.o tsns-tgmodified.o tsns-thlastused.o tsns-maxclones.o tsns-tglastused.o tsns-tgstartdate.o tsns-thmaxusage.o tsns-istrusted.o trusts_searchcommands.o
 

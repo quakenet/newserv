@@ -57,12 +57,9 @@ void _init(void) {
   registersearchterm(reg_nodesearch, "thcreated", tsns_thcreated_parse, 0, "trust host creation timestamp (note: we also store a startdate timestamp)");
   registersearchterm(reg_nodesearch, "thmodified", tsns_thmodified_parse, 0, "trust host last modified timestamp");
 
-  registersearchterm(reg_nodesearch, "tbid", tsns_tbid_parse, 0, "Trust Block ID");
-
   registersearchterm(reg_nicksearch, "istrusted", tsns_istrusted_parse, 0, "user is on a trusted host");
 
   registercontrolhelpcmd("trustlist",10,1,tsns_dotrustlist, "Usage: trustlist <tgid>");
-  registercontrolhelpcmd("trustdenylist",10,1,tsns_dotrustdenylist, "Usage: trustdenylist <tgid>");
 
 }
 
@@ -113,11 +110,8 @@ void _fini(void) {
   deregistersearchterm(reg_nodesearch, "thcreated", tsns_thcreated_parse);
   deregistersearchterm(reg_nodesearch, "thmodified", tsns_thmodified_parse);
 
-  deregistersearchterm(reg_nodesearch, "tbid", tsns_tbid_parse);
-
   deregistersearchterm(reg_nicksearch, "istrusted", tsns_istrusted_parse);
 
   deregistercontrolcmd("trustlist",tsns_dotrustlist);
-  deregistercontrolcmd("trustdenylist",tsns_dotrustdenylist);
 }
 

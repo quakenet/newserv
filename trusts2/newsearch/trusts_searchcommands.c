@@ -38,22 +38,6 @@ int tsns_dotrustlist(void *source, int cargc, char **cargv) {
     tree = NSASTNode(eq_parse, NSASTNode(tsns_tgid_parse), NSASTLiteral(cargv[0]));
   }
 
-//  nodes[0] = NSASTNode(tsns_tgid_parse);
-//  nodes[1] = cargv[0];
-//  tree =
-//      NSASTManualNode(eq_parse, 2, nodes 
-//    );
   return ast_tgsearch(&tree, tsnsmessagewrapper , source, tsnswallwrapper, printtgfull, NULL, NULL, 1);
 }
 
-int tsns_dotrustdenylist(void *source, int cargc, char **cargv) {
-  searchASTExpr tree;
-
-  tree = NSASTNode(gt_parse, NSASTNode(tsns_tbid_parse), NSASTLiteral("0"));
-
-  if(cargc == 1){ /* just assume -private */
-    return ast_nodesearch(&tree, tsnsmessagewrapper , source, tsnswallwrapper, printtrust_blockprivate, NULL, NULL, 500);
-  } else {
-    return ast_nodesearch(&tree, tsnsmessagewrapper , source, tsnswallwrapper, printtrust_block, NULL, NULL, 500);
-  }
-}
