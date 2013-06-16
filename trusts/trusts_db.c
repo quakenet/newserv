@@ -38,7 +38,7 @@ void createtrusttables(int mode) {
   );
 
   /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
-  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
+  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, created INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
 
   trustsdb->createtable(trustsdb, NULL, NULL,
     "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
@@ -80,7 +80,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  if(result->fields != 5) {
+  if(result->fields != 6) {
     Error("trusts", ERR_ERROR, "Wrong number of fields in hosts table.");
     loaderror = 1;
 
@@ -112,7 +112,8 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     }
 
     th.maxusage = strtoul(result->get(result, 3), NULL, 10);
-    th.lastseen = (time_t)strtoul(result->get(result, 4), NULL, 10);
+    th.created = (time_t)strtoul(result->get(result, 4), NULL, 10);
+    th.lastseen = (time_t)strtoul(result->get(result, 5), NULL, 10);
 
     if(!th_add(&th))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
@@ -270,6 +271,7 @@ trusthost *th_new(trustgroup *tg, char *host) {
 
   nth.group = tg;
   nth.id = thmaxid + 1;
+  nth.created = time(NULL);
   nth.lastseen = 0;
   nth.maxusage = 0;
 

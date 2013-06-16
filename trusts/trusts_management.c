@@ -4,6 +4,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/config.h"
+#include "../core/schedule.h"
 #include "../lib/stringbuf.h"
 #include "trusts.h"
 
@@ -452,6 +453,16 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static void cleanuptrusts(void *arg);
+
+static int trusts_cmdtrustcleanup(void *source, int cargc, char **cargv) {
+  cleanuptrusts(source);
+
+  controlreply(source, "Done.");
+
+  return CMD_OK;
+}
+
 
 static int commandsregistered;
 
@@ -468,6 +479,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustlogspew", NO_OPER, 2, trusts_cmdtrustlogspew, "Usage: trustlogspew <#id|name> ?limit?\nShows log for the specified trust group.");
   registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> ?limit?\nShows maching log entries.");
   registercontrolhelpcmd("trustcomment", NO_OPER, 2, trusts_cmdtrustcomment, "Usage: trustcomment <#id|name> <comment>\nLogs a comment for a trust.");
+  registercontrolhelpcmd("trustcleanup", NO_DEVELOPER, 0, trusts_cmdtrustcleanup, "Usage: trustcleanup\nCleans up unused trusts.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -483,6 +495,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustlogspew", trusts_cmdtrustlogspew);
   deregistercontrolcmd("trustloggrep", trusts_cmdtrustloggrep);
   deregistercontrolcmd("trustcomment", trusts_cmdtrustcomment);
+  deregistercontrolcmd("trustcleanup", trusts_cmdtrustcleanup);
 }
 
 static int loaded;
@@ -497,6 +510,88 @@ static void setupmods(void) {
   MS(contact);
   MS(comment);
   MS(trustedfor);
+}
+
+static int cleanuptrusts_active;
+
+static void cleanuptrusts(void *arg) {
+  unsigned int now, to_age;
+  nick *np = (nick *)arg;
+  trustgroup *tg;
+  trusthost *th;
+  int thcount = 0, tgcount = 0;
+  int i;
+  array expiredths, expiredtgs;
+
+  now = time(NULL);
+  to_age = now - (CLEANUP_TH_INACTIVE * 3600 * 24);
+
+  if(np) {
+    controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Manually started by %s.", np->nick);
+  } else {
+    controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Automatically started.");
+  }
+
+  if (cleanuptrusts_active) {
+    controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: ABORTED! Cleanup already in progress! BUG BUG BUG!");
+    return;
+  }
+
+  cleanuptrusts_active=1;
+
+  array_init(&expiredtgs, sizeof(trustgroup *));
+
+  for(tg=tglist;tg;tg=tg->next) {
+    array_init(&expiredths, sizeof(trusthost *));
+
+    for(th=tg->hosts;th;th=th->next) {
+      if((th->count == 0 && th->created < to_age && th->lastseen < to_age) || (tg->expires && tg->expires < now)) {
+        int pos = array_getfreeslot(&expiredths);
+        ((trusthost **)(expiredths.content))[pos] = th;
+      }       
+    }
+
+    for(i=0;i<expiredths.cursi;i++) {
+      char *cidrstr;
+
+      th = ((trusthost **)(expiredths.content))[i];
+      triggerhook(HOOK_TRUSTS_DELHOST, th);
+      th_delete(th);
+
+      cidrstr = trusts_cidr2str(th->ip, th->mask);
+      trustlog(tg, "cleanuptrusts", "Removed host '%s' because it was unused for %d days.", cidrstr, CLEANUP_TH_INACTIVE);
+
+      thcount++;
+    }
+
+    if(!tg->hosts) {
+      int pos = array_getfreeslot(&expiredtgs);
+      ((trustgroup **)(expiredtgs.content))[pos] = tg;
+    }
+  }
+
+  for(i=0;i<expiredtgs.cursi;i++) {
+    tg = ((trustgroup **)(expiredtgs.content))[i];
+    triggerhook(HOOK_TRUSTS_DELGROUP, tg);
+    trustlog(tg, "cleanuptrusts", "Deleted group '%s' because it had no hosts left.", tg->name->content);
+    tg_delete(tg);
+    tgcount++;
+  }
+
+  controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Removed %d trust hosts (inactive for %d days) and %d trust groups.", thcount, CLEANUP_TH_INACTIVE, tgcount);
+
+  cleanuptrusts_active=0;
+}
+
+static void schedulecleanup(int hooknum, void *arg) {
+  /* run at 1am but only if we're more than 15m away from it, otherwise run tomorrow */
+
+  time_t t = time(NULL);
+  time_t next_run = ((t / 86400) * 86400 + 86400) + 3600;
+  if(next_run - t < 900)
+    next_run+=86400;
+
+  schedulerecurring(next_run,0,86400,cleanuptrusts,NULL);
 }
 
 void _init(void) {
@@ -514,6 +609,7 @@ void _init(void) {
   loaded = 1;
 
   registerhook(HOOK_TRUSTS_DB_LOADED, registercommands);
+  registerhook(HOOK_TRUSTS_DB_LOADED, schedulecleanup);
   registerhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
   if(trustsdbloaded)
@@ -530,4 +626,6 @@ void _fini(void) {
   deregisterhook(HOOK_TRUSTS_DB_CLOSED, deregistercommands);
 
   deregistercommands(0, NULL);
+
+  deleteallschedules(cleanuptrusts);
 }

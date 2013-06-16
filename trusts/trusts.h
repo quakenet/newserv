@@ -26,6 +26,8 @@
 #define TABLES_MIGRATION 1
 #define TABLES_REPLICATION 2
 
+#define CLEANUP_TH_INACTIVE 30
+
 struct trustmigration;
 
 struct trusthost;
@@ -33,8 +35,10 @@ struct trusthost;
 typedef struct trusthost {
   unsigned int id;
 
+
   uint32_t ip, mask;
   unsigned int maxusage;
+  time_t created;
   time_t lastseen;
 
   nick *users;

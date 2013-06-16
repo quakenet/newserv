@@ -79,7 +79,7 @@ char *dumpth(trusthost *th, int oformat) {
   if(oformat) {
     snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%jd", th->group->id, trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (intmax_t)th->lastseen);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd", th->group->id, trusts_cidr2str(th->ip, th->mask), th->id, th->maxusage, (intmax_t)th->lastseen);
+    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd,%jd", th->group->id, trusts_cidr2str(th->ip, th->mask), th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created);
   }
 
   return buf;
@@ -188,7 +188,7 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
 }
 
 int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
-  unsigned long lastseen;
+  unsigned long lastseen, created;
   char *ip, xbuf[1024], *id;
 
 /* #id,213.230.192.128/26,20,23,1222732944
@@ -221,12 +221,14 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
   if(oformat) {
     if(sscanf(line, "%*u,%u,%lu", /*current, */&th->maxusage, &lastseen) != 2)
       return 0;
+    created = time(NULL);
   } else {
-    if(sscanf(line, "%u,%u,%lu", &th->id, &th->maxusage, &lastseen) != 3)
+    if(sscanf(line, "%u,%u,%lu,%lu", &th->id, &th->maxusage, &lastseen, &created) != 3)
       return 0;
   }
 
   th->lastseen = (time_t)lastseen;
+  th->created = (time_t)created;
 
   return 1;
 }

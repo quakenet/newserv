@@ -92,7 +92,7 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->group->id, th->group->name->content);
   }
 
-  controlreply(np, "%s%s%s %-10d %-10d %-21s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), parentbuf);  
+  controlreply(np, "%s%s%s %-10d %-10d %-21s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), trusts_timetostr(th->created), parentbuf);  
 
   for(th=th->children;th;th=th->nextbychild)
     outputtree(np, marker, originalgroup, th, depth + 1);
@@ -119,7 +119,7 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
-  controlreply(sender, "Host                 Current    Max        Last seen            Group ID   Group name");
+  controlreply(sender, "Host                 Current    Max        Last seen            Created              Group ID   Group name");
 
   marker = nextthmarker();
   array_init(&parents, sizeof(trusthost *));
