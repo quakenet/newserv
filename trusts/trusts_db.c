@@ -310,8 +310,8 @@ trustgroup *tg_new(trustgroup *itg) {
 
 void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
-    "Tuusut", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
+    "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen) VALUES (?, ?, ?, ?, ?, ?)",
+    "Tuusut", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->created, th->lastseen
   );
 }
 
