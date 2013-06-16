@@ -223,7 +223,7 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
       return 0;
     created = time(NULL);
   } else {
-    if(sscanf(line, "%u,%u,%lu,%lu", &th->id, &th->maxusage, &lastseen, &created) != 3)
+    if(sscanf(line, "%u,%u,%lu,%lu", &th->id, &th->maxusage, &lastseen, &created) != 4)
       return 0;
   }
 
