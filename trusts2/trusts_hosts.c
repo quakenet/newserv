@@ -1,11 +1,11 @@
 #include "trusts.h"
 
-trusthost_t *createtrusthostfromdb(unsigned long id, patricia_node_t* node, time_t startdate, time_t lastused, time_t expire, unsigned long maxused, trustgroup_t* trustgroup, time_t created, time_t modified){
+trusthost_t *createtrusthostfromdb(unsigned long id, patricia_node_t* node, time_t startdate, time_t lastused, time_t expire, unsigned long maxusage, trustgroup_t* trustgroup, time_t created, time_t modified){
   trusthost_t *th = createtrusthost(id,node,expire,trustgroup);
 
   th->startdate=startdate;
   th->lastused = lastused;
-  th->maxused = maxused;
+  th->maxusage = maxusage;
   th->created = created;
   th->modified = modified;
   return th;

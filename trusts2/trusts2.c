@@ -1,5 +1,6 @@
 #include "trusts.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include "../core/nsmalloc.h"
@@ -98,7 +99,7 @@ void increment_trust_ipnode(patricia_node_t *node) {
       /* update the trusted hosts themselves */
       tgh = (trusthost_t *)parent->exts[tgh_ext];
       tgh->lastused = curtime;
-      if (tgh->node->usercount > tgh->maxused) { tgh->maxused = tgh->node->usercount; }
+      if (tgh->node->usercount > tgh->maxusage) { tgh->maxusage = tgh->node->usercount; }
 
       /* update the trustgroup itself */
       tgh->trustgroup->currenton++;
@@ -157,3 +158,4 @@ int trusts_ignore_np(nick *np) {
   }
   return 0;
 }
+

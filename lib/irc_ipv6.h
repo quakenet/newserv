@@ -56,6 +56,8 @@ struct irc_sockaddr
  */
 #define SOCKIPLEN 45
 
+const char* irc_cidr_to_str(const struct irc_in_addr* in, int bitlen );
+
 /* from ircd_string.h */
 
 extern const char* ircd_ntoa(const struct irc_in_addr* addr);

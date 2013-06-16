@@ -360,7 +360,7 @@ int trust_dump(void *source, int cargc, char **cargv) {
                               IPtostr(((patricia_node_t *)thptr->node)->prefix->sin),
                               irc_bitlen(&(((patricia_node_t *)thptr->node)->prefix->sin),((patricia_node_t *)thptr->node)->prefix->bitlen),
                               0 /*a->currentlyon*/,
-                              0 /*a->maxused*/,
+                              0 /*a->maxusage*/,
                               0 /* a->lastused*/);
         lines++;
       }
@@ -646,11 +646,11 @@ int trust_stats(void *source, int cargc, char **cargv) {
       hentries++;
       thcount++;
       ucount+=thptr->node->usercount;
-      mcount+=thptr->maxused;
+      mcount+=thptr->maxusage;
       if(irc_in_addr_is_ipv4(&((patricia_node_t *)thptr->node)->prefix->sin)) {
         netcount4[((patricia_node_t *)thptr->node)->prefix->bitlen-96]++;
         netucount4[((patricia_node_t *)thptr->node)->prefix->bitlen-96]+=thptr->node->usercount;
-        netmcount4[((patricia_node_t *)thptr->node)->prefix->bitlen-96]+=thptr->maxused;
+        netmcount4[((patricia_node_t *)thptr->node)->prefix->bitlen-96]+=thptr->maxusage;
         if( (((patricia_node_t *)thptr->node)->prefix->bitlen-96) < maxthmask4 ) {
           maxthmask4 = (((patricia_node_t *)thptr->node)->prefix->bitlen-96);
         }
@@ -658,7 +658,7 @@ int trust_stats(void *source, int cargc, char **cargv) {
         controlreply(sender, "%s", IPtostr(((patricia_node_t *)thptr->node)->prefix->sin)); 
         netcount6[((patricia_node_t *)thptr->node)->prefix->bitlen]++;
         netucount6[((patricia_node_t *)thptr->node)->prefix->bitlen]+=thptr->node->usercount;
-        netmcount6[((patricia_node_t *)thptr->node)->prefix->bitlen]+=thptr->maxused;
+        netmcount6[((patricia_node_t *)thptr->node)->prefix->bitlen]+=thptr->maxusage;
         if( ((patricia_node_t *)thptr->node)->prefix->bitlen < maxthmask6 ) {
           maxthmask6 = ((patricia_node_t *)thptr->node)->prefix->bitlen;
         }

@@ -16,7 +16,6 @@
 #include "../localuser/localuserchannel.h"
 #include "../control/control.h"
 #include "../patricia/patricia.h"
-#include "../dbapi/dbapi.h"
 #include "../patricianick/patricianick.h"
 #include "../nick/nick.h"
 
@@ -25,6 +24,9 @@
 #define TRUSTS_HASH_IDENTSIZE 50
 
 #define TRUSTS_MAXGROUPNAMELEN 20
+
+#define TABLES_REGULAR 0
+#define TABLES_REPLICATION 1 
 
 /* node extensions */
 extern int tgh_ext;
@@ -43,7 +45,7 @@ typedef struct trusthost_s {
         time_t startdate;
         time_t lastused;
         time_t expire;
-        unsigned long maxused;
+        unsigned long maxusage;
 
         /* Trust group */
         struct trustgroup_s* trustgroup;
@@ -133,12 +135,8 @@ void freetrustgroupidentcount (trustgroupidentcount_t *trustgroupidentcount);
 
 /* trusts db */
 int trusts_load_db(void);
-void trusts_create_tables(void);
+void trusts_create_tables(int mode);
 void trusts_cleanup_db(void);
-void trusts_loadtrustgroups(DBConn *dbconn, void *arg);
-void trusts_loadtrustgroupsmax(DBConn *dbconn, void *arg);
-void trusts_loadtrusthosts(DBConn *dbconn, void *arg);
-void trusts_loadtrusthostsmax(DBConn *dbconn, void *arg);
 void trustsdb_addtrustgroup(trustgroup_t *t);
 void trustsdb_updatetrustgroup(trustgroup_t *t);
 void trustsdb_deletetrustgroup(trustgroup_t *t);
@@ -159,7 +157,7 @@ void trustgroup_expire (trustgroup_t *tg);
 void trustgroup_free(trustgroup_t* t);
 
 /* trusts hosts */
-trusthost_t *createtrusthostfromdb(unsigned long id, patricia_node_t* node, time_t startdate, time_t lastused, time_t expire, unsigned long maxused, trustgroup_t* trustgroup, time_t created, time_t modified);
+trusthost_t *createtrusthostfromdb(unsigned long id, patricia_node_t* node, time_t startdate, time_t lastused, time_t expire, unsigned long maxusage, trustgroup_t* trustgroup, time_t created, time_t modified);
 trusthost_t *createtrusthost(unsigned long id, patricia_node_t* node, time_t expire, trustgroup_t *trustgroup);
 void trusthost_free(trusthost_t* t);
 void trusthost_addcounters(trusthost_t* tgh);

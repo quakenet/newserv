@@ -115,6 +115,8 @@ void derefnode(patricia_tree_t *tree, patricia_node_t *node);
 #define bigendian_bitfor(nr) (0x80 >> ((nr) & 0x07))
 #define is_bit_set(base, nr) (get_byte_for_bit(base, nr) & bigendian_bitfor(nr))
 
+#define node_to_str(node) irc_cidr_to_str( &node->prefix->sin, irc_bitlen(&(node->prefix->sin),node->prefix->bitlen)) 
+
 #define PATRICIA_MAXBITS 128
 
 #define PATRICIA_WALK(Xhead, Xnode) \

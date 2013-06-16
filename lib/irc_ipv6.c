@@ -10,6 +10,16 @@
 
 #warning This source file is probably GPLed, it needs relicensing.
 
+/**
+ * Convert an CIDR to printable ASCII form
+ */
+const char* irc_cidr_to_str(const struct irc_in_addr* in, int bitlen ) 
+{
+  static char buf[SOCKIPLEN + 3];
+  sprintf( buf, "%s/%d", ircd_ntoa_r(buf, in), bitlen); 
+  return buf;
+}
+
 /** Convert an IP address to printable ASCII form.
  * This is generally deprecated in favor of ircd_ntoa_r().
  * @param[in] in Address to convert.

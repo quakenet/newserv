@@ -2,119 +2,196 @@
 #include "../core/error.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../dbapi2/dbapi2.h"
 #include <stdlib.h>
-
 #include "trusts.h"
 
-int trustdb_loaded = 0;
+DBAPIConn *trustsdb;
+static int tgmaxid, thmaxid;
+static int trustdb_loaded;
+static int loaderror;
+static void *flushschedule;
+
+void trusts_flush(void (*)(trusthost_t *), void (*)(trustgroup_t *));
+static void th_dbupdatecounts(trusthost_t *th);
+static void tg_dbupdatecounts(trustgroup_t *tg);
 
 static void trusts_dbtriggerdbloaded(void *arg);
 
+static void loadgroups_fini(const DBAPIResult *result, void *tag);
+static void loadhosts_fini(const DBAPIResult *result, void *tag);
+
+static int trusts_connectdb(void);
+static void loadcomplete(void);
+void trusts_loadtrustgroups(const DBAPIResult *result, void *tag);
+void trusts_loadtrusthosts(const DBAPIResult *result, void *tag);
+
 int trusts_load_db(void) {
-  if(!dbconnected()) {
+  if(!trusts_connectdb()) {
     Error("trusts", ERR_STOP, "Could not connect to database.");
     return 0;
   }
+
+  loaderror = 0;
 
   if(trustdb_loaded)
     trusts_cleanup_db();
 
   trustdb_loaded = 1;
 
-  trusts_create_tables();
+  trusts_create_tables(TABLES_REGULAR);
 
-  dbasyncquery(trusts_loadtrustgroups, NULL,
-    "SELECT trustid,maxusage,maxclones,maxperident,maxperip,enforceident,startdate,lastused,expires,owneruserid,created,modified FROM trusts.groups WHERE enddate = 0");
-  dbasyncquery(trusts_loadtrustgroupsmax, NULL,
-    "SELECT max(trustid) from trusts.groups");
-
-  dbasyncquery(trusts_loadtrusthosts, NULL,
-    "SELECT * FROM trusts.hosts WHERE enddate = 0");
-  dbasyncquery(trusts_loadtrusthostsmax, NULL,
-    "SELECT max(hostid) FROM trusts.hosts");
+  /* need to adjust these to not load trusts with enddate = 0 */
+  trustsdb->loadtable(trustsdb, NULL, trusts_loadtrustgroups, loadgroups_fini, NULL, "groups");
+  trustsdb->loadtable(trustsdb, NULL, trusts_loadtrusthosts, loadhosts_fini, NULL, "hosts");
 
   return 1;
 }
 
-void trusts_create_tables(void) {
-  dbattach("trusts");
-  dbcreatequery(
-    "CREATE TABLE trusts.groups ("
-    "trustid      INT4 NOT NULL PRIMARY KEY,"
-    "startdate    INT4 NOT NULL,"
-    "enddate      INT4 NOT NULL,"
+static int trusts_connectdb(void) {
+  if(!trustsdb) {
+    trustsdb = dbapi2open(NULL, "trusts");
+    if(!trustsdb) {
+      Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
+      return 0;
+    }
+  }
+
+  trusts_create_tables(TABLES_REGULAR);
+
+  return 1;
+}
+
+void trusts_create_tables(int mode) {
+  char *groups, *hosts;
+
+  if(mode == TABLES_REPLICATION) {
+    groups = "replication_groups";
+    hosts = "replication_hosts";
+  } else {
+    groups = "groups";
+    hosts = "hosts";
+  }
+
+  trustsdb->createtable( trustsdb, NULL, NULL, 
+    "CREATE TABLE ? ("
+    "trustid      INT4 PRIMARY KEY,"
+    "startdate    INT4,"
+    "enddate      INT4,"
     "owneruserid  INT4,"
-    "maxusage     INT4 NOT NULL,"
-    "enforceident INT2 NOT NULL,"
-    "maxclones    INT4 NOT NULL,"
+    "maxusage     INT4,"
+    "enforceident INT2,"
+    "maxclones    INT4,"
     "maxperident  INT4,"
     "maxperip     INT4,"
     "expires      INT4,"
     "lastused     INT4,"
     "modified     INT4,"
     "created      INT4"
-    ") WITHOUT OIDS;"
+    ")", "T", groups
     );
 
-  dbcreatequery(
-    "CREATE TABLE trusts.hosts ("
-    "hostid     INT4 NOT NULL PRIMARY KEY,"
-    "trustid    INT4 NOT NULL,"
-    "startdate  INT4 NOT NULL,"
+  trustsdb->createtable( trustsdb, NULL, NULL, 
+    "CREATE TABLE ? ("
+    "hostid     INT4 PRIMARY KEY,"
+    "trustid    INT4,"
+    "startdate  INT4,"
     "enddate    INT4,"
-    "host       VARCHAR NOT NULL,"
-    "maxusage   INT4 NOT NULL,"
+    "host       VARCHAR,"
+    "maxusage   INT4,"
     "lastused   INT4,"
-    "expires    INT4 NOT NULL,"
+    "expires    INT4,"
     "modified   INT4,"
     "created    INT4"
-    ") WITHOUT OIDS;"
+    ")", "T", hosts
     );
 
-  dbcreatequery(
-    "CREATE TABLE trusts.log ("
+  trustsdb->createtable( trustsdb, NULL, NULL, 
+    "CREATE TABLE ? ("
     "logid          SERIAL NOT NULL PRIMARY KEY,"
     "trustid        INT4 NOT NULL,"
     "timestamp      INT4 NOT NULL,"
     "userid         INT4 NOT NULL,"
     "type           INT2,"
     "message        VARCHAR"
-    ") WITHOUT OIDS;"
+    ")", "T", "log"
   );
 }
 
-void trusts_cleanup_db(void) {
-  dbdetach("trusts");
+static void flushdatabase(void *arg) {
+  trusts_flush(th_dbupdatecounts, tg_dbupdatecounts);
 }
 
-void trusts_loadtrustgroups(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
-  int rows=0;
+static void th_dbupdatecounts(trusthost_t *th) {
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastused = ?, maxusage = ? WHERE hostid = ?", "Ttuu", "hosts", th->lastused, th->maxusage, th->id);
+}
+
+static void tg_dbupdatecounts(trustgroup_t *tg) {
+  trustsdb->squery(trustsdb, "UPDATE ? SET lastused = ?, maxusage = ? WHERE trustid = ?", "Ttuu", "groups", tg->lastused, tg->maxusage, tg->id);
+}
+
+void trusts_cleanup_db(void) {
+  if(!trustsdb)
+    return;
+
+  if(flushschedule) {
+    deleteschedule(flushschedule, flushdatabase, NULL);
+    flushschedule = NULL;
+
+    flushdatabase(NULL);
+  }
+
+  trustdb_loaded = 0;
+  thmaxid = tgmaxid = 0;
+
+  trustsdb->close(trustsdb);
+  trustsdb = NULL;
+
+  triggerhook(HOOK_TRUSTS_DB_CLOSED, NULL);
+ 
+}
+
+void trusts_loadtrustgroups(const DBAPIResult *result, void *tag) {
   trustgroup_t *t;
 
-  if(!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trustgroup list.");
-    dbclear(pgres);
+  if(!result) {
+    Error("trusts", ERR_ERROR, "Error loading group table.");
+    loaderror=1;
+    return;
+  }
+
+  if(!result->success) {
+    Error("trusts", ERR_ERROR, "Error loading group table.");
+    loaderror = 1;
+
+    result->clear(result);
+    return;
+  }
+
+  if(result->fields != 13) {
+    Error("trusts", ERR_ERROR, "Wrong number of fields in groups table. (Got %d)", result->fields);
+    loaderror = 1;
+
+    result->clear(result);
     return;
   }
 
   trusts_lasttrustgroupid = 1; 
 
-  while(dbfetchrow(pgres)) {
-
+  while(result->next(result)) {
     t = createtrustgroupfromdb( 
-                     /*id*/          strtoul(dbgetvalue(pgres,0),NULL,10),
-                     /*maxusage*/    strtoul(dbgetvalue(pgres,1),NULL,10),
-                     /*maxclones*/   strtoul(dbgetvalue(pgres,2),NULL,10),
-                     /*maxperident*/ strtoul(dbgetvalue(pgres,3),NULL,10),
-                     /*maxperip*/    strtoul(dbgetvalue(pgres,4),NULL,10),
-        /*TODOTYPE*/ /*enforceident*/strtoul(dbgetvalue(pgres,5),NULL,10),
-                     /*startdate*/   strtoul(dbgetvalue(pgres,6),NULL,10),
-                     /*lastused*/    strtoul(dbgetvalue(pgres,7),NULL,10),
-                     /*expire*/      strtoul(dbgetvalue(pgres,8),NULL,10),
-                     /*ownerid*/     strtoul(dbgetvalue(pgres,9),NULL,10),
-                     /*created*/     strtoul(dbgetvalue(pgres,10),NULL,10),
-                     /*modified*/    strtoul(dbgetvalue(pgres,11),NULL,10)
+                     /*id*/          strtoul(result->get(result, 0),NULL,10),
+                     /*maxusage*/    strtoul(result->get(result, 1),NULL,10),
+                     /*maxclones*/   strtoul(result->get(result, 2),NULL,10),
+                     /*maxperident*/ strtoul(result->get(result, 3),NULL,10),
+                     /*maxperip*/    strtoul(result->get(result, 4),NULL,10),
+        /*TODOTYPE*/ /*enforceident*/strtoul(result->get(result, 5),NULL,10),
+                     /*startdate*/   strtoul(result->get(result, 6),NULL,10),
+                     /*lastused*/    strtoul(result->get(result, 7),NULL,10),
+                     /*expire*/      strtoul(result->get(result, 8),NULL,10),
+                     /*ownerid*/     strtoul(result->get(result, 9),NULL,10),
+                     /*created*/     strtoul(result->get(result, 10),NULL,10),
+                     /*modified*/    strtoul(result->get(result, 11),NULL,10)
                      );
     if (!t) {
       Error("trusts", ERR_ERROR, "Error loading trust group.");
@@ -122,131 +199,105 @@ void trusts_loadtrustgroups(DBConn *dbconn, void *arg) {
     }
 
     if(t->id > trusts_lasttrustgroupid)
-      trusts_lasttrustgroupid = t->id;
-
-    rows++;
+      tgmaxid = t->id;
   }
 
-  Error("trusts",ERR_INFO,"Loaded %d trusts (highest ID was %lu)",rows,trusts_lasttrustgroupid); 
-
-  dbclear(pgres);
+  result->clear(result); 
 }
 
-void trusts_loadtrustgroupsmax(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
-  unsigned long trustmax = 0;
-
-  if(!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trustgroup max.");
-    dbclear(pgres);
-    return;
-  }
-
-  while(dbfetchrow(pgres)) {
-    trustmax = strtoul(dbgetvalue(pgres,0),NULL,10);
-  }
-
-  if ( trustmax < trusts_lasttrustgroupid ) {
-    Error("trusts",ERR_INFO,"trust max failed - %lu, %lu", trustmax, trusts_lasttrustgroupid);
-  }
-  trusts_lasttrustgroupid = trustmax;
-
-  Error("trusts",ERR_INFO,"Loaded Trust Max %lu", trusts_lasttrustgroupid);
-
-  dbclear(pgres);
+static void loadgroups_fini(const DBAPIResult *result, void *tag) {
+  Error("trusts", ERR_INFO, "Finished loading groups, maximum id: %d.", tgmaxid);
 }
 
-void trusts_loadtrusthosts(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
-  int rows=0;
+void trusts_loadtrusthosts(const DBAPIResult *result, void *tag) {
   trusthost_t *t;
   trustgroup_t *tg;
   patricia_node_t *node;
   struct irc_in_addr sin;
   unsigned char bits;
 
-  if(!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trusthost list.");
-    dbclear(pgres);
+  if(!result) {
+    loaderror = 1;
     return;
   }
 
-  trusts_lasttrusthostid = 1;
+  if(!result->success) {
+    Error("trusts", ERR_ERROR, "Error loading hosts table.");
+    loaderror = 1;
 
-  while(dbfetchrow(pgres)) {
+    result->clear(result);
+    return;
+  }
+
+ if(result->fields != 10) {
+    Error("trusts", ERR_ERROR, "Wrong number of fields in hosts table.");
+    loaderror = 1;
+
+    result->clear(result);
+    return;
+  }
+
+  while(result->next(result)) {
+    char *host;
+
+    host = result->get(result, 4);
     /*node*/
-    if( ipmask_parse(dbgetvalue(pgres,4), &sin, &bits) == 0) {
-      Error("trusts", ERR_ERROR, "Failed to parse trusthost: %s", dbgetvalue(pgres,4));
+    if( ipmask_parse(host, &sin, &bits) == 0) {
+      Error("trusts", ERR_ERROR, "Failed to parse trusthost: %s", host);
       continue;
     }
 
     node  = refnode(iptree, &sin, bits);
 
+    /* thid */
+    int thid = strtoul(result->get(result, 0),NULL,10);
+    if(thid > thmaxid)
+      thmaxid = thid;
+
     /*tg*/
-    int tgid = strtoul(dbgetvalue(pgres,1),NULL,10);
+    int tgid = strtoul(result->get(result, 1),NULL,10);
     tg=findtrustgroupbyid(tgid);
     if (!tg) { 
       Error("trusts", ERR_ERROR, "Error loading trusthosts - invalid group: %d.", tgid);
-
-      /* update last hostid - although we probably should fail here more loudly */
-      if(t->id > trusts_lasttrusthostid)
-        trusts_lasttrusthostid = t->id;
-
       continue;
     }
 
     t = createtrusthostfromdb( 
-                    /*id*/        strtoul(dbgetvalue(pgres,0),NULL,10),
+                    /*id*/        thid,
                     /*node*/      node,
-                    /*startdate*/ strtoul(dbgetvalue(pgres,2),NULL,10),
-                    /*lastused*/  strtoul(dbgetvalue(pgres,6),NULL,10),
-                    /*expire*/    strtoul(dbgetvalue(pgres,7),NULL,10),
-                    /*maxusage*/  strtoul(dbgetvalue(pgres,5),NULL,10),
+                    /*startdate*/ strtoul(result->get(result, 2),NULL,10),
+                    /*lastused*/  (time_t)strtoul(result->get(result, 6),NULL,10),
+                    /*expire*/    strtoul(result->get(result, 7),NULL,10),
+                    /*maxusage*/  strtoul(result->get(result, 5),NULL,10),
                     /*trustgroup*/ tg,
-                    /*created*/   strtoul(dbgetvalue(pgres,9),NULL,10),
-                    /*modified*/ strtoul(dbgetvalue(pgres,8),NULL,10)
+                    /*created*/   strtoul(result->get(result, 9),NULL,10),
+                    /*modified*/ strtoul(result->get(result, 8),NULL,10)
                   );
     if (!t) {
-      Error("trusts", ERR_ERROR, "Error loading trusthost.");
+      Error("trusts", ERR_ERROR, "Error adding trusthost %s to group %d.", host, tg);
       return;
     }
     node = 0;
-    if(t->id > trusts_lasttrusthostid)
-      trusts_lasttrusthostid = t->id;
 
     trusthost_addcounters(t);
-    rows++;
   }
 
-  Error("trusts",ERR_INFO,"Loaded %d trusthosts (highest ID was %lu)",rows,trusts_lasttrusthostid);
+  result->clear(result);
 
-  dbclear(pgres);
+  loadcomplete();
 }
 
-void trusts_loadtrusthostsmax(DBConn *dbconn, void *arg) {
-  DBResult *pgres = dbgetresult(dbconn);
-  unsigned long trustmax = 0;
+static void loadhosts_fini(const DBAPIResult *result, void *tag) {
+  Error("trusts", ERR_INFO, "Finished loading hosts, maximum id: %d", thmaxid);
+}
 
-  if(!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trusthost max.");
-    dbclear(pgres);
+static void loadcomplete(void) {
+  /* error has already been shown */
+  if(loaderror)
     return;
-  }
-
-  while(dbfetchrow(pgres)) {
-    trustmax = strtoul(dbgetvalue(pgres,0),NULL,10);
-  }
-
-  if ( trustmax < trusts_lasttrusthostid ) {
-    Error("trusts", ERR_FATAL, "trusthost max failed - %lu, %lu", trustmax, trusts_lasttrusthostid);
-  }
-  trusts_lasttrusthostid = trustmax;
-
-  Error("trusts",ERR_INFO,"Loaded Trust Host Max %lu", trusts_lasttrusthostid);
-
-  dbclear(pgres);
 
   trusts_loaded = 1;
+  flushschedule = schedulerecurring(time(NULL) + 300, 0, 300, flushdatabase, NULL);
   scheduleoneshot(time(NULL), trusts_dbtriggerdbloaded, NULL);
 }
 
@@ -256,28 +307,28 @@ static void trusts_dbtriggerdbloaded(void *arg) {
 
 /* trust group */
 void trustsdb_addtrustgroup(trustgroup_t *t) {
-  dbquery("INSERT INTO trusts.groups (trustid,startdate,enddate,owneruserid,maxusage,enforceident,maxclones,maxperident,maxperip,expires,lastused,modified,created ) VALUES (%lu,%lu,0,%lu,%lu,%d,%d,%lu,%lu,%d,%lu,%lu,%lu,%lu )", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created ); 
+  trustsdb->squery(trustsdb,"INSERT INTO ? (trustid,startdate,enddate,owneruserid,maxusage,enforceident,maxclones,maxperident,maxperip,expires,lastused,modified,created ) VALUES (?,?,0,?,?,?,?,?,?,?,?,?,? )", "Tuuuuuuuuuuuuu", "groups", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created ); 
 }
 
 void trustsdb_updatetrustgroup(trustgroup_t *t) {
-  dbquery("UPDATE trusts.groups SET startdate=%lu,owneruserid=%lu,maxusage=%lu,enforceident=%d,maxclones=%lu, maxperident=%lu,maxperip=%d,expires=%lu,lastused=%lu,modified=%lu,created=%lu WHERE trustid = %lu", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created, t->id);
+  trustsdb->squery(trustsdb,"UPDATE ? SET startdate=?,owneruserid=?,maxusage=?,enforceident=?,maxclones=?, maxperident=?,maxperip=?,expires=?,lastused=?,modified=?,created=? WHERE trustid = ?", "Tuuuuuuuuuuu", "groups", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created, t->id);
 }
 
 void trustsdb_deletetrustgroup(trustgroup_t *t) {
-  dbquery("UPDATE trusts.groups SET enddate = %jd WHERE trustid = %lu", (intmax_t)getnettime(), t->id);
+  trustsdb->squery(trustsdb,"UPDATE ? SET enddate=? WHERE trustid = ?", "Ttu", "groups", (intmax_t)getnettime(), t->id);
 }
 
 /* trust host */
 void trustsdb_addtrusthost(trusthost_t *th) {
-  dbquery("INSERT INTO trusts.hosts (hostid,trustid,startdate,enddate,host,maxusage,lastused,expires,modified,created) VALUES (%lu,%lu,%lu,0,'%s/%d',%lu,%lu,%lu,%lu,%lu)", th->id, th->trustgroup->id, th->startdate, IPtostr(th->node->prefix->sin),irc_bitlen(&(th->node->prefix->sin),th->node->prefix->bitlen), th->maxused, th->lastused, th->expire, th->modified, th->created);
+  trustsdb->squery(trustsdb,"INSERT INTO ? (hostid,trustid,startdate,enddate,host,maxusage,lastused,expires,modified,created) VALUES (?,?,?,0,?,?,?,?,?,?)", "Tuuusuuuuuu", "hosts", th->id, th->trustgroup->id, th->startdate, node_to_str(th->node), th->maxusage, th->lastused, th->expire, th->modified, th->created);
 }
 
 void trustsdb_updatetrusthost(trusthost_t *th) {
-  dbquery("UPDATE trusts.hosts SET hostid=%lu,trustid=%lu,startdate=%lu,host='%s/%d',maxusage=%lu,lastused=%lu,expires=%lu,modified=%lu,created=%lu", th->id, th->trustgroup->id, th->startdate, IPtostr(th->node->prefix->sin), irc_bitlen(&(th->node->prefix->sin),th->node->prefix->bitlen), th->maxused, th->lastused, th->expire, th->modified, th->created);
+  trustsdb->squery(trustsdb,"UPDATE ? SET hostid=?,trustid=?,startdate=?,host=?,maxusage=?,lastused=?,expires=?,modified=?,created=?", "Tuuuuuuuuuu", "hosts", th->id, th->trustgroup->id, th->startdate, node_to_str(th->node), th->maxusage, th->lastused, th->expire, th->modified, th->created);
 }
 
 void trustsdb_deletetrusthost(trusthost_t *th) {
-  dbquery("UPDATE trusts.hosts SET enddate = %jd WHERE hostid = %lu", (intmax_t)getnettime(), th->id);
+  trustsdb->squery(trustsdb,"UPDATE ? SET enddate=? WHERE hostid=?", "Ttu", "hosts", (intmax_t)getnettime(), th->id);
 }
 
 /* trust log */
@@ -285,51 +336,41 @@ void trustsdb_deletetrusthost(trusthost_t *th) {
 /* @@@ TODO */
 
 void trustsdb_logmessage(trustgroup_t *tg, unsigned long userid, int type, char *message) {
-  /* maximum length of a trustlog message is ircd max length */
-  char escmessage[2*512+1];
-  
-  dbescapestring(escmessage,message, strlen(message)); 
-  dbquery("INSERT INTO trusts.log (trustid, timestamp, userid, type, message) VALUES ( %lu, %lu, %lu, %d, '%s')", tg->id, getnettime(), userid, type, escmessage);
+  trustsdb->squery(trustsdb,"INSERT INTO ? (trustid, timestamp, userid, type, message) VALUES (?,?,?,?,?)", "Tuuuus", "log", tg->id, getnettime(), userid, type, message);
 }
 
-void trust_dotrustlog_real(DBConn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned long)arg);
-  DBResult *pgres;
+void trust_dotrustlog_real(const struct DBAPIResult *result, void *arg) {
+  nick *np=(nick *)arg;
   unsigned long logid, trustid, userid, type;
   time_t timestamp;
   char *message;
   char timebuf[30];
   int header=0;
 
-  if(!dbconn)
-    return;
+  if(!result || !result->success) {
+    controlreply(np, "Error querying the log.");
 
-  pgres=dbgetresult(dbconn);
-
-  if (!dbquerysuccessful(pgres)) {
-    Error("trusts", ERR_ERROR, "Error loading trusts log data.");
-    dbclear(pgres);
+    if(result)
+      result->clear(result);
     return;
   }
 
- if (dbnumfields(pgres) != 6) {
+  if(result->fields != 6) {
     Error("trusts", ERR_ERROR, "trusts log data format error.");
-    dbclear(pgres);
+    result->clear(result);
     return;
   }
 
-  if (!np) {
-    dbclear(pgres);
+  if(!np)
     return;
-  }
-
-  while(dbfetchrow(pgres)) {
-    logid=strtoul(dbgetvalue(pgres, 0), NULL, 10);
-    trustid=strtoul(dbgetvalue(pgres, 1), NULL, 10);
-    timestamp=strtoul(dbgetvalue(pgres, 2), NULL, 10);
-    userid=strtoul(dbgetvalue(pgres, 3), NULL, 10);
-    type=strtoul(dbgetvalue(pgres, 4), NULL, 10);
-    message=dbgetvalue(pgres, 5);
+ 
+  while(result->next(result)) {
+    logid=strtoul(result->get(result, 0), NULL, 10);
+    trustid=strtoul(result->get(result, 1), NULL, 10);
+    timestamp=strtoul(result->get(result, 2), NULL, 10);
+    userid=strtoul(result->get(result, 3), NULL, 10);
+    type=strtoul(result->get(result, 4), NULL, 10);
+    message=result->get(result, 5);
 
     if (!header) {
       header=1;
@@ -345,11 +386,10 @@ void trust_dotrustlog_real(DBConn *dbconn, void *arg) {
   } else {
     controlreply(np, "End Of List.");
   }
-  dbclear(pgres);
+  result->clear(result);
 }
 
 
 void trustsdb_retrievetrustlog(nick *np, unsigned int trustid, time_t starttime) {
-  dbasyncquery(trust_dotrustlog_real, (void *)np->numeric, "SELECT * FROM trusts.log WHERE trustid=%u AND timestamp>%lu order by timestamp desc limit 1000", trustid, starttime);
-  Error("trusts", ERR_ERROR, "SELECT * FROM trusts.log WHERE trustid=%u AND timestamp>%lu order by timestamp desc limit 1000", trustid, starttime);
+  trustsdb->query(trustsdb, trust_dotrustlog_real, (void *) np, "SELECT * FROM ? WHERE trustid=? AND timestamp>? order by timestamp desc limit 1000", "Tuu", "log", trustid, starttime); 
 }

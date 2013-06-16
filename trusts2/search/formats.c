@@ -50,7 +50,7 @@ void printtgfull(searchCtx *ctx, nick *sender, trustgroup_t *g) {
                          IPtostr(((patricia_node_t *)thptr->node)->prefix->sin),
                          irc_bitlen(&(((patricia_node_t *)thptr->node)->prefix->sin),((patricia_node_t *)thptr->node)->prefix->bitlen),
                          thptr->node->usercount,
-                         thptr->maxused,
+                         thptr->maxusage,
                          trusts_timetostr(thptr->lastused),
                          trusts_timetostr(thptr->expire));
 

@@ -25,7 +25,6 @@ static void tsnswallwrapper(int level, char *format, ...) {
 
 int tsns_dotrustlist(void *source, int cargc, char **cargv) {
   searchASTExpr tree;
-  searchASTExpr nodes[2];
   
   if(cargc < 1) {
     controlreply(source,"Syntax: trustlist <#groupid>");

@@ -28,12 +28,12 @@ void *tsns_thmaxusage_exe(searchCtx *ctx, struct searchNode *thenode, void *thei
 
   if (ctx->searchcmd == reg_nodesearch) {
     if (node->exts[tgh_ext] != NULL) 
-      return (void *)(((trusthost_t *)node->exts[tgh_ext])->maxused);
+      return (void *)(((trusthost_t *)node->exts[tgh_ext])->maxusage);
     else
       return (void *)0; /* will cast to a FALSE */
   } else if (ctx->searchcmd == reg_thsearch) {
     th = (trusthost_t *)theinput;
-    return (void *)(th->maxused);
+    return (void *)(th->maxusage);
   } else {
     return NULL;
   }
