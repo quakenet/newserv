@@ -9,100 +9,9 @@
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_postbuf) {
-  static char prebuf[512], postbuf[512];
-  int spacelen;
-
-  if(spaces + 5 >= sizeof(prebuf)) {
-    prebuf[0] = prebuf[1] = '\0';
-  } else {
-    memset(prebuf, ' ', spaces);
-    prebuf[spaces] = '\0';
-  }
-
-  spacelen = width - (strlen(str) + spaces);
-  if(spacelen <= 0 || spacelen + 5 >= sizeof(postbuf)) {
-    postbuf[0] = postbuf[1] = '\0';
-  } else {
-    memset(postbuf, ' ', spacelen);
-    postbuf[spacelen] = '\0';
-  }
-
-  *_prebuf = prebuf;
-  *_postbuf = postbuf;
-}
-
-static void traverseandmark(unsigned int marker, trusthost *th) {
-  th->marker = marker;
-
-  for(th=th->children;th;th=th->nextbychild) {
-    th->marker = marker;
-    traverseandmark(marker, th);
-  }
-}
-
-static void insertth(array *parents, trusthost *th) {
-  int i;
-  trusthost **p2 = (trusthost **)(parents->content);
-
-  /* this eliminates common subtrees */
-  for(i=0;i<parents->cursi;i++)
-    if(p2[i] == th)
-      break;
-
-  if(i == parents->cursi) {
-    int pos = array_getfreeslot(parents);
-    ((trusthost **)(parents->content))[pos] = th;
-  }
-}
-
-static void marktree(array *parents, unsigned int marker, trusthost *th) {
-  trusthost *pth;
-  int parentcount = 0;
-
-  for(pth=th->parent;pth;pth=pth->next) {
-    insertth(parents, pth);
-
-    pth->marker = marker;
-  }
-
-  if(parentcount == 0)
-    insertth(parents, th);
-
-  /* sadly we need to recurse down */
-  traverseandmark(marker, th);
-}
-
-static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth) {
-  char *cidrstr, *prespacebuf, *postspacebuf, parentbuf[512];
-
-  if(th->marker != marker)
-    return;
-
-  cidrstr = trusts_cidr2str(th->ip, th->mask);
-  calculatespaces(depth + 1, 20 + 1, cidrstr, &prespacebuf, &postspacebuf);
-
-  if(th->group == originalgroup) {
-    prespacebuf[0] = '>';
-
-    parentbuf[0] = '\0';
-  } else {
-    /* show the ids of other groups */
-
-    snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->group->id, th->group->name->content);
-  }
-
-  controlreply(np, "%s%s%s %-10d %-10d %-21s%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), trusts_timetostr(th->created), parentbuf);  
-
-  for(th=th->children;th;th=th->nextbychild)
-    outputtree(np, marker, originalgroup, th, depth + 1);
-}
-
 static void displaygroup(nick *sender, trustgroup *tg) {
-  trusthost *th, **p2;
-  unsigned int marker;
-  array parents;
-  int i;
+  trusthost *th;
+  char *cidrstr;
   time_t t = time(NULL);
 
   /* abusing the ternary operator a bit :( */
@@ -119,19 +28,13 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
-  controlreply(sender, "Host                 Current    Max        Last seen            Created              Group ID   Group name");
+  controlreply(sender, "Host                 Current    Max        Last seen            Created");
 
-  marker = nextthmarker();
-  array_init(&parents, sizeof(trusthost *));
+  for(th=tg->hosts;th;th=th->next) {
+    cidrstr = trusts_cidr2str(th->ip, th->mask);
 
-  for(th=tg->hosts;th;th=th->next)
-    marktree(&parents, marker, th);
-
-  p2 = (trusthost **)(parents.content);
-  for(i=0;i<parents.cursi;i++)
-    outputtree(sender, marker, tg, p2[i], 0);
-
-  array_free(&parents);
+    controlreply(sender, "%-20s %-10d %-10d %-21s%s", cidrstr, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), trusts_timetostr(th->created));
+  }
 
   controlreply(sender, "End of list.");
 }

@@ -46,10 +46,6 @@ typedef struct trusthost {
 
   unsigned int count;
 
-  struct trusthost *parent, *children;
-  unsigned int marker;
-
-  struct trusthost *nextbychild;
   struct trusthost *next;
 } trusthost;
 
@@ -68,8 +64,6 @@ typedef struct trustgroup {
 
   trusthost *hosts;
   unsigned int count;
-
-  unsigned int marker;
 
   struct trustgroup *next;
 
@@ -114,9 +108,6 @@ void th_adjusthosts(trusthost *th, trusthost *, trusthost *);
 void th_getsuperandsubsets(uint32_t, uint32_t, trusthost **, trusthost **);
 trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask);
 trusthost *th_getnextsubsetbyhost(trusthost *th, uint32_t ip, uint32_t mask);
-void th_linktree(void);
-unsigned int nexttgmarker(void);
-unsigned int nextthmarker(void);
 trusthost *th_getbyid(unsigned int);
 int tg_modify(trustgroup *, trustgroup *);
 

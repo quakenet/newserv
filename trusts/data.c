@@ -13,8 +13,6 @@ trustgroup *tglist;
 void th_dbupdatecounts(trusthost *);
 void tg_dbupdatecounts(trustgroup *);
 
-static trusthost *th_getnextchildbyhost(trusthost *, trusthost *);
-
 void trusts_freeall(void) {
   trustgroup *tg, *ntg;
   trusthost *th, *nth;
@@ -49,36 +47,6 @@ void th_free(trusthost *th) {
   nsfree(POOL_TRUSTS, th);
 }
 
-static void th_updatechildren(trusthost *th) {
-  trusthost *nth = NULL;
-
-  th->children = NULL;
-
-  for(;;) {
-    nth = th_getnextchildbyhost(th, nth);
-    if(!nth)
-      break;
-
-    nth->nextbychild = th->children;
-    th->children = nth;
-  }
-}
-
-void th_linktree(void) {
-  trustgroup *tg;
-  trusthost *th;
-
-  /* ugh */
-  for(tg=tglist;tg;tg=tg->next)
-    for(th=tg->hosts;th;th=th->next)
-      th->parent = th_getsmallestsupersetbyhost(th->ip, th->mask);
-
-  for(tg=tglist;tg;tg=tg->next)
-    for(th=tg->hosts;th;th=th->next)
-      if(th->parent)
-        th_updatechildren(th->parent);
-}
-
 trusthost *th_add(trusthost *ith) {
   trusthost *th;
 
@@ -90,11 +58,6 @@ trusthost *th_add(trusthost *ith) {
 
   th->users = NULL;
   th->count = 0;
-
-  th->parent = NULL;
-  th->children = NULL;
-
-  th->marker = 0;
 
   th->next = th->group->hosts;
   th->group->hosts = th;
@@ -130,7 +93,6 @@ trustgroup *tg_add(trustgroup *itg) {
   }
 
   tg->hosts = NULL;
-  tg->marker = 0;
   tg->count = 0;
 
   memset(tg->exts, 0, sizeof(tg->exts));
@@ -206,40 +168,6 @@ trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask) {
           return th;
 
   return NULL;
-}
-
-/* NOT reentrant obviously */
-static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
-  if(!th) {
-    trustgroup *tg;
-
-    tg = tglist;
-    for(tg=tglist;tg;tg=tg->next) {
-      th = tg->hosts;
-      if(th)
-        break;
-    }
-
-    /* INVARIANT: tg => th */
-    if(!tg)
-      return NULL;
-
-    if(th->parent == orig)
-      return th;
-  }
-
-  for(;;) {
-    if(th->next) {
-      th = th->next;
-    } else {
-      if(!th->group->next)
-        return NULL;
-      th = th->group->next->hosts;
-    }
-
-    if(th->parent == orig)
-      return th;
-  }
 }
 
 void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, trusthost **subset) {
@@ -370,40 +298,6 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
         if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip))
           trusts_newnick(np, 1);
   }
-}
-
-unsigned int nexttgmarker(void) {
-  static unsigned int tgmarker = 0;
-  trustgroup *tg;
-
-  tgmarker++;
-  if(!tgmarker) {
-    /* If we wrapped to zero, zap the marker on all groups */
-    for(tg=tglist;tg;tg=tg->next)
-      tg->marker=0;
-
-    tgmarker++;
-  }
-
-  return tgmarker;
-}
-
-unsigned int nextthmarker(void) {
-  static unsigned int thmarker = 0;
-  trustgroup *tg;
-  trusthost *th;
-
-  thmarker++;
-  if(!thmarker) {
-    /* If we wrapped to zero, zap the marker on all hosts */
-    for(tg=tglist;tg;tg=tg->next)
-      for(th=tg->hosts;th;th=th->next)
-        th->marker=0;
-
-    thmarker++;
-  }
-
-  return thmarker;
 }
 
 trusthost *th_getbyid(unsigned int id) {
