@@ -4,7 +4,6 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/nsmalloc.h"
-#include "../irc/irc.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
@@ -262,8 +261,7 @@ static int trusts_cmdtrustgline(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *user, *reason;
-  int duration, count = 0;
-  trusthost *th;
+  int duration, count;
 
   if(cargc < 4)
     return CMD_USAGE;
@@ -284,11 +282,7 @@ static int trusts_cmdtrustgline(void *source, int cargc, char **cargv) {
 
   reason = cargv[3];
 
-  for(th=tg->hosts;th;th=th->next) {
-    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
-    irc_send("%s GL * +%s@%s %d %jd :%s", mynumeric->content, user, cidrstr, duration, (intmax_t)getnettime(), reason);
-    count++;
-  }
+  count = trustgline(tg, user, duration, reason);
 
   controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTGLINE'd user '%s' on group '%s', %d gline(s) set.", controlid(sender), user, tg->name->content, count);
   controlreply(sender, "Done. %d gline(s) set.", count);
@@ -300,8 +294,7 @@ static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *user, *reason;
-  int duration, count = 0;
-  trusthost *th;
+  int count;
 
   if(cargc < 2)
     return CMD_USAGE;
@@ -314,11 +307,7 @@ static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
 
   user = cargv[1];
 
-  for(th=tg->hosts;th;th=th->next) {
-    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
-    irc_send("%s GL * -%s@%s", mynumeric->content, user, cidrstr);
-    count++;
-  }
+  count = trustungline(tg, user, 0, "Deactivated.");
 
   controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTUNGLINE'd user '%s' on group '%s', %d gline(s) removed.", controlid(sender), user, tg->name->content, count);
   controlreply(sender, "Done. %d gline(s) removed.", count);
