@@ -293,7 +293,7 @@ static int trusts_cmdtrustgline(void *source, int cargc, char **cargv) {
 static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
-  char *user, *reason;
+  char *user;
   int count;
 
   if(cargc < 2)

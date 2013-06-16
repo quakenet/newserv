@@ -41,8 +41,8 @@ void createtrusttables(int mode) {
   trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
 
   trustsdb->createtable(trustsdb, NULL, NULL,
-    "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, ts INT, username VARCHAR(?), message VARCHAR(?))",
-    "Tdd", "log", CREATEDBYLEN, TRUSTLOGLEN
+    "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
+    "Tddd", "log", TRUSTNAMELEN, CREATEDBYLEN, TRUSTLOGLEN
   );
 }
 
@@ -377,7 +377,7 @@ void th_delete(trusthost *th) {
   th_linktree();
 }
 
-void trustlog(unsigned int groupid, const char *user, const char *format, ...) {
+void trustlog(trustgroup *tg, const char *user, const char *format, ...) {
   char buf[TRUSTLOGLEN+1];
   va_list va;
   unsigned int now;
@@ -389,8 +389,8 @@ void trustlog(unsigned int groupid, const char *user, const char *format, ...) {
   now = time(NULL);
 
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (ts, groupid, username, message) VALUES (?, ?, ?, ?)",
-    "Tuuss", "log", now, groupid, user, buf);
+    "INSERT INTO ? (ts, groupid, groupname, username, message) VALUES (?, ?, ?, ?, ?)",
+    "Tuusss", "log", now, tg->id, tg->name->content, user, buf);
 }
 
 static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) {
@@ -408,24 +408,31 @@ static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) 
 
   while(result->next(result)) {
     unsigned int ts, groupid;
-    char *user, *message;
+    char *groupname, *user, *message;
 
     ts = strtoul(result->get(result, 0), NULL, 10);
     groupid = strtoul(result->get(result, 1), NULL, 10);
-    user = result->get(result, 2);
-    message = result->get(result, 3);
+    groupname = result->get(result, 2);
+    user = result->get(result, 3);
+    message = result->get(result, 4);
 
-    controlreply(np, "[%s] #%d (%s) %s", trusts_timetostr(ts), groupid, user, message);
+    controlreply(np, "[%s] #%d/%s (%s) %s", trusts_timetostr(ts), groupid, groupname, user, message);
     rows++;
   }
 
-  controlreply(np, "--- Done. Found %d rows.", rows);
+  controlreply(np, "--- Done. Found %d entries.", rows);
 }
 
-void trustlogspew(nick *np, unsigned int groupid, unsigned int limit) {
+void trustlogspewid(nick *np, unsigned int groupid, unsigned int limit) {
   trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
-    "SELECT ts, groupid, username, message FROM ? WHERE groupid = ? ORDER BY ts DESC LIMIT ?",
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE groupid = ? ORDER BY ts DESC LIMIT ?",
     "Tuu", "log", groupid, limit);
+}
+
+void trustlogspewname(nick *np, const char *groupname, unsigned int limit) {
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE groupname = ? ORDER BY ts DESC LIMIT ?",
+    "Tsu", "log", groupname, limit);
 }
 
 void trustloggrep(nick *np, const char *pattern, unsigned int limit) {

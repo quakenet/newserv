@@ -85,7 +85,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   triggerhook(HOOK_TRUSTS_ADDHOST, th);
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTADD'ed host %s to group '%s'", controlid(sender), host, th->group->name->content);
-  trustlog(tg->id, controlid(sender), "Added host '%s'.", host);
+  trustlog(tg, controlid(sender), "Added host '%s'.", host);
 
   return CMD_OK;
 }
@@ -94,7 +94,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
   unsigned int howmany, maxperident, enforceident;
-  time_t howlong;
+  time_t howlong, expires;
   trustgroup *tg, itg;
 
   if(cargc < 6)
@@ -112,6 +112,11 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     controlreply(sender, "Invalid duration supplied.");
     return CMD_ERROR;
   }
+
+  if(howlong)
+    expires = howlong + time(NULL);
+  else
+    expires = 0;
 
   maxperident = strtoul(cargv[3], NULL, 10);
   if(!howmany || (maxperident > MAXPERIDENT)) {
@@ -150,10 +155,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   itg.trustedfor = howmany;
   itg.mode = enforceident;
   itg.maxperident = maxperident;
-  if(howlong)
-    itg.expires = howlong + time(NULL);
-  else
-    itg.expires = 0; /* never */
+  itg.expires = expires;
   itg.createdby = getsstring(createdby, CREATEDBYLEN);
   itg.contact = getsstring(contact, CONTACTLEN);
   itg.comment = getsstring(comment, COMMENTLEN);
@@ -179,9 +181,9 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   triggerhook(HOOK_TRUSTS_ADDGROUP, tg);
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPADD'ed '%s'", controlid(sender), tg->name->content);
-  trustlog(tg->id, controlid(sender), "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
+  trustlog(tg, controlid(sender), "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
     "expires=%d, createdby=%s, contact=%s, comment=%s",
-    tg->name->content, howmany, tg->id, enforceident, maxperident, howlong + time(NULL), createdby, contact, comment);
+    tg->name->content, howmany, tg->id, enforceident, maxperident, expires, createdby, contact, comment);
 
   return CMD_OK;
 }
@@ -205,7 +207,7 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
   }
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPDEL'ed '%s'.", controlid(sender), tg->name->content);
-  trustlog(tg->id, controlid(sender), "Deleted group '%s'.", tg->name->content);
+  trustlog(tg, controlid(sender), "Deleted group '%s'.", tg->name->content);
 
   triggerhook(HOOK_TRUSTS_DELGROUP, tg);
   tg_delete(tg);
@@ -250,7 +252,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host deleted.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTDEL'ed %s from group '%s'.", controlid(sender), host, tg->name->content);
-  trustlog(tg->id, controlid(sender), "Removed host '%s'.", host);
+  trustlog(tg, controlid(sender), "Removed host '%s'.", host);
 
   return CMD_OK;
 }
@@ -373,14 +375,13 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Group modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed group '%s' (field: %s, value: %s)", controlid(sender), tg->name->content, what, to);
-  trustlog(tg->id, controlid(sender), "Modified %s: %s", what, to);
+  trustlog(tg, controlid(sender), "Modified %s: %s", what, to);
 
   return CMD_OK;
 }
 
 static int trusts_cmdtrustlogspew(void *source, int cargc, char **cargv) {
   nick *sender = source;
-  trustgroup *tg = NULL;
   char *name;
   int groupid;
   int limit = 0;
@@ -388,26 +389,20 @@ static int trusts_cmdtrustlogspew(void *source, int cargc, char **cargv) {
   if(cargc < 1)
     return CMD_USAGE;
 
-  name = cargv[0];
-
-  tg = tg_strtotg(name);
-
-  if(tg)
-    groupid = tg->id;
-  else if (name[0] == '#')
-    groupid = strtoul(name + 1, NULL, 10);
-  else {
-    controlreply(sender, "Invalid trust group name or ID.");
-    return CMD_OK;
-  }
-
   if(cargc>1)
     limit = strtoul(cargv[1], NULL, 10);
 
   if(limit==0)
     limit = 100;
 
-  trustlogspew(sender, groupid, limit);
+  name = cargv[0];
+
+  if (name[0] == '#') {
+    groupid = strtoul(name + 1, NULL, 10);
+    trustlogspewid(sender, groupid, limit);
+  } else {
+    trustlogspewname(sender, name, limit);
+  }
 
   return CMD_OK;
 }
@@ -452,7 +447,7 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
   }
 
     controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
-  trustlog(tg->id, controlid(sender), "Comment: %s", comment);
+  trustlog(tg, controlid(sender), "Comment: %s", comment);
 
   return CMD_OK;
 }

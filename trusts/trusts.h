@@ -134,8 +134,9 @@ trusthost *th_copy(trusthost *);
 void tg_update(trustgroup *);
 void tg_delete(trustgroup *);
 void th_delete(trusthost *);
-void trustlog(unsigned int groupid, const char *user, const char *format, ...);
-void trustlogspew(nick *np, unsigned int groupid, unsigned int limit);
+void trustlog(trustgroup *tg, const char *user, const char *format, ...);
+void trustlogspewid(nick *np, unsigned int groupid, unsigned int limit);
+void trustlogspewname(nick *np, const char *groupname, unsigned int limit);
 void trustloggrep(nick *np, const char *pattern, unsigned int limit);
 
 typedef struct trustmigration {
