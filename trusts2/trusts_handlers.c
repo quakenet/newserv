@@ -20,11 +20,6 @@ void trusts_hook_newuser(int hook, void *arg) {
       tgh = NULL;
     } else {
       tg = tgh->trustgroup;
-      if(tg->expire && (tg->expire <= getnettime())) {
-        /* expire trust group */
-        trustgroup_expire(tg);
-        tgh = NULL;
-      }
     } 
   }
 
@@ -41,13 +36,7 @@ void trusts_hook_newuser(int hook, void *arg) {
             tgh = NULL;
           } else {
             tg = tgh->trustgroup;
-            if(tg->expire && (tg->expire <= getnettime())) {
-              /* expire trust group */
-              trustgroup_expire(tg);
-              tgh = NULL;
-            } else {
-              break; 
-            }
+            break; 
           }
         }
       parent = parent->parent;

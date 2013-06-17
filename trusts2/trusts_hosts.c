@@ -113,13 +113,18 @@ void trusthost_addcounters(trusthost_t* tgh) {
 void trusthost_expire( trusthost_t *th) {
   trustgroup_t *tg = th->trustgroup;
 
-  if(tg->expire && (tg->expire <= getnettime())) {
-    /* check if trustgroup also expires */
-    trustgroup_expire(tg);
-  } else {
-    controlwall(NO_OPER, NL_TRUSTS, "%s/%d expired from trustgroup #%lu",IPtostr(th->node->prefix->sin),irc_bitlen(&(th->node->prefix->sin),th->node->prefix->bitlen),tg->id);
-    trustsdb_deletetrusthost(th->node->exts[tgh_ext]);
-    trusthost_free(th->node->exts[tgh_ext]);
-    th->node->exts[tgh_ext] = NULL;
+  controlwall(NO_OPER, NL_TRUSTS, "%s/%d expired from trustgroup #%lu",IPtostr(th->node->prefix->sin),irc_bitlen(&(th->node->prefix->sin),th->node->prefix->bitlen),tg->id);
+  trustsdb_deletetrusthost(th->node->exts[tgh_ext]);
+  trusthost_free(th->node->exts[tgh_ext]);
+  th->node->exts[tgh_ext] = NULL;
+
+  trusthost_t* thptr;
+
+  int hash = trusts_gettrusthostgroupidhash(tg->id);
+  for (thptr = trusthostgroupidtable[hash]; thptr; thptr = thptr->nextbygroupid ) {
+    if ( thptr->trustgroup->id == tg->id ) {
+      return; 
+    }
   }
+  trustgroup_free( tg );
 }

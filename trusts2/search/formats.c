@@ -36,8 +36,6 @@ void printtgfull(searchCtx *ctx, nick *sender, trustgroup_t *g) {
   ctx->reply(sender,"Enforce Ident   : %d", g->enforceident);
   ctx->reply(sender,"Start Date      : %s", trusts_timetostr(g->startdate));
   ctx->reply(sender,"Last Used       : %s", trusts_timetostr(g->lastused));
-  ctx->reply(sender,"Expiry          : %s", trusts_timetostr(g->expire));
-
   ctx->reply(sender,"Owner           : %lu", g->ownerid);
 
   ctx->reply(sender,"Trust Hosts:");

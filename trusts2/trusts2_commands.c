@@ -125,7 +125,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  t = createtrustgroup( ++trusts_lasttrustgroupid, maxclones, maxperident, maxperip,  enforceident, getnettime() + expiry, ownerid);
+  t = createtrustgroup( ++trusts_lasttrustgroupid, maxclones, maxperident, maxperip,  enforceident, ownerid);
 
   if(!t) {
     controlreply(sender,"ERROR: An error occured adding trustgroup");
@@ -175,6 +175,18 @@ int trust_del(void *source, int cargc, char **cargv) {
     trustsdb_deletetrusthost(node->exts[tgh_ext]);
     trusthost_free(node->exts[tgh_ext]);
     node->exts[tgh_ext] = NULL;
+
+    trusthost_t* thptr;
+    int hash = trusts_gettrusthostgroupidhash(tg->id);
+    for (thptr = trusthostgroupidtable[hash]; thptr; thptr = thptr->nextbygroupid ) {
+      if ( thptr->trustgroup->id == tg->id ) {
+        return CMD_OK;
+      }
+    }
+    controlreply(sender,"Empty trustgroup #%lu Removed",tg->id);
+    controlwall(NO_OPER, NL_TRUSTS, "Empty trustgroup #%lu removed",tg->id);
+    trustgroup_free( tg );
+
   }
   return CMD_OK;
 }
@@ -345,9 +357,9 @@ int trust_dump(void *source, int cargc, char **cargv) {
       startid++;
       continue;
     }
-    controlreply(sender, "G,#%lu,%lu,%lu,%d,%lu,%lu,%lu,%lu",
+    controlreply(sender, "G,#%lu,%lu,%lu,%d,%lu,%lu,%lu",
       g->id, g->currenton, g->maxclones, g->enforceident, g->maxperident,
-      g->maxusage, g->expire, g->lastused);
+      g->maxusage, g->lastused);
     lines++;
 
     trusthost_t* thptr;
@@ -381,13 +393,12 @@ int trust_groupmodify(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;
   unsigned long oldvalue, newvalue;
   char *mod;
-  int expiry;
   trustgroup_t *tg;
 
   if (cargc<3 || cargc==4) {
     controlreply(sender,"Syntax: trustgroupmodify <#groupid> <what> [+|-|=]number");
     controlreply(sender,"        +20 means add 20, =20 replaces current value, -20 means subtract");
-    controlreply(sender,"        what: maxclones, maxperident, maxperip, expire, enforceident, ownerid");
+    controlreply(sender,"        what: maxclones, maxperident, maxperip, enforceident, ownerid");
     return CMD_OK;
   }
 
@@ -497,33 +508,6 @@ int trust_groupmodify(void *source, int cargc, char **cargv) {
       return CMD_ERROR;
     }
     tg->maxperip = newvalue;
-  } else if (ircd_strcmp(cargv[1], "expire")==0) {
-    oldvalue = tg->expire;
-    expiry = durationtolong(&cargv[2][1]);
-
-    if (expiry > (365 * 86400) ) {
-      controlreply(sender,"ERROR: Invalid duration given - temporary trusts can not be longer then 1 year");
-      return CMD_ERROR;
-    }
-
-    switch (*mod) {
-      case '+':
-        newvalue = oldvalue + expiry;
-        break;
-      case '-':
-        newvalue = oldvalue - expiry;
-        if (newvalue < getnettime() ) {
-          controlreply(sender, "ERROR: Can't set expiry before current nettime - use trustgroupdel to delete trust groups");
-          return CMD_ERROR;
-        }
-        break;
-      case '=':
-        if ( expiry > 0) { 
-          newvalue = getnettime() + expiry;
-        }
-        break; 
-    }
-    tg->expire = newvalue;
   } else if (ircd_strcmp(cargv[1], "enforceident")==0) {
     oldvalue = tg->enforceident;
     if ( (newvalue != 0 && newvalue != 1) || *mod != '=' ) {

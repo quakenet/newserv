@@ -11,7 +11,6 @@ void printtrust_blockprivate(searchCtx *ctx, nick *sender, patricia_node_t *node
 
 struct searchNode *tsns_trusted_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *tsns_tgid_parse(searchCtx *ctx, int argc, char **argv);
-struct searchNode *tsns_tgexpire_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *tsns_tgmaxperip_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *tsns_tgownerid_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *tsns_tgstartdate_parse(searchCtx *ctx, int argc, char **argv);

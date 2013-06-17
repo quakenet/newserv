@@ -84,7 +84,6 @@ void trusts_create_tables(int mode) {
     "maxclones    INT4,"
     "maxperident  INT4,"
     "maxperip     INT4,"
-    "expires      INT4,"
     "lastused     INT4,"
     "modified     INT4,"
     "created      INT4"
@@ -168,7 +167,7 @@ void trusts_loadtrustgroups(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  if(result->fields != 13) {
+  if(result->fields != 12) {
     Error("trusts", ERR_ERROR, "Wrong number of fields in groups table. (Got %d)", result->fields);
     loaderror = 1;
 
@@ -188,10 +187,9 @@ void trusts_loadtrustgroups(const DBAPIResult *result, void *tag) {
         /*TODOTYPE*/ /*enforceident*/strtoul(result->get(result, 5),NULL,10),
                      /*startdate*/   strtoul(result->get(result, 6),NULL,10),
                      /*lastused*/    strtoul(result->get(result, 7),NULL,10),
-                     /*expire*/      strtoul(result->get(result, 8),NULL,10),
-                     /*ownerid*/     strtoul(result->get(result, 9),NULL,10),
-                     /*created*/     strtoul(result->get(result, 10),NULL,10),
-                     /*modified*/    strtoul(result->get(result, 11),NULL,10)
+                     /*ownerid*/     strtoul(result->get(result, 8),NULL,10),
+                     /*created*/     strtoul(result->get(result, 9),NULL,10),
+                     /*modified*/    strtoul(result->get(result, 10),NULL,10)
                      );
     if (!t) {
       Error("trusts", ERR_ERROR, "Error loading trust group.");
@@ -307,11 +305,11 @@ static void trusts_dbtriggerdbloaded(void *arg) {
 
 /* trust group */
 void trustsdb_addtrustgroup(trustgroup_t *t) {
-  trustsdb->squery(trustsdb,"INSERT INTO ? (trustid,startdate,enddate,owneruserid,maxusage,enforceident,maxclones,maxperident,maxperip,expires,lastused,modified,created ) VALUES (?,?,0,?,?,?,?,?,?,?,?,?,? )", "Tuuuuuuuuuuuuu", "groups", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created ); 
+  trustsdb->squery(trustsdb,"INSERT INTO ? (trustid,startdate,enddate,owneruserid,maxusage,enforceident,maxclones,maxperident,maxperip,lastused,modified,created ) VALUES (?,?,0,?,?,?,?,?,?,?,?,?,? )", "Tuuuuuuuuuuuuu", "groups", t->id,t->startdate,t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->lastused, t->modified, t->created ); 
 }
 
 void trustsdb_updatetrustgroup(trustgroup_t *t) {
-  trustsdb->squery(trustsdb,"UPDATE ? SET startdate=?,owneruserid=?,maxusage=?,enforceident=?,maxclones=?, maxperident=?,maxperip=?,expires=?,lastused=?,modified=?,created=? WHERE trustid = ?", "Tuuuuuuuuuuu", "groups", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->expire, t->lastused, t->modified, t->created, t->id);
+  trustsdb->squery(trustsdb,"UPDATE ? SET startdate=?,owneruserid=?,maxusage=?,enforceident=?,maxclones=?, maxperident=?,maxperip=?,lastused=?,modified=?,created=? WHERE trustid = ?", "Tuuuuuuuuuuu", "groups", t->startdate, t->ownerid,t->maxusage,t->enforceident,t->maxclones,t->maxperident,t->maxperip, t->lastused, t->modified, t->created, t->id);
 }
 
 void trustsdb_deletetrustgroup(trustgroup_t *t) {

@@ -16,7 +16,6 @@ void _init(void) {
   registersearchterm(reg_tgsearch, "tgid", tsns_tgid_parse, 0, "Trustgroup ID");
   registersearchterm(reg_tgsearch, "tgstartdate", tsns_tgstartdate_parse, 0, "Trustgroup start date timestamp - represents date trust is due to go active or date trust was added");
   registersearchterm(reg_tgsearch, "tglastused", tsns_tglastused_parse, 0, "trust group last used timestamp");
-  registersearchterm(reg_tgsearch, "tgexpire", tsns_tgexpire_parse, 0, "trust group expiry timestamp");
   registersearchterm(reg_tgsearch, "tgownerid", tsns_tgownerid_parse, 0, "Q auth id of trust group owner");
   registersearchterm(reg_tgsearch, "tgmaxperip", tsns_tgmaxperip_parse, 0, "trust group max per IP value");
   registersearchterm(reg_tgsearch, "tgmaxusage", tsns_tgmaxusage_parse, 0, "trust group max usage ever");
@@ -37,7 +36,6 @@ void _init(void) {
 
   registersearchterm(reg_nodesearch, "trusted", tsns_trusted_parse, 0, "IP node is trusted");
   registersearchterm(reg_nodesearch, "tgid", tsns_tgid_parse, 0, "Trust group ID");
-  registersearchterm(reg_nodesearch, "tgexpire", tsns_tgexpire_parse, 0, "trust group expiry timestamp");
   registersearchterm(reg_nodesearch, "tgstartdate", tsns_tgstartdate_parse, 0, "Trustgroup start date timestamp - represents date trust is due to go active or date trust was added");
   registersearchterm(reg_nodesearch, "tglastused", tsns_tglastused_parse, 0, "trust group last used timestamp");
   registersearchterm(reg_nodesearch, "tgownerid", tsns_tgownerid_parse, 0, "Q auth id of trust group owner");
@@ -69,7 +67,6 @@ void _fini(void) {
   deregistersearchterm(reg_tgsearch, "tgid", tsns_tgid_parse);
   deregistersearchterm(reg_tgsearch, "tgstartdate", tsns_tgstartdate_parse);
   deregistersearchterm(reg_tgsearch, "tglastused", tsns_tglastused_parse);
-  deregistersearchterm(reg_tgsearch, "tgexpire", tsns_tgexpire_parse);
   deregistersearchterm(reg_tgsearch, "tgownerid", tsns_tgownerid_parse);
   deregistersearchterm(reg_tgsearch, "tgmaxperip", tsns_tgmaxperip_parse);
   deregistersearchterm(reg_tgsearch, "tgmaxusage", tsns_tgmaxusage_parse);
@@ -90,7 +87,6 @@ void _fini(void) {
 
   deregistersearchterm(reg_nodesearch, "trusted", tsns_trusted_parse);
   deregistersearchterm(reg_nodesearch, "tgid", tsns_tgid_parse);
-  deregistersearchterm(reg_nodesearch, "tgexpire", tsns_tgexpire_parse);
   deregistersearchterm(reg_nodesearch, "tgstartdate", tsns_tgstartdate_parse);
   deregistersearchterm(reg_nodesearch, "tglastused", tsns_tglastused_parse);
   deregistersearchterm(reg_nodesearch, "tgownerid", tsns_tgownerid_parse);
