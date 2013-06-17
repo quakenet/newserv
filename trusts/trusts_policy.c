@@ -33,7 +33,7 @@ static void policycheck(int hooknum, void *arg) {
    */
 
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
-    if(tg->count > tg->trustedfor) {
+    if(tg->trustedfor && tg->count > tg->trustedfor) {
 /*
       if(tg->count > (long)tg->exts[countext]) {
 

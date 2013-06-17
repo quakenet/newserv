@@ -6,12 +6,14 @@
 #include "../core/config.h"
 #include "../core/schedule.h"
 #include "../lib/stringbuf.h"
+#include "../noperserv/noperserv.h"
+#include "../noperserv/noperserv_policy.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-typedef int (*trustmodificationfn)(void *, char *arg);
+typedef int (*trustmodificationfn)(void *, char *arg, int);
 
 struct trustmodification {
   char name[50];
@@ -260,7 +262,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int modifycomment(void *arg, char *comment) {
+static int modifycomment(void *arg, char *comment, int override) {
   trustgroup *tg = arg;
   sstring *n = getsstring(comment, COMMENTLEN);
   if(!n)
@@ -272,7 +274,7 @@ static int modifycomment(void *arg, char *comment) {
   return 1;
 }
 
-static int modifycontact(void *arg, char *contact) {
+static int modifycontact(void *arg, char *contact, int override) {
   trustgroup *tg = arg;
   sstring *n = getsstring(contact, CONTACTLEN);
   if(!n)
@@ -284,11 +286,11 @@ static int modifycontact(void *arg, char *contact) {
   return 1;
 }
 
-static int modifytrustedfor(void *arg, char *num) {
+static int modifytrustedfor(void *arg, char *num, int override) {
   trustgroup *tg = arg;
   unsigned int trustedfor = strtoul(num, NULL, 10);
 
-  if(trustedfor > MAXTRUSTEDFOR)
+  if(!override && (trustedfor <= 0 || trustedfor > MAXTRUSTEDFOR))
     return 0;
 
   tg->trustedfor = trustedfor;
@@ -296,11 +298,11 @@ static int modifytrustedfor(void *arg, char *num) {
   return 1;
 }
 
-static int modifymaxperident(void *arg, char *num) {
+static int modifymaxperident(void *arg, char *num, int override) {
   trustgroup *tg = arg;
   unsigned int maxperident = strtoul(num, NULL, 10);
 
-  if(maxperident > MAXPERIDENT)
+  if(!override && (maxperident <= 0 || maxperident > MAXPERIDENT))
     return 0;
 
   tg->maxperident = maxperident;
@@ -308,7 +310,7 @@ static int modifymaxperident(void *arg, char *num) {
   return 1;
 }
 
-static int modifyenforceident(void *arg, char *num) {
+static int modifyenforceident(void *arg, char *num, int override) {
   trustgroup *tg = arg;
 
   if(num[0] == '1') {
@@ -322,7 +324,7 @@ static int modifyenforceident(void *arg, char *num) {
   return 1;
 }
 
-static int modifyexpires(void *arg, char *expires) {
+static int modifyexpires(void *arg, char *expires, int override) {
   trustgroup *tg = arg;
   int howlong = durationtolong(expires);
 
@@ -337,7 +339,7 @@ static int modifyexpires(void *arg, char *expires) {
   return 1;
 }
 
-static int modifymaxpernode(void *arg, char *num) {
+static int modifymaxpernode(void *arg, char *num, int override) {
   trusthost *th = arg;
   int maxpernode = strtol(num, NULL, 10);
   
@@ -349,7 +351,7 @@ static int modifymaxpernode(void *arg, char *num) {
   return 1;
 }
 
-static int modifynodebits(void *arg, char *num) {
+static int modifynodebits(void *arg, char *num, int override) {
   trusthost *th = arg;
   int nodebits = strtol(num, NULL, 10);
 
@@ -376,7 +378,7 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *what, *to, validfields[512];
-  int i;
+  int i, override;
   StringBuf b;
 
   if(cargc < 3)
@@ -391,10 +393,12 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   what = cargv[1];
   to = cargv[2];
 
+  override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
+
   sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trustgroupmods_a.cursi;i++) {
     if(!strcmp(what, trustgroupmods[i].name)) {
-      if(!(trustgroupmods[i].fn)(tg, to)) {
+      if(!(trustgroupmods[i].fn)(tg, to, override)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
@@ -427,7 +431,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   trusthost *th;
   nick *sender = source;
   char *what, *to, validfields[512];
-  int i;
+  int i, override;
   StringBuf b;
   struct irc_in_addr ip;
   unsigned char bits;
@@ -456,10 +460,12 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   what = cargv[2];
   to = cargv[3];
 
+  override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
+
   sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trusthostmods_a.cursi;i++) {
     if(!strcmp(what, trusthostmods[i].name)) {
-      if(!(trusthostmods[i].fn)(th, to)) {
+      if(!(trusthostmods[i].fn)(th, to, override)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
