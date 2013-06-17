@@ -46,6 +46,7 @@ void _init() {
 
   registerhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
+  registerhook(HOOK_NICK_MOVENODE, &pn_hook_movenodeuser);
 
   registercontrolhelpcmd("nodeuserlist", NO_OPER, 1, &pn_cmd_nodeuserlist, "Usage: nodeuserlist <ipv4|ipv6|cidr4|cidr6>\nLists all users on a given IP address or CIDR range.");
 }
@@ -63,6 +64,7 @@ void _fini() {
 
   deregisterhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   deregisterhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
+  deregisterhook(HOOK_NICK_MOVENODE, &pn_hook_movenodeuser);
 
   deregistercontrolcmd("nodeuserlist", &pn_cmd_nodeuserlist);
 }
@@ -144,6 +146,14 @@ void pn_hook_lostuser(int hook, void *arg) {
   nick *np = (nick *)arg;
 
   deletenickfromnode(np->ipnode, np);
+}
+
+void pn_hook_nodemoveuser(int hook, void *arg) {
+  nick *np = ((void **)arg)[0];
+  patricia_node_t *oldnode = ((void **)arg)[1];
+
+  deletenickfromnode(oldnode, np);
+  addnicktonode(np->ipnode, np);
 }
 
 int pn_cmd_nodeuserlist(void *source, int cargc, char **cargv) {

@@ -38,7 +38,7 @@ void createtrusttables(int mode) {
   );
 
   /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
-  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, created INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
+  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, created INT, lastseen INT, maxpernode INT, nodebits INT)", "Td", hosts, TRUSTHOSTLEN);
 
   trustsdb->createtable(trustsdb, NULL, NULL,
     "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
@@ -80,7 +80,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  if(result->fields != 6) {
+  if(result->fields != 8) {
     Error("trusts", ERR_ERROR, "Wrong number of fields in hosts table.");
     loaderror = 1;
 
@@ -114,6 +114,8 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     th.maxusage = strtoul(result->get(result, 3), NULL, 10);
     th.created = (time_t)strtoul(result->get(result, 4), NULL, 10);
     th.lastseen = (time_t)strtoul(result->get(result, 5), NULL, 10);
+    th.maxpernode = strtol(result->get(result, 6), NULL, 10);
+    th.nodebits = strtol(result->get(result, 7), NULL, 10);
 
     if(!th_add(&th))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
@@ -312,8 +314,8 @@ trustgroup *tg_new(trustgroup *itg) {
 
 void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen) VALUES (?, ?, ?, ?, ?, ?)",
-    "Tuusuut", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->created, th->lastseen
+    "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen, maxpernode, nodebits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tuusuutuu", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
   );
 }
 

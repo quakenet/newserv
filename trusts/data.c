@@ -91,6 +91,9 @@ trusthost *th_add(trusthost *ith) {
   th->users = NULL;
   th->count = 0;
 
+  th->maxpernode = 0;
+  th->nodebits = 128;
+
   th->parent = NULL;
   th->children = NULL;
 
@@ -354,7 +357,7 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
     nick *np, *nnp;
     for(np=superset->users;np;np=nnp) {
       nnp = nextbytrust(np);
-      if((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip) {
+      if((irc_in_addr_v4_to_int(&np->p_nodeaddr) & th->mask) == th->ip) {
         trusts_lostnick(np, 1);
         trusts_newnick(np, 1);
       }
@@ -367,7 +370,7 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
 
     for(i=0;i<NICKHASHSIZE;i++)
       for(np=nicktable[i];np;np=np->next)
-        if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_ipaddr) & th->mask) == th->ip))
+        if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_nodeaddr) & th->mask) == th->ip))
           trusts_newnick(np, 1);
   }
 }

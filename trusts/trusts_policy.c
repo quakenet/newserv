@@ -15,9 +15,12 @@ static void policycheck(int hooknum, void *arg) {
   if(moving)
     return;
 
-  if(!th) {
+  if(!th)
+    return;
+
+  if(th->maxpernode > np->ipnode->usercount) {
     if(np->ipnode->usercount > 5)
-      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (untrusted) %d connected, 5 max.", IPtostr(np->p_ipaddr), np->ipnode->usercount);
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, np->ipnode->usercount, th->maxpernode);
     return;
   }
 

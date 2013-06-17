@@ -35,7 +35,6 @@ struct trusthost;
 typedef struct trusthost {
   unsigned int id;
 
-
   uint32_t ip, mask;
   unsigned int maxusage;
   time_t created;
@@ -45,6 +44,9 @@ typedef struct trusthost {
   struct trustgroup *group;
 
   unsigned int count;
+
+  int maxpernode;
+  int nodebits;
 
   struct trusthost *parent, *children;
   unsigned int marker;

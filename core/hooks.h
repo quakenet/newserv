@@ -41,6 +41,7 @@
 #define HOOK_NICK_MODEOPER         307  /* Argument is void*[2] (nick, modes) */
 #define HOOK_NICK_KILL             308  /* Argument is void*[2] (nick, reason) */
 #define HOOK_NICK_MASKPRIVMSG      309  /* Argument is void*[3] (nick, target, message) ** NICK COULD BE NULL ** */
+#define HOOK_NICK_MOVENODE         310  /* Argument is void*[2] (nick, oldnode) */
 
 #define HOOK_CHANNEL_BURST         400  /* Argument is channel pointer */
 #define HOOK_CHANNEL_CREATE        401  /* Argument is void*[2] (channel, nick) */
