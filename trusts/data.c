@@ -237,7 +237,7 @@ static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
       th = th->group->next->hosts;
     }
 
-    if(th->parent == orig)
+    if(!th || th->parent == orig)
       return th;
   }
 }
