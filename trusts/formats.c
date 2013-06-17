@@ -26,9 +26,9 @@ char *dumpth(trusthost *th, int oformat) {
   static char buf[512];
 
   if(oformat) {
-    snprintf(buf, sizeof(buf), "#%u,%s/%u,%u,%u,%jd", th->group->id, IPtostr(th->ip), (unsigned int)th->bits, th->count, th->maxusage, (intmax_t)th->lastseen);
+    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%jd", th->group->id, trusts_cidr2str(&th->ip, th->bits), th->count, th->maxusage, (intmax_t)th->lastseen);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s/%u,%u,%u,%jd,%jd,%u,%u", th->group->id, IPtostr(th->ip), (unsigned int)th->bits, th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
+    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd,%jd,%u,%u", th->group->id, trusts_cidr2str(&th->ip, th->bits), th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
   }
 
   return buf;
