@@ -404,6 +404,13 @@ static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) 
     return;
   }
 
+  if(result->fields != 5) {
+    Error("trusts", ERR_ERROR, "Wrong number of fields in log table.");
+
+    result->clear(result);
+    return;
+  }
+
   while(result->next(result)) {
     unsigned int ts, groupid;
     char *groupname, *user, *message;
@@ -417,6 +424,8 @@ static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) 
     controlreply(np, "[%s] #%d/%s (%s) %s", trusts_timetostr(ts), groupid, groupname, user, message);
     rows++;
   }
+
+  result->clear(result);
 
   controlreply(np, "--- Done. Found %d entries.", rows);
 }
@@ -438,7 +447,7 @@ void trustloggrep(nick *np, const char *pattern, unsigned int limit) {
   snprintf(buf, sizeof(buf), "%%%s%%", pattern);
 
   trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
-    "SELECT ts, groupid, username, message FROM ? WHERE message LIKE ? ORDER BY ts DESC LIMIT ?",
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE message LIKE ? ORDER BY ts DESC LIMIT ?",
     "Tsu", "log", buf, limit);
 }
 

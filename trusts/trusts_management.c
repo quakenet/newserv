@@ -86,7 +86,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   triggerhook(HOOK_TRUSTS_ADDHOST, th);
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTADD'ed host %s to group '%s'", controlid(sender), host, th->group->name->content);
-  trustlog(tg, controlid(sender), "Added host '%s'.", host);
+  trustlog(tg, sender->authname, "Added host '%s'.", host);
 
   return CMD_OK;
 }
@@ -182,7 +182,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   triggerhook(HOOK_TRUSTS_ADDGROUP, tg);
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPADD'ed '%s'", controlid(sender), tg->name->content);
-  trustlog(tg, controlid(sender), "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
+  trustlog(tg, sender->authname, "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
     "expires=%d, createdby=%s, contact=%s, comment=%s",
     tg->name->content, howmany, tg->id, enforceident, maxperident, expires, createdby, contact, comment);
 
@@ -208,7 +208,7 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
   }
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPDEL'ed '%s'.", controlid(sender), tg->name->content);
-  trustlog(tg, controlid(sender), "Deleted group '%s'.", tg->name->content);
+  trustlog(tg, sender->authname, "Deleted group '%s'.", tg->name->content);
 
   triggerhook(HOOK_TRUSTS_DELGROUP, tg);
   tg_delete(tg);
@@ -253,7 +253,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host deleted.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTDEL'ed %s from group '%s'.", controlid(sender), host, tg->name->content);
-  trustlog(tg, controlid(sender), "Removed host '%s'.", host);
+  trustlog(tg, sender->authname, "Removed host '%s'.", host);
 
   return CMD_OK;
 }
@@ -376,7 +376,7 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Group modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed group '%s' (field: %s, value: %s)", controlid(sender), tg->name->content, what, to);
-  trustlog(tg, controlid(sender), "Modified %s: %s", what, to);
+  trustlog(tg, sender->authname, "Modified %s: %s", what, to);
 
   return CMD_OK;
 }
@@ -448,7 +448,7 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
   }
 
     controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
-  trustlog(tg, controlid(sender), "Comment: %s", comment);
+  trustlog(tg, sender->authname, "Comment: %s", comment);
 
   return CMD_OK;
 }
