@@ -27,8 +27,7 @@ int tsns_dotrustlist(void *source, int cargc, char **cargv) {
   searchASTExpr tree;
   
   if(cargc < 1) {
-    controlreply(source,"Syntax: trustlist <#groupid>");
-    return CMD_ERROR;
+    return CMD_USAGE;
   }
 
   if(cargv[0][0]== '#'){

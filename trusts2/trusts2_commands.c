@@ -29,20 +29,20 @@ void _fini(void) {
 void trusts_cmdinit(int hooknum, void *arg) {
   if(commandsregistered)
     return;
-  registercontrolcmd("trustgroupadd",10,7,trust_groupadd);
-  registercontrolcmd("trustgroupmodify",10,4,trust_groupmodify);
-  registercontrolcmd("trustgroupdel",10,2,trust_groupdel);
 
-  registercontrolcmd("trustcomment",10,2,trust_comment);
+  registercontrolhelpcmd("trustgroupadd", NO_OPER,7,trust_groupadd, "Usage: trustgroupadd <howmany> <maxperident> <maxperip> <enforceident> <ownerid>");
+  registercontrolcmd("trustgroupmodify",NO_OPER,4,trust_groupmodify);
+  registercontrolhelpcmd("trustgroupdel",NO_OPER,2,trust_groupdel, "Usage: trustgroupdel <#id|id>");
 
-  registercontrolcmd("trustadd",10,3,trust_add);
-  registercontrolcmd("trustdel",10,2,trust_del);
+  registercontrolhelpcmd("trustcomment",NO_OPER,2,trust_comment, "Usage: trustcomment <#groupid> <comment>");
 
+  registercontrolhelpcmd("trustadd",NO_OPER,3,trust_add, "Usage: trustadd <#groupid> IP[/mask] <duration>");
+  registercontrolhelpcmd("trustdel",NO_OPER,2,trust_del, "Usage: trustdel IP[/mask]");
 
-  registercontrolcmd("truststats",10,2,trust_stats);
-  registercontrolcmd("trustdump",10,2,trust_dump);
+  registercontrolhelpcmd("truststats",NO_OPER,2,trust_stats, "Usage: truststats");
+  registercontrolhelpcmd("trustdump",NO_OPER,2,trust_dump, "Usage: trustdump <start #id> <number>");
 
-  registercontrolcmd("trustlog", 10,2, trust_dotrustlog);
+  registercontrolhelpcmd("trustlog", 10,2, trust_dotrustlog, "Usage: trustlog <#groupid> [duration]");
 
   commandsregistered = 1;
   removeusers = 0;
@@ -84,8 +84,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
   trustgroup_t *t;
 
   if (cargc < 5) {
-    controlreply(sender,"Usage: trustgroupadd howmany maxperident maxperip enforceident ownerid");
-    return CMD_ERROR;
+    return CMD_USAGE;
   }
 
   maxclones = strtoul(cargv[0],NULL,10);
@@ -143,8 +142,7 @@ int trust_del(void *source, int cargc, char **cargv) {
   trustgroup_t *tg;
 
   if (cargc<1) {
-    controlreply(sender,"Syntax: trustdel IP[/mask]");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
@@ -195,8 +193,7 @@ int trust_add(void *source, int cargc, char **cargv) {
   trusthost_t *th;
 
   if (cargc<2) {
-    controlreply(sender,"Syntax: trustadd <#groupid> IP[/mask] <duration>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if(cargv[0][0]== '#'){
@@ -306,11 +303,7 @@ int trust_dump(void *source, int cargc, char **cargv) {
   long num=0, count=0, lines=0;
 
   if (cargc<2) {
-    controlreply(sender, "Syntax: trustdump <start #id> <number>");
-    controlreply(sender, "Dumps <number> trustgroups starting from <start #id>.");
-    controlreply(sender, "This allows to dump very large numbers of groups,");
-    controlreply(sender, "so use with care.");
-    return CMD_ERROR;
+    return CMD_USAGE;
   }
   strncpy(tmps3,cargv[0],20);
   tmps3[20]='\0';
@@ -390,7 +383,7 @@ int trust_groupmodify(void *source, int cargc, char **cargv) {
   trustgroup_t *tg;
 
   if (cargc<3 || cargc==4) {
-    controlreply(sender,"Syntax: trustgroupmodify <#groupid> <what> [+|-|=]number");
+    controlreply(sender,"Usage: trustgroupmodify <#groupid> <what> [+|-|=]number");
     controlreply(sender,"        +20 means add 20, =20 replaces current value, -20 means subtract");
     controlreply(sender,"        what: maxclones, maxperident, maxperip, enforceident, ownerid");
     return CMD_OK;
@@ -541,8 +534,7 @@ int trust_groupdel(void *source, int cargc, char **cargv) {
   patricia_node_t *node;
 
   if (cargc<1) {
-    controlreply(sender,"Syntax: trustgroupdel <#id|id>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if(cargv[0][0]== '#'){
@@ -672,8 +664,7 @@ int trust_comment(void *source, int cargc, char **cargv) {
   trustgroup_t *tg;
 
   if (cargc<2) {
-    controlreply(sender,"Syntax: trustcomment <#groupid> <comment>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if(cargv[0][0]== '#'){
@@ -708,8 +699,7 @@ int trust_dotrustlog(void *source, int cargc, char **cargv) {
   int trustid; 
 
   if (cargc < 1) {
-    controlreply(np,"Syntax: trustlog <#groupid> [duration]");
-    return CMD_ERROR;
+    return CMD_USAGE;
   }
 
   if(cargv[0][0]== '#'){
