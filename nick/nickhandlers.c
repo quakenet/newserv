@@ -29,7 +29,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
   char *fakehost;
   char *accountts;
   char *accountflags;
-  struct irc_in_addr ipaddress;
+  struct irc_in_addr ipaddress, ipaddress_canonical;
   char *accountid;
   unsigned long userid;
   
@@ -148,8 +148,10 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->realname->nicks=np;
     np->timestamp=timestamp;
 
-    base64toip(cargv[cargc-3], &ipaddress);
-    np->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
+    memcpy(&(np->ipaddress), &ipaddress, sizeof(ipaddress));
+
+    ip_canonicalize_6to4(&ipaddress_canonical, &ipaddress);
+    np->ipnode = refnode(iptree, &ipaddress_canonical, irc_in_addr_is_ipv4(&ipaddress) ? 128 : 64);
     node_increment_usercount(np->ipnode);
 
     np->away=NULL;

@@ -7,9 +7,15 @@ void trusts_newnick(nick *sender, int moving) {
   uint32_t host;
   trusthost *th;
   void *arg[2];
+  struct irc_in_addr ipaddress;
 
-  host = irc_in_addr_v4_to_int(&sender->p_ipaddr);
-  th = th_getbyhost(host);
+  ip_canonicalize_6to4(&ipaddress, &sender->p_ipaddr);
+
+  if (irc_in_addr_is_ipv4(&ipaddress)) {
+    host = irc_in_addr_v4_to_int(&ipaddress);
+    th = th_getbyhost(host);
+  } else
+    th = NULL;
 
   settrusthost(sender, th);
   if(!th) {

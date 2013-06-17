@@ -485,3 +485,21 @@ int ipmask_check(const struct irc_in_addr *addr, const struct irc_in_addr *mask,
   }
   return -1;
 }
+
+/** Convert IP addresses to canonical form for comparison.  6to4 addresses
+ * are converted to IPv4 addresses. All other addresses are left alone.
+ * @param[out] out Receives canonical format for address.
+ * @param[in] in IP address to canonicalize.
+ */
+void ip_canonicalize_6to4(struct irc_in_addr *out, const struct irc_in_addr *in)
+{
+    if (in->in6_16[0] == htons(0x2002)) {
+        out->in6_16[0] = out->in6_16[1] = out->in6_16[2] = 0;
+        out->in6_16[3] = out->in6_16[4] = 0;
+        out->in6_16[5] = 0xffff;
+        out->in6_16[6] = in->in6_16[1];
+        out->in6_16[7] = in->in6_16[2];
+    } else
+        memcpy(out, in, sizeof(*out));
+}
+
