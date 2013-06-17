@@ -94,6 +94,9 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
 
   controlreply(np, "%s%s%s %-10d %-10d %-21s %-15d /%-14d%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), th->maxpernode, (irc_in_addr_is_ipv4(&th->ip))?(th->nodebits - 96):th->nodebits, parentbuf);  
 
+  /* Make sure we're not seeing this subtree again. */
+  th->marker = -1;
+
   for(th=th->children;th;th=th->nextbychild)
     outputtree(np, marker, originalgroup, th, depth + 1);
 }
