@@ -487,7 +487,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int trusts_cmdtrustlogspew(void *source, int cargc, char **cargv) {
+static int trusts_cmdtrustlog(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *name;
   int groupid;
@@ -583,7 +583,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");
   registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, "Usage: trustgroupmodify <#id|name|id> <field> <new value>");
   registercontrolhelpcmd("trusthostmodify", NO_OPER, 4, trusts_cmdtrusthostmodify, "Usage: trusthostmodify <#id|name|id> <host> <field> <new value>");
-  registercontrolhelpcmd("trustlogspew", NO_OPER, 2, trusts_cmdtrustlogspew, "Usage: trustlogspew <#id|name> ?limit?\nShows log for the specified trust group.");
+  registercontrolhelpcmd("trustlog", NO_OPER, 2, trusts_cmdtrustlog, "Usage: trustlog <#id|name> ?limit?\nShows log for the specified trust group.");
   registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> ?limit?\nShows maching log entries.");
   registercontrolhelpcmd("trustcomment", NO_OPER, 2, trusts_cmdtrustcomment, "Usage: trustcomment <#id|name> <comment>\nLogs a comment for a trust.");
   registercontrolhelpcmd("trustcleanup", NO_DEVELOPER, 0, trusts_cmdtrustcleanup, "Usage: trustcleanup\nCleans up unused trusts.");
@@ -600,7 +600,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustdel", trusts_cmdtrustdel);
   deregistercontrolcmd("trustgroupmodify", trusts_cmdtrustgroupmodify);
   deregistercontrolcmd("trusthostmodify", trusts_cmdtrusthostmodify);
-  deregistercontrolcmd("trustlogspew", trusts_cmdtrustlogspew);
+  deregistercontrolcmd("trustlog", trusts_cmdtrustlog);
   deregistercontrolcmd("trustloggrep", trusts_cmdtrustloggrep);
   deregistercontrolcmd("trustcomment", trusts_cmdtrustcomment);
   deregistercontrolcmd("trustcleanup", trusts_cmdtrustcleanup);
