@@ -21,6 +21,7 @@
 #define MAXTRUSTEDFOR 50000
 #define MAXDURATION 365 * 86400 * 20
 #define MAXPERIDENT 1000
+#define MAXPERNODE 1000
 
 #define TABLES_REGULAR 0
 #define TABLES_MIGRATION 1
@@ -138,6 +139,7 @@ trustgroup *tg_copy(trustgroup *);
 trusthost *th_copy(trusthost *);
 void tg_update(trustgroup *);
 void tg_delete(trustgroup *);
+void th_update(trusthost *);
 void th_delete(trusthost *);
 void trustlog(trustgroup *tg, const char *user, const char *format, ...);
 void trustlogspewid(nick *np, unsigned int groupid, unsigned int limit);

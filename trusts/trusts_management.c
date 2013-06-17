@@ -11,7 +11,7 @@
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-typedef int (*trustmodificationfn)(trustgroup *, char *arg);
+typedef int (*trustmodificationfn)(void *, char *arg);
 
 struct trustmodification {
   char name[50];
@@ -260,7 +260,8 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int modifycomment(trustgroup *tg, char *comment) {
+static int modifycomment(void *arg, char *comment) {
+  trustgroup *tg = arg;
   sstring *n = getsstring(comment, COMMENTLEN);
   if(!n)
     return 0;
@@ -271,7 +272,8 @@ static int modifycomment(trustgroup *tg, char *comment) {
   return 1;
 }
 
-static int modifycontact(trustgroup *tg, char *contact) {
+static int modifycontact(void *arg, char *contact) {
+  trustgroup *tg = arg;
   sstring *n = getsstring(contact, CONTACTLEN);
   if(!n)
     return 0;
@@ -282,7 +284,8 @@ static int modifycontact(trustgroup *tg, char *contact) {
   return 1;
 }
 
-static int modifytrustedfor(trustgroup *tg, char *num) {
+static int modifytrustedfor(void *arg, char *num) {
+  trustgroup *tg = arg;
   unsigned int trustedfor = strtoul(num, NULL, 10);
 
   if(trustedfor > MAXTRUSTEDFOR)
@@ -293,7 +296,8 @@ static int modifytrustedfor(trustgroup *tg, char *num) {
   return 1;
 }
 
-static int modifymaxperident(trustgroup *tg, char *num) {
+static int modifymaxperident(void *arg, char *num) {
+  trustgroup *tg = arg;
   unsigned int maxperident = strtoul(num, NULL, 10);
 
   if(maxperident > MAXPERIDENT)
@@ -304,7 +308,9 @@ static int modifymaxperident(trustgroup *tg, char *num) {
   return 1;
 }
 
-static int modifyenforceident(trustgroup *tg, char *num) {
+static int modifyenforceident(void *arg, char *num) {
+  trustgroup *tg = arg;
+
   if(num[0] == '1') {
     tg->mode = 1;
   } else if(num[0] == '0') {
@@ -316,7 +322,8 @@ static int modifyenforceident(trustgroup *tg, char *num) {
   return 1;
 }
 
-static int modifyexpires(trustgroup *tg, char *expires) {
+static int modifyexpires(void *arg, char *expires) {
+  trustgroup *tg = arg;
   int howlong = durationtolong(expires);
 
   if((howlong < 0) || (howlong > MAXDURATION))
@@ -330,8 +337,34 @@ static int modifyexpires(trustgroup *tg, char *expires) {
   return 1;
 }
 
-static array trustmods_a;
-static struct trustmodification *trustmods;
+static int modifymaxpernode(void *arg, char *num) {
+  trusthost *th = arg;
+  int maxpernode = strtol(num, NULL, 10);
+  
+  if((maxpernode < 0) || (maxpernode > MAXPERNODE))
+    return 0;
+  
+  th->maxpernode = maxpernode;
+
+  return 1;
+}
+
+static int modifynodebits(void *arg, char *num) {
+  trusthost *th = arg;
+  int nodebits = strtol(num, NULL, 10);
+
+  if((nodebits < 0) || (nodebits > 128))
+    return 0;
+
+  th->nodebits = nodebits;
+
+  return 1;
+}
+
+static array trustgroupmods_a;
+static struct trustmodification *trustgroupmods;
+static array trusthostmods_a;
+static struct trustmodification *trusthostmods;
 
 static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
@@ -353,9 +386,9 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   to = cargv[2];
 
   sbinit(&b, validfields, sizeof(validfields));
-  for(i=0;i<trustmods_a.cursi;i++) {
-    if(!strcmp(what, trustmods[i].name)) {
-      if(!(trustmods[i].fn)(tg, to)) {
+  for(i=0;i<trustgroupmods_a.cursi;i++) {
+    if(!strcmp(what, trustgroupmods[i].name)) {
+      if(!(trustgroupmods[i].fn)(tg, to)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
@@ -364,10 +397,10 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
 
     if(i > 0)
       sbaddstr(&b, ", ");
-    sbaddstr(&b, trustmods[i].name);
+    sbaddstr(&b, trustgroupmods[i].name);
   }
 
-  if(i == trustmods_a.cursi) {
+  if(i == trustgroupmods_a.cursi) {
     sbterminate(&b);
     controlreply(sender, "No such field, valid fields are: %s", validfields);
     return CMD_ERROR;
@@ -378,6 +411,71 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Group modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed group '%s' (field: %s, value: %s)", controlid(sender), tg->name->content, what, to);
+  trustlog(tg, sender->authname, "Modified %s: %s", what, to);
+
+  return CMD_OK;
+}
+
+static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
+  trustgroup *tg;
+  trusthost *th;
+  nick *sender = source;
+  char *what, *to, validfields[512];
+  int i;
+  StringBuf b;
+  struct irc_in_addr ip;
+  unsigned char bits;
+
+  if(cargc < 4)
+    return CMD_USAGE;
+
+  tg = tg_strtotg(cargv[0]);
+  if(!tg) {
+    controlreply(sender, "Couldn't look up trustgroup.");
+    return CMD_ERROR;
+  }
+
+  if(!ipmask_parse(cargv[1], &ip, &bits)) {
+    controlreply(sender, "Invalid host.");
+    return CMD_ERROR;
+  }
+
+  th = th_getbyhostandmask(&ip, bits);
+
+  if(th->group != tg) {
+    controlreply(sender, "Host does not belong to the specified group.");
+    return CMD_ERROR;
+  }
+
+  what = cargv[2];
+  to = cargv[3];
+
+  sbinit(&b, validfields, sizeof(validfields));
+  for(i=0;i<trusthostmods_a.cursi;i++) {
+    if(!strcmp(what, trusthostmods[i].name)) {
+      if(!(trusthostmods[i].fn)(th, to)) {
+        controlreply(sender, "An error occured changing that property, check the syntax.");
+        return CMD_ERROR;
+      }
+      break;
+    }
+
+    if(i > 0)
+      sbaddstr(&b, ", ");
+    sbaddstr(&b, trusthostmods[i].name);
+  }
+
+  if(i == trusthostmods_a.cursi) {
+    sbterminate(&b);
+    controlreply(sender, "No such field, valid fields are: %s", validfields);
+    return CMD_ERROR;
+  }
+
+  triggerhook(HOOK_TRUSTS_MODIFYHOST, th);
+  th_update(th);
+  controlreply(sender, "Host modified.");
+
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), trusts_cidr2str(&ip, bits), tg->name->content, what, to);
   trustlog(tg, sender->authname, "Modified %s: %s", what, to);
 
   return CMD_OK;
@@ -478,6 +576,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustgroupdel", NO_OPER, 1, trusts_cmdtrustgroupdel, "Usage: trustgroupdel <#id|name|id>");
   registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");
   registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, "Usage: trustgroupmodify <#id|name|id> <field> <new value>");
+  registercontrolhelpcmd("trusthostmodify", NO_OPER, 4, trusts_cmdtrusthostmodify, "Usage: trusthostmodify <#id|name|id> <host> <field> <new value>");
   registercontrolhelpcmd("trustlogspew", NO_OPER, 2, trusts_cmdtrustlogspew, "Usage: trustlogspew <#id|name> ?limit?\nShows log for the specified trust group.");
   registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> ?limit?\nShows maching log entries.");
   registercontrolhelpcmd("trustcomment", NO_OPER, 2, trusts_cmdtrustcomment, "Usage: trustcomment <#id|name> <comment>\nLogs a comment for a trust.");
@@ -494,6 +593,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustgroupdel", trusts_cmdtrustgroupdel);
   deregistercontrolcmd("trustdel", trusts_cmdtrustdel);
   deregistercontrolcmd("trustgroupmodify", trusts_cmdtrustgroupmodify);
+  deregistercontrolcmd("trusthostmodify", trusts_cmdtrusthostmodify);
   deregistercontrolcmd("trustlogspew", trusts_cmdtrustlogspew);
   deregistercontrolcmd("trustloggrep", trusts_cmdtrustloggrep);
   deregistercontrolcmd("trustcomment", trusts_cmdtrustcomment);
@@ -503,15 +603,19 @@ static void deregistercommands(int hooknum, void *arg) {
 static int loaded;
 
 #define _ms_(x) (struct trustmodification){ .name = # x, .fn = modify ## x }
-#define MS(x) { int slot = array_getfreeslot(&trustmods_a); trustmods = (struct trustmodification *)trustmods_a.content; memcpy(&trustmods[slot], &_ms_(x), sizeof(struct trustmodification)); }
+#define MSGROUP(x) { int slot = array_getfreeslot(&trustgroupmods_a); trustgroupmods = (struct trustmodification *)trustgroupmods_a.content; memcpy(&trustgroupmods[slot], &_ms_(x), sizeof(struct trustmodification)); }
+#define MSHOST(x) { int slot = array_getfreeslot(&trusthostmods_a); trusthostmods = (struct trustmodification *)trusthostmods_a.content; memcpy(&trusthostmods[slot], &_ms_(x), sizeof(struct trustmodification)); }
 
 static void setupmods(void) {
-  MS(expires);
-  MS(enforceident);
-  MS(maxperident);
-  MS(contact);
-  MS(comment);
-  MS(trustedfor);
+  MSGROUP(expires);
+  MSGROUP(enforceident);
+  MSGROUP(maxperident);
+  MSGROUP(contact);
+  MSGROUP(comment);
+  MSGROUP(trustedfor);
+
+  MSHOST(maxpernode);
+  MSHOST(nodebits);
 }
 
 static int cleanuptrusts_active;
@@ -599,7 +703,8 @@ static void schedulecleanup(int hooknum, void *arg) {
 void _init(void) {
   sstring *m;
 
-  array_init(&trustmods_a, sizeof(struct trustmodification));
+  array_init(&trustgroupmods_a, sizeof(struct trustmodification));
+  array_init(&trusthostmods_a, sizeof(struct trustmodification));
   setupmods();
 
   m = getconfigitem("trusts", "master");
@@ -619,7 +724,8 @@ void _init(void) {
 }
 
 void _fini(void) {
-  array_free(&trustmods_a);
+  array_free(&trustgroupmods_a);
+  array_free(&trusthostmods_a);
 
   if(!loaded)
     return;

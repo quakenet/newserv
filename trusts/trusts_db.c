@@ -356,6 +356,13 @@ void tg_delete(trustgroup *tg) {
   tg_free(tg, 1);
 }
 
+void th_update(trusthost *th) {
+  trustsdb->squery(trustsdb,
+    "UPDATE ? SET maxpernode = ?, nodebits = ? WHERE id = ?",
+    "Tuuu", "hosts", th->maxpernode, th->nodebits, th->id
+  );
+}
+
 void trustsdb_deleteth(char *table, trusthost *th) {
   trustsdb->squery(trustsdb,
     "DELETE FROM ? WHERE id = ?",
