@@ -8,14 +8,14 @@ void glinebynick(nick *np, int duration, const char *reason) {
 }
 
 void glinebyhost(const char *ident, const char *hostname, int duration, const char *reason) {
-  uint32_t ip;
-  short mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   trusthost *th;
 
-  if(trusts_parsecidr(hostname, &ip, &mask)) {
-    th = th_getbyhost(ip);
+  if(ipmask_parse(hostname, &ip, &bits)) {
+    th = th_getbyhost(&ip);
 
-    if(th) {
+    if(th && th->group->mode) {
       trustgline(th->group, ident, duration, reason);
       return;
     }
@@ -25,14 +25,14 @@ void glinebyhost(const char *ident, const char *hostname, int duration, const ch
 }
 
 void unglinebyhost(const char *ident, const char *hostname, int duration, const char *reason) {
-  uint32_t ip;
-  short mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   trusthost *th;
 
-  if(trusts_parsecidr(hostname, &ip, &mask)) {
-    th = th_getbyhost(ip);
+  if(ipmask_parse(hostname, &ip, &bits)) {
+    th = th_getbyhost(&ip);
 
-    if(th) {
+    if(th && th->group->mode) {
       trustungline(th->group, ident, duration, reason);
       return;
     }
