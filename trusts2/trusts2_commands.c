@@ -76,7 +76,6 @@ void trusts_cmdfini() {
 
 int trust_groupadd(void *source, int cargc, char **cargv) {
   nick *sender=(nick *)source;
-  int expiry;
   unsigned long maxclones;
   unsigned short maxperip;
   unsigned long  maxperident;
@@ -84,8 +83,8 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
   unsigned long ownerid;
   trustgroup_t *t;
 
-  if (cargc < 6) {
-    controlreply(sender,"Usage: trustgroupadd howmany howlong maxperident maxperip enforceident ownerid");
+  if (cargc < 5) {
+    controlreply(sender,"Usage: trustgroupadd howmany maxperident maxperip enforceident ownerid");
     return CMD_ERROR;
   }
 
@@ -94,27 +93,22 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
     /* we allow 0 for unlimited trusts, and only warn on this */
     controlreply(sender, "WARNING: large maximum number of clients - %lu", maxclones);
   }
-  expiry = durationtolong(cargv[1]);
-  if (expiry > (365 * 86400) ) {
-    controlreply(sender,"ERROR: Invalid duration given - temporary trusts must be less than 1 year");
-    return CMD_ERROR;
-  }
-  ownerid  = strtoul(cargv[5],NULL,10);
-  maxperip = strtoul(cargv[3],NULL,10);
+  ownerid  = strtoul(cargv[4],NULL,10);
+  maxperip = strtoul(cargv[2],NULL,10);
   if (maxperip > 500) {
     controlreply(sender, "ERROR: MaxPerIP value should be less then 500 (if set)");
     return CMD_ERROR;
   }
-  maxperident = strtoul(cargv[2],NULL,10);
+  maxperident = strtoul(cargv[1],NULL,10);
   if (maxperident > 50) {
     controlreply(sender, "ERROR: MaxPerIdent value should be less then 50 (if set)");
     return CMD_ERROR;
   }
-  if (((cargv[4][0]!='0') && (cargv[4][0]!='1')) || (cargv[4][1]!='\0')) {
+  if (((cargv[3][0]!='0') && (cargv[3][0]!='1')) || (cargv[3][1]!='\0')) {
     controlreply(sender,"ERROR: enforceident is a boolean setting, that means it can only be 0 or 1");
     return CMD_ERROR;
   }
-  enforceident = cargv[4][0] == '1';
+  enforceident = cargv[3][0] == '1';
 
   if ( findtrustgroupbyownerid(ownerid) ) {
     controlreply(sender, "ERROR: Q User ID %d already has a trustgroup", ownerid);
@@ -136,7 +130,7 @@ int trust_groupadd(void *source, int cargc, char **cargv) {
 
   controlreply(sender,"Adding trustgroup with ID %lu", t->id);
   controlreply(sender,"Connections: %d, Enforceident %d, Per ident: %d, Per IP %d",maxclones,enforceident,maxperident,maxperip);
-  controlreply(sender,"Expires: %d, User ID: %d", expiry, ownerid);
+  controlreply(sender,"User ID: %d", ownerid);
   controlwall(NO_OPER, NL_TRUSTS, "NewTrust: ID: %lu, Connections: %d, Enforceident %d, Per ident: %d, Per IP %d, Owner %d", t->id,maxclones,enforceident,maxperident,maxperip, ownerid);
   return CMD_OK;
 }
