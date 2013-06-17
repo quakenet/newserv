@@ -373,6 +373,15 @@ void th_delete(trusthost *th) {
     }
   }
 
+  if(th->parent) {
+    for(pnext=&(th->parent->children);*pnext;pnext=&((*pnext)->nextbychild)) {
+      if(*pnext == th) {
+        *pnext = th->nextbychild;
+        break;
+      }
+    }
+  }
+
   for(np=th->users;np;np=nextbytrust(np))
     settrusthost(np, NULL);
 
