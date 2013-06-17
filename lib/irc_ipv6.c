@@ -486,19 +486,25 @@ int ipmask_check(const struct irc_in_addr *addr, const struct irc_in_addr *mask,
   return -1;
 }
 
-/** Convert IP addresses to canonical form for comparison.  6to4 addresses
+/** Convert IP addresses to canonical form for comparison.  6to4 and Teredo addresses
  * are converted to IPv4 addresses. All other addresses are left alone.
  * @param[out] out Receives canonical format for address.
  * @param[in] in IP address to canonicalize.
  */
-void ip_canonicalize_6to4(struct irc_in_addr *out, const struct irc_in_addr *in)
+void ip_canonicalize_tunnel(struct irc_in_addr *out, const struct irc_in_addr *in)
 {
-    if (in->in6_16[0] == htons(0x2002)) {
+    if (in->in6_16[0] == htons(0x2002)) { /* 6to4 */
         out->in6_16[0] = out->in6_16[1] = out->in6_16[2] = 0;
         out->in6_16[3] = out->in6_16[4] = 0;
         out->in6_16[5] = 0xffff;
         out->in6_16[6] = in->in6_16[1];
         out->in6_16[7] = in->in6_16[2];
+    } else if(in->in6_16[0] == htons(0x2001) && in->in6_16[1] == 0) { /* Teredo */
+        out->in6_16[0]  = out->in6_16[1] = out->in6_16[2] = 0;
+        out->in6_16[3] = out->in6_16[4] = 0;
+        out->in6_16[5] = 0xffff;
+        out->in6_16[6] = ~(in->in6_16[6]);
+        out->in6_16[7] = ~(in->in6_16[7]);
     } else
         memcpy(out, in, sizeof(*out));
 }
