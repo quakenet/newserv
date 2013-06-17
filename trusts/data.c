@@ -450,3 +450,11 @@ int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
 
   return 1;
 }
+
+int th_modify(trusthost *oldth, trusthost *newth) {
+  oldth->maxpernode = newth->maxpernode;
+  oldth->nodebits = newth->nodebits;
+
+  return 1;
+}
+

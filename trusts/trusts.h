@@ -121,6 +121,7 @@ unsigned int nexttgmarker(void);
 unsigned int nextthmarker(void);
 trusthost *th_getbyid(unsigned int);
 int tg_modify(trustgroup *, trustgroup *);
+int th_modify(trusthost *, trusthost *);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, trustgroup *);

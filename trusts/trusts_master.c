@@ -109,6 +109,12 @@ static void groupmodified(int hooknum, void *arg) {
   xsb_broadcast("trmodifygroup", NULL, "%s", dumptg(tg, 0));
 }
 
+static void hostmodified(int hooknum, void *arg) {
+  trusthost *th = arg;
+
+  xsb_broadcast("trmodifyhost", NULL, "%s", dumpth(th, 0));
+}
+
 static int trusts_cmdtrustforceresync(void *source, int argc, char **argv) {
   nick *np = source;
 
@@ -133,6 +139,7 @@ static void __dbloaded(int hooknum, void *arg) {
   registerhook(HOOK_TRUSTS_ADDHOST, hostadded);
   registerhook(HOOK_TRUSTS_DELHOST, hostremoved);
   registerhook(HOOK_TRUSTS_MODIFYGROUP, groupmodified);
+  registerhook(HOOK_TRUSTS_MODIFYHOST, hostmodified);
 
   /* we've just reloaded */
   /* if we're not online, no problem, other nodes will ask us individually */
@@ -154,6 +161,7 @@ static void __dbclosed(int hooknum, void *arg) {
   registerhook(HOOK_TRUSTS_ADDHOST, hostadded);
   registerhook(HOOK_TRUSTS_DELGROUP, hostremoved);
   registerhook(HOOK_TRUSTS_MODIFYGROUP, groupmodified);
+  registerhook(HOOK_TRUSTS_MODIFYHOST, hostmodified);
 
   deregistercontrolcmd("trustforceresync", trusts_cmdtrustforceresync);
 }
