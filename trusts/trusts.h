@@ -35,7 +35,8 @@ struct trusthost;
 typedef struct trusthost {
   unsigned int id;
 
-  uint32_t ip, mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   unsigned int maxusage;
   time_t created;
   time_t lastseen;
@@ -92,9 +93,7 @@ int trusts_fullyonline(void);
 
 /* formats.c */
 char *trusts_timetostr(time_t);
-int trusts_parsecidr(const char *, uint32_t *, short *);
-int trusts_str2cidr(const char *, uint32_t *, uint32_t *);
-char *trusts_cidr2str(uint32_t, uint32_t);
+char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char);
 char *dumpth(trusthost *, int);
 char *dumptg(trustgroup *, int);
 int parseth(char *, trusthost *, unsigned int *, int);
@@ -108,14 +107,14 @@ void th_free(trusthost *);
 trusthost *th_add(trusthost *);
 void tg_free(trustgroup *, int);
 trustgroup *tg_add(trustgroup *);
-trusthost *th_getbyhost(uint32_t);
-trusthost *th_getbyhostandmask(uint32_t, uint32_t);
-trusthost *th_getsmallestsupersetbyhost(uint32_t, uint32_t);
+trusthost *th_getbyhost(struct irc_in_addr *);
+trusthost *th_getbyhostandmask(struct irc_in_addr *, uint32_t);
+trusthost *th_getsmallestsupersetbyhost(struct irc_in_addr *, uint32_t);
 trustgroup *tg_strtotg(char *);
 void th_adjusthosts(trusthost *th, trusthost *, trusthost *);
-void th_getsuperandsubsets(uint32_t, uint32_t, trusthost **, trusthost **);
-trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask);
-trusthost *th_getnextsubsetbyhost(trusthost *th, uint32_t ip, uint32_t mask);
+void th_getsuperandsubsets(struct irc_in_addr *, uint32_t, trusthost **, trusthost **);
+trusthost *th_getsubsetbyhost(struct irc_in_addr *ip, uint32_t mask);
+trusthost *th_getnextsubsetbyhost(trusthost *th, struct irc_in_addr *ip, uint32_t mask);
 void th_linktree(void);
 unsigned int nexttgmarker(void);
 unsigned int nextthmarker(void);

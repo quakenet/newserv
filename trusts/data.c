@@ -71,7 +71,7 @@ void th_linktree(void) {
   /* ugh */
   for(tg=tglist;tg;tg=tg->next)
     for(th=tg->hosts;th;th=th->next)
-      th->parent = th_getsmallestsupersetbyhost(th->ip, th->mask);
+      th->parent = th_getsmallestsupersetbyhost(&th->ip, th->bits);
 
   for(tg=tglist;tg;tg=tg->next)
     for(th=tg->hosts;th;th=th->next)
@@ -90,9 +90,6 @@ trusthost *th_add(trusthost *ith) {
 
   th->users = NULL;
   th->count = 0;
-
-  th->maxpernode = 0;
-  th->nodebits = 128;
 
   th->parent = NULL;
   th->children = NULL;
@@ -146,16 +143,16 @@ trustgroup *tg_add(trustgroup *itg) {
   return tg;
 }
 
-trusthost *th_getbyhost(uint32_t ip) {
+trusthost *th_getbyhost(struct irc_in_addr *ip) {
   trustgroup *tg;
   trusthost *th, *result = NULL;
-  uint32_t mask;
+  uint32_t bits;
 
   for(tg=tglist;tg;tg=tg->next) {
     for(th=tg->hosts;th;th=th->next) {
-      if((ip & th->mask) == th->ip) {
-        if(!result || (th->mask > mask)) {
-          mask = th->mask;
+      if(ipmask_check(ip, &th->ip, th->bits)) {
+        if(!result || (th->bits > bits)) {
+          bits = th->bits;
           result = th;
         }
       }
@@ -165,29 +162,29 @@ trusthost *th_getbyhost(uint32_t ip) {
   return result;
 }
 
-trusthost *th_getbyhostandmask(uint32_t ip, uint32_t mask) {
+trusthost *th_getbyhostandmask(struct irc_in_addr *ip, uint32_t bits) {
   trustgroup *tg;
   trusthost *th;
 
   for(tg=tglist;tg;tg=tg->next)
     for(th=tg->hosts;th;th=th->next)
-      if((th->ip == ip) && (th->mask == mask))
+      if(ipmask_check(ip, &th->ip, 128) && th->bits == bits)
         return th;
 
   return NULL;
 }
 
 /* returns the ip with the smallest prefix that is still a superset of the given host */
-trusthost *th_getsmallestsupersetbyhost(uint32_t ip, uint32_t mask) {
+trusthost *th_getsmallestsupersetbyhost(struct irc_in_addr *ip, uint32_t bits) {
   trustgroup *tg;
   trusthost *th, *result = NULL;
-  uint32_t smask;
+  uint32_t sbits;
 
   for(tg=tglist;tg;tg=tg->next) {
     for(th=tg->hosts;th;th=th->next) {
-      if(th->ip == (ip & th->mask)) {
-        if((th->mask < mask) && (!result || (th->mask > smask))) {
-          smask = th->mask;
+      if(ipmask_check(ip, &th->ip, th->bits)) {
+        if((th->bits < bits) && (!result || (th->bits > sbits))) {
+          sbits = th->bits;
           result = th;
         }
       }
@@ -198,14 +195,14 @@ trusthost *th_getsmallestsupersetbyhost(uint32_t ip, uint32_t mask) {
 }
 
 /* returns the first ip that is a subset it comes across */
-trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask) {
+trusthost *th_getsubsetbyhost(struct irc_in_addr *ip, uint32_t bits) {
   trustgroup *tg;
   trusthost *th;
 
   for(tg=tglist;tg;tg=tg->next)
     for(th=tg->hosts;th;th=th->next)
-      if((th->ip & mask) == ip)
-        if(th->mask > mask)
+      if(ipmask_check(ip, &th->ip, th->bits))
+        if(th->bits > bits)
           return th;
 
   return NULL;
@@ -245,9 +242,9 @@ static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
   }
 }
 
-void th_getsuperandsubsets(uint32_t ip, uint32_t mask, trusthost **superset, trusthost **subset) {
-  *superset = th_getsmallestsupersetbyhost(ip, mask);
-  *subset = th_getsubsetbyhost(ip, mask);
+void th_getsuperandsubsets(struct irc_in_addr *ip, uint32_t bits, trusthost **superset, trusthost **subset) {
+  *superset = th_getsmallestsupersetbyhost(ip, bits);
+  *subset = th_getsubsetbyhost(ip, bits);
 }
 
 void trusts_flush(void (*thflush)(trusthost *), void (*tgflush)(trustgroup *)) {
@@ -357,7 +354,7 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
     nick *np, *nnp;
     for(np=superset->users;np;np=nnp) {
       nnp = nextbytrust(np);
-      if((irc_in_addr_v4_to_int(&np->p_nodeaddr) & th->mask) == th->ip) {
+      if(ipmask_check(&np->p_nodeaddr, &th->ip, th->bits)) {
         trusts_lostnick(np, 1);
         trusts_newnick(np, 1);
       }
@@ -370,7 +367,7 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
 
     for(i=0;i<NICKHASHSIZE;i++)
       for(np=nicktable[i];np;np=np->next)
-        if(!gettrusthost(np) && ((irc_in_addr_v4_to_int(&np->p_nodeaddr) & th->mask) == th->ip))
+        if(!gettrusthost(np) && ipmask_check(&np->p_nodeaddr, &th->ip, th->bits))
           trusts_newnick(np, 1);
   }
 }

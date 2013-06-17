@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <../nick/nick.h>
 #include "../irc/irc.h"
 #include "trusts.h"
@@ -11,7 +12,7 @@ int trustgline(trustgroup *tg, const char *ident, int duration, const char *reas
   int count = 0;
 
   for(th=tg->hosts;th;th=th->next) {
-    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
+    char *cidrstr = trusts_cidr2str(&th->ip, th->bits);
     irc_send("%s GL * +%s@%s %d %jd :%s", mynumeric->content, ident, cidrstr, duration, (intmax_t)getnettime(), reason);
     count++;
   }
@@ -24,7 +25,7 @@ int trustungline(trustgroup *tg, const char *ident, int duration, const char *re
   int count = 0;
 
   for(th=tg->hosts;th;th=th->next) {
-    char *cidrstr = trusts_cidr2str(th->ip, th->mask);
+    char *cidrstr = trusts_cidr2str(&th->ip, th->bits);
     irc_send("%s GL * +%s@%s %d %jd :%s", mynumeric->content, ident, cidrstr, duration, (intmax_t)getnettime(), reason);
     count++;
   }

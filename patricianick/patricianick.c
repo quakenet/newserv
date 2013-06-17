@@ -46,7 +46,7 @@ void _init() {
 
   registerhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   registerhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
-  registerhook(HOOK_NICK_MOVENODE, &pn_hook_movenodeuser);
+  registerhook(HOOK_NICK_MOVENODE, &pn_hook_nodemoveuser);
 
   registercontrolhelpcmd("nodeuserlist", NO_OPER, 1, &pn_cmd_nodeuserlist, "Usage: nodeuserlist <ipv4|ipv6|cidr4|cidr6>\nLists all users on a given IP address or CIDR range.");
 }
@@ -64,7 +64,7 @@ void _fini() {
 
   deregisterhook(HOOK_NICK_NEWNICK, &pn_hook_newuser);
   deregisterhook(HOOK_NICK_LOSTNICK, &pn_hook_lostuser);
-  deregisterhook(HOOK_NICK_MOVENODE, &pn_hook_movenodeuser);
+  deregisterhook(HOOK_NICK_MOVENODE, &pn_hook_nodemoveuser);
 
   deregistercontrolcmd("nodeuserlist", &pn_cmd_nodeuserlist);
 }

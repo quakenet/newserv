@@ -22,7 +22,8 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
   char *host;
-  uint32_t ip, mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   trusthost *th, *superset, *subset;
 
   if(cargc < 2)
@@ -35,7 +36,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   }
 
   host = cargv[1];
-  if(!trusts_str2cidr(host, &ip, &mask)) {
+  if(!ipmask_parse(host, &ip, &bits)) {
     controlreply(sender, "Invalid host.");
     return CMD_ERROR;
   }
@@ -50,19 +51,19 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
    */
 
   for(th=tg->hosts;th;th=th->next) {
-    if(th->ip == (ip & th->mask)) {
+    if(ipmask_check(&ip, &th->ip, th->bits)) {
       controlreply(sender, "This host (or part of it) is already covered in the given group.");
       return CMD_ERROR;
     }
   }
 
-  if(th_getbyhostandmask(ip, mask)) {
+  if(th_getbyhostandmask(&ip, bits)) {
     controlreply(sender, "This host already exists in another group with the same mask.");
     return CMD_ERROR;
   }
 
   /* this function will set both to NULL if it's equal, hence the check above */
-  th_getsuperandsubsets(ip, mask, &superset, &subset);
+  th_getsuperandsubsets(&ip, bits, &superset, &subset);
   if(superset) {
     /* a superset exists for us, we will be more specific than one existing host */
 
@@ -220,7 +221,8 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
 static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   trusthost *th;
-  uint32_t ip, mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   nick *sender = source;
   char *host;
 
@@ -234,13 +236,13 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   }
 
   host = cargv[1];
-  if(!trusts_str2cidr(host, &ip, &mask)) {
+  if(!ipmask_parse(host, &ip, &bits)) {
     controlreply(sender, "Invalid IP/mask.");
     return CMD_ERROR;
   }
 
   for(th=tg->hosts;th;th=th->next)
-    if((th->ip == ip) && (th->mask == mask))
+    if(ipmask_check(&ip, &th->ip, th->bits) && th->bits == bits)
       break;
 
   if(!th) {
@@ -558,7 +560,7 @@ static void cleanuptrusts(void *arg) {
       triggerhook(HOOK_TRUSTS_DELHOST, th);
       th_delete(th);
 
-      cidrstr = trusts_cidr2str(th->ip, th->mask);
+      cidrstr = trusts_cidr2str(&th->ip, th->bits);
       trustlog(tg, "cleanuptrusts", "Removed host '%s' because it was unused for %d days.", cidrstr, CLEANUP_TH_INACTIVE);
 
       thcount++;

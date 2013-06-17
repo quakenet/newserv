@@ -106,7 +106,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     }
 
     host = result->get(result, 2);
-    if(!trusts_str2cidr(host, &th.ip, &th.mask)) {
+    if(!ipmask_parse(host, &th.ip, &th.bits)) {
       Error("trusts", ERR_WARNING, "Error parsing cidr for host: %s", host);
       continue;
     }
@@ -258,7 +258,7 @@ trusthost *th_copy(trusthost *ith) {
 
   trustsdb_insertth("hosts", th, th->group->id);
 
-  th_getsuperandsubsets(ith->ip, ith->mask, &superset, &subset);
+  th_getsuperandsubsets(&ith->ip, ith->bits, &superset, &subset);
   th_adjusthosts(th, superset, subset);
   th_linktree();
 
@@ -268,7 +268,7 @@ trusthost *th_copy(trusthost *ith) {
 trusthost *th_new(trustgroup *tg, char *host) {
   trusthost *th, nth;
 
-  if(!trusts_str2cidr(host, &nth.ip, &nth.mask))
+  if(!ipmask_parse(host, &nth.ip, &nth.bits))
     return NULL;
 
   nth.group = tg;
@@ -276,6 +276,9 @@ trusthost *th_new(trustgroup *tg, char *host) {
   nth.created = time(NULL);
   nth.lastseen = 0;
   nth.maxusage = 0;
+
+  nth.maxpernode = 0;
+  nth.nodebits = (irc_in_addr_is_ipv4(&nth.ip))?128:64;
 
   th = th_copy(&nth);
   if(!th)
@@ -315,7 +318,7 @@ trustgroup *tg_new(trustgroup *itg) {
 void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
   trustsdb->squery(trustsdb,
     "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen, maxpernode, nodebits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tuusuutuu", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
+    "Tuusuutuu", table, th->id, groupid, trusts_cidr2str(&th->ip, th->bits), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
   );
 }
 

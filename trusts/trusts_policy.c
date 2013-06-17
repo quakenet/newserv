@@ -18,13 +18,14 @@ static void policycheck(int hooknum, void *arg) {
   if(!th)
     return;
 
-  if(th->maxpernode > np->ipnode->usercount) {
+  tg = th->group;
+
+  if(th->maxpernode && np->ipnode->usercount > th->maxpernode) {
     if(np->ipnode->usercount > 5)
       controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, np->ipnode->usercount, th->maxpernode);
     return;
   }
 
-  tg = th->group;
   /*
    * the purpose of this logic is to avoid spam like this:
    * WARNING: tgX exceeded limit: 11 connected vs 10 max

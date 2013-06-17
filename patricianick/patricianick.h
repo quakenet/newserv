@@ -16,7 +16,7 @@ extern int pnick_ext;
 
 void pn_hook_newuser(int hook, void *arg);
 void pn_hook_lostuser(int hook, void *arg);
-void pn_hook_movenodeuser(int hook, void *arg);
+void pn_hook_nodemoveuser(int hook, void *arg);
 
 void addnicktonode(patricia_node_t *node, nick *nick);
 void deletenickfromnode(patricia_node_t *node, nick *nick);

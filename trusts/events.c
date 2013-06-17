@@ -4,18 +4,13 @@
 static void __counthandler(int hooknum, void *arg);
 
 void trusts_newnick(nick *sender, int moving) {
-  uint32_t host;
   trusthost *th;
   void *arg[2];
   struct irc_in_addr ipaddress;
 
   ip_canonicalize_6to4(&ipaddress, &sender->p_ipaddr);
 
-  if (irc_in_addr_is_ipv4(&ipaddress)) {
-    host = irc_in_addr_v4_to_int(&ipaddress);
-    th = th_getbyhost(host);
-  } else
-    th = NULL;
+  th = th_getbyhost(&ipaddress);
 
   settrusthost(sender, th);
   if(!th) {

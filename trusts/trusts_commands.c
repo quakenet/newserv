@@ -75,12 +75,11 @@ static void marktree(array *parents, unsigned int marker, trusthost *th) {
 
 static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth) {
   char *cidrstr, *prespacebuf, *postspacebuf, parentbuf[512];
-  int mask;
 
   if(th->marker != marker)
     return;
 
-  cidrstr = trusts_cidr2str(th->ip, th->mask);
+  cidrstr = trusts_cidr2str(&th->ip, th->bits);
   calculatespaces(depth + 1, 20 + 1, cidrstr, &prespacebuf, &postspacebuf);
 
   if(th->group == originalgroup) {
@@ -93,10 +92,7 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     snprintf(parentbuf, sizeof(parentbuf), "%-10d %s", th->group->id, th->group->name->content);
   }
 
-  /*if (!ipv6) */
-    mask = th->nodebits - 96;
-
-  controlreply(np, "%s%s%s %-10d %-10d %-21s %-15d /%-14d%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), th->maxpernode, mask, parentbuf);  
+  controlreply(np, "%s%s%s %-10d %-10d %-21s %-15d /%-14d%s", prespacebuf, cidrstr, postspacebuf, th->count, th->maxusage, (th->count>0)?"(now)":((th->lastseen>0)?trusts_timetostr(th->lastseen):"(never)"), th->maxpernode, (irc_in_addr_is_ipv4(&th->ip))?(th->nodebits - 96):th->nodebits, parentbuf);  
 
   for(th=th->children;th;th=th->nextbychild)
     outputtree(np, marker, originalgroup, th, depth + 1);
@@ -146,8 +142,8 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   int found = 0, remaining = 50;
   char *name;
   trusthost *th;
-  uint32_t ip;
-  short mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -161,8 +157,8 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  if(trusts_parsecidr(name, &ip, &mask)) {
-    th = th_getbyhost(ip);
+  if(ipmask_parse(name, &ip, &bits)) {
+    th = th_getbyhost(&ip);
 
     if(!th) {
       controlreply(sender, "Specified IP address is not trusted.");

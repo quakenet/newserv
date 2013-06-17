@@ -6,61 +6,10 @@
 #include "../lib/strlfunc.h"
 #include "trusts.h"
 
-int trusts_parsecidr(const char *host, uint32_t *ip, short *mask) {
-  unsigned int octet1 = 0, octet2 = 0, octet3 = 0, octet4 = 0, umask = 32;
-
-  if(sscanf(host, "%u.%u.%u.%u/%u", &octet1, &octet2, &octet3, &octet4, &umask) != 5)
-    if(sscanf(host, "%u.%u.%u/%u", &octet1, &octet2, &octet3, &umask) != 4)
-      if(sscanf(host, "%u.%u/%u", &octet1, &octet2, &umask) != 3)
-        if(sscanf(host, "%u/%u", &octet1, &umask) != 2)
-          if(sscanf(host, "%u.%u.%u.%u", &octet1, &octet2, &octet3, &octet4) != 4)
-            return 0;
-
-  if(octet1 > 255 || octet2 > 255 || octet3 > 255 || octet4 > 255 || umask > 32)
-    return 0;
-
-  *ip = (octet1 << 24) | (octet2 << 16) | (octet3 << 8) | octet4;
-  *mask = umask;
-
-  return 1;
-}
-
-/* returns mask pre-anded */
-int trusts_str2cidr(const char *host, uint32_t *ip, uint32_t *mask) {
-  uint32_t result;
-  short smask;
-
-  if(!trusts_parsecidr(host, &result, &smask))
-    return 0;
-
-  if(smask == 0) {
-    *mask = 0;
-  } else {
-    *mask = 0xffffffff << (32 - smask);
-  }
-  *ip = result & *mask;
-
-  return 1;
-}
-
-char *trusts_cidr2str(uint32_t ip, uint32_t mask) {
+char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char bits) {
   static char buf[100];
-  char maskbuf[10];
 
-  if(mask != 0) {
-    /* count number of trailing zeros */
-    float f = (float)(mask & -mask);
-
-    mask = 32 - ((*(unsigned int *)&f >> 23) - 0x7f);
-  }
-
-  if(mask < 32) {
-    snprintf(maskbuf, sizeof(maskbuf), "/%u", mask);
-  } else {
-    maskbuf[0] = '\0';
-  }
-
-  snprintf(buf, sizeof(buf), "%u.%u.%u.%u%s", (ip >> 24) & 0xff, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff, maskbuf);
+  snprintf(buf, sizeof(buf), "%s/%u", IPtostr(*ip), (irc_in_addr_is_ipv4(ip))?bits-96:bits);
 
   return buf;
 }
@@ -77,9 +26,9 @@ char *dumpth(trusthost *th, int oformat) {
   static char buf[512];
 
   if(oformat) {
-    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%jd", th->group->id, trusts_cidr2str(th->ip, th->mask), th->count, th->maxusage, (intmax_t)th->lastseen);
+    snprintf(buf, sizeof(buf), "#%u,%s/%u,%u,%u,%jd", th->group->id, IPtostr(th->ip), (unsigned int)th->bits, th->count, th->maxusage, (intmax_t)th->lastseen);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd,%jd,%u,%u", th->group->id, trusts_cidr2str(th->ip, th->mask), th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
+    snprintf(buf, sizeof(buf), "%u,%s/%u,%u,%u,%jd,%jd,%u,%u", th->group->id, IPtostr(th->ip), (unsigned int)th->bits, th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
   }
 
   return buf;
@@ -216,7 +165,7 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
     return 0;
   *line++ = '\0';
 
-  if(!trusts_str2cidr(ip, &th->ip, &th->mask))
+  if(!ipmask_parse(ip, &th->ip, &th->bits))
     return 0;
 
   if(oformat) {
