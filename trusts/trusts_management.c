@@ -353,8 +353,11 @@ static int modifynodebits(void *arg, char *num) {
   trusthost *th = arg;
   int nodebits = strtol(num, NULL, 10);
 
-  if((nodebits < 0) || (nodebits > 128))
+  if((nodebits < 0) || (nodebits > ((irc_in_addr_is_ipv4(&th->ip))?32:128)))
     return 0;
+
+  if(irc_in_addr_is_ipv4(&th->ip))
+    nodebits += 96;
 
   th->nodebits = nodebits;
 
