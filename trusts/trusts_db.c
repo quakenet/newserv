@@ -394,6 +394,13 @@ void th_delete(trusthost *th) {
 
   th->group->count -= th->count;
 
+  if(th->parent) {
+    th->parent->count += th->count;
+
+    if(th->lastseen > th->parent->lastseen)
+      th->parent->lastseen = th->lastseen;
+  }
+
   trustsdb_deleteth("hosts", th);
   th_free(th);
 
