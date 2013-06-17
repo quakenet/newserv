@@ -257,7 +257,7 @@ trusthost *th_copy(trusthost *ith) {
   trustsdb_insertth("hosts", th, th->group->id);
 
   th_getsuperandsubsets(ith->ip, ith->mask, &superset, &subset);
-  th_adjusthosts(th, subset, superset);
+  th_adjusthosts(th, superset, subset);
   th_linktree();
 
   return th;
