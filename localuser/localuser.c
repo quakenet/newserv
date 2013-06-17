@@ -108,6 +108,8 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   ((unsigned char *)(ipaddress.in6_16))[14] = 1;
   ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
 
+  memcpy(&newuser->ipaddress, &ipaddress, sizeof(ipaddress));
+
   newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
   node_increment_usercount(newuser->ipnode);
 
