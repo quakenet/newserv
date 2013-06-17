@@ -80,7 +80,7 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     return;
 
   cidrstr = trusts_cidr2str(&th->ip, th->bits);
-  calculatespaces(depth + 1, 20 + 1, cidrstr, &prespacebuf, &postspacebuf);
+  calculatespaces(depth + 1, 30 + 1, cidrstr, &prespacebuf, &postspacebuf);
 
   if(th->group == originalgroup) {
     prespacebuf[0] = '>';
@@ -122,7 +122,7 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
-  controlreply(sender, "Host                 Current    Max        Last seen             Max per Node    Node Mask      Group ID   Group name");
+  controlreply(sender, "Host                            Current    Max        Last seen             Max per Node    Node Mask      Group ID   Group name");
 
   marker = nextthmarker();
   array_init(&parents, sizeof(trusthost *));
