@@ -359,6 +359,9 @@ static int modifynodebits(void *arg, char *num) {
   if(irc_in_addr_is_ipv4(&th->ip))
     nodebits += 96;
 
+  if(nodebits<th->bits)
+    return 0;
+
   th->nodebits = nodebits;
 
   return 1;
