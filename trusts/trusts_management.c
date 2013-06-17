@@ -476,7 +476,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), trusts_cidr2str(&ip, bits), tg->name->content, what, to);
-  trustlog(tg, sender->authname, "Modified %s: %s", what, to);
+  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, tg->name->content, to);
 
   return CMD_OK;
 }
