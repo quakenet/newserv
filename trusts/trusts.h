@@ -29,6 +29,8 @@
 
 #define CLEANUP_TH_INACTIVE 30
 
+#define POLICY_GLINE_DURATION 18
+
 struct trustmigration;
 
 struct trusthost;

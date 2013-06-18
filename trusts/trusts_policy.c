@@ -1,9 +1,11 @@
 #include "../core/hooks.h"
+#include "../core/config.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
-static int countext;
+static int countext, enforcepolicy;
 
 static void policycheck(int hooknum, void *arg) {
   void **args = arg;
@@ -31,7 +33,11 @@ static void policycheck(int hooknum, void *arg) {
   derefnode(iptree, head);
 
   if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, np->ipnode->usercount, th->maxpernode);
+    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
+
+    if(enforcepolicy)
+      irc_send("%s GL * +*@%s %d %jd :Too many connections from your host.", mynumeric->content, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+
     return;
   }
 
@@ -54,8 +60,12 @@ static void policycheck(int hooknum, void *arg) {
 /*
     }
 */
-    if((tg->mode == 1) && (np->ident[0] == '~'))
+    if((tg->mode == 1) && (np->ident[0] == '~')) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
+
+      if (enforcepolicy)
+        irc_send("%s GL * +%s@%s %d %jd :IDENT required from your host.", mynumeric->content, np->ident, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+    }
 
     if(tg->maxperident > 0) {
       int identcount = 0;
@@ -69,8 +79,12 @@ static void policycheck(int hooknum, void *arg) {
         }
       }
 
-      if(identcount > tg->maxperident)
+      if(identcount > tg->maxperident) {
         controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident);
+
+        if (enforcepolicy)
+          irc_send("%s GL * +%s@%s %d %jd :Too many connections from your user.", mynumeric->content, np->ident, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+      }
     }
   } else {
     if(tg->count < tg->maxusage)
@@ -82,6 +96,12 @@ void _init(void) {
   countext = registertgext("count");
   if(countext == -1)
     return;
+
+  sstring *m;
+
+  m = getconfigitem("trusts_policy", "enforcepolicy");
+  if(m)
+    enforcepolicy = atoi(m->content);
 
   registerhook(HOOK_TRUSTS_NEWNICK, policycheck);
   registerhook(HOOK_TRUSTS_LOSTNICK, policycheck);
