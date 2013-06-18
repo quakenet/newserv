@@ -33,7 +33,7 @@ static void policycheck(int hooknum, void *arg) {
   derefnode(iptree, head);
 
   if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
+    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.%s", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
 
     if(enforcepolicy)
       irc_send("%s GL * +*@%s %d %jd :Too many connections from your host.", mynumeric->content, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
@@ -92,6 +92,21 @@ static void policycheck(int hooknum, void *arg) {
   }
 }
 
+static int trusts_cmdtrustpolicy(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+
+  if(cargc < 1) {
+    controlreply(sender, "Trust policy enforcement is currently %s.", enforcepolicy?"enabled":"disabled");
+    return CMD_OK;
+  }
+
+  enforcepolicy = atoi(cargv[0]);
+  controlwall(NO_OPER, NL_TRUSTS, "%s %s trust policy enforcement.", controlid(sender), enforcepolicy?"enabled":"disabled");
+  controlreply(sender, "Trust policy enforcement is now %s.", enforcepolicy?"enabled":"disabled");
+
+  return CMD_OK;
+}
+
 void _init(void) {
   countext = registertgext("count");
   if(countext == -1)
@@ -105,6 +120,8 @@ void _init(void) {
 
   registerhook(HOOK_TRUSTS_NEWNICK, policycheck);
   registerhook(HOOK_TRUSTS_LOSTNICK, policycheck);
+
+  registercontrolhelpcmd("trustpolicy", NO_DEVELOPER, 1, trusts_cmdtrustpolicy, "Usage: trustpolicy ?1|0?\nEnables or disables policy enforcement. Shows current status when no parameter is specified.");
 }
 
 void _fini(void) {
@@ -115,4 +132,6 @@ void _fini(void) {
 
   deregisterhook(HOOK_TRUSTS_NEWNICK, policycheck);
   deregisterhook(HOOK_TRUSTS_LOSTNICK, policycheck);
+
+  deregistercontrolcmd("trustpolicy", trusts_cmdtrustpolicy);
 }
