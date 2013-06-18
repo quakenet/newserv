@@ -100,13 +100,16 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   unsigned int howmany, maxperident, enforceident;
   time_t howlong, expires;
   trustgroup *tg, itg;
+  int override;
 
   if(cargc < 6)
     return CMD_USAGE;
 
+  override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
+
   name = cargv[0];
   howmany = strtoul(cargv[1], NULL, 10);
-  if(!howmany || (howmany > MAXTRUSTEDFOR)) {
+  if(!override && (!howmany || (howmany > MAXTRUSTEDFOR))) {
     controlreply(sender, "Bad value maximum number of clients.");
     return CMD_ERROR;
   }
@@ -123,7 +126,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     expires = 0;
 
   maxperident = strtoul(cargv[3], NULL, 10);
-  if(!howmany || (maxperident > MAXPERIDENT)) {
+  if(maxperident < 0 || (maxperident > MAXPERIDENT)) {
     controlreply(sender, "Bad value for max per ident.");
     return CMD_ERROR;
   }
