@@ -7,11 +7,11 @@
 #include "../irc/irc.h"
 #include "../newsearch/newsearch.h"
 #include "trusts.h"
+#include "newsearch/trusts_newsearch.h"
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-extern struct searchNode *tgroup_parse(searchCtx *ctx, int argc, char **argv);
 extern void printnick_channels(searchCtx *, nick *, nick *);
 
 void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_postbuf) {

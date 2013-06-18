@@ -1,6 +1,7 @@
 #include "../../newsearch/newsearch.h"
 #include "../../core/hooks.h"
 #include "../trusts.h"
+#include "trusts_newsearch.h"
 
 struct searchNode *tgroup_parse(searchCtx *, int argc, char **argv);
 struct searchNode *thastrust_parse(searchCtx *, int argc, char **argv);
