@@ -27,6 +27,8 @@ MODULE_VERSION("");
 #define NO_FOUND_NICKNAME 1
 #define NO_FOUND_AUTHNAME 2
 
+int noperserv_ext;
+
 const flag no_commandflags[] = {
     { 'o', __NO_OPER },
     { 't', __NO_TRUST },

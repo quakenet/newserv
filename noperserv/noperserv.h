@@ -5,7 +5,7 @@
 #include "../noperserv/noperserv_db.h"
 #include "../lib/flags.h"
 
-int noperserv_ext;
+extern int noperserv_ext;
 
 extern const flag no_userflags[];
 extern const flag no_noticeflags[];

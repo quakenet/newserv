@@ -4,10 +4,14 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/nsmalloc.h"
+#include "../newsearch/newsearch.h"
 #include "trusts.h"
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
+
+extern struct searchNode *tgroup_parse(searchCtx *ctx, int argc, char **argv);
+extern void printnick_channels(searchCtx *, nick *, nick *);
 
 void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_postbuf) {
   static char prebuf[512], postbuf[512];
@@ -318,6 +322,17 @@ static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int trusts_cmdtrustspew(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  searchASTExpr tree;
+
+  if(cargc < 1)
+    return CMD_USAGE;
+
+  tree = NSASTNode(tgroup_parse, NSASTLiteral(cargv[0]));
+  return ast_nicksearch(&tree, controlreply, sender, NULL, printnick_channels, NULL, NULL, 2000);
+}
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -329,6 +344,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustdump", NO_OPER, 2, trusts_cmdtrustdump, "Usage: trustdump <#id> <number>");
   registercontrolhelpcmd("trustgline", NO_OPER, 4, trusts_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nGlines a user on all hosts of a trust group.");
   registercontrolhelpcmd("trustungline", NO_OPER, 4, trusts_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nUnglines a user on all hosts of a trust group.");
+  registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -340,6 +356,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustdump", trusts_cmdtrustdump);
   deregistercontrolcmd("trustgline", trusts_cmdtrustgline);
   deregistercontrolcmd("trustungline", trusts_cmdtrustungline);
+  deregistercontrolcmd("trustspew", trusts_cmdtrustspew);
 }
 
 void _init(void) {
