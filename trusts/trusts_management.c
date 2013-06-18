@@ -696,7 +696,7 @@ static void cleanuptrusts(void *arg) {
     tgcount++;
   }
 
-  controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Removed %d trust hosts (inactive for %d days) and %d trust groups.", thcount, CLEANUP_TH_INACTIVE, tgcount);
+  controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Removed %d trust hosts (inactive for %d days) and %d empty trust groups.", thcount, CLEANUP_TH_INACTIVE, tgcount);
 
   cleanuptrusts_active=0;
 }
