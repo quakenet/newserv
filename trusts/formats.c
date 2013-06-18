@@ -9,8 +9,24 @@
 
 char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char bits) {
   static char buf[100];
+  struct irc_in_addr iptemp;
+  int i;
 
-  snprintf(buf, sizeof(buf), "%s/%u", IPtostr(*ip), (irc_in_addr_is_ipv4(ip))?bits-96:bits);
+  for(i=0;i<8;i++) {
+    unsigned char curbits;
+
+    if (bits >= (i + 1) * 16)
+      curbits = 16;
+    else if (bits < i * 16)
+      curbits = 0;
+    else
+      curbits = bits - i * 16;
+
+    uint16_t mask = 0xffff & ~((1 << (16 - curbits)) - 1);
+    iptemp.in6_16[i] = htons(ntohs(ip->in6_16[i]) & mask);
+  }
+
+  snprintf(buf, sizeof(buf), "%s/%u", IPtostr(iptemp), (irc_in_addr_is_ipv4(&iptemp))?bits-96:bits);
 
   return buf;
 }
