@@ -37,7 +37,7 @@ static void policycheck(int hooknum, void *arg) {
     controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
 
     if(enforcepolicy)
-      glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", 0);
+      glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", GLINE_IGNORE_TRUST);
 
     return;
   }
@@ -65,7 +65,7 @@ static void policycheck(int hooknum, void *arg) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
 
       if (enforcepolicy)
-        glinebynick(np, POLICY_GLINE_DURATION, "IDENT required from your host.", GLINE_ALWAYS_USER);
+        glinebynick(np, POLICY_GLINE_DURATION, "IDENT required from your host.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
     }
 
     if(tg->maxperident > 0) {
@@ -84,7 +84,7 @@ static void policycheck(int hooknum, void *arg) {
         controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident);
 
         if (enforcepolicy)
-          glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your user.", GLINE_ALWAYS_USER);
+          glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your user.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
       }
     }
   } else {

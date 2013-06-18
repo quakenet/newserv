@@ -1,7 +1,7 @@
 #ifndef __GLINES_H
 #define __GLINES_H
 
-#define MAXGLINEUSERS        2
+#define MAXGLINEUSERS        100
 
 #define GLINE_IGNORE_TRUST   1
 #define GLINE_ALWAYS_USER    2
