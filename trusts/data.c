@@ -233,12 +233,19 @@ static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
     if(th->next) {
       th = th->next;
     } else {
-      if(!th->group->next)
+      trustgroup *tg = th->group;
+
+      do {
+        tg = tg->next;
+      } while (tg && !tg->hosts);
+
+      if(!tg)
         return NULL;
-      th = th->group->next->hosts;
+
+      th = tg->hosts;
     }
 
-    if(!th || th->parent == orig)
+    if(th->parent == orig)
       return th;
   }
 }
