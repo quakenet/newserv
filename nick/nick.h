@@ -200,7 +200,6 @@ int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
 char *visibleuserhost(nick *np, char *buf);
-void setipnodebits(nick *np, int bits);
 
 /* nickhandlers.c functions */
 int handlenickmsg(void *source, int cargc, char **cargv);

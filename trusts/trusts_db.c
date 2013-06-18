@@ -357,11 +357,6 @@ void tg_delete(trustgroup *tg) {
 }
 
 void th_update(trusthost *th) {
-  nick *np;
-
-  for(np=th->users;np;np=nextbytrust(np))
-    setipnodebits(np, th->nodebits);
-
   trustsdb->squery(trustsdb,
     "UPDATE ? SET maxpernode = ?, nodebits = ? WHERE id = ?",
     "Tuuu", "hosts", th->maxpernode, th->nodebits, th->id

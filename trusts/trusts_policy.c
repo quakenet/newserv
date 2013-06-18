@@ -11,6 +11,8 @@ static void policycheck(int hooknum, void *arg) {
   long moving = (long)args[1];
   trusthost *th = gettrusthost(np);
   trustgroup *tg;
+  patricia_node_t *node;
+  int nodecount;
 
   if(moving)
     return;
@@ -20,7 +22,11 @@ static void policycheck(int hooknum, void *arg) {
 
   tg = th->group;
 
-  if(th->maxpernode && np->ipnode->usercount > th->maxpernode) {
+  node = refnode(iptree, &th->ip, th->nodebits);
+  nodecount = node->usercount;
+  derefnode(iptree, node);
+
+  if(th->maxpernode && nodecount > th->maxpernode) {
     controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, np->ipnode->usercount, th->maxpernode);
     return;
   }

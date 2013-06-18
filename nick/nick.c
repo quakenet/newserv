@@ -370,31 +370,6 @@ char *visibleuserhost(nick *np, char *buf) {
   return buf;
 }
 
-/*
- * setipnodebits:
- *  Moves the nick to a different ipnode.
- */
-void setipnodebits(nick *np, int bits) {
-  struct irc_in_addr ipaddress;
-  patricia_node_t *oldnode;
-  void *harg[2];
-
-  if(np->ipnode->prefix->bitlen == bits)
-    return;
-
-  memcpy(&ipaddress, &np->p_nodeaddr, sizeof(ipaddress));
-  node_decrement_usercount(np->ipnode);
-  oldnode = np->ipnode;
-  np->ipnode = refnode(iptree, &ipaddress, bits);
-  node_increment_usercount(np->ipnode);
-
-  harg[0] = np;
-  harg[1] = oldnode;
-  triggerhook(HOOK_NICK_MOVENODE, harg);
-
-  derefnode(iptree, oldnode);
-}
-
 #if 0
 
 /*

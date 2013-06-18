@@ -18,7 +18,6 @@ void trusts_newnick(nick *sender, int moving) {
   } else {
     setnextbytrust(sender, th->users);
     th->users = sender;
-    setipnodebits(sender, th->nodebits);
   }
 
   arg[0] = sender;
