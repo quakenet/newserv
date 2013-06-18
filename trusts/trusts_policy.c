@@ -25,7 +25,7 @@ static void policycheck(int hooknum, void *arg) {
 
   tg = th->group;
 
-  head = refnode(iptree, &np->p_ipaddr, th->nodebits);
+  head = refnode(iptree, &np->p_nodeaddr, th->nodebits);
   PATRICIA_WALK(head, node)
   {
     nodecount += node->usercount;
@@ -34,7 +34,7 @@ static void policycheck(int hooknum, void *arg) {
   derefnode(iptree, head);
 
   if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
+    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max.", trusts_cidr2str(&np->p_nodeaddr, th->nodebits), tg->name->content, nodecount, th->maxpernode);
 
     if(enforcepolicy)
       glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", GLINE_IGNORE_TRUST);
