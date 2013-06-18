@@ -6,6 +6,7 @@
 #include "../core/hooks.h"
 #include "../core/nsmalloc.h"
 #include "../lib/irc_string.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 trustgroup *tglist;
@@ -250,7 +251,7 @@ void th_getsuperandsubsets(struct irc_in_addr *ip, uint32_t bits, trusthost **su
 void trusts_flush(void (*thflush)(trusthost *), void (*tgflush)(trustgroup *)) {
   trustgroup *tg;
   trusthost *th;
-  time_t t = time(NULL);
+  time_t t = getnettime();
 
   for(tg=tglist;tg;tg=tg->next) {
     if(tg->count > 0)

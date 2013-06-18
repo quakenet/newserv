@@ -5,6 +5,7 @@
 #include "../core/hooks.h"
 #include "../core/schedule.h"
 #include "../control/control.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 DBAPIConn *trustsdb;
@@ -273,7 +274,7 @@ trusthost *th_new(trustgroup *tg, char *host) {
 
   nth.group = tg;
   nth.id = thmaxid + 1;
-  nth.created = time(NULL);
+  nth.created = getnettime();
   nth.lastseen = 0;
   nth.maxusage = 0;
 

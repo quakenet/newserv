@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "../lib/strlfunc.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char bits) {
@@ -171,7 +172,7 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
   if(oformat) {
     if(sscanf(line, "%*u,%u,%lu", /*current, */&th->maxusage, &lastseen) != 2)
       return 0;
-    created = time(NULL);
+    created = getnettime();
   } else {
     if(sscanf(line, "%u,%u,%lu,%lu,%d,%d", &th->id, &th->maxusage, &lastseen, &created, &maxpernode, &nodebits) != 6)
       return 0;

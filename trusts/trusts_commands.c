@@ -4,6 +4,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/nsmalloc.h"
+#include "../irc/irc.h"
 #include "../newsearch/newsearch.h"
 #include "trusts.h"
 
@@ -110,7 +111,7 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   unsigned int marker;
   array parents;
   int i;
-  time_t t = time(NULL);
+  time_t t = getnettime();
 
   /* abusing the ternary operator a bit :( */
   controlreply(sender, "Name:            : %s", tg->name->content);

@@ -1,4 +1,5 @@
 #include "../core/hooks.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 static void __counthandler(int hooknum, void *arg);
@@ -71,7 +72,7 @@ static void __lostnick(int hooknum, void *arg) {
 }
 
 static void __counthandler(int hooknum, void *arg) {
-  time_t t = time(NULL);
+  time_t t = getnettime();
   void **args = arg;
   trusthost *th = gettrusthost((nick *)args[0]);
   trustgroup *tg;

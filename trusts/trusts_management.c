@@ -5,6 +5,7 @@
 #include "../lib/strlfunc.h"
 #include "../core/config.h"
 #include "../core/schedule.h"
+#include "../irc/irc.h"
 #include "../lib/stringbuf.h"
 #include "../noperserv/noperserv.h"
 #include "../noperserv/noperserv_policy.h"
@@ -121,7 +122,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   }
 
   if(howlong)
-    expires = howlong + time(NULL);
+    expires = howlong + getnettime();
   else
     expires = 0;
 
@@ -335,7 +336,7 @@ static int modifyexpires(void *arg, char *expires, int override) {
     return 0;
 
   if(howlong)
-    tg->expires = time(NULL) + howlong;
+    tg->expires = getnettime() + howlong;
   else
     tg->expires = 0; /* never */
 
@@ -644,7 +645,7 @@ static void cleanuptrusts(void *arg) {
   int i;
   array expiredths, expiredtgs;
 
-  now = time(NULL);
+  now = getnettime();
   to_age = now - (CLEANUP_TH_INACTIVE * 3600 * 24);
 
   if(np) {
