@@ -1,5 +1,6 @@
 #include "versionscan.h"
 #include "../lib/version.h"
+#include "../glines/glines.h"
 
 MODULE_VERSION("")
 
