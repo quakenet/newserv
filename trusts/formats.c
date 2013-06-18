@@ -13,14 +13,12 @@ char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char bits) {
   int i;
 
   for(i=0;i<8;i++) {
-    unsigned char curbits;
+    int curbits = bits - i * 16;
 
-    if (bits >= (i + 1) * 16)
-      curbits = 16;
-    else if (bits < i * 16)
+    if (curbits<0)
       curbits = 0;
-    else
-      curbits = bits - i * 16;
+    else if (curbits>16)
+      curbits = 16;
 
     uint16_t mask = 0xffff & ~((1 << (16 - curbits)) - 1);
     iptemp.in6_16[i] = htons(ntohs(ip->in6_16[i]) & mask);
