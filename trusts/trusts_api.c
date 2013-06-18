@@ -32,3 +32,17 @@ int trustungline(trustgroup *tg, const char *ident, int duration, const char *re
 
   return count;
 }
+
+unsigned char getnodebits(struct irc_in_addr *ip) {
+  trusthost *th;
+
+  th = th_getbyhost(ip);
+
+  if(th)
+    return th->nodebits;
+
+  if(irc_in_addr_is_ipv4(ip))
+    return 128;
+  else
+    return 64;
+}

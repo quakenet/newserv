@@ -11,7 +11,6 @@
 
 #define    NSMAX_KILL_LIMIT       500
 #define    NSMAX_GLINE_LIMIT      500
-#define    NSMAX_GLINE_CLONES     5
 
 /* gline duration, in seconds */
 #define    NSGLINE_DURATION       3600

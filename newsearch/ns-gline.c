@@ -149,10 +149,7 @@ static int glineuser(nick *np, struct gline_localdata *localdata, time_t ti) {
   char msgbuf[512];
   if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
     nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-    if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-      irc_send("%s GL * +*@%s %u %jd :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-    else
-      irc_send("%s GL * +%s@%s %u %jd :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
+    glinebynick(np, localdata->duration, msgbuf, 0);
     return 1;
   }
   

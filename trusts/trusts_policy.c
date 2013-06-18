@@ -3,6 +3,7 @@
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
+#include "../glines/glines.h"
 #include "trusts.h"
 
 static int countext, enforcepolicy;
@@ -33,10 +34,10 @@ static void policycheck(int hooknum, void *arg) {
   derefnode(iptree, head);
 
   if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.%s", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
+    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on IP: %s (group: %s) %d connected, %d max.", IPtostr(np->p_ipaddr), tg->name->content, nodecount, th->maxpernode);
 
     if(enforcepolicy)
-      irc_send("%s GL * +*@%s %d %jd :Too many connections from your host.", mynumeric->content, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+      glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", 0);
 
     return;
   }
@@ -64,7 +65,7 @@ static void policycheck(int hooknum, void *arg) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
 
       if (enforcepolicy)
-        irc_send("%s GL * +%s@%s %d %jd :IDENT required from your host.", mynumeric->content, np->ident, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+        glinebynick(np, POLICY_GLINE_DURATION, "IDENT required from your host.", GLINE_ALWAYS_USER);
     }
 
     if(tg->maxperident > 0) {
@@ -83,7 +84,7 @@ static void policycheck(int hooknum, void *arg) {
         controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident);
 
         if (enforcepolicy)
-          irc_send("%s GL * +%s@%s %d %jd :Too many connections from your user.", mynumeric->content, np->ident, trusts_cidr2str(&np->p_ipaddr, th->nodebits), POLICY_GLINE_DURATION, (intmax_t)getnettime());
+          glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your user.", GLINE_ALWAYS_USER);
       }
     }
   } else {

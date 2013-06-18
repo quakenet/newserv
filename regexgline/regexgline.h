@@ -61,6 +61,7 @@ void *rg_schedule = NULL;
 
 void rg_nick(int hooknum, void *arg);
 void rg_lostnick(int hooknum, void *arg);
+void rg_rename(int hooknum, void *arg);
 void rg_startup(void);
 
 int rg_gline(void *source, int cargc, char **cargv);
@@ -69,6 +70,7 @@ int rg_glist(void *source, int cargc, char **cargv);
 int rg_idlist(void *source, int cargc, char **cargv);
 int rg_spew(void *source, int cargc, char **cargv);
 int rg_sanitycheck(char *mask, int *count);
+
 
 int rg_dbconnect(void);
 void rg_dbload(void);

@@ -772,11 +772,11 @@ void versionscan_handler(nick* me, int type, void** args) {
             kcount++;
             break;
           case VS_GLUSER:
-            irc_send("%s GL * +*!%s@%s 3600 :%s\r\n", mynumeric->content, sender->ident, sender->host->name->content, v->data);
+            glinebynick(sender, 3600, v->data, GLINE_ALWAYS_USER);
             gcount++;
             break;
           case VS_GLHOST:
-            irc_send("%s GL * +*!*@%s 3600 :%s\r\n", mynumeric->content, sender->host->name->content, v->data);
+            glinebynick(sender, 3600, v->data, 0);
             gcount++;
             break;
           default:

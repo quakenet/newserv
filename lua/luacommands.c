@@ -237,31 +237,10 @@ static int lua_gline(lua_State *ps) {
   if(!target || (IsOper(target) || IsXOper(target) || IsService(target)))
     LUA_RETURN(ps, LUA_FAIL);
 
-  hp = target->host;
-  if(!hp)
+  if(glinebynick(target, duration, reason, GLINE_SIMULATE) > 50)
     LUA_RETURN(ps, LUA_FAIL);
 
-  usercount = hp->clonecount;
-  if(usercount > 10) { /* (decent) trusted host */
-    int j;
-    nick *np;
-
-    usercount = 0;
-
-    for (j=0;j<NICKHASHSIZE;j++)
-      for (np=nicktable[j];np;np=np->next)
-        if (np && (np->host == hp) && (!ircd_strcmp(np->ident, target->ident)))
-          usercount++;
-
-    if(usercount > 50)
-      LUA_RETURN(ps, LUA_FAIL);
-
-    snprintf(mask, sizeof(mask), "*%s@%s", target->ident, IPtostr(target->p_ipaddr));
-  } else {
-    snprintf(mask, sizeof(mask), "*@%s", IPtostr(target->p_ipaddr));
-  }
-
-  irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+  usercount = glinebynick(target, duration, reason, 0);
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
 }
 

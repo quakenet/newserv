@@ -15,6 +15,7 @@
 #include "../core/hooks.h"
 #include "../server/server.h"
 #include "../lib/strlfunc.h"
+#include "../glines/glines.h"
 #include <stdint.h>
 
 #define INSTANT_IDENT_GLINE  1
@@ -293,6 +294,7 @@ void rg_dodelay(void *arg) {
   rg_delay *delay = (rg_delay *)arg;
   char hostname[RG_MASKLEN];
   int hostlen, usercount = 0;
+  char reason[200];
   
   /* User or regex gline no longer exists */
   if((!delay->np) || (!delay->reason)) {
@@ -340,7 +342,8 @@ void rg_dodelay(void *arg) {
   }
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
-  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), delay->reason->reason->content, delay->reason->glineid);
+  snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
+  glinebyhost("*", hostname, rg_expiry_time, reason, GLINE_IGNORE_TRUST);
   rg_deletedelay(delay);
 }
 
@@ -1110,6 +1113,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   char hostname[RG_MASKLEN];
   int usercount = 0;
   int validdelay;
+  char reason[200];
 
   rg_loggline(rp, np);
 
@@ -1164,7 +1168,8 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   rg_shadowserver(np, rp, rp->type);
-  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
+  snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", rp->reason->content, rp->glineid);
+  glinebyhost("*", hostname, rg_expiry_time, reason, GLINE_IGNORE_TRUST);
   return usercount;
 }
 
