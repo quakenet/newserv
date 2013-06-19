@@ -1,5 +1,6 @@
 #include "versionscan.h"
 #include "../lib/version.h"
+#include "../glines/glines.h"
 
 MODULE_VERSION("")
 
@@ -772,11 +773,11 @@ void versionscan_handler(nick* me, int type, void** args) {
             kcount++;
             break;
           case VS_GLUSER:
-            irc_send("%s GL * +*!%s@%s 3600 :%s\r\n", mynumeric->content, sender->ident, sender->host->name->content, v->data);
+            glinesetbynick(sender, 3600, v->data, versionscan_nick->nick, GLINE_FORCE_IDENT);
             gcount++;
             break;
           case VS_GLHOST:
-            irc_send("%s GL * +*!*@%s 3600 :%s\r\n", mynumeric->content, sender->host->name->content, v->data);
+            glinesetbynick(sender, 3600, v->data, versionscan_nick->nick, 0);
             gcount++;
             break;
           default:
