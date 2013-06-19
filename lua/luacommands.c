@@ -17,6 +17,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/flags.h"
 #include "../authext/authext.h"
+#include "../glines/glines.h"
 
 #include "lua.h"
 #include "luabot.h"

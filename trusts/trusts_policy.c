@@ -65,7 +65,7 @@ static void policycheck(int hooknum, void *arg) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
 
       if (enforcepolicy)
-        glinebynick(np, POLICY_GLINE_DURATION, "IDENT required from your host.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
+        glinebynick(np, POLICY_GLINE_DURATION, "IDENTD required from your host.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
     }
 
     if(tg->maxperident > 0) {
