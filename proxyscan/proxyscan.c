@@ -27,7 +27,6 @@
 #include "../localuser/localuserchannel.h"
 #include "../core/nsmalloc.h"
 #include "../lib/irc_ipv6.h"
-#include "../glines/glines.h"
 
 MODULE_VERSION("")
 
@@ -575,7 +574,6 @@ void killsock(scan *sp, int outcome) {
     /* the purpose of this lastgline stuff is to stop gline spam from one scan */
     if (!chp->glineid || (now>=chp->lastgline+SCANTIMEOUT)) {
       char buf[512];
-      char reason[200];
       const char *ip;
 
       chp->lastgline=now;
@@ -583,8 +581,8 @@ void killsock(scan *sp, int outcome) {
 
       loggline(chp, sp->node);   
       ip = IPtostr(((patricia_node_t *)sp->node)->prefix->sin);
-      snprintf(reason, sizeof(reason), "Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d", chp->glineid);
-      glinesetbynode( (patricia_node_t *)sp->node, 1800, reason, "proxyscan" ); 
+      irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
+	       mynumeric->content,ip,(intmax_t)getnettime(), chp->glineid);
       Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",ip);
 
       snprintf(buf, sizeof(buf), "proxy-gline %lu %s %s %hu %s", time(NULL), ip, scantostr(sp->type), sp->port, "irc.quakenet.org");
