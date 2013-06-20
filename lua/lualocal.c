@@ -171,8 +171,7 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       break;
 
     case LU_KILLED:
-      p = (char *)args[2];
-      lua_vlpcall(l, ln, "irc_onkilled", "s", p);
+      lua_vlpcall(l, ln, "irc_onkilled", "");
 
       strlcpy(ln->nickname, target->nick, sizeof(ln->nickname));
       strlcpy(ln->ident, target->ident, sizeof(ln->ident));
@@ -212,7 +211,7 @@ void lua_reconnectlocal(void *arg) {
   ln->reconnect = NULL;
 
   if(lua_getlocalnickbynick(ln->nick, &l, &ln)) /* hacky! */
-    lua_vlpcall(l, ln, "irc_onkillreconnect", "");
+    lua_vlpcall(l, ln, "irc_onkillreconnect", "N", ln->nick);
 }
 
 static int lua_localjoin(lua_State *ps) {
