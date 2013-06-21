@@ -159,6 +159,17 @@ void lua_localnickhandler(nick *target, int type, void **args) {
 
       break;
 
+    case LU_PRIVNOTICE:
+      np = (nick *)args[0];
+      p = (char *)args[1];
+
+      if(!np || !p)
+        return;
+
+      lua_vlpcall(l, ln, "irc_onnotice", "Ns", np, p);
+
+      break;
+
     case LU_CHANMSG:
       np = (nick *)args[0];
       c = (channel *)args[1];
