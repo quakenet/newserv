@@ -40,7 +40,7 @@ int glinebyhost(const char *ident, const char *hostname, int duration, const cha
   if (!(flags & GLINE_IGNORE_TRUST)) {
     th = th_getbyhost(&ip);
 
-    if(th && th->group->mode) { /* Trust with enforceident enabled */
+    if(th && (th->group->flags & TRUST_ENFORCE_IDENT)) { /* Trust with enforceident enabled */
       trustgline(th->group, ident, duration, reason);
       return 0;
     }

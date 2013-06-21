@@ -161,7 +161,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   snprintf(createdby, sizeof(createdby), "#%s", sender->authname);
 
   itg.trustedfor = howmany;
-  itg.mode = enforceident;
+  itg.flags = enforceident?TRUST_ENFORCE_IDENT:0;
   itg.maxperident = maxperident;
   itg.expires = expires;
   itg.createdby = getsstring(createdby, CREATEDBYLEN);
@@ -318,9 +318,9 @@ static int modifyenforceident(void *arg, char *num, int override) {
   trustgroup *tg = arg;
 
   if(num[0] == '1') {
-    tg->mode = 1;
+    tg->flags |= TRUST_ENFORCE_IDENT;
   } else if(num[0] == '0') {
-    tg->mode = 0;
+    tg->flags &= ~TRUST_ENFORCE_IDENT;
   } else {
     return 0;
   }
@@ -339,6 +339,20 @@ static int modifyexpires(void *arg, char *expires, int override) {
     tg->expires = getnettime() + howlong;
   else
     tg->expires = 0; /* never */
+
+  return 1;
+}
+
+static int modifycleanup(void *arg, char *num, int override) {
+  trustgroup *tg = arg;
+
+  if(num[0] == '1') {
+    tg->flags &= ~TRUST_NO_CLEANUP;
+  } else if(num[0] == '0') {
+    tg->flags |= TRUST_NO_CLEANUP;
+  } else {
+    return 0;
+  }
 
   return 1;
 }
@@ -629,6 +643,7 @@ static void setupmods(void) {
   MSGROUP(contact);
   MSGROUP(comment);
   MSGROUP(trustedfor);
+  MSGROUP(cleanup);
 
   MSHOST(maxpernode);
   MSHOST(nodebits);
@@ -665,6 +680,9 @@ static void cleanuptrusts(void *arg) {
 
   for(tg=tglist;tg;tg=tg->next) {
     array_init(&expiredths, sizeof(trusthost *));
+
+    if(tg->flags & TRUST_NO_CLEANUP)
+      continue;
 
     for(th=tg->hosts;th;th=th->next) {
       if((th->count == 0 && th->created < to_age && th->lastseen < to_age) || (tg->expires && tg->expires < now)) {

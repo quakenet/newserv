@@ -31,6 +31,9 @@
 
 #define POLICY_GLINE_DURATION 18
 
+#define TRUST_ENFORCE_IDENT 1 /* This must be 1 for compatibility with O. */
+#define TRUST_NO_CLEANUP 2
+
 struct trustmigration;
 
 struct trusthost;
@@ -64,7 +67,7 @@ typedef struct trustgroup {
 
   sstring *name;
   unsigned int trustedfor;
-  int mode;
+  int flags;
   unsigned int maxperident;
   unsigned int maxusage;
   time_t expires;

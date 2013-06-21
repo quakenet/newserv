@@ -61,7 +61,7 @@ static void policycheck(int hooknum, void *arg) {
 /*
     }
 */
-    if((tg->mode == 1) && (np->ident[0] == '~')) {
+    if((tg->flags & TRUST_ENFORCE_IDENT) && (np->ident[0] == '~')) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
 
       if (enforcepolicy)

@@ -448,7 +448,7 @@ int tg_modify(trustgroup *oldtg, trustgroup *newtg) {
 
   /* id remains the same, count/hosts/marker/next/exts are ignored */
   vnewtg.trustedfor = newtg->trustedfor;
-  vnewtg.mode = newtg->mode;
+  vnewtg.flags = newtg->flags;
   vnewtg.maxperident = newtg->maxperident;
   vnewtg.maxusage = newtg->maxusage;
   vnewtg.expires = newtg->expires;

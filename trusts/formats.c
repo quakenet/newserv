@@ -53,9 +53,9 @@ char *dumptg(trustgroup *tg, int oformat) {
   static char buf[512];
 
   if(oformat) {
-    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->count, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
+    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->count, tg->trustedfor, tg->flags & TRUST_ENFORCE_IDENT, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
+    snprintf(buf, sizeof(buf), "%u,%s,%u,%d,%u,%u,%jd,%jd,%jd,%s,%s,%s", tg->id, tg->name->content, tg->trustedfor, tg->flags, tg->maxperident, tg->maxusage, (intmax_t)tg->expires, (intmax_t)tg->lastseen, (intmax_t)tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content);
   }
 
   return buf;
@@ -70,7 +70,7 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
 /* #id,ticket35153,14,20,1,1,17,1879854575,1222639249,0,nterfacer,Qwhois&2120764,Non-Commercial Bouncer (Created by: doomie)
       ,name       ,current
                      ,trustedfor
-                        ,mode
+                        ,flags
                           ,maxperident
                             ,maxusage
                                ,expires  ,lastseen   ,lastmaxusereset
@@ -111,11 +111,11 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
 
   if(oformat) {
     r = sscanf(line, "%*u,%u,%u,%u,%u,%lu,%lu,%lu,%n",
-               /*current, */ &tg->trustedfor, &tg->mode, &tg->maxperident,
+               /*current, */ &tg->trustedfor, &tg->flags, &tg->maxperident,
                &tg->maxusage, &expires, &lastseen, &lastmaxusereset, &pos);
   } else {
     r = sscanf(line, "%u,%u,%u,%u,%lu,%lu,%lu,%n",
-               &tg->trustedfor, &tg->mode, &tg->maxperident,
+               &tg->trustedfor, &tg->flags, &tg->maxperident,
                &tg->maxusage, &expires, &lastseen, &lastmaxusereset, &pos);
   }
   if(r != 7)
