@@ -65,7 +65,7 @@ static void marktree(array *parents, unsigned int marker, trusthost *th) {
   trusthost *pth;
   int parentcount = 0;
 
-  for(pth=th->parent;pth;pth=pth->next) {
+  for(pth=th->parent;pth;pth=pth->parent) {
     insertth(parents, pth);
 
     pth->marker = marker;
