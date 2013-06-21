@@ -171,8 +171,7 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       break;
 
     case LU_KILLED:
-      p = (char *)args[2];
-      lua_vlpcall(l, ln, "irc_onkilled", "s", p);
+      lua_vlpcall(l, ln, "irc_onkilled", "");
 
       strlcpy(ln->nickname, target->nick, sizeof(ln->nickname));
       strlcpy(ln->ident, target->ident, sizeof(ln->ident));
@@ -212,7 +211,7 @@ void lua_reconnectlocal(void *arg) {
   ln->reconnect = NULL;
 
   if(lua_getlocalnickbynick(ln->nick, &l, &ln)) /* hacky! */
-    lua_vlpcall(l, ln, "irc_onkillreconnect", "");
+    lua_vlpcall(l, ln, "irc_onkillreconnect", "N", ln->nick);
 }
 
 static int lua_localjoin(lua_State *ps) {
@@ -600,6 +599,42 @@ static int lua_localwallops(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localsimplechanmode(lua_State *ps) {
+  nick *source;
+  channel *cp;
+  char *modes;
+  flag_t add = 0, del = ~add;
+  flag_t permitted = CHANMODE_NOEXTMSG | CHANMODE_TOPICLIMIT | CHANMODE_SECRET | CHANMODE_PRIVATE | CHANMODE_INVITEONLY | CHANMODE_MODERATE | CHANMODE_NOCOLOUR | CHANMODE_NOCTCP | CHANMODE_REGONLY | CHANMODE_DELJOINS | CHANMODE_NOQUITMSG | CHANMODE_NONOTICE | CHANMODE_MODNOAUTH | CHANMODE_SINGLETARG;
+  modechanges changes;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  cp = findchannel((char *)lua_tostring(ps, 2));
+  if(!cp)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  modes = (char *)lua_tostring(ps, 3);
+  if(!modes)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(setflags(&add, permitted, modes, cmodeflags, REJECT_DISALLOWED|REJECT_UNKNOWN) != REJECT_NONE)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  if(setflags(&del, permitted, modes, cmodeflags, REJECT_DISALLOWED|REJECT_UNKNOWN) != REJECT_NONE)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  localsetmodeinit(&changes, cp, source);
+  localdosetmode_simple(&changes, add, ~del);
+  localsetmodeflush(&changes, 1);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localregisteruserid", lua_registerlocaluserid);
   lua_register(l, "irc_localderegisteruser", lua_deregisterlocaluser);
@@ -620,5 +655,7 @@ void lua_registerlocalcommands(lua_State *l) {
 
   lua_register(l, "irc_localwallusers", lua_localwallusers);
   lua_register(l, "irc_localwallops", lua_localwallops);
+
+  lua_register(l, "irc_localsimplechanmode", lua_localsimplechanmode);
 }
 

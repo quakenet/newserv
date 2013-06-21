@@ -248,7 +248,8 @@ void lua_bothandler(nick *target, int type, void **args) {
           p[le - 1] = '\000';
 
         lua_avpcall("irc_onctcp", "ls", np->numeric, p + 1);
-
+      } else {
+        lua_avpcall("irc_onnotice", "ls", np->numeric, p);
       }
 
       break;
