@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 
 #include "../lib/sstring.h"
@@ -290,7 +291,7 @@ trustgroup *tg_strtotg(char *name) {
   }
 
   for(tg=tglist;tg;tg=tg->next)
-    if(!strcmp(name, tg->name->content))
+    if(!strcasecmp(name, tg->name->content))
       return tg;
 
   return NULL;
