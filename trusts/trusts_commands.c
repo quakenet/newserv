@@ -119,7 +119,7 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, tg->mode?"":"not ");
   controlreply(sender, "Contact:         : %s", tg->contact->content);
-  controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"(the past -- BUG)"):"never");
+  controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"the past (will be removed during next cleanup)"):"never");
   controlreply(sender, "Last changed by  : %s", tg->createdby->content);
   controlreply(sender, "Comment:         : %s", tg->comment->content);
   controlreply(sender, "ID:              : %u", tg->id);
