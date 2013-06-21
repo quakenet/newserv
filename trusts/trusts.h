@@ -171,8 +171,6 @@ void trusts_lostnick(nick *, int);
 
 /* trusts_api.c */
 int istrusted(nick *);
-int trustgline(trustgroup *tg, const char *ident, int duration, const char *reason);
-int trustungline(trustgroup *tg, const char *ident, int duration, const char *reason);
 unsigned char getnodebits(struct irc_in_addr *ip);
 
 #endif

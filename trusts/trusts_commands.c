@@ -6,6 +6,7 @@
 #include "../core/nsmalloc.h"
 #include "../irc/irc.h"
 #include "../newsearch/newsearch.h"
+#include "../glines/glines.h"
 #include "trusts.h"
 #include "newsearch/trusts_newsearch.h"
 
@@ -266,60 +267,42 @@ static int trusts_cmdtrustdump(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
-static int trusts_cmdtrustgline(void *source, int cargc, char **cargv) {
-  trustgroup *tg;
-  nick *sender = source;
-  char *user, *reason;
-  int duration, count;
+static void trusts_suggestgline_cb(const char *mask, int hits, void *uarg) {
+  nick *sender = uarg;
 
-  if(cargc < 4)
-    return CMD_USAGE;
-
-  tg = tg_strtotg(cargv[0]);
-  if(!tg) {
-    controlreply(sender, "Couldn't look up trustgroup.");
-    return CMD_ERROR;
-  }
-
-  user = cargv[1];
-
-  duration = durationtolong(cargv[2]);
-  if((duration <= 0) || (duration > MAXDURATION)) {
-    controlreply(sender, "Invalid duration supplied.");
-    return CMD_ERROR;
-  }
-
-  reason = cargv[3];
-
-  count = trustgline(tg, user, duration, reason);
-
-  controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTGLINE'd user '%s' on group '%s', %d gline(s) set.", controlid(sender), user, tg->name->content, count);
-  controlreply(sender, "Done. %d gline(s) set.", count);
-
-  return CMD_OK;
+  controlreply(sender, "mask: %s, hits: %d", mask, hits);
 }
 
-static int trusts_cmdtrustungline(void *source, int cargc, char **cargv) {
-  trustgroup *tg;
+static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {
   nick *sender = source;
-  char *user;
+  char mask[512];
+  char *p, *user, *host;
+  struct irc_in_addr ip;
+  unsigned char bits;
   int count;
 
-  if(cargc < 2)
+  if(cargc < 1)
     return CMD_USAGE;
 
-  tg = tg_strtotg(cargv[0]);
-  if(!tg) {
-    controlreply(sender, "Couldn't look up trustgroup.");
+  strncpy(mask, cargv[0], sizeof(mask));
+
+  p = strchr(mask, '@');
+
+  if(!p)
+    return CMD_USAGE;
+
+  user = mask;
+  host = p + 1;
+  *p = '\0';
+
+  if(!ipmask_parse(host, &ip, &bits)) {
+    controlreply(sender, "Invalid CIDR.");
     return CMD_ERROR;
   }
 
-  user = cargv[1];
+  count = glinesuggestbyip(user, &ip, 128, 0, trusts_suggestgline_cb, sender);
 
-  count = trustungline(tg, user, 0, "Deactivated.");
-
-  controlwall(NO_OPER, NL_GLINES|NL_TRUSTS, "%s TRUSTUNGLINE'd user '%s' on group '%s', %d gline(s) removed.", controlid(sender), user, tg->name->content, count);
-  controlreply(sender, "Done. %d gline(s) removed.", count);
+  controlreply(sender, "Total hits: %d", count);
 
   return CMD_OK;
 }
@@ -344,8 +327,7 @@ static void registercommands(int hooknum, void *arg) {
 
   registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|IP>\nShows trust data for the specified trust group.");
   registercontrolhelpcmd("trustdump", NO_OPER, 2, trusts_cmdtrustdump, "Usage: trustdump <#id> <number>");
-  registercontrolhelpcmd("trustgline", NO_OPER, 4, trusts_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nGlines a user on all hosts of a trust group.");
-  registercontrolhelpcmd("trustungline", NO_OPER, 4, trusts_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nUnglines a user on all hosts of a trust group.");
+  registercontrolhelpcmd("trustglinesuggest", NO_OPER, 1, trusts_cmdtrustglinesuggest, "Usage: trustglinesuggest <user@host>\nSuggests glines for the specified hostmask.");
   registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
 }
 
@@ -356,8 +338,7 @@ static void deregistercommands(int hooknum, void *arg) {
 
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
   deregistercontrolcmd("trustdump", trusts_cmdtrustdump);
-  deregistercontrolcmd("trustgline", trusts_cmdtrustgline);
-  deregistercontrolcmd("trustungline", trusts_cmdtrustungline);
+  deregistercontrolcmd("trustglinesuggest", trusts_cmdtrustglinesuggest);
   deregistercontrolcmd("trustspew", trusts_cmdtrustspew);
 }
 
