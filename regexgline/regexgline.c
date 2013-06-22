@@ -1132,10 +1132,9 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
 
   if(!strcmp(rp->class, RESERVED_NICK_CLASS)) {
-    char mask[512], reason[512];
-    snprintf(mask, sizeof(mask), "%s!*@*", np->nick);
+    char reason[512];
     snprintf(reason, sizeof(reason), "AUTO %s (ID: %08lx)", rp->reason->content, rp->glineid);
-    glinesetmask(mask, RESERVED_NICK_GLINE_DURATION, reason);
+    glinebynick(np, RESERVED_NICK_GLINE_DURATION, reason, GLINE_ALWAYS_NICK);
   }
 
   validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
