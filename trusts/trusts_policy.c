@@ -14,8 +14,6 @@ static void policycheck(int hooknum, void *arg) {
   long moving = (long)args[1];
   trusthost *th = gettrusthost(np);
   trustgroup *tg;
-  patricia_node_t *head, *node;
-  int nodecount = 0;
 
   if(moving)
     return;
@@ -25,23 +23,6 @@ static void policycheck(int hooknum, void *arg) {
 
   tg = th->group;
 
-  head = refnode(iptree, &np->p_nodeaddr, th->nodebits);
-  PATRICIA_WALK(head, node)
-  {
-    nodecount += node->usercount;
-  }
-  PATRICIA_WALK_END;
-  derefnode(iptree, head);
-
-  if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max - %senforced.", trusts_cidr2str(&np->p_nodeaddr, th->nodebits), tg->name->content, nodecount, th->maxpernode, enforcepolicy?"":"not ");
-
-    if(enforcepolicy)
-      glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", GLINE_IGNORE_TRUST);
-
-    return;
-  }
-
   /*
    * the purpose of this logic is to avoid spam like this:
    * WARNING: tgX exceeded limit: 11 connected vs 10 max
@@ -50,17 +31,34 @@ static void policycheck(int hooknum, void *arg) {
    */
 
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
-    if(tg->trustedfor && tg->count > tg->trustedfor) {
-/*
-      if(tg->count > (long)tg->exts[countext]) {
+    patricia_node_t *head, *node;
+    int nodecount = 0;
 
+    head = refnode(iptree, &np->p_nodeaddr, th->nodebits);
+    PATRICIA_WALK(head, node)
+    {
+      nodecount += node->usercount;
+    }
+    PATRICIA_WALK_END;
+    derefnode(iptree, head);
+
+    if(th->maxpernode && nodecount > th->maxpernode) {
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max - %senforced.", trusts_cidr2str(&np->p_nodeaddr, th->nodebits), tg->name->content, nodecount, th->maxpernode, enforcepolicy?"":"not ");
+
+      if(enforcepolicy)
+        glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", GLINE_IGNORE_TRUST);
+
+      return;
+    }
+
+    if(tg->trustedfor && tg->count > tg->trustedfor) {
+      if(tg->count > (long)tg->exts[countext]) {
         tg->exts[countext] = (void *)(long)tg->count;
-*/
+
         controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded: '%s', %d connected, %d max.", tg->name->content, tg->count, tg->trustedfor);
       }
-/*
     }
-*/
+
     if((tg->flags & TRUST_ENFORCE_IDENT) && (np->ident[0] == '~')) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s - %senforced.", tg->name->content, np->nick, np->ident, np->host->name->content, enforcepolicy?"":"not ");
 
