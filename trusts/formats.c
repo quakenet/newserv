@@ -187,6 +187,8 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
     if(sscanf(line, "%*u,%u,%lu", /*current, */&th->maxusage, &lastseen) != 2)
       return 0;
     created = getnettime();
+    maxpernode = 0;
+    nodebits = 128;
   } else {
     if(sscanf(line, "%u,%u,%lu,%lu,%d,%d", &th->id, &th->maxusage, &lastseen, &created, &maxpernode, &nodebits) != 6)
       return 0;
