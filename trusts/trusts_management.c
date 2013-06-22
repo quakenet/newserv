@@ -470,7 +470,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
 
   th = th_getbyhostandmask(&ip, bits);
 
-  if(th->group != tg) {
+  if(!th || th->group != tg) {
     controlreply(sender, "Host does not belong to the specified group.");
     return CMD_ERROR;
   }
