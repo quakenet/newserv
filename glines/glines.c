@@ -27,7 +27,7 @@ void glineremovemask(const char *mask, int duration, const char *reason) {
 }
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
-  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' (hits: %d). Not sending.", mask, hits);
+  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' (hits: %d). CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, hits);
 
 /*  gline_params *gp = arg;
   glinesetmask(mask, gp->duration, gp->reason);*/
