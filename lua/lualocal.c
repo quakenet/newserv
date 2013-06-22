@@ -222,7 +222,7 @@ void lua_reconnectlocal(void *arg) {
   ln->reconnect = NULL;
 
   if(lua_getlocalnickbynick(ln->nick, &l, &ln)) /* hacky! */
-    lua_vlpcall(l, ln, "irc_onkillreconnect", "N", ln->nick);
+    lua_vlpcall(l, ln, "irc_onkillreconnect", "");
 }
 
 static int lua_localjoin(lua_State *ps) {
