@@ -34,7 +34,7 @@ static void policycheck(int hooknum, void *arg) {
   derefnode(iptree, head);
 
   if(th->maxpernode && nodecount > th->maxpernode) {
-    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max.", trusts_cidr2str(&np->p_nodeaddr, th->nodebits), tg->name->content, nodecount, th->maxpernode);
+    controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max - %senforced.", trusts_cidr2str(&np->p_nodeaddr, th->nodebits), tg->name->content, nodecount, th->maxpernode, enforcepolicy?"":"not ");
 
     if(enforcepolicy)
       glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your host.", GLINE_IGNORE_TRUST);
@@ -62,7 +62,7 @@ static void policycheck(int hooknum, void *arg) {
     }
 */
     if((tg->flags & TRUST_ENFORCE_IDENT) && (np->ident[0] == '~')) {
-      controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s.", tg->name->content, np->nick, np->ident, np->host->name->content);
+      controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s - %senforced.", tg->name->content, np->nick, np->ident, np->host->name->content, , enforcepolicy?"":"not ");
 
       if (enforcepolicy)
         glinebynick(np, POLICY_GLINE_DURATION, "IDENTD required from your host.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
@@ -81,7 +81,7 @@ static void policycheck(int hooknum, void *arg) {
       }
 
       if(identcount > tg->maxperident) {
-        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident);
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: '%s' %s!%s@%s, %d connected, %d max - %senforced.", tg->name->content, np->nick, np->ident, np->host->name->content, identcount, tg->maxperident, enforcepolicy?"":"not ");
 
         if (enforcepolicy)
           glinebynick(np, POLICY_GLINE_DURATION, "Too many connections from your user.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
