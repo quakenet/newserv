@@ -1131,8 +1131,12 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
     glineflags = GLINE_ALWAYS_USER;
   }
 
-  if(!strcmp(rp->class, RESERVED_NICK_CLASS))
-    irc_send("%s GL * +%s!*@* %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, np->nick, RESERVED_NICK_GLINE_DURATION, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
+  if(!strcmp(rp->class, RESERVED_NICK_CLASS)) {
+    char mask[512], reason[512];
+    snprintf(mask, sizeof(mask), "%s!*@*", np->nick);
+    snprintf(reason, sizeof(reason), "AUTO %s (ID: %08lx)", rp->reason->content, rp->glineid);
+    glinesetmask(mask, RESERVED_NICK_GLINE_DURATION, reason);
+  }
 
   validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
   if (validdelay || (usercount > rg_max_per_gline)) {

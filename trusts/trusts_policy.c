@@ -62,7 +62,7 @@ static void policycheck(int hooknum, void *arg) {
     }
 */
     if((tg->flags & TRUST_ENFORCE_IDENT) && (np->ident[0] == '~')) {
-      controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s - %senforced.", tg->name->content, np->nick, np->ident, np->host->name->content, , enforcepolicy?"":"not ");
+      controlwall(NO_OPER, NL_TRUSTS, "Ident required: '%s' %s!%s@%s - %senforced.", tg->name->content, np->nick, np->ident, np->host->name->content, enforcepolicy?"":"not ");
 
       if (enforcepolicy)
         glinebynick(np, POLICY_GLINE_DURATION, "IDENTD required from your host.", GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);

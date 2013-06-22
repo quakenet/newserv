@@ -19,18 +19,29 @@ static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, uns
 }
 
 void glinesetmask(const char *mask, int duration, const char *reason) {
+  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' lasting %s with reason '%s'. CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, longtoduration(duration, 0), reason);
+
+#if 0
   irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+#endif
 }
 
 void glineremovemask(const char *mask, int duration, const char *reason) {
+  controlwall(NO_OPER, NL_GLINES, "Would remove gline on '%s'. CURRENTLY DISABLED FOR TESTING PURPOSES.", mask);
+
+#if 0
   irc_send("%s GL * -%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+#endif
 }
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
-  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' (hits: %d). CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, hits);
+  gline_params *gp = arg;
 
-/*  gline_params *gp = arg;
-  glinesetmask(mask, gp->duration, gp->reason);*/
+  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' lasting %s with reason '%s' (hits: %d). CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, longtoduration(gp->duration, 0), gp->reason, hits);
+
+#if 0
+  glinesetmask(mask, gp->duration, gp->reason);
+#endif
 }
 
 int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, gline_callback callback, void *uarg) {
