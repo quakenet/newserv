@@ -26,11 +26,11 @@ void glinesetmask(const char *mask, int duration, const char *reason) {
 #endif
 }
 
-void glineremovemask(const char *mask, int duration, const char *reason) {
+void glineremovemask(const char *mask) {
   controlwall(NO_OPER, NL_GLINES, "Would remove gline on '%s'. CURRENTLY DISABLED FOR TESTING PURPOSES.", mask);
 
 #if 0
-  irc_send("%s GL * -%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+  irc_send("%s GL * -%s", mynumeric->content, mask);
 #endif
 }
 

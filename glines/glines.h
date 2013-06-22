@@ -17,7 +17,7 @@ typedef struct gline_params {
 typedef void (*gline_callback)(const char *, int, void *);
 
 void glinesetmask(const char *mask, int duration, const char *reason);
-void glineunsetmask(const char *mask, int duration, const char *reason);
+void glineunsetmask(const char *mask);
 
 int glinesuggestbyip(const char *, struct irc_in_addr *, unsigned char, int, gline_callback callback, void *uarg);
 int glinesuggestbynick(nick *, int, gline_callback callback, void *uarg);
