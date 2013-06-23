@@ -3,4 +3,4 @@
 .PHONY: all
 all: glines.so
 
-glines.so: glines.o
+glines.so: glines.o gline_handler.o
