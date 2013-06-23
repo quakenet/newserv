@@ -332,7 +332,7 @@ void trustsdb_inserttg(char *table, trustgroup *tg) {
 
 void tg_update(trustgroup *tg) {
   trustsdb->squery(trustsdb,
-    "UPDATE ? SET name = ?, trustedfor = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxusereset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
+    "UPDATE ? SET name = ?, trustedfor = ?, flags = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxusereset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
     "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->flags, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
   );
 }

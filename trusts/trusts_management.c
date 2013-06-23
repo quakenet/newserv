@@ -14,7 +14,7 @@
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-typedef int (*trustmodificationfn)(void *, char *arg, int);
+typedef int (*trustmodificationfn)(void *, char *arg, nick *, int);
 
 struct trustmodification {
   char name[50];
@@ -42,6 +42,20 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   if(!ipmask_parse(host, &ip, &bits)) {
     controlreply(sender, "Invalid host.");
     return CMD_ERROR;
+  }
+
+  /* Don't allow non-developers to add trusts for large subnets or modify protected groups. */
+  if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
+    int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
+    if(bits < minbits) {
+      controlreply(sender, "You don't have the necessary privileges to add a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      return CMD_ERROR;
+    }
+
+    if(tg->flags & TRUST_PROTECTED) {
+      controlreply(sender, "You don't have the necessary privileges to modify a protected trust group.");
+      return CMD_ERROR;
+    }
   }
 
   /* OKAY! Lots of checking here!
@@ -154,7 +168,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
 
   tg = tg_strtotg(name);
   if(tg) {
-    controlreply(sender, "A group with that name already exists");
+    controlreply(sender, "A group with that name already exists.");
     return CMD_ERROR;
   }
 
@@ -209,6 +223,14 @@ static int trusts_cmdtrustgroupdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  /* Don't allow non-developers to delete protected groups. */
+  if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
+    if(tg->flags & TRUST_PROTECTED) {
+      controlreply(sender, "You don't have the necessary privileges to modify a protected trust group.");
+      return CMD_ERROR;
+    }
+  }
+
   if(tg->hosts) {
     controlreply(sender, "Delete all hosts before deleting the group.");
     return CMD_ERROR;
@@ -247,6 +269,20 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  /* Don't allow non-developers to remove trusts for large subnets or modify protected groups. */
+  if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
+    int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
+    if(bits < minbits) {
+      controlreply(sender, "You don't have the necessary privileges to remove a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      return CMD_ERROR;
+    }
+
+    if(tg->flags & TRUST_PROTECTED) {
+      controlreply(sender, "You don't have the necessary privileges to modify a protected trust group.");
+      return CMD_ERROR;
+    }
+  }
+
   for(th=tg->hosts;th;th=th->next)
     if(ipmask_check(&ip, &th->ip, th->bits) && th->bits == bits)
       break;
@@ -266,7 +302,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int modifycomment(void *arg, char *comment, int override) {
+static int modifycomment(void *arg, char *comment, nick *source, int override) {
   trustgroup *tg = arg;
   sstring *n = getsstring(comment, COMMENTLEN);
   if(!n)
@@ -278,7 +314,7 @@ static int modifycomment(void *arg, char *comment, int override) {
   return 1;
 }
 
-static int modifycontact(void *arg, char *contact, int override) {
+static int modifycontact(void *arg, char *contact, nick *source, int override) {
   trustgroup *tg = arg;
   sstring *n = getsstring(contact, CONTACTLEN);
   if(!n)
@@ -290,31 +326,52 @@ static int modifycontact(void *arg, char *contact, int override) {
   return 1;
 }
 
-static int modifytrustedfor(void *arg, char *num, int override) {
+static int modifytrustedfor(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
   unsigned int trustedfor = strtoul(num, NULL, 10);
 
-  if(!override && (trustedfor <= 0 || trustedfor > MAXTRUSTEDFOR))
+  if(trustedfor < 0) {
+    controlreply(source, "The clone limit must not be negative.");
     return 0;
+  }
+
+  if(!override) {
+    if (trustedfor == 0) {
+      controlreply(source, "You don't have the necessary privileges to set an unlimited clone limit.");
+      return 0;
+    }
+
+    if (trustedfor > MAXTRUSTEDFOR) {
+      controlreply(source, "You don't have the necessary privileges to set the clone limit to a value higher than %d.", MAXTRUSTEDFOR);
+      return 0;
+    }
+  }
 
   tg->trustedfor = trustedfor;
 
   return 1;
 }
 
-static int modifymaxperident(void *arg, char *num, int override) {
+static int modifymaxperident(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
   unsigned int maxperident = strtoul(num, NULL, 10);
 
-  if(!override && (maxperident <= 0 || maxperident > MAXPERIDENT))
+  if(maxperident < 0) {
+    controlreply(source, "Ident limit must not be negative.");
     return 0;
+  }
+
+  if(maxperident > MAXPERIDENT) {
+    controlreply(source, "Ident limit must not be higher than %d. Consider setting it to 0 (unlimited) instead.", MAXPERIDENT);
+    return 0;
+  }
 
   tg->maxperident = maxperident;
 
   return 1;
 }
 
-static int modifyenforceident(void *arg, char *num, int override) {
+static int modifyenforceident(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
 
   if(num[0] == '1') {
@@ -328,7 +385,7 @@ static int modifyenforceident(void *arg, char *num, int override) {
   return 1;
 }
 
-static int modifyexpires(void *arg, char *expires, int override) {
+static int modifyexpires(void *arg, char *expires, nick *source, int override) {
   trustgroup *tg = arg;
   int howlong = durationtolong(expires);
 
@@ -343,8 +400,11 @@ static int modifyexpires(void *arg, char *expires, int override) {
   return 1;
 }
 
-static int modifycleanup(void *arg, char *num, int override) {
+static int modifycleanup(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
+
+  if(!override)
+    return 0;
 
   if(num[0] == '1') {
     tg->flags &= ~TRUST_NO_CLEANUP;
@@ -357,30 +417,69 @@ static int modifycleanup(void *arg, char *num, int override) {
   return 1;
 }
 
-static int modifymaxpernode(void *arg, char *num, int override) {
+static int modifyprotected(void *arg, char *num, nick *source, int override) {
+  trustgroup *tg = arg;
+
+  if(!override) {
+    controlreply(source, "You don't have the necessary privileges to modify this attribute.");
+    return 0;
+  }
+
+  if(num[0] == '1') {
+    tg->flags |= TRUST_PROTECTED;
+  } else if(num[0] == '0') {
+    tg->flags &= ~TRUST_PROTECTED;
+  } else {
+    return 0;
+  }
+
+  return 1;
+}
+
+static int modifymaxpernode(void *arg, char *num, nick *source, int override) {
   trusthost *th = arg;
   int maxpernode = strtol(num, NULL, 10);
-  
-  if((maxpernode < 0) || (maxpernode > MAXPERNODE))
+
+  if(maxpernode < 0) {
+    controlreply(source, "Node limit must not be negative.");
     return 0;
-  
+  }
+
+  if(maxpernode>MAXPERNODE) {
+    controlreply(source, "Node limit must not be higher than %d. Consider setting it to 0 (unlimited) instead.", MAXPERNODE);
+    return 0;
+  } 
+ 
   th->maxpernode = maxpernode;
 
   return 1;
 }
 
-static int modifynodebits(void *arg, char *num, int override) {
+static int modifynodebits(void *arg, char *num, nick *source, int override) {
   trusthost *th = arg;
   int nodebits = strtol(num, NULL, 10);
 
-  if((nodebits < 0) || (nodebits > ((irc_in_addr_is_ipv4(&th->ip))?32:128)))
+  if(nodebits < 0) {
+    controlreply(source, "Node bits must not be negative.");
     return 0;
+  }
+
+  if(!override) {
+    int minbits = irc_in_addr_is_ipv4(&th->ip)?TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4:TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6;
+
+    if(nodebits < minbits) {
+      controlreply(source, "You don't have the necessary privileges to set node bits to a subnet larger than /%d.", irc_in_addr_is_ipv4(&th->ip)?(minbits-96):minbits);
+      return 0;
+    }
+  }
 
   if(irc_in_addr_is_ipv4(&th->ip))
     nodebits += 96;
 
-  if(nodebits<th->bits)
+  if(nodebits<th->bits) {
+    controlreply(source, "Node bits must be smaller than the trusted CIDR's subnet size.");
     return 0;
+  }
 
   th->nodebits = nodebits;
 
@@ -413,10 +512,16 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
 
   override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
 
+  /* Don't allow non-developers to modify protected groups. */
+  if (!override && tg->flags & TRUST_PROTECTED) {
+    controlreply(sender, "You don't have the necessary privileges to modify a protected trust group.");
+    return CMD_ERROR;
+  }
+
   sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trustgroupmods_a.cursi;i++) {
     if(!strcmp(what, trustgroupmods[i].name)) {
-      if(!(trustgroupmods[i].fn)(tg, to, override)) {
+      if(!(trustgroupmods[i].fn)(tg, to, sender, override)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
@@ -468,6 +573,20 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  /* Don't allow non-developers to modify trusts for large subnets or modify protected groups. */
+  if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
+    int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
+    if(bits < minbits) {
+      controlreply(sender, "You don't have the necessary privileges to modify a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      return CMD_ERROR;
+    }
+
+    if(tg->flags & TRUST_PROTECTED) {
+      controlreply(sender, "You don't have the necessary privileges to modify a protected trust group.");
+      return CMD_ERROR;
+    }
+  }
+
   th = th_getbyhostandmask(&ip, bits);
 
   if(!th || th->group != tg) {
@@ -483,7 +602,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trusthostmods_a.cursi;i++) {
     if(!strcmp(what, trusthostmods[i].name)) {
-      if(!(trusthostmods[i].fn)(th, to, override)) {
+      if(!(trusthostmods[i].fn)(th, to, sender, override)) {
         controlreply(sender, "An error occured changing that property, check the syntax.");
         return CMD_ERROR;
       }
@@ -644,6 +763,7 @@ static void setupmods(void) {
   MSGROUP(comment);
   MSGROUP(trustedfor);
   MSGROUP(cleanup);
+  MSGROUP(protected);
 
   MSHOST(maxpernode);
   MSHOST(nodebits);

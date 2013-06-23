@@ -121,7 +121,8 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, (tg->flags & TRUST_ENFORCE_IDENT)?"":"not ");
   controlreply(sender, "Contact:         : %s", tg->contact->content);
   controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"the past (will be removed during next cleanup)"):"never");
-  controlreply(sender, "CIDR clean-up    : %s", (tg->flags & TRUST_NO_CLEANUP)?"disabled":"enabled");
+  controlreply(sender, "CIDR cleanup     : %s", (tg->flags & TRUST_NO_CLEANUP)?"disabled":"enabled");
+  controlreply(sender, "Protected        : %s", (tg->flags & TRUST_PROTECTED)?"protected":"not protected");
   controlreply(sender, "Last changed by  : %s", tg->createdby->content);
   controlreply(sender, "Comment:         : %s", tg->comment->content);
   controlreply(sender, "ID:              : %u", tg->id);
