@@ -111,7 +111,7 @@ int glinebynick(nick *np, int duration, const char *reason, int flags) {
     int hits = glinesuggestbyip(np->ident, &np->p_ipaddr, 128, flags | GLINE_SIMULATE, NULL, NULL);
     if(hits>MAXGLINEUSERS) {
       controlwall(NO_OPER, NL_GLINES, "Suggested gline(s) for nick '%s!%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
-        np->nick, np->ident, np->host->name->content, longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
+        np->nick, np->ident, IPtostr(np->p_ipaddr), longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
       return 0;
     }
   }
