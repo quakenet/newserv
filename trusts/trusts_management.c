@@ -403,8 +403,10 @@ static int modifyexpires(void *arg, char *expires, nick *source, int override) {
 static int modifycleanup(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
 
-  if(!override)
+  if(!override) {
+    controlreply(source, "You don't have the necessary privileges to modify this attribute.");
     return 0;
+  }
 
   if(num[0] == '1') {
     tg->flags &= ~TRUST_NO_CLEANUP;
