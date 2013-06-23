@@ -19,16 +19,12 @@ static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, uns
 }
 
 void glinesetmask(const char *mask, int duration, const char *reason) {
-  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' lasting %s with reason '%s'. CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, longtoduration(duration, 0), reason);
-
 #if 0
   irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
 #endif
 }
 
 void glineremovemask(const char *mask) {
-  controlwall(NO_OPER, NL_GLINES, "Would remove gline on '%s'. CURRENTLY DISABLED FOR TESTING PURPOSES.", mask);
-
 #if 0
   irc_send("%s GL * -%s", mynumeric->content, mask);
 #endif
@@ -36,12 +32,7 @@ void glineremovemask(const char *mask) {
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
   gline_params *gp = arg;
-
-  controlwall(NO_OPER, NL_GLINES, "Would set gline on '%s' lasting %s with reason '%s' (hits: %d). CURRENTLY DISABLED FOR TESTING PURPOSES.", mask, longtoduration(gp->duration, 0), gp->reason, hits);
-
-#if 0
   glinesetmask(mask, gp->duration, gp->reason);
-#endif
 }
 
 int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, gline_callback callback, void *uarg) {
@@ -84,6 +75,16 @@ int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bit
 
 int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags) {
   gline_params gp;
+
+  if(!(flags & GLINE_SIMULATE)) {
+    int hits = glinesuggestbyip(user, ip, bits, flags | GLINE_SIMULATE, NULL, NULL);
+    if(hits>MAXGLINEUSERS) {
+      controlwall(NO_OPER, NL_GLINES, "Suggested gline(s) for '%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
+        user, trusts_cidr2str(ip, bits), longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
+      return 0;
+    }
+  }
+
   gp.duration = duration;
   gp.reason = reason;
   return glinesuggestbyip(user, ip, bits, flags, glinesetmask_cb, &gp);
@@ -91,10 +92,13 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
 
 int glinesuggestbynick(nick *np, int flags, void (*callback)(const char *, int, void *), void *uarg) {
   if (flags & GLINE_ALWAYS_NICK) {
-    char mask[512];
-    snprintf(mask, sizeof(mask), "%s!*@*", np->nick);
-    callback(mask, 1, uarg); /* TODO: figure out if user was online. */
-    return 1; /* TODO: figure out if user was online. */
+    if(!(flags & GLINE_SIMULATE)) {
+      char mask[512];
+      snprintf(mask, sizeof(mask), "%s!*@*", np->nick);
+      callback(mask, 1, uarg);
+    }
+
+    return 1;
   } else {
     return glinesuggestbyip(np->ident, &np->p_ipaddr, 128, flags, callback, uarg);
   }
@@ -102,6 +106,16 @@ int glinesuggestbynick(nick *np, int flags, void (*callback)(const char *, int, 
 
 int glinebynick(nick *np, int duration, const char *reason, int flags) {
   gline_params gp;
+
+  if(!(flags & GLINE_SIMULATE)) {
+    int hits = glinesuggestbyip(np->ident, &np->p_ipaddr, 128, flags | GLINE_SIMULATE, NULL, NULL);
+    if(hits>MAXGLINEUSERS) {
+      controlwall(NO_OPER, NL_GLINES, "Suggested gline(s) for nick '%s!%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
+        np->nick, np->ident, np->host->name->content, longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
+      return 0;
+    }
+  }
+
   gp.duration = duration;
   gp.reason = reason;
   return glinesuggestbynick(np, flags, glinesetmask_cb, &gp);

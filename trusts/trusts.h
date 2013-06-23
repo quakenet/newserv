@@ -29,7 +29,7 @@
 
 #define CLEANUP_TH_INACTIVE 60
 
-#define POLICY_GLINE_DURATION 1800
+#define POLICY_GLINE_DURATION 18
 
 #define TRUST_ENFORCE_IDENT 1 /* This must be 1 for compatibility with O. */
 #define TRUST_NO_CLEANUP 2
