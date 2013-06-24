@@ -11,6 +11,7 @@
 #define CHANNELLEN  200
 #define KEYLEN      23 
 #define AWAYLEN     160
+#define SERVERLEN   200
 
 #define MAXSERVERS 4096
 
