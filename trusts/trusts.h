@@ -37,6 +37,8 @@
 #define POLICY_FAILURE_IDENTD 3
 #define POLICY_FAILURE_IDENTCOUNT 4
 
+#define DEFAULT_TRUSTPORT 5776
+
 #define TRUST_ENFORCE_IDENT 1 /* This must be 1 for compatibility with O. */
 #define TRUST_NO_CLEANUP 2
 #define TRUST_PROTECTED 4

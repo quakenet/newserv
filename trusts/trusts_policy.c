@@ -486,6 +486,7 @@ static int trusts_cmdtrustpolicy(void *source, int cargc, char **cargv) {
 void _init(void) {
   sstring *m;
   array *accts;
+  int trustport;
 
   countext = registertgext("count");
   if(countext == -1)
@@ -497,7 +498,12 @@ void _init(void) {
 
   m = getconfigitem("trusts_policy", "trustport");
   if(m)
-    listenerfd = createlistenersock(atoi(m->content));
+    trustport = atoi(m->content);
+  else
+    trustport = DEFAULT_TRUSTPORT;
+
+  if(trustport)
+    listenerfd = createlistenersock(trustport);
 
   accts = getconfigitems("trusts_policy", "server");
   if(!accts) {
