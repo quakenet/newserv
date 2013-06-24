@@ -330,12 +330,7 @@ static void processtrustclient(int fd, short events) {
 
 static void trustdotimeout(void *arg) {
   time_t t = time(NULL);
-  static time_t last_timeout_check = 0;
   trustsocket **pnext, *next;
-
-  /* every 5s process the entire thing for timeouts */
-  if(t - last_timeout_check > 5)
-    last_timeout_check = t;
 
   pnext = &tslist;
     
