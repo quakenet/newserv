@@ -92,7 +92,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
-      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount, th->maxpernode);
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount, th->maxpernode);
       snprintf(message, messagelen, "Too many connections from your host (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_NODECOUNT;
     }
@@ -128,7 +128,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       }
 
       if(identcount + usercountadjustment > tg->maxperident) {
-        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s), %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount, tg->maxperident);
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s): %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount, tg->maxperident);
         snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ip));
         return POLICY_FAILURE_IDENTCOUNT;
       }
