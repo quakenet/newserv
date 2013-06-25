@@ -343,7 +343,7 @@ void rg_dodelay(void *arg) {
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
   snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
-  glinebynick(delay->np, rg_expiry_time, reason, glineflags);
+  glinebynick(delay->np, rg_expiry_time, reason, glineflags, "regexgline");
   rg_deletedelay(delay);
 }
 
@@ -1134,7 +1134,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   if(!strcmp(rp->class, RESERVED_NICK_CLASS)) {
     char reason[512];
     snprintf(reason, sizeof(reason), "AUTO %s (ID: %08lx)", rp->reason->content, rp->glineid);
-    glinebynick(np, RESERVED_NICK_GLINE_DURATION, reason, GLINE_ALWAYS_NICK);
+    glinebynick(np, RESERVED_NICK_GLINE_DURATION, reason, GLINE_ALWAYS_NICK, "regexgline");
   }
 
   validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
@@ -1171,7 +1171,7 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   
   rg_shadowserver(np, rp, rp->type);
   snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", rp->reason->content, rp->glineid);
-  glinebynick(np, rg_expiry_time, reason, glineflags);
+  glinebynick(np, rg_expiry_time, reason, glineflags, "regexgline");
   return usercount;
 }
 

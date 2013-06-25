@@ -113,11 +113,10 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
   unsigned int howmany, maxperident, enforceident;
-  time_t howlong, expires;
   trustgroup *tg, itg;
   int override;
 
-  if(cargc < 6)
+  if(cargc < 5)
     return CMD_USAGE;
 
   override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
@@ -128,17 +127,6 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     controlreply(sender, "Bad value maximum number of clients.");
     return CMD_ERROR;
   }
-
-  howlong = durationtolong(cargv[2]);
-  if((howlong < 0) || (howlong > MAXDURATION)) {
-    controlreply(sender, "Invalid duration supplied.");
-    return CMD_ERROR;
-  }
-
-  if(howlong)
-    expires = howlong + getnettime();
-  else
-    expires = 0;
 
   maxperident = strtoul(cargv[3], NULL, 10);
   if(maxperident < 0 || (maxperident > MAXPERIDENT)) {
@@ -177,7 +165,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   itg.trustedfor = howmany;
   itg.flags = enforceident?TRUST_ENFORCE_IDENT:0;
   itg.maxperident = maxperident;
-  itg.expires = expires;
+  itg.expires = 0;
   itg.createdby = getsstring(createdby, CREATEDBYLEN);
   itg.contact = getsstring(contact, CONTACTLEN);
   itg.comment = getsstring(comment, COMMENTLEN);
@@ -204,8 +192,8 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPADD'ed '%s'", controlid(sender), tg->name->content);
   trustlog(tg, sender->authname, "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
-    "expires=%d, createdby=%s, contact=%s, comment=%s",
-    tg->name->content, howmany, tg->id, enforceident, maxperident, expires, createdby, contact, comment);
+    "createdby=%s, contact=%s, comment=%s",
+    tg->name->content, howmany, tg->id, enforceident, maxperident, createdby, contact, comment);
 
   return CMD_OK;
 }
@@ -722,7 +710,7 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("trustgroupadd", NO_OPER, 7, trusts_cmdtrustgroupadd, "Usage: trustgroupadd <name> <howmany> <howlong> <maxperident> <enforceident> <contact> ?comment?");
+  registercontrolhelpcmd("trustgroupadd", NO_OPER, 7, trusts_cmdtrustgroupadd, "Usage: trustgroupadd <name> <howmany> <maxperident> <enforceident> <contact> ?comment?");
   registercontrolhelpcmd("trustadd", NO_OPER, 2, trusts_cmdtrustadd, "Usage: trustadd <#id|name|id> <host>");
   registercontrolhelpcmd("trustgroupdel", NO_OPER, 1, trusts_cmdtrustgroupdel, "Usage: trustgroupdel <#id|name|id>");
   registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");

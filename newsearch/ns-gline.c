@@ -149,7 +149,7 @@ static int glineuser(nick *np, struct gline_localdata *localdata, time_t ti) {
   char msgbuf[512];
   if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
     nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-    glinebynick(np, localdata->duration, msgbuf, 0);
+    glinebynick(np, localdata->duration, msgbuf, 0, "newsearch");
     return 1;
   }
   
