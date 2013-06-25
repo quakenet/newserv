@@ -38,12 +38,14 @@ void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_p
   *_postbuf = postbuf;
 }
 
-static void traverseandmark(unsigned int marker, trusthost *th) {
+static void traverseandmark(unsigned int marker, trusthost *th, int markchildren) {
   th->marker = marker;
 
-  for(th=th->children;th;th=th->nextbychild) {
-    th->marker = marker;
-    traverseandmark(marker, th);
+  if(markchildren) {
+    for(th=th->children;th;th=th->nextbychild) {
+      th->marker = marker;
+      traverseandmark(marker, th, markchildren);
+    }
   }
 }
 
@@ -62,7 +64,7 @@ static void insertth(array *parents, trusthost *th) {
   }
 }
 
-static void marktree(array *parents, unsigned int marker, trusthost *th) {
+static void marktree(array *parents, unsigned int marker, trusthost *th, int showchildren) {
   trusthost *pth;
   int parentcount = 0;
 
@@ -76,20 +78,25 @@ static void marktree(array *parents, unsigned int marker, trusthost *th) {
     insertth(parents, th);
 
   /* sadly we need to recurse down */
-  traverseandmark(marker, th);
+  traverseandmark(marker, th, showchildren);
 }
 
-static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth) {
+static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth, int showchildren) {
   char *cidrstr, *prespacebuf, *postspacebuf, parentbuf[512];
 
   if(th->marker != marker)
     return;
 
   cidrstr = trusts_cidr2str(&th->ip, th->bits);
-  calculatespaces(depth + 1, 30 + 1, cidrstr, &prespacebuf, &postspacebuf);
+  calculatespaces(depth + 2, 30 + 1, cidrstr, &prespacebuf, &postspacebuf);
 
   if(th->group == originalgroup) {
-    prespacebuf[0] = '>';
+    if(!showchildren && th->group == originalgroup && th->children)
+      prespacebuf[0] = '*';
+    else
+      prespacebuf[0] = ' ';
+
+    prespacebuf[1] = '>';
 
     parentbuf[0] = '\0';
   } else {
@@ -104,10 +111,10 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
   th->marker = -1;
 
   for(th=th->children;th;th=th->nextbychild)
-    outputtree(np, marker, originalgroup, th, depth + 1);
+    outputtree(np, marker, originalgroup, th, depth + 1, showchildren);
 }
 
-static void displaygroup(nick *sender, trustgroup *tg) {
+static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   trusthost *th, **p2;
   unsigned int marker;
   array parents;
@@ -130,17 +137,19 @@ static void displaygroup(nick *sender, trustgroup *tg) {
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
+  controlreply(sender, "---");
+  controlreply(sender, "Attributes: * (has children, show with -v), > (belongs to this trust group)");
   controlreply(sender, "Host                            Current    Max        Last seen             Max per Node    Node Mask      Group ID   Group name");
 
   marker = nextthmarker();
   array_init(&parents, sizeof(trusthost *));
 
   for(th=tg->hosts;th;th=th->next)
-    marktree(&parents, marker, th);
+    marktree(&parents, marker, th, showchildren);
 
   p2 = (trusthost **)(parents.content);
   for(i=0;i<parents.cursi;i++)
-    outputtree(sender, marker, tg, p2[i], 0);
+    outputtree(sender, marker, tg, p2[i], 0, showchildren);
 
   array_free(&parents);
 
@@ -155,16 +164,26 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   trusthost *th;
   struct irc_in_addr ip;
   unsigned char bits;
+  int showchildren;
 
   if(cargc < 1)
     return CMD_USAGE;
 
-  name = cargv[0];
+  if(strcmp(cargv[0], "-v") == 0) {
+    if(cargc < 2)
+      return CMD_USAGE;
+
+    showchildren = 1;
+    name = cargv[1];
+  } else {
+    showchildren = 0;
+    name = cargv[0];
+  }
 
   tg = tg_strtotg(name);
 
   if(tg) {
-    displaygroup(sender, tg);
+    displaygroup(sender, tg, showchildren);
     return CMD_OK;
   }
 
@@ -176,7 +195,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
       return CMD_OK;
     }
 
-    displaygroup(sender, th->group);
+    displaygroup(sender, th->group, showchildren);
     return CMD_OK;
   }
 
@@ -184,7 +203,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     if(match(name, tg->name->content))
       continue;
 
-    displaygroup(sender, tg);
+    displaygroup(sender, tg, showchildren);
     if(--remaining == 0) {
       controlreply(sender, "Maximum number of matches reached.");
       return CMD_OK;
@@ -326,7 +345,7 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("trustlist", NO_OPER, 1, trusts_cmdtrustlist, "Usage: trustlist <#id|name|IP>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustlist", NO_OPER, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP>\nShows trust data for the specified trust group.");
   registercontrolhelpcmd("trustdump", NO_OPER, 2, trusts_cmdtrustdump, "Usage: trustdump <#id> <number>");
   registercontrolhelpcmd("trustglinesuggest", NO_OPER, 1, trusts_cmdtrustglinesuggest, "Usage: trustglinesuggest <user@host>\nSuggests glines for the specified hostmask.");
   registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
