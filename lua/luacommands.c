@@ -238,10 +238,10 @@ static int lua_gline(lua_State *ps) {
   if(!target || (IsOper(target) || IsXOper(target) || IsService(target)))
     LUA_RETURN(ps, LUA_FAIL);
 
-  if(glinebynick(target, duration, reason, GLINE_SIMULATE) > 50)
+  if(glinebynick(target, duration, reason, GLINE_SIMULATE, "lua") > 50)
     LUA_RETURN(ps, LUA_FAIL);
 
-  usercount = glinebynick(target, duration, reason, 0);
+  usercount = glinebynick(target, duration, reason, 0, "lua");
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
 }
 

@@ -61,7 +61,7 @@ typedef struct trustaccount {
 
 trustaccount trustaccounts[MAXSERVERS];
 
-static int checkconnectionth(const char *username, struct irc_in_addr *ip, trusthost *th, int hooknum, int usercountadjustment, char *message, size_t messagelen, char *hint) {
+static int checkconnectionth(const char *username, struct irc_in_addr *ip, trusthost *th, int hooknum, int usercountadjustment, char *message, size_t messagelen) {
   trustgroup *tg;
 
   if(messagelen>0)
@@ -92,7 +92,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
-      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max - %s.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount, th->maxpernode, hint);
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s) %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount, th->maxpernode);
       snprintf(message, messagelen, "Too many connections from your host (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_NODECOUNT;
     }
@@ -101,7 +101,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       if(tg->count > (long)tg->exts[countext]) {
         tg->exts[countext] = (void *)(long)tg->count;
 
-        controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded: '%s', %d connected, %d max. - %s.", tg->name->content, tg->count, tg->trustedfor, hint);
+        controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded (group %s): %d connected, %d max.", tg->name->content, tg->count, tg->trustedfor);
         snprintf(message, messagelen, "Too many connections from your trust (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
         return POLICY_FAILURE_GROUPCOUNT;
       }
@@ -110,7 +110,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     }
 
     if((tg->flags & TRUST_ENFORCE_IDENT) && (username[0] == '~')) {
-      controlwall(NO_OPER, NL_TRUSTS, "Ident required: %s@%s (group: %s) - %s.", username, IPtostr(*ip), tg->name->content, hint);
+      controlwall(NO_OPER, NL_TRUSTS, "Ident required: %s@%s (group: %s).", username, IPtostr(*ip), tg->name->content);
       snprintf(message, messagelen, "IDENTD required from your host (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_IDENTD;
     }
@@ -128,7 +128,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       }
 
       if(identcount + usercountadjustment > tg->maxperident) {
-        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s), %d connected, %d max - %s.", username, IPtostr(*ip), tg->name->content, identcount, tg->maxperident, hint);
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s), %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount, tg->maxperident);
         snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ip));
         return POLICY_FAILURE_IDENTCOUNT;
       }
@@ -141,11 +141,11 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
   return POLICY_SUCCESS;
 }
 
-static int checkconnection(const char *username, struct irc_in_addr *ip, int hooknum, int cloneadjustment, char *message, size_t messagelen, char *hint) {
+static int checkconnection(const char *username, struct irc_in_addr *ip, int hooknum, int cloneadjustment, char *message, size_t messagelen) {
   struct irc_in_addr ip_canonicalized;
   ip_canonicalize_tunnel(&ip_canonicalized, ip);
 
-  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(ip), hooknum, cloneadjustment, message, messagelen, hint);
+  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(ip), hooknum, cloneadjustment, message, messagelen);
 }
 
 static int trustdowrite(trustsocket *sock, char *format, ...) {
@@ -178,7 +178,7 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
     return trustdowrite(sock, "PASS %s", sequence_id);
   }
   
-  verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message), "enforcing with IAuth");
+  verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message));
 
   if (verdict == POLICY_SUCCESS) {
     sock->accepted++;
@@ -190,6 +190,7 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
   } else {
     sock->rejected++;
 
+    controlwall(NO_OPER, NL_TRUSTS, "Rejected connection from %s@%s using IAuth: %s", username, host, message);
     return trustdowrite(sock, "KILL %s %s", sequence_id, message);
   }
 }
@@ -457,30 +458,24 @@ static void policycheck_irc(int hooknum, void *arg) {
   long moving = (long)args[1];
   char message[512];
   int verdict;
-  char *hint;
 
   if(moving)
     return;
 
-  if (enforcepolicy)
-    hint = "enforcing with glines";
-  else
-    hint = "not enforcing";
-
-  verdict = checkconnectionth(np->ident, &np->p_nodeaddr, gettrusthost(np), hooknum, 0, message, sizeof(message), hint);
+  verdict = checkconnectionth(np->ident, &np->p_nodeaddr, gettrusthost(np), hooknum, 0, message, sizeof(message));
     
   if(!enforcepolicy)
     return;
-    
+
   switch (verdict) {
     case POLICY_FAILURE_NODECOUNT:
-      glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_IGNORE_TRUST);
+      glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_IGNORE_TRUST, "trusts_policy");
       break;
     case POLICY_FAILURE_IDENTD:
-      glinebyip("~*", &np->p_ipaddr, 128, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
+      glinebyip("~*", &np->p_ipaddr, 128, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
       break;
     case POLICY_FAILURE_IDENTCOUNT:
-      glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST);
+      glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
       break;
   }
 }

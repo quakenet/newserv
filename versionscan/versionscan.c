@@ -773,11 +773,11 @@ void versionscan_handler(nick* me, int type, void** args) {
             kcount++;
             break;
           case VS_GLUSER:
-            glinebynick(sender, 3600, v->data, GLINE_ALWAYS_USER);
+            glinebynick(sender, 3600, v->data, GLINE_ALWAYS_USER, "versionscan");
             gcount++;
             break;
           case VS_GLHOST:
-            glinebynick(sender, 3600, v->data, 0);
+            glinebynick(sender, 3600, v->data, 0, "versionscan");
             gcount++;
             break;
           default:

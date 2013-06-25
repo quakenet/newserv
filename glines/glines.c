@@ -18,13 +18,17 @@ static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, uns
   return count;
 }
 
-void glinesetmask(const char *mask, int duration, const char *reason) {
+void glinesetmask(const char *mask, int duration, const char *reason, const char *creator) {
+  controlwall(NO_OPER, NL_GLINES, "Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
+
 #if 0
   irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
 #endif
 }
 
 void glineremovemask(const char *mask) {
+  controlwall(NO_OPER, NL_GLINES, "Removing gline on '%s'.", mask);
+
 #if 0
   irc_send("%s GL * -%s", mynumeric->content, mask);
 #endif
@@ -32,7 +36,7 @@ void glineremovemask(const char *mask) {
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
   gline_params *gp = arg;
-  glinesetmask(mask, gp->duration, gp->reason);
+  glinesetmask(mask, gp->duration, gp->reason, gp->creator);
 }
 
 int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, gline_callback callback, void *uarg) {
@@ -73,7 +77,7 @@ int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bit
   return count;
 }
 
-int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags) {
+int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator) {
   gline_params gp;
 
   if(!(flags & GLINE_SIMULATE)) {
@@ -104,7 +108,7 @@ int glinesuggestbynick(nick *np, int flags, void (*callback)(const char *, int, 
   }
 }
 
-int glinebynick(nick *np, int duration, const char *reason, int flags) {
+int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator) {
   gline_params gp;
 
   if(!(flags & GLINE_SIMULATE)) {
@@ -118,5 +122,6 @@ int glinebynick(nick *np, int duration, const char *reason, int flags) {
 
   gp.duration = duration;
   gp.reason = reason;
+  gp.creator = creator;
   return glinesuggestbynick(np, flags, glinesetmask_cb, &gp);
 }

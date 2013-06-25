@@ -29,7 +29,7 @@ void chanservdgline(void* arg) {
       if(rup->suspendreason)
         reason = rup->suspendreason->content;
 
-      glinebynick(nl, 3600, reason, 0);
+      glinebynick(nl, 3600, reason, 0, "chanserv");
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (authed as %s) expires in 60 minute/s (hit %d user%s) (reason: %s)", 
         nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount, ucount==1?"":"s", reason);
     }

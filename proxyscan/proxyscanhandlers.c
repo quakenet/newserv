@@ -80,7 +80,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
 
     /* set a SHORT gline - if they really have an open proxy the gline will be re-set, with a new ID */
     snprintf(reason, sizeof(reason), "Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d", chp->glineid);
-    glinebynick(np, 600, reason, GLINE_IGNORE_TRUST);
+    glinebynick(np, 600, reason, GLINE_IGNORE_TRUST, "proxyscan");
 
     chp->lastscan=time(NULL);
     chp->proxies=NULL;
