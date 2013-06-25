@@ -34,22 +34,23 @@ static int countext, enforcepolicy;
 #define TRUSTPASSLEN 128
 #define NONCELEN 16
 
-#define STATE_UNAUTHED 0
-#define STATE_AUTHED 1
-
 typedef struct trustsocket {
   int fd;
-  int state;
+  int authed;
+  char authuser[SERVERLEN+1];
   char buf[TRUSTBUFSIZE];
   unsigned char nonce[NONCELEN];
   int size;
+  time_t connected;
   time_t timeout;
+  int accepted;
+  int rejected;
 
   struct trustsocket *next;
 } trustsocket;
 
 static trustsocket *tslist;
-static int listenerfd;
+static int listenerfd = -1;
 static FILE *urandom;
 
 typedef struct trustaccount {
@@ -172,17 +173,23 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
   struct irc_in_addr ip;
   unsigned char bits;
   
-  if(!ipmask_parse(host, &ip, &bits))
+  if(!ipmask_parse(host, &ip, &bits)) {
+    sock->accepted++;
     return trustdowrite(sock, "PASS %s", sequence_id);
+  }
   
   verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message), "enforcing with IAuth");
 
   if (verdict == POLICY_SUCCESS) {
+    sock->accepted++;
+
     if(message[0])
       return trustdowrite(sock, "PASS %s %s", sequence_id, message);
     else
       return trustdowrite(sock, "PASS %s", sequence_id);
   } else {
+    sock->rejected++;
+
     return trustdowrite(sock, "KILL %s %s", sequence_id, message);
   }
 }
@@ -231,7 +238,8 @@ static int handletrustauth(trustsocket *sock, char *server_name, char *mac) {
   if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest))))
     return trustkillconnection(sock, "Bad MAC.");
 
-  sock->state = STATE_AUTHED;
+  sock->authed = 1;
+  strncpy(sock->authuser, server_name, SERVERLEN);
   return trustdowrite(sock, "AUTHOK");
 }
 
@@ -261,12 +269,12 @@ static int handletrustline(trustsocket *sock, char *line) {
     tokens[tokensfound++] = lastpos;
   }
 
-  if(sock->state == STATE_UNAUTHED && !strcmp("AUTH", command)) {
+  if(!sock->authed && !strcmp("AUTH", command)) {
     if(tokensfound != 2)
       return trustkillconnection(sock, "incorrect arg count for command.");
 
     return handletrustauth(sock, tokens[0], tokens[1]);
-  } else if(sock->state == STATE_AUTHED && !strcmp("CHECK", command)) {
+  } else if(sock->authed && !strcmp("CHECK", command)) {
     if(tokensfound != 3)
       return trustkillconnection(sock, "incorrect arg count for command.");
 
@@ -330,14 +338,14 @@ static void processtrustclient(int fd, short events) {
 
 static void trustdotimeout(void *arg) {
   time_t t = time(NULL);
-  trustsocket **pnext, *next;
+  trustsocket **pnext, *next, *sock;
 
   pnext = &tslist;
     
-  for(trustsocket *sock=tslist;sock;) {
+  for(sock=tslist;sock;) {
     next = sock->next;
 
-    if(sock->state == STATE_UNAUTHED && t >= sock->timeout) {
+    if(!sock->authed && t >= sock->timeout) {
       trustkillconnection(sock, "Auth timeout.");
       deregisterhandler(sock->fd, 1);
       *pnext = sock->next;
@@ -390,9 +398,12 @@ static void processtrustlistener(int fd, short events) {
       tslist = sock->next;
       nsfree(POOL_TRUSTS, sock);
     } else {
-      sock->state = STATE_UNAUTHED;
+      sock->authed = 0;
       sock->size = 0;
+      sock->connected = time(NULL);
       sock->timeout = time(NULL) + 30;
+      sock->accepted = 0;
+      sock->rejected = 0;
       if(!trustdowrite(sock, "AUTH %s", hmac_printhex(sock->nonce, buf, NONCELEN))) {
         Error("trusts_policy", ERR_WARNING, "Error writing auth to fd %d.", newfd);
         deregisterhandler(newfd, 1);
@@ -489,6 +500,22 @@ static int trusts_cmdtrustpolicy(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  time_t now;
+  trustsocket *sock;
+
+  time(&now);
+
+  controlreply(sender, "Server                   Connected for             Accepted        Rejected");
+
+  for(sock=tslist;sock;sock=sock->next)
+    controlreply(sender, "%-20s %20s %10d %15d", sock->authed?sock->authuser:"<not authenticated>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
+
+  controlreply(sender, "-- End of list.");
+  return CMD_OK;
+}
+
 void _init(void) {
   sstring *m;
   array *accts;
@@ -547,6 +574,7 @@ void _init(void) {
   registerhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
 
   registercontrolhelpcmd("trustpolicy", NO_DEVELOPER, 1, trusts_cmdtrustpolicy, "Usage: trustpolicy ?1|0?\nEnables or disables policy enforcement. Shows current status when no parameter is specified.");
+  registercontrolhelpcmd("trustsockets", NO_DEVELOPER, 0, trusts_cmdtrustsockets, "Usage: trustsockets\nLists all currently active TRUST sockets.");
 
   schedulerecurring(time(NULL)+1, 0, 5, trustdotimeout, NULL);
   
@@ -556,6 +584,8 @@ void _init(void) {
 }
 
 void _fini(void) {
+  trustsocket *sock, *next;
+
   if(countext == -1)
     return;
 
@@ -565,9 +595,22 @@ void _fini(void) {
   deregisterhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
 
   deregistercontrolcmd("trustpolicy", trusts_cmdtrustpolicy);
+  deregistercontrolcmd("trustsockets", trusts_cmdtrustsockets);
   
-  deleteallschedules(trustdotimeout);
-  
+  deleteallschedules(trustdotimeout); 
+ 
   if (urandom)
     fclose(urandom);
+
+  if (listenerfd != -1)
+    deregisterhandler(listenerfd, 1);
+
+  for(sock=tslist;sock;) {
+    next = sock->next;
+
+    trustkillconnection(sock, "Unloading module.");
+    trustfreeconnection(sock);
+
+    sock = next;
+  }
 }
