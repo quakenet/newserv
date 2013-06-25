@@ -77,22 +77,22 @@ typedef void (*gline_callback)(const char *, int, void *);
 void glinesetmask(const char *mask, int duration, const char *reason, const char *creator);
 void glineunsetmask(const char *mask);
 
+int glinebyip(const char *, struct irc_in_addr *, unsigned char, int, const char *, int, const char *);
+int glinebynick(nick *, int, const char *, int, const char *);
 int glinesuggestbyip(const char *, struct irc_in_addr *, unsigned char, int, gline_callback callback, void *uarg);
 int glinesuggestbynick(nick *, int, gline_callback callback, void *uarg);
-gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime);
 
+gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime);
 char *glinetostring(gline *g);
-gline *gline_find( char *);
+gline *gline_find(char *);
 gline *makegline(char *);
 int handleglinemsg(void *, int, char **);
 void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);
-int glineequal ( gline *, gline *);
+int glineequal (gline *, gline *);
 
 void freegline (gline *);
 gline *getgline();
-void removegline( gline *);
-int glinebyip(const char *, struct irc_in_addr *, unsigned char, int, const char *, int, const char *);
-int glinebynick(nick *, int, const char *, int, const char *);
+void removegline(gline *);
 
 #endif
