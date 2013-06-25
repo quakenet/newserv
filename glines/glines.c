@@ -91,6 +91,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
 
   gp.duration = duration;
   gp.reason = reason;
+  gp.creator = creator;
   return glinesuggestbyip(user, ip, bits, flags, glinesetmask_cb, &gp);
 }
 
