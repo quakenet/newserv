@@ -144,8 +144,8 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   return glinesuggestbynick(np, flags, glinesetmask_cb, &gp);
 }
 
-gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime) {
-  gline* gl;
+gline *gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime) {
+  gline *gl;
 
   if ( !(gl=makegline(mask))) { /* sets up nick,user,host,node and flags */
     /* couldn't process gline mask */
@@ -169,7 +169,7 @@ gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, ti
   return gl;
 }
 
-gline* makegline(char *mask) {
+gline *makegline(char *mask) {
   /* populate gl-> user,host,node,nick and set appropriate flags */
   int len;
   int foundat=-1,foundbang=-1;

@@ -70,7 +70,7 @@ typedef struct gline_params {
   const char *creator;
 } gline_params;
 
-extern gline* glinelist;
+extern gline *glinelist;
 
 typedef void (*gline_callback)(const char *, int, void *);
 
@@ -84,7 +84,7 @@ gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, ti
 char *glinetostring(gline *g);
 gline *gline_find( char *);
 gline *makegline(char *);
-int handleglinemsg(void*, int, char**);
+int handleglinemsg(void *, int, char **);
 void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);
 int glineequal ( gline *, gline *);
