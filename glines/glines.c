@@ -228,7 +228,7 @@ gline *makegline(char *mask) {
              }
             } else {
               /* we have a / so cidr gline */
-		      gl->ip = sin;
+              gl->ip = sin;
               gl->bits = bits;
               if (foundwild || !is_normalized_ipmask(&sin, bits)) {
                 gl->host=getsstring(&mask[i+1],HOSTLEN);
