@@ -145,7 +145,7 @@ static int checkconnection(const char *username, struct irc_in_addr *ip, int hoo
   struct irc_in_addr ip_canonicalized;
   ip_canonicalize_tunnel(&ip_canonicalized, ip);
 
-  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(ip), hooknum, cloneadjustment, message, messagelen);
+  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(&ip_canonicalized), hooknum, cloneadjustment, message, messagelen);
 }
 
 static int trustdowrite(trustsocket *sock, char *format, ...) {
