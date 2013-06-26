@@ -213,6 +213,8 @@ static void trustfreeconnection(trustsocket *sock, int unlink) {
   trustsocket **pnext, *ts;
 
   if(!unlink) {
+    controlwall(NO_OPER, NL_TRUSTS, "Lost connection on policy socket for '%s'.", sock->authed?sock->authuser:"<unauthenticated connection>");
+
     deregisterhandler(sock->fd, 1);
     nsfree(POOL_TRUSTS, sock);
     return;
@@ -534,7 +536,7 @@ static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
   controlreply(sender, "Server                   Connected for             Accepted        Rejected");
 
   for(sock=tslist;sock;sock=sock->next)
-    controlreply(sender, "%-20s %20s %10d %15d", sock->authed?sock->authuser:"<not authenticated>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
+    controlreply(sender, "%-20s %20s %10d %15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
 
   controlreply(sender, "-- End of list.");
   return CMD_OK;
