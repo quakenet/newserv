@@ -89,15 +89,13 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   if(superset) {
     /* a superset exists for us, we will be more specific than one existing host */
 
-    controlreply(sender, "Warning: this host already exists in another group, but this new host will override it as it has a smaller prefix.");
+    controlreply(sender, "Note: This host already exists in another group, but this new host will override it as it has a smaller prefix.");
   }
   if(subset) {
     /* a subset of us exists, we will be less specific than some existing hosts */
 
-    controlreply(sender, "Warning: this host already exists in at least one other group, the new host has a larger prefix and therefore will not override those hosts.");
+    controlreply(sender, "Note: This host already exists in at least one other group, the new host has a larger prefix and therefore will not override those hosts.");
   }
-  if(superset || subset)
-    controlreply(sender, "Adding anyway...");
 
   th = th_new(tg, host);
   if(!th) {
