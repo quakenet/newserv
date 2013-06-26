@@ -134,24 +134,24 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  maxperident = strtoul(cargv[3], NULL, 10);
+  maxperident = strtoul(cargv[2], NULL, 10);
   if(maxperident < 0 || (maxperident > MAXPERIDENT)) {
     controlreply(sender, "Bad value for max per ident.");
     return CMD_ERROR;
   }
 
-  if(cargv[4][0] != '1' && cargv[4][0] != '0') {
+  if(cargv[3][0] != '1' && cargv[4][0] != '0') {
     controlreply(sender, "Bad value for enforce ident (use 0 or 1).");
     return CMD_ERROR;
   }
-  enforceident = cargv[4][0] == '1';
+  enforceident = cargv[3][0] == '1';
 
-  contact = cargv[5];
+  contact = cargv[4];
 
-  if(cargc < 7) {
+  if(cargc < 6) {
     comment = "(no comment)";
   } else {
-    comment = cargv[6];
+    comment = cargv[5];
   }
 
   /* don't allow #id or id forms */
