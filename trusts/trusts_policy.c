@@ -106,10 +106,10 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
 
         controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded (group %s): %d connected, %d max.", tg->name->content, tg->count + usercountadjustment, tg->trustedfor);
         snprintf(message, messagelen, "Too many connections from your trust (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
-        return POLICY_FAILURE_GROUPCOUNT;
       }
-      
-      snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
+
+      snprintf(message, messagelen, "Too many connections from your trust (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      return POLICY_FAILURE_GROUPCOUNT;
     }
 
     if((tg->flags & TRUST_ENFORCE_IDENT) && (username[0] == '~')) {
@@ -140,6 +140,9 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     if(tg->count < tg->maxusage)
       tg->exts[countext] = (void *)(long)tg->count;
   }
+
+  if(tg->trustedfor > 0)
+    snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
 
   return POLICY_SUCCESS;
 }
