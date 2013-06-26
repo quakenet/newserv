@@ -28,7 +28,7 @@
 #include "../glines/glines.h"
 #include "trusts.h"
 
-static int countext, enforcepolicy;
+static int countext, enforcepolicy_irc, enforcepolicy_auth;
 
 #define TRUSTBUFSIZE 8192
 #define TRUSTPASSLEN 128
@@ -179,6 +179,9 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
   }
   
   verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message));
+
+  if(!enforcepolicy_auth)
+    verdict = POLICY_SUCCESS;
 
   if (verdict == POLICY_SUCCESS) {
     sock->accepted++;
@@ -470,8 +473,8 @@ static void policycheck_irc(int hooknum, void *arg) {
 
   verdict = checkconnectionth(np->ident, &np->p_nodeaddr, gettrusthost(np), hooknum, 0, message, sizeof(message));
     
-  if(!enforcepolicy)
-    return;
+  if(!enforcepolicy_irc)
+    verdict = POLICY_SUCCESS;
 
   switch (verdict) {
     case POLICY_FAILURE_NODECOUNT:
@@ -486,20 +489,36 @@ static void policycheck_irc(int hooknum, void *arg) {
   }
 }
 
-static int trusts_cmdtrustpolicy(void *source, int cargc, char **cargv) {
+static int trusts_cmdtrustpolicyirc(void *source, int cargc, char **cargv) {
   nick *sender = source;
 
   if(cargc < 1) {
-    controlreply(sender, "Trust policy enforcement is currently %s.", enforcepolicy?"enabled":"disabled");
+    controlreply(sender, "Use of glines for trust policy enforcement is currently %s.", enforcepolicy_irc?"enabled":"disabled");
     return CMD_OK;
   }
 
-  enforcepolicy = atoi(cargv[0]);
-  controlwall(NO_OPER, NL_TRUSTS, "%s %s trust policy enforcement.", controlid(sender), enforcepolicy?"enabled":"disabled");
-  controlreply(sender, "Trust policy enforcement is now %s.", enforcepolicy?"enabled":"disabled");
+  enforcepolicy_irc = atoi(cargv[0]);
+  controlwall(NO_OPER, NL_TRUSTS, "%s %s use of glines for trust policy enforcement.", controlid(sender), enforcepolicy_irc?"enabled":"disabled");
+  controlreply(sender, "Use of glines for trust policy enforcement is now %s.", enforcepolicy_irc?"enabled":"disabled");
 
   return CMD_OK;
 }
+
+static int trusts_cmdtrustpolicyauth(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+
+  if(cargc < 1) {
+    controlreply(sender, "Trust policy enforcement with IAuth is currently %s.", enforcepolicy_auth?"enabled":"disabled");
+    return CMD_OK;
+  }
+
+  enforcepolicy_auth = atoi(cargv[0]);
+  controlwall(NO_OPER, NL_TRUSTS, "%s %s trust policy enforcement with IAuth.", controlid(sender), enforcepolicy_auth?"enabled":"disabled");
+  controlreply(sender, "Trust policy enforcement with IAuth is now %s.", enforcepolicy_auth?"enabled":"disabled");
+
+  return CMD_OK;
+}
+
 
 static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
   nick *sender = source;
@@ -567,9 +586,13 @@ void _init(void) {
   if(countext == -1)
     return;
 
-  m = getconfigitem("trusts_policy", "enforcepolicy");
+  m = getconfigitem("trusts_policy", "enforcepolicy_irc");
   if(m)
-    enforcepolicy = atoi(m->content);
+    enforcepolicy_irc = atoi(m->content);
+
+  m = getconfigitem("trusts_policy", "enforcepolicy_auth");
+  if(m)
+    enforcepolicy_auth = atoi(m->content);
 
   m = getconfigitem("trusts_policy", "trustport");
   if(m)
@@ -586,7 +609,8 @@ void _init(void) {
   registerhook(HOOK_TRUSTS_LOSTNICK, &policycheck_irc);
   registerhook(HOOK_CORE_REHASH, trustaccounts_rehash);
 
-  registercontrolhelpcmd("trustpolicy", NO_DEVELOPER, 1, trusts_cmdtrustpolicy, "Usage: trustpolicy ?1|0?\nEnables or disables policy enforcement. Shows current status when no parameter is specified.");
+  registercontrolhelpcmd("trustpolicyirc", NO_DEVELOPER, 1, trusts_cmdtrustpolicyirc, "Usage: trustpolicyirc ?1|0?\nEnables or disables policy enforcement (IRC). Shows current status when no parameter is specified.");
+  registercontrolhelpcmd("trustpolicyauth", NO_DEVELOPER, 1, trusts_cmdtrustpolicyauth, "Usage: trustpolicyauth ?1|0?\nEnables or disables policy enforcement (IAuth). Shows current status when no parameter is specified.");
   registercontrolhelpcmd("trustsockets", NO_DEVELOPER, 0, trusts_cmdtrustsockets, "Usage: trustsockets\nLists all currently active TRUST sockets.");
 
   schedulerecurring(time(NULL)+1, 0, 5, trustdotimeout, NULL);
@@ -608,7 +632,8 @@ void _fini(void) {
   deregisterhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
   deregisterhook(HOOK_CORE_REHASH, trustaccounts_rehash);
 
-  deregistercontrolcmd("trustpolicy", trusts_cmdtrustpolicy);
+  deregistercontrolcmd("trustpolicyirc", trusts_cmdtrustpolicyirc);
+  deregistercontrolcmd("trustpolicyauth", trusts_cmdtrustpolicyauth);
   deregistercontrolcmd("trustsockets", trusts_cmdtrustsockets);
   
   deleteallschedules(trustdotimeout); 
