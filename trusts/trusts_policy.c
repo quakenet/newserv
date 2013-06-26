@@ -229,18 +229,24 @@ static int handletrustauth(trustsocket *sock, char *server_name, char *mac) {
     }
   }
 
-  if (!password)
+  if (!password) {
+    controlwall(NO_OPER, NL_TRUSTS, "Invalid servername for policy socket: '%s'", server_name);
     return trustkillconnection(sock, "Invalid servername.");
+  }
 
   hmacmd5 h;
   hmacmd5_init(&h, (unsigned char *)password, strlen(password));
   hmacmd5_update(&h, (unsigned char *)hmac_printhex(sock->nonce, noncehexbuf, NONCELEN), NONCELEN * 2);
   hmacmd5_final(&h, digest);
-  if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest))))
+  if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest)))) {
+    controlwall(NO_OPER, NL_TRUSTS, "Invalid password for policy socket with servername '%s'.", server_name);
     return trustkillconnection(sock, "Bad MAC.");
+  }
 
   sock->authed = 1;
   strncpy(sock->authuser, server_name, SERVERLEN);
+
+  controlwall(NO_OPER, NL_TRUSTS, "Successful authentication for policy socket with servername '%s'.", server_name);
   return trustdowrite(sock, "AUTHOK");
 }
 
@@ -511,9 +517,50 @@ static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+void loadtrustaccounts(void) {
+  array *accts;
+
+  memset(trustaccounts, 0, sizeof(trustaccounts));
+
+  accts = getconfigitems("trusts_policy", "server");
+  if(!accts) {
+    Error("trusts_policy", ERR_INFO, "No servers added.");
+  } else {
+    sstring **servers = (sstring **)(accts->content);
+    int i;
+    for(i=0;i<accts->cursi;i++) {
+      char server[512];
+      char *pos;
+
+      if(i>=MAXSERVERS) {
+        Error("trusts_policy", ERR_INFO, "Too many servers specified.");
+        break;
+      }
+
+      strncpy(server, servers[i]->content, sizeof(server));
+
+      pos = strchr(server, ',');
+
+      if(!pos) {
+        Error("trusts_policy", ERR_INFO, "Server line is missing password: %s", server);
+        continue;
+      }
+
+      *pos = '\0';
+
+      trustaccounts[i].used = 1;
+      strncpy(trustaccounts[i].server, server, SERVERLEN);
+      strncpy(trustaccounts[i].password, pos+1, TRUSTPASSLEN);
+    }
+  }
+}
+
+static void trustaccounts_rehash(int hooknum, void *arg) {
+  loadtrustaccounts();
+}
+
 void _init(void) {
   sstring *m;
-  array *accts;
   int trustport;
 
   countext = registertgext("count");
@@ -533,40 +580,11 @@ void _init(void) {
   if(trustport)
     listenerfd = createlistenersock(trustport);
 
-  accts = getconfigitems("trusts_policy", "server");
-  if(!accts) {
-    Error("trusts_policy", ERR_INFO, "No servers added.");
-  } else {
-    sstring **servers = (sstring **)(accts->content);
-    int i;
-    for(i=0;i<accts->cursi;i++) {
-      char server[512];
-      char *pos;
+  loadtrustaccounts();
 
-      if(i>=MAXSERVERS) {
-        Error("trusts_policy", ERR_INFO, "Too many servers specified.");
-        break;
-      }
-      
-      strncpy(server, servers[i]->content, sizeof(server));
-      
-      pos = strchr(server, ',');
-      
-      if(!pos) {
-        Error("trusts_policy", ERR_INFO, "Server line is missing password: %s", server);
-        continue;
-      }
-      
-      *pos = '\0';
-      
-      trustaccounts[i].used = 1;
-      strncpy(trustaccounts[i].server, server, SERVERLEN);
-      strncpy(trustaccounts[i].password, pos+1, TRUSTPASSLEN);
-    }
-  }
-    
   registerhook(HOOK_TRUSTS_NEWNICK, policycheck_irc);
-  registerhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
+  registerhook(HOOK_TRUSTS_LOSTNICK, &policycheck_irc);
+  registerhook(HOOK_CORE_REHASH, trustaccounts_rehash);
 
   registercontrolhelpcmd("trustpolicy", NO_DEVELOPER, 1, trusts_cmdtrustpolicy, "Usage: trustpolicy ?1|0?\nEnables or disables policy enforcement. Shows current status when no parameter is specified.");
   registercontrolhelpcmd("trustsockets", NO_DEVELOPER, 0, trusts_cmdtrustsockets, "Usage: trustsockets\nLists all currently active TRUST sockets.");
@@ -588,6 +606,7 @@ void _fini(void) {
 
   deregisterhook(HOOK_TRUSTS_NEWNICK, policycheck_irc);
   deregisterhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
+  deregisterhook(HOOK_CORE_REHASH, trustaccounts_rehash);
 
   deregistercontrolcmd("trustpolicy", trusts_cmdtrustpolicy);
   deregistercontrolcmd("trustsockets", trusts_cmdtrustsockets);
