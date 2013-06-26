@@ -383,8 +383,10 @@ static int modifyexpires(void *arg, char *expires, nick *source, int override) {
   trustgroup *tg = arg;
   int howlong = durationtolong(expires);
 
-  if((howlong < 0) || (howlong > MAXDURATION))
+  if((howlong < 0) || (howlong > MAXDURATION)) {
+    controlreply(source, "Duration cannot be negative or greater than %s (use 0 instead if you don't want the group to expire).", longtoduration(MAXDURATION, 0));
     return 0;
+  }
 
   if(howlong)
     tg->expires = getnettime() + howlong;
@@ -460,6 +462,9 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
     return 0;
   }
 
+  if(irc_in_addr_is_ipv4(&th->ip))
+    nodebits += 96;
+
   if(!override) {
     int minbits = irc_in_addr_is_ipv4(&th->ip)?TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4:TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6;
 
@@ -469,11 +474,8 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
     }
   }
 
-  if(irc_in_addr_is_ipv4(&th->ip))
-    nodebits += 96;
-
   if(nodebits<th->bits) {
-    controlreply(source, "Node bits must be smaller than the trusted CIDR's subnet size.");
+    controlreply(source, "Node bits must be smaller or equal to the trusted CIDR's subnet size.");
     return 0;
   }
 
@@ -621,7 +623,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), trusts_cidr2str(&ip, bits), tg->name->content, what, to);
-  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, tg->name->content, to);
+  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, trusts_cidr2str(&ip, bits), to);
 
   return CMD_OK;
 }
@@ -685,6 +687,11 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
   name = cargv[0];
   comment = cargv[1];
 
+  if(strlen(comment)>TRUSTLOGLEN) {
+    controlreply(sender, "Your comment is too long (max: %d characters).", TRUSTLOGLEN);
+    return CMD_OK;
+  }
+
   tg = tg_strtotg(name);
 
   if(!tg) {
@@ -692,7 +699,7 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-    controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
   trustlog(tg, sender->authname, "Comment: %s", comment);
 
   return CMD_OK;
