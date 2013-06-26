@@ -210,7 +210,7 @@ static int trustkillconnection(trustsocket *sock, char *reason) {
 }
 
 static void trustfreeconnection(trustsocket *sock, int unlink) {
-  trustsocket **pnext = &tslist;
+  trustsocket **pnext, *ts;
 
   if(!unlink) {
     deregisterhandler(sock->fd, 1);
@@ -218,7 +218,9 @@ static void trustfreeconnection(trustsocket *sock, int unlink) {
     return;
   }
 
-  for(trustsocket *ts=*pnext;ts;pnext=&((*pnext)->next)) {
+  pnext = &tslist;
+  
+  for(ts=*pnext;*pnext;pnext=&((*pnext)->next)) {
     if(ts == sock) {
       *pnext = sock->next;
       trustfreeconnection(sock, 0);
@@ -361,13 +363,11 @@ static void trustdotimeout(void *arg) {
 
   pnext = &tslist;
     
-  for(sock=*pnext;sock;) {
+  for(sock=*pnext;*pnext;pnext=&((*pnext)->next)) {
     if(!sock->authed && t >= sock->timeout) {
       trustkillconnection(sock, "Auth timeout.");
       *pnext = sock->next;
       trustfreeconnection(sock, 0);
-    } else {
-      pnext = &((*pnext)->next);
     }
   }
 }
