@@ -140,7 +140,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if(cargv[3][0] != '1' && cargv[4][0] != '0') {
+  if(cargv[3][0] != '1' && cargv[3][0] != '0') {
     controlreply(sender, "Bad value for enforce ident (use 0 or 1).");
     return CMD_ERROR;
   }
