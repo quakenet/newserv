@@ -209,14 +209,19 @@ static int trustkillconnection(trustsocket *sock, char *reason) {
   return 0;
 }
 
-static void trustfreeconnection(trustsocket *sock) {
+static void trustfreeconnection(trustsocket *sock, int unlink) {
   trustsocket **pnext = &tslist;
-    
+
+  if(!unlink) {
+    deregisterhandler(sock->fd, 1);
+    nsfree(POOL_TRUSTS, sock);
+    return;
+  }
+
   for(trustsocket *ts=tslist;ts;ts=ts->next) {
     if(ts == sock) {
-      deregisterhandler(sock->fd, 1);
       *pnext = sock->next;
-      nsfree(POOL_TRUSTS, sock);
+      trustfreeconnection(sock, 0);
       break;
     }
     
@@ -349,7 +354,7 @@ static void processtrustclient(int fd, short events) {
   
   if(events & POLLIN)
     if(!handletrustclient(sock))
-      trustfreeconnection(sock);
+      trustfreeconnection(sock, 1);
 }
 
 static void trustdotimeout(void *arg) {
@@ -363,9 +368,8 @@ static void trustdotimeout(void *arg) {
 
     if(!sock->authed && t >= sock->timeout) {
       trustkillconnection(sock, "Auth timeout.");
-      deregisterhandler(sock->fd, 1);
       *pnext = sock->next;
-      nsfree(POOL_TRUSTS, sock);
+      trustfreeconnection(sock, 0);
     } else {
       pnext = &(sock->next);
     }
@@ -654,7 +658,7 @@ void _fini(void) {
     next = sock->next;
 
     trustkillconnection(sock, "Unloading module.");
-    trustfreeconnection(sock);
+    trustfreeconnection(sock, 0);
 
     sock = next;
   }
