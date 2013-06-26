@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 #include "../irc/irc.h"
 #include "../trusts/trusts.h"
 #include "../control/control.h"
 #include "glines.h"
+
+MODULE_VERSION("");
 
 static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, unsigned char bits) {
   nick *np;

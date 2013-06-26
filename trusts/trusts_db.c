@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include "../lib/version.h"
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
 #include "../core/hooks.h"
@@ -7,6 +8,8 @@
 #include "../control/control.h"
 #include "../irc/irc.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 DBAPIConn *trustsdb;
 static int tgmaxid, thmaxid;

@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include "../lib/version.h"
 #include "../lib/hmac.h"
 #include "../core/events.h"
 #include "../core/schedule.h"
@@ -27,6 +28,8 @@
 #include "../irc/irc.h"
 #include "../glines/glines.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static int countext, enforcepolicy_irc, enforcepolicy_auth;
 

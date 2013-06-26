@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../control/control.h"
+#include "../lib/version.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/config.h"
@@ -10,6 +11,8 @@
 #include "../noperserv/noperserv.h"
 #include "../noperserv/noperserv_policy.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
