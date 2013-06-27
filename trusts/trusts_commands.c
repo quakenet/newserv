@@ -141,7 +141,7 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
   controlreply(sender, "---");
-  controlreply(sender, "Attributes: * (has children, show with -v), > (belongs to this trust group)");
+  controlreply(sender, "Attributes: * (has hidden children, show with -v), > (belongs to this trust group)");
   controlreply(sender, "Host                            Current    Max        Last seen             Max per Node    Node Mask      Group ID   Group name");
 
   marker = nextthmarker();
