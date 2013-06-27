@@ -303,6 +303,9 @@ static int handletrustline(trustsocket *sock, char *line) {
 
     policycheck_auth(sock, tokens[0], tokens[1], tokens[2]);
     return 1;
+  } else if(!strcmp("VERSION", command)) {
+    /* Ignore this command for now. */
+    return 1;
   } else {
     Error("trusts_policy", ERR_WARNING, "Bad command: %s", command);
     return 0;
