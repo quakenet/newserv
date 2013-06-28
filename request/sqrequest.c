@@ -798,10 +798,10 @@ void qr_finirequest(void) {
 
 void qr_requeststats(nick *rqnick, nick *np) {
   sendnoticetouser(rqnick, np, "- Suspended (S):                  %d", qr_suspended);
-  sendnoticetouser(rqnick, np, "- No chanstats (S):             %d", qr_nohist);
-  sendnoticetouser(rqnick, np, "- Too small (S):                %d", qr_toosmall);
-  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):  %d", qr_nochanlev);
-  sendnoticetouser(rqnick, np, "- User was not the owner (S):   %d", qr_notowner);
+  sendnoticetouser(rqnick, np, "- No chanstats (S):               %d", qr_nohist);
+  sendnoticetouser(rqnick, np, "- Too small (S):                  %d", qr_toosmall);
+  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):    %d", qr_nochanlev);
+  sendnoticetouser(rqnick, np, "- User was not the owner (S):     %d", qr_notowner);
   sendnoticetouser(rqnick, np, "- A:                              %d", qr_a);
   sendnoticetouser(rqnick, np, "- B:                              %d", qr_b);
   sendnoticetouser(rqnick, np, "- C:                              %d", qr_c);
