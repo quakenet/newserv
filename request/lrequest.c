@@ -72,6 +72,6 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 }
 
 void lr_requeststats(nick *rqnick, nick *np) {
-  sendnoticetouser(rqnick, np, "- Too many requests:              %d", lr_notargets);
+  sendnoticetouser(rqnick, np, "- Too many requests (Q):          %d", lr_notargets);
   sendnoticetouser(rqnick, np, "- Not in top%d (Q):                %d", LR_TOPX, lr_top5);
 }
