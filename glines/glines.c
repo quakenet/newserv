@@ -2,12 +2,14 @@
 #include <assert.h>
 #include <string.h>
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 #include "../irc/irc.h"
 #include "../trusts/trusts.h"
 #include "../control/control.h"
 #include "glines.h"
 
 static void statusfn(int, void *);
+MODULE_VERSION("");
 
 void _init() {
   registerserverhandler("GL", &handleglinemsg, 6);

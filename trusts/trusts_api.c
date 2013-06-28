@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include "../lib/version.h"
 #include <../nick/nick.h>
 #include "../irc/irc.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 int istrusted(nick *np) {
   return gettrusthost(np) != NULL;

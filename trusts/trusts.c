@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include "../lib/version.h"
 #include "../core/hooks.h"
 #include "../core/error.h"
 #include "../core/nsmalloc.h"
 #include "../server/server.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 void trusts_registerevents(void);
 void trusts_deregisterevents(void);

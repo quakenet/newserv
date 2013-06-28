@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../control/control.h"
+#include "../lib/version.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include "../core/config.h"
@@ -10,6 +11,8 @@
 #include "../noperserv/noperserv.h"
 #include "../noperserv/noperserv_policy.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
@@ -89,15 +92,13 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   if(superset) {
     /* a superset exists for us, we will be more specific than one existing host */
 
-    controlreply(sender, "Warning: this host already exists in another group, but this new host will override it as it has a smaller prefix.");
+    controlreply(sender, "Note: This host already exists in another group, but this new host will override it as it has a smaller prefix.");
   }
   if(subset) {
     /* a subset of us exists, we will be less specific than some existing hosts */
 
-    controlreply(sender, "Warning: this host already exists in at least one other group, the new host has a larger prefix and therefore will not override those hosts.");
+    controlreply(sender, "Note: This host already exists in at least one other group, the new host has a larger prefix and therefore will not override those hosts.");
   }
-  if(superset || subset)
-    controlreply(sender, "Adding anyway...");
 
   th = th_new(tg, host);
   if(!th) {
@@ -133,24 +134,24 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  maxperident = strtoul(cargv[3], NULL, 10);
+  maxperident = strtoul(cargv[2], NULL, 10);
   if(maxperident < 0 || (maxperident > MAXPERIDENT)) {
     controlreply(sender, "Bad value for max per ident.");
     return CMD_ERROR;
   }
 
-  if(cargv[4][0] != '1' && cargv[4][0] != '0') {
+  if(cargv[3][0] != '1' && cargv[3][0] != '0') {
     controlreply(sender, "Bad value for enforce ident (use 0 or 1).");
     return CMD_ERROR;
   }
-  enforceident = cargv[4][0] == '1';
+  enforceident = cargv[3][0] == '1';
 
-  contact = cargv[5];
+  contact = cargv[4];
 
-  if(cargc < 7) {
+  if(cargc < 6) {
     comment = "(no comment)";
   } else {
-    comment = cargv[6];
+    comment = cargv[5];
   }
 
   /* don't allow #id or id forms */
@@ -382,8 +383,10 @@ static int modifyexpires(void *arg, char *expires, nick *source, int override) {
   trustgroup *tg = arg;
   int howlong = durationtolong(expires);
 
-  if((howlong < 0) || (howlong > MAXDURATION))
+  if((howlong < 0) || (howlong > MAXDURATION)) {
+    controlreply(source, "Duration cannot be negative or greater than %s (use 0 instead if you don't want the group to expire).", longtoduration(MAXDURATION, 0));
     return 0;
+  }
 
   if(howlong)
     tg->expires = getnettime() + howlong;
@@ -459,6 +462,9 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
     return 0;
   }
 
+  if(irc_in_addr_is_ipv4(&th->ip))
+    nodebits += 96;
+
   if(!override) {
     int minbits = irc_in_addr_is_ipv4(&th->ip)?TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4:TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6;
 
@@ -468,11 +474,8 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
     }
   }
 
-  if(irc_in_addr_is_ipv4(&th->ip))
-    nodebits += 96;
-
   if(nodebits<th->bits) {
-    controlreply(source, "Node bits must be smaller than the trusted CIDR's subnet size.");
+    controlreply(source, "Node bits must be smaller or equal to the trusted CIDR's subnet size.");
     return 0;
   }
 
@@ -620,7 +623,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   controlreply(sender, "Host modified.");
 
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), trusts_cidr2str(&ip, bits), tg->name->content, what, to);
-  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, tg->name->content, to);
+  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, trusts_cidr2str(&ip, bits), to);
 
   return CMD_OK;
 }
@@ -684,6 +687,11 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
   name = cargv[0];
   comment = cargv[1];
 
+  if(strlen(comment)>TRUSTLOGLEN) {
+    controlreply(sender, "Your comment is too long (max: %d characters).", TRUSTLOGLEN);
+    return CMD_OK;
+  }
+
   tg = tg_strtotg(name);
 
   if(!tg) {
@@ -691,7 +699,7 @@ static int trusts_cmdtrustcomment(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-    controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTCOMMENT'ed group '%s': %s", controlid(sender), tg->name->content, comment);
   trustlog(tg, sender->authname, "Comment: %s", comment);
 
   return CMD_OK;

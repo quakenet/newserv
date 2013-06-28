@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include "../lib/version.h"
 #include "../lib/hmac.h"
 #include "../core/events.h"
 #include "../core/schedule.h"
@@ -28,7 +29,9 @@
 #include "../glines/glines.h"
 #include "trusts.h"
 
-static int countext, enforcepolicy;
+MODULE_VERSION("");
+
+static int countext, enforcepolicy_irc, enforcepolicy_auth;
 
 #define TRUSTBUFSIZE 8192
 #define TRUSTPASSLEN 128
@@ -67,7 +70,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
   if(messagelen>0)
     message[0] = '\0';
   
-  if(!th)
+  if(!th || !trustsdbloaded)
     return POLICY_SUCCESS;
 
   tg = th->group;
@@ -92,8 +95,8 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
-      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount, th->maxpernode);
-      snprintf(message, messagelen, "Too many connections from your host (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
+      snprintf(message, messagelen, "Too many connections from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_NODECOUNT;
     }
 
@@ -101,17 +104,17 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       if(tg->count > (long)tg->exts[countext]) {
         tg->exts[countext] = (void *)(long)tg->count;
 
-        controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded (group %s): %d connected, %d max.", tg->name->content, tg->count, tg->trustedfor);
-        snprintf(message, messagelen, "Too many connections from your trust (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
-        return POLICY_FAILURE_GROUPCOUNT;
+        controlwall(NO_OPER, NL_TRUSTS, "Hard connection limit exceeded (group %s): %d connected, %d max.", tg->name->content, tg->count + usercountadjustment, tg->trustedfor);
+        snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       }
-      
-      snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
+
+      snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      return POLICY_FAILURE_GROUPCOUNT;
     }
 
     if((tg->flags & TRUST_ENFORCE_IDENT) && (username[0] == '~')) {
       controlwall(NO_OPER, NL_TRUSTS, "Ident required: %s@%s (group: %s).", username, IPtostr(*ip), tg->name->content);
-      snprintf(message, messagelen, "IDENTD required from your host (%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      snprintf(message, messagelen, "IDENTD required from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_IDENTD;
     }
 
@@ -128,8 +131,8 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       }
 
       if(identcount + usercountadjustment > tg->maxperident) {
-        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s): %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount, tg->maxperident);
-        snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see http://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ip));
+        controlwall(NO_OPER, NL_TRUSTS, "Hard ident limit exceeded: %s@%s (group: %s): %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount + usercountadjustment, tg->maxperident);
+        snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ip));
         return POLICY_FAILURE_IDENTCOUNT;
       }
     }
@@ -138,6 +141,9 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       tg->exts[countext] = (void *)(long)tg->count;
   }
 
+  if(tg->trustedfor > 0)
+    snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
+
   return POLICY_SUCCESS;
 }
 
@@ -145,7 +151,7 @@ static int checkconnection(const char *username, struct irc_in_addr *ip, int hoo
   struct irc_in_addr ip_canonicalized;
   ip_canonicalize_tunnel(&ip_canonicalized, ip);
 
-  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(ip), hooknum, cloneadjustment, message, messagelen);
+  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(&ip_canonicalized), hooknum, cloneadjustment, message, messagelen);
 }
 
 static int trustdowrite(trustsocket *sock, char *format, ...) {
@@ -180,6 +186,9 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
   
   verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message));
 
+  if(!enforcepolicy_auth)
+    verdict = POLICY_SUCCESS;
+
   if (verdict == POLICY_SUCCESS) {
     sock->accepted++;
 
@@ -200,18 +209,25 @@ static int trustkillconnection(trustsocket *sock, char *reason) {
   return 0;
 }
 
-static void trustfreeconnection(trustsocket *sock) {
-  trustsocket **pnext = &tslist;
-    
-  for(trustsocket *ts=tslist;ts;ts=ts->next) {
+static void trustfreeconnection(trustsocket *sock, int unlink) {
+  trustsocket **pnext, *ts;
+
+  if(!unlink) {
+    controlwall(NO_OPER, NL_TRUSTS, "Lost connection on policy socket for '%s'.", sock->authed?sock->authuser:"<unauthenticated connection>");
+
+    deregisterhandler(sock->fd, 1);
+    nsfree(POOL_TRUSTS, sock);
+    return;
+  }
+
+  pnext = &tslist;
+  
+  for(ts=*pnext;*pnext;pnext=&((*pnext)->next)) {
     if(ts == sock) {
-      deregisterhandler(sock->fd, 1);
       *pnext = sock->next;
-      nsfree(POOL_TRUSTS, sock);
+      trustfreeconnection(sock, 0);
       break;
     }
-    
-    pnext = &(sock->next);
   }
 }
 
@@ -229,18 +245,24 @@ static int handletrustauth(trustsocket *sock, char *server_name, char *mac) {
     }
   }
 
-  if (!password)
+  if (!password) {
+    controlwall(NO_OPER, NL_TRUSTS, "Invalid servername for policy socket: '%s'", server_name);
     return trustkillconnection(sock, "Invalid servername.");
+  }
 
   hmacmd5 h;
   hmacmd5_init(&h, (unsigned char *)password, strlen(password));
   hmacmd5_update(&h, (unsigned char *)hmac_printhex(sock->nonce, noncehexbuf, NONCELEN), NONCELEN * 2);
   hmacmd5_final(&h, digest);
-  if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest))))
+  if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest)))) {
+    controlwall(NO_OPER, NL_TRUSTS, "Invalid password for policy socket with servername '%s'.", server_name);
     return trustkillconnection(sock, "Bad MAC.");
+  }
 
   sock->authed = 1;
   strncpy(sock->authuser, server_name, SERVERLEN);
+
+  controlwall(NO_OPER, NL_TRUSTS, "Successful authentication for policy socket with servername '%s'.", server_name);
   return trustdowrite(sock, "AUTHOK");
 }
 
@@ -280,6 +302,9 @@ static int handletrustline(trustsocket *sock, char *line) {
       return trustkillconnection(sock, "incorrect arg count for command.");
 
     policycheck_auth(sock, tokens[0], tokens[1], tokens[2]);
+    return 1;
+  } else if(!strcmp("VERSION", command)) {
+    /* Ignore this command for now. */
     return 1;
   } else {
     Error("trusts_policy", ERR_WARNING, "Bad command: %s", command);
@@ -334,28 +359,21 @@ static void processtrustclient(int fd, short events) {
   
   if(events & POLLIN)
     if(!handletrustclient(sock))
-      trustfreeconnection(sock);
+      trustfreeconnection(sock, 1);
 }
 
 static void trustdotimeout(void *arg) {
   time_t t = time(NULL);
-  trustsocket **pnext, *next, *sock;
+  trustsocket **pnext, *sock;
 
   pnext = &tslist;
     
-  for(sock=tslist;sock;) {
-    next = sock->next;
-
+  for(sock=*pnext;*pnext;pnext=&((*pnext)->next)) {
     if(!sock->authed && t >= sock->timeout) {
       trustkillconnection(sock, "Auth timeout.");
-      deregisterhandler(sock->fd, 1);
       *pnext = sock->next;
-      nsfree(POOL_TRUSTS, sock);
-    } else {
-      pnext = &(sock->next);
+      trustfreeconnection(sock, 0);
     }
-    
-    sock=next;
   }
 }
 
@@ -464,8 +482,8 @@ static void policycheck_irc(int hooknum, void *arg) {
 
   verdict = checkconnectionth(np->ident, &np->p_nodeaddr, gettrusthost(np), hooknum, 0, message, sizeof(message));
     
-  if(!enforcepolicy)
-    return;
+  if(!enforcepolicy_irc)
+    verdict = POLICY_SUCCESS;
 
   switch (verdict) {
     case POLICY_FAILURE_NODECOUNT:
@@ -480,20 +498,36 @@ static void policycheck_irc(int hooknum, void *arg) {
   }
 }
 
-static int trusts_cmdtrustpolicy(void *source, int cargc, char **cargv) {
+static int trusts_cmdtrustpolicyirc(void *source, int cargc, char **cargv) {
   nick *sender = source;
 
   if(cargc < 1) {
-    controlreply(sender, "Trust policy enforcement is currently %s.", enforcepolicy?"enabled":"disabled");
+    controlreply(sender, "Use of glines for trust policy enforcement is currently %s.", enforcepolicy_irc?"enabled":"disabled");
     return CMD_OK;
   }
 
-  enforcepolicy = atoi(cargv[0]);
-  controlwall(NO_OPER, NL_TRUSTS, "%s %s trust policy enforcement.", controlid(sender), enforcepolicy?"enabled":"disabled");
-  controlreply(sender, "Trust policy enforcement is now %s.", enforcepolicy?"enabled":"disabled");
+  enforcepolicy_irc = atoi(cargv[0]);
+  controlwall(NO_OPER, NL_TRUSTS, "%s %s use of glines for trust policy enforcement.", controlid(sender), enforcepolicy_irc?"enabled":"disabled");
+  controlreply(sender, "Use of glines for trust policy enforcement is now %s.", enforcepolicy_irc?"enabled":"disabled");
 
   return CMD_OK;
 }
+
+static int trusts_cmdtrustpolicyauth(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+
+  if(cargc < 1) {
+    controlreply(sender, "Trust policy enforcement with IAuth is currently %s.", enforcepolicy_auth?"enabled":"disabled");
+    return CMD_OK;
+  }
+
+  enforcepolicy_auth = atoi(cargv[0]);
+  controlwall(NO_OPER, NL_TRUSTS, "%s %s trust policy enforcement with IAuth.", controlid(sender), enforcepolicy_auth?"enabled":"disabled");
+  controlreply(sender, "Trust policy enforcement with IAuth is now %s.", enforcepolicy_auth?"enabled":"disabled");
+
+  return CMD_OK;
+}
+
 
 static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
   nick *sender = source;
@@ -505,33 +539,16 @@ static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
   controlreply(sender, "Server                   Connected for             Accepted        Rejected");
 
   for(sock=tslist;sock;sock=sock->next)
-    controlreply(sender, "%-20s %20s %10d %15d", sock->authed?sock->authuser:"<not authenticated>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
+    controlreply(sender, "%-20s %20s %10d %15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
 
   controlreply(sender, "-- End of list.");
   return CMD_OK;
 }
 
-void _init(void) {
-  sstring *m;
+void loadtrustaccounts(void) {
   array *accts;
-  int trustport;
 
-  countext = registertgext("count");
-  if(countext == -1)
-    return;
-
-  m = getconfigitem("trusts_policy", "enforcepolicy");
-  if(m)
-    enforcepolicy = atoi(m->content);
-
-  m = getconfigitem("trusts_policy", "trustport");
-  if(m)
-    trustport = atoi(m->content);
-  else
-    trustport = DEFAULT_TRUSTPORT;
-
-  if(trustport)
-    listenerfd = createlistenersock(trustport);
+  memset(trustaccounts, 0, sizeof(trustaccounts));
 
   accts = getconfigitems("trusts_policy", "server");
   if(!accts) {
@@ -547,28 +564,62 @@ void _init(void) {
         Error("trusts_policy", ERR_INFO, "Too many servers specified.");
         break;
       }
-      
+
       strncpy(server, servers[i]->content, sizeof(server));
-      
+
       pos = strchr(server, ',');
-      
+
       if(!pos) {
         Error("trusts_policy", ERR_INFO, "Server line is missing password: %s", server);
         continue;
       }
-      
+
       *pos = '\0';
-      
+
       trustaccounts[i].used = 1;
       strncpy(trustaccounts[i].server, server, SERVERLEN);
       strncpy(trustaccounts[i].password, pos+1, TRUSTPASSLEN);
     }
   }
-    
-  registerhook(HOOK_TRUSTS_NEWNICK, policycheck_irc);
-  registerhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
+}
 
-  registercontrolhelpcmd("trustpolicy", NO_DEVELOPER, 1, trusts_cmdtrustpolicy, "Usage: trustpolicy ?1|0?\nEnables or disables policy enforcement. Shows current status when no parameter is specified.");
+static void trustaccounts_rehash(int hooknum, void *arg) {
+  loadtrustaccounts();
+}
+
+void _init(void) {
+  sstring *m;
+  int trustport;
+
+  countext = registertgext("count");
+  if(countext == -1)
+    return;
+
+  m = getconfigitem("trusts_policy", "enforcepolicy_irc");
+  if(m)
+    enforcepolicy_irc = atoi(m->content);
+
+  m = getconfigitem("trusts_policy", "enforcepolicy_auth");
+  if(m)
+    enforcepolicy_auth = atoi(m->content);
+
+  m = getconfigitem("trusts_policy", "trustport");
+  if(m)
+    trustport = atoi(m->content);
+  else
+    trustport = DEFAULT_TRUSTPORT;
+
+  if(trustport)
+    listenerfd = createlistenersock(trustport);
+
+  loadtrustaccounts();
+
+  registerhook(HOOK_TRUSTS_NEWNICK, policycheck_irc);
+  registerhook(HOOK_TRUSTS_LOSTNICK, &policycheck_irc);
+  registerhook(HOOK_CORE_REHASH, trustaccounts_rehash);
+
+  registercontrolhelpcmd("trustpolicyirc", NO_DEVELOPER, 1, trusts_cmdtrustpolicyirc, "Usage: trustpolicyirc ?1|0?\nEnables or disables policy enforcement (IRC). Shows current status when no parameter is specified.");
+  registercontrolhelpcmd("trustpolicyauth", NO_DEVELOPER, 1, trusts_cmdtrustpolicyauth, "Usage: trustpolicyauth ?1|0?\nEnables or disables policy enforcement (IAuth). Shows current status when no parameter is specified.");
   registercontrolhelpcmd("trustsockets", NO_DEVELOPER, 0, trusts_cmdtrustsockets, "Usage: trustsockets\nLists all currently active TRUST sockets.");
 
   schedulerecurring(time(NULL)+1, 0, 5, trustdotimeout, NULL);
@@ -588,8 +639,10 @@ void _fini(void) {
 
   deregisterhook(HOOK_TRUSTS_NEWNICK, policycheck_irc);
   deregisterhook(HOOK_TRUSTS_LOSTNICK, policycheck_irc);
+  deregisterhook(HOOK_CORE_REHASH, trustaccounts_rehash);
 
-  deregistercontrolcmd("trustpolicy", trusts_cmdtrustpolicy);
+  deregistercontrolcmd("trustpolicyirc", trusts_cmdtrustpolicyirc);
+  deregistercontrolcmd("trustpolicyauth", trusts_cmdtrustpolicyauth);
   deregistercontrolcmd("trustsockets", trusts_cmdtrustsockets);
   
   deleteallschedules(trustdotimeout); 
@@ -604,7 +657,7 @@ void _fini(void) {
     next = sock->next;
 
     trustkillconnection(sock, "Unloading module.");
-    trustfreeconnection(sock);
+    trustfreeconnection(sock, 0);
 
     sock = next;
   }

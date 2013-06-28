@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "../lib/version.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
@@ -9,6 +10,8 @@
 #include "../glines/glines.h"
 #include "trusts.h"
 #include "newsearch/trusts_newsearch.h"
+
+MODULE_VERSION("");
 
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
@@ -138,7 +141,7 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
 
   controlreply(sender, "---");
-  controlreply(sender, "Attributes: * (has children, show with -v), > (belongs to this trust group)");
+  controlreply(sender, "Attributes: * (has hidden children, show with -v), > (belongs to this trust group)");
   controlreply(sender, "Host                            Current    Max        Last seen             Max per Node    Node Mask      Group ID   Group name");
 
   marker = nextthmarker();

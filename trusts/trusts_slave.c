@@ -7,6 +7,7 @@
 #include "../core/config.h"
 #include "../core/error.h"
 #include "../control/control.h"
+#include "../lib/version.h"
 #include "../lib/sha1.h"
 #include "../lib/hmac.h"
 #include "../lib/irc_string.h"
@@ -14,6 +15,8 @@
 #include "../server/server.h"
 #include "../xsb/xsb.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static int syncing, synced;
 static sstring *smasterserver;

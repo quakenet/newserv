@@ -5,11 +5,14 @@
 #include "../core/hooks.h"
 #include "../core/config.h"
 #include "../core/error.h"
+#include "../lib/version.h"
 #include "../lib/sha1.h"
 #include "../lib/hmac.h"
 #include "../xsb/xsb.h"
 #include "../control/control.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static void broadcast(SHA1_CTX *c, unsigned int replicationid, unsigned int lineno, char *command, char *format, ...) {
   char buf[512], buf2[600];
