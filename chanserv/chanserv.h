@@ -113,8 +113,8 @@
 #define MAXCHANLEVS  500
 #define MAXBANS      50
 
-/* Maximum number of channels a user may be known on when adding new channels */
-#define MAXCHANNELS  2
+/* Maximum number of channels a user may be known on */
+#define MAXCHANNELS  500
 
 /* Sources of entropy and standard length defines */
 #define ENTROPYSOURCE "/dev/urandom"
