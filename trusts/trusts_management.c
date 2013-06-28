@@ -44,6 +44,11 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if(!is_normalized_ipmask(&ip, bits)) {
+    controlreply(sender, "Invalid IP Mask.");
+    return CMD_ERROR;
+  }
+
   /* Don't allow non-developers to add trusts for large subnets or modify protected groups. */
   if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
     int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
