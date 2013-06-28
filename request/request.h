@@ -11,6 +11,7 @@
 #define RQ_REQUEST_HOST "request.quakenet.org"
 #define RQ_REQUEST_REAL "Service Request v0.23"
 #define RQ_REQUEST_AUTH "R"
+#define RQ_REQUEST_AUTHID 1780711
 
 #define RQU_ANY 0
 #define RQU_OPER 1
