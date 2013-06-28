@@ -5,6 +5,7 @@
 #include "request.h"
 #include "lrequest.h"
 #include "request_block.h"
+#include "request_fasttrack.h"
 #include "../localuser/localuser.h"
 
 /* stats counters */
@@ -30,55 +31,49 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 
   cf = cf_findchanfix(cp->index);
 
-  if (cf == NULL) {
-    sendnoticetouser(svc, np, "Sorry, your channel '%s' was created recently. "
-          "Please try again in an hour.", cp->index->name->content);
+  if(cf) {
+    rocount = cf_getsortedregops(cf, LR_TOPX, rolist);
 
-    lr_noregops++;
+    ro = NULL;
 
-    return RQ_ERROR;
-  }
+    for (i = 0; i < min(LR_TOPX, rocount); i++) {
+      if (cf_cmpregopnick(rolist[i], np)) {
+        ro = rolist[i];
+        break;
+      }
+    }
 
-  rocount = cf_getsortedregops(cf, LR_TOPX, rolist);
+    if (ro == NULL) {
+      sendnoticetouser(svc, np, "Sorry, you must be one of the top %d ops "
+            "for the channel '%s'.", LR_TOPX, cp->index->name->content);
 
-  ro = NULL;
+      lr_top5++;
 
-  for (i = 0; i < min(LR_TOPX, rocount); i++) {
-    if (cf_cmpregopnick(rolist[i], np)) {
-      ro = rolist[i];
-      break;
+      return RQ_ERROR;
     }
   }
 
-  if (ro == NULL) {
-    sendnoticetouser(svc, np, "Sorry, you must be one of the top %d ops "
-          "for the channel '%s'.", LR_TOPX, cp->index->name->content);
+  if(!rq_tryfasttrack(np)) {
+    if (cf == NULL) {
+      sendnoticetouser(svc, np, "Sorry, your channel '%s' was created recently. "
+            "Please try again in an hour.", cp->index->name->content);
 
-    lr_top5++;
-
-    return RQ_ERROR;
-  }
-
-  /* treat blocked users as if their score is too low */
-  if (ro->score < LR_CFSCORE || rq_findblock(np->authname)) {
-    if (rq_isspam(np)) {
-      sendnoticetouser(svc, np, "Do not flood the request system. "
-            "Try again in %s.", rq_longtoduration(rq_blocktime(np)));
-
-      lr_floodattempts++;
+      lr_noregops++;
 
       return RQ_ERROR;
     }
 
-    sendnoticetouser(svc, np, "Sorry, you do not meet the "
-          "%s request requirements; please try again in an hour, "
-          "see http://www.quakenet.org/faq/faq.php?c=1&f=6#6", RQ_QNICK);
+    /* treat blocked users as if their score is too low */
+    if (ro->score < LR_CFSCORE || rq_findblock(np->authname)) {
+      sendnoticetouser(svc, np, "Sorry, you do not meet the "
+            "%s request requirements; please try again in an hour, "
+            "see http://www.quakenet.org/faq/faq.php?c=1&f=6#6", RQ_QNICK);
 
-    lr_scoretoolow++;
+      lr_scoretoolow++;
 
-    return RQ_ERROR;
+      return RQ_ERROR;
+    }
   }
-
   
   sendmessagetouser(svc, qnick, "addchan %s #%s +jp upgrade %s", cp->index->name->content,
         np->authname, np->nick);

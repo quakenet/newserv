@@ -730,21 +730,10 @@ int qr_instantrequestq(nick *sender, channel *cp) {
 
 int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   chanindex *cip = cp->index;
-  int who = 0;
   requestrec *nextreq, *lastreq;
-
-  if (rq_isspam(sender)) {
-      sendnoticetouser(rqnick, sender, "Do not flood the request system."
-          " Try again in %s.", rq_longtoduration(rq_blocktime(sender)));
-    
-      return RQ_ERROR;
-  }
 
   /* check which service is on the channel */
   if (getnumerichandlefromchanhash(cp->users, qnick->numeric) != NULL) {
-    /* we've found Q */
-    who = QR_Q;
-
     /* Request stats from Q */
     sendmessagetouser(rqnick, qnick, "CHANLEV %s", cip->name->content);
 

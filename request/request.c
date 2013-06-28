@@ -12,6 +12,7 @@
 #include "../splitlist/splitlist.h"
 #include "request.h"
 #include "request_block.h"
+#include "request_fasttrack.h"
 #include "lrequest.h"
 #include "sqrequest.h"
 #include "user.h"
@@ -53,6 +54,9 @@ static int extloaded = 0;
 
 void _init(void) {
   if(!rq_initblocks())
+    return;
+
+  if(!rq_initfasttrack())
     return;
 
   extloaded = 1;
@@ -106,6 +110,7 @@ void _fini(void) {
   destroycommandtree(rqcommands);
 
   rq_finiblocks();
+  rq_finifasttrack();
   qr_finirequest();
   ru_persist();
 
