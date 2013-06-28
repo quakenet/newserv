@@ -9,10 +9,8 @@
 #include "../localuser/localuser.h"
 
 /* stats counters */
-int lr_noregops = 0;
-int lr_scoretoolow = 0;
 int lr_top5 = 0;
-int lr_floodattempts = 0;
+int lr_notargets = 0;
 
 #define min(a,b) ((a > b) ? b : a)
 
@@ -53,28 +51,16 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
     }
   }
 
-  if(!rq_tryfasttrack(np)) {
-    if (cf == NULL) {
-      sendnoticetouser(svc, np, "Sorry, your channel '%s' was created recently. "
-            "Please try again in an hour.", cp->index->name->content);
+  /* treat blocked users as if they're out of targets */
+  if(rq_findblock(np->authname) || !rq_tryfasttrack(np)) {
+    sendnoticetouser(svc, np, "Sorry, you may not request %s for another "
+      "channel at this time. Please try again in an hour.", RQ_QNICK);
 
-      lr_noregops++;
+    lr_notargets++;
 
-      return RQ_ERROR;
-    }
-
-    /* treat blocked users as if their score is too low */
-    if (ro->score < LR_CFSCORE || rq_findblock(np->authname)) {
-      sendnoticetouser(svc, np, "Sorry, you do not meet the "
-            "%s request requirements; please try again in an hour, "
-            "see http://www.quakenet.org/faq/faq.php?c=1&f=6#6", RQ_QNICK);
-
-      lr_scoretoolow++;
-
-      return RQ_ERROR;
-    }
+    return RQ_ERROR;
   }
-  
+
   sendmessagetouser(svc, qnick, "addchan %s #%s +jp upgrade %s", cp->index->name->content,
         np->authname, np->nick);
 
@@ -86,8 +72,6 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 }
 
 void lr_requeststats(nick *rqnick, nick *np) {
-  sendnoticetouser(rqnick, np, "- No registered ops (Q):          %d", lr_noregops);
-  sendnoticetouser(rqnick, np, "- Score too low (Q):              %d", lr_scoretoolow);
+  sendnoticetouser(rqnick, np, "- Too many requests:              %d", lr_notargets);
   sendnoticetouser(rqnick, np, "- Not in top%d (Q):                %d", LR_TOPX, lr_top5);
-  sendnoticetouser(rqnick, np, "- Floods (Q):                     %d", lr_floodattempts);
 }

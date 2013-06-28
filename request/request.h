@@ -1,6 +1,6 @@
 #define RQ_TLZ "#twilightzone"
 
-#define RQ_QSERVER "nslave.netsplit.net"
+#define RQ_QSERVER "CServe.quakenet.org"
 #define RQ_QNICK "Q"
 
 #define RQ_SSERVER "services.de.quakenet.org"
