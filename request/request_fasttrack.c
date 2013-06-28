@@ -36,13 +36,16 @@ int rq_initfasttrack(void) {
 }
 
 void rq_finifasttrack(void) {
-  rq_fasttrack *ft;
+  rq_fasttrack *ft, *next;
 
   deregisterhook(HOOK_NICK_NEWNICK, &rqhook_account);
   deregisterhook(HOOK_NICK_ACCOUNT, &rqhook_account);
 
-  for(ft=ftlist;ft;ft=ft->next)
+  for(ft=ftlist;ft;) {
+    next = ft->next;
     free(ft);
+    ft = next;
+  }
 
   releasenickext(rqnext);
 }
@@ -65,7 +68,32 @@ static void rqhook_account(int hook, void *arg) {
 }
 
 static void rq_cleanup_fasttrack(void *arg) {
+  time_t now = getnettime();
+  rq_fasttrack **pft, *ft;
+  int j;
+  nick *tnp;
 
+  now = getnettime();
+
+  pft = &ftlist;
+
+  for(ft=*pft;*pft;pft=&((*pft)->next)) {
+    int foundnick = 0;
+
+    for(j=0;j<NICKHASHSIZE && !foundnick;j++) {
+      for(tnp=nicktable[j];tnp;tnp=tnp->next) {
+        if(tnp->exts[rqnext]==ft) {
+          foundnick = 1;
+          break;
+        }
+      }
+    }
+
+    if(ft->refill_time < now) {
+      *pft = ft->next;
+      free(ft);
+    }
+  }
 }
 
 static rq_fasttrack *rq_getfasttrack(nick *np) {
@@ -86,6 +114,9 @@ static rq_fasttrack *rq_getfasttrack(nick *np) {
   ft->userid = np->auth->userid;
   ft->targets = 0;
   ft->refill_time = 0;
+
+  ft->next = ftlist;
+  ftlist = ft;
 
   np->exts[rqnext] = ft;
 
