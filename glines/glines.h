@@ -35,6 +35,16 @@
 #define GLINE_BADMASK     0x100000
 
 /**
+ * glist flags
+ */
+#define GLIST_COUNT    0x01 /* -c */
+#define GLIST_EXACT    0x02 /* -x */
+#define GLIST_FIND     0x04 /* -f */
+#define GLIST_REASON   0x10 /* -r */
+#define GLIST_OWNER    0x20 /* -o */
+#define GLIST_REALNAME 0x40 /* -R */
+
+/**
  * Interpret absolute/relative timestamps with same method as snircd
  * If the expiration value, interpreted as an absolute timestamp, is
  * more recent than 5 years in the past, we interpret it as an

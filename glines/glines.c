@@ -12,11 +12,14 @@ static void statusfn(int, void *);
 MODULE_VERSION("");
 
 void _init() {
+  /* If we're connected to IRC, force a disconnect. */
+  if (connected) {
+    irc_send("%s SQ %s 0 :Resync [adding jupe support]",mynumeric->content,myserver->content); irc_disconnected();
+  }
+
   registerserverhandler("GL", &handleglinemsg, 6);
   registerhook(HOOK_CORE_STATSREQUEST, statusfn);
 
-  /* send reburst command to get glines from before we registered handler */
-  irc_send("%s RB G", mynumeric->content);
 }
 
 void _fini() {
@@ -466,7 +469,7 @@ void gline_propagate(gline *agline) {
   if ( agline->flags & GLINE_ACTIVE ) {
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content, glinetostring(agline), agline->expires, agline->lastmod, agline->reason->content);
   } else {
-    irc_send("%s GL * -%s %lu %lu\r\n", mynumeric->content, glinetostring(agline), agline->expires, agline->lastmod);
+    irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content, glinetostring(agline), agline->expires, agline->lastmod, agline->reason->content);
   }
 }
 
@@ -507,5 +510,30 @@ static void statusfn(int hooknum, void *arg) {
     snprintf(message, sizeof(message), "Glines  :%7d glines", glcount);
     triggerhook(HOOK_CORE_STATSREPLY, message);
   } 
+}
+
+/* returns non-zero on match */
+int gline_match_mask ( gline *gla, gline *glb) {
+  if ((!gla->nick && glb->nick) || (gla->nick && !glb->nick))
+    return 0;
+
+  if (gla->nick && match(gla->nick->content,glb->nick->content))
+    return 0;
+
+  // TODO should check for ANY etc
+  if ((!gla->user && glb->user) || (gla->user && !glb->user))
+    return 0;
+
+  if (gla->user && match(gla->user->content,glb->user->content))
+    return 0;
+
+  if ((!gla->host && glb->host) || (gla->host && !glb->host))
+    return 0;
+
+  if (gla->host && match(gla->host->content,glb->host->content))
+    return 0;
+
+  /* TODO @@@ match bits flags */
+  return 1;
 }
 
