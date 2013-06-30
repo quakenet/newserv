@@ -235,9 +235,9 @@ gline *makegline(char *mask) {
               /* we have a / so cidr gline */
               gl->ip = sin;
               gl->bits = bits;
-              if (foundwild || !is_normalized_ipmask(&sin, bits)) {
-                gl->host=getsstring(&mask[i+1],HOSTLEN);
-                gl->flags |= GLINE_IPWILD;
+              gl->host=getsstring(&mask[i+1],HOSTLEN);
+              if (!is_normalized_ipmask(&sin, bits)) {
+                gl->flags |= GLINE_BADMASK;
               }
               gl->flags |= GLINE_IPMASK;
             }
@@ -434,14 +434,7 @@ char *glinetostring(gline *g) {
   } else if (g->host) {
     strpos += sprintf(outstring+strpos, "%s", g->host->content);
   } else if ( g->flags & GLINE_IPMASK ) {
-    if ( g->flags & GLINE_IPWILD ) {
-      strpos += sprintf(outstring+strpos, "%s", g->host->content);
-    } else {
-      if (g->bits == 128)
-        strpos += sprintf(outstring+strpos, "%s", IPtostr(g->ip));
-      else
-        strpos += sprintf(outstring+strpos, "%s/%d", IPtostr(g->ip), irc_bitlen(&(g->ip),(g->bits)));
-    }
+    strpos += sprintf(outstring+strpos, "%s", g->host->content);
   }
   return outstring;
 }

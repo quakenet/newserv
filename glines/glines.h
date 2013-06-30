@@ -31,7 +31,6 @@
 #define GLINE_ACTIVE      0x010000  /* Gline is active */
 #define GLINE_IPMASK      0x020000  /* Gline includes an CIDR mask */
 #define GLINE_HOST        0x040000
-#define GLINE_IPWILD      0x080000
 #define GLINE_BADMASK     0x100000
 
 /**
