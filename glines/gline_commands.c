@@ -29,12 +29,14 @@ int gline_glist(void* source, int cargc, char** cargv);
 int gline_glstats(void* source, int cargc, char** cargv);
 int gline_ungline(void* source, int cargc, char** cargv);
 int gline_saveglines(void* source, int cargc, char** cargv);
+int gline_rawgline(void* source, int cargc, char** cargv);
 
 void _init() {
   registercontrolhelpcmd("glstats",NO_OPER,0,&gline_glstats,"Usage: glstats.");
   registercontrolhelpcmd("glist",NO_OPER,2,&gline_glist,"Usage: glist.");
   registercontrolhelpcmd("ungline",NO_OPER,1,&gline_ungline,"Usage: ungline.");
-  
+  registercontrolhelpcmd("rawgline",NO_OPER,3,&gline_rawgline,"Usage: rawgline.");
+ 
   registercontrolhelpcmd("saveglines",NO_OPER,0,&gline_saveglines,"Usage: saveglines");
 
 }
@@ -275,6 +277,37 @@ int gline_ungline(void* source, int cargc, char** cargv) {
 
   controlreply(sender, "G-Line deactivated.");
 
+  return CMD_OK;
+}
+
+int gline_rawgline(void* source, int cargc, char** cargv) {
+  nick* sender = (nick*)source;
+  gline* g;
+  int expires;
+
+  if (cargc < 3) {
+    controlreply(sender, "Syntax: rawgline <mask> <duration> <reason>");
+    controlreply(sender, "Where <mask> is the exact G-Line to add.");
+    return CMD_ERROR;
+  }
+
+  if ((g = gline_find(cargv[0]))) {
+    /**
+     * Legacy 1.3: Until 1.4, warn opers that they can't modify this gline
+     */
+    if ((g->flags & GLINE_ACTIVE)) {
+      controlreply(sender, "Active G-Line already exists on %s - unable to modify", cargv[0]);
+      return CMD_ERROR;
+    }
+    controlreply(send, "Reactivating existing gline on %s", cargv[0]);
+    /**
+     * End Legacy
+     */
+  }
+
+  expires = durationtolong(cargv[1]);
+
+  glinesetmask(cargv[0], expires, cargv[2], sender->nick);
   return CMD_OK;
 }
 

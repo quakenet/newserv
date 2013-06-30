@@ -92,13 +92,14 @@ int glinebynick(nick *, int, const char *, int, const char *);
 int glinesuggestbyip(const char *, struct irc_in_addr *, unsigned char, int, gline_callback callback, void *uarg);
 int glinesuggestbynick(nick *, int, gline_callback callback, void *uarg);
 
-gline* gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime);
+gline *gline_add(sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime);
 char *glinetostring(gline *g);
 gline *gline_find(char *);
 gline *makegline(char *);
 int handleglinemsg(void *, int, char **);
 void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);
+gline *gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal (gline *, gline *);
 
 void freegline (gline *);

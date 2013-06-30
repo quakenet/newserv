@@ -41,13 +41,28 @@ static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, uns
 }
 
 void glinesetmask(const char *mask, int duration, const char *reason, const char *creator) {
+  gline *g;
+  time_t t = getnettime();
+  sstring *screator;
+
   if(strcmp(creator, "trusts_policy")==0) {
     controlwall(NO_OPER, NL_GLINES, "(NOT) Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
     return;
   }
 
-  controlwall(NO_OPER, NL_GLINES, "Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
-  irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+  if (!(g = gline_find(mask))) {
+    // new gline
+    screator = getsstring(creator, 255);
+    g = gline_add(screator, mask, reason, t+duration, t, t+duration);
+    gline_propagate(g);
+  } else {
+    // existing gline
+    // in 1.4, can update expire, reason etc
+    // in 1.3 can only activate an existing inactive gline
+    if( !(g->flags & GLINE_ACTIVE) )  {
+      gline_activate(g,0,1);
+    }
+  }
 }
 
 void glineremovemask(const char *mask) {
@@ -148,7 +163,7 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   return glinesuggestbynick(np, flags, glinesetmask_cb, &gp);
 }
 
-gline *gline_add(long creatornum, sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime) {
+gline *gline_add(sstring *creator, char *mask, char *reason, time_t expires, time_t lastmod, time_t lifetime) {
   gline *gl;
 
   if ( !(gl=makegline(mask))) { /* sets up nick,user,host,node and flags */
@@ -438,6 +453,25 @@ char *glinetostring(gline *g) {
   return outstring;
 }
 
+gline *gline_activate(gline *agline, time_t lastmod, int propagate) {
+  time_t now = getnettime();
+  agline->flags |= GLINE_ACTIVE;
+
+  if (lastmod) {
+    agline->lastmod = lastmod;
+  } else {
+    if(now<=agline->lastmod)
+      agline->lastmod++;
+    else
+      agline->lastmod=now;
+  }
+
+  if ( propagate) {
+    gline_propagate(agline);
+  }
+  return agline;
+}
+
 gline *gline_deactivate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
   agline->flags &= ~GLINE_ACTIVE;
@@ -459,6 +493,7 @@ gline *gline_deactivate(gline *agline, time_t lastmod, int propagate) {
 
 void gline_propagate(gline *agline) {
   if ( agline->flags & GLINE_ACTIVE ) {
+    controlwall(NO_OPER, NL_GLINES, "Setting gline on '%s' lasting %s with reason '%s', created by: %s", glinetostring(agline), longtoduration(agline->expires-getnettime(),0), agline->reason->content, agline->creator->content);
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content, glinetostring(agline), agline->expires, agline->lastmod, agline->reason->content);
   } else {
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content, glinetostring(agline), agline->expires, agline->lastmod, agline->reason->content);
