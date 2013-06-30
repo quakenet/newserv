@@ -89,7 +89,7 @@ int gline_glstats(void* source, int cargc, char** cargv) {
   controlreply(sender, "Realname G-Lines:  %d", rnglinecount);
 
   controlreply(sender, "Active G-Lines:    %d", activecount);
-  controlreply(sender, "De-Active G-Lines: %d", deactivecount);
+  controlreply(sender, "Inactive G-Lines:  %d", deactivecount);
 
   /* TODO show top 10 creators here */
   /* TODO show unique creators count */
