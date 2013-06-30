@@ -22,19 +22,18 @@ static int countmatchingusers(const char *identmask, struct irc_in_addr *ip, uns
 }
 
 void glinesetmask(const char *mask, int duration, const char *reason, const char *creator) {
-  controlwall(NO_OPER, NL_GLINES, "(NOT) Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
+  if(strcmp(creator, "trusts_policy")==0) {
+    controlwall(NO_OPER, NL_GLINES, "(NOT) Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
+    return;
+  }
 
-#if 0
+  controlwall(NO_OPER, NL_GLINES, "Setting gline on '%s' lasting %s with reason '%s', created by: %s", mask, longtoduration(duration, 0), reason, creator);
   irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
-#endif
 }
 
 void glineremovemask(const char *mask) {
-  controlwall(NO_OPER, NL_GLINES, "(NOT) Removing gline on '%s'.", mask);
-
-#if 0
+  controlwall(NO_OPER, NL_GLINES, "Removing gline on '%s'.", mask);
   irc_send("%s GL * -%s", mynumeric->content, mask);
-#endif
 }
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
