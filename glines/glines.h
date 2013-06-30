@@ -42,6 +42,7 @@
 #define GLIST_REASON   0x10 /* -r */
 #define GLIST_OWNER    0x20 /* -o */
 #define GLIST_REALNAME 0x40 /* -R */
+#define GLIST_INACTIVE 0x80 /* -i */
 
 /**
  * Interpret absolute/relative timestamps with same method as snircd

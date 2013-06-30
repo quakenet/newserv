@@ -5,4 +5,4 @@ all: gline_commands.so glines.so
 
 gline_commands.so: gline_commands.o
 
-glines.so: glines.o gline_handler.o
+glines.so: glines.o gline_handler.o gline_alloc.o
