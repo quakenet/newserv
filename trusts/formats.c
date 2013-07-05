@@ -113,6 +113,9 @@ int parsetg(char *buf, trustgroup *tg, int oformat) {
     r = sscanf(line, "%*u,%u,%u,%u,%u,%lu,%lu,%lu,%n",
                /*current, */ &tg->trustedfor, &tg->flags, &tg->maxperident,
                &tg->maxusage, &expires, &lastseen, &lastmaxusereset, &pos);
+
+    if(tg->maxperident > 0)
+      tg->flags |= TRUST_RELIABLE_USERNAME;
   } else {
     r = sscanf(line, "%u,%u,%u,%u,%lu,%lu,%lu,%n",
                &tg->trustedfor, &tg->flags, &tg->maxperident,

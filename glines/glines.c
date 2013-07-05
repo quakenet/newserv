@@ -51,7 +51,7 @@ int glinesuggestbyip(const char *user, struct irc_in_addr *ip, unsigned char bit
   if (!(flags & GLINE_IGNORE_TRUST)) {
     th = th_getbyhost(ip);
 
-    if(th && (th->group->flags & TRUST_ENFORCE_IDENT)) { /* Trust with enforceident enabled */
+    if(th && (th->group->flags & TRUST_RELIABLE_USERNAME)) { /* Trust with reliable usernames */
       count = 0;
 
       for(oth=th->group->hosts;oth;oth=oth->next)

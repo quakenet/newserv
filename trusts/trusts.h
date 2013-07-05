@@ -42,6 +42,7 @@
 #define TRUST_ENFORCE_IDENT 1 /* This must be 1 for compatibility with O. */
 #define TRUST_NO_CLEANUP 2
 #define TRUST_PROTECTED 4
+#define TRUST_RELIABLE_USERNAME 8
 
 #define TRUST_MIN_UNPRIVILEGED_BITS_IPV4 (96 + 20)
 #define TRUST_MIN_UNPRIVILEGED_BITS_IPV6 32

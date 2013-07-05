@@ -120,7 +120,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
   unsigned int howmany, maxperident, enforceident;
   trustgroup *tg, itg;
-  int override;
+  int override, flags;
 
   if(cargc < 5)
     return CMD_USAGE;
@@ -168,8 +168,16 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
 
   snprintf(createdby, sizeof(createdby), "#%s", sender->authname);
 
+  flags = 0;
+
+  if(maxperident > 0)
+    flags |= TRUST_RELIABLE_USERNAME;
+
+  if(enforceident)
+    flags |= TRUST_ENFORCE_IDENT;
+
   itg.trustedfor = howmany;
-  itg.flags = enforceident?TRUST_ENFORCE_IDENT:0;
+  itg.flags = flags;
   itg.maxperident = maxperident;
   itg.expires = 0;
   itg.createdby = getsstring(createdby, CREATEDBYLEN);
@@ -358,6 +366,12 @@ static int modifymaxperident(void *arg, char *num, nick *source, int override) {
   if(maxperident > MAXPERIDENT) {
     controlreply(source, "Ident limit must not be higher than %d. Consider setting it to 0 (unlimited) instead.", MAXPERIDENT);
     return 0;
+  }
+
+  if(maxperident > 0) {
+    tg->flags |= TRUST_RELIABLE_USERNAME;
+  } else {
+    tg->flags &= ~TRUST_RELIABLE_USERNAME;
   }
 
   tg->maxperident = maxperident;

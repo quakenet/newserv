@@ -117,6 +117,51 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
     outputtree(np, marker, originalgroup, th, depth + 1, showchildren);
 }
 
+static char *formatflags(int flags) {
+  static char buf[512];
+
+  buf[0] = '\0';
+
+  if(flags & TRUST_ENFORCE_IDENT)
+    strncat(buf, "enforcing ident", 512);
+
+  if(flags & TRUST_NO_CLEANUP) {
+    if(buf[0])
+      strncat(buf, ", ", 512);
+
+    strncat(buf, "exempt from cleanup", 512);
+  }
+
+  if(flags & TRUST_PROTECTED) {
+    if(buf[0])
+      strncat(buf, ", ", 512);
+
+    strncat(buf, "protected", 512);
+  }
+
+  if(flags & TRUST_RELIABLE_USERNAME) {
+    if(buf[0])
+      strncat(buf, ", ", 512);
+
+    strncat(buf, "reliable username", 512);
+  }
+
+  buf[512-1] = '\0';
+
+  return buf;
+}
+
+static char *formatlimit(unsigned int limit) {
+  static char buf[64];
+
+  if(limit)
+    snprintf(buf, sizeof(buf), "%u", limit);
+  else
+    strncpy(buf, "unlimited", sizeof(buf));
+
+  return buf;
+}
+
 static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   trusthost *th, **p2;
   unsigned int marker;
@@ -126,13 +171,12 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
 
   /* abusing the ternary operator a bit :( */
   controlreply(sender, "Name:            : %s", tg->name->content);
-  controlreply(sender, "Trusted for      : %d", tg->trustedfor);
+  controlreply(sender, "Trusted for      : %s", formatlimit(tg->trustedfor));
   controlreply(sender, "Currently using  : %d", tg->count);
-  controlreply(sender, "Clients per user : %d (%senforcing ident)", tg->maxperident, (tg->flags & TRUST_ENFORCE_IDENT)?"":"not ");
+  controlreply(sender, "Clients per user : %s", formatlimit(tg->maxperident));
+  controlreply(sender, "Flags            : %s", formatflags(tg->flags));
   controlreply(sender, "Contact:         : %s", tg->contact->content);
   controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"the past (will be removed during next cleanup)"):"never");
-  controlreply(sender, "CIDR cleanup     : %s", (tg->flags & TRUST_NO_CLEANUP)?"disabled":"enabled");
-  controlreply(sender, "Protected        : %s", (tg->flags & TRUST_PROTECTED)?"yes":"no");
   controlreply(sender, "Created by       : %s", tg->createdby->content);
   controlreply(sender, "Comment:         : %s", tg->comment->content);
   controlreply(sender, "ID:              : %u", tg->id);
