@@ -26,7 +26,7 @@ int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
   reply(sender, "Executing...");
   if(header)
-    header(sender, headerarg);
+    header(&ctx, sender, headerarg);
   pnodesearch_exe(search, &ctx, iptree->head);
 
   (search->free)(&ctx, search);

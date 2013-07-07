@@ -12,7 +12,6 @@
 #include "../lib/strlfunc.h"
 #include "patriciasearch.h"
 #include "../lib/version.h"
-#include "../newsearch/newsearch.h"
 
 MODULE_VERSION("")
 
@@ -21,6 +20,7 @@ searchCmd *reg_nodesearch;
 int do_pnodesearch(void *source, int cargc, char **cargv);
 
 NodeDisplayFunc defaultpnodefn = printnode;
+HeaderFunc defaultpnodehfn     = printnode_header;
 
 void _init() {
   reg_nodesearch = (searchCmd *)registersearchcommand("nodesearch",NO_OPER,do_pnodesearch, printnode);
@@ -49,6 +49,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
   int limit=500;
   int arg=0;
   NodeDisplayFunc display=defaultpnodefn;
+  HeaderFunc header=defaultpnodehfn;
   int ret;
   patricia_node_t *subset = iptree->head;
   parsertree *tree;
@@ -59,7 +60,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
     return CMD_OK;
   }
 
-  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void *)&display, reg_nodesearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, (void *)&subset, (void *)&display, (void *)&header, reg_nodesearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -74,11 +75,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
 
   tree = parse_string(reg_nodesearch, cargv[arg]);
   if(!tree) {
-#ifdef NEWSEARCH_NEWPARSER
     displaystrerror(reply, sender, cargv[arg]);
-#else
-    reply(sender,"Something went wrong.");
-#endif
     return CMD_ERROR;
   }
 
