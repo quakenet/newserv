@@ -41,5 +41,7 @@ void localusersetaccount(nick *np, char *accname, unsigned long accid, u_int64_t
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
 void localusersetaccountflags(authname *anp, u_int64_t accountflags);
+void localuseraddcloaktarget(nick *np, nick *target);
+void localuserclearcloaktargets(nick *np);
 
 #endif

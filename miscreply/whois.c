@@ -44,7 +44,7 @@ static void do_whois(char *sourcenum, nick *snick, nick *tnick) {
    *      target user is not hidechan (usermode +n)
    *      OR user WHOIS'ing himself
    */
-  if ((!IsService(tnick) && !IsHideChan(tnick)) || snick == tnick) {
+  if ((!IsService(tnick) && !IsHideChan(tnick) && canseeuser(snick, tnick)) || snick == tnick) {
     nicks[0] = (char *)snick;
     nicks[1] = (char *)tnick;
     nicks[2] = sourcenum;
