@@ -29,7 +29,10 @@ void printchannel_topic(searchCtx *, nick *, chanindex *);
 void printchannel_services(searchCtx *, nick *, chanindex *);
 
 UserDisplayFunc defaultuserfn = printuser;
+
 NickDisplayFunc defaultnickfn = printnick;
+HeaderFunc defaultnickhfn     = printnick_header;
+
 ChanDisplayFunc defaultchanfn = printchannel;
 
 searchCmd *reg_nicksearch, *reg_chansearch, *reg_usersearch;
@@ -93,7 +96,7 @@ void displaycommandhelp(nick *np, Command *cmd) {
     m=getcommandlist(acmd->outputtree,acmdlist,100);
     for(j=0;j<m;j++) {
       if ( controlpermitted( acmdlist[j]->level, np) ) {
-        char *help=(char *)acmdlist[j]->ext;
+        char *help=(char *)((struct DisplayExt *)acmdlist[j]->ext)->help;
         if ( help && help[0] != '\0')
           controlreply(np, "%-10s: %s\n", acmdlist[j]->command->content, help);
         else 
@@ -130,8 +133,17 @@ void displaycommandhelp(nick *np, Command *cmd) {
   }
 }
 
-void regdisp( searchCmd *cmd, const char *name, void *handler, int level, char *help) {
-  addcommandexttotree(cmd->outputtree, name, level, 0, (CommandHandler) handler, (char *)help);
+void regdisp( searchCmd *cmd, const char *name, void *handler, void *header, int level, char *help) {
+  DisplayExt *adf=(struct DisplayExt *)malloc(sizeof(struct DisplayExt));
+  if (!adf) {
+    Error("newsearch", ERR_ERROR, "malloc failed: regdisp");
+    return;
+  }
+
+  adf->help = help;
+  adf->displayheader = header;
+
+  addcommandexttotree(cmd->outputtree, name, level, 0, (CommandHandler) handler, adf);
 } 
 
 void unregdisp( searchCmd *cmd, const char *name, void *handler ) {
@@ -236,16 +248,16 @@ void _init() {
   registersearchterm(reg_nicksearch,"notice",notice_parse, 0, "NOTICE users in newsearch result. Note: evaluation order");
  
   /* Nick output filters */
-  regdisp(reg_nicksearch,"default",printnick, 0, "");
-  regdisp(reg_nicksearch,"channels",printnick_channels, 0, "include channels in output");
+  regdisp(reg_nicksearch,"default",printnick, printnick_header, 0, "");
+  regdisp(reg_nicksearch,"channels",printnick_channels, NULL, 0, "include channels in output");
     
   /* Channel output filters */
-  regdisp(reg_chansearch,"default",printchannel, 0, "");
-  regdisp(reg_chansearch,"topic",printchannel_topic, 0, "display channel topics");
-  regdisp(reg_chansearch,"services",printchannel_services, 0, "display services on channels");
+  regdisp(reg_chansearch,"default",printchannel, NULL, 0, "");
+  regdisp(reg_chansearch,"topic",printchannel_topic, NULL, 0, "display channel topics");
+  regdisp(reg_chansearch,"services",printchannel_services, NULL, 0, "display services on channels");
 
   /* Nick output filters */
-  regdisp(reg_usersearch,"default",printuser, 0, "");
+  regdisp(reg_usersearch,"default",printuser, NULL, 0, "");
  
 }
 
@@ -362,7 +374,7 @@ static void controlwallwrapper(int level, char *format, ...) {
   va_end(ap);
 }
 
-int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender) {
+int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, void *header, CommandTree *sl, replyFunc reply, void *sender) {
   char *ch;
   Command *cmd;
   struct irc_in_addr sin; unsigned char bits;
@@ -396,6 +408,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
           return CMD_ERROR;
         }
         *((void **)display)=(void *)cmd->handler;
+        *((void **)header)=(void *)((struct DisplayExt *)cmd->ext)->displayheader;
         (*arg)++;
         break;
 
@@ -444,6 +457,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int limit=500;
   int arg=0;
   NickDisplayFunc display=defaultnickfn;
+  HeaderFunc header=defaultnickhfn;
   int ret;
 #ifndef NEWSEARCH_NEWPARSER
   searchCtx ctx;
@@ -458,7 +472,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
  
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_nicksearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, (void *)&header, reg_nicksearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -488,7 +502,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_ERROR;
   }
 
-  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_nicksearch(tree->root, reply, sender, wall, display, header, NULL, limit);
 
   parse_free(tree);
 #endif
@@ -551,6 +565,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int limit=500;
   int arg=0;
   ChanDisplayFunc display=defaultchanfn;
+  HeaderFunc header=NULL;
   int ret;
 #ifndef NEWSEARCH_NEWPARSER
   struct searchNode *search;
@@ -565,7 +580,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
   
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_chansearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, (void *)&header, reg_chansearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 
@@ -638,6 +653,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int limit=500;
   int arg=0;
   UserDisplayFunc display=defaultuserfn;
+  HeaderFunc header=NULL;
   int ret;
 #ifndef NEWSEARCH_NEWPARSER
   struct searchNode *search;
@@ -652,7 +668,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_OK;
   }
  
-  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_usersearch->outputtree, reply, sender);
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, (void *)&header, reg_usersearch->outputtree, reply, sender);
   if(ret != CMD_OK)
     return ret;
 

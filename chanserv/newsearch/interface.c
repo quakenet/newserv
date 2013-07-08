@@ -86,7 +86,7 @@ int cs_dousersearch(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-void showheader(void *source, void *header) {
+void showheader(searchCtx *ctx, void *source, void *header) {
   long iheader = (long)header;
 
   chanservstdmessage(source, iheader);

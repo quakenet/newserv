@@ -148,7 +148,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
   reply(sender, "Executing...");
   if(header)  
-    header(sender, headerarg);
+    header(&ctx, sender, headerarg);
   nicksearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
@@ -177,7 +177,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
   reply(sender, "Executing...");
   if(header)  
-    header(sender, headerarg);
+    header(&ctx, sender, headerarg);
   chansearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
@@ -206,7 +206,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
 
   reply(sender, "Executing...");
   if(header)  
-    header(sender, headerarg);
+    header(&ctx, sender, headerarg);
   usersearch_exe(search, &ctx);
 
   (search->free)(&ctx, search);
