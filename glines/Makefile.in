@@ -1,8 +1,23 @@
 @include@ @includel@../build.mk@includel@
 
-.PHONY: all
-all: gline_commands.so glines.so
+GLINEDIRS=search newsearch
+
+.PHONY: all dirs $(GLINEDIRS) clean distclean
+
+all: gline_commands.so glines.so dirs
 
 gline_commands.so: gline_commands.o
 
 glines.so: glines.o gline_handler.o gline_alloc.o
+
+dirs: $(GLINEDIRS)
+	ln -sf */*.so .
+
+$(GLINEDIRS):
+	cd $@ && $(MAKE) $(MFLAGS) all
+
+clean:
+	rm -f */*.o */*.so *.o *.so
+
+distclean:
+	rm -f */Makefile Makefile

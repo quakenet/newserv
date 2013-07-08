@@ -1,0 +1,11 @@
+INCPATH=../../
+@include@ @includel@../../build.mk@includel@
+
+.PHONY: all
+
+ifeq (${NEWSEARCH_NEWPARSER},1)
+
+all: gline_search.so
+gline_search.so: formats.o gline_search.o newsearch_ast.o
+
+endif
