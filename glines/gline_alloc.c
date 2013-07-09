@@ -11,7 +11,7 @@
 gline *glinelist;
 
 gline *newgline() {
-  gline *gl = nsmalloc(POOL_GLINE,ALLOCUNIT*sizeof(gline));
+  gline *gl = nsmalloc(POOL_GLINE, ALLOCUNIT*sizeof(gline));
   if(!gl)
     return NULL;
 
@@ -50,18 +50,14 @@ void freegline (gline *gl) {
 }
 
 void removegline(gline *gl) {
-  gline *gl2;
-  if ( gl == glinelist) {
-    glinelist = gl->next;
-  } else {
-    gl2 = glinelist;
-    while (gl2) {
-      if ( gl2->next == gl) {
-        gl2->next = gl->next;
-        break;
-      }
-      gl2 = gl2->next;
+  gline **pnext;
+
+  for(pnext=&glinelist;*pnext;pnext=&((*pnext)->next)) {
+    if (*pnext == gl) {
+      *pnext = gl->next;
+      break;
     }
   }
+
   freegline(gl);
 }
