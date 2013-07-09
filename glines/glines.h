@@ -103,7 +103,7 @@ gline *gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal (gline *, gline *);
 
 void freegline (gline *);
-gline *getgline();
+gline *newgline();
 void removegline(gline *);
 
 #endif

@@ -199,7 +199,7 @@ gline *makegline(char *mask) {
   gline *gl = NULL;
 
   Error("gline", ERR_FATAL,"processing: %s", mask);
-  if (!(gl = getgline())) {
+  if (!(gl = newgline())) {
     Error("gline", ERR_ERROR, "Failed to allocate new gline");
     return 0;
   }

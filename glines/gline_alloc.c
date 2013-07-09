@@ -10,7 +10,7 @@
 
 gline *glinelist;
 
-gline *getgline() {
+gline *newgline() {
   gline *gl = nsmalloc(POOL_GLINE,ALLOCUNIT*sizeof(gline));
   if(!gl)
     return NULL;
