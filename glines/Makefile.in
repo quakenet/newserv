@@ -1,6 +1,8 @@
 @include@ @includel@../build.mk@includel@
 
 .PHONY: all
-all: glines.so
+all: glines.so glines_commands.so
 
-glines.so: glines.o
+glines.so: glines.o glines_alloc.o glines_handler.o
+
+glines_commands.so: glines_commands.o
