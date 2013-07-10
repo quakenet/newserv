@@ -36,7 +36,7 @@
 #define UMODE_PARANOID  0x2000
 #define UMODE_CLOAKED   0x4000
 
-#define UMODE_ALL       0x3FFF
+#define UMODE_ALL       0x7FFF
 
 #define AFLAG_STAFF     0x0001
 #define AFLAG_SUPPORT   0x0002
