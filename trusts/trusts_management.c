@@ -368,12 +368,6 @@ static int modifymaxperident(void *arg, char *num, nick *source, int override) {
     return 0;
   }
 
-  if(maxperident > 0) {
-    tg->flags |= TRUST_RELIABLE_USERNAME;
-  } else {
-    tg->flags &= ~TRUST_RELIABLE_USERNAME;
-  }
-
   tg->maxperident = maxperident;
 
   return 1;
@@ -386,6 +380,20 @@ static int modifyenforceident(void *arg, char *num, nick *source, int override) 
     tg->flags |= TRUST_ENFORCE_IDENT;
   } else if(num[0] == '0') {
     tg->flags &= ~TRUST_ENFORCE_IDENT;
+  } else {
+    return 0;
+  }
+
+  return 1;
+}
+
+static int modifyreliableusername(void *arg, char *num, nick *source, int override) {
+  trustgroup *tg = arg;
+
+  if(num[0] == '1') {
+    tg->flags |= TRUST_RELIABLE_USERNAME;
+  } else if(num[0] == '0') {
+    tg->flags &= ~TRUST_RELIABLE_USERNAME;
   } else {
     return 0;
   }
@@ -775,6 +783,7 @@ static int loaded;
 static void setupmods(void) {
   MSGROUP(expires);
   MSGROUP(enforceident);
+  MSGROUP(reliableusername);
   MSGROUP(maxperident);
   MSGROUP(contact);
   MSGROUP(comment);
