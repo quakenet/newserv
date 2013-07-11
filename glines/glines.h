@@ -9,6 +9,7 @@
 #undef SNIRCD_14
 
 #define MAXGLINEUSERS        100
+#define MAXGLINECHANNELS     10
 
 #define MAXUSERGLINEDURATION (90 * 86400)
 #define MINUSERGLINEREASON 10
@@ -19,26 +20,13 @@
 #define GLINE_NO_LIMIT       8
 #define GLINE_SIMULATE       16
 
-#define GLINE_NICKEXACT   0x000001  /* Gline includes an exact nick (no wildcards) */
-#define GLINE_NICKMASK    0x000002  /* Gline includes a nick mask with wildcards */
-#define GLINE_NICKANY     0x000004  /* Gline is *!.. */
-#define GLINE_NICKNULL    0x000008  /* Gline has no nick */
-#define GLINE_USEREXACT   0x000010  /* Gline includes an exact user (no wildcards) */
-#define GLINE_USERMASK    0x000020  /* Gline includes a user mask with wildcards */
-#define GLINE_USERANY     0x000040  /* Gline is ..!*@.. */
-#define GLINE_USERNULL    0x000080  /* Gline has no user */
-#define GLINE_HOSTEXACT   0x000100  /* Gline includes an exact host */
-#define GLINE_HOSTMASK    0x000200  /* Gline includes a host mask */
-#define GLINE_HOSTANY     0x000400  /* Gline is ..@* */
-#define GLINE_HOSTNULL    0x000800  /* Gline has no host */
-#define GLINE_BADCHAN     0x001000  /* Gline includes a badchan */
-#define GLINE_REALNAME    0x002000  /* Gline includes a realname */
-#define GLINE_ACTIVATE    0x004000  /* Gline should be activated */
-#define GLINE_DEACTIVATE  0x008000  /* Gline should be deactivated */
-#define GLINE_ACTIVE      0x010000  /* Gline is active */
-#define GLINE_IPMASK      0x020000  /* Gline includes an CIDR mask */
-#define GLINE_HOST        0x040000
-#define GLINE_BADMASK     0x100000
+#define GLINE_HOSTMASK    1   /* Gline includes a host mask */
+#define GLINE_IPMASK      2   /* Gline includes an CIDR mask */
+#define GLINE_BADCHAN     4   /* Gline includes a badchan */
+#define GLINE_REALNAME    8   /* Gline includes a realname */
+#define GLINE_ACTIVATE    16  /* Gline should be activated */
+#define GLINE_DEACTIVATE  32  /* Gline should be deactivated */
+#define GLINE_ACTIVE      64  /* Gline is active */
 
 /**
  * glist flags
@@ -92,8 +80,8 @@ typedef struct gline_params {
 typedef void (*gline_callback)(const char *, int, void *);
 
 /* glines.c */
-void glinesetmask(const char *mask, int duration, const char *reason, const char *creator);
-void glineunsetmask(const char *mask);
+int glinesetmask(const char *mask, int duration, const char *reason, const char *creator);
+int glineunsetmask(const char *mask);
 
 int glinesuggestbyip(const char *, struct irc_in_addr *, unsigned char, int, gline_callback callback, void *uarg);
 int glinesuggestbynick(nick *, int, gline_callback callback, void *uarg);
@@ -102,7 +90,7 @@ int glinebynick(nick *, int, const char *, int, const char *);
 
 gline *gline_add(const char *creator, const char *mask, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 char *glinetostring(gline *g);
-gline *gline_find(const char *);
+gline *findgline(const char *);
 gline *makegline(const char *);
 void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);

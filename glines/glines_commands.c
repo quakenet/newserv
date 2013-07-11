@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "../lib/version.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
+#include "../lib/splitline.h"
 #include "../lib/strlfunc.h"
 #include "../core/nsmalloc.h"
 #include "../irc/irc.h"
+#include "../localuser/localuser.h"
+#include "../localuser/localuserchannel.h"
 #include "glines.h"
 #include "../trusts/trusts.h"
 
@@ -17,8 +21,9 @@ static void deregistercommands(int, void *);
 static int glines_cmdblock(void *source, int cargc, char **cargv) {
   nick *sender = source;
   nick *target;
-  int count, duration;
+  int hits, duration;
   char *reason;
+  char creator[32];
 
   if (cargc < 3)
     return CMD_USAGE;
@@ -44,9 +49,12 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  count = glinebynick(target, duration, reason, 0, controlid(sender));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  hits = glinebynick(target, duration, reason, 0, creator);
 
-  controlreply(sender, "Total hits: %d", count);
+  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), target->nick, target->ident, target->host->name->content, longtoduration(duration, 0), reason, hits);
+
+  controlreply(sender, "Total hits: %d", hits);
 
   return CMD_OK;
 }
@@ -55,6 +63,7 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
   nick *sender = source;
   int duration, hits;
   char *mask, *reason;
+  char creator[32];
   gline *gl;
 
   if (cargc < 3)
@@ -77,7 +86,7 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
   }
 
 #ifdef SNIRCD_13
-  gl = gline_find(mask);
+  gl = findgline(mask);
 
   if (gl) {
      /* snircd 1.3:  warn opers that they can't modify this gline */
@@ -94,12 +103,19 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
   hits = gline_count_hits(gl);
   freegline(gl);
 
-  if (hits > MAXGLINEUSERS) {
+  if (gl->flags & GLINE_BADCHAN && hits > MAXGLINECHANNELS) {
+    controlreply(sender, "This G-Line would hit %d channels. Limit is %d. NOT SET.", hits, MAXGLINECHANNELS);
+    return CMD_ERROR;
+  } else if (hits > MAXGLINEUSERS) {
     controlreply(sender, "This G-Line would hit %d users. Limit is %d. NOT SET.", hits, MAXGLINEUSERS);
     return CMD_ERROR;
   }
 
-  glinesetmask(mask, duration, reason, controlid(sender));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  glinesetmask(mask, duration, reason, creator);
+
+  controlwall(NO_OPER, NL_GLINES, "%s RAWGLINE'd mask '%s' for %s with reason '%s' (%d hits)", controlid(sender), mask, longtoduration(duration, 0), reason, hits);
+
 
   controlreply(sender, "Done.");
 
@@ -146,6 +162,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   unsigned char bits;
   int count, duration;
   char *reason;
+  char creator[32];
 
   if (cargc < 3)
     return CMD_USAGE;
@@ -199,7 +216,8 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  count = glinebyip(user, &ip, 128, duration, reason, 0, controlid(sender));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  count = glinebyip(user, &ip, 128, duration, reason, 0, creator);
 
   controlreply(sender, "Total hits: %d", count);
 
@@ -213,7 +231,7 @@ static int glines_cmdungline(void *source, int cargc, char **cargv) {
   if (cargc < 1)
     return CMD_USAGE;
 
-  gl = gline_find(cargv[0]);
+  gl = findgline(cargv[0]);
 
   if (!gl) {
     controlreply(sender, "No such G-Line.");
@@ -233,6 +251,104 @@ static int glines_cmdungline(void *source, int cargc, char **cargv) {
 }
 
 static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  channel *cp;
+  nick *np;
+  char *reason = "Clearing channel.";
+  int mode, duration, i, slot;
+  array victims;
+  char creator[32];
+
+  if (cargc < 2)
+    return CMD_USAGE;
+
+  cp = findchannel(cargv[0]);
+
+  if (!cp) {
+    controlreply(sender, "Couldn't find that channel.");
+    return CMD_ERROR;
+  }
+
+  if (strcmp(cargv[1], "kick") == 0)
+    mode = 0;
+  else if (strcmp(cargv[1], "kill") == 0)
+    mode = 1;
+  else if (strcmp(cargv[1], "gline") == 0)
+    mode = 2;
+  else if (strcmp(cargv[1], "glineall") == 0)
+    mode = 3;
+  else
+    return CMD_USAGE;
+
+  if (mode == 0 || mode == 1) {
+    if (cargc >= 3) {
+      rejoinline(cargv[2], cargc - 2);
+      reason = cargv[2];
+    }
+  } else {
+    if (cargc < 3)
+      return CMD_USAGE;
+
+    duration = durationtolong(cargv[2]);
+
+    if (duration <= 0 || duration > MAXUSERGLINEDURATION) {
+      controlreply(sender, "Sorry, glines may not last longer than %s.", longtoduration(MAXUSERGLINEDURATION, 0));
+      return CMD_ERROR;
+    }
+
+    if (cargc >= 4)
+      reason = cargv[3];
+  }
+
+  array_init(&victims, sizeof(nick *));
+
+  /* we need to make a list of the channel users here because
+   * kicking/killing them will affect their position in the channel's
+   * user list. */
+  for (i = 0; i < cp->users->hashsize; i++) {
+    if (cp->users->content[i] == nouser)
+      continue;
+
+    np = getnickbynumeric(cp->users->content[i]);
+
+    if (!np)
+      continue;
+
+    if (IsService(np) || IsOper(np))
+      continue;
+
+    slot = array_getfreeslot(&victims);
+    (((nick **)victims.content)[slot]) = np;
+  }
+
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+
+  for (i = 0; i < victims.cursi; i++) {
+    np = ((nick **)victims.content)[i];
+
+    switch (mode) {
+      case 0:
+        localkickuser(NULL, cp, np, reason);
+        break;
+      case 1:
+        killuser(NULL, np, "%s", reason);
+        break;
+      case 2:
+        if (IsAccount(np))
+          break;
+        /* fall through */
+      case 3:
+        glinebynick(np, duration, reason, 0, creator);
+        break;
+      default:
+        assert(0);
+    }
+  }
+
+  array_free(&victims);
+
+  controlreply(sender, "Done.");
+
   return CMD_OK;
 }
 
@@ -243,6 +359,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   int duration, count;
   char *reason;
   char mask[512];
+  char creator[32];
 
   if (cargc < 4)
     return CMD_USAGE;
@@ -270,13 +387,14 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
 
   count = 0;
 
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+
   for(th = tg->hosts; th; th = th->next) {
     snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], trusts_cidr2str(&th->ip, th->bits));
-    glinesetmask(mask, duration, reason, controlid(sender));
-    count++;
+    count += glinesetmask(mask, duration, reason, creator);
   }
 
-  controlreply(sender, "Done. %d glines set.", count);
+  controlreply(sender, "Done. %d G-Lines set.", count);
 
   return CMD_OK;
 }
@@ -302,11 +420,10 @@ static int glines_cmdtrustungline(void *source, int cargc, char **cargv) {
 
   for (th = tg->hosts; th; th = th->next) {
     snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], trusts_cidr2str(&th->ip, th->bits));
-    glineunsetmask(mask);
-    count++;
+    count += glineunsetmask(mask);
   }
 
-  controlreply(sender, "Done. %d glines deactivated.", count);
+  controlreply(sender, "Done. %d G-Lines deactivated.", count);
 
   return CMD_OK;
 }
@@ -337,7 +454,7 @@ static int glines_cmdglstats(void *source, int cargc, char **cargv) {
 
     if (g->flags & GLINE_IPMASK)
       ipglinecount++;
-    else if (g->flags & (GLINE_HOSTMASK | GLINE_HOSTEXACT))
+    else if (g->flags & GLINE_HOSTMASK)
       hostglinecount++;
     else if (g->flags & GLINE_REALNAME)
       rnglinecount++;
@@ -529,12 +646,12 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("block", NO_OPER, 3, glines_cmdblock, "Usage: block <nick> <duration> <reason>\nSets a gline using an approprite mask given the user's nickname.");
+  registercontrolhelpcmd("block", NO_OPER, 3, glines_cmdblock, "Usage: block <nick> <duration> <reason>\nSets a gline using an appropriate mask given the user's nickname.");
   registercontrolhelpcmd("rawgline", NO_OPER, 3, glines_cmdrawgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline.");
   registercontrolhelpcmd("rawglinesimulate", NO_OPER, 1, glines_cmdrawglinesimulate, "Usage: rawglinesimulate <mask>\nSimulates what happens when a gline is set.");
   registercontrolhelpcmd("gline", NO_OPER, 3, glines_cmdgline, "Usage: gline <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask so as not to hit unrelated trusted users.");
   registercontrolhelpcmd("ungline", NO_OPER, 1, glines_cmdungline, "Usage: ungline <mask>\nDeactivates a gline.");
-  registercontrolhelpcmd("clearchan", NO_OPER, 2, glines_cmdclearchan, "Usage: clearchan <#channel> <how> ?duration? ?reason?\nClears a channel.\nhow can be one of:\nkick - Kicks users.\nkill - Kills users.\ngline - Glines non-authed users (using an appropriate mask).\nglineall - Glines users.\nDuration is only valid when glining users. Reason defaults to \"Clearing channel.\".");
+  registercontrolhelpcmd("clearchan", NO_OPER, 4, glines_cmdclearchan, "Usage: clearchan <#channel> <how> <duration> ?reason?\nClears a channel.\nhow can be one of:\nkick - Kicks users.\nkill - Kills users.\ngline - Glines non-authed users (using an appropriate mask).\nglineall - Glines users.\nDuration is only valid when glining users. Reason defaults to \"Clearing channel.\".");
   registercontrolhelpcmd("trustgline", NO_OPER, 4, glines_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nSets a gline on the specified username for each host in the specified trust group. The username may contain wildcards.");
   registercontrolhelpcmd("trustungline", NO_OPER, 2, glines_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nRemoves a gline that was previously set with trustgline.");
   registercontrolhelpcmd("glstats", NO_OPER, 0, glines_cmdglstats, "Usage: glstat\nShows statistics about G-Lines.");

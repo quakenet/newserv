@@ -130,7 +130,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
 
     Error("debuggline", ERR_WARNING, "GL Received: Creator %s, Mask %s, Reason %s, Expire %lu, Lastmod %lu, Lifetime %lu", creator, mask, reason, expire, lastmod, lifetime);   
 
-    agline = gline_find(mask);
+    agline = findgline(mask);
 
     if (agline) {
       if (agline->flags & GLINE_ACTIVE) { 
@@ -157,7 +157,9 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     } 
   } else if (flags & GLINE_DEACTIVATE) {
     /* deactivate gline */
-    if ((agline = gline_find(mask))) {
+    agline = findgline(mask);
+
+    if (agline) {
       switch (cargc) {
         case 2:
           /* asuka U:d, no last mod */
@@ -217,7 +219,9 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     }
   } else {
     /* modification - only snircd 1.4.x */
-    if ((agline = gline_find(mask))) {
+    agline = findgline(mask);
+
+    if (agline) {
       expire = abs_expire(atoi(cargv[2]));
       lastmod = atoi(cargv[3]);
       lifetime = atoi(cargv[4]);

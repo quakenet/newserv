@@ -31,9 +31,7 @@ int gline_match_nick(gline *gl, nick *np) {
     return 0;
 
   if (gl->flags & GLINE_REALNAME) {
-    assert(gl->user->content[0] == '$' && gl->user->content[1] == 'R');
-
-    if (gl->user && match(gl->user->content + 2, np->realname->name->content) != 0)
+    if (gl->user && match(gl->user->content, np->realname->name->content) != 0)
       return 0;
 
     return 1;
@@ -98,11 +96,11 @@ int gline_count_hits(gline *gl) {
   return count;
 }
 
-void glinesetmask(const char *mask, int duration, const char *reason, const char *creator) {
+int glinesetmask(const char *mask, int duration, const char *reason, const char *creator) {
   gline *gl;
   time_t now = getnettime();
 
-  gl = gline_find(mask);
+  gl = findgline(mask);
 
   if (!gl) {
     /* new gline */
@@ -117,15 +115,20 @@ void glinesetmask(const char *mask, int duration, const char *reason, const char
     if (!(gl->flags & GLINE_ACTIVE))
       gline_activate(gl, 0, 1);
   }
+
+  return 1;
 }
 
-void glineunsetmask(const char *mask) {
-  gline *gl = gline_find(mask);
+int glineunsetmask(const char *mask) {
+  gline *gl = findgline(mask);
 
   if (gl && (gl->flags & GLINE_ACTIVE)) {
-    controlwall(NO_OPER, NL_GLINES, "Deactivating gline on '%s'.", mask);
+    controlwall(NO_OPER, NL_GLINES, "Deactivating G-Lline on '%s'.", mask);
     gline_deactivate(gl, 0, 1);
+    return 1;
   }
+
+  return 0;
 }
 
 static void glinesetmask_cb(const char *mask, int hits, void *arg) {
@@ -186,7 +189,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   if (!(flags & GLINE_SIMULATE)) {
     int hits = glinesuggestbyip(user, ip, bits, flags | GLINE_SIMULATE, NULL, NULL);
     if (hits > MAXGLINEUSERS) {
-      controlwall(NO_OPER, NL_GLINES, "Suggested gline(s) for '%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
+      controlwall(NO_OPER, NL_GLINES, "Suggested G-Line(s) for '%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
         user, trusts_cidr2str(ip, bits), longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
       return 0;
     }
@@ -218,7 +221,7 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   if (!(flags & GLINE_SIMULATE)) {
     int hits = glinesuggestbyip(np->ident, &np->p_ipaddr, 128, flags | GLINE_SIMULATE, NULL, NULL);
     if (hits > MAXGLINEUSERS) {
-      controlwall(NO_OPER, NL_GLINES, "Suggested gline(s) for nick '%s!%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
+      controlwall(NO_OPER, NL_GLINES, "Suggested G-Line(s) for nick '%s!%s@%s' lasting %s with reason '%s' would hit %d users (limit: %d) - NOT SET.",
         np->nick, np->ident, IPtostr(np->p_ipaddr), longtoduration(duration, 0), reason, hits, MAXGLINEUSERS);
       return 0;
     }
@@ -259,13 +262,9 @@ gline *gline_add(const char *creator, const char *mask, const char *reason, time
 
 gline *makegline(const char *mask) {
   /* populate gl-> user,host,node,nick and set appropriate flags */
-  int len;
-  int foundat = -1, foundbang = -1;
-  int foundwild = 0;
-  int i;
-  struct irc_in_addr sin;
-  unsigned char bits;
   gline *gl;
+  char nick[512], user[512], host[512];
+  const char *pnick = NULL, *puser = NULL, *phost = NULL;
 
   Error("gline", ERR_FATAL, "processing: %s", mask);
 
@@ -276,182 +275,68 @@ gline *makegline(const char *mask) {
     return NULL;
   }
 
-  len = strlen(mask);
-
-  switch (*mask) {
-    case '#':
-    case '&':
-      gl->flags |= GLINE_BADCHAN;
-      gl->user = getsstring(mask, CHANNELLEN);
-      return gl;
-   case '$':
-      switch (mask[1]) {
-        case 'R':
-          gl->flags |= GLINE_REALNAME;
-          break;
-        default:
-          return 0;
-      }
-      gl->user = getsstring(mask, REALLEN);
-      return gl;
-   default:
-      /* Default case of some host/ip/cidr mask */
-      for (i = len-1; i >= 0; i--) {
-        if (mask[i] == '@') {
-          /* host */
-          if (len - i - 1 > HOSTLEN) {
-            /* host too long */
-            gl->flags |= GLINE_BADMASK;
-          } else if (i == len-1) {
-            /* no host supplied aka gline ends @ */
-            gl->flags |= GLINE_BADMASK;
-          } else if (i == len - 2 && mask[i+1] == '*') {
-            /* Special case: "@*" */
-            gl->flags |= GLINE_HOSTANY;
-          } else {
-            if (ipmask_parse(&mask[i+1], &sin, &bits) == 0) {
-              /* we have some host string */
-              gl->host = getsstring(&mask[i+1], HOSTLEN);
-              if (foundwild) {
-                gl->flags |= GLINE_HOSTMASK;
-              } else {
-                gl->flags |= GLINE_HOSTEXACT;
-             }
-            } else {
-              /* we have a / so cidr gline */
-              gl->ip = sin;
-              gl->bits = bits;
-              gl->host = getsstring(&mask[i+1], HOSTLEN);
-              if (!is_normalized_ipmask(&sin, bits)) {
-                gl->flags |= GLINE_BADMASK;
-              }
-              gl->flags |= GLINE_IPMASK;
-            }
-          }
-          foundat = i;
-          break;
-        } else if (mask[i] == '?' || mask[i] == '*') {
-          if (!foundwild)  /* Mark last wildcard in string */
-            foundwild = i;
-        }
-      }
+  if (*mask == '#' || *mask == '&') {
+    gl->flags |= GLINE_BADCHAN;
+    gl->user = getsstring(mask, CHANNELLEN);
+    return gl;
   }
 
-  if (foundat<0) {
-    /* If there wasn't an @, this ban matches any host */
-    gl->host = NULL;
-    gl->flags |= GLINE_HOSTANY;
-  }
-
-  foundwild = 0;
-
-  for (i = 0;i < foundat; i++) {
-    if (mask[i] == '!') {
-      if (i == 0) {
-        /* Invalid mask: nick is empty */
-        gl->flags |= GLINE_NICKNULL;
-        gl->nick = NULL;
-      } else if (i == 1 && mask[0] == '*') {
-        /* matches any nick */
-        gl->flags |= GLINE_NICKANY;
-        gl->nick = NULL;
-      } else {
-        if (i>NICKLEN) {
-          /* too long */
-                  gl->flags |= GLINE_BADMASK;
-        }
-        gl->nick = getsstring(mask, i);
-        if (foundwild)
-          gl->flags |= GLINE_NICKMASK;
-        else
-          gl->flags |= GLINE_NICKEXACT;
-      }
-      foundbang = i;
-      break;
-    } else if (mask[i] == '?' || mask[i] == '*') {
-      if (i < NICKLEN) {
-        foundwild = 1;
-      }
-    }
-  }
-
-  if (foundbang < 0) {
-    /* We didn't find a !, what we do now depends on what happened
-     * with the @ */
-    if (foundat < 0) {
-      /* A gline with no ! or @ is treated as a host gline only */
-      /* Note that we've special-cased "*" at the top, so we can only
-       * hit the MASK or EXACT case here. */
-      gl->host = getsstring(mask, len);
-
-      if (foundwild)
-        gl->flags |= GLINE_HOSTMASK;
-      else
-        gl->flags |= GLINE_HOSTEXACT;
-
-      gl->flags |= (GLINE_USERANY | GLINE_NICKANY);
-      gl->nick = NULL;
-      gl->user = NULL;
-    } else {
-      /* A gline with @ only is treated as user@host */
-      gl->nick = NULL;
-      gl->flags |= GLINE_NICKANY;
-    }
-  }
-
-  if (foundat >= 0) {
-    /* We found an @, so everything between foundbang+1 and foundat-1 is supposed to be ident */
-    /* This is true even if there was no !.. */
-    if (foundat == foundbang + 1) {
-      /* empty ident matches nothing */ /*@@@TODO: * for glines? */
-      gl->flags |= (GLINE_BADMASK | GLINE_USERNULL);
-    } else if (foundat - foundbang - 1 > USERLEN) {
-      /* It's too long.. */
-          gl->flags |= GLINE_BADMASK;
-    } else if ((foundat - foundbang - 1 == 1) && mask[foundbang+1]=='*') {
-      gl->flags |= GLINE_USERANY;
-    } else {
-      gl->user = getsstring(&mask[foundbang+1], (foundat-foundbang-1));
-      if (strchr(gl->user->content, '*') || strchr(gl->user->content, '?'))
-        gl->flags |= GLINE_USERMASK;
-      else
-        gl->flags |= GLINE_USEREXACT;
-    }
-    /* Username part can't contain an @ */
-    if (gl->user && strchr(gl->user->content, '@')) {
-      gl->flags |= GLINE_BADMASK;
-    }
-  }
-
-  assert(gl->flags & (GLINE_USEREXACT | GLINE_USERMASK | GLINE_USERANY | GLINE_USERNULL));
-  assert(gl->flags & (GLINE_NICKEXACT | GLINE_NICKMASK | GLINE_NICKANY | GLINE_NICKNULL));
-  assert(gl->flags & (GLINE_HOSTEXACT | GLINE_HOSTMASK | GLINE_HOSTANY | GLINE_HOSTNULL | GLINE_IPMASK));
-
-  if (gl->flags & GLINE_BADMASK) {
-    Error("gline", ERR_WARNING, "BADMASK: %s", mask);
-        return 0;
-  }
-
-  /* Start: Safety Check for now... */
-  if (strcmp(glinetostring(gl), mask) != 0) {
-    /* oper can specify * to glist, ircd by default converts * to *!*@* */
-    if (((gl->flags & (GLINE_USERANY | GLINE_NICKANY | GLINE_HOSTANY)) == (GLINE_USERANY | GLINE_NICKANY | GLINE_HOSTANY)) && strcmp("*", mask) == 0) {
-      return gl;
-    }
-    /* oper can specifiy *@host, ircd by default converst *@host to *!*@host */
-    if (gl->flags & GLINE_NICKANY && mask[1] != '!') {
-      Error("gline", ERR_WARNING, "different: %s %s", glinetostring(gl), mask);
-      return gl;
+  if (*mask == '$') {
+    if (mask[1] != 'R') {
+      freegline(gl);
+      return NULL;
     }
 
-    Error("gline", ERR_WARNING, "DIFFERENT: %s %s", glinetostring(gl), mask);
+    gl->flags |= GLINE_REALNAME;
+    gl->user = getsstring(mask + 2, REALLEN);
+    return gl;
   }
-  /* End: Safety Check for now... */
+
+  if (sscanf(mask, "%[^!]!%[^@]@%s", nick, user, host) == 3) {
+    pnick = nick;
+    puser = user;
+    phost = host;
+  } else if (sscanf(mask, "%[^@]@%s", user, host) == 2) {
+    puser = user;
+    phost = host;
+  } else {
+    phost = mask;
+  }
+
+  /* validate length of the mask components */
+  if ((pnick && (pnick[0] == '\0' || strlen(pnick) > NICKLEN)) ||
+      (puser && (puser[0] == '\0' || strlen(puser) > USERLEN)) ||
+      (phost && (phost[0] == '\0' || strlen(phost) > HOSTLEN))) {
+    freegline(gl);
+    return NULL;
+  }
+
+  /* ! and @ are not allowed in the mask components */
+  if ((pnick && (strchr(pnick, '!') || strchr(pnick, '@'))) ||
+      (puser && (strchr(puser, '!') || strchr(puser, '@'))) ||
+      (phost && (strchr(phost, '!') || strchr(phost, '@')))) {
+    freegline(gl);
+    return NULL;
+  }
+
+  if (phost && ipmask_parse(phost, &gl->ip, &gl->bits))
+    gl->flags |= GLINE_IPMASK;
+  else
+    gl->flags |= GLINE_HOSTMASK;
+
+  if (pnick && strcmp(pnick, "*") != 0)
+    gl->nick = getsstring(pnick, NICKLEN);
+
+  if (puser && strcmp(puser, "*") != 0)
+    gl->user = getsstring(puser, USERLEN);
+
+  if (phost && strcmp(phost, "*") != 0)
+    gl->host = getsstring(phost, HOSTLEN);
 
   return gl;
 }
 
-gline *gline_find(const char *mask) {
+gline *findgline(const char *mask) {
   gline *gl, *next;
   gline *globalgline;
   time_t curtime = time(0);
@@ -481,48 +366,31 @@ gline *gline_find(const char *mask) {
   return 0;
 }
 
-char *glinetostring(gline *g) {
-  static char outstring[NICKLEN+USERLEN+HOSTLEN+5]; /* check */
-  int strpos = 0;
+char *glinetostring(gline *gl) {
+  static char mask[512]; /* check */
 
-  if (g->flags & GLINE_REALNAME) {
-   if (g->user)
-     strpos += sprintf(outstring+strpos, "%s", g->user->content);
-   /* @@ todo $R*
-    * add $R (not check badchans need same?) */
-   return outstring;
+  if (gl->flags & GLINE_REALNAME) {
+   if (gl->user)
+     snprintf(mask, sizeof(mask), "$R%s", gl->user->content);
+   else
+     strncpy(mask, "$R*", sizeof(mask));
+
+   return mask;
   }
 
-  if (g->flags & GLINE_BADCHAN) {
-    if (g->user)
-      strpos += sprintf(outstring+strpos, "%s", g->user->content);
-    return outstring;
+  if (gl->flags & GLINE_BADCHAN) {
+    assert(gl->user);
+
+    strncpy(mask, gl->user->content, sizeof(mask));
+    return mask;
   }
 
-  if (g->flags & GLINE_NICKANY) {
-    strpos += sprintf(outstring+strpos, "*");
-  } else if (g->nick) {
-    strpos += sprintf(outstring+strpos, "%s", g->nick->content);
-  }
+  snprintf(mask, sizeof(mask), "%s!%s@%s",
+    gl->nick ? gl->nick->content : "*",
+    gl->user ? gl->nick->content : "*",
+    gl->host ? gl->host->content : "*");
 
-  strpos += sprintf(outstring+strpos, "!");
-
-  if (g->flags & GLINE_USERANY) {
-    strpos += sprintf(outstring+strpos, "*");
-  } else if (g->user) {
-    strpos += sprintf(outstring+strpos, "%s", g->user->content);
-  }
-
-  strpos += sprintf(outstring+strpos, "@");
-
-  if (g->flags & GLINE_HOSTANY) {
-    strpos += sprintf(outstring+strpos, "*");
-  } else if (g->host) {
-    strpos += sprintf(outstring+strpos, "%s", g->host->content);
-  } else if (g->flags & GLINE_IPMASK) {
-    strpos += sprintf(outstring+strpos, "%s", g->host->content);
-  }
-  return outstring;
+  return mask;
 }
 
 gline *gline_activate(gline *agline, time_t lastmod, int propagate) {
