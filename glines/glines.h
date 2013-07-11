@@ -5,7 +5,10 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
-#define MAXGLINEUSERS        500
+#define SNIRCD_13
+#undef SNIRCD_14
+
+#define MAXGLINEUSERS        100
 
 #define MAXUSERGLINEDURATION (90 * 86400)
 #define MINUSERGLINEREASON 10
@@ -57,7 +60,7 @@
  */
 #define abs_expire(exp) ((exp) >= getnettime() - 157680000 ? (exp) : (exp) + getnettime())
 
-#define gline_max(a,b) (((a)<(b)) ? (b) : (a))
+#define gline_max(a, b) (((a)<(b)) ? (b) : (a))
 
 typedef struct gline {
   sstring *nick;
@@ -78,13 +81,13 @@ typedef struct gline {
   struct gline *next;
 } gline;
 
+extern gline *glinelist;
+
 typedef struct gline_params {
   int duration;
   const char *reason;
   const char *creator;
 } gline_params;
-
-extern gline *glinelist;
 
 typedef void (*gline_callback)(const char *, int, void *);
 
@@ -105,6 +108,7 @@ void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);
 gline *gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal(gline *, gline *);
+int gline_count_hits(gline *gl);
 int gline_match_mask(gline *gla, gline *glb);
 int gline_match_nick(gline *gl, nick *np);
 int gline_match_channel(gline *gl, channel *cp);
