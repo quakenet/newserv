@@ -9,7 +9,6 @@
 
 int handleglinemsg(void *source, int cargc, char **cargv) {
   char *sender = (char *)source;
-  char *target;
   char *mask;
   char *reason;
   char *creator;
@@ -22,12 +21,16 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
   /**
    * Valid GL tokens have X params:
    * 2: Local modification to a local gline - ignored by services
+   * 4: ulined GL
    * 5: 1.3.x GL Token
    * 6: 1.4.x GL Token - adds lifetime parameter
    */
   switch (cargc) {
     case 2:
       /* local modification which we reject later */
+      break;
+    case 4:
+      /* ulined GL */
       break;
     case 5:
       /* 1.3.x GL Token */
@@ -73,15 +76,6 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
       return CMD_ERROR;
   }
 
-  /* 1st param is target */
-  target = cargv[0];
-
-  /* anything other than a global G-Line is irrelevant */
-  if (strcmp(target, "*") != 0) {
-    Error("gline", ERR_WARNING, "Received local g-line from %s - do they realise we're a service?", sender);
-    return CMD_ERROR;
-  }
-
   /* 2nd param is mask */
   mask = cargv[1];
 
@@ -109,6 +103,8 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     switch (cargc) {
       case 4:
         /* asuka U:d, no lastmod */
+        lastmod = getnettime();
+        lifetime = gline_max(lastmod, expire);
         reason = cargv[3];
         break;
       case 5:
