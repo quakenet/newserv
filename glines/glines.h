@@ -39,6 +39,10 @@
 #define GLIST_REALNAME 0x40 /* -R */
 #define GLIST_INACTIVE 0x80 /* -i */
 
+#define GLSTORE_PATH_PREFIX   "data/glines"
+#define GLSTORE_SAVE_FILES    5
+#define GLSTORE_SAVE_INTERVAL 3600
+
 /**
  * Interpret absolute/relative timestamps with same method as snircd
  * If the expiration value, interpreted as an absolute timestamp, is
@@ -109,5 +113,9 @@ void removegline(gline *);
 /* glines_handler.c */
 int handleglinemsg(void *, int, char **);
 void handleglinestats(int hooknum, void *arg);
+
+/* glines_store.c */
+int glstore_save(void);
+int glstore_load(void);
 
 #endif
