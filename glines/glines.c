@@ -387,7 +387,7 @@ char *glinetostring(gline *gl) {
 
   snprintf(mask, sizeof(mask), "%s!%s@%s",
     gl->nick ? gl->nick->content : "*",
-    gl->user ? gl->nick->content : "*",
+    gl->user ? gl->user->content : "*",
     gl->host ? gl->host->content : "*");
 
   return mask;
@@ -433,14 +433,28 @@ gline *gline_deactivate(gline *agline, time_t lastmod, int propagate) {
 
 void gline_propagate(gline *agline) {
   if (agline->flags & GLINE_ACTIVE) {
-    controlwall(NO_OPER, NL_GLINES, "Setting gline on '%s' lasting %s with reason '%s', created by: %s",
+    controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason->content, agline->creator->content);
+
+#if 0
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
+#endif
+    controlwall(NO_OPER, NL_GLINES, "%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
+      glinetostring(agline), agline->expire - getnettime(),
+      agline->lastmod, agline->reason->content);
   } else {
+    controlwall(NO_OPER, NL_GLINES, "Deactivating G-Line on '%s'",
+      glinetostring(agline));
+
+#if 0
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
+      glinetostring(agline), agline->expire - getnettime(),
+      agline->lastmod, agline->reason->content);
+#endif
+    controlwall(NO_OPER, NL_GLINES, "%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
   }

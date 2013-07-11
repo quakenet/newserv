@@ -54,7 +54,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
 
   controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), target->nick, target->ident, target->host->name->content, longtoduration(duration, 0), reason, hits);
 
-  controlreply(sender, "Total hits: %d", hits);
+  controlreply(sender, "Done.");
 
   return CMD_OK;
 }
@@ -116,7 +116,6 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
 
   controlwall(NO_OPER, NL_GLINES, "%s RAWGLINE'd mask '%s' for %s with reason '%s' (%d hits)", controlid(sender), mask, longtoduration(duration, 0), reason, hits);
 
-
   controlreply(sender, "Done.");
 
   return CMD_OK;
@@ -160,7 +159,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   char *p, *user, *host;
   struct irc_in_addr ip;
   unsigned char bits;
-  int count, duration;
+  int hits, duration;
   char *reason;
   char creator[32];
 
@@ -217,9 +216,12 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   }
 
   snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  count = glinebyip(user, &ip, 128, duration, reason, 0, creator);
+  hits = glinebyip(user, &ip, 128, duration, reason, 0, creator);
 
-  controlreply(sender, "Total hits: %d", count);
+  controlwall(NO_OPER, NL_GLINES, "%s GLINE'd mask '%s' for %s with reason '%s' (%d hits)",
+    controlid(sender), cargv[0], longtoduration(duration, 0), reason, hits);
+
+  controlreply(sender, "Done.");
 
   return CMD_OK;
 }
@@ -244,6 +246,8 @@ static int glines_cmdungline(void *source, int cargc, char **cargv) {
   }
 
   gline_deactivate(gl, 0, 1);
+
+  controlwall(NO_OPER, NL_GLINES, "%s UNGLINE'd mask '%s'", controlid(sender), cargv[0]);
 
   controlreply(sender, "G-Line deactivated.");
 
@@ -347,6 +351,13 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
 
   array_free(&victims);
 
+  if (mode == 0 || mode == 1)
+    controlwall(NO_OPER, NL_GLINES, "%s CLEARCHAN'd channel '%s' with mode '%s' and reason '%s'",
+      controlid(sender), cp->index->name->content, cargv[1], reason);
+  else
+    controlwall(NO_OPER, NL_GLINES, "%s CLEARCHAN'd channel '%s' with mode '%s', duration %s and reason '%s'",
+      controlid(sender), cp->index->name->content, cargv[1], longtoduration(duration, 0), reason);
+
   controlreply(sender, "Done.");
 
   return CMD_OK;
@@ -394,7 +405,10 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
     count += glinesetmask(mask, duration, reason, creator);
   }
 
-  controlreply(sender, "Done. %d G-Lines set.", count);
+  controlwall(NO_OPER, NL_GLINES, "%s TRUSTGLINE'd user '%s' on trust group '%s' for %s with reason '%s' (%d G-Lines set)",
+    controlid(sender), cargv[1], tg->name, longtoduration(duration, 0), reason, count);
+
+  controlreply(sender, "Done. %d G-Lines set.");
 
   return CMD_OK;
 }
@@ -423,7 +437,10 @@ static int glines_cmdtrustungline(void *source, int cargc, char **cargv) {
     count += glineunsetmask(mask);
   }
 
-  controlreply(sender, "Done. %d G-Lines deactivated.", count);
+  controlwall(NO_OPER, NL_GLINES, "%s TRUSTUNGLINE'd user '%s' on trust group '%s' (%d G-Lines deactivated)",
+    controlid(sender), cargv[1], tg->name, count);
+
+  controlreply(sender, "Done.");
 
   return CMD_OK;
 }
@@ -639,6 +656,27 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int glines_cmdsyncglines(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  gline *gl;
+  int count;
+
+  count = 0;
+
+  for (gl = glinelist; gl; gl = gl->next) {
+    gline_propagate(gl);
+    count++;
+  }
+  
+  controlwall(NO_OPER, NL_GLINES, "%s SYNCGLINE'd %d G-Lines.",
+    controlid(sender), count);
+
+  controlreply(sender, "Done.");
+
+  return CMD_OK;
+}
+
+
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -656,6 +694,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustungline", NO_OPER, 2, glines_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nRemoves a gline that was previously set with trustgline.");
   registercontrolhelpcmd("glstats", NO_OPER, 0, glines_cmdglstats, "Usage: glstat\nShows statistics about G-Lines.");
   registercontrolhelpcmd("glist", NO_OPER, 2, glines_cmdglist, "Usage: glist [-flags] <mask>\nLists matching G-Lines.\nValid flags are:\n-c: Count G-Lines.\n-f: Find G-Lines active on <mask>.\n-x: Find G-Lines matching <mask> exactly.\n-R: Find G-lines on realnames.\n-o: Search for glines by owner.\n-r: Search for glines by reason.\n-i: Include inactive glines.");
+  registercontrolhelpcmd("syncglines", NO_DEVELOPER, 0, glines_cmdsyncglines, "Usage: syncglines\nSends all G-Lines to all other servers.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -673,6 +712,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("trustungline", glines_cmdtrustungline);
   deregistercontrolcmd("glstats", glines_cmdglstats);
   deregistercontrolcmd("glist", glines_cmdglist);
+  deregistercontrolcmd("syncglines", glines_cmdsyncglines);
 }
 
 void _init(void) {
