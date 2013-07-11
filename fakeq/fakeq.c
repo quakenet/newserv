@@ -1,3 +1,4 @@
+#define CS_NODB
 #include "../chanserv/chanserv.h"
 
 static nick *fakeq;
