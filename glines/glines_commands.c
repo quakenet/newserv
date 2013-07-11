@@ -629,7 +629,7 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
 
     if (!(flags & GLIST_COUNT) && (count < limit)) {
       snprintf(tmp, 249, "%s", glinetostring(g));
-      controlreply(sender, "%s%-50s %-19s %-25s %s", g->flags & GLINE_ACTIVE ? "+" : "-", tmp, g->flags & GLINE_ACTIVE ? (char*)longtoduration(g->expire - curtime, 0) : "<inactive>",
+      controlreply(sender, "%s%-49s %-19s %-25s %s", g->flags & GLINE_ACTIVE ? "+" : "-", tmp, g->flags & GLINE_ACTIVE ? (char*)longtoduration(g->expire - curtime, 0) : "<inactive>",
             g->creator ? g->creator->content : "", g->reason ? g->reason->content : "");
     }
   }
