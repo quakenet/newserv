@@ -77,7 +77,7 @@ static void rq_cleanup_fasttrack(void *arg) {
 
   pft = &ftlist;
 
-  for(ft=*pft;pft && *pft;pft=&((*pft)->next)) {
+  for(ft=*pft;*pft;pft=&((*pft)->next)) {
     int foundnick = 0;
 
     for(j=0;j<NICKHASHSIZE && !foundnick;j++) {
@@ -93,6 +93,9 @@ static void rq_cleanup_fasttrack(void *arg) {
       *pft = ft->next;
       free(ft);
     }
+
+    if (!*pft)
+      break;
   }
 }
 
