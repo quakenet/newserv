@@ -14,6 +14,8 @@ gline *makegline(const char *mask) {
   gline *gl;
   char nick[512], user[512], host[512];
   const char *pnick = NULL, *puser = NULL, *phost = NULL;
+  const char *pos;
+  int count;
 
   /* Make sure there are no spaces in the mask, glstore_* depends on this */
   if (strchr(mask, ' ') != NULL)
@@ -74,6 +76,21 @@ gline *makegline(const char *mask) {
     gl->flags |= GLINE_IPMASK;
   else
     gl->flags |= GLINE_HOSTMASK;
+
+  /* Don't allow invalid IPv6 bans as those match * on snircd 1.3.4 */
+  if (phost) {
+    count = 0;
+
+    for (pos = phost; *pos; pos++)
+      if (*pos == ':')
+        count++;
+
+    if (count >= 8) {
+      controlwall(NO_OPER, NL_GLINES, "Warning: Parsed invalid IPv6 G-Line: %s", mask);
+      freegline(gl);
+      return NULL;
+    }
+  }
 
   if (pnick && strcmp(pnick, "*") != 0)
     gl->nick = getsstring(pnick, NICKLEN);
