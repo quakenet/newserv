@@ -98,8 +98,8 @@ gline *makegline(const char *);
 char *glinetostring(gline *g);
 
 /* glines_util.c */
-int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *reason, int duration, const char *creator);
-int glinebynick(nick *np, int flags, const char *reason, int duration, const char *creator);
+int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator);
+int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator);
 
 /* glines_buf.c */
 void glinebufinit(glinebuf *gbuf, int merge);

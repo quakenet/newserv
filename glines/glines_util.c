@@ -1,7 +1,7 @@
 #include "../irc/irc.h"
 #include "glines.h"
 
-int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *reason, int duration, const char *creator) {
+int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator) {
   glinebuf gbuf;
   int hits;
 
@@ -18,7 +18,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   return hits;
 }
 
-int glinebynick(nick *np, int flags, const char *reason, int duration, const char *creator) {
+int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator) {
   glinebuf gbuf;
   int hits;
 
