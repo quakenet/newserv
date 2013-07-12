@@ -130,25 +130,25 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     agline = findgline(mask);
 
     if (agline) {
-      if (agline->flags & GLINE_ACTIVE) { 
-        Error("debuggline", ERR_WARNING, "Duplicate Gline recieved for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason->content, agline->creator->content);
+      Error("debuggline", ERR_WARNING, "Update for existing gline received for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason->content, agline->creator->content);
+
+      agline->flags |= GLINE_ACTIVE;
+
+      /* check lastmod then assume the new gline is authoritive */
+      if (lastmod > agline->lastmod) {
+        agline->lastmod = lastmod;
+        agline->expire = expire;
+        agline->lifetime = lifetime;
+        freesstring(agline->creator);
+        agline->creator = getsstring(creator, 255);
+        freesstring(agline->reason);
+        agline->reason = getsstring(reason, 255); 
       } else {
-        /* we're reactivating a gline - check lastmod then assume the new gline is authoritive */
-        if (lastmod > agline->lastmod) {
-          agline->lastmod = lastmod;
-          agline->expire = expire;
-          agline->lifetime = lifetime;
-          agline->creator = getsstring(creator, 255);
-          freesstring(agline->reason);
-          agline->reason = getsstring(reason, 255); 
-          agline->flags |= GLINE_ACTIVE;
-        } else {
-          Error("debuggline", ERR_WARNING, "received a gline with a lower lastmod");
-          /* @@@TODO resend our gline ? */
-        } 
-      }
-      /* TODO */
-      return CMD_ERROR;
+        Error("debuggline", ERR_WARNING, "received a gline with a lower lastmod");
+        /* Don't send our gline as that might cause loops in case we don't understand the gline properly. */
+      } 
+
+      return CMD_OK;
     } else {
       glinebufinit(&gbuf, 0);
       glinebufadd(&gbuf, mask, creator, reason, expire, lastmod, lifetime);
@@ -238,7 +238,6 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
         agline->reason = getsstring(reason, 255);
       } else {
         Error("debuggline", ERR_WARNING, "received a gline modification with a lower lastmod");
-        /* @@@TODO resend our gline ? */
       }
 
       return CMD_OK;
