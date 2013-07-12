@@ -16,20 +16,11 @@ gline *newgline() {
 }
 
 void freegline(gline *gl) {
-  if (gl->nick)
-    freesstring(gl->nick);
-
-  if (gl->user)
-    freesstring(gl->user);
-
-  if (gl->host)
-    freesstring(gl->host);
-
-  if (gl->reason)
-    freesstring(gl->reason);
-
-  if (gl->creator)
-    freesstring(gl->creator);
+  freesstring(gl->nick);
+  freesstring(gl->user);
+  freesstring(gl->host);
+  freesstring(gl->reason);
+  freesstring(gl->creator);
 
   nsfree(POOL_GLINE, gl);
 }
