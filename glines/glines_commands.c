@@ -64,7 +64,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
+static int glines_gline_helper(void *source, int cargc, char **cargv, int sanitychecks) {
   nick *sender = source;
   int duration, users, channels;
   char *mask, *reason;
@@ -110,7 +110,12 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
   snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 1);
-  glinebufadd(&gbuf, mask, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
+
+  if (!glinebufadd(&gbuf, mask, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration)) {
+    controlreply(sender, "Invalid G-Line mask.");
+    return CMD_ERROR;
+  }
+
   glinebufcounthits(&gbuf, &users, &channels);
 
   if (channels > MAXUSERGLINECHANNELHITS) {
@@ -123,20 +128,36 @@ static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (sanitychecks && glinebufsanitize(&gbuf) > 0) {
+    controlreply(sender, "G-Line failed sanity checks.");
+    return CMD_ERROR;
+  }
+  
   glinebufflush(&gbuf, 1);
 
-  controlwall(NO_OPER, NL_GLINES, "%s RAWGLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)", controlid(sender), mask, longtoduration(duration, 0), reason, users, channels);
+  controlwall(NO_OPER, NL_GLINES, "%s %sGLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)",
+    controlid(sender),
+    sanitychecks ? "" : "RAW",
+    mask, longtoduration(duration, 0),
+    reason, users, channels);
 
   controlreply(sender, "Done.");
 
   return CMD_OK;
 }
 
+static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
+  return glines_gline_helper(source, cargc, cargv, 0);
+}
+
+static int glines_cmdgline(void *source, int cargc, char **cargv) {
+  return glines_gline_helper(source, cargc, cargv, 1);
+}
+
 static int glines_cmdrawglinesimulate(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *mask;
   glinebuf gbuf;
-  gline *gl;
   int users, channels;
   char creator[32];
 
@@ -148,9 +169,8 @@ static int glines_cmdrawglinesimulate(void *source, int cargc, char **cargv) {
   snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
-  gl = glinebufadd(&gbuf, mask, creator, "Simulate", getnettime(), getnettime(), getnettime());
 
-  if (!gl) {
+  if (!glinebufadd(&gbuf, mask, creator, "Simulate", getnettime(), getnettime(), getnettime())) {
     controlreply(sender, "Invalid G-Line mask.");
     return CMD_ERROR;
   }
@@ -163,7 +183,7 @@ static int glines_cmdrawglinesimulate(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int glines_cmdgline(void *source, int cargc, char **cargv) {
+static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *origmask;
   char mask[512];
@@ -747,9 +767,10 @@ static void registercommands(int hooknum, void *arg) {
   commandsregistered = 1;
 
   registercontrolhelpcmd("block", NO_OPER, 3, glines_cmdblock, "Usage: block <nick> <duration> <reason>\nSets a gline using an appropriate mask given the user's nickname.");
-  registercontrolhelpcmd("rawgline", NO_OPER, 3, glines_cmdrawgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline.");
+  registercontrolhelpcmd("rawgline", NO_OPER, 3, glines_cmdrawgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline. Does fewer sanity checks than \"gline\". Use with care.");
   registercontrolhelpcmd("rawglinesimulate", NO_OPER, 1, glines_cmdrawglinesimulate, "Usage: rawglinesimulate <mask>\nSimulates what happens when a gline is set.");
-  registercontrolhelpcmd("gline", NO_OPER, 3, glines_cmdgline, "Usage: gline <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask so as not to hit unrelated trusted users.");
+  registercontrolhelpcmd("gline", NO_OPER, 3, glines_cmdgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline.");
+  registercontrolhelpcmd("smartgline", NO_OPER, 3, glines_cmdsmartgline, "Usage: gline <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask so as not to hit unrelated trusted users.");
   registercontrolhelpcmd("ungline", NO_OPER, 1, glines_cmdungline, "Usage: ungline <mask>\nDeactivates a gline.");
   registercontrolhelpcmd("clearchan", NO_OPER, 4, glines_cmdclearchan, "Usage: clearchan <#channel> <how> <duration> ?reason?\nClears a channel.\nhow can be one of:\nkick - Kicks users.\nkill - Kills users.\ngline - Glines non-authed users (using an appropriate mask).\nglineall - Glines users.\nDuration is only valid when glining users. Reason defaults to \"Clearing channel.\".");
   registercontrolhelpcmd("trustgline", NO_OPER, 4, glines_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nSets a gline on the specified username for each host in the specified trust group. The username may contain wildcards.");
@@ -770,6 +791,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("rawgline", glines_cmdrawgline);
   deregistercontrolcmd("rawglinesimulate", glines_cmdrawglinesimulate);
   deregistercontrolcmd("gline", glines_cmdgline);
+  deregistercontrolcmd("smartgline", glines_cmdsmartgline);
   deregistercontrolcmd("ungline", glines_cmdungline);
   deregistercontrolcmd("clearchan", glines_cmdclearchan);
   deregistercontrolcmd("trustgline", glines_cmdtrustgline);

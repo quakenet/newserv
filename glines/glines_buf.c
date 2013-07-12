@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include "../lib/irc_string.h"
+#include "../irc/irc.h"
 #include "../control/control.h"
 #include "../trusts/trusts.h"
 #include "glines.h"
@@ -36,6 +38,9 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
       if (gline_match_mask(gl, sgl)) {
         *pnext = sgl->next;
         freegline(sgl);
+        
+        if (!*pnext)
+          break;
       }
     }
   }
@@ -67,8 +72,10 @@ void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, u
     th = th_getbyhost(ip);
 
     if (th && (th->group->flags & TRUST_RELIABLE_USERNAME)) { /* Trust with reliable usernames */
-      for(oth = th->group->hosts; oth; oth = oth->next)
+      for (oth = th->group->hosts; oth; oth = oth->next)
         glinebufaddbyip(gbuf, user, &oth->ip, oth->bits, flags | GLINE_ALWAYS_USER | GLINE_IGNORE_TRUST, creator, reason, expire, lastmod, lifetime);
+
+      return;
     }
   }
 
@@ -147,6 +154,42 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
       }
     }
   }
+}
+
+int glinebufsanitize(glinebuf *gbuf) {
+  gline *gl, **pnext;
+  int skipped;
+  const char *hint;
+
+  skipped = 0;
+
+  /* Remove glines that fail the sanity check */
+  for (pnext = &gbuf->head; *pnext; pnext = &((*pnext)->next)) {
+    gl = *pnext;
+
+    if (!isglinesane(gl, &hint)) {
+      controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s with reason '%s', created by: %s - Skipping: %s",
+        glinetostring(gl), longtoduration(gl->expire-getnettime(), 0),
+        gl->reason->content, gl->creator->content, hint);
+
+      *pnext = gl->next;
+      freegline(gl);
+
+      skipped++;
+      
+      if (!*pnext)
+        break;
+    }
+  }
+
+  return skipped;
+}
+
+void glinebufspew(glinebuf *gbuf, nick *np) {
+  gline *gl;
+
+  for (gl = gbuf->head; gl; gl = gl->next)
+    controlreply(np, "mask: %s", glinetostring(gl));
 }
 
 void glinebufflush(glinebuf *gbuf, int propagate) {

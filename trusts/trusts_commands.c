@@ -334,12 +334,6 @@ static int trusts_cmdtrustdump(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
-static void trusts_suggestgline_cb(const char *mask, int hits, void *uarg) {
-  nick *sender = uarg;
-
-  controlreply(sender, "mask: %s, hits: %d", mask, hits);
-}
-
 static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char mask[512];
@@ -347,6 +341,8 @@ static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {
   struct irc_in_addr ip;
   unsigned char bits;
   int count;
+  glinebuf gbuf;
+  char creator[32];
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -367,7 +363,13 @@ static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  count = glinesuggestbyip(user, &ip, 128, 0, trusts_suggestgline_cb, sender);
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+
+  glinebufinit(&gbuf, 1);
+  glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, "Simulate", getnettime(), getnettime(), getnettime());
+  glinebufcounthits(&gbuf, &count, NULL);
+  glinebufspew(&gbuf, sender);
+  glinebufabandon(&gbuf);
 
   controlreply(sender, "Total hits: %d", count);
 

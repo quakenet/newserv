@@ -256,3 +256,78 @@ int gline_match_mask(gline *gla, gline *glb) {
   return 1;
 }
 
+int isglinesane(gline *gl, const char **hint) {
+  int wildcard, nowildcardcount;
+  char *pos;
+  trusthost *th;
+
+  /* Hits all realnames. */
+  if ((gl->flags & GLINE_REALNAME) && !gl->user) {
+    *hint = "Matches all realnames.";
+    return 0;
+  }
+
+  /* Hits all local/non-local channels. */
+  if ((gl->flags & GLINE_BADCHAN) && (strcmp(gl->user->content, "&*") == 0 || strcmp(gl->user->content, "#*") == 0)) {
+    *hint = "Matches all local/non-local channels.";
+    return 0;
+  }
+
+  /* Mask wider than /16 for IPv4 or /32 for IPv6. */
+  if ((gl->flags & GLINE_IPMASK) && gl->bits < (irc_in_addr_is_ipv4(&gl->ip) ? (96 + 16) : 32)) {
+    *hint = "CIDR mask too wide.";
+    return 0;
+  }
+
+  /* Doesn't have at least two non-wildcarded host components. */
+  if (gl->flags & GLINE_HOSTMASK) {
+    nowildcardcount = 0;
+
+    wildcard = 0;
+    pos = gl->host->content;
+
+    for (;;) {
+      switch (*pos) {
+        case '*':
+          /* fall through */
+        case '?':
+          wildcard = 1;
+          break;
+
+        case '.':
+        case '\0':
+          if (!wildcard)
+            nowildcardcount++;
+          else
+            wildcard = 0;
+
+          if (*pos == '\0')
+            pos = NULL; /* Leave the loop. */
+
+          break;
+      }
+
+      if (pos)
+        pos++;
+      else
+        break;
+    }
+    
+    if (nowildcardcount < 2) {
+      *hint = "Needs at least 2 non-wildcarded host components.";
+      return 0;
+    }
+  }
+
+  /* Wildcard username match for trusted host with reliable usernames. */
+  if (gl->flags & GLINE_IPMASK && (!gl->user || strchr(gl->user->content, '*') || strchr(gl->user->content, '?'))) {
+    th = th_getbyhost(&gl->ip);
+
+    if (th && (th->group->flags & TRUST_RELIABLE_USERNAME)) {
+      *hint = "Wildcard username match for a trusted host that has reliable usernames.";
+      return 0;
+    }
+  }
+
+  return 1;
+}

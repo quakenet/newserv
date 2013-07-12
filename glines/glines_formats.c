@@ -26,13 +26,13 @@ gline *makegline(const char *mask) {
     return NULL;
   }
 
-  if (*mask == '#' || *mask == '&') {
+  if (mask[0] == '#' || mask[0] == '&') {
     gl->flags |= GLINE_BADCHAN;
     gl->user = getsstring(mask, CHANNELLEN);
     return gl;
   }
 
-  if (*mask == '$') {
+  if (mask[0] == '$') {
     if (mask[1] != 'R') {
       freegline(gl);
       return NULL;
