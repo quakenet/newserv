@@ -8,11 +8,13 @@
 #define SNIRCD_13
 #undef SNIRCD_14
 
-#define MAXGLINEUSERS        100
-#define MAXGLINECHANNELS     10
+#define MAXUSERGLINEUSERHITS        100
+#define MAXUSERGLINECHANNELHITS     10
+#define MAXUSERGLINEDURATION        90 * 86400
+#define MINUSERGLINEREASON          10
 
-#define MAXUSERGLINEDURATION (90 * 86400)
-#define MINUSERGLINEREASON 10
+#define MAXGLINEUSERHITS     500
+#define MAXGLINECHANNELHITS  50
 
 #define GLINE_IGNORE_TRUST   1
 #define GLINE_ALWAYS_NICK    2
@@ -73,26 +75,14 @@ typedef struct gline {
   struct gline *next;
 } gline;
 
+typedef struct glinebuf {
+  gline *head;
+  int merge;
+} glinebuf;
+
 extern gline *glinelist;
 
-typedef struct gline_params {
-  int duration;
-  const char *reason;
-  const char *creator;
-} gline_params;
-
-typedef void (*gline_callback)(const char *, int, void *);
-
 /* glines.c */
-int glinesetmask(const char *mask, int duration, const char *reason, const char *creator);
-int glineunsetmask(const char *mask);
-
-int glinesuggestbyip(const char *, struct irc_in_addr *, unsigned char, int, gline_callback callback, void *uarg);
-int glinesuggestbynick(nick *, int, gline_callback callback, void *uarg);
-int glinebyip(const char *, struct irc_in_addr *, unsigned char, int, const char *, int, const char *);
-int glinebynick(nick *, int, const char *, int, const char *);
-
-gline *gline_add(const char *creator, const char *mask, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 char *glinetostring(gline *g);
 gline *findgline(const char *);
 gline *makegline(const char *);
@@ -100,10 +90,21 @@ void gline_propagate(gline *);
 gline *gline_deactivate(gline *, time_t, int);
 gline *gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal(gline *, gline *);
-int gline_count_hits(gline *gl);
 int gline_match_mask(gline *gla, gline *glb);
 int gline_match_nick(gline *gl, nick *np);
 int gline_match_channel(gline *gl, channel *cp);
+
+int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *reason, int duration, const char *creator);
+int glinebynick(nick *np, int flags, const char *reason, int duration, const char *creator);
+
+/* glines_buf.c */
+void glinebufinit(glinebuf *gbuf, int merge);
+gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
+void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
+void glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
+void glinebufcounthits(glinebuf *gbuf, int *users, int *channels);
+void glinebufflush(glinebuf *gbuf, int propagate);
+void glinebufabandon(glinebuf *gbuf);
 
 /* glines_alloc.c */
 void freegline(gline *);

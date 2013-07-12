@@ -17,6 +17,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
   long creatornum;
   gline *agline;
   nick *np;
+  glinebuf gbuf;
 
   /**
    * Valid GL tokens have X params:
@@ -149,7 +150,9 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
       /* TODO */
       return CMD_ERROR;
     } else {
-      gline_add(creator, mask, reason, expire, lastmod, lifetime); 
+      glinebufinit(&gbuf, 0);
+      glinebufadd(&gbuf, mask, creator, reason, expire, lastmod, lifetime);
+      glinebufflush(&gbuf, 0);
     } 
   } else if (flags & GLINE_DEACTIVATE) {
     /* deactivate gline */
@@ -202,14 +205,17 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
            return CMD_ERROR;
       }
 
-      agline = gline_add(creator, mask, reason, expire, lastmod, lifetime);
+      glinebufinit(&gbuf, 0);
+      agline = glinebufadd(&gbuf, mask, creator, reason, expire, lastmod, lifetime);
 
       if (!agline) {
+        glinebufabandon(&gbuf);
         Error("gline", ERR_WARNING, "gline_add failed");
         return CMD_ERROR;
       }
 
       gline_deactivate(agline, lastmod, 0);
+      glinebufflush(&gbuf, 0);
 
       return CMD_OK;
     }

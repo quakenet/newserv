@@ -41,7 +41,7 @@ static int glstore_loadfile(const char *file) {
   count = 0;
 
   while (!feof(fp)) {
-    if (fscanf(fp, "%[^ ]%jd,%jd,%jd,%d,%[^,],%s", mask, &expire, &lastmod, &lifetime, &flags, creator, reason) != 7)
+    if (fscanf(fp, "%[^ ]%jd,%jd,%jd,%d,%[^,],%[^\n]\n", mask, &expire, &lastmod, &lifetime, &flags, creator, reason) != 7)
       continue;
 
     count++;
