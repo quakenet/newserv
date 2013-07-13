@@ -153,9 +153,9 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (operlimit) {
-    glinebufcounthits(&gbuf, &users, &channels);
-  
+  glinebufcounthits(&gbuf, &users, &channels);
+
+  if (operlimit) {  
     if (channels > MAXUSERGLINECHANNELHITS) {
       glinebufabandon(&gbuf);
       controlreply(sender, "G-Line on '%s' would hit %d channels. Limit is %d. Not setting G-Line.", mask, channels, MAXUSERGLINECHANNELHITS);
