@@ -109,6 +109,7 @@ gline *findgline(const char *mask) {
 
 void gline_activate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
+
   agline->flags |= GLINE_ACTIVE;
 
   if (lastmod)
@@ -124,6 +125,7 @@ void gline_activate(gline *agline, time_t lastmod, int propagate) {
 
 void gline_deactivate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
+
   agline->flags &= ~GLINE_ACTIVE;
 
   if (lastmod)
@@ -137,8 +139,41 @@ void gline_deactivate(gline *agline, time_t lastmod, int propagate) {
     gline_propagate(agline);
 }
 
+void gline_destroy(gline *agline, time_t lastmod, int propagate) {
+  time_t now = getnettime();
+
+  agline->flags &= ~GLINE_ACTIVE;
+  agline->flags |= GLINE_DESTROYED;
+
+  if (lastmod)
+    agline->lastmod = lastmod;
+  else if (now <= agline->lastmod)
+    agline->lastmod++;
+  else
+    agline->lastmod = now;
+
+  if (propagate)
+    gline_propagate(agline);
+
+  removegline(agline);
+}
+
 void gline_propagate(gline *agline) {
-  if (agline->flags & GLINE_ACTIVE) {
+  if (agline->flags & GLINE_DESTROYED) {
+    controlwall(NO_OPER, NL_GLINES, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
+      glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
+      agline->reason->content, agline->creator->content);
+
+#if 1
+    irc_send("%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
+      glinetostring(agline), agline->expire - getnettime(),
+      agline->lastmod, agline->reason->content);
+#else
+    controlwall(NO_OPER, NL_GLINES, "%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
+      glinetostring(agline), agline->expire - getnettime(),
+      agline->lastmod, agline->reason->content);
+#endif
+  } else if (agline->flags & GLINE_ACTIVE) {
     controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason->content, agline->creator->content);

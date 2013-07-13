@@ -27,7 +27,9 @@
 #define GLINE_REALNAME    8   /* Gline includes a realname */
 #define GLINE_ACTIVATE    16  /* Gline should be activated */
 #define GLINE_DEACTIVATE  32  /* Gline should be deactivated */
-#define GLINE_ACTIVE      64  /* Gline is active */
+#define GLINE_DESTROY     64  /* Gline should be destroyed */
+#define GLINE_ACTIVE      128 /* Gline is active */
+#define GLINE_DESTROYED   256 /* Gline is destroyed */
 
 /**
  * glist flags
@@ -85,6 +87,7 @@ extern gline *glinelist;
 gline *findgline(const char *);
 void gline_propagate(gline *);
 void gline_deactivate(gline *, time_t, int);
+void gline_destroy(gline *, time_t, int);
 void gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal(gline *, gline *);
 int gline_match_mask(gline *gla, gline *glb);

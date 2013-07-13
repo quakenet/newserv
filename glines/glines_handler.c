@@ -80,6 +80,12 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
   /* 2nd param is mask */
   mask = cargv[1];
 
+  /* snircd 1.3.5 can destroy glines, no #if here */
+  if (*mask == '%') {
+    flags |= GLINE_DESTROY;
+    mask++;
+  }
+
   switch (*mask) {
     case '+':
       flags |= GLINE_ACTIVATE;
@@ -167,12 +173,22 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
         case 5:
           /* asuka last mod */
           lastmod = atoi(cargv[3]);
-          gline_deactivate(agline, lastmod, 0);
+          
+          if (flags & GLINE_DESTROY)
+            gline_destroy(agline, lastmod, 0);
+          else
+            gline_deactivate(agline, lastmod, 0);
+
           break;
         case 6:
           /* snircd */
           lastmod = atoi(cargv[3]);
-          gline_deactivate(agline, lastmod, 0);
+
+          if (flags & GLINE_DESTROY)
+            gline_destroy(agline, lastmod, 0);
+          else
+            gline_deactivate(agline, lastmod, 0);
+
           break;
         default:
           Error("gline", ERR_WARNING, "Gline Deactivate with invalid number (%d) of arguments", cargc);
