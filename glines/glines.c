@@ -351,7 +351,7 @@ int isglinesane(gline *gl, const char **hint) {
   }
 
   /* Wildcard username match for trusted host with reliable usernames. */
-  if (gl->flags & GLINE_IPMASK && (!gl->user || strchr(gl->user->content, '*') || strchr(gl->user->content, '?'))) {
+  if ((gl->flags & GLINE_IPMASK) && (!gl->user || strchr(gl->user->content, '*') || strchr(gl->user->content, '?'))) {
     th = th_getbyhost(&gl->ip);
 
     if (th && (th->group->flags & TRUST_RELIABLE_USERNAME)) {
