@@ -273,6 +273,10 @@ int isglinesane(gline *gl, const char **hint) {
     return 0;
   }
 
+  /* Skip the other checks for nickname glines. */
+  if (gl->nick)
+    return 1;
+
   /* Mask wider than /16 for IPv4 or /32 for IPv6. */
   if ((gl->flags & GLINE_IPMASK) && gl->bits < (irc_in_addr_is_ipv4(&gl->ip) ? (96 + 16) : 32)) {
     *hint = "CIDR mask too wide.";
