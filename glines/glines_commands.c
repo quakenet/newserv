@@ -755,6 +755,8 @@ static int glines_cmdcleanupglines(void *source, int cargc, char **cargv) {
   controlwall(NO_OPER, NL_GLINES, "%s CLEANUPGLINES'd %d G-Lines.",
     controlid(sender), count);
   
+  controlreply(sender, "Done.");
+  
   return CMD_OK;
 }
 
