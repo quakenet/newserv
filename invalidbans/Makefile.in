@@ -1,0 +1,6 @@
+@include@ @includel@../build.mk@includel@
+
+.PHONY: all
+all: invalidbans.so
+
+invalidbans.so: invalidbans.o
