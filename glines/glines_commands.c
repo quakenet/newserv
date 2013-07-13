@@ -136,7 +136,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   if (gl) {
      /* warn opers that they can't modify this gline */
     if (gl->flags & GLINE_ACTIVE) {
-      controlreply(sender, "Active G-Line already exists on %s - unable to modify", cargv[0]);
+      controlreply(sender, "Active G-Line already exists on %s - unable to modify", mask);
       return CMD_ERROR;
     }
 
