@@ -38,7 +38,12 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
 
   duration = durationtolong(cargv[1]);
 
-  if (duration <= 0 || duration > MAXUSERGLINEDURATION) {
+  if (duration <= 0) {
+    controlreply(sender, "Invalid duration specified.");
+    return CMD_ERROR;
+  }
+
+  if (duration > MAXUSERGLINEDURATION) {
     controlreply(sender, "Sorry, glines may not last longer than %s.", longtoduration(MAXUSERGLINEDURATION, 0));
     return CMD_ERROR;
   }
@@ -81,7 +86,12 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
 
   duration = durationtolong(cargv[1]);
 
-  if (duration <= 0 || duration > MAXUSERGLINEDURATION) {
+  if (duration <= 0) {
+    controlreply(sender, "Invalid duration specified.");
+    return CMD_ERROR;
+  }
+
+  if (duration > MAXUSERGLINEDURATION) {
     controlreply(sender, "Sorry, glines may not last longer than %s.", longtoduration(MAXUSERGLINEDURATION, 0));
     return CMD_ERROR;
   }
@@ -120,16 +130,16 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
 
   if (channels > MAXUSERGLINECHANNELHITS) {
     glinebufabandon(&gbuf);
-    controlreply(sender, "G-Line on '%s' would hit %d channels. Limit is %d. Not setting G-Lines.", mask, channels, MAXUSERGLINECHANNELHITS);
+    controlreply(sender, "G-Line on '%s' would hit %d channels. Limit is %d. Not setting G-Line.", mask, channels, MAXUSERGLINECHANNELHITS);
     return CMD_ERROR;
   } else if (users > MAXUSERGLINEUSERHITS) {
     glinebufabandon(&gbuf);
-    controlreply(sender, "G-Line on '%s' would hit %d users. Limit is %d. Not setting G-Lines.", mask, users, MAXUSERGLINEUSERHITS);
+    controlreply(sender, "G-Line on '%s' would hit %d users. Limit is %d. Not setting G-Line.", mask, users, MAXUSERGLINEUSERHITS);
     return CMD_ERROR;
   }
 
   if (sanitychecks && glinebufsanitize(&gbuf) > 0) {
-    controlreply(sender, "G-Line failed sanity checks.");
+    controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;
   }
   
@@ -207,7 +217,12 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
 
   duration = durationtolong(cargv[1]);
 
-  if (duration <= 0 || duration > MAXUSERGLINEDURATION) {
+  if (duration <= 0) {
+    controlreply(sender, "Invalid duration specified.");
+    return CMD_ERROR;
+  }
+
+  if (duration > MAXUSERGLINEDURATION) {
     controlreply(sender, "Sorry, glines may not last longer than %s.", longtoduration(MAXUSERGLINEDURATION, 0));
     return CMD_ERROR;
   }
@@ -332,7 +347,12 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
 
     duration = durationtolong(cargv[2]);
 
-    if (duration <= 0 || duration > MAXUSERGLINEDURATION) {
+    if (duration <= 0) {
+      controlreply(sender, "Invalid duration specified.");
+      return CMD_ERROR;
+    }
+
+    if (duration > MAXUSERGLINEDURATION) {
       controlreply(sender, "Sorry, glines may not last longer than %s.", longtoduration(MAXUSERGLINEDURATION, 0));
       return CMD_ERROR;
     }
