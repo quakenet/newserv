@@ -139,6 +139,7 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
   }
 
   if (sanitychecks && glinebufsanitize(&gbuf) > 0) {
+    glinebufabandon(&gbuf);
     controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;
   }
@@ -181,6 +182,7 @@ static int glines_cmdrawglinesimulate(void *source, int cargc, char **cargv) {
   glinebufinit(&gbuf, 0);
 
   if (!glinebufadd(&gbuf, mask, creator, "Simulate", getnettime(), getnettime(), getnettime())) {
+    glinebufabandon(&gbuf);
     controlreply(sender, "Invalid G-Line mask.");
     return CMD_ERROR;
   }
