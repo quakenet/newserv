@@ -75,7 +75,7 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
   char *mask, *reason;
   char creator[32];
   glinebuf gbuf;
-#ifdef SNIRCD_13
+#if SNIRCD_VERSION <= 134
   gline *gl;
 #endif
 
@@ -103,11 +103,11 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
     return CMD_ERROR;
   }
 
-#ifdef SNIRCD_13
+#if SNIRCD_VERSION <= 134
   gl = findgline(mask);
 
   if (gl) {
-     /* snircd 1.3:  warn opers that they can't modify this gline */
+     /* warn opers that they can't modify this gline */
     if (gl->flags & GLINE_ACTIVE) {
       controlreply(sender, "Active G-Line already exists on %s - unable to modify", cargv[0]);
       return CMD_ERROR;

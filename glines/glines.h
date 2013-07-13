@@ -5,8 +5,7 @@
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
-#define SNIRCD_13
-#undef SNIRCD_14
+#define SNIRCD_VERSION 134
 
 #define MAXUSERGLINEUSERHITS        100
 #define MAXUSERGLINECHANNELHITS     10
