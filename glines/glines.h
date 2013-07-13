@@ -84,8 +84,8 @@ extern gline *glinelist;
 /* glines.c */
 gline *findgline(const char *);
 void gline_propagate(gline *);
-gline *gline_deactivate(gline *, time_t, int);
-gline *gline_activate(gline *agline, time_t lastmod, int propagate);
+void gline_deactivate(gline *, time_t, int);
+void gline_activate(gline *agline, time_t lastmod, int propagate);
 int glineequal(gline *, gline *);
 int gline_match_mask(gline *gla, gline *glb);
 int gline_match_nick(gline *gl, nick *np);

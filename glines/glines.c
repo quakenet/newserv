@@ -107,42 +107,34 @@ gline *findgline(const char *mask) {
   return 0;
 }
 
-gline *gline_activate(gline *agline, time_t lastmod, int propagate) {
+void gline_activate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
   agline->flags |= GLINE_ACTIVE;
 
-  if (lastmod) {
+  if (lastmod)
     agline->lastmod = lastmod;
-  } else {
-    if (now <= agline->lastmod)
-      agline->lastmod++;
-    else
-      agline->lastmod = now;
-  }
+  else if (now <= agline->lastmod)
+    agline->lastmod++;
+  else
+    agline->lastmod = now;
 
   if (propagate)
     gline_propagate(agline);
-
-  return agline;
 }
 
-gline *gline_deactivate(gline *agline, time_t lastmod, int propagate) {
+void gline_deactivate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
   agline->flags &= ~GLINE_ACTIVE;
 
-  if (lastmod) {
+  if (lastmod)
     agline->lastmod = lastmod;
-  } else {
-    if (now <= agline->lastmod)
-      agline->lastmod++;
-    else
-      agline->lastmod = now;
-  }
+  else if (now <= agline->lastmod)
+    agline->lastmod++;
+  else
+    agline->lastmod = now;
 
   if (propagate)
     gline_propagate(agline);
-
-  return agline;
 }
 
 void gline_propagate(gline *agline) {
