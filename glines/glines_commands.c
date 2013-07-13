@@ -69,22 +69,48 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int glines_gline_helper(void *source, int cargc, char **cargv, int sanitychecks) {
+static int glines_cmdgline(void *source, int cargc, char **cargv) {
   nick *sender = source;
   int duration, users, channels;
-  char *mask, *reason;
+  char *mask, *reason, *pos;
   char creator[32];
+  int coff, sanitychecks, operlimit;
   glinebuf gbuf;
 #if SNIRCD_VERSION < 140
   gline *gl;
 #endif
 
-  if (cargc < 3)
+  if (cargc < 1)
     return CMD_USAGE;
 
-  mask = cargv[0];
+  coff = 0;
+  sanitychecks = 1;
+  operlimit = 1;
+    
+  if (cargv[0][0] == '-') {
+    coff = 1;
+    
+    for (pos = &(cargv[0][1]); *pos; pos++) {
+      switch (*pos) {
+	case 'S':
+	  sanitychecks = 0;
+	  break;
+	case 'l':
+	  operlimit = 0;
+	  break;
+	default:
+	  controlreply(sender, "Invalid flag specified: %c", *pos);
+	  return CMD_ERROR;
+      }
+    }
+  }
 
-  duration = durationtolong(cargv[1]);
+  if (cargc < 3 + coff)
+    return CMD_USAGE;
+
+  mask = cargv[coff];
+
+  duration = durationtolong(cargv[coff + 1]);
 
   if (duration <= 0) {
     controlreply(sender, "Invalid duration specified.");
@@ -96,7 +122,8 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
     return CMD_ERROR;
   }
 
-  reason = cargv[2];
+  rejoinline(cargv[coff + 2], cargc - coff - 2);
+  reason = cargv[coff + 2];
 
   if (strlen(reason) < MINUSERGLINEREASON) {
     controlreply(sender, "Please specify a proper gline reason.");
@@ -126,16 +153,18 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
     return CMD_ERROR;
   }
 
-  glinebufcounthits(&gbuf, &users, &channels);
-
-  if (channels > MAXUSERGLINECHANNELHITS) {
-    glinebufabandon(&gbuf);
-    controlreply(sender, "G-Line on '%s' would hit %d channels. Limit is %d. Not setting G-Line.", mask, channels, MAXUSERGLINECHANNELHITS);
-    return CMD_ERROR;
-  } else if (users > MAXUSERGLINEUSERHITS) {
-    glinebufabandon(&gbuf);
-    controlreply(sender, "G-Line on '%s' would hit %d users. Limit is %d. Not setting G-Line.", mask, users, MAXUSERGLINEUSERHITS);
-    return CMD_ERROR;
+  if (operlimit) {
+    glinebufcounthits(&gbuf, &users, &channels);
+  
+    if (channels > MAXUSERGLINECHANNELHITS) {
+      glinebufabandon(&gbuf);
+      controlreply(sender, "G-Line on '%s' would hit %d channels. Limit is %d. Not setting G-Line.", mask, channels, MAXUSERGLINECHANNELHITS);
+      return CMD_ERROR;
+    } else if (users > MAXUSERGLINEUSERHITS) {
+      glinebufabandon(&gbuf);
+      controlreply(sender, "G-Line on '%s' would hit %d users. Limit is %d. Not setting G-Line.", mask, users, MAXUSERGLINEUSERHITS);
+      return CMD_ERROR;
+    }
   }
 
   if (sanitychecks && glinebufsanitize(&gbuf) > 0) {
@@ -146,26 +175,15 @@ static int glines_gline_helper(void *source, int cargc, char **cargv, int sanity
   
   glinebufflush(&gbuf, 1);
 
-  controlwall(NO_OPER, NL_GLINES, "%s %sGLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)",
-    controlid(sender),
-    sanitychecks ? "" : "RAW",
-    mask, longtoduration(duration, 0),
-    reason, users, channels);
+  controlwall(NO_OPER, NL_GLINES, "%s GLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)",
+    controlid(sender), mask, longtoduration(duration, 0), reason, users, channels);
 
   controlreply(sender, "Done.");
 
   return CMD_OK;
 }
 
-static int glines_cmdrawgline(void *source, int cargc, char **cargv) {
-  return glines_gline_helper(source, cargc, cargv, 0);
-}
-
-static int glines_cmdgline(void *source, int cargc, char **cargv) {
-  return glines_gline_helper(source, cargc, cargv, 1);
-}
-
-static int glines_cmdrawglinesimulate(void *source, int cargc, char **cargv) {
+static int glines_cmdglinesimulate(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *mask;
   glinebuf gbuf;
@@ -213,7 +231,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   origmask = cargv[0];
 
   if (origmask[0] == '#' || origmask[0] == '&') {
-    controlreply(sender, "Please use rawgline for badchans and regex glines.");
+    controlreply(sender, "Please use \"gline\" for badchans and regex glines.");
     return CMD_ERROR;
   }
 
@@ -239,7 +257,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   strncpy(mask, origmask, sizeof(mask));
 
   if (strchr(mask, '!')) {
-    controlreply(sender, "Use rawgline to place nick glines.");
+    controlreply(sender, "Use \"gline\" to place nick glines.");
     return CMD_ERROR;
   }
 
@@ -816,9 +834,8 @@ static void registercommands(int hooknum, void *arg) {
   commandsregistered = 1;
 
   registercontrolhelpcmd("block", NO_OPER, 3, glines_cmdblock, "Usage: block <nick> <duration> <reason>\nSets a gline using an appropriate mask given the user's nickname.");
-  registercontrolhelpcmd("rawgline", NO_OPER, 3, glines_cmdrawgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline. Does fewer sanity checks than \"gline\". Use with care.");
-  registercontrolhelpcmd("rawglinesimulate", NO_OPER, 1, glines_cmdrawglinesimulate, "Usage: rawglinesimulate <mask>\nSimulates what happens when a gline is set.");
-  registercontrolhelpcmd("gline", NO_OPER, 3, glines_cmdgline, "Usage: rawgline <mask> <duration> <reason>\nSets a gline.");
+  registercontrolhelpcmd("gline", NO_OPER, 4, glines_cmdgline, "Usage: gline ?flags? <mask> <duration> <reason>\nSets a gline. Flags can be one or more of:\n-S - bypass sanity checks\n-l - bypass hit limits");
+  registercontrolhelpcmd("glinesimulate", NO_OPER, 1, glines_cmdglinesimulate, "Usage: glinesimulate <mask>\nSimulates what happens when a gline is set.");
   registercontrolhelpcmd("smartgline", NO_OPER, 3, glines_cmdsmartgline, "Usage: gline <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask so as not to hit unrelated trusted users.");
   registercontrolhelpcmd("ungline", NO_OPER, 1, glines_cmdungline, "Usage: ungline <mask>\nDeactivates a gline.");
   registercontrolhelpcmd("clearchan", NO_OPER, 4, glines_cmdclearchan, "Usage: clearchan <#channel> <how> <duration> ?reason?\nClears a channel.\nhow can be one of:\nkick - Kicks users.\nkill - Kills users.\ngline - Glines non-authed users (using an appropriate mask).\nglineall - Glines users.\nDuration is only valid when glining users. Reason defaults to \"Clearing channel.\".");
@@ -838,9 +855,8 @@ static void deregistercommands(int hooknum, void *arg) {
   commandsregistered = 0;
 
   deregistercontrolcmd("block", glines_cmdblock);
-  deregistercontrolcmd("rawgline", glines_cmdrawgline);
-  deregistercontrolcmd("rawglinesimulate", glines_cmdrawglinesimulate);
   deregistercontrolcmd("gline", glines_cmdgline);
+  deregistercontrolcmd("glinesimulate", glines_cmdglinesimulate);
   deregistercontrolcmd("smartgline", glines_cmdsmartgline);
   deregistercontrolcmd("ungline", glines_cmdungline);
   deregistercontrolcmd("clearchan", glines_cmdclearchan);
