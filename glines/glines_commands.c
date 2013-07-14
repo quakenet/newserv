@@ -325,6 +325,29 @@ static int glines_cmdungline(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int glines_cmddestroygline(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  gline *gl;
+
+  if (cargc < 1)
+    return CMD_USAGE;
+
+  gl = findgline(cargv[0]);
+
+  if (!gl) {
+    controlreply(sender, "No such G-Line.");
+    return CMD_ERROR;
+  }
+
+  gline_destroy(gl, 0, 1);
+
+  controlwall(NO_OPER, NL_GLINES, "%s DESTROYGLINE'd mask '%s'", controlid(sender), cargv[0]);
+
+  controlreply(sender, "G-Line destroyed.");
+
+  return CMD_OK;
+}
+
 static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   nick *sender = source;
   channel *cp;
@@ -751,84 +774,6 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int glines_cmdcleanupglines(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  gline **pnext, *gl;
-  int count;
-  time_t now;
-  
-  count = 0;
-  time(&now);
-  
-  for (pnext = &glinelist; *pnext; pnext = &((*pnext)->next)) {
-    gl = *pnext;
-    
-    /* Remove inactivate glines that have been last changed more than a week ago */
-    if (!(gl->flags & GLINE_ACTIVE) && gl->lastmod < now - 7 * 24 * 60 * 60) {
-      gline_destroy(gl, 0, 1);
-      count++;
-    }
-    
-    if (!*pnext)
-      break;
-  }
-  
-  controlwall(NO_OPER, NL_GLINES, "%s CLEANUPGLINES'd %d G-Lines.",
-    controlid(sender), count);
-  
-  controlreply(sender, "Done.");
-  
-  return CMD_OK;
-}
-
-static int glines_cmdsyncglines(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  gline *gl;
-  int count;
-
-  count = 0;
-
-  for (gl = glinelist; gl; gl = gl->next) {
-    gline_propagate(gl);
-    count++;
-  }
-  
-  controlwall(NO_OPER, NL_GLINES, "%s SYNCGLINE'd %d G-Lines.",
-    controlid(sender), count);
-
-  controlreply(sender, "Done.");
-
-  return CMD_OK;
-}
-
-static int glines_cmdsaveglines(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  int count;
-
-  count = glstore_save();
-
-  if (count < 0)
-    controlreply(sender, "An error occured while saving G-Lines.");
-  else
-    controlreply(sender, "Saved %d G-Line%s.", count, (count == 1) ? "" : "s");
-
-  return CMD_OK;
-}
-
-static int glines_cmdloadglines(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  int count;
-
-  count = glstore_load();
-
-  if (count < 0)
-    controlreply(sender, "An error occured while loading the G-Lines file.");
-  else
-    controlreply(sender, "Loaded %d G-Line%s.", count, (count == 1) ? "" : "s");
-
-  return CMD_OK;
-}
-
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
@@ -841,15 +786,12 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("glinesimulate", NO_OPER, 1, glines_cmdglinesimulate, "Usage: glinesimulate <mask>\nSimulates what happens when a gline is set.");
   registercontrolhelpcmd("smartgline", NO_OPER, 3, glines_cmdsmartgline, "Usage: smartgline <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask depending on whether the specified mask is trusted.");
   registercontrolhelpcmd("ungline", NO_OPER, 1, glines_cmdungline, "Usage: ungline <mask>\nDeactivates a gline.");
+  registercontrolhelpcmd("destroygline", NO_DEVELOPER, 1, glines_cmddestroygline, "Usage: destroygline <mask>\nDestroys a gline.");
   registercontrolhelpcmd("clearchan", NO_OPER, 4, glines_cmdclearchan, "Usage: clearchan <#channel> <how> <duration> ?reason?\nClears a channel.\nhow can be one of:\nkick - Kicks users.\nkill - Kills users.\ngline - Glines non-authed users (using an appropriate mask).\nglineall - Glines users.\nDuration is only valid when glining users. Reason defaults to \"Clearing channel.\".");
   registercontrolhelpcmd("trustgline", NO_OPER, 4, glines_cmdtrustgline, "Usage: trustgline <#id|name> <user> <duration> <reason>\nSets a gline on the specified username for each host in the specified trust group. The username may contain wildcards.");
   registercontrolhelpcmd("trustungline", NO_OPER, 2, glines_cmdtrustungline, "Usage: trustungline <#id|name> <user>\nRemoves a gline that was previously set with trustgline.");
   registercontrolhelpcmd("glstats", NO_OPER, 0, glines_cmdglstats, "Usage: glstat\nShows statistics about G-Lines.");
   registercontrolhelpcmd("glist", NO_OPER, 2, glines_cmdglist, "Usage: glist [-flags] <mask>\nLists matching G-Lines.\nValid flags are:\n-c: Count G-Lines.\n-f: Find G-Lines active on <mask>.\n-x: Find G-Lines matching <mask> exactly.\n-R: Find G-lines on realnames.\n-o: Search for glines by owner.\n-r: Search for glines by reason.\n-i: Include inactive glines.");
-  registercontrolhelpcmd("cleanupglines", NO_OPER, 0, glines_cmdcleanupglines, "Usage: cleanupglines\nDestroys all deactivated G-Lines.");
-  registercontrolhelpcmd("syncglines", NO_DEVELOPER, 0, glines_cmdsyncglines, "Usage: syncglines\nSends all G-Lines to all other servers.");
-  registercontrolhelpcmd("loadglines", NO_DEVELOPER, 0, glines_cmdloadglines, "Usage: loadglines\nForce load of glines.");
-  registercontrolhelpcmd("saveglines", NO_DEVELOPER, 0, glines_cmdsaveglines, "Usage: saveglines\nForce save of glines.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
@@ -862,15 +804,12 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("glinesimulate", glines_cmdglinesimulate);
   deregistercontrolcmd("smartgline", glines_cmdsmartgline);
   deregistercontrolcmd("ungline", glines_cmdungline);
+  deregistercontrolcmd("destroygline", glines_cmddestroygline);
   deregistercontrolcmd("clearchan", glines_cmdclearchan);
   deregistercontrolcmd("trustgline", glines_cmdtrustgline);
   deregistercontrolcmd("trustungline", glines_cmdtrustungline);
   deregistercontrolcmd("glstats", glines_cmdglstats);
   deregistercontrolcmd("glist", glines_cmdglist);
-  deregistercontrolcmd("cleanupglines", glines_cmdcleanupglines);
-  deregistercontrolcmd("syncglines", glines_cmdsyncglines);
-  deregistercontrolcmd("loadglines", glines_cmdloadglines);
-  deregistercontrolcmd("saveglines", glines_cmdsaveglines);
 }
 
 void _init(void) {

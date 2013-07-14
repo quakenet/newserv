@@ -22,21 +22,11 @@ void _init() {
 
   registerserverhandler("GL", handleglinemsg, 6);
   registerhook(HOOK_CORE_STATSREQUEST, handleglinestats);
-
-  schedulerecurring(time(NULL), 0, GLSTORE_SAVE_INTERVAL, &glines_sched_save, NULL);
-
-  glstore_load();
 }
 
 void _fini() {
   deregisterserverhandler("GL", handleglinemsg);
   deregisterhook(HOOK_CORE_STATSREQUEST, handleglinestats);
-
-  deleteschedule(NULL, glines_sched_save, NULL);
-}
-
-static void glines_sched_save(void *arg) {
-  glstore_save();
 }
 
 int gline_match_nick(gline *gl, nick *np) {
