@@ -9,15 +9,55 @@
 #include "../control/control.h"
 #include "glines.h"
 
+/** Find canonical user and host for a string.
+ * If \a userhost starts with '$', assign \a userhost to *user_p and NULL to *host_p.
+ * Otherwise, if \a userhost contains '@', assign the earlier part of it to *user_p and the rest to *host_p.
+ * Otherwise, assign \a def_user to *user_p and \a userhost to *host_p.
+ *
+ * @param[in] userhost Input string from user.
+ * @param[out] nick_p Gets pointer to nick part of hostmask.
+ * @param[out] user_p Gets pointer to user (or channel/realname) part of hostmask.
+ * @param[out] host_p Gets point to host part of hostmask (may be assigned NULL).
+ * @param[in] def_user Default value for user part.
+ */
+static void
+canon_userhost(char *userhost, char **nick_p, char **user_p, char **host_p, char *def_user) {
+  char *tmp, *s;
+
+  if (*userhost == '$') {
+    *user_p = userhost;
+    *host_p = NULL;
+    *nick_p = NULL;
+    return;
+  }
+
+  if ((tmp = strchr(userhost, '!'))) {
+    *nick_p = userhost;
+    *(tmp++) = '\0';
+  } else {
+    *nick_p = def_user;
+    tmp = userhost;
+  }
+
+  if (!(s = strchr(tmp, '@'))) {
+    *user_p = def_user;
+    *host_p = tmp;
+  } else {
+    *user_p = tmp;
+    *(s++) = '\0';
+    *host_p = s;
+  }
+}
+
 gline *makegline(const char *mask) {
   /* populate gl-> user,host,node,nick and set appropriate flags */
   gline *gl;
-  char nick[512], user[512], host[512];
-  const char *pnick = NULL, *puser = NULL, *phost = NULL;
+  char dupmask[512];
+  char *nick, *user, *host;
   const char *pos;
   int count;
 
-  /* Make sure there are no spaces in the mask, glstore_* depends on this */
+  /* Make sure there are no spaces in the mask */
   if (strchr(mask, ' ') != NULL)
     return NULL;
 
@@ -27,7 +67,7 @@ gline *makegline(const char *mask) {
     Error("gline", ERR_ERROR, "Failed to allocate new gline");
     return NULL;
   }
-
+  
   if (mask[0] == '#' || mask[0] == '&') {
     gl->flags |= GLINE_BADCHAN;
     gl->user = getsstring(mask, CHANNELLEN);
@@ -45,61 +85,35 @@ gline *makegline(const char *mask) {
     return gl;
   }
 
-  if (sscanf(mask, "%[^!]!%[^@]@%s", nick, user, host) == 3) {
-    pnick = nick;
-    puser = user;
-    phost = host;
-  } else if (sscanf(mask, "%[^@]@%s", user, host) == 2) {
-    puser = user;
-    phost = host;
-  } else {
-    phost = mask;
-  }
+  strncpy(dupmask, mask, sizeof(dupmask));
+  canon_userhost(dupmask, &nick, &user, &host, "*");
 
-  /* validate length of the mask components */
-  if ((pnick && (pnick[0] == '\0' || strlen(pnick) > NICKLEN)) ||
-      (puser && (puser[0] == '\0' || strlen(puser) > USERLEN)) ||
-      (phost && (phost[0] == '\0' || strlen(phost) > HOSTLEN))) {
-    freegline(gl);
-    return NULL;
-  }
-
-  /* ! and @ are not allowed in the mask components */
-  if ((pnick && (strchr(pnick, '!') || strchr(pnick, '@'))) ||
-      (puser && (strchr(puser, '!') || strchr(puser, '@'))) ||
-      (phost && (strchr(phost, '!') || strchr(phost, '@')))) {
-    freegline(gl);
-    return NULL;
-  }
-
-  if (phost && ipmask_parse(phost, &gl->ip, &gl->bits))
+  if (ipmask_parse(host, &gl->ip, &gl->bits))
     gl->flags |= GLINE_IPMASK;
   else
     gl->flags |= GLINE_HOSTMASK;
 
-  /* Don't allow invalid IPv6 bans as those match * on snircd 1.3.4 */
-  if (phost) {
-    count = 0;
+  /* Don't allow invalid IPv6 bans as those might match * on snircd 1.3.4 */
+  count = 0;
 
-    for (pos = phost; *pos; pos++)
-      if (*pos == ':')
-        count++;
+  for (pos = host; *pos; pos++)
+    if (*pos == ':')
+      count++;
 
-    if (count >= 8) {
-      controlwall(NO_OPER, NL_GLINES, "Warning: Parsed invalid IPv6 G-Line: %s", mask);
-      freegline(gl);
-      return NULL;
-    }
+  if (count >= 8) {
+    controlwall(NO_OPER, NL_GLINES, "Warning: Parsed invalid IPv6 G-Line: %s", mask);
+    freegline(gl);
+    return NULL;
   }
 
-  if (pnick && strcmp(pnick, "*") != 0)
-    gl->nick = getsstring(pnick, NICKLEN);
+  if (strcmp(nick, "*") != 0)
+    gl->nick = getsstring(nick, 512);
 
-  if (puser && strcmp(puser, "*") != 0)
-    gl->user = getsstring(puser, USERLEN);
+  if (strcmp(user, "*") != 0)
+    gl->user = getsstring(user, 512);
 
-  if (phost && strcmp(phost, "*") != 0)
-    gl->host = getsstring(phost, HOSTLEN);
+  if (strcmp(host, "*") != 0)
+    gl->host = getsstring(host, 512);
 
   return gl;
 }
