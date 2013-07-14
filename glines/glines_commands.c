@@ -755,13 +755,16 @@ static int glines_cmdcleanupglines(void *source, int cargc, char **cargv) {
   nick *sender = source;
   gline **pnext, *gl;
   int count;
+  time_t now;
   
   count = 0;
+  time(&now);
   
   for (pnext = &glinelist; *pnext; pnext = &((*pnext)->next)) {
     gl = *pnext;
     
-    if (!(gl->flags & GLINE_ACTIVE)) {
+    /* Remove inactivate glines that have been last changed more than a week ago */
+    if (!(gl->flags & GLINE_ACTIVE) && gl->lastmod < now - 7 * 24 * 60 * 60) {
       gline_destroy(gl, 0, 1);
       count++;
     }
