@@ -89,7 +89,7 @@ static void rq_cleanup_fasttrack(void *arg) {
       }
     }
 
-    if(ft->refill_time < now) {
+    if(!foundnick && ft->refill_time < now) {
       *pft = ft->next;
       free(ft);
     }
