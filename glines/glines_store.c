@@ -16,7 +16,7 @@ static int glstore_savefile(const char *file) {
   for (gl = glinelist; gl; gl = gl->next) {
     fprintf(fp, "%s %jd,%jd,%jd,%d,%s,%s\n",
       glinetostring(gl), (intmax_t)gl->expire, (intmax_t)gl->lastmod, (intmax_t)gl->lifetime,
-      gl->flags & ~(GLINE_HOSTMASK | GLINE_IPMASK | GLINE_BADCHAN | GLINE_REALNAME),
+      (gl->flags & GLINE_ACTIVE) ? 1 : 0,
       gl->creator->content, gl->reason->content);
     count++;
   }
@@ -30,7 +30,7 @@ static int glstore_loadfile(const char *file) {
   FILE *fp;
   char mask[512], creator[512], reason[512];
   intmax_t expire, lastmod, lifetime;
-  int flags, count;
+  int active, count;
   gline *gl;
 
   fp = fopen(file, "r");
@@ -41,7 +41,7 @@ static int glstore_loadfile(const char *file) {
   count = 0;
 
   while (!feof(fp)) {
-    if (fscanf(fp, "%[^ ]%jd,%jd,%jd,%d,%[^,],%[^\n]\n", mask, &expire, &lastmod, &lifetime, &flags, creator, reason) != 7)
+    if (fscanf(fp, "%[^ ]%jd,%jd,%jd,%d,%[^,],%[^\n]\n", mask, &expire, &lastmod, &lifetime, &active, creator, reason) != 7)
       continue;
 
     count++;
@@ -58,7 +58,7 @@ static int glstore_loadfile(const char *file) {
 
     gl->creator = getsstring(creator, 512);
 
-    gl->flags |= flags;
+    gl->flags = active ? GLINE_ACTIVE : 0;
 
     gl->reason = getsstring(reason, 512);
     gl->expire = expire;
