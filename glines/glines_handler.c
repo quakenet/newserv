@@ -110,8 +110,8 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     switch (cargc) {
       case 4:
         /* asuka U:d, no lastmod */
-        lastmod = getnettime();
-        lifetime = gline_max(lastmod, expire);
+        lastmod = 0;
+        lifetime = expire;
         reason = cargv[3];
         break;
       case 5:

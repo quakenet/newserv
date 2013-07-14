@@ -126,6 +126,11 @@ void gline_activate(gline *agline, time_t lastmod, int propagate) {
 void gline_deactivate(gline *agline, time_t lastmod, int propagate) {
   time_t now = getnettime();
 
+  if (agline->lastmod == 0) {
+    Error("gline", ERR_WARNING, "Tried to deactivate gline with lastmod == 0: %s", glinetostring(agline));
+    return;
+  }
+
   agline->flags &= ~GLINE_ACTIVE;
 
   if (lastmod)
@@ -144,6 +149,11 @@ void gline_destroy(gline *agline, time_t lastmod, int propagate) {
 
   agline->flags &= ~GLINE_ACTIVE;
   agline->flags |= GLINE_DESTROYED;
+
+  if (agline->lastmod == 0) {
+    Error("gline", ERR_WARNING, "Tried to destroy gline with lastmod == 0: %s", glinetostring(agline));
+    return;
+  }
 
   if (lastmod)
     agline->lastmod = lastmod;
