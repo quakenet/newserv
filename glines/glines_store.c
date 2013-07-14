@@ -60,7 +60,7 @@ static int glstore_loadfile(const char *file) {
 
     gl->creator = getsstring(creator, 512);
 
-    gl->flags = active ? GLINE_ACTIVE : 0;
+    gl->flags |= active ? GLINE_ACTIVE : 0;
 
     gl->reason = getsstring(reason, 512);
     gl->expire = expire;
