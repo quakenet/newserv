@@ -230,8 +230,8 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
 
   origmask = cargv[0];
 
-  if (origmask[0] == '#' || origmask[0] == '&') {
-    controlreply(sender, "Please use \"gline\" for badchans and regex glines.");
+  if (origmask[0] == '#' || origmask[0] == '&' || origmask[0] == '$') {
+    controlreply(sender, "Please use \"gline\" for badchan or realname glines.");
     return CMD_ERROR;
   }
 
