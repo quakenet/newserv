@@ -23,7 +23,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   nick *target;
   int hits, duration;
   char *reason;
-  char creator[32];
+  char creator[128];
   glinebuf gbuf;
 
   if (cargc < 3)
@@ -55,7 +55,10 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 1);
   glinebufaddbynick(&gbuf, target, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
@@ -73,7 +76,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   nick *sender = source;
   int duration, users, channels;
   char *mask, *reason, *pos;
-  char creator[32];
+  char creator[128];
   int coff, sanitychecks, operlimit;
   glinebuf gbuf;
 #if SNIRCD_VERSION < 140
@@ -144,7 +147,10 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   }
 #endif
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 1);
 
@@ -188,14 +194,17 @@ static int glines_cmdglinesimulate(void *source, int cargc, char **cargv) {
   char *mask;
   glinebuf gbuf;
   int users, channels;
-  char creator[32];
+  char creator[128];
 
   if (cargc < 1)
     return CMD_USAGE;
 
   mask = cargv[0];
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 0);
 
@@ -222,7 +231,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   unsigned char bits;
   int hits, duration;
   char *reason;
-  char creator[32];
+  char creator[128];
   glinebuf gbuf;
 
   if (cargc < 3)
@@ -282,7 +291,10 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 1);
   glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
@@ -355,7 +367,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   char *reason = "Clearing channel.";
   int mode, duration, i, slot, hits;
   array victims;
-  char creator[32];
+  char creator[128];
   glinebuf gbuf;
 
   if (cargc < 2)
@@ -425,7 +437,10 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
     (((nick **)victims.content)[slot]) = np;
   }
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 1);
 
@@ -475,7 +490,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   int duration, hits;
   char *reason;
   char mask[512];
-  char creator[32];
+  char creator[128];
   glinebuf gbuf;
 
   if (cargc < 4)
@@ -502,7 +517,10 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  if (sender->auth)
+    snprintf(creator, sizeof(creator), "#%s", sender->authname);
+  else
+    strncpy(creator, controlid(sender), sizeof(creator));
 
   glinebufinit(&gbuf, 0);
 
