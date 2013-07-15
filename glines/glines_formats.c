@@ -85,12 +85,6 @@ gline *makegline(const char *mask) {
     return gl;
   }
 
-  /* Make sure it's not too long */
-  if (strlen(mask) > NICKLEN + USERLEN + HOSTLEN + 4) {
-    freegline(gl);
-    return NULL;
-  }
-
   strncpy(dupmask, mask, sizeof(dupmask));
   canon_userhost(dupmask, &nick, &user, &host, "*");
 
