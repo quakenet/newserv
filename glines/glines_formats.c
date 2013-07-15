@@ -61,6 +61,10 @@ gline *makegline(const char *mask) {
   if (strchr(mask, ' ') != NULL)
     return NULL;
 
+  /* Make sure it's not too long */
+  if (strlen(mask) > NICKLEN + USERLEN + HOSTLEN + 2)
+    return NULL;
+
   gl = newgline();
 
   if (!gl) {
