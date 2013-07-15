@@ -174,9 +174,9 @@ void gline_propagate(gline *agline) {
       agline->lastmod, agline->reason->content);
 #endif
   } else if (agline->flags & GLINE_ACTIVE) {
-    controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s with reason '%s', created by: %s",
+    controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
-      agline->reason->content, agline->creator->content);
+      agline->creator->content, agline->reason->content);
 
 #if 1
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
@@ -188,8 +188,9 @@ void gline_propagate(gline *agline) {
       agline->lastmod, agline->reason->content);
 #endif
   } else {
-    controlwall(NO_OPER, NL_GLINES, "Deactivating G-Line on '%s'",
-      glinetostring(agline));
+    controlwall(NO_OPER, NL_GLINES, "Deactivating G-Line on '%s' lasting %s created by %s with reason '%s'",
+      glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
+      agline->creator->content, agline->reason->content);
 
 #if 1
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,

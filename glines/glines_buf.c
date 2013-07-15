@@ -168,7 +168,7 @@ int glinebufsanitize(glinebuf *gbuf) {
     gl = *pnext;
 
     if (!isglinesane(gl, &hint)) {
-      controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s with reason '%s', created by: %s - Skipping: %s",
+      controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s created by %s with reason '%s' - Skipping: %s",
         glinetostring(gl), longtoduration(gl->expire-getnettime(), 0),
         gl->reason->content, gl->creator->content, hint);
 
