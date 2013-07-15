@@ -164,7 +164,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason->content, agline->creator->content);
 
-#if 1
+#if 0
     irc_send("%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
@@ -178,7 +178,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason->content);
 
-#if 1
+#if 0
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
@@ -192,7 +192,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason->content);
 
-#if 1
+#if 0
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
