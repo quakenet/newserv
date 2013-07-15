@@ -88,12 +88,6 @@ gline *makegline(const char *mask) {
   strncpy(dupmask, mask, sizeof(dupmask));
   canon_userhost(dupmask, &nick, &user, &host, "*");
 
-  /* Make sure it's not too long */
-  if (strlen(nick) + strlen(user) + strlen(host) > NICKLEN + USERLEN + HOSTLEN) {
-    freegline(gl);
-    return NULL;
-  }
-
   if (ipmask_parse(host, &gl->ip, &gl->bits))
     gl->flags |= GLINE_IPMASK;
   else

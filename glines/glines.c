@@ -301,6 +301,15 @@ int isglinesane(gline *gl, const char **hint) {
     return 0;
   }
 
+  /* Hostmask is too long. */
+  if (!(gl->flags & (GLINE_BADCHAN | GLINE_REALNAME)) &&
+      ((gl->nick && strlen(gl->nick->content) > NICKLEN) ||
+       (gl->user && strlen(gl->user->content) > USERLEN) ||
+       (gl->host && strlen(gl->host->content) > HOSTLEN))) {
+    *hint = "Hostmask components are too long.";
+    return 0;
+  }
+  
   /* Skip the other checks for nickname glines. */
   if (gl->nick)
     return 1;
