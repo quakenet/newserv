@@ -157,6 +157,12 @@ void gline_destroy(gline *agline, time_t lastmod, int propagate) {
 }
 
 void gline_propagate(gline *agline) {
+  /* Don't propagate Ulined glines. */
+  if (agline->lastmod == 0) {
+    Error("gline", ERR_WARNING, "Tried to propagate gline with lastmod == 0: %s", glinetostring(agline));
+    return;
+  }
+
   if (agline->flags & GLINE_DESTROYED) {
     controlwall(NO_OPER, NL_GLINES, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
