@@ -849,7 +849,7 @@ static int glines_cmdcleanupglines(void *source, int cargc, char **cargv) {
     gl = *pnext;
     
     /* Remove inactivate glines that have been last changed more than a week ago */
-    if (1) { /*!(gl->flags & GLINE_ACTIVE) && gl->lastmod < now - 7 * 24 * 60 * 60) {*/
+    if (!(gl->flags & GLINE_ACTIVE) && gl->lastmod < now - 7 * 24 * 60 * 60) {
       gline_destroy(gl, 0, 1);
       count++;
     } else {
@@ -886,7 +886,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("glstats", NO_OPER, 0, glines_cmdglstats, "Usage: glstat\nShows statistics about G-Lines.");
   registercontrolhelpcmd("glist", NO_OPER, 2, glines_cmdglist, "Usage: glist [-flags] <mask>\nLists matching G-Lines.\nValid flags are:\n-c: Count G-Lines.\n-f: Find G-Lines active on <mask>.\n-x: Find G-Lines matching <mask> exactly.\n-R: Find G-lines on realnames.\n-o: Search for glines by owner.\n-r: Search for glines by reason.\n-i: Include inactive glines.");
   registercontrolhelpcmd("syncglines", NO_DEVELOPER, 0, glines_cmdsyncglines, "Usage: syncglines\nSends all G-Lines to all other servers.");
-  registercontrolhelpcmd("cleanupglines", NO_OPER, 0, glines_cmdcleanupglines, "Usage: cleanupglines\nDestroys all deactivated G-Lines.");
+  registercontrolhelpcmd("cleanupglines", NO_DEVELOPER, 0, glines_cmdcleanupglines, "Usage: cleanupglines\nDestroys all deactivated G-Lines.");
 }
 
 static void deregistercommands(int hooknum, void *arg) {
