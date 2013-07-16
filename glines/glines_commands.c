@@ -173,7 +173,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (sanitychecks && glinebufsanitize(&gbuf) > 0) {
+  if (sanitychecks && glinebufsanitize(&gbuf, sender) > 0) {
     glinebufabandon(&gbuf);
     controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;

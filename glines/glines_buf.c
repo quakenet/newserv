@@ -156,7 +156,7 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
   }
 }
 
-int glinebufsanitize(glinebuf *gbuf) {
+int glinebufsanitize(glinebuf *gbuf, nick *spewto) {
   gline *gl, **pnext;
   int skipped;
   const char *hint;
@@ -168,9 +168,14 @@ int glinebufsanitize(glinebuf *gbuf) {
     gl = *pnext;
 
     if (!isglinesane(gl, &hint)) {
-      controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s created by %s with reason '%s' - Skipping: %s",
-        glinetostring(gl), longtoduration(gl->expire-getnettime(), 0),
-        gl->reason->content, gl->creator->content, hint);
+      if (spewto) {
+        controlreply(spewto, "Sanity check failed for G-Line on '%s' - Skipping: %s",
+          glinetostring(gl), hint);
+      } else {
+        controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s created by %s with reason '%s' - Skipping: %s",
+          glinetostring(gl), longtoduration(gl->expire-getnettime(), 0),
+          gl->reason->content, gl->creator->content, hint);
+      }
 
       *pnext = gl->next;
       freegline(gl);
@@ -185,11 +190,11 @@ int glinebufsanitize(glinebuf *gbuf) {
   return skipped;
 }
 
-void glinebufspew(glinebuf *gbuf, nick *np) {
+void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
 
   for (gl = gbuf->head; gl; gl = gl->next)
-    controlreply(np, "mask: %s", glinetostring(gl));
+    controlreply(spewto, "mask: %s", glinetostring(gl));
 }
 
 void glinebufflush(glinebuf *gbuf, int propagate) {
