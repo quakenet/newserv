@@ -11,8 +11,6 @@
 
 MODULE_VERSION("");
 
-static void glines_sched_save(void *arg);
-
 void _init() {
   /* If we're connected to IRC, force a disconnect. */
   if (connected) {
@@ -164,7 +162,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason->content, agline->creator->content);
 
-#if 0
+#if 1
     irc_send("%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
@@ -178,7 +176,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason->content);
 
-#if 0
+#if 1
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
@@ -192,7 +190,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason->content);
 
-#if 0
+#if 1
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
@@ -288,6 +286,18 @@ int isglinesane(gline *gl, const char **hint) {
   int wildcard, nowildcardcount;
   char *pos;
   trusthost *th;
+
+  /* Reason is too short */
+  if (strlen(gl->reason->content) < MINGLINEREASONLEN) {
+    *hint = "G-Line reason is too short.";
+    return 0;
+  }
+
+  /* Duration is too long */
+  if (gl->expire - getnettime() > MAXGLINEDURATION) {
+    *hint = "G-Line duration is too long.";
+    return 0;
+  }
 
   /* Hits all realnames. */
   if ((gl->flags & GLINE_REALNAME) && !gl->user) {

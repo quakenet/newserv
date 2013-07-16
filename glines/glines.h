@@ -9,8 +9,9 @@
 
 #define MAXUSERGLINEUSERHITS        100
 #define MAXUSERGLINECHANNELHITS     10
-#define MAXUSERGLINEDURATION        90 * 86400
-#define MINUSERGLINEREASON          10
+
+#define MAXGLINEDURATION            90 * 86400
+#define MINGLINEREASONLEN           10
 
 #define MAXGLINEUSERHITS     500
 #define MAXGLINECHANNELHITS  50
@@ -18,8 +19,7 @@
 #define GLINE_IGNORE_TRUST   1
 #define GLINE_ALWAYS_NICK    2
 #define GLINE_ALWAYS_USER    4
-#define GLINE_NO_LIMIT       8
-#define GLINE_SIMULATE       16
+#define GLINE_SIMULATE       8
 
 #define GLINE_HOSTMASK    1   /* Gline includes a host mask */
 #define GLINE_IPMASK      2   /* Gline includes an CIDR mask */
@@ -102,14 +102,15 @@ char *glinetostring(gline *g);
 /* glines_util.c */
 int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator);
 int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator);
+void glineunsetmask(const char *mask);
 
 /* glines_buf.c */
 void glinebufinit(glinebuf *gbuf, int merge);
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
-void glinebufcounthits(glinebuf *gbuf, int *users, int *channels);
-int glinebufsanitize(glinebuf *gbuf, nick *spewto);
+void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto);
+int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits);
 void glinebufspew(glinebuf *gbuf, nick *spewto);
 void glinebufflush(glinebuf *gbuf, int propagate);
 void glinebufabandon(glinebuf *gbuf);

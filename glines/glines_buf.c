@@ -101,7 +101,7 @@ void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator,
   }
 }
 
-void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
+void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) {
   gline *gl;
   int i, hit;
   chanindex *cip;
@@ -131,8 +131,12 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
           }
         }
 
-        if (hit)
+        if (hit) {
+          if (spewto)
+            controlreply(spewto, "channel: %s", cip->name->content);
+
           (*channels)++;
+        }
       }
     }
   }
@@ -149,45 +153,48 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
           }
         }
 
-        if (hit)
+        if (hit) {
+          if (spewto)
+            controlreply(spewto, "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+
           (*users)++;
+        }
       }
     }
   }
 }
 
-int glinebufsanitize(glinebuf *gbuf, nick *spewto) {
-  gline *gl, **pnext;
-  int skipped;
+int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits) {
+  gline *gl;
+  int users, channels, good;
   const char *hint;
 
-  skipped = 0;
+  glinebufcounthits(gbuf, &users, &channels, spewhits ? spewto : NULL);
 
-  /* Remove glines that fail the sanity check */
-  for (pnext = &gbuf->head; *pnext; pnext = &((*pnext)->next)) {
-    gl = *pnext;
-
-    if (!isglinesane(gl, &hint)) {
-      if (spewto) {
-        controlreply(spewto, "Sanity check failed for G-Line on '%s' - Skipping: %s",
-          glinetostring(gl), hint);
-      } else {
-        controlwall(NO_OPER, NL_GLINES, "Sanity check failed for G-Line on '%s' lasting %s created by %s with reason '%s' - Skipping: %s",
-          glinetostring(gl), longtoduration(gl->expire-getnettime(), 0),
-          gl->reason->content, gl->creator->content, hint);
-      }
-
-      *pnext = gl->next;
-      freegline(gl);
-
-      skipped++;
-      
-      if (!*pnext)
-        break;
+  if (!overridelimit) {
+    if (channels > MAXUSERGLINECHANNELHITS) {
+      controlreply(spewto, "G-Lines would hit %d channels. Limit is %d. Not setting G-Lines.", channels, MAXUSERGLINECHANNELHITS);
+      return 0;
+    } else if (users > MAXUSERGLINEUSERHITS) {
+      controlreply(spewto, "G-Lines would hit %d users. Limit is %d. Not setting G-Lines.", users, MAXUSERGLINEUSERHITS);
+      return 0;
     }
   }
 
-  return skipped;
+  good = 1;
+
+  if (!overridesanity) {
+    /* Remove glines that fail the sanity check */
+    for (gl = gbuf->head; gl; gl = gl->next) {
+      if (!isglinesane(gl, &hint)) {
+        controlreply(spewto, "Sanity check failed for G-Line on '%s' - Skipping: %s",
+          glinetostring(gl), hint);
+        good = 0;
+      }
+    }
+  }
+
+  return good;
 }
 
 void glinebufspew(glinebuf *gbuf, nick *spewto) {
@@ -202,7 +209,7 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
   int users, channels;
 
   /* Sanity check */
-  glinebufcounthits(gbuf, &users, &channels);
+  glinebufcounthits(gbuf, &users, &channels, NULL);
 
   if (propagate && (users > MAXGLINEUSERHITS || channels > MAXGLINECHANNELHITS)) {
     controlwall(NO_OPER, NL_GLINES, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.");
