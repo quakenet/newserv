@@ -232,6 +232,16 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
       else if (!(gl->flags & GLINE_ACTIVE) && sgl->flags & GLINE_ACTIVE)
         gline_deactivate(sgl, 0, 0);
 
+#if SNIRCD_VERSION >= 140
+      sgl->expire = gl->expire;
+
+      if (gl->lifetime > sgl->lifetime) 
+        sgl->lifetime = gl->lifetime;
+
+      freesstring(sgl->reason);
+      sgl->reason = getsstring(gl->reason, 512);
+#endif
+
       freegline(gl);
       gl = sgl;
     } else {

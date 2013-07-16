@@ -124,7 +124,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   glinebuf gbuf;
 #if SNIRCD_VERSION < 140
   gline *gl;
-#endif
+#endif /* SNIRCD_VERSION */
 
   if (cargc < 1)
     return CMD_USAGE;
@@ -159,7 +159,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
 
     controlreply(sender, "Reactivating existing gline on %s", mask);
   }
-#endif
+#endif /* SNIRCD_VERSION */
 
   if (sender->auth)
     snprintf(creator, sizeof(creator), "#%s", sender->authname);

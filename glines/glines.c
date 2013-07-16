@@ -163,7 +163,14 @@ void gline_propagate(gline *agline) {
     return;
   }
 
+#if SNIRCD_VERSION >= 140
+#error TODO: implement 6 parameter glines for snircd >=1.4.0
+#endif /* SNIRCD_VERSION */
+
   if (agline->flags & GLINE_DESTROYED) {
+#if SNIRCD_VERSION < 135
+    controlwall(NO_OPER, NL_GLINES, "Tried to destroy G-Line on '%s' however SNIRCD_VERSION is too old.", glinetostring(agline));
+#else
     controlwall(NO_OPER, NL_GLINES, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason->content, agline->creator->content);
@@ -177,6 +184,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason->content);
 #endif
+#endif /* SNIRCD_VERSION */
   } else if (agline->flags & GLINE_ACTIVE) {
     controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),

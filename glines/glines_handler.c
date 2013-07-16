@@ -80,7 +80,6 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
   /* 2nd param is mask */
   mask = cargv[1];
 
-  /* snircd 1.3.5 can destroy glines, no #if here */
   if (*mask == '%') {
     flags |= GLINE_DESTROY;
     mask++;
