@@ -157,7 +157,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     } else {
       glinebufinit(&gbuf, 0);
       glinebufadd(&gbuf, mask, creator, reason, expire, lastmod, lifetime);
-      glinebufflush(&gbuf, 0);
+      glinebufcommit(&gbuf, 0);
     } 
   } else if (flags & GLINE_DEACTIVATE) {
     /* deactivate gline */
@@ -224,13 +224,13 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
       agline = glinebufadd(&gbuf, mask, creator, reason, expire, lastmod, lifetime);
 
       if (!agline) {
-        glinebufabandon(&gbuf);
+        glinebufabort(&gbuf);
         Error("gline", ERR_WARNING, "gline_add failed");
         return CMD_ERROR;
       }
 
       gline_deactivate(agline, lastmod, 0);
-      glinebufflush(&gbuf, 0);
+      glinebufcommit(&gbuf, 0);
 
       return CMD_OK;
     }

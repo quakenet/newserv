@@ -95,19 +95,19 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufaddbynick(&gbuf, target, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   if (simulate) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "Simulation complete. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufflush(&gbuf, 1);
+  glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), target->nick, target->ident, target->host->name->content, longtoduration(duration, 0), reason, hits);
 
@@ -176,19 +176,19 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   }
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   if (simulate) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "Simulation complete. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   glinebufcounthits(&gbuf, &users, &channels, NULL);
-  glinebufflush(&gbuf, 1);
+  glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s GLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)",
     controlid(sender), mask, longtoduration(duration, 0), reason, users, channels);
@@ -275,19 +275,19 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   if (simulate) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "Simulation complete. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufflush(&gbuf, 1);
+  glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s SMARTGLINE'd mask '%s' for %s with reason '%s' (%d hits)",
     controlid(sender), cargv[0], longtoduration(duration, 0), reason, hits);
@@ -468,19 +468,19 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   }
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;
   }
 
   if (simulate) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "Simulation complete. Not clearing channel.");
     return CMD_ERROR;
   }
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufflush(&gbuf, 1);
+  glinebufcommit(&gbuf, 1);
 
   array_free(&victims);
 
@@ -547,19 +547,19 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   }
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;
   }
 
   if (simulate) {
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
     controlreply(sender, "Simulation complete. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufflush(&gbuf, 1);
+  glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s TRUSTGLINE'd user '%s' on trust group '%s' for %s with reason '%s' (%d hits)",
     controlid(sender), cargv[1], tg->name->content, longtoduration(duration, 0), reason, hits);
@@ -871,6 +871,25 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int glines_cmdglineundo(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  int id;
+  
+  if (cargc < 1)
+    return CMD_USAGE;
+
+  id = atoi(cargv[0]);
+  
+  if (id == 0 || !glinebufundo(id)) {
+    controlreply(sender, "Invalid log ID.");
+    return CMD_ERROR;
+  }
+
+  controlreply(sender, "Done.");  
+  
+  return CMD_OK;
+}
+
 static int glines_cmdsyncglines(void *source, int cargc, char **cargv) {
   nick *sender = source;
   gline *gl;
@@ -941,6 +960,7 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("glstats", NO_OPER, 0, glines_cmdglstats, "Usage: glstat\nShows statistics about G-Lines.");
   registercontrolhelpcmd("glist", NO_OPER, 2, glines_cmdglist, "Usage: glist [-flags] <mask>\nLists matching G-Lines.\nValid flags are:\n-c: Count G-Lines.\n-f: Find G-Lines active on <mask>.\n-x: Find G-Lines matching <mask> exactly.\n-R: Find G-lines on realnames.\n-o: Search for glines by owner.\n-r: Search for glines by reason.\n-i: Include inactive glines.");
   registercontrolhelpcmd("glinelog", NO_OPER, 1, glines_cmdglinelog, "Usage: glinelog ?id?\nShows information about previous gline transactions.");
+  registercontrolhelpcmd("glineundo", NO_OPER, 1, glines_cmdglineundo, "Usage: glineundo ?id?\nUndoes a gline transaction.");
   registercontrolhelpcmd("syncglines", NO_DEVELOPER, 0, glines_cmdsyncglines, "Usage: syncglines\nSends all G-Lines to all other servers.");
   registercontrolhelpcmd("cleanupglines", NO_DEVELOPER, 0, glines_cmdcleanupglines, "Usage: cleanupglines\nDestroys all deactivated G-Lines.");
 }
@@ -961,6 +981,7 @@ static void deregistercommands(int hooknum, void *arg) {
   deregistercontrolcmd("glstats", glines_cmdglstats);
   deregistercontrolcmd("glist", glines_cmdglist);
   deregistercontrolcmd("glinelog", glines_cmdglinelog);
+  deregistercontrolcmd("glineundo", glines_cmdglineundo);
   deregistercontrolcmd("syncglines", glines_cmdsyncglines);
   deregistercontrolcmd("cleanupglines", glines_cmdcleanupglines);
 }

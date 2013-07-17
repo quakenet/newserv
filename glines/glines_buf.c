@@ -216,7 +216,7 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
     controlreply(spewto, "%-40s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - ref, 0), gl->creator->content, gl->reason->content);
 }
 
-void glinebufflush(glinebuf *gbuf, int propagate) {
+void glinebufcommit(glinebuf *gbuf, int propagate) {
   gline *gl, *next, *sgl;
   glinebuf *gbl;
   int users, channels;
@@ -226,7 +226,7 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
 
   if (propagate && (users > MAXGLINEUSERHITS || channels > MAXGLINECHANNELHITS)) {
     controlwall(NO_OPER, NL_GLINES, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.");
-    glinebufabandon(gbuf);
+    glinebufabort(gbuf);
     return;
   }
 
@@ -290,13 +290,15 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
       glinebuflogoffset = 0;
 
     if (glinebuflog[glinebuflogoffset])
-      glinebufabandon(glinebuflog[glinebuflogoffset]);
+      glinebufabort(glinebuflog[glinebuflogoffset]);
 
     glinebuflog[glinebuflogoffset]= gbl;
   }
+  
+  glinebufabort(gbuf);
 }
 
-void glinebufabandon(glinebuf *gbuf) {
+void glinebufabort(glinebuf *gbuf) {
   gline *gl, *next;
 
   for (gl = gbuf->glines; gl; gl = next) {
@@ -304,6 +306,37 @@ void glinebufabandon(glinebuf *gbuf) {
 
     freegline(gl);
   }
+  
+  freesstring(gbuf->comment);
+}
+
+int glinebufundo(int id) {
+  glinebuf *gbl;
+  gline *gl, *sgl;
+  int i;
+
+  for (i = 0; i < MAXGLINELOG; i++) {
+    gbl = glinebuflog[i];
+    
+    if (!gbl || gbl->id != id)
+      continue;
+
+    for (gl = gbl->glines; gl; gl = gl->next) {
+      sgl = findgline(glinetostring(gl));
+      
+      if (!sgl)
+        continue;
+      
+      gline_deactivate(sgl, 0, 1);
+    }
+    
+    glinebufabort(gbl);
+    glinebuflog[i] = NULL;
+
+    return 1;
+  }
+  
+  return 0;
 }
 
 void glinebufcommentf(glinebuf *gbuf, const char *format, ...) {

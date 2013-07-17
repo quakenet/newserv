@@ -11,9 +11,9 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
 
   if (flags & GLINE_SIMULATE)
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
   else
-    glinebufflush(&gbuf, 1);
+    glinebufcommit(&gbuf, 1);
 
   return hits;
 }
@@ -28,9 +28,9 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
 
   if (flags & GLINE_SIMULATE)
-    glinebufabandon(&gbuf);
+    glinebufabort(&gbuf);
   else
-    glinebufflush(&gbuf, 1);
+    glinebufcommit(&gbuf, 1);
 
   return hits;
 }
