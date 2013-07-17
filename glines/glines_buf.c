@@ -283,6 +283,9 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
     }
   }
 
+  /* We've moved all glines to the gline list. Clear glines link in the glinebuf. */  
+  gbuf->glines = NULL;
+
   if (propagate && gbl->glines) {
     glinebuflogoffset++;
 
