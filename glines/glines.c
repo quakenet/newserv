@@ -396,3 +396,35 @@ int isglinesane(gline *gl, const char **hint) {
 
   return 1;
 }
+
+gline *glinedup(gline *gl) {
+  gline *sgl;
+
+  sgl = newgline();
+
+  if (!sgl)
+    return NULL;
+
+  if (gl->nick)
+    sgl->nick = getsstring(gl->nick->content, 512);
+
+  if (gl->user)
+    sgl->user = getsstring(gl->user->content, 512);
+
+  if (gl->host)
+    sgl->host = getsstring(gl->host->content, 512);
+
+  sgl->reason = getsstring(gl->reason->content, 512);
+  sgl->creator = getsstring(gl->creator->content, 512);
+
+  memcpy(&sgl->ip, &gl->ip, sizeof(gl->ip));
+  sgl->bits = gl->bits;
+
+  sgl->expire = gl->expire;
+  sgl->lastmod = gl->lastmod;
+  sgl->lifetime = gl->lifetime;
+
+  sgl->flags = gl->flags;
+
+  return sgl;
+}

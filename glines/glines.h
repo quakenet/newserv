@@ -16,6 +16,8 @@
 #define MAXGLINEUSERHITS     500
 #define MAXGLINECHANNELHITS  50
 
+#define MAXGLINELOG          500
+
 #define GLINE_IGNORE_TRUST   1
 #define GLINE_ALWAYS_NICK    2
 #define GLINE_ALWAYS_USER    4
@@ -77,11 +79,17 @@ typedef struct gline {
 } gline;
 
 typedef struct glinebuf {
-  gline *head;
+  int id;
+  sstring *comment;
+  time_t flush;
+
+  gline *glines;
   int merge;
 } glinebuf;
 
 extern gline *glinelist;
+extern glinebuf *glinebuflog[MAXGLINELOG];
+extern int glinebuflogoffset;
 
 /* glines.c */
 gline *findgline(const char *);
@@ -94,6 +102,7 @@ int gline_match_mask(gline *gla, gline *glb);
 int gline_match_nick(gline *gl, nick *np);
 int gline_match_channel(gline *gl, channel *cp);
 int isglinesane(gline *gl, const char **hint);
+gline *glinedup(gline *gl);
 
 /* glines_formats.c */
 gline *makegline(const char *);
@@ -114,6 +123,8 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 void glinebufspew(glinebuf *gbuf, nick *spewto);
 void glinebufflush(glinebuf *gbuf, int propagate);
 void glinebufabandon(glinebuf *gbuf);
+void glinebufcommentf(glinebuf *gbuf, const char *format, ...);
+void glinebufcommentv(glinebuf *gbuf, const char *prefix, int cargc, char **cargv);
 
 /* glines_alloc.c */
 void freegline(gline *);

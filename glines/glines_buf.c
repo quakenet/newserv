@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "../lib/irc_string.h"
@@ -6,8 +7,14 @@
 #include "../trusts/trusts.h"
 #include "glines.h"
 
+static int nextglinebufid = 1;
+glinebuf *glinebuflog[MAXGLINELOG] = {};
+int glinebuflogoffset = 0;
+
 void glinebufinit(glinebuf *gbuf, int merge) {
-  gbuf->head = NULL;
+  gbuf->id = 0;
+  gbuf->comment = NULL;
+  gbuf->glines = NULL;
   gbuf->merge = merge;
 }
 
@@ -24,7 +31,7 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
 
   if (gbuf->merge) {
     /* Check if an existing gline supercedes this mask */
-    for (sgl = gbuf->head; sgl; sgl = sgl->next) {
+    for (sgl = gbuf->glines; sgl; sgl = sgl->next) {
       if (gline_match_mask(sgl, gl)) {
         freegline(gl);
         return sgl;
@@ -32,7 +39,7 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
     }
 
     /* Remove older glines this gline matches */
-    for (pnext = &gbuf->head; *pnext; pnext = &((*pnext)->next)) {
+    for (pnext = &gbuf->glines; *pnext; pnext = &((*pnext)->next)) {
       sgl = *pnext;
 
       if (gline_match_mask(gl, sgl)) {
@@ -55,8 +62,8 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
   gl->lastmod = lastmod;
   gl->lifetime = lifetime;
 
-  gl->next = gbuf->head;
-  gbuf->head = gl;
+  gl->next = gbuf->glines;
+  gbuf->glines = gl;
 
   return gl;
 }
@@ -124,7 +131,7 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
 
         hit = 0;
 
-        for (gl = gbuf->head; gl; gl = gl->next) {
+        for (gl = gbuf->glines; gl; gl = gl->next) {
           if (gline_match_channel(gl, cp)) {
             hit = 1;
             break;
@@ -146,7 +153,7 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       for (np = nicktable[i]; np; np = np->next) {
         hit = 0;
 
-        for (gl = gbuf->head; gl; gl = gl->next) {
+        for (gl = gbuf->glines; gl; gl = gl->next) {
           if (gline_match_nick(gl, np)) {
             hit = 1;
             break;
@@ -185,7 +192,7 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 
   if (!overridesanity) {
     /* Remove glines that fail the sanity check */
-    for (gl = gbuf->head; gl; gl = gl->next) {
+    for (gl = gbuf->glines; gl; gl = gl->next) {
       if (!isglinesane(gl, &hint)) {
         controlreply(spewto, "Sanity check failed for G-Line on '%s' - Skipping: %s",
           glinetostring(gl), hint);
@@ -199,13 +206,19 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 
 void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
+  time_t ref;
+  
+  ref = (gbuf->flush) ? gbuf->flush : getnettime();
 
-  for (gl = gbuf->head; gl; gl = gl->next)
-    controlreply(spewto, "mask: %s", glinetostring(gl));
+  controlreply(spewto, "Mask                                     Duration             Creator              Reason");
+  
+  for (gl = gbuf->glines; gl; gl = gl->next)
+    controlreply(spewto, "%-40s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - ref, 0), gl->creator->content, gl->reason->content);
 }
 
 void glinebufflush(glinebuf *gbuf, int propagate) {
   gline *gl, *next, *sgl;
+  glinebuf *gbl;
   int users, channels;
 
   /* Sanity check */
@@ -217,7 +230,19 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
     return;
   }
 
-  for (gl = gbuf->head; gl; gl = next) {
+  time(&gbuf->flush);
+
+  if (propagate) {
+    /* Make a copy of the glinebuf for the log */
+    gbl = malloc(sizeof(glinebuf));
+    gbl->id = nextglinebufid++;
+    gbl->comment = (gbuf->comment) ? getsstring(gbuf->comment->content, 512) : NULL;
+    gbl->flush = gbuf->flush;
+    gbl->glines = NULL; /* going to set this later */
+    gbl->merge = gbuf->merge;
+  }
+
+  for (gl = gbuf->glines; gl; gl = next) {
     next = gl->next;
 
     sgl = findgline(glinetostring(gl));
@@ -249,17 +274,67 @@ void glinebufflush(glinebuf *gbuf, int propagate) {
       glinelist = gl;
     }
 
-    if (propagate)
+    if (propagate) {
       gline_propagate(gl);
+
+      sgl = glinedup(gl);
+      sgl->next = gbl->glines;
+      gbl->glines = sgl;
+    }
+  }
+
+  if (propagate && gbl->glines) {
+    glinebuflogoffset++;
+
+    if (glinebuflogoffset >= MAXGLINELOG)
+      glinebuflogoffset = 0;
+
+    if (glinebuflog[glinebuflogoffset])
+      glinebufabandon(glinebuflog[glinebuflogoffset]);
+
+    glinebuflog[glinebuflogoffset]= gbl;
   }
 }
 
 void glinebufabandon(glinebuf *gbuf) {
   gline *gl, *next;
 
-  for (gl = gbuf->head; gl; gl = next) {
+  for (gl = gbuf->glines; gl; gl = next) {
     next = gl->next;
 
     freegline(gl);
   }
+}
+
+void glinebufcommentf(glinebuf *gbuf, const char *format, ...) {
+  char comment[512];
+  va_list va;
+
+  va_start(va, format);
+  vsnprintf(comment, 511, format, va);
+  comment[511] = '\0';
+  va_end(va);
+  
+  gbuf->comment = getsstring(comment, 512);
+}
+
+void glinebufcommentv(glinebuf *gbuf, const char *prefix, int cargc, char **cargv) {
+  char comment[512];
+  int i;
+
+  if (prefix)
+    strncpy(comment, prefix, sizeof(comment));
+  else
+    comment[0] = '\0';
+  
+  for (i = 0; i < cargc; i++) {
+    if (comment[0])
+      strncat(comment, " ", sizeof(comment));
+
+    strncat(comment, cargv[i], sizeof(comment));
+  }
+  
+  comment[511] = '\0';
+  
+  gbuf->comment = getsstring(comment, 512);
 }
