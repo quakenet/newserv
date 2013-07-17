@@ -1,4 +1,5 @@
 #include "../irc/irc.h"
+#include "../trusts/trusts.h"
 #include "glines.h"
 
 int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator) {
@@ -6,6 +7,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   int hits;
 
   glinebufinit(&gbuf, 1);
+  glinebufcommentf(&gbuf, "on IP mask %s@%s, set by %s", user, trusts_cidr2str(ip, bits), creator);
   glinebufaddbyip(&gbuf, user, ip, bits, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
@@ -23,6 +25,7 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   int hits;
 
   glinebufinit(&gbuf, 1);
+  glinebufcommentf(&gbuf, "on nick %s!%s@%s, set by %s", np->nick, np->ident, np->host->name->content, creator);
   glinebufaddbynick(&gbuf, np, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   glinebufcounthits(&gbuf, &hits, NULL, NULL);

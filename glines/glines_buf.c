@@ -297,7 +297,7 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
 
     glinebuflog[glinebuflogoffset]= gbl;
   }
-  
+
   glinebufabort(gbuf);
 }
 
