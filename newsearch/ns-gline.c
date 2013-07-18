@@ -134,7 +134,8 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   if (ctx->searchcmd == reg_chansearch) {
     cip = (chanindex *)theinput;
     cip->marker = localdata->marker;
-    localdata->count += cip->channel->users->totalusers;
+    if (cip->channel != NULL)
+      localdata->count += cip->channel->users->totalusers;
   }
   else {
     np = (nick *)theinput;
