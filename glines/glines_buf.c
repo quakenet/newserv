@@ -247,10 +247,13 @@ void glinebufmerge(glinebuf *gbuf) {
 */
 }
 
-void glinebufcommit(glinebuf *gbuf, int propagate) {
+int glinebufcommit(glinebuf *gbuf, int propagate) {
   gline *gl, *next, *sgl;
   glinebuf *gbl;
-  int users, channels, i, slot;
+  int users, channels, i, slot, id;
+
+  if (!gbuf->glines)
+    return 0; /* Don't waste log IDs on empty gline buffers */
 
   /* Sanity check */
   glinebufcounthits(gbuf, &users, &channels, NULL);
@@ -258,10 +261,12 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
   if (propagate && (users > MAXGLINEUSERHITS || channels > MAXGLINECHANNELHITS)) {
     controlwall(NO_OPER, NL_GLINES, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.");
     glinebufabort(gbuf);
-    return;
+    return 0;
   }
 
   time(&gbuf->commit);
+
+  id = 0;
 
   if (propagate) {
     gbl = NULL;
@@ -305,8 +310,11 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
       slot = array_getfreeslot(&gbl->hits);
       ((sstring **)gbl->hits.content)[slot] = getsstring(((sstring **)gbuf->hits.content)[i]->content, 512);
     }
+
+    id = gbl->id;
   }
 
+  /* Move glines to the global gline list */
   for (gl = gbuf->glines; gl; gl = next) {
     next = gl->next;
 
@@ -364,6 +372,8 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
   }
 
   glinebufabort(gbuf);
+
+  return id;
 }
 
 void glinebufabort(glinebuf *gbuf) {

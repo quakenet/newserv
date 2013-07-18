@@ -127,7 +127,7 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto);
 int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits);
 void glinebufspew(glinebuf *gbuf, nick *spewto);
 void glinebufmerge(glinebuf *gbuf);
-void glinebufcommit(glinebuf *gbuf, int propagate);
+int glinebufcommit(glinebuf *gbuf, int propagate);
 void glinebufabort(glinebuf *gbuf);
 int glinebufundo(int id);
 void glinebufcommentf(glinebuf *gbuf, const char *format, ...);
