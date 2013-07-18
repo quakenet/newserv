@@ -208,7 +208,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
     }
   }
 
-  glinebufcounthits(&gbuf, &hits, NULL, NULL);
+  glinebufcounthits(&gbuf, &hits, NULL);
   glinebufcommit(&gbuf, 1);
 
   if (safe)

@@ -15,7 +15,10 @@ int glinebuflogoffset = 0;
 void glinebufinit(glinebuf *gbuf, int id) {
   gbuf->id = id;
   gbuf->comment = NULL;
+  gbuf->commit = 0;
+  gbuf->ammend = 0;
   gbuf->glines = NULL;
+  gbuf->hitsvalid = 0;
   gbuf->userhits = 0;
   gbuf->channelhits = 0;
   array_init(&gbuf->hits, sizeof(sstring *));
@@ -44,6 +47,8 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
 
   gl->next = gbuf->glines;
   gbuf->glines = gl;
+
+  gbuf->hitsvalid = 0;
 
   return gl;
 }
@@ -88,13 +93,18 @@ void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator,
   }
 }
 
-void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) {
+void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
   gline *gl;
   int i, hit, slot;
   chanindex *cip;
   channel *cp;
   nick *np;
   char uhmask[512];
+
+#if 0 /* Let's just do a new hit check anyway. */
+  if (gbuf->hitsvalid)
+    return;
+#endif
 
   gbuf->userhits = 0;
   gbuf->channelhits = 0;
@@ -124,9 +134,6 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       if (hit) {
         snprintf(uhmask, sizeof(uhmask), "channel: %s", cip->name->content);
 
-        if (spewto)
-          controlreply(spewto, "%s", uhmask);
-
         gbuf->channelhits++;
 
         slot = array_getfreeslot(&gbuf->hits);
@@ -147,10 +154,8 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       }
 
       if (hit) {
-        snprintf(uhmask, sizeof(uhmask), "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
-
-        if (spewto)
-          controlreply(spewto, "%s", uhmask);
+        snprintf(uhmask, sizeof(uhmask), "user: %s!%s@%s%s%s r(%s)", np->nick, np->ident, np->host->name->content,
+          (np->auth) ? "/" : "", (np->auth) ? np->authname : "", np->realname->name->content);
 
         gbuf->userhits++;
 
@@ -159,7 +164,9 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       }
     }
   }
-  
+
+  gbuf->hitsvalid = 1;  
+
   if (users)
     *users = gbuf->userhits;
   
@@ -167,12 +174,12 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
     *channels = gbuf->channelhits;
 }
 
-int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits) {
+int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit) {
   gline *gl;
   int users, channels, good;
   const char *hint;
 
-  glinebufcounthits(gbuf, &users, &channels, spewhits ? spewto : NULL);
+  glinebufcounthits(gbuf, &users, &channels);
 
   if (!overridelimit) {
     if (channels > MAXUSERGLINECHANNELHITS) {
@@ -204,7 +211,27 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
   int i;
   char timebuf[30];
-  
+
+  if (!gbuf->hitsvalid)
+    glinebufcounthits(gbuf, NULL, NULL);
+
+  if (gbuf->id == 0)
+    controlreply(spewto, "Uncommitted G-Line transaction.");
+  else
+    controlreply(spewto, "G-Line transaction ID %d", gbuf->id);
+
+  controlreply(spewto, "Comment: %s", (gbuf->comment) ? gbuf->comment->content : "(no comment)");
+
+  if (gbuf->commit) {
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbuf->commit));
+    controlreply(spewto, "Committed at: %s", timebuf);
+  }
+
+  if (gbuf->ammend) {
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbuf->ammend));
+    controlreply(spewto, "Ammended at: %s", timebuf);
+  }
+
   controlreply(spewto, "Mask                                     Duration             Last modified        Creator              Reason");
   
   for (gl = gbuf->glines; gl; gl = gl->next) {
@@ -212,10 +239,16 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
     controlreply(spewto, "%-40s %-20s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - gl->lastmod, 0), timebuf, gl->creator->content, gl->reason->content);
   }
 
-  controlreply(spewto, "Hit");
+  controlreply(spewto, "Hits");
 
-  for (i = 0; i < gbuf->hits.cursi; i++)
+  for (i = 0; i < gbuf->hits.cursi; i++) {
     controlreply(spewto, "%s", ((sstring **)gbuf->hits.content)[i]->content);
+
+    if (i >= 500) {
+      controlreply(spewto, "More than 500 hits, list truncated.");
+      break;
+    }
+  }
 }
 
 void glinebufmerge(glinebuf *gbuf) {
@@ -256,7 +289,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
     return 0; /* Don't waste log IDs on empty gline buffers */
 
   /* Sanity check */
-  glinebufcounthits(gbuf, &users, &channels, NULL);
+  glinebufcounthits(gbuf, &users, &channels);
 
   if (propagate && (users > MAXGLINEUSERHITS || channels > MAXGLINECHANNELHITS)) {
     controlwall(NO_OPER, NL_GLINES, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.");

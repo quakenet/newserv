@@ -86,6 +86,7 @@ typedef struct glinebuf {
 
   gline *glines;
 
+  int hitsvalid;
   int userhits;
   int channelhits;
 
@@ -123,8 +124,8 @@ void glinebufinit(glinebuf *gbuf, int id);
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
-void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto);
-int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits);
+void glinebufcounthits(glinebuf *gbuf, int *users, int *channels);
+int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit);
 void glinebufspew(glinebuf *gbuf, nick *spewto);
 void glinebufmerge(glinebuf *gbuf);
 int glinebufcommit(glinebuf *gbuf, int propagate);

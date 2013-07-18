@@ -53,7 +53,7 @@ static int parse_gline_flags(nick *sender, const char *flagparam, int *overrides
 static int glines_cmdblock(void *source, int cargc, char **cargv) {
   nick *sender = source;
   nick *target;
-  int hits, duration;
+  int hits, duration, id;
   int coff, overridesanity, overridelimit, simulate;
   char *reason;
   char creator[128];
@@ -94,7 +94,9 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufcommentv(&gbuf, "BLOCK", cargc + coff - 1, cargv);
   glinebufaddbynick(&gbuf, target, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
-  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
+  glinebufspew(&gbuf, sender);
+
+  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
     glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
@@ -106,19 +108,19 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(&gbuf, &hits, NULL);
+  id = glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), target->nick, target->ident, target->host->name->content, longtoduration(duration, 0), reason, hits);
 
-  controlreply(sender, "Done.");
+  controlreply(sender, "Done. G-Line transaction ID: %d", id);
 
   return CMD_OK;
 }
 
 static int glines_cmdgline(void *source, int cargc, char **cargv) {
   nick *sender = source;
-  int duration, users, channels;
+  int duration, users, channels, id;
   char *mask, *reason;
   char creator[128];
   int coff, overridesanity, overridelimit, simulate;
@@ -175,7 +177,9 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
+  glinebufspew(&gbuf, sender);
+
+  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
     glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
@@ -187,13 +191,13 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  glinebufcounthits(&gbuf, &users, &channels, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(&gbuf, &users, &channels);
+  id = glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s GLINE'd mask '%s' for %s with reason '%s' (hits %d users/%d channels)",
     controlid(sender), mask, longtoduration(duration, 0), reason, users, channels);
 
-  controlreply(sender, "Done.");
+  controlreply(sender, "Done. G-Line transaction ID: %d", id);
 
   return CMD_OK;
 }
@@ -206,7 +210,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   struct irc_in_addr ip;
   unsigned char bits;
   int hits, duration;
-  int coff, overridesanity, overridelimit, simulate;
+  int coff, overridesanity, overridelimit, simulate, id;
   char *reason;
   char creator[128];
   glinebuf gbuf;
@@ -274,7 +278,9 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   glinebufcommentv(&gbuf, "SMARTGLINE", cargc + coff - 1, cargv);
   glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
-  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
+  glinebufspew(&gbuf, sender);
+
+  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
     glinebufabort(&gbuf);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
@@ -286,13 +292,13 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(&gbuf, &hits, NULL);
+  id = glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s SMARTGLINE'd mask '%s' for %s with reason '%s' (%d hits)",
     controlid(sender), cargv[0], longtoduration(duration, 0), reason, hits);
 
-  controlreply(sender, "Done.");
+  controlreply(sender, "Done. G-Line transaction ID: %d", id);
 
   return CMD_OK;
 }
@@ -353,7 +359,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   channel *cp;
   nick *np;
   char *reason = "Clearing channel.";
-  int mode, duration, i, slot, hits;
+  int mode, duration, i, slot, hits, id;
   int coff, overridesanity, overridelimit, simulate;
   array victims;
   char creator[128];
@@ -467,10 +473,14 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
-    glinebufabort(&gbuf);
-    controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
-    return CMD_ERROR;
+  if (mode != 0 && mode != 1) {
+    glinebufspew(&gbuf, sender);
+
+    if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
+      glinebufabort(&gbuf);
+      controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
+      return CMD_ERROR;
+    }
   }
 
   if (simulate) {
@@ -480,19 +490,20 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   }
 
   glinebufmerge(&gbuf);
-  glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(&gbuf, &hits, NULL);
+  id = glinebufcommit(&gbuf, 1);
 
   array_free(&victims);
 
-  if (mode == 0 || mode == 1)
+  if (mode == 0 || mode == 1) {
     controlwall(NO_OPER, NL_GLINES, "%s CLEARCHAN'd channel '%s' with mode '%s' and reason '%s'",
       controlid(sender), cp->index->name->content, cargv[1], reason);
-  else
+    controlreply(sender, "Done.");
+  } else {
     controlwall(NO_OPER, NL_GLINES, "%s CLEARCHAN'd channel '%s' with mode '%s', duration %s and reason '%s' (%d hits)",
       controlid(sender), cp->index->name->content, cargv[1], longtoduration(duration, 0), reason, hits);
-
-  controlreply(sender, "Done.");
+    controlreply(sender, "Done. G-Line transaction ID: %d", id);
+  }
 
   return CMD_OK;
 }
@@ -502,7 +513,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   trusthost *th;
   int duration, hits;
-  int coff, overridesanity, overridelimit, simulate;
+  int coff, overridesanity, overridelimit, simulate, id;
   char *reason;
   char mask[512];
   char creator[128];
@@ -547,7 +558,9 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
     glinebufadd(&gbuf, mask, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
   }
 
-  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit, simulate)) {
+  glinebufspew(&gbuf, sender);
+
+  if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
     glinebufabort(&gbuf);
     controlreply(sender, "G-Line failed sanity checks. Not setting G-Line.");
     return CMD_ERROR;
@@ -559,13 +572,13 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  glinebufcounthits(&gbuf, &hits, NULL, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(&gbuf, &hits, NULL);
+  id = glinebufcommit(&gbuf, 1);
 
   controlwall(NO_OPER, NL_GLINES, "%s TRUSTGLINE'd user '%s' on trust group '%s' for %s with reason '%s' (%d hits)",
     controlid(sender), cargv[1], tg->name->content, longtoduration(duration, 0), reason, hits);
 
-  controlreply(sender, "Done.");
+  controlreply(sender, "Done. G-Line transaction ID: %d", id);
 
   return CMD_OK;
 }
@@ -856,7 +869,7 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
 
       strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime((gbl->ammend) ? &gbl->ammend : &gbl->commit));
       strncat(timebuf, (gbl->ammend) ? "*" : " ", sizeof(timebuf));
-      controlreply(sender, "%-20s %-10d %-10d %-15d %-15d %s", timebuf, gbl->id, count, gbl->userhits, gbl->channelhits, gbl->comment ? gbl->comment->content : "no comment");
+      controlreply(sender, "%-20s %-10d %-10d %-15d %-15d %s", timebuf, gbl->id, count, gbl->userhits, gbl->channelhits, gbl->comment ? gbl->comment->content : "(no comment)");
     }
 
     if (id != 0 && gbl->id == id) {
