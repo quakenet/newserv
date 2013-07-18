@@ -81,7 +81,10 @@ gline *makegline(const char *mask) {
     }
 
     gl->flags |= GLINE_REALNAME;
-    gl->user = getsstring(mask + 2, REALLEN);
+
+    if (strcmp(mask + 2, "*") != 0)
+      gl->user = getsstring(mask + 2, REALLEN);
+
     return gl;
   }
 
@@ -122,11 +125,7 @@ char *glinetostring(gline *gl) {
   static char mask[512]; /* check */
 
   if (gl->flags & GLINE_REALNAME) {
-   if (gl->user)
-     snprintf(mask, sizeof(mask), "$R%s", gl->user->content);
-   else
-     strncpy(mask, "$R*", sizeof(mask));
-
+   snprintf(mask, sizeof(mask), "$R%s", (gl->user) ? gl->user->content : "*");
    return mask;
   }
 
