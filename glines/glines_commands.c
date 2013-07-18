@@ -867,8 +867,8 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
       for (gl = gbl->glines; gl; gl = gl->next)
 	count++;
 
-      strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime((gbl->ammend) ? &gbl->ammend : &gbl->commit));
-      strncat(timebuf, (gbl->ammend) ? "*" : " ", sizeof(timebuf));
+      strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime((gbl->amend) ? &gbl->amend : &gbl->commit));
+      strncat(timebuf, (gbl->amend) ? "*" : " ", sizeof(timebuf));
       controlreply(sender, "%-20s %-10d %-10d %-15d %-15d %s", timebuf, gbl->id, count, gbl->userhits, gbl->channelhits, gbl->comment ? gbl->comment->content : "(no comment)");
     }
 

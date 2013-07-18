@@ -16,7 +16,7 @@ void glinebufinit(glinebuf *gbuf, int id) {
   gbuf->id = id;
   gbuf->comment = NULL;
   gbuf->commit = 0;
-  gbuf->ammend = 0;
+  gbuf->amend = 0;
   gbuf->glines = NULL;
   gbuf->hitsvalid = 0;
   gbuf->userhits = 0;
@@ -227,8 +227,8 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
     controlreply(spewto, "Committed at: %s", timebuf);
   }
 
-  if (gbuf->ammend) {
-    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbuf->ammend));
+  if (gbuf->amend) {
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbuf->amend));
     controlreply(spewto, "Ammended at: %s", timebuf);
   }
 
@@ -312,7 +312,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
 
         if (glinebuflog[i]->id == gbuf->id) {
           gbl = glinebuflog[i];
-          gbl->ammend = gbuf->commit;
+          gbl->amend = gbuf->commit;
 
           /* We're going to re-insert this glinebuf, so remove it for now */
           glinebuflog[i] = NULL;
@@ -331,7 +331,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
       gbl->userhits = 0;
       gbl->channelhits = 0;
       gbl->commit = gbuf->commit;
-      gbl->ammend = 0;
+      gbl->amend = 0;
 
       array_init(&gbl->hits, sizeof(sstring *));
     }

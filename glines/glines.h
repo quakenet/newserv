@@ -82,7 +82,7 @@ typedef struct glinebuf {
   int id;
   sstring *comment;
   time_t commit;
-  time_t ammend;
+  time_t amend;
 
   gline *glines;
 
