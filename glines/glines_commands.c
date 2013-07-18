@@ -842,7 +842,7 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
   controlreply(sender, "Time                 ID         G-Lines    User Hits      Channel Hits     Comment");
   
   for (i = 0; i < MAXGLINELOG; i++) {
-    gbl = glinebuflog[(i + glinebuflogoffset) % MAXGLINELOG];
+    gbl = glinebuflog[(i + glinebuflogoffset + 1) % MAXGLINELOG];
     
     if (!gbl)
       continue;
