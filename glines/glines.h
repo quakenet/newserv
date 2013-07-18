@@ -88,6 +88,8 @@ typedef struct glinebuf {
 
   int userhits;
   int channelhits;
+
+  array hits;
 } glinebuf;
 
 extern gline *glinelist;

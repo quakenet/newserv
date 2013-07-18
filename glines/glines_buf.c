@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "../lib/array.h"
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
 #include "../control/control.h"
@@ -18,6 +19,7 @@ void glinebufinit(glinebuf *gbuf, int merge) {
   gbuf->merge = merge;
   gbuf->userhits = 0;
   gbuf->channelhits = 0;
+  array_init(&gbuf->hits, sizeof(sstring *));
 }
 
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
@@ -112,13 +114,20 @@ void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator,
 
 void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) {
   gline *gl;
-  int i, hit;
+  int i, hit, slot;
   chanindex *cip;
   channel *cp;
   nick *np;
+  char uhmask[512];
 
   gbuf->userhits = 0;
   gbuf->channelhits = 0;
+
+  for (i = 0; i < gbuf->hits.cursi; i++)
+    freesstring(((sstring **)gbuf->hits.content)[i]);
+
+  array_free(&gbuf->hits);
+  array_init(&gbuf->hits, sizeof(sstring *));
 
   for (i = 0; i<CHANNELHASHSIZE; i++) {
     for (cip = chantable[i]; cip; cip = cip->next) {
@@ -137,10 +146,15 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       }
 
       if (hit) {
+        snprintf(uhmask, sizeof(uhmask), "channel: %s", cip->name->content);
+
         if (spewto)
-          controlreply(spewto, "channel: %s", cip->name->content);
+          controlreply(spewto, "%s", uhmask);
 
         gbuf->channelhits++;
+
+        slot = array_getfreeslot(&gbuf->hits);
+        ((sstring **)gbuf->hits.content)[slot] = getsstring(uhmask, 512);
       }
     }
   }
@@ -157,10 +171,15 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
       }
 
       if (hit) {
+        snprintf(uhmask, sizeof(uhmask), "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+
         if (spewto)
-          controlreply(spewto, "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+          controlreply(spewto, "%s", uhmask);
 
         gbuf->userhits++;
+
+        slot = array_getfreeslot(&gbuf->hits);
+        ((sstring **)gbuf->hits.content)[slot] = getsstring(uhmask, 512);
       }
     }
   }
@@ -208,6 +227,7 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
   time_t ref;
+  int i;
   
   ref = (gbuf->flush) ? gbuf->flush : getnettime();
 
@@ -215,12 +235,17 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
   
   for (gl = gbuf->glines; gl; gl = gl->next)
     controlreply(spewto, "%-40s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - ref, 0), gl->creator->content, gl->reason->content);
+
+  controlreply(spewto, "Hit");
+
+  for (i = 0; i < gbuf->hits.cursi; i++)
+    controlreply(spewto, "%s", ((sstring **)gbuf->hits.content)[i]->content);
 }
 
 void glinebufcommit(glinebuf *gbuf, int propagate) {
   gline *gl, *next, *sgl;
   glinebuf *gbl;
-  int users, channels;
+  int users, channels, i, slot;
 
   /* Sanity check */
   glinebufcounthits(gbuf, &users, &channels, NULL);
@@ -239,8 +264,17 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
     gbl->id = nextglinebufid++;
     gbl->comment = (gbuf->comment) ? getsstring(gbuf->comment->content, 512) : NULL;
     gbl->flush = gbuf->flush;
-    gbl->glines = NULL; /* going to set this later */
     gbl->merge = gbuf->merge;
+    gbl->glines = NULL; /* going to set this later */
+    gbl->userhits = gbuf->userhits;
+    gbl->channelhits = gbuf->channelhits;
+
+    array_init(&gbl->hits, sizeof(sstring *));
+
+    for (i = 0; i < gbuf->hits.cursi; i++) {
+      slot = array_getfreeslot(&gbl->hits);
+      ((sstring **)gbl->hits.content)[slot] = getsstring(((sstring **)gbuf->hits.content)[i]->content, 512);
+    }
   }
 
   for (gl = gbuf->glines; gl; gl = next) {
@@ -304,6 +338,7 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
 
 void glinebufabort(glinebuf *gbuf) {
   gline *gl, *next;
+  int i;
 
   for (gl = gbuf->glines; gl; gl = next) {
     next = gl->next;
@@ -312,6 +347,11 @@ void glinebufabort(glinebuf *gbuf) {
   }
   
   freesstring(gbuf->comment);
+
+  for (i = 0; i < gbuf->hits.cursi; i++)
+    freesstring(((sstring **)gbuf->hits.content)[i]);
+
+  array_free(&gbuf->hits);
 }
 
 int glinebufundo(int id) {
