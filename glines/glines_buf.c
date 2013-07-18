@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "../lib/array.h"
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
@@ -249,6 +250,9 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
       break;
     }
   }
+
+  if (i == 0)
+    controlreply(spewto, "(no hits)");
 }
 
 void glinebufmerge(glinebuf *gbuf) {
@@ -297,6 +301,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
     return 0;
   }
 
+  /* Record the commit time */
   time(&gbuf->commit);
 
   id = 0;
@@ -328,6 +333,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
       gbl->id = (gbuf->id == 0) ? nextglinebufid++ : gbuf->id;
       gbl->comment = (gbuf->comment) ? getsstring(gbuf->comment->content, 512) : NULL;
       gbl->glines = NULL; /* going to set this later */
+      gbl->hitsvalid = 1;
       gbl->userhits = 0;
       gbl->channelhits = 0;
       gbl->commit = gbuf->commit;
@@ -338,6 +344,8 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
 
     gbl->userhits += gbuf->userhits;
     gbl->channelhits += gbuf->channelhits;
+
+    assert(gbuf->userhits + gbuf->channelhits == gbuf->hits.cursi);
 
     for (i = 0; i < gbuf->hits.cursi; i++) {
       slot = array_getfreeslot(&gbl->hits);
@@ -380,9 +388,12 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
       glinelist = gl;
     }
 
+    gl->glinebufid = id;
+
     if (propagate) {
       gline_propagate(gl);
 
+      /* Save a duplicate of the gline in the log buffer */
       sgl = glinedup(gl);
       sgl->next = gbl->glines;
       gbl->glines = sgl;
@@ -392,7 +403,8 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
   /* We've moved all glines to the global gline list. Clear glines link in the glinebuf. */  
   gbuf->glines = NULL;
 
-  if (propagate && gbl->glines) {
+  /* Log the transaction if we're propagating the glines */
+  if (propagate) {
     glinebuflogoffset++;
 
     if (glinebuflogoffset >= MAXGLINELOG)
@@ -443,7 +455,9 @@ int glinebufundo(int id) {
       
       if (!sgl)
         continue;
-      
+
+      sgl->glinebufid = 0;
+
       gline_deactivate(sgl, 0, 1);
     }
     

@@ -74,6 +74,7 @@ typedef struct gline {
   time_t lifetime;
 
   unsigned int flags;
+  int glinebufid;
 
   struct gline *next;
 } gline;

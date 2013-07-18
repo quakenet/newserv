@@ -679,7 +679,7 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   char *mask;
   int count = 0;
   int limit = 500;
-  char tmp[250];
+  char expirestr[250], idstr[250];
 
   if (cargc < 1 || (cargc == 1 && cargv[0][0] == '-')) {
     controlreply(sender, "Syntax: glist [-flags] <mask>");
@@ -747,7 +747,7 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   }
 
   if (!(flags & GLIST_COUNT))
-    controlreply(sender, "%-50s %-19s %-25s %s", "Mask:", "Expires in:", "Creator:", "Reason:");
+    controlreply(sender, "%-50s %-19s %-15s %-25s %s", "Mask:", "Expires in:", "Transaction ID:", "Creator:", "Reason:");
 
   gline *searchgl = makegline(mask);
 
@@ -820,11 +820,13 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
     count++;
 
     if (!(flags & GLIST_COUNT) && count < limit) {
-      snprintf(tmp, 249, "%s", glinetostring(gl));
-      controlreply(sender, "%s%-49s %-19s %-25s %s",
+      snprintf(expirestr, sizeof(expirestr), "%s", glinetostring(gl));
+      snprintf(idstr, sizeof(idstr), "%d", gl->glinebufid);
+      controlreply(sender, "%s%-49s %-19s %-15s %-25s %s",
         (gl->flags & GLINE_ACTIVE) ? "+" : "-",
-        tmp,
+        expirestr,
         (gl->flags & GLINE_ACTIVE) ? (char*)longtoduration(gl->expire - curtime, 0) : "<inactive>",
+        gl->glinebufid ? idstr : "",
         gl->creator ? gl->creator->content : "",
         gl->reason ? gl->reason->content : "");
     }
