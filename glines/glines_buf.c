@@ -12,18 +12,17 @@ static int nextglinebufid = 1;
 glinebuf *glinebuflog[MAXGLINELOG] = {};
 int glinebuflogoffset = 0;
 
-void glinebufinit(glinebuf *gbuf, int merge) {
-  gbuf->id = 0;
+void glinebufinit(glinebuf *gbuf, int id) {
+  gbuf->id = id;
   gbuf->comment = NULL;
   gbuf->glines = NULL;
-  gbuf->merge = merge;
   gbuf->userhits = 0;
   gbuf->channelhits = 0;
   array_init(&gbuf->hits, sizeof(sstring *));
 }
 
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
-  gline *gl, *sgl, **pnext;
+  gline *gl;
 
   gl = makegline(mask); /* sets up nick,user,host,node and flags */
 
@@ -31,29 +30,6 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
     /* couldn't process gline mask */
     Error("gline", ERR_WARNING, "Tried to add malformed G-Line %s!", mask);
     return 0;
-  }
-
-  if (gbuf->merge) {
-    /* Check if an existing gline supercedes this mask */
-    for (sgl = gbuf->glines; sgl; sgl = sgl->next) {
-      if (gline_match_mask(sgl, gl)) {
-        freegline(gl);
-        return sgl;
-      }
-    }
-
-    /* Remove older glines this gline matches */
-    for (pnext = &gbuf->glines; *pnext; pnext = &((*pnext)->next)) {
-      sgl = *pnext;
-
-      if (gline_match_mask(gl, sgl)) {
-        *pnext = sgl->next;
-        freegline(sgl);
-        
-        if (!*pnext)
-          break;
-      }
-    }
   }
 
   gl->creator = getsstring(creator, 255);
@@ -226,20 +202,49 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 
 void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
-  time_t ref;
   int i;
+  char timebuf[30];
   
-  ref = (gbuf->flush) ? gbuf->flush : getnettime();
-
-  controlreply(spewto, "Mask                                     Duration             Creator              Reason");
+  controlreply(spewto, "Mask                                     Duration             Last modified        Creator              Reason");
   
-  for (gl = gbuf->glines; gl; gl = gl->next)
-    controlreply(spewto, "%-40s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - ref, 0), gl->creator->content, gl->reason->content);
+  for (gl = gbuf->glines; gl; gl = gl->next) {
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gl->lastmod));
+    controlreply(spewto, "%-40s %-20s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - gl->lastmod, 0), timebuf, gl->creator->content, gl->reason->content);
+  }
 
   controlreply(spewto, "Hit");
 
   for (i = 0; i < gbuf->hits.cursi; i++)
     controlreply(spewto, "%s", ((sstring **)gbuf->hits.content)[i]->content);
+}
+
+void glinebufmerge(glinebuf *gbuf) {
+  /* TODO: reimplement */
+
+/*
+  if (gbuf->merge) {
+    /-* Check if an existing gline supercedes this mask *-/
+    for (sgl = gbuf->glines; sgl; sgl = sgl->next) {
+      if (gline_match_mask(sgl, gl)) {
+        freegline(gl);
+        return sgl;
+      }
+    }
+
+    /-* Remove older glines this gline matches *-/
+    for (pnext = &gbuf->glines; *pnext; pnext = &((*pnext)->next)) {
+      sgl = *pnext;
+
+      if (gline_match_mask(gl, sgl)) {
+        *pnext = sgl->next;
+        freegline(sgl);
+
+        if (!*pnext)
+          break;
+      }
+    }
+  }
+*/
 }
 
 void glinebufcommit(glinebuf *gbuf, int propagate) {
@@ -256,20 +261,45 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
     return;
   }
 
-  time(&gbuf->flush);
+  time(&gbuf->commit);
 
   if (propagate) {
-    /* Make a copy of the glinebuf for the log */
-    gbl = malloc(sizeof(glinebuf));
-    gbl->id = nextglinebufid++;
-    gbl->comment = (gbuf->comment) ? getsstring(gbuf->comment->content, 512) : NULL;
-    gbl->flush = gbuf->flush;
-    gbl->merge = gbuf->merge;
-    gbl->glines = NULL; /* going to set this later */
-    gbl->userhits = gbuf->userhits;
-    gbl->channelhits = gbuf->channelhits;
+    gbl = NULL;
 
-    array_init(&gbl->hits, sizeof(sstring *));
+    /* Find an existing log buffer */
+    if (gbuf->id != 0) {
+      for (i = 0; i < MAXGLINELOG; i++) {
+        if (!glinebuflog[i])
+          continue;
+
+        if (glinebuflog[i]->id == gbuf->id) {
+          gbl = glinebuflog[i];
+          gbl->ammend = gbuf->commit;
+
+          /* We're going to re-insert this glinebuf, so remove it for now */
+          glinebuflog[i] = NULL;
+
+          break;
+        }
+      }
+    }
+
+    /* Make a new glinebuf for the log */
+    if (gbuf->id == 0 || !gbl) {
+      gbl = malloc(sizeof(glinebuf));
+      gbl->id = (gbuf->id == 0) ? nextglinebufid++ : gbuf->id;
+      gbl->comment = (gbuf->comment) ? getsstring(gbuf->comment->content, 512) : NULL;
+      gbl->glines = NULL; /* going to set this later */
+      gbl->userhits = 0;
+      gbl->channelhits = 0;
+      gbl->commit = gbuf->commit;
+      gbl->ammend = 0;
+
+      array_init(&gbl->hits, sizeof(sstring *));
+    }
+
+    gbl->userhits += gbuf->userhits;
+    gbl->channelhits += gbuf->channelhits;
 
     for (i = 0; i < gbuf->hits.cursi; i++) {
       slot = array_getfreeslot(&gbl->hits);
@@ -318,7 +348,7 @@ void glinebufcommit(glinebuf *gbuf, int propagate) {
     }
   }
 
-  /* We've moved all glines to the gline list. Clear glines link in the glinebuf. */  
+  /* We've moved all glines to the global gline list. Clear glines link in the glinebuf. */  
   gbuf->glines = NULL;
 
   if (propagate && gbl->glines) {

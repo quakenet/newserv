@@ -90,7 +90,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   else
     strncpy(creator, controlid(sender), sizeof(creator));
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "BLOCK", cargc + coff - 1, cargv);
   glinebufaddbynick(&gbuf, target, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
@@ -167,7 +167,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   else
     strncpy(creator, controlid(sender), sizeof(creator));
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "GLINE", cargc + coff - 1, cargv);
 
   if (!glinebufadd(&gbuf, mask, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration)) {
@@ -270,7 +270,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   else
     strncpy(creator, controlid(sender), sizeof(creator));
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "SMARTGLINE", cargc + coff - 1, cargv);
   glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
@@ -434,7 +434,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   else
     strncpy(creator, controlid(sender), sizeof(creator));
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "CLEARCHAN", cargc + coff - 1, cargv);
 
   for (i = 0; i < victims.cursi; i++) {
@@ -479,6 +479,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  glinebufmerge(&gbuf);
   glinebufcounthits(&gbuf, &hits, NULL, NULL);
   glinebufcommit(&gbuf, 1);
 
@@ -853,7 +854,8 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
       for (gl = gbl->glines; gl; gl = gl->next)
 	count++;
 
-      strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbl->flush));
+      strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime((gbl->ammend) ? &gbl->ammend : &gbl->commit));
+      strncat(timebuf, (gbl->ammend) ? "*" : " ", sizeof(timebuf));
       controlreply(sender, "%-20s %-10d %-10d %-15d %-15d %s", timebuf, gbl->id, count, gbl->userhits, gbl->channelhits, gbl->comment ? gbl->comment->content : "no comment");
     }
 

@@ -6,7 +6,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   glinebuf gbuf;
   int hits;
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentf(&gbuf, "on IP mask %s@%s, set by %s", user, trusts_cidr2str(ip, bits), creator);
   glinebufaddbyip(&gbuf, user, ip, bits, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
@@ -24,7 +24,7 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
   glinebuf gbuf;
   int hits;
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufcommentf(&gbuf, "on nick %s!%s@%s, set by %s", np->nick, np->ident, np->host->name->content, creator);
   glinebufaddbynick(&gbuf, np, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 

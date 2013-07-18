@@ -365,7 +365,7 @@ static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {
 
   snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
-  glinebufinit(&gbuf, 1);
+  glinebufinit(&gbuf, 0);
   glinebufaddbyip(&gbuf, user, &ip, 128, 0, creator, "Simulate", getnettime(), getnettime(), getnettime());
   glinebufcounthits(&gbuf, &count, NULL, NULL);
   glinebufspew(&gbuf, sender);

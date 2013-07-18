@@ -81,9 +81,9 @@ typedef struct gline {
 typedef struct glinebuf {
   int id;
   sstring *comment;
-  time_t flush;
+  time_t commit;
+  time_t ammend;
 
-  int merge;
   gline *glines;
 
   int userhits;
@@ -119,13 +119,14 @@ int glinebynick(nick *np, int duration, const char *reason, int flags, const cha
 void glineunsetmask(const char *mask);
 
 /* glines_buf.c */
-void glinebufinit(glinebuf *gbuf, int merge);
+void glinebufinit(glinebuf *gbuf, int id);
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto);
 int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits);
 void glinebufspew(glinebuf *gbuf, nick *spewto);
+void glinebufmerge(glinebuf *gbuf);
 void glinebufcommit(glinebuf *gbuf, int propagate);
 void glinebufabort(glinebuf *gbuf);
 int glinebufundo(int id);
