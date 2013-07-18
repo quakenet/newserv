@@ -839,6 +839,8 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
     }
   }
   
+  controlreply(sender, "Time                 ID         G-Lines    User Hits      Channel Hits     Comment");
+  
   for (i = 0; i < MAXGLINELOG; i++) {
     gbl = glinebuflog[(i + glinebuflogoffset) % MAXGLINELOG];
     
@@ -852,7 +854,7 @@ static int glines_cmdglinelog(void *source, int cargc, char **cargv) {
 	count++;
 
       strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbl->flush));
-      controlreply(sender, "[%s] ID: %d - %d glines (%s)", timebuf, gbl->id, count, gbl->comment ? gbl->comment->content : "no comment");
+      controlreply(sender, "%-20s %-10d %-10d %-15d %-15d %s", timebuf, gbl->id, count, gbl->userhits, gbl->channelhits, gbl->comment ? gbl->comment->content : "no comment");
     }
 
     if (id != 0 && gbl->id == id) {

@@ -16,6 +16,8 @@ void glinebufinit(glinebuf *gbuf, int merge) {
   gbuf->comment = NULL;
   gbuf->glines = NULL;
   gbuf->merge = merge;
+  gbuf->userhits = 0;
+  gbuf->channelhits = 0;
 }
 
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
@@ -115,60 +117,59 @@ void glinebufcounthits(glinebuf *gbuf, int *users, int *channels, nick *spewto) 
   channel *cp;
   nick *np;
 
+  gbuf->userhits = 0;
+  gbuf->channelhits = 0;
+
+  for (i = 0; i<CHANNELHASHSIZE; i++) {
+    for (cip = chantable[i]; cip; cip = cip->next) {
+      cp = cip->channel;
+
+      if (!cp)
+        continue;
+
+      hit = 0;
+
+      for (gl = gbuf->glines; gl; gl = gl->next) {
+        if (gline_match_channel(gl, cp)) {
+          hit = 1;
+          break;
+        }
+      }
+
+      if (hit) {
+        if (spewto)
+          controlreply(spewto, "channel: %s", cip->name->content);
+
+        gbuf->channelhits++;
+      }
+    }
+  }
+
+  for (i = 0; i < NICKHASHSIZE; i++) {
+    for (np = nicktable[i]; np; np = np->next) {
+      hit = 0;
+
+      for (gl = gbuf->glines; gl; gl = gl->next) {
+        if (gline_match_nick(gl, np)) {
+          hit = 1;
+          break;
+        }
+      }
+
+      if (hit) {
+        if (spewto)
+          controlreply(spewto, "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
+
+        gbuf->userhits++;
+      }
+    }
+  }
+  
   if (users)
-    *users = 0;
-
+    *users = gbuf->userhits;
+  
   if (channels)
-    *channels = 0;
-
-  if (channels) {
-    for (i = 0; i<CHANNELHASHSIZE; i++) {
-      for (cip = chantable[i]; cip; cip = cip->next) {
-        cp = cip->channel;
-
-        if (!cp)
-          continue;
-
-        hit = 0;
-
-        for (gl = gbuf->glines; gl; gl = gl->next) {
-          if (gline_match_channel(gl, cp)) {
-            hit = 1;
-            break;
-          }
-        }
-
-        if (hit) {
-          if (spewto)
-            controlreply(spewto, "channel: %s", cip->name->content);
-
-          (*channels)++;
-        }
-      }
-    }
-  }
-
-  if (users) {
-    for (i = 0; i < NICKHASHSIZE; i++) {
-      for (np = nicktable[i]; np; np = np->next) {
-        hit = 0;
-
-        for (gl = gbuf->glines; gl; gl = gl->next) {
-          if (gline_match_nick(gl, np)) {
-            hit = 1;
-            break;
-          }
-        }
-
-        if (hit) {
-          if (spewto)
-            controlreply(spewto, "user: %s!%s@%s r(%s)", np->nick, np->ident, np->host->name->content, np->realname->name->content);
-
-          (*users)++;
-        }
-      }
-    }
-  }
+    *channels = gbuf->channelhits;
 }
 
 int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit, int spewhits) {

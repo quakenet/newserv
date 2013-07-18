@@ -83,8 +83,11 @@ typedef struct glinebuf {
   sstring *comment;
   time_t flush;
 
-  gline *glines;
   int merge;
+  gline *glines;
+
+  int userhits;
+  int channelhits;
 } glinebuf;
 
 extern gline *glinelist;
