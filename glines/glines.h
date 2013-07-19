@@ -134,6 +134,7 @@ void glinebufabort(glinebuf *gbuf);
 int glinebufundo(int id);
 void glinebufcommentf(glinebuf *gbuf, const char *format, ...);
 void glinebufcommentv(glinebuf *gbuf, const char *prefix, int cargc, char **cargv);
+int glinebufwritelog(glinebuf *gbuf, int propagating);
 
 /* glines_alloc.c */
 void freegline(gline *);
