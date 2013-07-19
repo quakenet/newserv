@@ -493,7 +493,7 @@ int glinebufwritelog(glinebuf *gbuf, int propagating) {
     if (gbuf->comment)
       glinebufcommentf(gbl, "%s", gbuf->comment->content);
     else if (!propagating)
-      glinebufcommentf(gbl, "Remote G-Lines set by %s", gbuf->glines->creator->content);
+      glinebufcommentf(gbl, "G-Lines set by %s", gbuf->glines->creator->content);
 
     gbl->commit = gbuf->commit;
   }
@@ -524,7 +524,7 @@ int glinebufwritelog(glinebuf *gbuf, int propagating) {
   if (glinebuflog[glinebuflogoffset])
     glinebufabort(glinebuflog[glinebuflogoffset]);
 
-  glinebuflog[glinebuflogoffset]= gbl;
+  glinebuflog[glinebuflogoffset] = gbl;
 
   return gbl->id;
 }
