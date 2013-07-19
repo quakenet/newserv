@@ -230,7 +230,7 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
 
   if (gbuf->amend) {
     strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gbuf->amend));
-    controlreply(spewto, "Ammended at: %s", timebuf);
+    controlreply(spewto, "Amended at: %s", timebuf);
   }
 
   controlreply(spewto, "Mask                                     Duration             Last modified        Creator              Reason");
