@@ -211,7 +211,7 @@ int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int over
 void glinebufspew(glinebuf *gbuf, nick *spewto) {
   gline *gl;
   int i;
-  char timebuf[30];
+  char timebuf[30], lastmod[30];
 
   if (!gbuf->hitsvalid)
     glinebufcounthits(gbuf, NULL, NULL);
@@ -233,11 +233,17 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
     controlreply(spewto, "Amended at: %s", timebuf);
   }
 
-  controlreply(spewto, "Mask                                     Duration             Last modified        Creator              Reason");
+  controlreply(spewto, "Mask                                     Expiry               Last modified        Creator                   Reason");
   
   for (gl = gbuf->glines; gl; gl = gl->next) {
-    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gl->lastmod));
-    controlreply(spewto, "%-40s %-20s %-20s %-20s %s", glinetostring(gl), longtoduration(gl->expire - gl->lastmod, 0), timebuf, gl->creator->content, gl->reason->content);
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&gl->expire));
+ 
+    if (gl->lastmod == 0)
+      strncpy(lastmod, "<ulined>", sizeof(lastmod));
+    else
+      strftime(lastmod, sizeof(lastmod), "%d/%m/%y %H:%M:%S", localtime(&gl->lastmod));
+
+    controlreply(spewto, "%-40s %-20s %-20s %-25s %s", glinetostring(gl), timebuf, lastmod, gl->creator->content, gl->reason->content);
   }
 
   controlreply(spewto, "Hits");
