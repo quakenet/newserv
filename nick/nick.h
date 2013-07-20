@@ -34,8 +34,9 @@
 #define UMODE_REGPRIV   0x0800
 #define UMODE_HIDEIDLE  0x1000
 #define UMODE_PARANOID  0x2000
+#define UMODE_CLOAKED   0x4000
 
-#define UMODE_ALL       0x3FFF
+#define UMODE_ALL       0x7FFF
 
 #define AFLAG_STAFF     0x0001
 #define AFLAG_SUPPORT   0x0002
@@ -59,6 +60,7 @@
 #define IsRegPriv(x)      ((x)->umodes & UMODE_REGPRIV)
 #define IsHideIdle(x)     ((x)->umodes & UMODE_HIDEIDLE)
 #define IsParanoid(x)     ((x)->umodes & UMODE_PARANOID)
+#define IsCloaked(x)      ((x)->umodes & UMODE_CLOAKED)
 
 #define SetInvisible(x)    ((x)->umodes |= UMODE_INV)
 #define SetWallops(x)      ((x)->umodes |= UMODE_WALLOPS)
@@ -74,6 +76,7 @@
 #define SetRegPriv(x)      ((x)->umodes |= UMODE_REGPRIV)
 #define SetHideIdle(x)     ((x)->umodes |= UMODE_HIDEIDLE)
 #define SetParanoid(x)     ((x)->umodes |= UMODE_PARANOID)
+#define SetCloaked(x)      ((x)->umodes |= UMODE_CLOAKED)
 
 #define ClearInvisible(x)    ((x)->umodes &= ~UMODE_INV)
 #define ClearWallops(x)      ((x)->umodes &= ~UMODE_WALLOPS)
@@ -89,6 +92,7 @@
 #define ClearRegPriv(x)      ((x)->umodes &= ~UMODE_REGPRIV)
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
 #define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
+#define ClearCloaked(x)      ((x)->umodes &= ~UMODE_CLOAKED)
 
 #define IsStaff(x)           ((x)->flags & AFLAG_STAFF)
 #define IsDeveloper(x)       ((x)->flags & AFLAG_DEVELOPER)
@@ -142,6 +146,8 @@ typedef struct nick {
   time_t accountts;
   sstring *away;
   patricia_node_t *ipnode;
+  unsigned int cloak_count;
+  struct nick *cloak_extra;
   unsigned int marker;
   struct nick *next;
   struct nick *nextbyhost;
@@ -198,6 +204,10 @@ int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
 char *visibleuserhost(nick *np, char *buf);
+int canseeuser(nick *np, nick *cloaked);
+void addcloaktarget(nick *cloaked, nick *target);
+void removecloaktarget(nick *target);
+void clearcloaktargets(nick *cloaked);
 
 /* nickhandlers.c functions */
 int handlenickmsg(void *source, int cargc, char **cargv);
@@ -207,6 +217,8 @@ int handleusermodemsg(void *source, int cargc, char **cargv);
 int handleaccountmsg(void *source, int cargc, char **cargv);
 int handleprivmsg(void *source, int cargc, char **cargv);
 int handleawaymsg(void *source, int cargc, char **cargv);
+int handleaddcloak(void *source, int cargc, char **cargv);
+int handleclearcloak(void *source, int cargc, char **cargv);
 
 /* These functions have been replaced by macros 
 nick **gethandlebynumeric(long numeric);
