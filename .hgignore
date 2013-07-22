@@ -4,7 +4,6 @@ syntax: glob
 *.o
 *.so
 *.db
-local.mk
 build.mk
 newserv
 modules/
@@ -20,16 +19,13 @@ newserv.core
 *.dump
 chanservlog
 Makefile
-autobuild.mk
 chanserv/*/commandlist.c
 chanserv/achievements/achievementscanners.c
-configure.ac.local
+configure.ini.local
 config.h
-settings.mk
 graphing/dump
 silly
 y.tab.{c,h}
 lex.yy.c
-.settings.mk
 core.*
 core
