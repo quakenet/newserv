@@ -76,6 +76,7 @@ static const char *classes[] = { "drone", "proxy", "spam", "other", RESERVED_NIC
 
 void rg_initglinelist(struct rg_glinelist *gll);
 void rg_flushglines(struct rg_glinelist *gll);
+static void rg_rename(int hooknum, void *arg);
 
 void _init(void) {
   sstring *max_casualties, *max_spew, *expiry_time, *max_per_gline;
