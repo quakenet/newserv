@@ -1,0 +1,15 @@
+include ../build.mk
+
+CFLAGS+=$(INCDBAPI)
+LDFLAGS+=$(LIBDBAPI)
+
+.PHONY: all
+all: noperserv.so noperserv_commands.so noperserv_raw.so noperserv_fakeuser.so
+
+noperserv.so: noperserv.o noperserv_db.o noperserv_hooks.o noperserv_policy.o
+
+noperserv_commands.so: noperserv_commands.o
+
+noperserv_raw.so: noperserv_raw.o
+
+noperserv_fakeuser.so: noperserv_fakeuser.o

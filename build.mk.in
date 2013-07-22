@@ -2,6 +2,7 @@ ifndef INCPATH
 INCPATH=../
 endif
 
+CONFIGURED=1
 CFLAGS=
 LEX=flex
 MFLAGS=

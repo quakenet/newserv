@@ -182,7 +182,7 @@ print CL "}\n";
 
 close CL;
 
-open MF,">autobuild.mk";
+open MF,">.autobuild.mk";
 
 print MF "# Automatically generated Makefile, do not edit.\n";
 

@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: carrot.so
-
-carrot.so: carrot.o

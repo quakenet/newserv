@@ -18,7 +18,6 @@ newserv.core
 *.log
 *.dump
 chanservlog
-Makefile
 chanserv/*/commandlist.c
 chanserv/achievements/achievementscanners.c
 configure.ini.local
@@ -28,4 +27,5 @@ silly
 y.tab.{c,h}
 lex.yy.c
 core.*
-core
+.autobuild.mk
+.configure.log

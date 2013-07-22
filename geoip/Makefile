@@ -1,0 +1,18 @@
+include ../build.mk
+
+GEOIPDIRS=libGeoIP
+LDFLAGS+=-lc
+
+.PHONY: all clean distclean $(GEOIPDIRS) dirs
+
+all: dirs geoip.so
+
+geoip.so: geoip.o libGeoIP/GeoIP.o libGeoIP/regionName.o libGeoIP/timeZone.o
+
+dirs: $(GEOIPDIRS)
+
+$(GEOIPDIRS):
+	cd $@ && $(MAKE) $(MFLAGS) all
+
+clean:
+	rm -f */*.o */*.so *.o *.so
