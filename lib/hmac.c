@@ -132,7 +132,7 @@ char *hmac_printhex(unsigned char *data, char *out, size_t len) {
   return out;
 }
 
-int hmac_strcmp(char *a, char *b) {
+int hmac_strcmp(const char *a, const char *b) {
   int result = 1;
 
   if(!a || !b)
