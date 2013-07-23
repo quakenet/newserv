@@ -773,25 +773,26 @@ static void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr,
     }
 }
 
+static void helpmod_list_aliases(huser *sender, channel *returntype, char *buf, int *p_i, alias_tree node)
+{
+    if (*p_i > 256)
+    {
+        helpmod_reply(sender, returntype, "%s", buf);
+        *p_i = 0;
+    }
+    if (!node)
+        return;
+    sprintf(buf+*p_i,"%.200s ",node->name->content);
+    *p_i+=(1+strlen(node->name->content));
+    helpmod_list_aliases(sender, returntype, buf, p_i, node->left);
+    helpmod_list_aliases(sender, returntype, buf, p_i, node->right);
+}
+
 static void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     char buf[512];
     int i = 0;
-    void helpmod_list_aliases(alias_tree node)
-    {
-	if (i > 256)
-	{
-	    helpmod_reply(sender, returntype, "%s", buf);
-	    i = 0;
-	}
-	if (!node)
-	    return;
-        sprintf(buf+i,"%.200s ",node->name->content);
-	i+=(1+strlen(node->name->content));
-        helpmod_list_aliases(node->left);
-	helpmod_list_aliases(node->right);
-    }
-    helpmod_list_aliases(aliases);
+    helpmod_list_aliases(sender, returntype, buf, &i, aliases);
     if (i)
 	helpmod_reply(sender, returntype, "%s", buf);
 }
