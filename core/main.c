@@ -71,6 +71,8 @@ int main(int argc, char **argv) {
   finihandlers();
 
   nsexit();
+
+  return 0;
 }
 
 void handlesignals(void) {
