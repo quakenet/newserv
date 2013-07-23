@@ -94,7 +94,11 @@ helpmod_editor *hed_write(helpmod_editor *editor)
     hed_line *ptr;
 
     sprintf(fname_buffer, HELPMOD_TEXT_DIR"/%s" ,editor->filename);
-    if ((file = fopen(fname_buffer, "wt")) == NULL);
+    if ((file = fopen(fname_buffer, "wt")) == NULL)
+    {
+        Error("helpmod", ERR_ERROR, "hed: could not open file: %s", fname_buffer);
+        return editor;
+    }
 
     for (ptr = editor->start;ptr != NULL;ptr = ptr->next)
         fprintf(file, "%s\n", ptr->line);
