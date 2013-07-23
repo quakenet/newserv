@@ -487,7 +487,7 @@ int trojanscan_strip_codes(char *buf, size_t max, char *original) {
 struct trojanscan_worms *trojanscan_find_worm_by_id(int id) {
   int i;
   for(i=0;i<trojanscan_database.total_worms;i++)
-    if ((trojanscan_database.worms[i].id == id))
+    if (trojanscan_database.worms[i].id == id)
       return &trojanscan_database.worms[i];
   return NULL;
 }
@@ -1930,7 +1930,7 @@ void trojanscan_clonehandlemessages(nick *target, int messagetype, void **args) 
                 trojanscan_chans[j].watch_clone = NULL;
           } else {
             for(rp=trojanscan_realchanlist;rp;rp=rp->next)
-              if ((rp->clone == &(trojanscan_swarm[i])))
+              if (rp->clone == &(trojanscan_swarm[i]))
                 rp->donotpart = 1;
           }
           derefnode(iptree, trojanscan_swarm[i].fakeipnode);

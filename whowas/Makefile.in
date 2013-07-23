@@ -1,5 +1,0 @@
-@include@ @includel@../build.mk@includel@
-.PHONY: all
-all: whowas.so
-
-whowas.so: whowas.o

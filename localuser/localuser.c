@@ -150,6 +150,9 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
     }
   }
 
+  newuser->cloak_count = 0;
+  newuser->cloak_extra = NULL;
+
   if (connected) {
     /* Check for nick collision */
     if ((np=getnickbynick(nickname))!=NULL) {
@@ -645,3 +648,20 @@ void localusersetaccountflags(authname *anp, u_int64_t accountflags) {
 
   triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);
 }
+
+void localuseraddcloaktarget(nick *np, nick *target) {
+  char snumeric[10], tnumeric[10];
+
+  strcpy(snumeric, longtonumeric(np->numeric,5));
+  strcpy(tnumeric, longtonumeric(target->numeric,5));
+
+  irc_send("%s CA %s", snumeric, tnumeric);
+
+  addcloaktarget(np, target);
+}
+
+void localuserclearcloaktargets(nick *np) {
+  irc_send("%s CU", longtonumeric(np->numeric,5));
+  clearcloaktargets(np);
+}
+

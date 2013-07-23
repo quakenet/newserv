@@ -1,8 +1,0 @@
-INCPATH=../../
-@include@ @includel@../../build.mk@includel@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: chanserv_newsearch.so
-
-chanserv_newsearch.so: chanserv_newsearch.o formats.o csns-qusers.o interface.o csns-qlasthost.o csns-qemail.o csns-qsuspendreason.o csns-qusername.o csns-qchanflags.o csns-qsuspended.o

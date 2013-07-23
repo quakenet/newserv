@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: chanprofile.so
-
-chanprofile.so: chanprofile.o

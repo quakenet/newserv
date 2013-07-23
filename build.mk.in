@@ -1,92 +1,73 @@
-@ifndef@ INCPATH
+ifndef INCPATH
 INCPATH=../
-@endif@
+endif
 
+CONFIGURED=1
 CFLAGS=
 LEX=flex
 MFLAGS=
 
-@sinclude@ @includel@$(INCPATH)defaults.mk@includel@
-@sinclude@ @includel@$(INCPATH)settings.mk@includel@
-
-@ifeq@${HOOKS_NEW}@ifeqsep@1@ifeqend@
+ifeq (${HOOKS_NEW},1)
 HOOK_ENGINE=new
-@else@
+else
 HOOK_ENGINE=old
-@endif@
+endif
 
 # if USE_VALGRIND == 1
-@ifeq@${USE_VALGRIND}@ifeqsep@1@ifeqend@
+ifeq (${USE_VALGRIND},1)
   CFLAGS+=-DUSE_VALGRIND
   SSTRING_ENGINE=valgrind
 
 ## if SSTRING_NEW == 1
-@ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
+ifeq (${SSTRING_NEW},1)
     IMPOSSIBLE="USE_VALGRIND and SSTRING_NEW"
-@endif@ # SSTRING_NEW == 1
+endif # SSTRING_NEW == 1
 
 ## if SSTRING_MMAP == 1
-@ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
+ifeq (${SSTRING_MMAP},1)
     IMPOSSIBLE="USE_VALGRIND and SSTRING_MMAP"
-@endif@ ## SSTRING_MMAP == 1
-@else@ # USE_VALGRIND == 1
+endif ## SSTRING_MMAP == 1
+else # USE_VALGRIND == 1
 
 ## if SSTRING_NEW == 1
-@ifeq@${SSTRING_NEW}@ifeqsep@1@ifeqend@
+ifeq (${SSTRING_NEW},1)
     SSTRING_ENGINE=new
-@else@ ## SSTRING_NEW == 1
+else ## SSTRING_NEW == 1
     SSTRING_ENGINE=old
 
 ### if SSTRING_MMAP == 1
-@ifeq@${SSTRING_MMAP}@ifeqsep@1@ifeqend@
+ifeq (${SSTRING_MMAP},1)
       IMPOSSIBLE="SSTRING_MMAP without SSTRING_NEW"
-@endif@ ### SSTRING_MMAP == 1
-@endif@ ## SSTRING_NEW == 1
-@endif@ # USE_VALGRIND == 1
+endif ### SSTRING_MMAP == 1
+endif ## SSTRING_NEW == 1
+endif # USE_VALGRIND == 1
 
-@ifdef@ IMPOSSIBLE
-@error@ impossible combination of settings: ${IMPOSSIBLE}@errorend@
-@endif@
+ifdef IMPOSSIBLE
+$(error impossible combination of settings: ${IMPOSSIBLE})
+endif
 
-@ifndef@ BUILDID
-BUILDID @shell@ (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" @shellend@
-@endif@
+ifndef BUILDID
+BUILDID = $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" )
+endif
 MFLAGS+=BUILDID=$(BUILDID)
 
 .SUFFIXES: .so .y .l
 
 .o.so:
-	@-ldline-@ $(LDFLAGS)
+	$(CC) -nostartfiles -shared -o $@ $^ $(LDFLAGS)
 
 .y.c:	;
 
 .l.c:	;
 
-.PHONY: checksettings default
-
-@ifndef@ CHECKEDSETTINGS
-default: checksettings all
-
-checksettings:
-	@touch ${INCPATH}/settings.mk
-	@test -f ${INCPATH}/.settings.mk || cp ${INCPATH}/settings.mk ${INCPATH}/.settings.mk
-	@diff ${INCPATH}/.settings.mk ${INCPATH}/settings.mk >/dev/null || $(MAKE) -e FORCECHECK=1 realchecksettings
-
-realchecksettings:
-
-@ifdef@ FORCECHECK
-@error@ you must run make clean if you change settings.mk@errorend@
-@endif@
-@endif@
-MFLAGS+=CHECKEDSETTINGS=1
+default: all
 
 CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
 
-@ifndef@ CLANG
-@ifndef@ NOC99
+ifndef CLANG
+ifndef NOC99
 CFLAGS+=-std=c99
-@endif@
+endif
 CFLAGS+=-export-dynamic
-@endif@
-
+endif

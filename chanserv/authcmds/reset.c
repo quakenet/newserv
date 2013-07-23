@@ -17,6 +17,7 @@
 #include "../chanserv.h"
 #include "../authlib.h"
 #include "../../lib/irc_string.h"
+#include "../../lib/hmac.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

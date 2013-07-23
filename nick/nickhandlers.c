@@ -160,6 +160,8 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->authname=NULLAUTHNAME;
     np->auth=NULL;
     np->accountts=0;
+    np->cloak_count = 0;
+    np->cloak_extra = NULL;
     if(cargc>=9) {
       int sethostarg = 6, opernamearg = 6, accountarg = 6;
 
@@ -446,3 +448,37 @@ int handleawaymsg(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
+
+int handleaddcloak(void *source, int cargc, char **cargv) {
+  nick *sender, *target;
+
+  /* Check source is a valid user */
+  if (!(sender=getnickbynumericstr(source))) {
+    return CMD_OK;
+  }
+
+  if (cargc < 1)
+    return CMD_OK;
+
+  if (!(target=getnickbynumericstr(cargv[0]))) {
+    return CMD_OK;
+  }
+
+  addcloaktarget(sender, target);
+
+  return CMD_OK;
+}
+
+int handleclearcloak(void *source, int cargc, char **cargv) {
+  nick *sender;
+
+  /* Check source is a valid user */
+  if (!(sender=getnickbynumericstr(source))) {
+    return CMD_OK;
+  }
+
+  clearcloaktargets(sender);
+
+  return CMD_OK;
+}
+
