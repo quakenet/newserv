@@ -1,5 +1,6 @@
 #include "hmac.h"
 #include <string.h>
+#include <ctype.h>
 
 void hmacsha256_init(hmacsha256 *c, unsigned char *key, int keylen) {
   unsigned char realkey[64], outerkey[64], innerkey[64];
