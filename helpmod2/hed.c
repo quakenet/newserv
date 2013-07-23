@@ -198,21 +198,17 @@ void hed_command (huser *sender, channel* returntype, char* ostr, int argc, char
 		switch (argv[0][i])
 		{
 		case '.':
-		    sprintf(&buffer[j], "%d%n", editor->line + 1, &nread);
-                    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 1);
 		    break;
 		case '$':
-		    sprintf(&buffer[j], "%d%n", hed_line_count(editor) + 0, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", hed_line_count(editor) + 0);
 		    break;
 		case '-':
 		case '^':
-		    sprintf(&buffer[j], "%d%n", editor->line + 0, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 0);
 		    break;
 		case '+':
-		    sprintf(&buffer[j], "%d%n", editor->line + 2, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 2);
 		    break;
 		default:
 		    buffer[j++] = argv[0][i];

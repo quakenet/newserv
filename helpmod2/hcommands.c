@@ -3181,7 +3181,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	DIR *dir;
 	struct dirent *dent;
 	char buffer[384], **lines, *start;
-        int nwritten, bufpos = 0, nlines = 0,i;
+        int bufpos = 0, nlines = 0,i;
 
 	dir = opendir(HELPMOD_TEXT_DIR);
 	assert(dir != NULL);
@@ -3232,8 +3232,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 		buffer[bufpos] = ' ';
 		bufpos++;
 	    }
-	    sprintf(buffer + bufpos, "%s%n", lines[i], &nwritten);
-	    bufpos+=nwritten;
+	    bufpos+=sprintf(buffer + bufpos, "%s", lines[i]);
 
 	    if (bufpos > (384 - (HED_FILENAME_LENGTH+1)))
 	    {
