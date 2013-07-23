@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/time.h>
 
 #include "../core/hooks.h"
@@ -42,14 +43,13 @@ void _fini() {
 }
 
 int handlejupe(void *source, int cargc, char **cargv) {
-	char *target, *server, *expire, *modtime, *reason;
+	char *server, *expire, *modtime, *reason;
 	jupe_t *jupe;
 	unsigned int flags;
 
 	if (cargc < 5)
 		return CMD_OK; /* local jupe or not a valid.. we don't care */
 
-	target = cargv[0];
 	server = cargv[1];
 	expire = cargv[2];
 	modtime = cargv[3];
@@ -133,11 +133,11 @@ jupe_t *make_jupe(char *server, char *reason, time_t expirets, time_t lastmod, u
 }
 
 void jupe_propagate(jupe_t *jupe) {
-	irc_send("%s JU * %c%s %d %d :%s", mynumeric->content, 
+	irc_send("%s JU * %c%s %jd %jd :%s", mynumeric->content, 
 			JupeIsRemActive(jupe) ? '+' : '-',
 			JupeServer(jupe),
-			jupe->ju_expire - getnettime(),
-			JupeLastMod(jupe),
+			(intmax_t)(jupe->ju_expire - getnettime()),
+			(intmax_t)JupeLastMod(jupe),
 			JupeReason(jupe));
 }
 
