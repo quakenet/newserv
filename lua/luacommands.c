@@ -221,7 +221,6 @@ static int lua_gline(lua_State *ps) {
   nick *target;
   char mask[512];
   int duration, usercount = 0;
-  host *hp;
   
   if(!lua_isstring(ps, 1) || !lua_isint(ps, 2) || !lua_isstring(ps, 3))
     LUA_RETURN(ps, LUA_FAIL);
