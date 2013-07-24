@@ -215,7 +215,6 @@ static trusthost *th_getnextchildbyhost(trusthost *orig, trusthost *th) {
   if(!th) {
     trustgroup *tg;
 
-    tg = tglist;
     for(tg=tglist;tg;tg=tg->next) {
       th = tg->hosts;
       if(th)
