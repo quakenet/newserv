@@ -38,7 +38,6 @@ int handlerpingmsg(void *source, int cargc, char **cargv) {
   nick *snick;                        /* struct nick for source nick */
   long i;                             /* index for serverlist[] */
   char *sourcenum = (char *)source;   /* source numeric */
-  char *server;                       /* target server parameter */
   char *destserver;                   /* destination server mask */
   char *destnum;                      /* destination server numeric */
   char *sourceoper;                   /* requesting operator numeric */
@@ -57,7 +56,7 @@ int handlerpingmsg(void *source, int cargc, char **cargv) {
     }
 
     /* get the parameters */
-    server = cargv[0];
+    /*server = cargv[0];*/
     sourceoper = cargv[1];
     time_s = cargv[2];
     time_us = cargv[3];
@@ -87,7 +86,7 @@ int handlerpingmsg(void *source, int cargc, char **cargv) {
 
     /* get the parameters */
     destserver = cargv[0];
-    server = cargv[1];
+    /*server = cargv[1];*/
     comment = cargv[2];
 
     /* find source user */ 
