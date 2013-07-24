@@ -54,7 +54,7 @@ MFLAGS+=BUILDID=$(BUILDID)
 .SUFFIXES: .so .y .l
 
 .o.so:
-	$(CC) -nostartfiles -shared -o $@ $^ $(LDFLAGS)
+	$(CC) -nostartfiles -Wl,--export-dynamic -shared -o $@ $^ $(LDFLAGS)
 
 .y.c:	;
 
@@ -65,9 +65,6 @@ default: all
 CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
 
-ifndef CLANG
 ifndef NOC99
 CFLAGS+=-std=c99
-endif
-CFLAGS+=-export-dynamic
 endif
