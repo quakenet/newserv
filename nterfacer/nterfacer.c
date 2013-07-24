@@ -602,7 +602,6 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   if(argcount) {
     parsebuf = (char *)ntmalloc(strlen(pp) + 1);
     MemCheckR(parsebuf, RE_MEM_ERROR);
-    newp = parsebuf;
   
     for(newp=args[0]=parsebuf,pp++;*pp;pp++) {
       if((*pp == '\\') && *(pp + 1)) {

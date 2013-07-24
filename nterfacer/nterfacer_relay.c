@@ -489,14 +489,11 @@ void relay_quits(int hook, void *args) {
 }
 
 void relay_disconnect(int hook, void *args) {
-  struct rld *np, *lp = NULL;
   while(list) {
     struct rline *ri = list->rline;
 
     dispose_rld_prev(list, NULL);
 
     ri_error(ri, RELAY_DISCONNECTED, "Disconnected from IRC");
-
-    np = lp;
   }
 }
