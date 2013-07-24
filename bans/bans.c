@@ -420,9 +420,9 @@ char *bantostring(chanban *bp) {
   strpos += sprintf(outstring+strpos,"@");
 
   if (bp->flags & CHANBAN_HOSTANY) {
-    strpos += sprintf(outstring+strpos,"*");
+    sprintf(outstring+strpos,"*");
   } else if (bp->host) {
-    strpos += sprintf(outstring+strpos,"%s",bp->host->content);
+    sprintf(outstring+strpos,"%s",bp->host->content);
   }
 
   return outstring;
@@ -452,11 +452,10 @@ char *bantostringdebug(chanban *bp) {
   }
 
   if (bp->host) {
-    strpos += sprintf(outstring+strpos, "host=%s ",bp->host->content);
+    sprintf(outstring+strpos, "host=%s ",bp->host->content);
   } else {
-    strpos += sprintf(outstring+strpos, "nohost ");
+    sprintf(outstring+strpos, "nohost ");
   }
-
 
   return outstring;
 } 
