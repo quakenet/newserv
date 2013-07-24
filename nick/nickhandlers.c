@@ -402,7 +402,6 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
 
 int handleprivmsg(void *source, int cargc, char **cargv) {
   nick *sender;
-  char *message;
   void *args[3];
 
   if (cargc<2)
@@ -415,8 +414,6 @@ int handleprivmsg(void *source, int cargc, char **cargv) {
 
   if (!match2strings(cargv[0] + 1,myserver->content))
     return CMD_OK;
-
-  message=cargv[0];
 
   args[0]=sender;
   args[1]=cargv[0];
