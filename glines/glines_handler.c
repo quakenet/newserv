@@ -60,7 +60,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
           Error("gline", ERR_WARNING, "Received gline from non-existant server");
           return CMD_ERROR; 
         } else {
-          creator = serverlist[(int)creatornum].name->content, HOSTLEN;
+          creator = serverlist[(int)creatornum].name->content;
         }
       break;
     case 5:
