@@ -1,6 +1,7 @@
 #include "chanserv.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../glines/glines.h"
 
 void chanservdgline(void* arg) {
   reguser *rup=(reguser*)arg;
