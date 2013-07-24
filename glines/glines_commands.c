@@ -694,8 +694,6 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  mask = cargv[0];
-
   if (cargc > 1) {
     char* ch = cargv[0];
 
