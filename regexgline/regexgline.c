@@ -170,7 +170,7 @@ int rg_rescan(void *source, int cargc, char **cargv) {
 }
 
 void _fini(void) {
-  struct rg_struct *gp = rg_list, *oldgp;
+  struct rg_struct *gp, *oldgp;
   rg_delay *delay, *delaynext;
   
   if(started) {
