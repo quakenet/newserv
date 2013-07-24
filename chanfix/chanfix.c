@@ -679,7 +679,6 @@ void cfsched_dosample(void *arg) {
   channel *cp;
   chanindex *cip;
   nick *np;
-  chanfix *cf;
   regop *ro, *roh;
   struct timeval start;
   struct timeval end;
@@ -696,7 +695,6 @@ void cfsched_dosample(void *arg) {
 
   for (i=0; i<CHANNELHASHSIZE; i++) {
     for (cip=chantable[i]; cip; cip=cip->next) {
-      cf = (chanfix*)cip->exts[cfext];
       cp = cip->channel;
 
       if (!cp || cp->users->totalusers < CFMINUSERS)
