@@ -366,8 +366,6 @@ void handledata(int fd, short events) {
   }
 
   while(again) {
-    again=0;
-    
     res=read(serverfd, inbuf+bytesleft, READBUFSIZE-bytesleft);
     if (res<=0) {
       Error("irc",ERR_ERROR,"Disconnected by remote server.");
