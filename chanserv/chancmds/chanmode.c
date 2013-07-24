@@ -159,7 +159,6 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
           return CMD_ERROR;
         }
         newlim=strtol(cargv[carg++],NULL,10);
-        limdone=1;
       }
     }
 

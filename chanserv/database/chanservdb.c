@@ -534,7 +534,7 @@ void loadsomechanbans(DBConn *dbconn, void *arg) {
   regban  *rbp;
   regchan *rcp;
   int uid,cid,bid;
-  time_t expiry,now;
+  time_t expiry;
   int total=0;
 
   pgres=dbgetresult(dbconn);
@@ -548,8 +548,6 @@ void loadsomechanbans(DBConn *dbconn, void *arg) {
     Error("chanserv",ERR_ERROR,"Ban format error");
     return;
   }
-
-  now=time(NULL);
 
   while(dbfetchrow(pgres)) {
     bid=strtoul(dbgetvalue(pgres,0),NULL,10);

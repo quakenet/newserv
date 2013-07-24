@@ -21,9 +21,8 @@
 void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup;
-  unsigned int userID;
   char *oldpass, *newpass, *oldemail, *newemail;
-  time_t changetime, authtime;
+  time_t changetime;
   DBResult *pgres;
   int count=0;
   char tbuf[TIMELEN];
@@ -58,9 +57,9 @@ void csdb_doaccounthistory_real(DBConn *dbconn, void *arg) {
   /* @TIMELEN */
   chanservsendmessage(np, "Number: Time:               Old password:  New password:  Old email:                     New email:");
   while(dbfetchrow(pgres)) {
-    userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
+    /*userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);*/
     changetime=strtoul(dbgetvalue(pgres, 1), NULL, 10);
-    authtime=strtoul(dbgetvalue(pgres, 2), NULL, 10);
+    /*authtime=strtoul(dbgetvalue(pgres, 2), NULL, 10);*/
     oldpass=dbgetvalue(pgres, 3);
     newpass=dbgetvalue(pgres, 4);
     oldemail=dbgetvalue(pgres, 5);

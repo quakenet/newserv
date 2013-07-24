@@ -28,8 +28,8 @@
 void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   reguser *rup, *crup1, *crup2;
-  unsigned int userID, channelID, targetID;
-  time_t changetime, authtime;
+  unsigned int userID, targetID;
+  time_t changetime;
   flag_t oldflags, newflags;
   DBResult *pgres;
   int count=0;
@@ -66,10 +66,10 @@ void csdb_dochanlevhistory_real(DBConn *dbconn, void *arg) {
   chanservsendmessage(np, "Number: Time:               Changing user:  Changed user:   Old flags:      New flags:");
   while(dbfetchrow(pgres)) {
     userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
-    channelID=strtoul(dbgetvalue(pgres, 1), NULL, 10);
+    /*channelID=strtoul(dbgetvalue(pgres, 1), NULL, 10);*/
     targetID=strtoul(dbgetvalue(pgres, 2), NULL, 10);
     changetime=strtoul(dbgetvalue(pgres, 3), NULL, 10);
-    authtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
+    /*authtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);*/
     oldflags=strtoul(dbgetvalue(pgres, 5), NULL, 10);
     newflags=strtoul(dbgetvalue(pgres, 6), NULL, 10);
     q9strftime(tbuf, sizeof(tbuf), changetime);
