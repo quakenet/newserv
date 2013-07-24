@@ -32,10 +32,7 @@ void *authedpct_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) 
   int j=0;
   nick *np;
   chanindex *cip = (chanindex *)theinput;
-  struct authedpct_localdata *localdata;
 
-  localdata = thenode->localdata;
-  
   if (!cip->channel)
     return (void *)0;
   

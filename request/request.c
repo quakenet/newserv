@@ -324,8 +324,6 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
     return RQ_ERROR;
   }
 
-  retval = RQ_ERROR;
-
   retval = lr_requestl(rqnick, np, cp, qnick);
 
   if (rq_logfd != NULL) {

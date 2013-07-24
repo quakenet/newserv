@@ -1082,7 +1082,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
             char *name = argv[1], *description;
             SKIP_WORD; SKIP_WORD;
             description = ostr;
-            htrm = hterm_add(source, name, description);
+            hterm_add(source, name, description);
             helpmod_reply(sender, returntype, "Term %s added succesfully", name);
         }
     }
@@ -1889,7 +1889,6 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
 static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
-    hstat_channel *channel_stats;
     hstat_channel_entry *stat_entry;
 
     time_t timer = time(NULL);
@@ -1952,8 +1951,6 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
                 SKIP_WORD;
             }
         }
-
-    channel_stats = hchan->stats;
 
     if (!days && !weeks)
         return;
@@ -2685,7 +2682,6 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
     /* third pass - find status boundaries */
     {
 	for (;o_limit < nick_count && numeric_array[o_limit] & CUMODE_OP; o_limit++);
-        v_limit = o_limit;
 	for(v_limit = o_limit; (v_limit < nick_count) && numeric_array[v_limit] & CUMODE_VOICE; v_limit++);
     }
 

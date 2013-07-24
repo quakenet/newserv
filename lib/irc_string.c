@@ -261,7 +261,7 @@ const char *longtoduration(unsigned long interval, int format) {
         pos += sprintf(outstring+pos,"%d minute%s ",minutes,minutes==1?"":"s");
       }
       if (seconds>0 || !interval) {
-        pos += sprintf(outstring+pos,"%d second%s ",seconds,seconds==1?"":"s");
+        sprintf(outstring+pos,"%d second%s ",seconds,seconds==1?"":"s");
       }
     }
   } else {
@@ -275,7 +275,7 @@ const char *longtoduration(unsigned long interval, int format) {
       pos += sprintf(outstring+pos, "%dm ",minutes);
     }
     if (seconds>0 || !interval) {
-      pos += sprintf(outstring+pos, "%ds ",seconds);
+      sprintf(outstring+pos, "%ds ",seconds);
     }
   }
 

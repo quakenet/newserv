@@ -22,7 +22,7 @@
 
 int csu_dowhois(void *source, int cargc, char **cargv) {
   nick *sender=source;
-  reguser *rup=getreguserfromnick(sender), *target;
+  reguser *rup, *target;
   char buf[200];
   char nbpos=0;
   regchanuser *rcup, *rcup2;

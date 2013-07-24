@@ -415,7 +415,6 @@ const char* iptobase64(char* buf, const struct irc_in_addr* addr, unsigned int c
     if (curr_zeros > max_zeros) {
       max_start = ii - curr_zeros;
       max_zeros = curr_zeros;
-      curr_zeros = 0;
     }
     /* Print the rest of the address */
     for (ii = zero; ii < 8; ) {
