@@ -50,7 +50,6 @@ void hmacsha1_init(hmacsha1 *c, unsigned char *key, int keylen) {
     SHA1Init(&keyc);
     SHA1Update(&keyc, key, keylen);
     SHA1Final(realkey, &keyc);
-    keylen = 20;
   } else {
     memcpy(realkey, key, keylen);
   }
@@ -88,7 +87,6 @@ void hmacmd5_init(hmacmd5 *c, unsigned char *key, int keylen) {
     MD5Init(&keyc);
     MD5Update(&keyc, key, keylen);
     MD5Final(realkey, &keyc);
-    keylen = 16;
   } else {
     memcpy(realkey, key, keylen);
   }
