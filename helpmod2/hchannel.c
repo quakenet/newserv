@@ -331,6 +331,7 @@ void hchannels_dnmo(struct huser_struct *husr)
                         break;
                 }
             *hchanuser = tmp;
+            assert(*hchanuser != NULL);
             (*hchanuser)->next = NULL;
             if (on_desk(husr, huserchan))
             {
