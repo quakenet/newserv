@@ -68,7 +68,7 @@ static void rqhook_account(int hook, void *arg) {
 }
 
 static void rq_cleanup_fasttrack(void *arg) {
-  time_t now = getnettime();
+  time_t now;
   rq_fasttrack **pft, *ft;
   int j;
   nick *tnp;
