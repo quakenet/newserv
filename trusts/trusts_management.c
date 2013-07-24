@@ -118,7 +118,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
 static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *name, *contact, *comment, createdby[ACCOUNTLEN + 2];
-  unsigned int howmany, maxperident, enforceident;
+  long howmany, maxperident, enforceident;
   trustgroup *tg, itg;
   int override, flags;
 
@@ -128,13 +128,13 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
 
   name = cargv[0];
-  howmany = strtoul(cargv[1], NULL, 10);
+  howmany = strtol(cargv[1], NULL, 10);
   if(!override && (!howmany || (howmany > MAXTRUSTEDFOR))) {
     controlreply(sender, "Bad value maximum number of clients.");
     return CMD_ERROR;
   }
 
-  maxperident = strtoul(cargv[2], NULL, 10);
+  maxperident = strtol(cargv[2], NULL, 10);
   if(maxperident < 0 || (maxperident > MAXPERIDENT)) {
     controlreply(sender, "Bad value for max per ident.");
     return CMD_ERROR;
@@ -155,7 +155,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   }
 
   /* don't allow #id or id forms */
-  if((name[0] == '#') || strtoul(name, NULL, 10)) {
+  if((name[0] == '#') || strtol(name, NULL, 10)) {
     controlreply(sender, "Invalid trustgroup name.");
     return CMD_ERROR;
   }
@@ -330,7 +330,7 @@ static int modifycontact(void *arg, char *contact, nick *source, int override) {
 
 static int modifytrustedfor(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
-  unsigned int trustedfor = strtoul(num, NULL, 10);
+  long trustedfor = strtol(num, NULL, 10);
 
   if(trustedfor < 0) {
     controlreply(source, "The clone limit must not be negative.");
@@ -356,7 +356,7 @@ static int modifytrustedfor(void *arg, char *num, nick *source, int override) {
 
 static int modifymaxperident(void *arg, char *num, nick *source, int override) {
   trustgroup *tg = arg;
-  unsigned int maxperident = strtoul(num, NULL, 10);
+  long maxperident = strtol(num, NULL, 10);
 
   if(maxperident < 0) {
     controlreply(source, "Ident limit must not be negative.");
@@ -654,13 +654,13 @@ static int trusts_cmdtrustlog(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *name;
   int groupid;
-  int limit = 0;
+  long limit = 0;
 
   if(cargc < 1)
     return CMD_USAGE;
 
   if(cargc>1)
-    limit = strtoul(cargv[1], NULL, 10);
+    limit = strtol(cargv[1], NULL, 10);
 
   if(limit==0)
     limit = 100;
@@ -668,7 +668,7 @@ static int trusts_cmdtrustlog(void *source, int cargc, char **cargv) {
   name = cargv[0];
 
   if (name[0] == '#') {
-    groupid = strtoul(name + 1, NULL, 10);
+    groupid = strtol(name + 1, NULL, 10);
     trustlogspewid(sender, groupid, limit);
   } else {
     trustlogspewname(sender, name, limit);
@@ -680,7 +680,7 @@ static int trusts_cmdtrustlog(void *source, int cargc, char **cargv) {
 static int trusts_cmdtrustloggrep(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *pattern;
-  int limit = 0;
+  long limit = 0;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -688,7 +688,7 @@ static int trusts_cmdtrustloggrep(void *source, int cargc, char **cargv) {
   pattern = cargv[0];
 
   if(cargc>1)
-    limit = strtoul(cargv[1], NULL, 10);
+    limit = strtol(cargv[1], NULL, 10);
 
   if(limit==0)
     limit = 100;
