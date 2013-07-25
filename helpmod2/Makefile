@@ -7,7 +7,3 @@ TARGETS=huser.o hhooks.o hconf.o hgen.o hchannel.o hban.o hchanban.o hlamer.o ht
 all: helpmod2.so
 
 helpmod2.so: $(TARGETS)
-
-clean:
-	rm -f *~ *.o *.so
-
