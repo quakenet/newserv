@@ -7,7 +7,9 @@ LDFLAGS+=-lc
 
 all: dirs geoip.so
 
-geoip.so: geoip.o libGeoIP/GeoIP.o libGeoIP/regionName.o libGeoIP/timeZone.o
+libGeoIP/libgeoip.a: dirs
+
+geoip.so: geoip.o libGeoIP/libgeoip.a
 
 dirs: $(GEOIPDIRS)
 
@@ -15,4 +17,4 @@ $(GEOIPDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.so *.o *.so
+	rm -f */*.o */*.so *.o *.so */*.a
