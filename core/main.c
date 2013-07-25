@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
@@ -28,6 +29,8 @@ static int newserv_sigint_pending, newserv_sigusr1_pending, newserv_sighup_pendi
 static void (*oldsegv)(int);
 
 int main(int argc, char **argv) {
+  char *config = "newserv.conf";
+
   initseed();
   inithooks();
   inithandlers();
@@ -38,10 +41,18 @@ int main(int argc, char **argv) {
   initsstring();
   
   if (argc>1) {
-    initconfig(argv[1]);
-  } else {  
-    initconfig("newserv.conf");
+    if (strcmp(argv[1], "--help")==0) {
+      printf("Syntax: %s [config]\n", argv[0]);
+      puts("");
+      printf("Default configuration file unless specified: %s\n", config);
+
+      return 0;
+    }
+
+    config = argv[1];
   }
+
+  initconfig(config);
 
   /* Loading the modules will bring in the bulk of the code */
   initmodules();

@@ -58,7 +58,7 @@ default: all
 -include $(wildcard *.d)
 
 .c.o:
-	$(CC) $(CFLAGS) -MMD -c -o $@ $^
+	$(CC) $(CFLAGS) -MMD -c -o $@ $<
 
 .o.so:
 	$(CC) -nostartfiles -Wl,--export-dynamic -shared -o $@ $^ $(LDFLAGS)
