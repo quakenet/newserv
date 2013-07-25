@@ -51,7 +51,14 @@ BUILDID = $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g
 endif
 MFLAGS+=BUILDID=$(BUILDID)
 
+default: all
+
 .SUFFIXES: .so .y .l
+
+-include $(wildcard *.d)
+
+.c.o:
+	$(CC) $(CFLAGS) -MMD -c -o $@ $^
 
 .o.so:
 	$(CC) -nostartfiles -Wl,--export-dynamic -shared -o $@ $^ $(LDFLAGS)
@@ -59,8 +66,6 @@ MFLAGS+=BUILDID=$(BUILDID)
 .y.c:	;
 
 .l.c:	;
-
-default: all
 
 CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security

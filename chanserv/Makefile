@@ -13,7 +13,7 @@ $(CSDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.so *.o *.so
+	rm -f */*.o */*.d */*.so *.o *.d *.so
 
 distclean:
 	rm -f */.autobuild.mk .autobuild.mk
