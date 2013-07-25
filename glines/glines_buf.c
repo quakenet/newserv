@@ -243,7 +243,7 @@ void glinebufspew(glinebuf *gbuf, nick *spewto) {
     else
       strftime(lastmod, sizeof(lastmod), "%d/%m/%y %H:%M:%S", localtime(&gl->lastmod));
 
-    controlreply(spewto, "%-40s %-20s %-20s %-25s %s", glinetostring(gl), timebuf, lastmod, gl->creator->content, gl->reason->content);
+    controlreply(spewto, "%-40s %-20s %-20s %-25s %s", glinetostring(gl), timebuf, lastmod, gl->creator->content, gl->reason ? gl->reason->content : "");
   }
 
   controlreply(spewto, "Hits");

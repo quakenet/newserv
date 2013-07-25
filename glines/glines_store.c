@@ -19,7 +19,7 @@ static int glstore_savefile(const char *file) {
     fprintf(fp, "%s %jd,%jd,%jd,%d,%s,%s\n",
       glinetostring(gl), (intmax_t)gl->expire, (intmax_t)gl->lastmod, (intmax_t)gl->lifetime,
       (gl->flags & GLINE_ACTIVE) ? 1 : 0,
-      gl->creator->content, gl->reason->content);
+      gl->creator->content, gl->reason ? gl->reason->content : "");
     count++;
   }
 

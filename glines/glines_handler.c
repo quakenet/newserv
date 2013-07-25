@@ -135,7 +135,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
     agline = findgline(mask);
 
     if (agline) {
-      Error("debuggline", ERR_WARNING, "Update for existing gline received for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason->content, agline->creator->content);
+      Error("debuggline", ERR_WARNING, "Update for existing gline received for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason ? agline->reason->content : "", agline->creator->content);
 
       agline->flags |= GLINE_ACTIVE;
 

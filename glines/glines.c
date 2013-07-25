@@ -173,45 +173,45 @@ void gline_propagate(gline *agline) {
 #else
     controlwall(NO_OPER, NL_GLINES, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
-      agline->reason->content, agline->creator->content);
+      agline->reason ? agline->reason->content : "", agline->creator->content);
 
 #if 1
     irc_send("%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
     controlwall(NO_OPER, NL_GLINES, "%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
 #endif /* SNIRCD_VERSION */
   } else if (agline->flags & GLINE_ACTIVE) {
     controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
-      agline->creator->content, agline->reason->content);
+      agline->creator->content, agline->reason ? agline->reason->content : "");
 
 #if 1
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
     controlwall(NO_OPER, NL_GLINES, "%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
   } else {
     controlwall(NO_OPER, NL_GLINES, "Deactivating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
-      agline->creator->content, agline->reason->content);
+      agline->creator->content, agline->reason ? agline->reason->content : "");
 
 #if 1
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
     controlwall(NO_OPER, NL_GLINES, "%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason->content);
+      agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
   }
 }
@@ -302,7 +302,7 @@ int isglinesane(gline *gl, const char **hint) {
   trusthost *th;
 
   /* Reason is too short */
-  if (strlen(gl->reason->content) < MINGLINEREASONLEN) {
+  if (!gl->reason || strlen(gl->reason->content) < MINGLINEREASONLEN) {
     *hint = "G-Line reason is too short.";
     return 0;
   }
@@ -414,7 +414,7 @@ gline *glinedup(gline *gl) {
   if (gl->host)
     sgl->host = getsstring(gl->host->content, 512);
 
-  sgl->reason = getsstring(gl->reason->content, 512);
+  sgl->reason = gl->reason ? getsstring(gl->reason->content, 512) : NULL;
   sgl->creator = getsstring(gl->creator->content, 512);
 
   memcpy(&sgl->ip, &gl->ip, sizeof(gl->ip));
