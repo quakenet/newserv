@@ -13,39 +13,6 @@ else
 HOOK_ENGINE=old
 endif
 
-# if USE_VALGRIND == 1
-ifeq (${USE_VALGRIND},1)
-  CFLAGS+=-DUSE_VALGRIND
-  SSTRING_ENGINE=valgrind
-
-## if SSTRING_NEW == 1
-ifeq (${SSTRING_NEW},1)
-    IMPOSSIBLE="USE_VALGRIND and SSTRING_NEW"
-endif # SSTRING_NEW == 1
-
-## if SSTRING_MMAP == 1
-ifeq (${SSTRING_MMAP},1)
-    IMPOSSIBLE="USE_VALGRIND and SSTRING_MMAP"
-endif ## SSTRING_MMAP == 1
-else # USE_VALGRIND == 1
-
-## if SSTRING_NEW == 1
-ifeq (${SSTRING_NEW},1)
-    SSTRING_ENGINE=new
-else ## SSTRING_NEW == 1
-    SSTRING_ENGINE=old
-
-### if SSTRING_MMAP == 1
-ifeq (${SSTRING_MMAP},1)
-      IMPOSSIBLE="SSTRING_MMAP without SSTRING_NEW"
-endif ### SSTRING_MMAP == 1
-endif ## SSTRING_NEW == 1
-endif # USE_VALGRIND == 1
-
-ifdef IMPOSSIBLE
-$(error impossible combination of settings: ${IMPOSSIBLE})
-endif
-
 ifndef BUILDID
 BUILDID = $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" )
 endif
