@@ -122,6 +122,7 @@ int registerhandler(int fd, short events, FDHandler handler) {
    
   eventhandlers[fd].handler=handler;
 
+  memset(&epe, 0, sizeof(epe));
   epe.data.fd=fd;
   epe.events=polltoepoll(events);
 
