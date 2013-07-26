@@ -343,7 +343,7 @@ int controlrmmod(void *sender, int cargc, char **cargv) {
   if (cargc<1)
     return CMD_USAGE;
   
-  switch(rmmod(cargv[0])) {
+  switch(rmmod(cargv[0], 1)) {
     case 1:
       controlreply((nick *)sender,"Module %s is not loaded.",cargv[0]);
       return CMD_ERROR;
@@ -611,7 +611,7 @@ void controlspecialrmmod(void *arg) {
   
   a->schedule = NULL;
 
-  rmmod(froo->content);
+  rmmod(froo->content, 1);
   freesstring(froo);
 }
 
