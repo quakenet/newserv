@@ -13,6 +13,7 @@
 #define endpools() nsmallocpools; extern char *nsmpoolnames[MAXPOOL];
 
 #include <stdlib.h>
+#include <stdint.h>
 
 void *nsmalloc(unsigned int poolid, size_t size);
 void nsfree(unsigned int poolid, void *ptr);
@@ -24,12 +25,13 @@ void nscheckfreeall(unsigned int poolid);
 void *nscalloc(unsigned int poolid, size_t nmemb, size_t size);
 
 #define MAXPOOL		100
-
+#define REDZONE_MAGIC   0x243653E957851F68ULL
 struct nsminfo {
   struct nsminfo *next;
   struct nsminfo *prev;
 
   size_t size;
+  uint64_t redzone;
   char data[];
 };
 
