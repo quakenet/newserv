@@ -161,6 +161,7 @@ int nsmhistogram(void *sender, int cargc, char **cargv) {
     }
     if((low > np->size) || (freqs[low].size != np->size)) {
       controlreply(sender, "ERROR");
+      free(freqs);
       return CMD_ERROR;
     } else {
       freqs[low].freq++;

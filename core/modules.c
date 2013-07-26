@@ -139,6 +139,7 @@ void initmoduledeps() {
         Error("core",ERR_ERROR,
                "Too many modules in dependency file; rebuild with higher MAXMODULES.  Module dependencies disabled.\n");
         clearmoduledeps();
+        fclose(fp);
         return;
       }
       
@@ -155,11 +156,14 @@ void initmoduledeps() {
           Error("core",ERR_WARNING,"Couldn't find parent module %s of %s.  Module dependencies disabled.",
                   largv[i+1],largv[0]);
           clearmoduledeps();
+          fclose(fp);
           return;
         }
         mdp->parents[i]->numchildren++; /* break the bad news */
       }
     }
+
+    fclose(fp);
     
     /* Second pass */
     for (i=0;i<knownmodules;i++) {

@@ -3301,6 +3301,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	if ((in = fopen(fname_buffer, "rt")) != NULL)
 	{
 	    helpmod_reply(sender, returntype, "Can not add text: Text %s already exists", argv[1]);
+            fclose(in);
             return;
 	}
 	else
