@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "nsmalloc.h"
 #define __NSMALLOC_C
