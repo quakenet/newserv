@@ -10,14 +10,12 @@
 #include "../lib/irc_string.h"
 #include "jupe.h"
 
-jupe_t *jupes;
+jupe_t *jupes = NULL;
 
 int handlejupe(void *source, int cargc, char **cargv);
 void sendjupeburst(int hook, void *args);
 
 void _init() {
-	jupes = NULL;
-
 	registerhook(HOOK_IRC_SENDBURSTBURSTS, &sendjupeburst);
 	
 	registerserverhandler("JU", &handlejupe, 5);
@@ -103,7 +101,7 @@ void sendjupeburst(int hook, void *args) {
 }
 
 jupe_t *make_jupe(char *server, char *reason, time_t expirets, time_t lastmod, unsigned int flags) {
-	jupe_t *jupe, *last_jupe;
+	jupe_t *jupe;
 
 	jupe = (jupe_t*)malloc(sizeof(jupe_t));
 
@@ -118,16 +116,8 @@ jupe_t *make_jupe(char *server, char *reason, time_t expirets, time_t lastmod, u
 	jupe->ju_next = NULL;
 
 	/* add the jupe to our linked list */
-	if (jupes == NULL)
-		jupes = jupe;
-	else {
-		last_jupe = jupes;
-
-		while (last_jupe->ju_next)
-			last_jupe = last_jupe->ju_next;
-
-		last_jupe->ju_next = jupe;
-	}
+	jupe->ju_next = jupes;
+	jupes = jupe;
 
 	return jupe;
 }
