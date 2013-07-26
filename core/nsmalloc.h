@@ -17,6 +17,7 @@
 void *nsmalloc(unsigned int poolid, size_t size);
 void nsfree(unsigned int poolid, void *ptr);
 void nsfreeall(unsigned int poolid);
+void nsinit(void);
 void nsexit(void);
 void *nsrealloc(unsigned int poolid, void *ptr, size_t size);
 void nscheckfreeall(unsigned int poolid);
@@ -35,7 +36,7 @@ struct nsminfo {
 struct nsmpool {
   unsigned long count;
   size_t size;
-  struct nsminfo first;
+  struct nsminfo *blocks;
 };
 
 extern struct nsmpool nsmpools[MAXPOOL];

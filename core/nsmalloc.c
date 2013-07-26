@@ -8,12 +8,12 @@
 #undef __NSMALLOC_H
 #include "nsmalloc.h"
 
+#include "../lib/valgrind.h"
+#include "../lib/memcheck.h"
 #include "../core/hooks.h"
 #include "../core/error.h"
 
 struct nsmpool nsmpools[MAXPOOL];
-
-#ifndef USE_NSMALLOC_VALGRIND
 
 void *nsmalloc(unsigned int poolid, size_t size) {
   struct nsminfo *nsmp;
@@ -26,16 +26,24 @@ void *nsmalloc(unsigned int poolid, size_t size) {
 
   if (!nsmp)
     return NULL;
-  
+
+  VALGRIND_CREATE_MEMPOOL(nsmp, 0, 0);
+
   nsmp->size=size;
   nsmpools[poolid].size+=size;
   nsmpools[poolid].count++;
 
-  nsmp->next=nsmpools[poolid].first.next;
-  nsmp->prev=&nsmpools[poolid].first;
-  if (nsmpools[poolid].first.next)
-    nsmpools[poolid].first.next->prev=nsmp;
-  nsmpools[poolid].first.next=nsmp;
+  if (nsmpools[poolid].blocks) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmpools[poolid].blocks, sizeof(struct nsminfo));
+    nsmpools[poolid].blocks->prev = nsmp;
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmpools[poolid].blocks, sizeof(struct nsminfo));
+  }
+  nsmp->next=nsmpools[poolid].blocks;
+  nsmp->prev=NULL;
+  nsmpools[poolid].blocks=nsmp;
+
+  VALGRIND_MEMPOOL_ALLOC(nsmp, nsmp->data, nsmp->size);
+  VALGRIND_MAKE_MEM_NOACCESS(nsmp, sizeof(struct nsminfo));
 
   return (void *)nsmp->data;
 }
@@ -53,7 +61,6 @@ void *nscalloc(unsigned int poolid, size_t nmemb, size_t size) {
   return m;
 }
 
-/* we dump core on ptr == NULL */
 void nsfree(unsigned int poolid, void *ptr) {
   struct nsminfo *nsmp;
   
@@ -63,15 +70,28 @@ void nsfree(unsigned int poolid, void *ptr) {
   /* evil */
   nsmp=(struct nsminfo*)ptr - 1;
 
-  /* always set as we have a sentinel */
-  nsmp->prev->next=nsmp->next;
-  if (nsmp->next)
-    nsmp->next->prev=nsmp->prev;
+  VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
+
+  if (nsmp->prev) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmp->prev, sizeof(struct nsminfo));
+    nsmp->prev->next = nsmp->next;
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmp->prev, sizeof(struct nsminfo));
+  } else
+    nsmpools[poolid].blocks = NULL;
+
+  if (nsmp->next) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmp->next, sizeof(struct nsminfo));
+    nsmp->next->prev = nsmp->prev;
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmp->next, sizeof(struct nsminfo));
+  }
 
   nsmpools[poolid].size-=nsmp->size;
   nsmpools[poolid].count--;
 
+  VALGRIND_MEMPOOL_FREE(nsmp, nsmp->data);
   free(nsmp);
+  VALGRIND_DESTROY_MEMPOOL(nsmp);
+
   return;
 }
 
@@ -92,21 +112,39 @@ void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
   /* evil */
   nsmp=(struct nsminfo *)ptr - 1;
 
-  if (size == nsmp->size)
+  VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
+
+  if (size == nsmp->size) {
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmp, sizeof(struct nsminfo));
     return (void *)nsmp->data;
+  }
 
   nsmpn=(struct nsminfo *)realloc(nsmp, sizeof(struct nsminfo)+size);
-  if (!nsmpn)
+  if (!nsmpn) {
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmp, sizeof(struct nsminfo));
     return NULL;
+  }
+
+  VALGRIND_MOVE_MEMPOOL(nsmp, nsmpn);
 
   nsmpools[poolid].size+=size-nsmpn->size;
   nsmpn->size=size;
 
-  /* always set as we have a sentinel */
-  nsmpn->prev->next=nsmpn;
+  if (nsmpn->prev) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmpn->prev, sizeof(struct nsminfo));
+    nsmpn->prev->next=nsmpn;
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmpn->prev, sizeof(struct nsminfo));
+  } else
+    nsmpools[poolid].blocks = nsmpn;
 
-  if (nsmpn->next)
+  if (nsmpn->next) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmpn->next, sizeof(struct nsminfo));
     nsmpn->next->prev=nsmpn;
+    VALGRIND_MAKE_MEM_UNDEFINED(nsmpn->next, sizeof(struct nsminfo));
+  }
+
+  VALGRIND_MEMPOOL_CHANGE(nsmpn, nsmp->data, nsmpn->data, nsmpn->size);
+  VALGRIND_MAKE_MEM_UNDEFINED(nsmpn, sizeof(struct nsminfo));
 
   return (void *)nsmpn->data;
 }
@@ -117,12 +155,15 @@ void nsfreeall(unsigned int poolid) {
   if (poolid >= MAXPOOL)
     return;
  
-  for (nsmp=nsmpools[poolid].first.next;nsmp;nsmp=nnsmp) {
+  for (nsmp=nsmpools[poolid].blocks;nsmp;nsmp=nnsmp) {
+    VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
     nnsmp=nsmp->next;
+    VALGRIND_MEMPOOL_FREE(nsmp, nsmp->data);
     free(nsmp);
+    VALGRIND_DESTROY_MEMPOOL(nsmp);
   }
   
-  nsmpools[poolid].first.next=NULL;
+  nsmpools[poolid].blocks=NULL;
   nsmpools[poolid].size=0;
   nsmpools[poolid].count=0;
 }
@@ -131,10 +172,14 @@ void nscheckfreeall(unsigned int poolid) {
   if (poolid >= MAXPOOL)
     return;
  
-  if (nsmpools[poolid].first.next) {
+  if (nsmpools[poolid].blocks) {
     Error("core",ERR_INFO,"nsmalloc: Blocks still allocated in pool #%d (%s): %zub, %lu items",poolid,nsmpoolnames[poolid]?nsmpoolnames[poolid]:"??",nsmpools[poolid].size,nsmpools[poolid].count);
     nsfreeall(poolid);
   }
+}
+
+void nsinit(void) {
+  memset(nsmpools, 0, sizeof(nsmpools));
 }
 
 void nsexit(void) {
@@ -143,34 +188,4 @@ void nsexit(void) {
   for (i=0;i<MAXPOOL;i++)
     nsfreeall(i);
 }
-
-#else
-
-void *nsmalloc(unsigned int poolid, size_t size) {
-  return malloc(size);
-}
-
-void *nscalloc(unsigned int poolid, size_t nmemb, size_t size) {
-  return calloc(nmemb, size);
-}
-
-void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
-  return realloc(ptr, size);
-}
-
-void nsfree(unsigned int poolid, void *ptr) {
-  if(ptr)
-    free(ptr);
-}
-
-void nsfreeall(unsigned int poolid) {
-}
-
-void nsexit(void) {
-}
-
-void nscheckfreeall(unsigned int poolid) {
-}
-
-#endif
 
