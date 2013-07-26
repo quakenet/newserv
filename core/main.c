@@ -14,6 +14,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 
 void initseed();
 void init_logfile();

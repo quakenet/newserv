@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "nsmalloc.h"
 #define __NSMALLOC_C
@@ -34,16 +35,16 @@ void *nsmalloc(unsigned int poolid, size_t size) {
   nsmpools[poolid].count++;
 
   if (nsmpools[poolid].blocks) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmpools[poolid].blocks, sizeof(struct nsminfo));
     nsmpools[poolid].blocks->prev = nsmp;
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmpools[poolid].blocks, sizeof(struct nsminfo));
   }
   nsmp->next=nsmpools[poolid].blocks;
   nsmp->prev=NULL;
   nsmpools[poolid].blocks=nsmp;
 
   VALGRIND_MEMPOOL_ALLOC(nsmp, nsmp->data, nsmp->size);
-  VALGRIND_MAKE_MEM_NOACCESS(nsmp, sizeof(struct nsminfo));
+
+  nsmp->redzone = REDZONE_MAGIC;
+  VALGRIND_MAKE_MEM_NOACCESS(&nsmp->redzone, sizeof(nsmp->redzone));
 
   return (void *)nsmp->data;
 }
@@ -70,19 +71,16 @@ void nsfree(unsigned int poolid, void *ptr) {
   /* evil */
   nsmp=(struct nsminfo*)ptr - 1;
 
-  VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
+  VALGRIND_MAKE_MEM_DEFINED(&nsmp->redzone, sizeof(nsmp->redzone));
+  assert(nsmp->redzone == REDZONE_MAGIC);
 
   if (nsmp->prev) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmp->prev, sizeof(struct nsminfo));
     nsmp->prev->next = nsmp->next;
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmp->prev, sizeof(struct nsminfo));
   } else
     nsmpools[poolid].blocks = NULL;
 
   if (nsmp->next) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmp->next, sizeof(struct nsminfo));
     nsmp->next->prev = nsmp->prev;
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmp->next, sizeof(struct nsminfo));
   }
 
   nsmpools[poolid].size-=nsmp->size;
@@ -114,16 +112,12 @@ void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
 
   VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
 
-  if (size == nsmp->size) {
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmp, sizeof(struct nsminfo));
+  if (size == nsmp->size)
     return (void *)nsmp->data;
-  }
 
   nsmpn=(struct nsminfo *)realloc(nsmp, sizeof(struct nsminfo)+size);
-  if (!nsmpn) {
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmp, sizeof(struct nsminfo));
+  if (!nsmpn)
     return NULL;
-  }
 
   VALGRIND_MOVE_MEMPOOL(nsmp, nsmpn);
 
@@ -131,20 +125,15 @@ void *nsrealloc(unsigned int poolid, void *ptr, size_t size) {
   nsmpn->size=size;
 
   if (nsmpn->prev) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmpn->prev, sizeof(struct nsminfo));
     nsmpn->prev->next=nsmpn;
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmpn->prev, sizeof(struct nsminfo));
   } else
     nsmpools[poolid].blocks = nsmpn;
 
   if (nsmpn->next) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmpn->next, sizeof(struct nsminfo));
     nsmpn->next->prev=nsmpn;
-    VALGRIND_MAKE_MEM_UNDEFINED(nsmpn->next, sizeof(struct nsminfo));
   }
 
   VALGRIND_MEMPOOL_CHANGE(nsmpn, nsmp->data, nsmpn->data, nsmpn->size);
-  VALGRIND_MAKE_MEM_UNDEFINED(nsmpn, sizeof(struct nsminfo));
 
   return (void *)nsmpn->data;
 }
@@ -156,7 +145,6 @@ void nsfreeall(unsigned int poolid) {
     return;
  
   for (nsmp=nsmpools[poolid].blocks;nsmp;nsmp=nnsmp) {
-    VALGRIND_MAKE_MEM_DEFINED(nsmp, sizeof(struct nsminfo));
     nnsmp=nsmp->next;
     VALGRIND_MEMPOOL_FREE(nsmp, nsmp->data);
     free(nsmp);
