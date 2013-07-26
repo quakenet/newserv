@@ -730,21 +730,10 @@ int qr_instantrequestq(nick *sender, channel *cp) {
 
 int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   chanindex *cip = cp->index;
-  int who = 0;
   requestrec *nextreq, *lastreq;
-
-  if (rq_isspam(sender)) {
-      sendnoticetouser(rqnick, sender, "Do not flood the request system."
-          " Try again in %s.", rq_longtoduration(rq_blocktime(sender)));
-    
-      return RQ_ERROR;
-  }
 
   /* check which service is on the channel */
   if (getnumerichandlefromchanhash(cp->users, qnick->numeric) != NULL) {
-    /* we've found Q */
-    who = QR_Q;
-
     /* Request stats from Q */
     sendmessagetouser(rqnick, qnick, "CHANLEV %s", cip->name->content);
 
@@ -809,10 +798,10 @@ void qr_finirequest(void) {
 
 void qr_requeststats(nick *rqnick, nick *np) {
   sendnoticetouser(rqnick, np, "- Suspended (S):                  %d", qr_suspended);
-  sendnoticetouser(rqnick, np, "- No chanstats (S):             %d", qr_nohist);
-  sendnoticetouser(rqnick, np, "- Too small (S):                %d", qr_toosmall);
-  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):  %d", qr_nochanlev);
-  sendnoticetouser(rqnick, np, "- User was not the owner (S):   %d", qr_notowner);
+  sendnoticetouser(rqnick, np, "- No chanstats (S):               %d", qr_nohist);
+  sendnoticetouser(rqnick, np, "- Too small (S):                  %d", qr_toosmall);
+  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):    %d", qr_nochanlev);
+  sendnoticetouser(rqnick, np, "- User was not the owner (S):     %d", qr_notowner);
   sendnoticetouser(rqnick, np, "- A:                              %d", qr_a);
   sendnoticetouser(rqnick, np, "- B:                              %d", qr_b);
   sendnoticetouser(rqnick, np, "- C:                              %d", qr_c);

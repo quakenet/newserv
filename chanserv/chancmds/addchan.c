@@ -37,7 +37,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   reguser *founder;
   flag_t flags;
   short type=0;
-  unsigned int i;
+  unsigned int i, count;
   void *args[3];
   
   if (!rup)
@@ -102,7 +102,19 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
       chanservstdmessage(notify, QM_ALREADYREGISTERED, cip->name->content);
     return CMD_ERROR;
   }
-  
+
+  count = 0;
+
+  for (rcup=founder->knownon;rcup;rcup=rcup->nextbyuser)
+    count++; 
+
+  if (count > MAXCHANNELS) {
+    chanservstdmessage(sender, QM_TOOMANYCHANNELS, cip->name->content);
+    if (notify)
+      chanservstdmessage(sender, QM_TOOMANYCHANNELS, cip->name->content);
+    return CMD_ERROR;
+  }
+
   /* Initialise the channel */ 
   rcp=getregchan();
   

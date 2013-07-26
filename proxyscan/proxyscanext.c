@@ -89,6 +89,8 @@ void loadextrascans() {
       }
     }
   }
+
+  fclose(fp);
 }
 
 

@@ -74,8 +74,7 @@ int strregexp(const char * str, const char * pattern)
 #define TIME_PRINT(elem,marker)\
 if (elem)\
 {\
-    sprintf(buf, " %d%s%n", elem, marker, &tmp);\
-    buf+=tmp;\
+    buf+=sprintf(buf, " %d%s", elem, marker);\
 }\
 
 /* This implementation might look a little evil but it does work */
@@ -87,7 +86,7 @@ const char *helpmod_strtime(int total_seconds)
     char *buf = buffers[buffer_index];
     char *buffer = buf;
 
-    int years, months, days, hours, minutes, seconds, tmp;
+    int years, months, days, hours, minutes, seconds;
 
     buffer_index = (buffer_index+1) % 3;
 

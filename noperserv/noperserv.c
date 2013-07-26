@@ -171,7 +171,6 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
         return CMD_ERROR;
       }
       newaccount = a->name;
-      target = a->nicks;
     } else {
       target = getnickbynick(cargv[0]);
       if(!target) {

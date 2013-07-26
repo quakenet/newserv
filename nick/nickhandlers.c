@@ -128,10 +128,6 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     }
 
     base64toip(cargv[cargc-3], &ipaddress);
-    if (!irc_in_addr_valid(&ipaddress)) {
-      Error("nick",ERR_ERROR,"Received NICK with invalid ipaddress for %s from %s.",cargv[0],sender);
-      return CMD_ERROR;
-    }
 
     /* At this stage the nick is cleared to proceed */
     np=newnick();
@@ -162,6 +158,8 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->authname=NULLAUTHNAME;
     np->auth=NULL;
     np->accountts=0;
+    np->cloak_count = 0;
+    np->cloak_extra = NULL;
     if(cargc>=9) {
       int sethostarg = 6, opernamearg = 6, accountarg = 6;
 
@@ -404,7 +402,6 @@ int handleaccountmsg(void *source, int cargc, char **cargv) {
 
 int handleprivmsg(void *source, int cargc, char **cargv) {
   nick *sender;
-  char *message;
   void *args[3];
 
   if (cargc<2)
@@ -417,8 +414,6 @@ int handleprivmsg(void *source, int cargc, char **cargv) {
 
   if (!match2strings(cargv[0] + 1,myserver->content))
     return CMD_OK;
-
-  message=cargv[0];
 
   args[0]=sender;
   args[1]=cargv[0];
@@ -448,3 +443,37 @@ int handleawaymsg(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
+
+int handleaddcloak(void *source, int cargc, char **cargv) {
+  nick *sender, *target;
+
+  /* Check source is a valid user */
+  if (!(sender=getnickbynumericstr(source))) {
+    return CMD_OK;
+  }
+
+  if (cargc < 1)
+    return CMD_OK;
+
+  if (!(target=getnickbynumericstr(cargv[0]))) {
+    return CMD_OK;
+  }
+
+  addcloaktarget(sender, target);
+
+  return CMD_OK;
+}
+
+int handleclearcloak(void *source, int cargc, char **cargv) {
+  nick *sender;
+
+  /* Check source is a valid user */
+  if (!(sender=getnickbynumericstr(source))) {
+    return CMD_OK;
+  }
+
+  clearcloaktargets(sender);
+
+  return CMD_OK;
+}
+

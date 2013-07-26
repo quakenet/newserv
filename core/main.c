@@ -1,4 +1,5 @@
 #include "../lib/sstring.h"
+#include "../lib/valgrind.h"
 #include "events.h"
 #include "schedule.h"
 #include "hooks.h"
@@ -9,9 +10,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 
 void initseed();
 void init_logfile();
@@ -28,6 +31,10 @@ static int newserv_sigint_pending, newserv_sigusr1_pending, newserv_sighup_pendi
 static void (*oldsegv)(int);
 
 int main(int argc, char **argv) {
+  char *config = "newserv.conf";
+
+  nsinit();
+
   initseed();
   inithooks();
   inithandlers();
@@ -38,10 +45,18 @@ int main(int argc, char **argv) {
   initsstring();
   
   if (argc>1) {
-    initconfig(argv[1]);
-  } else {  
-    initconfig("newserv.conf");
+    if (strcmp(argv[1], "--help")==0) {
+      printf("Syntax: %s [config]\n", argv[0]);
+      puts("");
+      printf("Default configuration file unless specified: %s\n", config);
+
+      return 0;
+    }
+
+    config = argv[1];
   }
+
+  initconfig(config);
 
   /* Loading the modules will bring in the bulk of the code */
   initmodules();
@@ -71,6 +86,14 @@ int main(int argc, char **argv) {
   finihandlers();
 
   nsexit();
+
+  if (RUNNING_ON_VALGRIND) {
+    /* We've already manually called _fini for each of the modules. Make sure
+     * it's not getting called again when the libraries are unloaded. */
+    _exit(0);
+  }
+
+  return 0;
 }
 
 void handlesignals(void) {

@@ -33,12 +33,12 @@
 int csc_doadduser(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
-  regchanuser *rcup, *rcuplist;
+  regchanuser *rcup, *trcup, *rcuplist;
   regchan *rcp;
   reguser *rup;
   flag_t addflags;
   char *flagbuf;
-  unsigned int count=0;
+  unsigned int chanlevcount=0, channelcount=0;
   int added=0;
   int i, foundflags=0;
   void *args[3];
@@ -82,9 +82,9 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
   flagbuf=printflags(addflags, rcuflags);  
 
   /* ugh */
-  for (count=i=0;i<REGCHANUSERHASHSIZE;i++)
+  for (chanlevcount=i=0;i<REGCHANUSERHASHSIZE;i++)
     for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
-      count++;
+      chanlevcount++;
 
   /* If we found flags don't try to add them as a user as well.. */
   for (i=1+foundflags;i<cargc;i++) {
@@ -96,10 +96,19 @@ int csc_doadduser(void *source, int cargc, char **cargv) {
       continue;
     }
 
-    if(count++ >= MAXCHANLEVS) {
+    if(chanlevcount++ >= MAXCHANLEVS) {
       chanservstdmessage(sender, QM_TOOMANYCHANLEVS);
       chanservstdmessage(sender, QM_DONE);
       return CMD_OK;
+    }
+
+    channelcount=0;
+    for (trcup=rup->knownon;trcup;trcup=trcup->nextbyuser)
+      channelcount++;
+
+    if(channelcount >= MAXCHANNELS) {
+      chanservstdmessage(sender, QM_TOOMANYCHANNELS);
+      return CMD_ERROR;
     }
 
     rcup=getregchanuser();

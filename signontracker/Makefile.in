@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: signontracker.so
-
-signontracker.so: signontracker.o

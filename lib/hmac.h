@@ -28,4 +28,4 @@ void hmacmd5_init(hmacmd5 *c, unsigned char *key, int keylen);
 
 char *hmac_printhex(unsigned char *data, char *out, size_t len);
 
-int hmac_strcmp(char *a, char *b);
+int hmac_strcmp(const char *a, const char *b);

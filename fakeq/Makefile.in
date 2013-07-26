@@ -1,9 +1,0 @@
-CFLAGS+=$(INCDBAPI) $(INCPCRE)
-LDFLAGS+=$(LIBDBAPI) $(LIBPCRE)
-
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: fakeq.so
-
-fakeq.so: fakeq.o

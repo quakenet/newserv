@@ -91,7 +91,7 @@ int lua_reloadlua(void *sender, int cargc, char **cargv) {
 
 int lua_lslua(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
-  lua_list *l = lua_head;
+  lua_list *l;
 
   controlreply(np, "Loaded scripts:");
 

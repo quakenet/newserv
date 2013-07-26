@@ -5,13 +5,12 @@
 #include "request.h"
 #include "lrequest.h"
 #include "request_block.h"
+#include "request_fasttrack.h"
 #include "../localuser/localuser.h"
 
 /* stats counters */
-int lr_noregops = 0;
-int lr_scoretoolow = 0;
 int lr_top5 = 0;
-int lr_floodattempts = 0;
+int lr_notargets = 0;
 
 #define min(a,b) ((a > b) ? b : a)
 
@@ -30,56 +29,38 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 
   cf = cf_findchanfix(cp->index);
 
-  if (cf == NULL) {
-    sendnoticetouser(svc, np, "Sorry, your channel '%s' was created recently. "
-          "Please try again in an hour.", cp->index->name->content);
+  if(cf) {
+    rocount = cf_getsortedregops(cf, LR_TOPX, rolist);
 
-    lr_noregops++;
+    ro = NULL;
 
-    return RQ_ERROR;
-  }
-
-  rocount = cf_getsortedregops(cf, LR_TOPX, rolist);
-
-  ro = NULL;
-
-  for (i = 0; i < min(LR_TOPX, rocount); i++) {
-    if (cf_cmpregopnick(rolist[i], np)) {
-      ro = rolist[i];
-      break;
+    for (i = 0; i < min(LR_TOPX, rocount); i++) {
+      if (cf_cmpregopnick(rolist[i], np)) {
+        ro = rolist[i];
+        break;
+      }
     }
-  }
 
-  if (ro == NULL) {
-    sendnoticetouser(svc, np, "Sorry, you must be one of the top %d ops "
-          "for the channel '%s'.", LR_TOPX, cp->index->name->content);
+    if (ro == NULL) {
+      sendnoticetouser(svc, np, "Sorry, you must be one of the top %d ops "
+            "for the channel '%s'.", LR_TOPX, cp->index->name->content);
 
-    lr_top5++;
-
-    return RQ_ERROR;
-  }
-
-  /* treat blocked users as if their score is too low */
-  if (ro->score < LR_CFSCORE || rq_findblock(np->authname)) {
-    if (rq_isspam(np)) {
-      sendnoticetouser(svc, np, "Do not flood the request system. "
-            "Try again in %s.", rq_longtoduration(rq_blocktime(np)));
-
-      lr_floodattempts++;
+      lr_top5++;
 
       return RQ_ERROR;
     }
+  }
 
-    sendnoticetouser(svc, np, "Sorry, you do not meet the "
-          "%s request requirements; please try again in an hour, "
-          "see http://www.quakenet.org/faq/faq.php?c=1&f=6#6", RQ_QNICK);
+  /* treat blocked users as if they're out of targets */
+  if(rq_findblock(np->authname) || !rq_tryfasttrack(np)) {
+    sendnoticetouser(svc, np, "Sorry, you may not request %s for another "
+      "channel at this time. Please try again in an hour.", RQ_QNICK);
 
-    lr_scoretoolow++;
+    lr_notargets++;
 
     return RQ_ERROR;
   }
 
-  
   sendmessagetouser(svc, qnick, "addchan %s #%s +jp upgrade %s", cp->index->name->content,
         np->authname, np->nick);
 
@@ -91,8 +72,6 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 }
 
 void lr_requeststats(nick *rqnick, nick *np) {
-  sendnoticetouser(rqnick, np, "- No registered ops (Q):          %d", lr_noregops);
-  sendnoticetouser(rqnick, np, "- Score too low (Q):              %d", lr_scoretoolow);
+  sendnoticetouser(rqnick, np, "- Too many requests (Q):          %d", lr_notargets);
   sendnoticetouser(rqnick, np, "- Not in top%d (Q):                %d", LR_TOPX, lr_top5);
-  sendnoticetouser(rqnick, np, "- Floods (Q):                     %d", lr_floodattempts);
 }

@@ -35,6 +35,7 @@ const flag umodeflags[] = {
    { 'R', UMODE_REGPRIV },
    { 'I', UMODE_HIDEIDLE },
    { 'P', UMODE_PARANOID },
+   { 'C', UMODE_CLOAKED },
    { '\0', 0 } };
 
 const flag accountflags[] = {
@@ -90,6 +91,8 @@ void _init() {
   registerserverhandler("AC",&handleaccountmsg,4);
   registerserverhandler("P",&handleprivmsg,2);
   registerserverhandler("A",&handleawaymsg,1);
+  registerserverhandler("CA",&handleaddcloak,1);
+  registerserverhandler("CU",&handleclearcloak,0);
   
   /* Fake the addition of our own server */
   handleserverchange(HOOK_SERVER_NEWSERVER,(void *)numerictolong(mynumeric->content,2));
@@ -126,6 +129,8 @@ void _fini() {
   deregisterserverhandler("AC",&handleaccountmsg); 
   deregisterserverhandler("P",&handleprivmsg);
   deregisterserverhandler("A",&handleawaymsg);
+  deregisterserverhandler("CA",&handleaddcloak);
+  deregisterserverhandler("CU",&handleclearcloak);
 }
 
 /*
@@ -214,6 +219,10 @@ void deletenick(nick *np) {
   derefnode(iptree, np->ipnode);
   
   /* TODO: figure out how to cleanly remove nodes without affecting other modules */
+
+  /* Remove cloak entries for the user */
+  removecloaktarget(np);
+  clearcloaktargets(np);
 
   /* Delete the nick from the servernick table */  
   *(gethandlebynumericunsafe(np->numeric))=NULL;
@@ -424,4 +433,40 @@ nick *getnickbynumericstr(char *numericstr) {
 }
 
 #endif
+
+int canseeuser(nick *np, nick *cloaked)
+{
+  return (np == cloaked ||
+          !IsCloaked(cloaked) ||
+          np->cloak_extra == cloaked);
+}
+
+void addcloaktarget(nick *cloaked, nick *target)
+{
+  removecloaktarget(target);
+
+  target->cloak_extra = cloaked;
+  cloaked->cloak_count++;
+}
+
+void removecloaktarget(nick *target)
+{
+  if (target->cloak_extra) {
+    target->cloak_extra->cloak_count--;
+    target->cloak_extra = NULL;
+  }
+}
+
+void clearcloaktargets(nick *cloaked)
+{
+  nick *tnp;
+  int j;
+
+  for(j=0;j<NICKHASHSIZE;j++)
+    for(tnp=nicktable[j];tnp;tnp=tnp->next)
+      if (tnp->cloak_extra == cloaked)
+        tnp->cloak_extra = NULL;
+
+  cloaked->cloak_count = 0;
+}
 
