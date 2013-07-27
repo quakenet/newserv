@@ -14,6 +14,7 @@ $(CSDIRS):
 
 clean:
 	rm -f */*.o */*.d */*.so *.o *.d *.so
+	rm -rf */.deps .deps
 
 distclean:
 	rm -f */.autobuild.mk .autobuild.mk

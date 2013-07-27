@@ -32,6 +32,7 @@ $(TRUSTSDIRS):
 
 clean:
 	rm -f */*.o */*.d */*.so *.o *.d *.so
+	rm -rf */.deps .deps
 
 distclean:
 

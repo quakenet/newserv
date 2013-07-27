@@ -22,10 +22,11 @@ default: all
 
 .SUFFIXES: .so .y .l
 
--include $(wildcard *.d)
+-include $(wildcard .deps/*.d)
 
 .c.o:
-	$(CC) $(CFLAGS) -MMD -c -o $@ $<
+	@if [ ! -d .deps ]; then mkdir .deps || true; fi
+	$(CC) $(CFLAGS) -MMD -MF .deps/$(subst .o,.d,$@) -c -o $@ $<
 
 .o.so:
 	$(CC) -nostartfiles -Wl,--export-dynamic -shared -o $@ $^ $(LDFLAGS)

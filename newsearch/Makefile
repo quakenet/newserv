@@ -23,6 +23,7 @@ lex.yy.c: newsearch.l y.tab.h
 
 clean:
 	rm -f *.o *.d *.so y.tab.c y.tab.h lex.yy.c
+	rm -rf .deps
 
 distclean:
 

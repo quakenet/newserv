@@ -18,3 +18,4 @@ $(GEOIPDIRS):
 
 clean:
 	rm -f */*.o */*.d */*.so *.o *.d *.so */*.a
+	rm -rf .deps */.deps
