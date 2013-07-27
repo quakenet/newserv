@@ -99,5 +99,6 @@ char *controlid(nick *);
 #define NL_OPERING         0x0800  /* when someone opers */
 #define NL_NOTICES         0x1000  /* turn off to receive privmsgs instead of notices */
 #define NL_ALL_COMMANDS    0x2000  /* every single command sent */
+#define NL_GLINES_AUTO     0x4000  /* automated gline messages */
 
 #endif  

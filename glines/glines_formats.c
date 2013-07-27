@@ -104,7 +104,7 @@ gline *makegline(const char *mask) {
       count++;
 
   if (count >= 8) {
-    controlwall(NO_OPER, NL_GLINES, "Warning: Parsed invalid IPv6 G-Line: %s", mask);
+    controlwall(NO_OPER, NL_GLINES_AUTO, "Warning: Parsed invalid IPv6 G-Line: %s", mask);
     freegline(gl);
     return NULL;
   }

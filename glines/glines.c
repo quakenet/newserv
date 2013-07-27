@@ -169,9 +169,9 @@ void gline_propagate(gline *agline) {
 
   if (agline->flags & GLINE_DESTROYED) {
 #if SNIRCD_VERSION < 135
-    controlwall(NO_OPER, NL_GLINES, "Tried to destroy G-Line on '%s' however SNIRCD_VERSION is too old.", glinetostring(agline));
+    controlwall(NO_OPER, NL_GLINES_AUTO, "Tried to destroy G-Line on '%s' however SNIRCD_VERSION is too old.", glinetostring(agline));
 #else
-    controlwall(NO_OPER, NL_GLINES, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
+    controlwall(NO_OPER, NL_GLINES_AUTO, "Destroying G-Line on '%s' lasting %s with reason '%s', created by: %s",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason ? agline->reason->content : "", agline->creator->content);
 
@@ -180,13 +180,13 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
-    controlwall(NO_OPER, NL_GLINES, "%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
+    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
 #endif /* SNIRCD_VERSION */
   } else if (agline->flags & GLINE_ACTIVE) {
-    controlwall(NO_OPER, NL_GLINES, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
+    controlwall(NO_OPER, NL_GLINES_AUTO, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason ? agline->reason->content : "");
 
@@ -195,12 +195,12 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
-    controlwall(NO_OPER, NL_GLINES, "%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
+    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
   } else {
-    controlwall(NO_OPER, NL_GLINES, "Deactivating G-Line on '%s' lasting %s created by %s with reason '%s'",
+    controlwall(NO_OPER, NL_GLINES_AUTO, "Deactivating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason ? agline->reason->content : "");
 
@@ -209,7 +209,7 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #else
-    controlwall(NO_OPER, NL_GLINES, "%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
+    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
 #endif
