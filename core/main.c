@@ -42,8 +42,6 @@ int main(int argc, char **argv) {
 
   init_logfile();
   
-  initsstring();
-  
   if (argc>1) {
     if (strcmp(argv[1], "--help")==0) {
       printf("Syntax: %s [config]\n", argv[0]);
@@ -79,7 +77,6 @@ int main(int argc, char **argv) {
   }  
 
   freeconfig();
-  finisstring();  
 
   fini_logfile();
   finischedule();
