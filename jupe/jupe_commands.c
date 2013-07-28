@@ -27,9 +27,10 @@ int ju_addjupe(void *source, int cargc, char **cargv) {
 
   result = jupe_add(cargv[0], cargv[2], duration, JUPE_ACTIVE);
 
-  if (result)
+  if (result) {
+    controlwall(NO_OPER, NL_MISC, "%s added JUPE for '%s' expiring in %s with reason %s", controlid(np), cargv[0], longtoduration(duration, 0), cargv[2]);
     controlreply(np, "Done.");
-  else
+  } else
     controlreply(np, "Jupe could not be created.");
 
   return CMD_OK;
@@ -58,6 +59,7 @@ int ju_activatejupe(void *source, int cargc, char **cargv) {
 
   jupe_activate(jupe);
 
+  controlwall(NO_OPER, NL_MISC, "%s reactivated JUPE for '%s'", controlid(np), cargv[0]);
   controlreply(np, "Done.");
   return CMD_OK;
 }
@@ -84,6 +86,7 @@ int ju_deactivatejupe(void *source, int cargc, char **cargv) {
 
   jupe_deactivate(jupe);
 
+  controlwall(NO_OPER, NL_MISC, "%s deactivated JUPE for '%s'", controlid(np), cargv[0]);
   controlreply(np, "Done.");
   return CMD_OK;
 }

@@ -73,7 +73,7 @@ int handlejupe(void *source, int cargc, char **cargv) {
     jupe->ju_flags = flags;
     jupe->ju_lastmod = atoi(modtime);
 
-    Error("jupe", ERR_WARNING, "jupe modified for %s (%s) expiring in %s,"
+    Error("jupe", ERR_INFO, "jupe modified for %s (%s) expiring in %s,"
                                " lastmod: %s, active: %s", server, reason, expire, modtime, flags ? "yes" : "no");
     return CMD_OK;
   }
@@ -83,7 +83,7 @@ int handlejupe(void *source, int cargc, char **cargv) {
   if (jupe == NULL)
     return CMD_ERROR;
 
-  Error("jupe", ERR_WARNING, "jupe added for %s (%s) expiring in %s,"
+  Error("jupe", ERR_INFO, "jupe added for %s (%s) expiring in %s,"
                " lastmod: %s, active: %s", server, reason, expire, modtime, flags ? "yes" : "no");
 
   return CMD_OK;
@@ -208,7 +208,7 @@ int jupe_add(char *server, char *reason, time_t duration, unsigned int flags) {
     return 0;
 
   jupe = make_jupe(server, reason, getnettime() + duration, getnettime(), flags);
-	
+
   if (jupe == NULL)
     return 0;
 
