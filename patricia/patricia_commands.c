@@ -19,7 +19,7 @@ MODULE_VERSION("")
 
 FILE* dumpip_logfp;
 int nc_cmd_dumptree(void *source, int cargc, char **cargv);
-int nc_cmd_nodecount(void *source, int cargc, char **cargv);
+int nc_cmd_usercount(void *source, int cargc, char **cargv);
 
 void _init() {
   if (!(dumpip_logfp = fopen("log/iplist", "w")))
@@ -39,14 +39,14 @@ void _init() {
                                   "12: ptr, bitlen, usercount, ip\n"
                                   "13: ptr, leftptr, rightptr, parentptr\n"
                                   "14: ptr, ext0, ext1, ext2, ext3, ext4");
-  registercontrolhelpcmd("nodecount", NO_OPER, 1, &nc_cmd_nodecount, "Displays number of users on a given ipv4/6 or cidr4/6");
+  registercontrolhelpcmd("usercount", NO_OPER, 1, &nc_cmd_usercount, "Usage: usercount <ip|cidr>\nDisplays number of users on a given ipv4/6 or cidr4/6");
 }
 
 void _fini() {
   if (dumpip_logfp)
     fclose(dumpip_logfp);
   deregistercontrolcmd("dumptree", &nc_cmd_dumptree);
-  deregistercontrolcmd("nodecount", &nc_cmd_nodecount);
+  deregistercontrolcmd("usercount", &nc_cmd_usercount);
 }
 
 int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
@@ -58,8 +58,7 @@ int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
   int i = 0;
  
   if (cargc < 1) {
-    controlreply(np, "Syntax: dumptree <ipv4|ipv6|cidr4|cidr6>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
@@ -141,7 +140,7 @@ int nc_cmd_dumptree(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int nc_cmd_nodecount(void *source, int cargc, char **cargv) {
+int nc_cmd_usercount(void *source, int cargc, char **cargv) {
   nick *np = (nick *)source;
   struct irc_in_addr sin;
   unsigned char bits;
@@ -149,8 +148,7 @@ int nc_cmd_nodecount(void *source, int cargc, char **cargv) {
   int count;
 
   if (cargc < 1) {
-    controlreply(np, "Syntax: nodecount <ipv4|ipv6|cidr4|cidr6>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if (ipmask_parse(cargv[0], &sin, &bits) == 0) {
