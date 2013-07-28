@@ -10,8 +10,7 @@ int ju_addjupe(void *source, int cargc, char **cargv) {
   int result, duration;
 
   if (cargc < 3) {
-    controlreply(np, "Syntax: addjupe <servername> <duration> <reason>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   if (jupe_find(cargv[0]) != NULL) {
@@ -41,9 +40,7 @@ int ju_activatejupe(void *source, int cargc, char **cargv) {
   jupe_t *jupe;
 
   if (cargc < 1) {
-    controlreply(np, "Syntax: activatejupe <servername>");
-
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   jupe = jupe_find(cargv[0]);
@@ -62,7 +59,6 @@ int ju_activatejupe(void *source, int cargc, char **cargv) {
   jupe_activate(jupe);
 
   controlreply(np, "Done.");
-
   return CMD_OK;
 }
 
@@ -71,28 +67,24 @@ int ju_deactivatejupe(void *source, int cargc, char **cargv) {
   jupe_t *jupe;
 
   if (cargc < 1) {
-    controlreply(np, "Syntax: deactivatejupe <servername>");
-    return CMD_OK;
+    return CMD_USAGE;
   }
 
   jupe = jupe_find(cargv[0]);
 
   if (jupe == NULL) {
     controlreply(np, "There is no such jupe.");
-
     return CMD_OK;
   }
 
   if ((jupe->ju_flags & JUPE_ACTIVE) == 0) {
     controlreply(np, "This jupe is already deactivated.");
-
     return CMD_OK;
   }
 
   jupe_deactivate(jupe);
 
   controlreply(np, "Done.");
-	
   return CMD_OK;
 }
 
@@ -113,15 +105,14 @@ int ju_jupelist(void *source, int cargc, char **cargv) {
   }
 
   controlreply(np, "--- End of JUPE list.");
-
   return CMD_OK;
 }
 
 void _init(void) {
-  registercontrolcmd("addjupe", 10, 3, ju_addjupe);
-  registercontrolcmd("activatejupe", 10, 1, ju_activatejupe);
-  registercontrolcmd("deactivatejupe", 10, 1, ju_deactivatejupe);
-  registercontrolcmd("jupelist", 10, 0, ju_jupelist);
+  registercontrolhelpcmd("addjupe", NO_OPER, 3, ju_addjupe, "Usage: addjupe <servername> <duration> <reason>");
+  registercontrolhelpcmd("activatejupe", NO_OPER, 1, ju_activatejupe, "Usage: activatejupe <servername>");
+  registercontrolhelpcmd("deactivatejupe", NO_OPER, 1, ju_deactivatejupe, "Usage: deactivatejupe <servername>");
+  registercontrolhelpcmd("jupelist", NO_OPER, 0, ju_jupelist, "Usage: jupelist");
 }
 
 void _fini(void) {
