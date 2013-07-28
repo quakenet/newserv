@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include "../lib/version.h"
 #include "../core/schedule.h"
 #include "../control/control.h"
 #include "glines.h"
+
+MODULE_VERSION("");
 
 static int glstore_savefile(const char *file) {
   FILE *fp;
