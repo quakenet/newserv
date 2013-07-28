@@ -17,13 +17,10 @@
 
 MODULE_VERSION("")
 
-FILE* dumpip_logfp;
 int nc_cmd_dumptree(void *source, int cargc, char **cargv);
 int nc_cmd_usercount(void *source, int cargc, char **cargv);
 
 void _init() {
-  if (!(dumpip_logfp = fopen("log/iplist", "w")))
-    Error("dumpip", ERR_ERROR, "Failed to open log file!");
   registercontrolhelpcmd("dumptree", NO_DEVELOPER, 2, &nc_cmd_dumptree, 
                                   "Dumps diaganostic information on the patricia trie structure\n"
                                   "Usage: dumptree <ipv4|ipv6|cidr4|cidr6> [int]\n" 
@@ -43,8 +40,6 @@ void _init() {
 }
 
 void _fini() {
-  if (dumpip_logfp)
-    fclose(dumpip_logfp);
   deregistercontrolcmd("dumptree", &nc_cmd_dumptree);
   deregistercontrolcmd("usercount", &nc_cmd_usercount);
 }
