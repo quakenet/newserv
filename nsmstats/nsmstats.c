@@ -36,7 +36,7 @@ void nsmgenstats(struct nsmpool *pool, double *mean, double *stddev) {
 
   *mean = (double)pool->size / pool->count;
 
-  for (np=pool->first.next;np;np=np->next)
+  for (np=pool->blocks;np;np=np->next)
     sumsq+=np->size * np->size;
 
   *stddev = sqrtf((double)sumsq / pool->count - *mean * *mean);
@@ -132,7 +132,7 @@ int nsmhistogram(void *sender, int cargc, char **cargv) {
 
   /* O(n) */
   memset(freqs, 0, sizeof(struct nsmhistogram_s) * pool->count);
-  for(i=0,np=pool->first.next;np;np=np->next)
+  for(i=0,np=pool->blocks;np;np=np->next)
     freqs[i++].size = np->size;
 
   /* O(n log n) */
@@ -149,7 +149,7 @@ int nsmhistogram(void *sender, int cargc, char **cargv) {
   }
 
   /* outer loop is O(n), inner loop is O(1 + log n) => O(n + n log n) => O(n log n) */
-  for(np=pool->first.next;np;np=np->next) {
+  for(np=pool->blocks;np;np=np->next) {
     unsigned long low = 0, high = dst;
     while(low < high) {
       unsigned long mid = (low + high) / 2;
@@ -161,6 +161,7 @@ int nsmhistogram(void *sender, int cargc, char **cargv) {
     }
     if((low > np->size) || (freqs[low].size != np->size)) {
       controlreply(sender, "ERROR");
+      free(freqs);
       return CMD_ERROR;
     } else {
       freqs[low].freq++;

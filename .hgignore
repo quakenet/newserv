@@ -3,6 +3,7 @@ syntax: glob
 */*~
 *.o
 *.d
+*.a
 *.so
 *.db
 build.mk

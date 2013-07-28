@@ -17,4 +17,5 @@ $(GEOIPDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.d */*.so *.o *.d *.so */*.a
+	rm -f */*.o */*.so *.o *.so */*.a
+	rm -rf .deps */.deps

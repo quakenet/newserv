@@ -213,7 +213,6 @@ int qabot_dodelbot(void* sender, int cargc, char** cargv) {
 
 int qabot_doadduser(void* sender, int cargc, char** cargv) {
   nick* np = (nick*)sender;
-  nick* target = NULL;
   char* ch;
   flag_t flags = 0;
   char* victim;
@@ -227,7 +226,7 @@ int qabot_doadduser(void* sender, int cargc, char** cargv) {
     return CMD_ERROR;
   
   if (qabot_getuser(victim)) {
-    sendnoticetouser(qabot_nick, np, "Account %s already exists.", target->authname);
+    sendnoticetouser(qabot_nick, np, "Account %s already exists.", victim);
     return CMD_ERROR;
   }
   

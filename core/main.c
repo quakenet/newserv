@@ -1,4 +1,5 @@
 #include "../lib/sstring.h"
+#include "../lib/valgrind.h"
 #include "events.h"
 #include "schedule.h"
 #include "hooks.h"
@@ -13,6 +14,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 
 void initseed();
 void init_logfile();
@@ -31,14 +33,14 @@ static void (*oldsegv)(int);
 int main(int argc, char **argv) {
   char *config = "newserv.conf";
 
+  nsinit();
+
   initseed();
   inithooks();
   inithandlers();
   initschedule();
 
   init_logfile();
-  
-  initsstring();
   
   if (argc>1) {
     if (strcmp(argv[1], "--help")==0) {
@@ -75,13 +77,18 @@ int main(int argc, char **argv) {
   }  
 
   freeconfig();
-  finisstring();  
 
   fini_logfile();
   finischedule();
   finihandlers();
 
   nsexit();
+
+  if (RUNNING_ON_VALGRIND) {
+    /* We've already manually called _fini for each of the modules. Make sure
+     * it's not getting called again when the libraries are unloaded. */
+    _exit(0);
+  }
 
   return 0;
 }

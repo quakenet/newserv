@@ -179,6 +179,8 @@ static char *email_to_error(char *email) {
     }
   }
 
+  free(dupemail);
+
   return NULL;
 }
 

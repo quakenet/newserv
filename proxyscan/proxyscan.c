@@ -1116,6 +1116,8 @@ int proxyscandoscanfile(void *sender, int cargc, char **cargv) {
     }
   }
 
+  fclose(fp);
+
   sendnoticetouser(proxyscannick,np,"Started %d scans...", count);
   return CMD_OK;
 }

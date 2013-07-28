@@ -75,10 +75,10 @@ static void rq_cleanup_fasttrack(void *arg) {
 
   now = getnettime();
 
-  pft = &ftlist;
-
-  for(ft=*pft;*pft;pft=&((*pft)->next)) {
+  for(pft=&ftlist;*pft;pft=&((*pft)->next)) {
     int foundnick = 0;
+
+    ft = *pft;
 
     for(j=0;j<NICKHASHSIZE && !foundnick;j++) {
       for(tnp=nicktable[j];tnp;tnp=tnp->next) {

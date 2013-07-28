@@ -31,7 +31,8 @@ $(TRUSTSDIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
 
 clean:
-	rm -f */*.o */*.d */*.so *.o *.d *.so
+	rm -f */*.o */*.so *.o *.so
+	rm -rf */.deps .deps
 
 distclean:
 
