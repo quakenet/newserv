@@ -13,7 +13,6 @@
 jupe_t *jupes = NULL;
 
 int handlejupe(void *source, int cargc, char **cargv);
-void sendjupeburst(int hook, void *args);
 
 void _init() {
   /* If we're connected to IRC, force a disconnect. */
@@ -22,8 +21,6 @@ void _init() {
     irc_disconnected();
   }
 
-  registerhook(HOOK_IRC_SENDBURSTBURSTS, &sendjupeburst);
-	
   registerserverhandler("JU", &handlejupe, 5);
 }
 
@@ -39,8 +36,6 @@ void _fini() {
     jupes = next;
   }
 
-  deregisterhook(HOOK_IRC_SENDBURSTBURSTS, &sendjupeburst);
-	
   deregisterserverhandler("JU", &handlejupe);
 }
 
@@ -87,19 +82,6 @@ int handlejupe(void *source, int cargc, char **cargv) {
                " lastmod: %s, active: %s", server, reason, expire, modtime, flags ? "yes" : "no");
 
   return CMD_OK;
-}
-
-void sendjupeburst(int hook, void *args) {
-  jupe_t *jupe = jupes;
-
-  if (hook != HOOK_IRC_SENDBURSTBURSTS)
-    return;
-
-  while (jupe) {
-    jupe_propagate(jupe);
-
-    jupe = jupe->ju_next;
-  }
 }
 
 jupe_t *make_jupe(char *server, char *reason, time_t expirets, time_t lastmod, unsigned int flags) {
