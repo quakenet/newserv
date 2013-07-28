@@ -45,7 +45,7 @@ void createtrusttables(int mode) {
   trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, created INT, lastseen INT, maxpernode INT, nodebits INT)", "Td", hosts, TRUSTHOSTLEN);
 
   trustsdb->createtable(trustsdb, NULL, NULL,
-    "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
+    "CREATE TABLE ? (groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
     "Tddd", "log", TRUSTNAMELEN, CREATEDBYLEN, TRUSTLOGLEN
   );
 }
