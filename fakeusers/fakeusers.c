@@ -55,7 +55,6 @@ int fakelist(void *sender, int cargc, char **cargv);
 int fakekill(void *sender, int cargc, char **cargv);
 void reconnectfake(void *details);
 
-int db_loaded = 0;
 static DBAPIConn *nofudb;
 
 void _init() {
@@ -108,8 +107,6 @@ int fakeuser_loaddb()
       return 0;
     }
   }
-
-  db_loaded = 1;
 
   nofudb->createtable(nofudb, NULL, NULL, 
     "CREATE TABLE ? ("
