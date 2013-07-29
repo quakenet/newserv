@@ -34,36 +34,142 @@ typedef struct fakeuser {
   struct fakeuser *next;
 } fakeuser;
 
-fakeuser *fakeuserlist = NULL;
-
-static void fakeuser_cleanup();
-static int fakeuser_loaddb();
-static void fakeusers_load(const DBAPIResult *res, void *arg);
-static void fakeuser_handler(nick *user, int command, void **params);
-static int fakeadd(void *sender, int cargc, char **cargv);
-static int fakelist(void *sender, int cargc, char **cargv);
-static int fakekill(void *sender, int cargc, char **cargv);
-static void schedulefakeuser(void *arg);
-static fakeuser *findfakeuserbynick(char *nick);
-static void fake_remove(char *nickname);
-static fakeuser *fake_add(fakeuser *details);
-
+static fakeuser *fakeuserlist;
 static DBAPIConn *nofudb;
 
-void fakeuser_cleanup() {
+static void reconnectfakeuser(void *arg);
+
+static fakeuser *findfakeuserbynick(char *nick) {
   fakeuser *fake;
-  void *next;
 
-  for (fake = fakeuserlist; fake; fake = next) {
-    deregisterlocaluser(fake->user, "Signing off");
-    next = fake->next;
-    free(fake);
-  }
+  for (fake = fakeuserlist; fake; fake = fake->next)
+    if (!ircd_strcmp(nick, fake->nick))
+      return fake;
 
-  fakeuserlist = NULL;
+  return NULL;
 }
 
-int fakeuser_loaddb() {
+static void fake_free(fakeuser *fake) {
+  fakeuser **pnext;
+
+  if (fake->user)
+    deregisterlocaluser(fake->user, "Signing off");
+
+  deleteschedule(NULL, &reconnectfakeuser, fake);
+  
+  for (pnext = &fakeuserlist; *pnext; pnext = &((*pnext)->next)) {
+    if (*pnext == fake) {
+      *pnext = fake->next;
+      break;
+    }
+  }
+
+  free(fake);
+}
+
+static void fake_remove(fakeuser *fake) {
+  nofudb->squery(nofudb, "DELETE FROM ? WHERE nick = ?", "Ts", "fakeusers", fake->nick);
+  
+  fake_free(fake);
+}
+
+static void fakeuser_handler(nick *user, int command, void **params) {
+  if (command == LU_KILLED) {
+    fakeuser *fake;
+    time_t timenow = time(NULL);
+
+    fake = findfakeuserbynick(user->nick);
+
+    if (!fake) {
+      controlwall(NO_OPER, NL_FAKEUSERS, "Error: A fakeuser was killed, but wasn't found in the list");
+      Error("fakeuser", ERR_ERROR, "A fakeuser was killed, but wasn't found in the list");
+      return;
+    }
+
+    fake->user = NULL;
+
+    if (timenow - fake->lastkill < KILL_TIME) {
+      controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) KILL'ed twice under in %d seconds. Removing.",
+                  fake->nick, fake->ident, fake->host, fake->realname, KILL_TIME);
+      fake_remove(fake);
+      return;
+    }
+
+    fake->lastkill = timenow;
+
+    scheduleoneshot(time(NULL) + KILL_WAIT, &reconnectfakeuser, fake);
+  }
+}
+
+static void reconnectfakeuser(void *arg) {
+  fakeuser *fake = arg;
+  nick *user;
+  
+  if (fake->user)
+    return;
+
+  if ((user = getnickbynick(fake->nick)) && (IsOper(user) || IsService(user) || IsXOper(user)))
+    return;
+
+  fake->user = registerlocaluser(fake->nick, fake->ident, fake->host, fake->realname,
+                                 NULL, UMODE_INV | UMODE_DEAF, &fakeuser_handler);
+}
+
+static fakeuser *fake_add(const char *nick, const char *ident, const char *host, const char *realname) {
+  fakeuser *fake;
+
+  fake = malloc(sizeof(fakeuser));
+
+  if (!fake)
+    return NULL;
+
+  strlcpy(fake->nick, nick, NICKLEN + 1);
+  strlcpy(fake->ident, ident, USERLEN + 1);
+  strlcpy(fake->host, host, HOSTLEN + 1);
+  strlcpy(fake->realname, realname, REALLEN + 1);
+
+  fake->user = NULL;
+  fake->lastkill = 0;
+
+  fake->next = fakeuserlist;
+  fakeuserlist = fake;
+
+  scheduleoneshot(time(NULL) + 1, reconnectfakeuser, fake);
+  
+  return fake;
+}
+
+static fakeuser *fake_create(const char *nick, const char *ident, const char *host, const char *realname) {
+  fakeuser *fake;
+  
+  fake = fake_add(nick, ident, host, realname);
+
+  if (!fake)
+    return NULL;
+  
+  nofudb->squery(nofudb, "INSERT INTO ? (nick, ident, host, realname) VALUES (?,?,?,?)", "Tssss", "fakeusers",
+                 fake->nick, fake->ident, fake->host, fake->realname);
+
+  return fake;
+}
+
+static void fakeusers_load(const DBAPIResult *res, void *arg) {
+  if (!res)
+    return;
+
+  if (!res->success) {
+    Error("fakeuser", ERR_ERROR, "Error loading fakeuser list.");
+    res->clear(res);
+    return;
+  }
+
+  while (res->next(res))
+    fake_add(res->get(res, 0), res->get(res, 1), res->get(res, 2), res->get(res, 3));
+
+  res->clear(res);
+}
+
+static int fakeuser_loaddb() {
   if (!nofudb) {
     nofudb = dbapi2open(DBAPI2_DEFAULT, "fakeusers");
 
@@ -87,112 +193,11 @@ int fakeuser_loaddb() {
   return 1;
 }
 
-void fakeusers_load(const DBAPIResult *res, void *arg) {
-  fakeuser fakeuser;
-
-  if (!res)
-    return;
-
-  if (!res->success) {
-    Error("fakeuser", ERR_ERROR, "Error loading fakeuser list.");
-    res->clear(res);
-    return;
-  }
-
-  while (res->next(res)) {
-    strlcpy(fakeuser.nick, res->get(res, 0), NICKLEN + 1);
-    strlcpy(fakeuser.ident, res->get(res, 1), USERLEN + 1);
-    strlcpy(fakeuser.host, res->get(res, 2), HOSTLEN + 1);
-    strlcpy(fakeuser.realname, res->get(res, 3), REALLEN + 1);
-    fake_add(&fakeuser);
-  }
-
-  scheduleoneshot(time(NULL) + 1, schedulefakeuser, NULL);
-  res->clear(res);
-}
-
-nick *register_fakeuseronnet(fakeuser *details) {
-  nick *user;
-
-  if ((user = getnickbynick(details->nick)) && (IsOper(user) || IsService(user) || IsXOper(user))) {
-    return NULL;
-  }
-
-  return registerlocaluser(details->nick, details->ident, details->host, details->realname,
-                           NULL, UMODE_INV | UMODE_DEAF, &fakeuser_handler);
-}
-
-fakeuser *fake_add(fakeuser *details) {
-  fakeuser *newfake;
-
-  newfake = malloc(sizeof(fakeuser));
-
-  if (!newfake) {
-    return NULL;
-  }
-
-  memcpy(newfake, details, sizeof(fakeuser));
-
-  newfake->user = NULL;
-  newfake->lastkill = 0;
-
-  newfake->next = fakeuserlist;
-  fakeuserlist = newfake;
-  return newfake;
-}
-
-void fake_remove(char *nickname) {
-  fakeuser *fake, *prev;
-
-  for (fake = fakeuserlist; fake; fake = fake->next) {
-    if (!ircd_strcmp(nickname, fake->nick)) {
-      if (fake == fakeuserlist)
-        fakeuserlist = fake->next;
-      else
-        prev->next = fake->next;
-
-      if(fake->user)
-        deregisterlocaluser(fake->user, "Signing off");
-
-      free(fake);
-      return;
-    }
-
-    prev = fake;
-  }
-}
-
-void fakeuser_handler(nick *user, int command, void **params) {
-  if (command == LU_KILLED) {
-    fakeuser *item;
-    time_t timenow = time(NULL);
-
-    item = findfakeuserbynick(user->nick);
-
-    if (!item) {
-      controlwall(NO_OPER, NL_FAKEUSERS, "Error: A fakeuser was killed, but wasn't found in the list");
-      Error("fakeuser", ERR_ERROR, "A fakeuser was killed, but wasn't found in the list");
-      return;
-    }
-
-    item->user = NULL;
-
-    if (timenow - item->lastkill < KILL_TIME) {
-      controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) KILL'ed twice under in %d seconds. Removing.", item->nick, item->ident, item->host, item->realname, KILL_TIME);
-      nofudb->squery(nofudb, "DELETE FROM ? WHERE nick = ?", "Ts", "fakeusers", item->nick);
-      fake_remove(item->nick);
-      return;
-    }
-
-    item->lastkill = timenow;
-
-    scheduleoneshot(time(NULL) + KILL_WAIT, schedulefakeuser, item);
-  }
-}
-
-int fakeadd(void *sender, int cargc, char **cargv) {
-  fakeuser newfake;
+static int fakeadd(void *source, int cargc, char **cargv) {
+  nick *sender = source;
   fakeuser *fake;
+  char *nick, *ident, *realname;
+  char host[HOSTLEN + 1];
 
   if (cargc == 0)
     return CMD_USAGE;
@@ -204,40 +209,38 @@ int fakeadd(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  strlcpy(newfake.nick, cargv[0], NICKLEN + 1);
+  nick = cargv[0];
 
   if (cargc < 4)
-    strlcpy(newfake.realname, cargv[0], REALLEN + 1);
+    realname = cargv[0];
   else
-    strlcpy(newfake.realname, cargv[3], REALLEN + 1);
+    realname = cargv[3];
 
   if (cargc < 3) {
-    strlcpy(newfake.host, cargv[0], NICKLEN + 1);
-    strlcat(newfake.host, ".fakeusers.quakenet.org", HOSTLEN + 1);
+    strlcpy(host, cargv[0], NICKLEN + 1);
+    strlcat(host, ".fakeusers.quakenet.org", HOSTLEN + 1);
   } else
-    strlcpy(newfake.host, cargv[2], HOSTLEN + 1);
+    strlcpy(host, cargv[2], HOSTLEN + 1);
 
   if (cargc < 2)
-    strlcpy(newfake.ident, cargv[0], USERLEN + 1);
+    ident = cargv[0];
   else
-    strlcpy(newfake.ident, cargv[1], USERLEN + 1);
+    ident = cargv[1];
 
-  fake = fake_add(&newfake);
+  fake = fake_create(nick, ident, host, realname);
 
-  if (!fake) {
+  if (!fake)
     return CMD_ERROR;
-  }
 
-  nofudb->squery(nofudb, "INSERT INTO ? (nick, ident, host, realname) VALUES (?,?,?,?)", "Tssss", "fakeusers", fake->nick, fake->ident, fake->host, fake->realname);
   controlreply(sender, "Added fake user %s", fake->nick);
-  controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) added by %s/%s", fake->nick, fake->ident,
-              fake->host, fake->realname, ((nick *)sender)->nick, ((nick *)sender)->authname);
+  controlwall(NO_OPER, NL_FAKEUSERS, "%s added fake user: %s!%s@%s (%s)", controlid(sender),
+              fake->nick, fake->ident, fake->host, fake->realname);
 
-  scheduleoneshot(time(NULL) + 1, schedulefakeuser, fake);
+  scheduleoneshot(time(NULL) + 1, &reconnectfakeuser, fake);
   return CMD_OK;
 }
 
-int fakelist(void *sender, int cargc, char **cargv) {
+static int fakelist(void *sender, int cargc, char **cargv) {
   fakeuser *fake;
   int fakeusercount = 0;
 
@@ -256,7 +259,7 @@ int fakelist(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-int fakekill(void *sender, int cargc, char **cargv) {
+static int fakekill(void *sender, int cargc, char **cargv) {
   fakeuser *fake;
 
   if (cargc == 0)
@@ -274,26 +277,8 @@ int fakekill(void *sender, int cargc, char **cargv) {
   controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) removed by %s/%s", fake->nick, fake->ident,
               fake->host, fake->realname, ((nick *)sender)->nick, ((nick *)sender)->authname);
 
-  fake_remove(cargv[0]);
+  fake_remove(fake);
   return CMD_OK;
-}
-
-void schedulefakeuser(void *arg) {
-  fakeuser *fake;
-
-  for (fake = fakeuserlist; fake; fake = fake->next)
-    if (!fake->user)
-      fake->user = register_fakeuseronnet(fake);
-}
-
-fakeuser *findfakeuserbynick(char *nick) {
-  fakeuser *fake;
-
-  for (fake = fakeuserlist; fake; fake = fake->next)
-    if (!ircd_strcmp(nick, fake->nick))
-      return fake;
-
-  return NULL;
 }
 
 void _init() {
@@ -308,8 +293,13 @@ void _init() {
 }
 
 void _fini() {
-  fakeuser_cleanup();
-  deleteallschedules(schedulefakeuser);
+  fakeuser *fake, *next;
+
+  for (fake = fakeuserlist; fake; fake = next) {
+    next = fake->next;
+    fake_free(fake);
+  }
+
   deregistercontrolcmd("fakeuser", &fakeadd);
   deregistercontrolcmd("fakelist", &fakelist);
   deregistercontrolcmd("fakekill", &fakekill);
