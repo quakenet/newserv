@@ -150,11 +150,11 @@ void noperserv_free_user(no_autheduser *au) {
   loadedusers--;
 }
 
-no_autheduser *noperserv_get_autheduser(authname *an) {
-  if (!an)
+no_autheduser *noperserv_get_autheduser(authname *anp) {
+  if (!anp)
     return NULL;
 
-  return an->exts[noperserv_ext];
+  return anp->exts[noperserv_ext];
 }
 
 unsigned long noperserv_get_autheduser_count(void) {
