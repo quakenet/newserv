@@ -15,10 +15,10 @@ UserDisplayFunc previousdefault;
 void _init() {
   regdisp(reg_nicksearch, "auth", printnick_auth, 0, "");
   regdisp(reg_nicksearch, "authchans", printnick_authchans, 0, "");
-//  regdisp(reg_chansearch, "qusers", printchannel_qusers, 0, "");
+  regdisp(reg_usersearch, "qusers", printchannel_qusers, 0, "");
   regdisp(reg_usersearch, "auth", printauth, 0, "");
 
-//  registersearchterm(reg_usersearch, "qusers", qusers_parse, 0, "");
+  registersearchterm(reg_usersearch, "qusers", qusers_parse, 0, "");
   registersearchterm(reg_usersearch, "qlasthost", qlasthost_parse, 0, "");
   registersearchterm(reg_usersearch, "qemail", qemail_parse, 0, "");
   registersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse, 0, "");
@@ -39,10 +39,10 @@ void _init() {
 void _fini() {
   unregdisp(reg_nicksearch, "auth", printnick_auth);
   unregdisp(reg_nicksearch, "authchans", printnick_authchans);
-//  unregdisp(reg_chansearch, "qusers", printchannel_qusers);
+  unregdisp(reg_usersearch, "qusers", printchannel_qusers);
   unregdisp(reg_usersearch, "auth", printauth);
 
-//  deregistersearchterm(reg_usersearch, "qusers", qusers_parse);
+  deregistersearchterm(reg_usersearch, "qusers", qusers_parse);
   deregistersearchterm(reg_usersearch, "qlasthost", qlasthost_parse);
   deregistersearchterm(reg_usersearch, "qemail", qemail_parse);
   deregistersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse);
