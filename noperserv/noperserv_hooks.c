@@ -243,6 +243,7 @@ void noperserv_whois_hook(int hooknum, void *arg) {
 }
 
 int noperserv_whois(void *sender, int cargc, char **cargv) {
+  authname *an;
   no_autheduser *au;
   nick *np = (nick *)sender;
   CommandHandler oldwhois = noperserv_find_hook("whois");
@@ -260,14 +261,20 @@ int noperserv_whois(void *sender, int cargc, char **cargv) {
       return oldwhois(sender, cargc, cargv);
     return CMD_ERROR;
   }
-  
-  au = noperserv_get_autheduser(cargv[0] + 1);
-  if(!au) {
+
+  an = findauthnamebyname(cargv[0] + 1);
+  if(!an) {
     controlreply(np, "Account not registered.");
+    return CMD_OK;
+  }  
+
+  au = noperserv_get_autheduser(an);
+  if(!au) {
+    controlreply(np, "User does not have a NOperserv account.");
     return CMD_OK;
   }
 
-  controlreply(np, "Account   : %s", au->authname->content);
+  controlreply(np, "Account   : %s", au->authname->name);
 
   replynick = np;
 
@@ -323,18 +330,18 @@ void noperserv_whois_account_handler(int hooknum, void *arg) {
   char nickbuffer[(NICKLEN + 2) * NO_NICKS_PER_WHOIS_LINE - 1]; /* since we don't need space or comma for the first item we're fine NULL wise */
   char accountspace[NICKLEN + 3]; /* space, comma, null */
   char message[1024];
+  nick *np;
   
   nickbuffer[0] = '\0';
   if(hooknum == HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER) {
     /* we can just read out the authed user linked list */
     no_autheduser *au = (void *)arg;
-    no_nicklist *nl = au->nick;
     
-    if(nl)
+    if(au->authname->nicks)
       found = 1;
 
-    for(;nl;nl=nl->next) {
-      snprintf(accountspace, sizeof(accountspace), "%s%s", count++?", ":"", nl->nick->nick);
+    for(np=au->authname->nicks;np;np=np->nextbyauthname) {
+      snprintf(accountspace, sizeof(accountspace), "%s%s", count++?", ":"", np->nick);
       strlcat(nickbuffer, accountspace, sizeof(nickbuffer));
 
       if(count >= NO_NICKS_PER_WHOIS_LINE) {
@@ -464,9 +471,11 @@ int noperserv_help(void *sender, int cargc, char **cargv) {
 void noperserv_wall(flag_t permissionlevel, flag_t noticelevel, char *format, ...) {
   char buf[512];
   va_list va;
-  no_autheduser *au = authedusers;
-  no_nicklist *nl;
   char *flags = printflags(noticelevel, no_noticeflags) + 1;
+  int i;
+  authname *anp;
+  no_autheduser *au;
+  nick *np;
 
   va_start(va, format);
   vsnprintf(buf, sizeof(buf), format, va);
@@ -474,11 +483,16 @@ void noperserv_wall(flag_t permissionlevel, flag_t noticelevel, char *format, ..
 
   Error("noperserv", ERR_INFO, "$%s$ %s", flags, buf);
 
-  for(;au;au=au->next) {
-    if((NOGetNoticeLevel(au) & noticelevel) && !(NOGetAuthLevel(au) & __NO_RELAY)) {
-      for(nl=au->nick;nl;nl=nl->next)
-        if(noperserv_policy_command_permitted(permissionlevel, nl->nick))
-          controlreply(nl->nick, "$%s$ %s", flags, buf);
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (anp=authnametable[i];anp;anp=anp->next) {
+      au = noperserv_get_autheduser(anp);
+      if(!au)
+        continue;
+      if((NOGetNoticeLevel(au) & noticelevel) && !(NOGetAuthLevel(au) & __NO_RELAY)) {
+        for(np=anp->nicks;np;np=np->nextbyauthname)
+          if(noperserv_policy_command_permitted(permissionlevel, np))
+            controlreply(np, "$%s$ %s", flags, buf);
+      }
     }
   }
 }

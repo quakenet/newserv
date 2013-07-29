@@ -13,7 +13,7 @@ extern const flag no_commandflags[];
 
 #define NO_NICKS_PER_WHOIS_LINE 3
 
-#define NOGetAuthedUser(user)  (no_autheduser *)(user->exts[noperserv_ext])
+#define NOGetAuthedUser(user)  (no_autheduser *)(user->auth ? user->auth->exts[noperserv_ext] : NULL)
 #define NOGetAuthLevel(user)   user->authlevel
 #define NOGetNoticeLevel(user) user->noticelevel
 #define NOMax(a, b) (a>b?a:b)

@@ -82,7 +82,7 @@ void _init() {
   if(!noperserv_load_db())
     return;
 
-  noperserv_ext = registernickext("noperserv");
+  noperserv_ext = registerauthnameext("noperserv", 1);
 
   noperserv_setup_hooks();
 
@@ -151,18 +151,17 @@ void _fini() {
 
   noperserv_cleanup_db();
 
-  releasenickext(noperserv_ext);
+  releaseauthnameext(noperserv_ext);
 }
 
 /* @test */
 int noperserv_hello(void *sender, int cargc, char **cargv) {
-  char *newaccount = NULL;
+  authname *newaccount = NULL;
   no_autheduser *au;
-  int i;
   nick *np = (nick *)sender, *np2, *target = NULL;
 
   if(cargc == 0) {
-    newaccount = np->authname;
+    newaccount = np->auth;
   } else {
     if(cargv[0][0] == '#') {
       authname *a = getauthbyname(cargv[0] + 1);
@@ -170,19 +169,19 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
         controlreply(np, "Cannot find anyone with that authname on the network.");
         return CMD_ERROR;
       }
-      newaccount = a->name;
+      newaccount = a;
     } else {
       target = getnickbynick(cargv[0]);
       if(!target) {
         controlreply(np, "Supplied nickname is not on the network.");
         return CMD_ERROR;
       }
-      if(!IsAccount(target)) {
-        controlreply(np, "Supplied user is not authed with the network.");
-        return CMD_ERROR;
-      }
-      newaccount = target->authname;
+      newaccount = target->auth;
     }
+  }
+  if(!newaccount) {
+    controlreply(np, "Supplied user is not authed with the network.");
+    return CMD_ERROR;
   }
   au = noperserv_get_autheduser(newaccount);
   if(au) {
@@ -190,7 +189,7 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  au = noperserv_new_autheduser(newaccount);
+  au = noperserv_new_autheduser(newaccount->userid, newaccount->name);
   if(!au) {
     controlreply(np, "Memory allocation error.");
     return CMD_ERROR;
@@ -204,53 +203,55 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
     au->noticelevel = NO_DEFAULT_NOTICELEVEL;
   }
 
-  au->id = noperserv_next_autheduser_id();
   noperserv_update_autheduser(au);
 
-  for(i=0;i<NICKHASHSIZE;i++)
-    for(np2=nicktable[i];np2;np2=np2->next)
-      if(IsAccount(np2) && !ircd_strcmp(newaccount, np2->authname)) {
-        noperserv_add_to_autheduser(np2, au);
-        controlreply(np2, "An account has been created for you (auth %s).", au->authname->content);
-        if(NOGetAuthLevel(au))
-          controlreply(np2, "User flags: %s", printflags(NOGetAuthLevel(au), no_userflags));
-        controlreply(np2, "Notice flags: %s", printflags(NOGetNoticeLevel(au), no_noticeflags));
-      }
+  for(np2=newaccount->nicks;np2;np2=np2->nextbyauthname) {
+    controlreply(np2, "An account has been created for you (auth %s).", au->authname->name);
+    if(NOGetAuthLevel(au))
+      controlreply(np2, "User flags: %s", printflags(NOGetAuthLevel(au), no_userflags));
+    controlreply(np2, "Notice flags: %s", printflags(NOGetNoticeLevel(au), no_noticeflags));
+  }
 
-  if(ircd_strcmp(np->authname, newaccount)) { /* send a message to the person who HELLO'ed if we haven't already been told */
-    controlreply(np, "Account created for auth %s.", au->authname->content);
+  if(np->auth==newaccount) { /* send a message to the person who HELLO'ed if we haven't already been told */
+    controlreply(np, "Account created for auth %s.", au->authname->name);
     if(NOGetAuthLevel(au))
       controlreply(np, "User flags: %s", printflags(NOGetAuthLevel(au), no_userflags));
     controlreply(np, "Notice flags: %s", printflags(NOGetNoticeLevel(au), no_noticeflags));
     controlreply(np, "Instructions sent to all authed users.");
-  } else if(au->nick && au->nick->next) { /* if we have already been told, tell the user it was sent to more than themselves */
+  } else if(newaccount->nicks && newaccount->nicks->next) { /* if we have already been told, tell the user it was sent to more than themselves */
     controlreply(np, "Instructions sent to all authed users.");
   }
 
-  controlwall(NO_OPERED, NL_MANAGEMENT, "%s/%s just HELLO'ed: %s", np->nick, np->authname, au->authname->content);
+  controlwall(NO_OPERED, NL_MANAGEMENT, "%s/%s just HELLO'ed: %s", np->nick, np->authname, au->authname->name);
   return CMD_OK;
 }
 
 no_autheduser *noperserv_autheduser_from_command(nick *np, char *command, int *typefound, char **returned) {
   no_autheduser *au;
+  authname *anp;
   if(command[0] == '#') {
-    au = noperserv_get_autheduser(command + 1);
+    anp = findauthnamebyname(command + 1);
+    if(!anp) {
+      controlreply(np, "Authname not found.");
+      return NULL;
+    }
+    au = noperserv_get_autheduser(anp);
     if(!au) {
       controlreply(np, "Authname not found.");
     } else {
       *typefound = NO_FOUND_AUTHNAME;
-      *returned = au->authname->content;
+      *returned = au->authname->name;
       return au;
     }
   } else {
     nick *np2 = getnickbynick(command);
     if(!np2) {
       controlreply(np, "Nickname not on the network.");
-      return CMD_OK;
+      return NULL;
     }
     if(!IsAccount(np2)) {
       controlreply(np, "User is not authed with the network.");
-      return CMD_OK;
+      return NULL;
     }
     au = NOGetAuthedUser(np2);
     if(!au) {
@@ -266,7 +267,7 @@ no_autheduser *noperserv_autheduser_from_command(nick *np, char *command, int *t
 }
 
 int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender;
+  nick *np2, *np = (nick *)sender;
   no_autheduser *au;
 
   if(cargc == 1) {
@@ -296,7 +297,6 @@ int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
             controlreply(np, "No changes made to existing flags.");
           } else {
             char ourflags[FLAGBUFLEN], ournoticeflags[FLAGBUFLEN], diff[FLAGBUFLEN * 2 + 1], finalflags[FLAGBUFLEN];
-            no_nicklist *nl = au->nick;
             noperserv_update_autheduser(au);
             controlreply(np, "Flag alterations complete.");
 
@@ -306,10 +306,10 @@ int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
             controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) successfully used NOTICEFLAGS (%s): %s", np->nick, np->authname, ourflags, ournoticeflags, diff);
 
             strlcpy(finalflags, printflags(NOGetNoticeLevel(au), no_noticeflags), sizeof(finalflags));
-            for(;nl;nl=nl->next)
-              if(nl->nick != np) {
-                controlreply(nl->nick, "!!! %s just used NOTICEFLAGS (%s): %s", np->nick, ournoticeflags, diff);
-                controlreply(nl->nick, "Your notice flags are %s", finalflags);
+            for(np2=au->authname->nicks;np2;np2=np2->nextbyauthname)
+              if(np2 != np) {
+                controlreply(np2, "!!! %s just used NOTICEFLAGS (%s): %s", np->nick, ournoticeflags, diff);
+                controlreply(np2, "Your notice flags are %s", finalflags);
               }
           }
         }
@@ -343,11 +343,10 @@ int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
 
 /* @test */
 int noperserv_deluser(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender;
+  nick *np2, *np = (nick *)sender;
   no_autheduser *target /* target user */, *au = NOGetAuthedUser(np); /* user executing command */
   char *userreturned = NULL; /* nickname or authname of the target, pulled from the db */
   int typefound; /* whether it was an authname or a username */
-  no_nicklist *nl;
   char targetflags[FLAGBUFLEN], ourflags[FLAGBUFLEN], deleteduser[NOMax(ACCOUNTLEN, NICKLEN) + 1];
 
   if(cargc != 1)
@@ -367,18 +366,18 @@ int noperserv_deluser(void *sender, int cargc, char **cargv) {
      to modify, if we have no flags we won't be able to delete ourselves */
   if((target != au) && !noperserv_policy_permitted_modifications(au, target)) {
     controlreply(np, "Deletion denied."); 
-    controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) attempted to DELUSER %s (%s)", np->nick, np->authname, ourflags, target->authname->content, targetflags);
+    controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) attempted to DELUSER %s (%s)", np->nick, np->authname, ourflags, target->authname->name, targetflags);
 
     return CMD_ERROR;
   }
 
-  for(nl=target->nick;nl;nl=nl->next)
-    if(nl->nick != np)
-      controlreply(nl->nick, "!!! %s/%s (%s) just DELUSERed you.", np->nick, np->authname, ourflags);
+  for(np2=target->authname->nicks;np2;np2=np2->nextbyauthname)
+    if(np2 != np)
+      controlreply(np2, "!!! %s/%s (%s) just DELUSERed you.", np->nick, np->authname, ourflags);
 
   noperserv_delete_autheduser(target);
 
-  controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) successfully used DELUSER on %s (%s)", np->nick, np->authname, ourflags, target->authname->content, targetflags);
+  controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) successfully used DELUSER on %s (%s)", np->nick, np->authname, ourflags, deleteduser, targetflags);
 
   if(target == au) {
     controlreply(np, "You have been deleted.");
@@ -392,7 +391,7 @@ int noperserv_deluser(void *sender, int cargc, char **cargv) {
 /* @test */
 /* this command needs LOTS of checking */
 int noperserv_userflags(void *sender, int cargc, char **cargv) {
-  nick *np = (nick *)sender;
+  nick *np2, *np = (nick *)sender;
   no_autheduser *au = NOGetAuthedUser(np), *target = NULL;
   char *flags = NULL, *nicktarget = NULL;
   int typefound;
@@ -437,7 +436,7 @@ int noperserv_userflags(void *sender, int cargc, char **cargv) {
           strlcpy(targetflags, printflags(fwas, no_userflags), sizeof(targetflags));
           strlcpy(ourflags, printflags(fours, no_userflags), sizeof(ourflags));
 
-          controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) attempted to use USERFLAGS on %s (%s): %s", np->nick, np->authname, ourflags, target->authname->content, targetflags, printflagdiff(fwas, fnow, no_userflags));
+          controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) attempted to use USERFLAGS on %s (%s): %s", np->nick, np->authname, ourflags, target->authname->name, targetflags, printflagdiff(fwas, fnow, no_userflags));
           return CMD_ERROR;
         }
       } else if(ret == REJECT_NONE) {
@@ -445,7 +444,6 @@ int noperserv_userflags(void *sender, int cargc, char **cargv) {
           controlreply(np, "No changes made to existing flags.");
         } else {
           char targetflags[FLAGBUFLEN], ourflags[FLAGBUFLEN], finalflags[FLAGBUFLEN];
-          no_nicklist *nl = target->nick;
 
           noperserv_policy_update_noticeflags(fwas, target);          
           noperserv_update_autheduser(target);
@@ -455,14 +453,14 @@ int noperserv_userflags(void *sender, int cargc, char **cargv) {
           strlcpy(targetflags, printflags(fwas, no_userflags), sizeof(targetflags));
           strlcpy(ourflags, printflags(fours, no_userflags), sizeof(ourflags));
 
-          controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) successfully used USERFLAGS on %s (%s): %s", np->nick, np->authname, ourflags, target->authname->content, targetflags, printflagdiff(fwas, NOGetAuthLevel(target), no_userflags));
+          controlwall(NO_OPER, NL_MANAGEMENT, "%s/%s (%s) successfully used USERFLAGS on %s (%s): %s", np->nick, np->authname, ourflags, target->authname->name, targetflags, printflagdiff(fwas, NOGetAuthLevel(target), no_userflags));
 
           strlcpy(finalflags, printflags(NOGetAuthLevel(target), no_userflags), sizeof(finalflags));
-          for(;nl;nl=nl->next)
-            if(nl->nick != np) {
-              controlreply(nl->nick, "!!! %s/%s (%s) just used USERFLAGS on you (%s): %s", np->nick, np->authname, ourflags, targetflags, printflagdiff(fwas, NOGetAuthLevel(target), no_userflags));
-              controlreply(nl->nick, "Your user flags are now: %s", finalflags);
-              controlreply(nl->nick, "Your notice flags are now: %s", printflags(target->noticelevel, no_noticeflags));
+          for(np2=target->authname->nicks;np2;np2=np2->nextbyauthname)
+            if(np2 != np) {
+              controlreply(np2, "!!! %s/%s (%s) just used USERFLAGS on you (%s): %s", np->nick, np->authname, ourflags, targetflags, printflagdiff(fwas, NOGetAuthLevel(target), no_userflags));
+              controlreply(np2, "Your user flags are now: %s", finalflags);
+              controlreply(np2, "Your notice flags are now: %s", printflags(target->noticelevel, no_noticeflags));
             }
         }
       }
