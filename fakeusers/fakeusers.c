@@ -237,6 +237,7 @@ static int fakeadd(void *source, int cargc, char **cargv) {
               fake->nick, fake->ident, fake->host, fake->realname);
 
   scheduleoneshot(time(NULL) + 1, &reconnectfakeuser, fake);
+
   return CMD_OK;
 }
 
@@ -256,6 +257,7 @@ static int fakelist(void *sender, int cargc, char **cargv) {
   }
 
   controlreply(sender, "%d fakeusers are currently connected", fakeusercount);
+
   return CMD_OK;
 }
 
@@ -272,12 +274,12 @@ static int fakekill(void *sender, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  nofudb->squery(nofudb, "DELETE FROM ? WHERE nick = ?", "Ts", "fakeusers", fake->nick);
   controlreply(sender, "Killed fake user %s", fake->nick);
   controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) removed by %s/%s", fake->nick, fake->ident,
               fake->host, fake->realname, ((nick *)sender)->nick, ((nick *)sender)->authname);
 
   fake_remove(fake);
+
   return CMD_OK;
 }
 
