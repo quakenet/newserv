@@ -400,10 +400,6 @@ void fakeuser_handler(nick *user, int command, void **params)
     }
     details->lastkill = timenow;
 
-    /*
-    controlwalls(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) was KILL'ed", details->nick,
-                details->ident, details->host, details->realname);
-    */
     details->schedule = scheduleoneshot(time(NULL) + KILL_WAIT, &reconnectfake, details);
     if (!details->schedule)
     {
