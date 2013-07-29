@@ -36,39 +36,19 @@ typedef struct fakeuser {
 
 fakeuser *fakeuserlist = NULL;
 
-void fakeuser_cleanup();
-int fakeuser_loaddb();
-void fakeusers_load(const DBAPIResult *res, void *arg);
-void fakeuser_handler(nick *user, int command, void **params);
-int fakeadd(void *sender, int cargc, char **cargv);
-int fakelist(void *sender, int cargc, char **cargv);
-int fakekill(void *sender, int cargc, char **cargv);
-void schedulefakeuser(void *arg);
-fakeuser *findfakeuserbynick(char *nick);
-void fake_remove(char *nickname);
-fakeuser *fake_add(fakeuser *details);
+static void fakeuser_cleanup();
+static int fakeuser_loaddb();
+static void fakeusers_load(const DBAPIResult *res, void *arg);
+static void fakeuser_handler(nick *user, int command, void **params);
+static int fakeadd(void *sender, int cargc, char **cargv);
+static int fakelist(void *sender, int cargc, char **cargv);
+static int fakekill(void *sender, int cargc, char **cargv);
+static void schedulefakeuser(void *arg);
+static fakeuser *findfakeuserbynick(char *nick);
+static void fake_remove(char *nickname);
+static fakeuser *fake_add(fakeuser *details);
 
 static DBAPIConn *nofudb;
-
-void _init() {
-  if (!fakeuser_loaddb()) {
-    Error("fakeuser", ERR_FATAL, "Cannot load database");
-    return;
-  }
-
-  registercontrolhelpcmd("fakeuser", NO_OPER, 4, &fakeadd, "Usage: FAKEUSER nick <ident> <host> <realname>\nCreates a fake user.");
-  registercontrolhelpcmd("fakelist", NO_OPER, 0, &fakelist, "Usage: FAKELIST\nLists all fake users.");
-  registercontrolhelpcmd("fakekill", NO_OPER, 2, &fakekill, "Usage: FAKEKILL nick <reason>\nRemoves a fake user");
-
-}
-
-void _fini() {
-  fakeuser_cleanup();
-  deleteallschedules(schedulefakeuser);
-  deregistercontrolcmd("fakeuser", &fakeadd);
-  deregistercontrolcmd("fakelist", &fakelist);
-  deregistercontrolcmd("fakekill", &fakekill);
-}
 
 void fakeuser_cleanup() {
   fakeuser *fake;
@@ -131,21 +111,6 @@ void fakeusers_load(const DBAPIResult *res, void *arg) {
   res->clear(res);
 }
 
-fakeuser *getdetails(nick *user) {
-  fakeuser *details;
-  details = malloc(sizeof(fakeuser));
-
-  if (!details)
-    return NULL;
-
-  strlcpy(details->nick, user->nick, NICKLEN + 1);
-  strlcpy(details->ident, user->ident, USERLEN + 1);
-  strlcpy(details->host, user->host->name->content, HOSTLEN + 1);
-  strlcpy(details->realname, user->realname->name->content, REALLEN + 1);
-  details->lastkill = 0;
-  return details;
-}
-
 nick *register_fakeuseronnet(fakeuser *details) {
   nick *user;
 
@@ -185,6 +150,9 @@ void fake_remove(char *nickname) {
         fakeuserlist = fake->next;
       else
         prev->next = fake->next;
+
+      if(fake->user)
+        deregisterlocaluser(fake->user, "Signing off");
 
       free(fake);
       return;
@@ -275,7 +243,7 @@ int fakelist(void *sender, int cargc, char **cargv) {
 
   for (fake = fakeuserlist; fake; fake = fake->next) {
     if (!fake->user)
-      controlreply(sender, "%s!%s@%s (%s) %s - RECONNECTING", fake->nick, fake->ident,
+      controlreply(sender, "%s!%s@%s (%s) - RECONNECTING", fake->nick, fake->ident,
                    fake->host, fake->realname);
     else
       controlreply(sender, "%s!%s@%s (%s)", fake->nick, fake->ident,
@@ -306,13 +274,6 @@ int fakekill(void *sender, int cargc, char **cargv) {
   controlwall(NO_OPER, NL_FAKEUSERS, "Fake user %s!%s@%s (%s) removed by %s/%s", fake->nick, fake->ident,
               fake->host, fake->realname, ((nick *)sender)->nick, ((nick *)sender)->authname);
 
-  if (fake->user) {
-    if (cargc > 1)
-      deregisterlocaluser(fake->user, cargv[1]);
-    else
-      deregisterlocaluser(fake->user, "Signing off");
-  }
-
   fake_remove(cargv[0]);
   return CMD_OK;
 }
@@ -320,21 +281,36 @@ int fakekill(void *sender, int cargc, char **cargv) {
 void schedulefakeuser(void *arg) {
   fakeuser *fake;
 
-  for (fake = fakeuserlist; fake; fake = fake->next) {
-    if (!fake->user) {
+  for (fake = fakeuserlist; fake; fake = fake->next)
+    if (!fake->user)
       fake->user = register_fakeuseronnet(fake);
-    }
-  }
 }
 
 fakeuser *findfakeuserbynick(char *nick) {
   fakeuser *fake;
 
-  for (fake = fakeuserlist; fake; fake = fake->next) {
-    if (!ircd_strcmp(nick, fake->nick)) {
+  for (fake = fakeuserlist; fake; fake = fake->next)
+    if (!ircd_strcmp(nick, fake->nick))
       return fake;
-    }
-  }
 
   return NULL;
+}
+
+void _init() {
+  if (!fakeuser_loaddb()) {
+    Error("fakeuser", ERR_FATAL, "Cannot load database");
+    return;
+  }
+
+  registercontrolhelpcmd("fakeuser", NO_OPER, 4, &fakeadd, "Usage: FAKEUSER nick <ident> <host> <realname>\nCreates a fake user.");
+  registercontrolhelpcmd("fakelist", NO_OPER, 0, &fakelist, "Usage: FAKELIST\nLists all fake users.");
+  registercontrolhelpcmd("fakekill", NO_OPER, 2, &fakekill, "Usage: FAKEKILL nick\nRemoves a fake user");
+}
+
+void _fini() {
+  fakeuser_cleanup();
+  deleteallschedules(schedulefakeuser);
+  deregistercontrolcmd("fakeuser", &fakeadd);
+  deregistercontrolcmd("fakelist", &fakelist);
+  deregistercontrolcmd("fakekill", &fakekill);
 }
