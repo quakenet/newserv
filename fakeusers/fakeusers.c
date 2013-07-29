@@ -61,7 +61,7 @@ static DBAPIConn *nofudb;
 void _init() {
   if (!fakeuser_loaddb())
   {
-    Error("noperserv_fakeuser", ERR_FATAL, "Cannot load database");
+    Error("fakeuser", ERR_FATAL, "Cannot load database");
     return;
   }
   registercontrolhelpcmd("fakeuser", NO_OPER, 4, &fakeadd, "Usage: FAKEUSER nick <ident> <host> <realname>\nCreates a fake user.");
@@ -102,7 +102,7 @@ void fakeuser_cleanup()
 int fakeuser_loaddb()
 {
   if (!nofudb) {
-    nofudb = dbapi2open(DBAPI2_DEFAULT, "noperservfakeuser");
+    nofudb = dbapi2open(DBAPI2_DEFAULT, "fakeusers");
     if(!nofudb) {
       Error("fakeuser", ERR_STOP, "Could not connect to database.");
       return 0;
@@ -386,7 +386,7 @@ void fakeuser_handler(nick *user, int command, void **params)
     if (!item)
     {
       controlwall(NO_OPER, NL_FAKEUSERS, "Error: A fakeuser was killed, but wasn't found in the list");
-      Error("noperserv_fakeuser", ERR_ERROR, "A fakeuser was killed, but wasn't found in the list");
+      Error("fakeuser", ERR_ERROR, "A fakeuser was killed, but wasn't found in the list");
       return;
     }
 
@@ -407,7 +407,7 @@ void fakeuser_handler(nick *user, int command, void **params)
     details->schedule = scheduleoneshot(time(NULL) + KILL_WAIT, &reconnectfake, details);
     if (!details->schedule)
     {
-      Error("noperserv_fakeuser", ERR_ERROR, "Couldn't reschedule fakeuser for reconnect");
+      Error("fakeuser", ERR_ERROR, "Couldn't reschedule fakeuser for reconnect");
       free(details);
       return;
     }
@@ -451,14 +451,14 @@ int fakeadd(void *sender, int cargc, char **cargv)
     else if (err_code == ERR_MEM)
     {
       controlreply(sender, "Error: memory error!!");
-      Error("noperserv_fakeuser", ERR_STOP, "malloc error");
+      Error("fakeuser", ERR_STOP, "malloc error");
     }
     else if (err_code == ERR_WONTKILL)
       controlreply(sender, "Nick already exists and I won't kill it");
     else
     {
       controlreply(sender, "Unknown error when adding fakeuser");
-      Error("noperserv_fakeuser", ERR_ERROR, "Unknown error when adding fakeuser");
+      Error("fakeuser", ERR_ERROR, "Unknown error when adding fakeuser");
     }
     return CMD_ERROR;
   }
