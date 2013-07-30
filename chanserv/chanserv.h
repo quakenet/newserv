@@ -753,8 +753,6 @@ extern sstring *cs_quitreason;
 void chanserv_finalinit();
 
 /* chanservalloc.c */
-void chanservallocinit();
-void csfreeall();
 regchan *getregchan();
 void freeregchan(regchan *rcp);
 reguser *getreguser();
