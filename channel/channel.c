@@ -43,9 +43,6 @@ void channelstats(int hooknum, void *arg);
 void sendchanburst(int hooknum, void *arg);
 
 void _init() {
-  /* Initialise internal structures */
-  initchannelalloc();
-
   /* Set up the nouser marker according to our own numeric */
   nouser=(mylongnum<<18)|CU_NOUSERMASK;
   

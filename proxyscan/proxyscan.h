@@ -145,7 +145,6 @@ foundproxy *getfoundproxy();
 void freefoundproxy(foundproxy *fpp);
 pendingscan *getpendingscan();
 void freependingscan(pendingscan *psp);
-void sfreeall();
 extrascan *getextrascan();
 void freeextrascan(extrascan *esp);
 

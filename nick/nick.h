@@ -11,6 +11,7 @@
 #include "../lib/base64.h"
 #include "../lib/irc_ipv6.h"
 #include "../patricia/patricia.h"
+#include "../lib/ccassert.h"
 
 #include "../authext/authext.h"
 
@@ -130,6 +131,8 @@ typedef struct realname {
   struct realname *next;
 } realname;
 
+CCASSERT(sizeof(host) == sizeof(realname));
+
 typedef struct nick {
   char nick[NICKLEN+1];
   long numeric;
@@ -187,13 +190,12 @@ extern char *NULLAUTHNAME;
                                   (((*gethandlebynumeric(x))->numeric==(x&MAXNUMERIC))?(*gethandlebynumeric(x)):NULL)))
 
 /* nickalloc.c functions */
-void initnickalloc();
 realname *newrealname();
 void freerealname(realname *rn);
 nick *newnick();
-void freenick (nick *np);
+void freenick(nick *np);
 host *newhost();
-void freehost (host *hp);
+void freehost(host *hp);
 
 /* nick.c functions */
 void handleserverchange(int hooknum, void *arg);

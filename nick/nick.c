@@ -66,7 +66,6 @@ void _init() {
     for (anp=authnametable[i];anp;anp=anp->next)
       anp->nicks=NULL;  
 
-  initnickalloc();
   initnickhelpers();
   memset(nicktable,0,sizeof(nicktable));
   memset(servernicks,0,sizeof(servernicks));

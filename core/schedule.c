@@ -27,7 +27,6 @@ int schedexes;
 void schedulestats(int hooknum, void *arg);
 
 void initschedule() {
-  initschedulealloc();
   events=NULL;
   schedadds=scheddels=schedexes=scheddelfast=0;
   registerhook(HOOK_CORE_STATSREQUEST, &schedulestats);
@@ -167,6 +166,7 @@ void *scheduleoneshot(time_t when, ScheduleCallback callback, void *arg) {
   sp->repeatcount=1;
   sp->callback=callback;
   sp->callbackparam=arg;
+  sp->deleted=0;
 
   insertschedule(sp);
   
@@ -192,6 +192,7 @@ void *schedulerecurring(time_t first, int count, time_t interval, ScheduleCallba
   sp->repeatcount=(count-1);
   sp->callback=callback;
   sp->callbackparam=arg;
+  sp->deleted=0;
   
   insertschedule(sp);
   
@@ -212,13 +213,17 @@ void deleteschedule(void *sch, ScheduleCallback callback, void *arg) {
   if (sch) {
     sp=(schedule *)sch;
     /* Double check the params are correct: 
-     *  because we recycle and never free schedule structs it's
-     *  actually OK to try and delete a schedule that has been executed... */
+     * it's perfectly OK to delete a schedule that has been executed,
+     * we're just marking the schedule as deleted here so that it can be
+     * cleaned up by doscheduledevents later on. */
      
-    if (sp->callback==callback && sp->callbackparam==arg) {
+    if (sp->callback==callback && sp->callbackparam==arg && !sp->deleted) {
       scheddelfast++;
-      schedule_remove(sp->index);
-      freeschedule(sp);
+      sp->deleted=1;
+#ifdef SCHEDDEBUG
+    } else {
+      Error("schedule",ERR_DEBUG,"deleted schedule that was previously marked as deleted");
+#endif
     }
     return;
   }
@@ -226,10 +231,9 @@ void deleteschedule(void *sch, ScheduleCallback callback, void *arg) {
   /* Argh, have to find it by brute force */
 
   for(i=0;i<heapsize;i++) {
-    if ((events[i]->callback==callback) && (events[i]->callbackparam==arg)) {
+    if (events[i]->callback==callback && events[i]->callbackparam==arg && !sp->deleted) {
       sp=events[i];
-      schedule_remove(sp->index);
-      freeschedule(sp);
+      sp->deleted=1;
       return;
     }
   }
@@ -267,7 +271,13 @@ void doscheduledevents(time_t when) {
     events[0]=events[heapsize];
     events[0]->index=0;
     schedule_heapify(0);
-    
+
+    /* This schedule was previously marked as deleted and we're now lazily cleaning it up. */
+    if (sp->deleted) {
+      freeschedule(sp);
+      continue;
+    } 
+   
     if (sp->callback==NULL) {
       Error("core",ERR_ERROR,"Tried to call NULL function in doscheduledevents(): (%p, %p, %p)",sp,sp->callback,sp->callbackparam);
       continue;
@@ -280,7 +290,7 @@ void doscheduledevents(time_t when) {
     /* Update the structures _before_ doing the callback.. */
     switch(sp->type) {
     case SCHEDULE_ONESHOT:
-      freeschedule(sp);
+      sp->deleted=1;
       break;
         
     case SCHEDULE_REPEATING:
@@ -297,9 +307,11 @@ void doscheduledevents(time_t when) {
 	  sp->type=SCHEDULE_ONESHOT;       
 	}
       }
-      insertschedule(sp);
       break;
     }
+
+    insertschedule(sp);
+
 #ifdef SCHEDDEBUG
     Error("schedule",ERR_DEBUG,"exec schedule:(%x, %x, %x)", (unsigned int)sp, (unsigned int)sc, (unsigned int)arg);
 #endif

@@ -236,8 +236,7 @@ void _init() {
   chanservext=registerchanext("chanserv");
   chanservaext=registerauthnameext("chanserv",1);
 
-  /* Set up the allocators and hashes */
-  chanservallocinit();
+  /* Set up the hashes */
   chanservhashinit();
 
   /* And the messages */

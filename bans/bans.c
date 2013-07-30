@@ -14,32 +14,16 @@
 
 MODULE_VERSION("")
 
-#define ALLOCUNIT 100
-
-chanban *freebans;
-
-void _init() {
-  freebans=NULL;  
-}
-
 void _fini() {
   nsfreeall(POOL_BANS);
 }
 
 chanban *getchanban() {
-  int i;
   chanban *cbp;
 
-  if (freebans==NULL) {
-    freebans=(chanban *)nsmalloc(POOL_BANS, ALLOCUNIT*sizeof(chanban));
-    for (i=0;i<ALLOCUNIT-1;i++) {
-      freebans[i].next=(struct chanban *)&(freebans[i+1]);
-    }
-    freebans[ALLOCUNIT-1].next=NULL;
-  }
-
-  cbp=freebans;
-  freebans=cbp->next;
+  cbp = nsmalloc(POOL_BANS, sizeof(chanban));
+  if (!cbp)
+    return NULL;
 
   cbp->nick=NULL;
   cbp->user=NULL;
@@ -49,16 +33,11 @@ chanban *getchanban() {
 }
 
 void freechanban(chanban *cbp) {
-  cbp->next=(struct chanban *)freebans;
+  freesstring(cbp->nick);
+  freesstring(cbp->user);
+  freesstring(cbp->host);
 
-  if (cbp->nick)
-    freesstring(cbp->nick);
-  if (cbp->user)
-    freesstring(cbp->user);
-  if (cbp->host)
-    freesstring(cbp->host);
-
-  freebans=cbp;
+  nsfree(POOL_BANS, cbp);
 }
 
 /*
