@@ -108,8 +108,10 @@ static void reconnectfakeuser(void *arg) {
   if (fake->user)
     return;
 
-  if ((user = getnickbynick(fake->nick)) && (IsOper(user) || IsService(user) || IsXOper(user)))
+  if ((user = getnickbynick(fake->nick)) && (IsOper(user) || IsService(user) || IsXOper(user))) {
+    fake_remove(fake);
     return;
+  }
 
   fake->user = registerlocaluser(fake->nick, fake->ident, fake->host, fake->realname,
                                  NULL, UMODE_INV | UMODE_DEAF, &fakeuser_handler);
