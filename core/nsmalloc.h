@@ -68,7 +68,8 @@ beginpools() {
   pool(TRUSTS),
   pool(SPAMSCAN2),
   pool(ACHIEVEMENTS),
-  pool(CHANSTATS)
+  pool(CHANSTATS),
+  pool(SCHEDULE)
 } endpools()
 
 #undef pool

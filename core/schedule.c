@@ -27,7 +27,6 @@ int schedexes;
 void schedulestats(int hooknum, void *arg);
 
 void initschedule() {
-  initschedulealloc();
   events=NULL;
   schedadds=scheddels=schedexes=scheddelfast=0;
   registerhook(HOOK_CORE_STATSREQUEST, &schedulestats);
