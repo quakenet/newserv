@@ -11,10 +11,9 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 #include "../authext/authext.h"
-#include "noperserv.h"
-#include "noperserv_db.h"
-#include "noperserv_hooks.h"
-#include "noperserv_policy.h"
+#include "../control/control.h"
+#include "../control/control_db.h"
+#include "../control/control_policy.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -27,135 +26,8 @@ MODULE_VERSION("");
 #define NO_FOUND_NICKNAME 1
 #define NO_FOUND_AUTHNAME 2
 
-const flag no_commandflags[] = {
-    { 'o', __NO_OPER },
-    { 't', __NO_TRUST },
-    { 's', __NO_STAFF },
-    { 'S', __NO_SEC },
-    { 'd', __NO_DEVELOPER },
-    { 'L', __NO_LEGACY },
-    { 'O', __NO_OPERED },
-    { 'r', __NO_AUTHED },
-    { 'R', __NO_ACCOUNT },
-    { 'Y', __NO_RELAY },
-    { '\0', 0 }
-  }; 
-
-const flag no_userflags[] = {
-    { 'o', __NO_OPER },
-    { 't', __NO_TRUST },
-    { 's', __NO_STAFF },
-    { 'S', __NO_SEC },
-    { 'd', __NO_DEVELOPER },
-    { 'Y', __NO_RELAY },
-    { '\0', 0 }
-  }; 
-
-const flag no_noticeflags[] = {
-    { 'm', NL_MANAGEMENT },   /* hello, password, userflags, noticeflags */
-    { 't', NL_TRUSTS },       /* trust stuff... */
-    { 'k', NL_KICKKILLS },    /* KICK/KILL commands */
-    { 'I', NL_MISC },         /* misc commands */
-    { 'g', NL_GLINES },       /* GLINE commands */
-    { 'h', NL_HITS },         /* Where a gline or kill is set automatically by the bot */
-    { 'c', NL_CLONING },      /* Clone detection */
-    { 'C', NL_CLEARCHAN },    /* When someone clearchans */
-    { 'f', NL_FAKEUSERS },    /* Fakeuser addition */
-    { 'b', NL_BROADCASTS },   /* Broadcast/mbroadcast/sbroadcast */
-    { 'o', NL_OPERATIONS },   /* insmod/rmmod/etc */
-    { 'O', NL_OPERING },      /* when someone opers */
-    { 'n', NL_NOTICES },      /* turn off to receive notices instead of privmsgs */
-    { 'A', NL_ALL_COMMANDS }, /* all commands sent */
-    { '\0', 0 }
-  };
-
-int noperserv_hello(void *sender, int cargc, char **cargv);
-int noperserv_noticeflags(void *sender, int cargc, char **cargv);
-int noperserv_userflags(void *sender, int cargc, char **cargv);
-int noperserv_deluser(void *sender, int cargc, char **cargv);
-void noperserv_oper_detection(int hooknum, void *arg);
-void noperserv_reply(nick *np, char *format, ...) __attribute__ ((format (printf, 2, 3)));
-
-int init = 0;
-
-void _init() {
-  if(!noperserv_load_db())
-    return;
-
-  noperserv_ext = registerauthnameext("noperserv", 1);
-
-  noperserv_setup_hooks();
-
-  registercontrolhelpcmd("hello", NO_OPERED | NO_AUTHED, 1, &noperserv_hello, "Syntax: HELLO ?nickname|#authname?\nCreates an account on the service for the specified nick, or if one isn't supplied, your nickname.");
-  registercontrolhelpcmd("userflags", NO_ACCOUNT, 2, &noperserv_userflags,
-    "Syntax: USERFLAGS <nickname|#authname> ?modifications?\n"
-    " Views and modifies user permissions.\n"
-    " If no nickname or authname is supplied, you are substituted for it.\n"
-    " If no flags are supplied, flags are just displayed instead of modified."
-    " Flags:\n"
-    "  +o: Operator\n"
-    "  +s: Staff member\n"
-    "  +S: Security team member\n"
-    "  +d: NOperserv developer\n"
-    "  +t: Trust queue worker\n"
-    "  +Y: Relay\n"
-    " Additional flags may show up in SHOWCOMMANDS but are not userflags as such:\n"
-    "  +r: Authed user\n"
-    "  +R: Registered NOperserv user\n"
-    "  +O: Must be /OPER'ed\n"
-    "  +L: Legacy command\n"
-  );
-  registercontrolhelpcmd("noticeflags", NO_ACCOUNT, 1, &noperserv_noticeflags,
-    "Syntax: NOTICEFLAGS ?(nickname|#authname)|flags?\n"
-    " This command can view and modify your own notice flags, and view that of other users.\n"
-    " Flags:\n"
-    "  +m: Management (hello, password, userflags, noticeflags)\n"
-    "  +t: Trusts\n"
-    "  +k: KICK/KILL commands\n"
-    "  +g: GLINE commands\n"
-    "  +h: Shows when glines are set by code (hits)\n"
-    "  +c: Clone information\n"
-    "  +C: CLEARCHAN command\n"
-    "  +f: FAKEUSER commands\n"
-    "  +b: BROADCAST commands\n"
-    "  +o: Operation commands, such as insmod, rmmod, die, etc\n"
-    "  +O: /OPER\n"
-    "  +I: Misc commands (resync, etc)\n"
-    "  +n: Sends notices instead of privmsgs\n"
-    "  +A: Every single command sent to the service (spammy)\n"
-  );
-
-  registercontrolhelpcmd("deluser", NO_OPERED | NO_ACCOUNT, 2, &noperserv_deluser, "Syntax: DELUSER <nickname|#authname>\nDeletes the specified user.");
-  registerhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
-
-  init = 1;
-}
-
-#ifdef BROKEN_DLCLOSE
-void __fini() {
-#else
-void _fini() {
-#endif
-  if(!init)
-    return;
-
-  deregisterhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
-
-  deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
-  deregistercontrolcmd("userflags", &noperserv_userflags);
-  deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
-  deregistercontrolcmd("hello", &noperserv_hello);
-  deregistercontrolcmd("deluser", &noperserv_deluser);
-
-  noperserv_cleanup_hooks();
-
-  noperserv_cleanup_db();
-
-  releaseauthnameext(noperserv_ext);
-}
-
 /* @test */
-int noperserv_hello(void *sender, int cargc, char **cargv) {
+static int noperserv_hello(void *sender, int cargc, char **cargv) {
   authname *newaccount = NULL;
   no_autheduser *au;
   nick *np = (nick *)sender, *np2, *target = NULL;
@@ -226,7 +98,7 @@ int noperserv_hello(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-no_autheduser *noperserv_autheduser_from_command(nick *np, char *command, int *typefound, char **returned) {
+static no_autheduser *noperserv_autheduser_from_command(nick *np, char *command, int *typefound, char **returned) {
   no_autheduser *au;
   authname *anp;
   if(command[0] == '#') {
@@ -266,7 +138,7 @@ no_autheduser *noperserv_autheduser_from_command(nick *np, char *command, int *t
   return NULL;
 }
 
-int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
+static int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
   nick *np2, *np = (nick *)sender;
   no_autheduser *au;
 
@@ -342,7 +214,7 @@ int noperserv_noticeflags(void *sender, int cargc, char **cargv) {
 }
 
 /* @test */
-int noperserv_deluser(void *sender, int cargc, char **cargv) {
+static int noperserv_deluser(void *sender, int cargc, char **cargv) {
   nick *np2, *np = (nick *)sender;
   no_autheduser *target /* target user */, *au = NOGetAuthedUser(np); /* user executing command */
   char *userreturned = NULL; /* nickname or authname of the target, pulled from the db */
@@ -390,7 +262,7 @@ int noperserv_deluser(void *sender, int cargc, char **cargv) {
 
 /* @test */
 /* this command needs LOTS of checking */
-int noperserv_userflags(void *sender, int cargc, char **cargv) {
+static int noperserv_userflags(void *sender, int cargc, char **cargv) {
   nick *np2, *np = (nick *)sender;
   no_autheduser *au = NOGetAuthedUser(np), *target = NULL;
   char *flags = NULL, *nicktarget = NULL;
@@ -481,16 +353,54 @@ int noperserv_userflags(void *sender, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-void noperserv_oper_detection(int hooknum, void *arg) {
-  nick *np = (nick *)arg;
+void _init() {
+  registercontrolhelpcmd("hello", NO_OPERED | NO_AUTHED, 1, &noperserv_hello, "Syntax: HELLO ?nickname|#authname?\nCreates an account on the service for the specified nick, or if one isn't supplied, your nickname.");
+  registercontrolhelpcmd("userflags", NO_ACCOUNT, 2, &noperserv_userflags,
+    "Syntax: USERFLAGS <nickname|#authname> ?modifications?\n"
+    " Views and modifies user permissions.\n"
+    " If no nickname or authname is supplied, you are substituted for it.\n"
+    " If no flags are supplied, flags are just displayed instead of modified."
+    " Flags:\n"
+    "  +o: Operator\n"
+    "  +s: Staff member\n"
+    "  +S: Security team member\n"
+    "  +d: NOperserv developer\n"
+    "  +t: Trust queue worker\n"
+    "  +Y: Relay\n"
+    " Additional flags may show up in SHOWCOMMANDS but are not userflags as such:\n"
+    "  +r: Authed user\n"
+    "  +R: Registered NOperserv user\n"
+    "  +O: Must be /OPER'ed\n"
+    "  +L: Legacy command\n"
+  );
+  registercontrolhelpcmd("noticeflags", NO_ACCOUNT, 1, &noperserv_noticeflags,
+    "Syntax: NOTICEFLAGS ?(nickname|#authname)|flags?\n"
+    " This command can view and modify your own notice flags, and view that of other users.\n"
+    " Flags:\n"
+    "  +m: Management (hello, password, userflags, noticeflags)\n"
+    "  +t: Trusts\n"
+    "  +k: KICK/KILL commands\n"
+    "  +g: GLINE commands\n"
+    "  +h: Shows when glines are set by code (hits)\n"
+    "  +c: Clone information\n"
+    "  +C: CLEARCHAN command\n"
+    "  +f: FAKEUSER commands\n"
+    "  +b: BROADCAST commands\n"
+    "  +o: Operation commands, such as insmod, rmmod, die, etc\n"
+    "  +O: /OPER\n"
+    "  +I: Misc commands (resync, etc)\n"
+    "  +n: Sends notices instead of privmsgs\n"
+    "  +A: Every single command sent to the service (spammy)\n"
+  );
 
-  if(np->umodes & UMODE_OPER) {
-    if(np->opername && strcmp(np->opername->content, "-")) {
-      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed as %s", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"", np->opername->content);
-    } else {
-      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
-    }
-  } else {
-    controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just DEOPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
-  }
+  registercontrolhelpcmd("deluser", NO_OPERED | NO_ACCOUNT, 2, &noperserv_deluser, "Syntax: DELUSER <nickname|#authname>\nDeletes the specified user.");
 }
+
+void _fini() {
+  deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
+  deregistercontrolcmd("userflags", &noperserv_userflags);
+  deregistercontrolcmd("noticeflags", &noperserv_noticeflags);
+  deregistercontrolcmd("hello", &noperserv_hello);
+  deregistercontrolcmd("deluser", &noperserv_deluser);
+}
+

@@ -1,7 +1,6 @@
-#include "../control/control.h"
-#include "noperserv.h"
-#include "noperserv_db.h"
-#include "noperserv_policy.h"
+#include "control.h"
+#include "control_db.h"
+#include "control_policy.h"
 
 /* command access */
 int noperserv_policy_command_permitted(flag_t level, nick *user) {

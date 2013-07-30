@@ -13,8 +13,7 @@
 #include "../core/schedule.h"
 #include "../dbapi2/dbapi2.h"
 
-#include "noperserv.h"
-#include "noperserv_db.h"
+#include "control.h"
 
 #include <stdlib.h>
 

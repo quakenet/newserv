@@ -1,6 +1,8 @@
 #ifndef __NOPERSERV_STRUCTS_H
 #define __NOPERSERV_STRUCTS_H
 
+#include "../authext/authext.h"
+
 typedef unsigned long no_tableid;
 
 typedef struct no_autheduser {
