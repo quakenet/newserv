@@ -157,7 +157,6 @@ int addnumerictochanuserhash(chanuserhash *cuh, long numeric);
 unsigned long *getnumerichandlefromchanhash(chanuserhash *cuh, long numeric);
 
 /* functions from channelalloc.c */
-void initchannelalloc();
 channel *newchan();
 void freechan(channel *cp);
 chanuserhash *newchanuserhash(int numbuckets);
