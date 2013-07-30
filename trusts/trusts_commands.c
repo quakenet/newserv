@@ -90,7 +90,7 @@ static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup,
   if(th->marker != marker)
     return;
 
-  cidrstr = trusts_cidr2str(&th->ip, th->bits);
+  cidrstr = CIDRtostr(th->ip, th->bits);
   calculatespaces(depth + 2, 30 + 1, cidrstr, &prespacebuf, &postspacebuf);
 
   if(th->group == originalgroup) {

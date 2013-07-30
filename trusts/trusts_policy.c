@@ -95,7 +95,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
-      controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", trusts_cidr2str(ip, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
+      controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", CIDRtostr(*ip, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
       snprintf(message, messagelen, "Too many connections from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
       return POLICY_FAILURE_NODECOUNT;
     }

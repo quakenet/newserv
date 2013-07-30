@@ -77,6 +77,48 @@ const char* ircd_ntoa_r(char* buf, const struct irc_in_addr* in)
     }
 }
 
+/** Convert a CIDR mask to printable ASCII form.
+ * This is generally deprecated in favor of ircd_ntoa_masked_r().
+ * @param[in] in Address to convert.
+ * @param[in] bits Mask bits.
+ * @return Pointer to a static buffer containing the readable form.
+ */
+const char* ircd_ntoa_masked(const struct irc_in_addr* in, unsigned char bits)
+{
+  static char buf[CIDRLEN];
+  return ircd_ntoa_masked_r(buf, in, bits);
+}
+
+/** Convert a CIDR mask to printable ASCII form.
+ * @param[out] buf Output buffer to write to.
+ * @param[in] in Address to format.
+ * @param[in] bits Mask bits.
+ * @return Pointer to the output buffer \a buf.
+ */
+const char* ircd_ntoa_masked_r(char* buf, const struct irc_in_addr* in, unsigned char bits)
+{
+  char inname[SOCKIPLEN];
+  struct irc_in_addr intemp;
+  int i;
+
+  for(i=0;i<8;i++) {
+    int curbits = bits - i * 16;
+
+    if (curbits<0)
+      curbits = 0;
+    else if (curbits>16)
+      curbits = 16;
+
+    uint16_t mask = 0xffff & ~((1 << (16 - curbits)) - 1);
+    intemp.in6_16[i] = htons(ntohs(in->in6_16[i]) & mask);
+  }
+
+  ircd_ntoa_r(inname, &intemp);
+  sprintf(buf, "%s/%u", inname, irc_bitlen(in, bits));
+
+  return buf;
+}
+
 /** Attempt to parse an IPv4 address into a network-endian form.
  * @param[in] input Input string.
  * @param[out] output Network-endian representation of the address.

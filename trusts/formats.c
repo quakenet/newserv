@@ -7,28 +7,6 @@
 #include "../irc/irc.h"
 #include "trusts.h"
 
-char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char bits) {
-  static char buf[100];
-  struct irc_in_addr iptemp;
-  int i;
-
-  for(i=0;i<8;i++) {
-    int curbits = bits - i * 16;
-
-    if (curbits<0)
-      curbits = 0;
-    else if (curbits>16)
-      curbits = 16;
-
-    uint16_t mask = 0xffff & ~((1 << (16 - curbits)) - 1);
-    iptemp.in6_16[i] = htons(ntohs(ip->in6_16[i]) & mask);
-  }
-
-  snprintf(buf, sizeof(buf), "%s/%u", IPtostr(iptemp), (irc_in_addr_is_ipv4(&iptemp))?bits-96:bits);
-
-  return buf;
-}
-
 char *trusts_timetostr(time_t t) {
   static char buf[100];
 
@@ -41,9 +19,9 @@ char *dumpth(trusthost *th, int oformat) {
   static char buf[512];
 
   if(oformat) {
-    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%jd", th->group->id, trusts_cidr2str(&th->ip, th->bits), th->count, th->maxusage, (intmax_t)th->lastseen);
+    snprintf(buf, sizeof(buf), "#%u,%s,%u,%u,%jd", th->group->id, CIDRtostr(th->ip, th->bits), th->count, th->maxusage, (intmax_t)th->lastseen);
   } else {
-    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd,%jd,%u,%u", th->group->id, trusts_cidr2str(&th->ip, th->bits), th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
+    snprintf(buf, sizeof(buf), "%u,%s,%u,%u,%jd,%jd,%u,%u", th->group->id, CIDRtostr(th->ip, th->bits), th->id, th->maxusage, (intmax_t)th->lastseen, (intmax_t)th->created, th->maxpernode, th->nodebits);
   }
 
   return buf;

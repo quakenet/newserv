@@ -7,7 +7,7 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   int hits;
 
   glinebufinit(&gbuf, 0);
-  glinebufcommentf(&gbuf, "on IP mask %s@%s, set by %s", user, trusts_cidr2str(ip, bits), creator);
+  glinebufcommentf(&gbuf, "on IP mask %s@%s, set by %s", user, CIDRtostr(*ip, bits), creator);
   glinebufaddbyip(&gbuf, user, ip, bits, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   glinebufcounthits(&gbuf, &hits, NULL);

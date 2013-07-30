@@ -79,7 +79,7 @@ void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, u
   if (nodebits < bits)
     bits = nodebits;
 
-  snprintf(mask, sizeof(mask), "%s@%s", user, trusts_cidr2str(ip, bits));
+  snprintf(mask, sizeof(mask), "%s@%s", user, CIDRtostr(*ip, bits));
 
   glinebufadd(gbuf, mask, creator, reason, expire, lastmod, lifetime);
 }

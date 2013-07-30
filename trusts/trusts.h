@@ -115,7 +115,6 @@ int trusts_fullyonline(void);
 
 /* formats.c */
 char *trusts_timetostr(time_t);
-char *trusts_cidr2str(struct irc_in_addr *ip, unsigned char);
 char *dumpth(trusthost *, int);
 char *dumptg(trustgroup *, int);
 int parseth(char *, trusthost *, unsigned int *, int);

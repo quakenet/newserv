@@ -554,7 +554,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   glinebufcommentv(&gbuf, "TRUSTGLINE", cargc + coff - 1, cargv);
 
   for(th = tg->hosts; th; th = th->next) {
-    snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], trusts_cidr2str(&th->ip, th->bits));
+    snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], CIDRtostr(th->ip, th->bits));
     glinebufadd(&gbuf, mask, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
   }
 
@@ -604,7 +604,7 @@ static int glines_cmdtrustungline(void *source, int cargc, char **cargv) {
   count = 0;
 
   for (th = tg->hosts; th; th = th->next) {
-    snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], trusts_cidr2str(&th->ip, th->bits));
+    snprintf(mask, sizeof(mask), "*!%s@%s", cargv[1], CIDRtostr(th->ip, th->bits));
 
     gl = findgline(mask);
 

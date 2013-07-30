@@ -322,7 +322,7 @@ trustgroup *tg_new(trustgroup *itg) {
 void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
   trustsdb->squery(trustsdb,
     "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen, maxpernode, nodebits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tuusuutuu", table, th->id, groupid, trusts_cidr2str(&th->ip, th->bits), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
+    "Tuusuutuu", table, th->id, groupid, CIDRtostr(th->ip, th->bits), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
   );
 }
 

@@ -644,8 +644,8 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   th_update(th);
   controlreply(sender, "Host modified.");
 
-  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), trusts_cidr2str(&ip, bits), tg->name->content, what, to);
-  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, trusts_cidr2str(&ip, bits), to);
+  controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTMODIFIED'ed host '%s' in group '%s' (field: %s, value: %s)", controlid(sender), CIDRtostr(ip, bits), tg->name->content, what, to);
+  trustlog(tg, sender->authname, "Modified %s for host '%s': %s", what, CIDRtostr(ip, bits), to);
 
   return CMD_OK;
 }
@@ -842,10 +842,11 @@ static void cleanuptrusts(void *arg) {
 
       th = ((trusthost **)(expiredths.content))[i];
       triggerhook(HOOK_TRUSTS_DELHOST, th);
-      th_delete(th);
 
-      cidrstr = trusts_cidr2str(&th->ip, th->bits);
+      cidrstr = CIDRtostr(th->ip, th->bits);
       trustlog(tg, "cleanuptrusts", "Removed host '%s' because it was unused for %d days.", cidrstr, CLEANUP_TH_INACTIVE);
+
+      th_delete(th);
 
       thcount++;
     }
