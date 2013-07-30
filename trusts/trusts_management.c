@@ -56,7 +56,7 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
     int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
     if(bits < minbits) {
-      controlreply(sender, "You don't have the necessary privileges to add a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      controlreply(sender, "You don't have the necessary privileges to add a subnet larger than /%d.", irc_bitlen(&ip, minbits));
       return CMD_ERROR;
     }
 
@@ -275,7 +275,7 @@ static int trusts_cmdtrustdel(void *source, int cargc, char **cargv) {
   if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
     int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
     if(bits < minbits) {
-      controlreply(sender, "You don't have the necessary privileges to remove a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      controlreply(sender, "You don't have the necessary privileges to remove a subnet larger than /%d.", irc_bitlen(&ip, minbits));
       return CMD_ERROR;
     }
 
@@ -491,7 +491,7 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
     int minbits = irc_in_addr_is_ipv4(&th->ip)?TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4:TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6;
 
     if(nodebits < minbits) {
-      controlreply(source, "You don't have the necessary privileges to set node bits to a subnet larger than /%d.", irc_in_addr_is_ipv4(&th->ip)?(minbits-96):minbits);
+      controlreply(source, "You don't have the necessary privileges to set node bits to a subnet larger than /%d.", irc_bitlen(&th->ip, minbits));
       return 0;
     }
   }
@@ -597,7 +597,7 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   if (!noperserv_policy_command_permitted(NO_DEVELOPER, sender)) {
     int minbits = irc_in_addr_is_ipv4(&ip)?TRUST_MIN_UNPRIVILEGED_BITS_IPV4:TRUST_MIN_UNPRIVILEGED_BITS_IPV6;
     if(bits < minbits) {
-      controlreply(sender, "You don't have the necessary privileges to modify a subnet larger than /%d.", irc_in_addr_is_ipv4(&ip)?(minbits-96):minbits);
+      controlreply(sender, "You don't have the necessary privileges to modify a subnet larger than /%d.", irc_bitlen(&ip, minbits));
       return CMD_ERROR;
     }
 
