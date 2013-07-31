@@ -153,9 +153,6 @@ struct searchNode *hostpct_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authedpct_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *kick_parse(searchCtx *ctx, int argc, char **argv);
 
-/* Interpret a string to give a node */
-struct searchNode *search_parse(searchCtx *ctx, char *input);
-
 /* Iteration functions */
 struct searchNode *any_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *all_parse(searchCtx *ctx, int argc, char **argv);

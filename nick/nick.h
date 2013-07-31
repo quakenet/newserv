@@ -11,7 +11,6 @@
 #include "../lib/base64.h"
 #include "../lib/irc_ipv6.h"
 #include "../patricia/patricia.h"
-#include "../lib/ccassert.h"
 
 #include "../authext/authext.h"
 
@@ -130,8 +129,6 @@ typedef struct realname {
   struct nick *nicks;
   struct realname *next;
 } realname;
-
-CCASSERT(sizeof(host) == sizeof(realname));
 
 typedef struct nick {
   char nick[NICKLEN+1];

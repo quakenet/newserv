@@ -74,11 +74,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
 
   tree = parse_string(reg_nodesearch, cargv[arg]);
   if(!tree) {
-#ifdef NEWSEARCH_NEWPARSER
     displaystrerror(reply, sender, cargv[arg]);
-#else
-    reply(sender,"Something went wrong.");
-#endif
     return CMD_ERROR;
   }
 
