@@ -3,14 +3,10 @@
 
 #include "../irc/irc_config.h"
 #include "../lib/flags.h"
-#include "../lib/ccassert.h"
 
 #include <sys/types.h>
 
 #define MAXAUTHNAMEEXTS 5
-
-/* checking to see that u_int64_t == unsigned long long for strtoull */
-CCASSERT(sizeof(unsigned long long) == sizeof(u_int64_t))
 
 struct nick;
 

@@ -7,11 +7,15 @@
 #include "../core/hooks.h"
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
+#include "../lib/ccassert.h"
 
 #include <string.h>
 #include <stdio.h>
 
 MODULE_VERSION("")
+
+/* checking to see that u_int64_t == unsigned long long for strtoull */
+CCASSERT(sizeof(unsigned long long) == sizeof(u_int64_t))
 
 #define authnamehash(x)   ((x)%AUTHNAMEHASHSIZE)
 #define authnamehashbyname(x) (crc32i(x)%AUTHNAMEHASHSIZE)
