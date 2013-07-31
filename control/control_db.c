@@ -143,7 +143,9 @@ void noperserv_update_autheduser(no_autheduser *au) {
 }
 
 void noperserv_free_user(no_autheduser *au) {
-  au->authname->exts[noperserv_ext] = NULL;
+  authname *anp = au->authname;
+  anp->exts[noperserv_ext] = NULL;
+  releaseauthname(anp);
   free(au);
 
   loadedusers--;
