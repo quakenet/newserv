@@ -769,13 +769,14 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
       if (!(gl->flags & GLINE_REALNAME))
         continue;
       if (flags & GLIST_EXACT) {
-        if (!glineequal(searchgl, gl)) {
+        if (!glineequal(searchgl, gl))
           continue;
-        }
       } else if (flags & GLIST_FIND) {
-        if (!gline_match_mask(searchgl, gl)) {
+        if (!gline_match_mask(gl, searchgl))
           continue;
-        }
+      } else {
+        if (!match2strings(mask, glinetostring(gl)))
+          continue;
       }
     } else {
       if (gl->flags & GLINE_REALNAME)
@@ -786,28 +787,29 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
           if (!gl->reason || ircd_strcmp(mask, gl->reason->content) != 0)
             continue;
         } else if (flags & GLIST_FIND) {
-          if (!gl->reason || match(gl->reason->content, mask))
+          if (!gl->reason || !match2strings(gl->reason->content, mask))
             continue;
-        } else if (!gl->reason || match(mask, gl->reason->content))
+        } else if (!gl->reason || !match2strings(mask, gl->reason->content))
             continue;
       } else if (flags & GLIST_OWNER) {
         if (flags & GLIST_EXACT) {
           if (!gl->creator || ircd_strcmp(mask, gl->creator->content) != 0)
             continue;
         } else if (flags & GLIST_FIND) {
-          if (!gl->creator || match(gl->creator->content, mask))
+          if (!gl->creator || !match2strings(gl->creator->content, mask))
             continue;
-        } else if (!gl->creator || match(mask, gl->creator->content))
+        } else if (!gl->creator || !match2strings(mask, gl->creator->content))
           continue;
       } else {
         if (flags & GLIST_EXACT) {
-          if (!glineequal(searchgl, gl)) {
+          if (!glineequal(searchgl, gl))
             continue;
-          }
         } else if (flags & GLIST_FIND) {
-          if (!gline_match_mask(searchgl, gl)) {
+          if (!gline_match_mask(gl, searchgl))
             continue;
-          }
+        } else {
+          if (!match2strings(mask, glinetostring(gl)))
+            continue;
         }
       }
     }

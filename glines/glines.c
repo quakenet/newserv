@@ -246,9 +246,6 @@ int gline_match_mask(gline *gla, gline *glb) {
   if ((gla->flags & GLINE_REALNAME) != (glb->flags & GLINE_REALNAME))
     return 0;
 
-  if ((gla->flags & GLINE_IPMASK) != (glb->flags & GLINE_IPMASK))
-    return 0;
-
   if (gla->nick && !glb->nick)
     return 0;
 
@@ -261,7 +258,7 @@ int gline_match_mask(gline *gla, gline *glb) {
   if (gla->user && glb->user && match(gla->user->content, glb->user->content) != 0)
     return 0;
 
-  if (gla->flags & GLINE_IPMASK) {
+  if (gla->flags & GLINE_IPMASK && glb->flags & GLINE_IPMASK) {
     if (gla->bits > glb->bits)
       return 0;
 
