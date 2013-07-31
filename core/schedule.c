@@ -231,7 +231,7 @@ void deleteschedule(void *sch, ScheduleCallback callback, void *arg) {
   /* Argh, have to find it by brute force */
 
   for(i=0;i<heapsize;i++) {
-    if (events[i]->callback==callback && events[i]->callbackparam==arg && !sp->deleted) {
+    if (events[i]->callback==callback && events[i]->callbackparam==arg && !events[i]->deleted) {
       sp=events[i];
       sp->deleted=1;
       return;
