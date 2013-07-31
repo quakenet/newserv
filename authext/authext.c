@@ -13,12 +13,9 @@
 
 MODULE_VERSION("")
 
-#define ALLOCUNIT 100
-
 #define authnamehash(x)   ((x)%AUTHNAMEHASHSIZE)
 #define authnamehashbyname(x) (crc32i(x)%AUTHNAMEHASHSIZE)
 
-authname *freeauthnames;
 authname *authnametable[AUTHNAMEHASHSIZE];
 
 /* internal access only */
@@ -32,7 +29,6 @@ static struct {
 static void authextstats(int hooknum, void *arg);
 
 void _init(void) {
-  freeauthnames=NULL;
   memset(authnametable,0,sizeof(authnametable));
   memset(authnametablebyname,0,sizeof(authnametablebyname));
   registerhook(HOOK_CORE_STATSREQUEST, &authextstats);
@@ -44,26 +40,11 @@ void _fini(void) {
 }
 
 authname *newauthname(void) {
-  authname *anp;
-  int i;
-
-  if (freeauthnames==NULL) {
-    freeauthnames=(authname *)nsmalloc(POOL_AUTHEXT, ALLOCUNIT*sizeof(authname));
-    for (i=0;i<(ALLOCUNIT-1);i++) {
-      freeauthnames[i].next=&(freeauthnames[i+1]);
-    }
-    freeauthnames[ALLOCUNIT-1].next=NULL;
-  }
-
-  anp=freeauthnames;
-  freeauthnames=anp->next;
-
-  return anp;
+  return nsmalloc(POOL_AUTHEXT, sizeof(authname));
 }
 
 void freeauthname (authname *anp) {
-  anp->next=freeauthnames;
-  freeauthnames=anp;
+  nsfree(POOL_AUTHEXT, anp);
 }
 
 int registerauthnameext(const char *name, int persistent) {
