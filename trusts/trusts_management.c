@@ -514,9 +514,8 @@ static struct trustmodification *trusthostmods;
 static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   nick *sender = source;
-  char *what, *to, validfields[512];
+  char *what, *to;
   int i, override;
-  StringBuf b;
 
   if(cargc < 3)
     return CMD_USAGE;
@@ -538,7 +537,6 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trustgroupmods_a.cursi;i++) {
     if(!strcmp(what, trustgroupmods[i].name)) {
       if(!(trustgroupmods[i].fn)(tg, to, sender, override)) {
@@ -547,17 +545,10 @@ static int trusts_cmdtrustgroupmodify(void *source, int cargc, char **cargv) {
       }
       break;
     }
-
-    if(i > 0)
-      sbaddstr(&b, ", ");
-    sbaddstr(&b, trustgroupmods[i].name);
   }
 
-  if(i == trustgroupmods_a.cursi) {
-    sbterminate(&b);
-    controlreply(sender, "No such field, valid fields are: %s", validfields);
-    return CMD_ERROR;
-  }
+  if(i == trustgroupmods_a.cursi)
+    return CMD_USAGE;
 
   triggerhook(HOOK_TRUSTS_MODIFYGROUP, tg);
   tg_update(tg);
@@ -573,9 +564,8 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
   trustgroup *tg;
   trusthost *th;
   nick *sender = source;
-  char *what, *to, validfields[512];
+  char *what, *to;
   int i, override;
-  StringBuf b;
   struct irc_in_addr ip;
   unsigned char bits;
 
@@ -619,7 +609,6 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
 
   override = noperserv_policy_command_permitted(NO_DEVELOPER, sender);
 
-  sbinit(&b, validfields, sizeof(validfields));
   for(i=0;i<trusthostmods_a.cursi;i++) {
     if(!strcmp(what, trusthostmods[i].name)) {
       if(!(trusthostmods[i].fn)(th, to, sender, override)) {
@@ -628,17 +617,10 @@ static int trusts_cmdtrusthostmodify(void *source, int cargc, char **cargv) {
       }
       break;
     }
-
-    if(i > 0)
-      sbaddstr(&b, ", ");
-    sbaddstr(&b, trusthostmods[i].name);
   }
 
-  if(i == trusthostmods_a.cursi) {
-    sbterminate(&b);
-    controlreply(sender, "No such field, valid fields are: %s", validfields);
-    return CMD_ERROR;
-  }
+  if(i == trusthostmods_a.cursi)
+    return CMD_USAGE;
 
   triggerhook(HOOK_TRUSTS_MODIFYHOST, th);
   th_update(th);
@@ -741,6 +723,11 @@ static int trusts_cmdtrustcleanup(void *source, int cargc, char **cargv) {
 static int commandsregistered;
 
 static void registercommands(int hooknum, void *arg) {
+  static char tgmhelp[512], thmhelp[512];
+  char validfields[512];
+  StringBuf b;
+  int i;
+
   if(commandsregistered)
     return;
   commandsregistered = 1;
@@ -749,8 +736,29 @@ static void registercommands(int hooknum, void *arg) {
   registercontrolhelpcmd("trustadd", NO_OPER, 2, trusts_cmdtrustadd, "Usage: trustadd <#id|name|id> <host>");
   registercontrolhelpcmd("trustgroupdel", NO_OPER, 1, trusts_cmdtrustgroupdel, "Usage: trustgroupdel <#id|name|id>");
   registercontrolhelpcmd("trustdel", NO_OPER, 2, trusts_cmdtrustdel, "Usage: trustdel <#id|name|id> <ip/mask>");
-  registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, "Usage: trustgroupmodify <#id|name|id> <field> <new value>");
-  registercontrolhelpcmd("trusthostmodify", NO_OPER, 4, trusts_cmdtrusthostmodify, "Usage: trusthostmodify <#id|name|id> <host> <field> <new value>");
+
+  sbinit(&b, validfields, sizeof(validfields));
+  for(i=0;i<trustgroupmods_a.cursi;i++) {
+    if(i > 0)
+      sbaddstr(&b, ", ");
+    sbaddstr(&b, trustgroupmods[i].name);
+  }
+  sbterminate(&b);
+
+  snprintf(tgmhelp, sizeof(tgmhelp), "Usage: trustgroupmodify <#id|name|id> <field> <new value>\nModifies a trust group.\nValid fields: %s", validfields);
+  registercontrolhelpcmd("trustgroupmodify", NO_OPER, 3, trusts_cmdtrustgroupmodify, tgmhelp);
+
+  sbinit(&b, validfields, sizeof(validfields));
+  for(i=0;i<trusthostmods_a.cursi;i++) {
+    if(i > 0)
+      sbaddstr(&b, ", ");
+    sbaddstr(&b, trusthostmods[i].name);
+  }
+  sbterminate(&b);
+
+  snprintf(thmhelp, sizeof(thmhelp), "Usage: trusthostmodify <#id|name|id> <host> <field> <new value>\nModifies a trust host\nValid fields: %s", validfields);
+  registercontrolhelpcmd("trusthostmodify", NO_OPER, 4, trusts_cmdtrusthostmodify, thmhelp);
+
   registercontrolhelpcmd("trustlog", NO_OPER, 2, trusts_cmdtrustlog, "Usage: trustlog <#id|name> ?limit?\nShows log for the specified trust group.");
   registercontrolhelpcmd("trustloggrep", NO_OPER, 2, trusts_cmdtrustloggrep, "Usage trustloggrep <pattern> ?limit?\nShows maching log entries.");
   registercontrolhelpcmd("trustcomment", NO_OPER, 2, trusts_cmdtrustcomment, "Usage: trustcomment <#id|name> <comment>\nLogs a comment for a trust.");
