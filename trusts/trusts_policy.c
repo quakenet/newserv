@@ -87,11 +87,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
     int nodecount = 0;
 
     head = refnode(iptree, ip, th->nodebits);
-    PATRICIA_WALK(head, node)
-    {
-      nodecount += node->usercount;
-    }
-    PATRICIA_WALK_END;
+    nodecount = node->usercount;
     derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
