@@ -13,6 +13,7 @@ void trusts_registerevents(void);
 void trusts_deregisterevents(void);
 
 static void statusfn(int, void *);
+static void whoisfn(int, void *);
 
 static sstring *tgextnames[MAXTGEXTS];
 
@@ -34,6 +35,7 @@ void _init(void) {
   }
 
   registerhook(HOOK_CORE_STATSREQUEST, statusfn);
+  registerhook(HOOK_CONTROL_WHOISREQUEST, &whoisfn);
   trusts_registerevents();
 }
 
@@ -44,9 +46,48 @@ void _fini(void) {
   }
 
   deregisterhook(HOOK_CORE_STATSREQUEST, statusfn);
+  deregisterhook(HOOK_CONTROL_WHOISREQUEST, &whoisfn);
   trusts_deregisterevents();
 
   nscheckfreeall(POOL_TRUSTS);
+}
+
+static void whoisfn(int hooknum, void *arg) {
+  trusthost *th;
+  char message[512];
+  nick *np = (nick *)arg;
+
+  if(!np)
+    return;
+
+  th = gettrusthost(np);
+
+  if(!th)
+    return;
+
+  snprintf(message, sizeof(message), "Trustgroup: %s (#%d)", th->group->name->content, th->group->id);
+  triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  if(th->group->trustedfor>0) {
+    snprintf(message, sizeof(message), "Trustgroup: Usage: %d/%d", th->group->count, th->group->trustedfor);
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  }
+  if(th->maxpernode>0) {
+    snprintf(message, sizeof(message), "Trusthost : %s", CIDRtostr(np->p_ipaddr, th->nodebits));
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+
+    patricia_node_t *node;
+    int usercount = 0;
+
+    node = refnode(iptree, &(np->p_ipaddr), th->nodebits);
+    usercount = node->usercount;
+    derefnode(iptree, node);
+
+    snprintf(message, sizeof(message), "Trusthost : Usage: %d/%d", usercount, th->maxpernode);
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  } else {
+    snprintf(message, sizeof(message), "Trusthost : %s", CIDRtostr(th->ip, th->bits));
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  }
 }
 
 static void statusfn(int hooknum, void *arg) {
