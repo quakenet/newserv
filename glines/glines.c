@@ -175,44 +175,26 @@ void gline_propagate(gline *agline) {
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->reason ? agline->reason->content : "", agline->creator->content);
 
-#if 1
     irc_send("%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
-#else
-    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * %%-%s %lu %lu :%s\r\n", mynumeric->content,
-      glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason ? agline->reason->content : "");
-#endif
 #endif /* SNIRCD_VERSION */
   } else if (agline->flags & GLINE_ACTIVE) {
     controlwall(NO_OPER, NL_GLINES_AUTO, "Activating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason ? agline->reason->content : "");
 
-#if 1
     irc_send("%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
-#else
-    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * +%s %lu %lu :%s\r\n", mynumeric->content,
-      glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason ? agline->reason->content : "");
-#endif
   } else {
     controlwall(NO_OPER, NL_GLINES_AUTO, "Deactivating G-Line on '%s' lasting %s created by %s with reason '%s'",
       glinetostring(agline), longtoduration(agline->expire-getnettime(), 0),
       agline->creator->content, agline->reason ? agline->reason->content : "");
 
-#if 1
     irc_send("%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
       glinetostring(agline), agline->expire - getnettime(),
       agline->lastmod, agline->reason ? agline->reason->content : "");
-#else
-    controlwall(NO_OPER, NL_GLINES_AUTO, "%s GL * -%s %lu %lu :%s\r\n", mynumeric->content,
-      glinetostring(agline), agline->expire - getnettime(),
-      agline->lastmod, agline->reason ? agline->reason->content : "");
-#endif
   }
 }
 
