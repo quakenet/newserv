@@ -83,12 +83,12 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
    */
 
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
-    patricia_node_t *head, *node;
+    patricia_node_t *node;
     int nodecount = 0;
 
-    head = refnode(iptree, ip, th->nodebits);
+    node = refnode(iptree, ip, th->nodebits);
     nodecount = node->usercount;
-    derefnode(iptree, head);
+    derefnode(iptree, node);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
       controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", CIDRtostr(*ip, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
