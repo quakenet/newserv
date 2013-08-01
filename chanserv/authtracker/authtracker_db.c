@@ -21,8 +21,6 @@
 #define DANGLING_HASHSIZE	500
 #define dangling_hash(x)	((x)%DANGLING_HASHSIZE)
 
-#define	ALLOCUNIT	100
-
 struct dangling_entry {
   unsigned int	numeric;
   unsigned long userid;
@@ -37,29 +35,13 @@ struct dangling_server {
 };
 
 struct dangling_server *ds[MAXSERVERS];
-struct dangling_entry *free_des;
 
 static struct dangling_entry *get_de() {
-  struct dangling_entry *dep;
-  int i;
-  
-  if (free_des == NULL) {
-    free_des = (struct dangling_entry *)nsmalloc(POOL_AUTHTRACKER, ALLOCUNIT * sizeof(struct dangling_entry));
-    for (i=0;i<(ALLOCUNIT-1);i++) {
-      free_des[i].next= &(free_des[i+1]);
-    }
-    free_des[ALLOCUNIT-1].next=NULL;
-  }
-  
-  dep=free_des;
-  free_des=dep->next;
-  
-  return dep;
+  return nsmalloc(POOL_AUTHTRACKER, sizeof(struct dangling_entry));
 }
 
 static void free_de(struct dangling_entry *dep) {
-  dep->next=free_des;
-  free_des=dep;
+  nsfree(POOL_AUTHTRACKER, dep);
 }
 
 void at_lostnick(unsigned int numeric, unsigned long userid, time_t accountts, time_t losttime, int reason) {

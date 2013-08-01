@@ -18,6 +18,7 @@ typedef struct schedule {
   ScheduleCallback  callback;
   void             *callbackparam;
   int               index; /* Where in the array this event is currently situated */
+  int               deleted;
 } schedule;
 
 

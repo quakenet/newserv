@@ -45,7 +45,6 @@ chanstats *findchanstatsifexists(const char *channame);
 
 /* chanstatsalloc.c */
 void cstsfreeall();
-void initchanstatsalloc();
 chanstats *getchanstats();
 void freechanstats(chanstats *csp);
 

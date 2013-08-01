@@ -185,13 +185,12 @@ extern char *NULLAUTHNAME;
                                   (((*gethandlebynumeric(x))->numeric==(x&MAXNUMERIC))?(*gethandlebynumeric(x)):NULL)))
 
 /* nickalloc.c functions */
-void initnickalloc();
 realname *newrealname();
 void freerealname(realname *rn);
 nick *newnick();
-void freenick (nick *np);
+void freenick(nick *np);
 host *newhost();
-void freehost (host *hp);
+void freehost(host *hp);
 
 /* nick.c functions */
 void handleserverchange(int hooknum, void *arg);

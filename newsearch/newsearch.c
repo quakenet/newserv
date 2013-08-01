@@ -459,12 +459,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   NickDisplayFunc display=defaultnickfn;
   HeaderFunc header=defaultnickhfn;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  searchCtx ctx;
-  struct searchNode *search;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -485,17 +480,6 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch, sender, display, limit);
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  nicksearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_nicksearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
@@ -505,7 +489,6 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   ast_nicksearch(tree->root, reply, sender, wall, display, header, NULL, limit);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -567,12 +550,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   ChanDisplayFunc display=defaultchanfn;
   HeaderFunc header=NULL;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  struct searchNode *search;
-  searchCtx ctx;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -593,17 +571,6 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch, sender, display, limit);
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  chansearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_chansearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
@@ -613,7 +580,6 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -655,12 +621,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   UserDisplayFunc display=defaultuserfn;
   HeaderFunc header=NULL;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  struct searchNode *search;
-  searchCtx ctx;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -681,18 +642,6 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch, sender, display, limit);
-
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  usersearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_usersearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
@@ -702,7 +651,6 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -962,172 +910,6 @@ void literal_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 
-static int unescape(char *input, char *output, size_t buflen) {
-  char *ch, *ch2;
-  int e=0;
-  
-  if (*input=='\"') {
-    for (ch=input;*ch;ch++) {
-      if(ch - input >= buflen) {
-        parseError="Buffer overflow";
-        return 0;
-      }
-    }
-      
-    if (*(ch-1) != '\"') {
-      parseError="Quote mismatch";
-      return 0;
-    }
-
-    *(ch-1)='\0';
-    input++;
-  }
-    
-  ch2=output;
-  for (ch=input;*ch;ch++) {
-    if(ch - input >= buflen) {
-      parseError="Buffer overflow";
-      return 0;
-    }
-    
-    if (e) {
-      e=0;
-      *ch2++=*ch;
-    } else if (*ch=='\\') {
-      e=1;
-    } else {
-      *ch2++=*ch;
-    }
-  }
-  *ch2='\0';
-  
-  return 1;
-}
-
-struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
-  /* OK, we need to split the input into chunks on spaces and brackets.. */
-  char *argvector[100];
-  char inputb[1024];
-  char *input;
-  char thestring[500];
-  int i,j,q=0,e=0;
-  char *ch;
-  struct Command *cmd;
-  struct searchNode *thenode;
-
-  strlcpy(inputb, cinput, sizeof(inputb));
-  input = inputb;
-  
-  /* If it starts with a bracket, it's a function call.. */
-  if (*input=='(') {
-    /* Skip past string */
-    for (ch=input;*ch;ch++);
-    if (*(ch-1) != ')') {
-      parseError = "Bracket mismatch!";
-      return NULL;
-    }
-    input++;
-    *(ch-1)='\0';
-
-    /* Split further args */
-    i=-1; /* i = -1 BoW, 0 = inword, 1 = bracket nest depth */
-    j=0;  /* j = current arg */
-    e=0;
-    q=0;
-    argvector[0]="";
-    for (ch=input;*ch;ch++) {
-      /*printf("i: %d j: %d e: %d q: %d ch: '%c'\n", i, j, e, q, *ch);*/
-      if (i==-1) {
-        argvector[j]=ch;
-        if (*ch=='(') {
-          i=1;
-        } else if (*ch != ' ') {
-          i=0;
-          if (*ch=='\\') {
-            e=1;
-          } else if (*ch=='\"') {
-            q=1;
-          }
-        }
-      } else if (e==1) {
-        e=0;
-      } else if (q==1) {
-        if (*ch=='\\')	 {
-          e=1;
-        } else if (*ch=='\"')	{
-          q=0;
-        }
-      } else if (i==0) {
-        if (*ch=='\\') {
-          e=1;
-        } else if (*ch=='\"') {
-          q=1;
-        } else if (*ch==' ') {
-          *ch='\0';
-          j++;
-          if(j >= (sizeof(argvector) / sizeof(*argvector))) {
-            parseError = "Too many arguments";
-            return NULL;
-          }
-          i=-1;
-        }
-      } else {
-        if (*ch=='\\') {
-          e=1;
-        } else if (*ch=='\"') {
-          q=1;
-        } else if (*ch=='(') {
-          i++;
-        } else if (*ch==')') {
-          i--;
-        }
-      }
-    }
-    
-    if (i>0) {
-      parseError = "Bracket mismatch!";
-      return NULL;
-    }
-
-    if (*(ch-1) == 0) /* if the last character was a space */
-      j--; /* remove an argument */
-    
-/*    for(k=1;k<=j;k++)
-      if(!unescape(argvector[k], argvector[k], sizeof(inputb)))
-        return NULL;
-*/
-
-    if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
-      parseError = "Unknown command (for valid command list, see help <searchcmd>)";
-      return NULL;
-    } else {
-      if (!controlpermitted(cmd->level, ctx->sender)) { 
-        parseError = "Access denied (for valid command list, see help <searchcmd>)";
-        return NULL;
-      }
-      return ((parseFunc)cmd->handler)(ctx, j, argvector+1);
-    }
-  } else {
-    /* Literal */
-    
-    /* slug: disabled now we unescape during the main parse stage */
-    if(!unescape(input, thestring, sizeof(thestring)))
-      return NULL;
-
-    if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
-      parseError = "malloc: could not allocate memory for this search.";
-      return NULL;
-    }
-
-    thenode->localdata  = getsstring(thestring,512);
-    thenode->returntype = RETURNTYPE_CONST | RETURNTYPE_STRING;
-    thenode->exe        = literal_exe;
-    thenode->free       = literal_free;
-
-    return thenode;
-  }    
-}
-
 void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
   StringBuf b;
   const char *p;
@@ -1266,7 +1048,6 @@ void var_setstr(struct searchVariable *v, char *data) {
   v->cdata.u.stringbuf = data;
 }
 
-#ifdef NEWSEARCH_NEWPARSER
 void displaystrerror(replyFunc reply, nick *np, const char *input) {
   char buf[515];
 
@@ -1285,7 +1066,6 @@ void displaystrerror(replyFunc reply, nick *np, const char *input) {
 
   reply(np, "Parse error: %s", parseStrError);
 }
-#endif
 
 struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p) {
   struct searchNode *c;

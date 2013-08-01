@@ -12,6 +12,7 @@
 #include "../server/server.h"
 #include "../parser/parser.h"
 #include "../lib/version.h"
+#include "../lib/ccassert.h"
 #include "../core/nsmalloc.h"
 
 #include <stdlib.h>
@@ -19,6 +20,8 @@
 #include <stdio.h>
 
 MODULE_VERSION("");
+
+CCASSERT(sizeof(host) == sizeof(realname));
 
 const flag umodeflags[] = {
    { 'i', UMODE_INV },
@@ -66,7 +69,6 @@ void _init() {
     for (anp=authnametable[i];anp;anp=anp->next)
       anp->nicks=NULL;  
 
-  initnickalloc();
   initnickhelpers();
   memset(nicktable,0,sizeof(nicktable));
   memset(servernicks,0,sizeof(servernicks));

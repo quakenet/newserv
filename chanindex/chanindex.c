@@ -12,13 +12,10 @@
 
 MODULE_VERSION("")
 
-#define ALLOCUNIT	1000
-
 #define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
 
 chanindex *chantable[CHANNELHASHSIZE];
 sstring *extnames[MAXCHANNELEXTS];
-chanindex *freechanindices;
 
 unsigned int channelmarker;
 
@@ -26,7 +23,6 @@ void _init() {
   memset(chantable,0,sizeof(chantable));
   memset(extnames,0,sizeof(extnames));
   channelmarker=0;
-  freechanindices=NULL;
 }
 
 void _fini() {
@@ -34,26 +30,11 @@ void _fini() {
 }
 
 chanindex *getchanindex() {
-  int i;
-  chanindex *cip;
-
-  if (freechanindices==NULL) {
-    freechanindices=(chanindex *)nsmalloc(POOL_CHANINDEX, ALLOCUNIT*sizeof(chanindex));
-    for(i=0;i<ALLOCUNIT-1;i++) {
-      freechanindices[i].next=&(freechanindices[i+1]);
-    }
-    freechanindices[ALLOCUNIT-1].next=NULL;
-  }
-
-  cip=freechanindices;
-  freechanindices=cip->next;
-
-  return cip;
+  return nsmalloc(POOL_CHANINDEX, sizeof(chanindex));
 }
 
 void freechanindex(chanindex *cip) {
-  cip->next=freechanindices;
-  freechanindices=cip;
+  nsfree(POOL_CHANINDEX, cip);
 }
 
 chanindex *findchanindex(const char *name) {
