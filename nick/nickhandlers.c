@@ -147,7 +147,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     memcpy(&(np->ipaddress), &ipaddress, sizeof(ipaddress));
 
     ip_canonicalize_tunnel(&ipaddress_canonical, &ipaddress);
-    np->ipnode = refnode(iptree, &ipaddress_canonical, irc_in_addr_is_ipv4(&ipaddress) ? 128 : 64);
+    np->ipnode = refnode(iptree, &ipaddress_canonical, PATRICIA_MAXBITS);
     node_increment_usercount(np->ipnode);
 
     np->away=NULL;
