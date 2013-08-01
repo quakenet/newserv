@@ -698,30 +698,21 @@ void handlemessages(nick *target, int messagetype, void **args) {
     case LU_PRIVMSG:
     case LU_SECUREMSG:
       /* If it's a message, first arg is nick and second is message */
-      sender=(nick *)args[0];
+      sender = (nick *)args[0];
 
-      Error("control",ERR_INFO,"From: %s!%s@%s: %s",sender->nick,sender->ident,sender->host->name->content, (char *)args[1]);
+      controlwall(NO_DEVELOPER, NL_ALL_COMMANDS, "From: %s!%s@%s%s%s: %s", sender->nick, sender->ident, sender->host->name->content, IsAccount(sender)?"/":"", IsAccount(sender)?sender->authname:"", (char *)args[1]);
 
       /* Split the line into params */
-      cargc=splitline((char *)args[1],cargv,50,0);
+      cargc = splitline((char *)args[1], cargv, 50, 0);
       
-      if (!cargc) {
-        /* Blank line */
+      if(!cargc) /* Blank line */
         return;
-      } 
        	
-      cmd=findcommandintree(controlcmds,cargv[0],1);
-      if (cmd==NULL) {
-        controlreply(sender,"Unknown command.");
+      cmd = findcommandintree(controlcmds,cargv[0],1);
+      if(!cmd || !noperserv_policy_command_permitted(cmd->level, sender)) {
+        controlreply(sender, "Unknown command or access denied.");
         return;
       }
-      
-      if (cmd->level>0 && !IsOper(sender)) {
-        controlreply(sender,"You need to be opered to use this command.");
-        return;
-      }
-      
-      /* If we were doing "authed user tracking" here we'd put a check in for authlevel */
       
       /* Check the maxargs */
       if (cmd->maxparams<(cargc-1)) {
@@ -732,6 +723,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       
       if((cmd->handler)((void *)sender,cargc-1,&(cargv[1])) == CMD_USAGE)
         controlhelp(sender, cmd);
+
       break;
       
     case LU_KILLED:
@@ -739,6 +731,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
       mynick=NULL;
       triggerhook(HOOK_CONTROL_REGISTERED, NULL);
+
       break;
       
     default:
