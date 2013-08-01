@@ -67,12 +67,9 @@ static void whoisfn(int hooknum, void *arg) {
 
   snprintf(message, sizeof(message), "Trustgroup: %s (#%d)", th->group->name->content, th->group->id);
   triggerhook(HOOK_CONTROL_WHOISREPLY, message);
-  if(th->group->trustedfor>0) {
-    snprintf(message, sizeof(message), "Trustgroup: Usage: %d/%d", th->group->count, th->group->trustedfor);
-    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
-  }
-  if(th->maxpernode>0) {
-    snprintf(message, sizeof(message), "Trusthost : %s", CIDRtostr(np->p_ipaddr, th->nodebits));
+
+  if (th->maxpernode > 0) {
+    snprintf(message, sizeof(message), "Node      : %s", CIDRtostr(np->p_ipaddr, th->nodebits));
     triggerhook(HOOK_CONTROL_WHOISREPLY, message);
 
     patricia_node_t *node;
@@ -82,10 +79,15 @@ static void whoisfn(int hooknum, void *arg) {
     usercount = node->usercount;
     derefnode(iptree, node);
 
-    snprintf(message, sizeof(message), "Trusthost : Usage: %d/%d", usercount, th->maxpernode);
+    snprintf(message, sizeof(message), "Node      : Usage: %d/%d", usercount, th->maxpernode);
     triggerhook(HOOK_CONTROL_WHOISREPLY, message);
-  } else {
+  }
+
+  if (th->group->trustedfor > 0) {
     snprintf(message, sizeof(message), "Trusthost : %s", CIDRtostr(th->ip, th->bits));
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+
+    snprintf(message, sizeof(message), "Trustgroup : Usage: %d/%d", th->group->count, th->group->trustedfor);
     triggerhook(HOOK_CONTROL_WHOISREPLY, message);
   }
 }
