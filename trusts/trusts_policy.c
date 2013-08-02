@@ -70,7 +70,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
   if(messagelen>0)
     message[0] = '\0';
   
-  if(!th || !trustsdbloaded)
+  if(!th || !trustsdbloaded || irc_in_addr_is_loopback(ip))
     return POLICY_SUCCESS;
 
   tg = th->group;
