@@ -1,6 +1,7 @@
 /* Some utterly useless dog */
 
 #include "../core/schedule.h"
+#include "../irc/irc.h"
 #include "../lib/irc_string.h"
 #include "../localuser/localuserchannel.h"
 #include "../control/control.h"
@@ -12,15 +13,19 @@ MODULE_VERSION("")
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <sys/time.h>
 
 int cmd_serverlist(void *sender, int cargc, char **cargv);
 void serverlist_hook_newserver(int hook, void *arg);
 void serverlist_hook_lostserver(int hook, void *arg);
 int serverlist_versionreply(void *source, int cargc, char **cargv);
+void serverlist_pingservers(void *arg);
+int serverlist_rpong(void *source, int cargc, char **cargv);
 
 struct {
   int used;
   time_t ts;
+  int lag;
   sstring *version1;
   sstring *version2;
 } serverinfo[MAXSERVERS];
@@ -42,11 +47,14 @@ void _init(void) {
       serverinfo[i].used = 0;
 
     serverinfo[i].ts = getnettime();
+    serverinfo[i].lag = -1;
     serverinfo[i].version1 = NULL;
     serverinfo[i].version2 = NULL;
   }
   registernumerichandler(351, &serverlist_versionreply, 2);
+  registerserverhandler("RO", &serverlist_rpong, 4);
 
+  schedulerecurring(time(NULL)+1, 0, 10, &serverlist_pingservers, NULL);
 }
 
 void _fini(void) {
@@ -58,18 +66,21 @@ void _fini(void) {
     }
   }
   deregisternumerichandler(351, &serverlist_versionreply);
+  deregisterserverhandler("RO", &serverlist_rpong);
 
   deregisterhook(HOOK_SERVER_NEWSERVER, &serverlist_hook_newserver);
   deregisterhook(HOOK_SERVER_LOSTSERVER, &serverlist_hook_lostserver);
 
   deregistercontrolcmd("serverlist",cmd_serverlist);
+
+  deleteschedule(NULL, &serverlist_pingservers, NULL);
 }
 
 int cmd_serverlist(void *sender, int cargc, char **cargv) {
   nick *np = (nick*)sender;
   int a, i, ucount, acount, scount;
 
-  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-7s %-15s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Version");
+  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-7s %-16s %-10s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Lag", "Version");
 
   scount = acount = 0;
 
@@ -84,10 +95,11 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
       acount += ucount;
       scount++;
 
-      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-15s %-20s - %s", i, serverlist[i].name->content,
+      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-16s %-10d %-20s - %s", i, serverlist[i].name->content,
             servercount[i], ucount, serverlist[i].maxusernum,
             printflags(serverlist[i].flags, smodeflags),
             longtoduration(getnettime() - serverinfo[i].ts, 0),
+            serverinfo[i].lag,
             serverinfo[i].version1 ? serverinfo[i].version1->content : "Unknown",
             serverinfo[i].version2 ? serverinfo[i].version2->content : "Unknown");
     }
@@ -165,5 +177,72 @@ void serverlist_hook_lostserver(int hook, void *arg) {
   serverinfo[num].used = 0;
   freesstring(serverinfo[num].version1);
   freesstring(serverinfo[num].version2);
+}
+
+
+void serverlist_pingservers(void *arg) {
+  int i;
+  server *from, *to;
+  char fnum[10], tnum[10];
+  struct timeval tv;
+
+  if (!mynick)
+    return;
+
+  for(i=0;i<MAXSERVERS;i++) {
+    to = &serverlist[i];
+
+    if (to->parent == -1)
+      continue;
+
+    from = &serverlist[to->parent];
+
+    if (to->linkstate != LS_LINKED || from->linkstate != LS_LINKED)
+      continue;
+
+    strcpy(fnum, longtonumeric(to->parent,2));
+    strcpy(tnum, longtonumeric(i, 2));
+
+    if (from->parent == -1) { /* Are we the source? */
+      (void) gettimeofday(&tv, NULL);
+      irc_send("%s RI %s %s %jd %jd :RP", mynumeric->content, tnum, longtonumeric(mynick->numeric,5), (intmax_t)tv.tv_sec, (intmax_t)tv.tv_usec);
+    } else {
+      strcpy(fnum, longtonumeric(to->parent,2));
+      strcpy(tnum, longtonumeric(i, 2));
+      irc_send("%s RI %s %s :RP", longtonumeric(mynick->numeric,5), to->name->content, fnum);
+    }
+  }
+}
+
+int serverlist_rpong(void *source, int cargc, char **cargv) {
+  int to, lag;
+  struct timeval tv;
+
+  if (cargc < 4)
+    return CMD_ERROR;
+
+  if (cargc == 5) { /* From target to source server */
+    if (strcmp(cargv[4], "RP") != 0)
+      return CMD_OK;
+
+    to = numerictolong(source, 2);
+
+    (void) gettimeofday(&tv, NULL);
+    lag = (tv.tv_sec - strtoull(cargv[2], NULL, 10)) * 1000 + (tv.tv_usec - strtoull(cargv[3], NULL, 10)) / 1000;
+  } else { /* From source server to client */
+    if (strcmp(cargv[3], "RP") != 0)
+      return CMD_OK;
+
+    to = findserver(cargv[1]);
+
+    if (to == -1)
+      return CMD_ERROR;
+
+    lag = atoi(cargv[2]);
+  }
+
+  serverinfo[to].lag = lag;
+
+  return CMD_OK;
 }
 
