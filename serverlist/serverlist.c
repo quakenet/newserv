@@ -82,7 +82,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
   int a, i, ucount, acount, scount;
   char lagstr[20];
 
-  controlreply(np, "%-7s %-35s %5s/%5s/%-5s %-7s %-20s %-8s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Lag", "Version");
+  controlreply(np, "%-7s %-35s %5s/%5s/%-7s %-7s %-20s %-8s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Lag", "Version");
 
   scount = acount = 0;
 
@@ -102,7 +102,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
       else
         snprintf(lagstr, sizeof(lagstr), "%d", serverinfo[i].lag);
 
-      controlreply(np, "%-7d %-35s %5d/%5d/%-5d %-7s %-20s %-8s %-20s - %s", i, serverlist[i].name->content,
+      controlreply(np, "%-7d %-35s %5d/%5d/%-7d %-7s %-20s %-8s %-20s - %s", i, serverlist[i].name->content,
             servercount[i], ucount, serverlist[i].maxusernum,
             printflags(serverlist[i].flags, smodeflags),
             longtoduration(getnettime() - serverinfo[i].ts, 0),
