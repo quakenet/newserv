@@ -79,7 +79,7 @@ void _init(void) {
 
   service_re = compilefree(getcopyconfigitem("serverlist", "service_re", "^services\\d*\\..*$", 256));
   hub_re = compilefree(getcopyconfigitem("serverlist", "hub_re", "^hub\\d*\\..*$", 256));
-  not_client_re = compilefree(getcopyconfigitem("serverlist", "not_client_re", "^(testserv\\d*\\.|irc\\.ipv6\\.).*$", 256));
+  not_client_re = compilefree(getcopyconfigitem("serverlist", "not_client_re", "^(testserv\\d*\\.).*$", 256));
 
   for (i = 0; i < MAXSERVERS; i++) {
     if (serverlist[i].linkstate == LS_LINKED)
