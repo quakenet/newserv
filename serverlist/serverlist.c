@@ -54,7 +54,7 @@ void _init(void) {
   registernumerichandler(351, &serverlist_versionreply, 2);
   registerserverhandler("RO", &serverlist_rpong, 4);
 
-  schedulerecurring(time(NULL)+1, 0, 10, &serverlist_pingservers, NULL);
+  schedulerecurring(time(NULL)+1, 0, 60, &serverlist_pingservers, NULL);
 }
 
 void _fini(void) {
