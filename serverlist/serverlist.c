@@ -7,6 +7,9 @@
 #include "../control/control.h"
 #include "../usercount/usercount.h"
 #include "../lib/version.h"
+#include "../serverlist/serverlist.h"
+#include "../core/config.h"
+#include "../lib/strlfunc.h"
 
 MODULE_VERSION("")
 
@@ -15,6 +18,7 @@ MODULE_VERSION("")
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <pcre.h>
 
 int cmd_serverlist(void *sender, int cargc, char **cargv);
 void serverlist_hook_newserver(int hook, void *arg);
@@ -23,16 +27,45 @@ int serverlist_versionreply(void *source, int cargc, char **cargv);
 void serverlist_pingservers(void *arg);
 int serverlist_rpong(void *source, int cargc, char **cargv);
 
+const flag servertypeflags[] = {
+  { 'c', SERVERTYPEFLAG_CLIENT_SERVER },
+  { 'h', SERVERTYPEFLAG_HUB },
+  { 's', SERVERTYPEFLAG_SERVICE },
+  { 'Q', SERVERTYPEFLAG_CHANSERV },
+  { 'S', SERVERTYPEFLAG_SPAMSCAN },
+  { 'X', SERVERTYPEFLAG_CRITICAL_SERVICE },
+  { '\0', 0 }
+};
+
 struct {
   int used;
   time_t ts;
   int lag;
   sstring *version1;
   sstring *version2;
+  flag_t type;
 } serverinfo[MAXSERVERS];
 
 void serverlist_doversion(void);
 
+static sstring *s_server, *q_server;
+static pcre *service_re, *hub_re, *not_client_re;
+
+static pcre *compilefree(sstring *re) {
+  const char *err;
+  int erroffset;
+  pcre *r;
+
+  r = pcre_compile(re->content, 0, &err, &erroffset, NULL);
+  if(r == NULL) {
+    Error("serverlist", ERR_WARNING, "Unable to compile RE %s (offset: %d, reason: %s)", re->content, erroffset, err);
+    freesstring(re);
+    return NULL;
+  }
+
+  freesstring(re);
+  return r;
+}
 
 void _init(void) {
   registercontrolhelpcmd("serverlist",NO_OPER,1,&cmd_serverlist,"Usage: serverlist [pattern]\nShows all currently connected servers");
@@ -40,6 +73,13 @@ void _init(void) {
   registerhook(HOOK_SERVER_NEWSERVER, &serverlist_hook_newserver);
   registerhook(HOOK_SERVER_LOSTSERVER, &serverlist_hook_lostserver);
   int i;
+
+  q_server = getcopyconfigitem("serverlist", "q_server", "CServe.quakenet.org", HOSTLEN);
+  s_server = getcopyconfigitem("serverlist", "s_server", "services2.uk.quakenet.org", HOSTLEN);
+
+  service_re = compilefree(getcopyconfigitem("serverlist", "service_re", "^services\\d*\\..*$", 256));
+  hub_re = compilefree(getcopyconfigitem("serverlist", "hub_re", "^hub\\d*\\..*$", 256));
+  not_client_re = compilefree(getcopyconfigitem("serverlist", "not_client_re", "^(testserv\\d*\\.|irc\\.ipv6\\.).*$", 256));
 
   for (i = 0; i < MAXSERVERS; i++) {
     if (serverlist[i].linkstate == LS_LINKED)
@@ -51,6 +91,7 @@ void _init(void) {
     serverinfo[i].lag = -1;
     serverinfo[i].version1 = NULL;
     serverinfo[i].version2 = NULL;
+    serverinfo[i].type = getservertype(&serverlist[i]);
   }
   registernumerichandler(351, &serverlist_versionreply, 2);
   registerserverhandler("RO", &serverlist_rpong, 4);
@@ -75,14 +116,21 @@ void _fini(void) {
   deregistercontrolcmd("serverlist",cmd_serverlist);
 
   deleteschedule(NULL, &serverlist_pingservers, NULL);
+
+  freesstring(q_server);
+  freesstring(s_server);
+  pcre_free(service_re);
+  pcre_free(hub_re);
+  pcre_free(not_client_re);
 }
 
 int cmd_serverlist(void *sender, int cargc, char **cargv) {
   nick *np = (nick*)sender;
   int a, i, ucount, acount, scount;
   char lagstr[20];
+  char buf[512];
 
-  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-7s %-20s %-8s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Connected for", "Lag", "Version");
+  controlreply(np, "%-7s %-30s %5s/%5s/%-5s %-7s %-7s %-20s %-8s %-20s", "Numeric", "Hostname", "ECl", "Cl", "MaxCl", "Flags", "Type", "Connected for", "Lag", "Version");
 
   scount = acount = 0;
 
@@ -102,9 +150,11 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
       else
         snprintf(lagstr, sizeof(lagstr), "%d", serverinfo[i].lag);
 
-      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-20s %-8s %-20s - %s", i, serverlist[i].name->content,
+      strlcpy(buf, printflags(serverinfo[i].type, servertypeflags), sizeof(buf));
+
+      controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-7s %-20s %-8s %-20s - %s", i, serverlist[i].name->content,
             servercount[i], ucount, serverlist[i].maxusernum,
-            printflags(serverlist[i].flags, smodeflags),
+            printflags(serverlist[i].flags, smodeflags), buf,
             longtoduration(getnettime() - serverinfo[i].ts, 0),
             lagstr,
             serverinfo[i].version1 ? serverinfo[i].version1->content : "Unknown",
@@ -161,13 +211,14 @@ void serverlist_hook_newserver(int hook, void *arg) {
   char *num1, *numeric;
   long num = (long)arg;
 
-  if (mynick == NULL)
-    return;
-
   serverinfo[num].used = 1;
   serverinfo[num].ts = getnettime();
   serverinfo[num].version1 = NULL;
   serverinfo[num].version2 = NULL;
+  serverinfo[num].type = getservertype(&serverlist[num]);
+
+  if (mynick == NULL) /* bleh this is buggy... doesn't do it when mynick appears */
+    return;
 
   numeric = longtonumeric(mynick->numeric,5);
   num1 = (char*)malloc(strlen(numeric) + 1); /* bleh.. longtonumeric() is using static variables */
@@ -186,6 +237,58 @@ void serverlist_hook_lostserver(int hook, void *arg) {
   freesstring(serverinfo[num].version2);
 }
 
+flag_t getservertype(server *server) {
+  flag_t result = 0;
+  char *server_name;
+  int server_len;
+
+  if(server == NULL || server->name == NULL)
+    return 0;
+
+  server_name = server->name->content;
+  server_len = server->name->length;
+
+  if(server->flags & SMODE_SERVICE)
+    result|=SERVERTYPEFLAG_SERVICE;
+
+  if(!strcmp(server_name, q_server->content)) {
+    result|=SERVERTYPEFLAG_CHANSERV;
+    result|=SERVERTYPEFLAG_CRITICAL_SERVICE;
+  } else if(!strcmp(server_name, s_server->content)) {
+    result|=SERVERTYPEFLAG_SPAMSCAN;
+    result|=SERVERTYPEFLAG_CRITICAL_SERVICE;
+  } else {
+    if(service_re && (pcre_exec(service_re, NULL, server_name, server_len, 0, 0, NULL, 0) >= 0)) {
+      /* matches service re */
+      if((server->flags & SMODE_SERVICE) == 0) {
+        /* is not a service */
+        Error("serverlist", ERR_WARNING, "Non-service server (%s) matched service RE.", server_name);
+      }
+    } else {
+      /* does not match service re */
+      if((server->flags & SMODE_SERVICE) != 0) {
+        result|=SERVERTYPEFLAG_SERVICE;
+        Error("serverlist", ERR_WARNING, "Service server (%s) that does not match service RE.", server_name);
+      }
+    }
+  }
+
+  if(hub_re && (pcre_exec(hub_re, NULL, server_name, server_len, 0, 0, NULL, 0) >= 0)) {
+    if((server->flags & SMODE_HUB) != 0) {
+      result|=SERVERTYPEFLAG_HUB;
+    } else {
+      Error("serverlist", ERR_WARNING, "Server matched hub re but isn't a hub (%s).", server_name);
+    }
+  }
+
+  if(not_client_re && (pcre_exec(not_client_re, NULL, server_name, server_len, 0, 0, NULL, 0) >= 0)) {
+    /* noop */
+  } else if(result == 0) {
+    result|=SERVERTYPEFLAG_CLIENT_SERVER;
+  }
+
+  return result;
+}
 
 void serverlist_pingservers(void *arg) {
   int i;
@@ -252,4 +355,3 @@ int serverlist_rpong(void *source, int cargc, char **cargv) {
 
   return CMD_OK;
 }
-

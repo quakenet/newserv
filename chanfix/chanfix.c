@@ -446,7 +446,7 @@ int cfcmd_chanfix(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (sp_countsplitservers() > 0) {
+  if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > 0) {
     controlreply(np, "Chanfix cannot be used during a netsplit.");
 
     return CMD_ERROR;
@@ -586,7 +586,7 @@ int cfcmd_requestop(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (sp_countsplitservers() > 0) {
+  if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > 0) {
     controlreply(np, "One or more servers are currently split. Wait until the"
                  " netsplit is over and try again.");
 
@@ -688,7 +688,7 @@ void cfsched_dosample(void *arg) {
 
   cfuhost = cfscore = cfnewro = 0;
 
-  if (sp_countsplitservers() > CFMAXSPLITSERVERS)
+  if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > CFMAXSPLITSERVERS)
     return;
 
   gettimeofday(&start, NULL);
@@ -858,7 +858,7 @@ void cfhook_autofix(int hook, void *arg) {
       hook == HOOK_CHANNEL_KICK || hook == HOOK_CHANNEL_JOIN) {
     cp = args[0];
 
-    if (sp_countsplitservers() > 0)
+    if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > 0)
       return;
 
     for(a=0;a<cp->users->hashsize;a++) {

@@ -10,8 +10,9 @@ MODULE_VERSION("");
 
 array splitlist;
 
-void sphook_newserver(int hook, void *arg);
-void sphook_lostserver(int hook, void *arg);
+static void sphook_newserver(int hook, void *arg);
+static void sphook_lostserver(int hook, void *arg);
+static void sp_addsplit(const char *name, time_t ts, flag_t flags);
 
 void _init(void) {
   registerhook(HOOK_SERVER_NEWSERVER, &sphook_newserver);
@@ -21,7 +22,7 @@ void _init(void) {
   array_setlim1(&splitlist, 5);
   array_setlim2(&splitlist, 5);
 
-  sp_addsplit("default.split.quakenet.org", getnettime());
+  sp_addsplit("default.split.quakenet.org", getnettime(), SERVERTYPEFLAG_CRITICAL_SERVICE | SERVERTYPEFLAG_SERVICE);
 }
 
 void _fini(void) {
@@ -37,27 +38,24 @@ void _fini(void) {
   array_free(&splitlist);
 }
 
-void sphook_newserver(int hook, void *arg) {
+static void sphook_newserver(int hook, void *arg) {
   sp_deletesplit(serverlist[(long)arg].name->content);
 }
 
-void sphook_lostserver(int hook, void *arg) {
-  sp_addsplit(serverlist[(long)arg].name->content, getnettime());
+static void sphook_lostserver(int hook, void *arg) {
+  server *server = &serverlist[(long)arg];
+  sp_addsplit(server->name->content, getnettime(), getservertype(server));
 }
 
-int sp_countsplitservers(void) {
-  return splitlist.cursi;
-}
-
-int sp_issplitserver(const char *name) {
+int sp_countsplitservers(flag_t orflags) {
+  int result = 0;
   int i;
 
-  for (i = 0; i < splitlist.cursi; i++) {
-    if (strcmp(name, ((splitserver*)splitlist.content)[i].name->content) == 0)
-      return 1;
-  }
+  for (i = 0; i < splitlist.cursi; i++)
+    if((((splitserver*)splitlist.content)[i].type | orflags) != 0)
+      result++;
 
-  return 0;
+  return result;
 }
 
 void sp_deletesplit(const char *name) {
@@ -74,7 +72,7 @@ void sp_deletesplit(const char *name) {
   }
 }
 
-void sp_addsplit(const char *name, time_t ts) {
+static void sp_addsplit(const char *name, time_t ts, flag_t type) {
   int slot;
   splitserver *srv;
 
@@ -84,4 +82,5 @@ void sp_addsplit(const char *name, time_t ts) {
 
   srv->name = getsstring(name, HOSTLEN);
   srv->ts = ts;
+  srv->type = type;
 }
