@@ -94,7 +94,7 @@
 #define   CHALLENGEAUTHSITE "http://www.quakenet.org/development/challengeauth/"
 
 /* Cleanup options */
-#define CLEANUP_ACCOUNT_INACTIVE  80
+#define CLEANUP_ACCOUNT_INACTIVE  180
 #define CLEANUP_ACCOUNT_UNUSED    3
 #define CLEANUP_CHANNEL_INACTIVE  40
 
@@ -875,8 +875,7 @@ void cs_removeuser(reguser *rup);
 int checkresponse(reguser *rup, const unsigned char *entropy, const char *response, CRAlgorithm algorithm);
 int checkhashpass(reguser *rup, const char *junk, const char *hash);
 flag_t cs_sanitisechanlev(flag_t flags);
-typedef int (*UnbanFN)(void *arg, struct chanban *ban);
-int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure);
+int cs_unbanfn(nick *sender, chanindex *cip, int (*fn)(void *arg, struct chanban *ban), void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 int checkreason(nick *np, char *reason);
 

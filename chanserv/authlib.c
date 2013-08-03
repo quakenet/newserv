@@ -155,6 +155,9 @@ int csa_checkpasswordquality(char *password) {
   if (strlen(password) < 6)
     return QM_PWTOSHORT;
 
+  if (strlen(password) > 10)
+    return QM_PWTOLONG;
+
   for ( i = 0; password[i] && i < PASSLEN; i++ ) {
     if ( password[i] == password[i+1] || password[i] + 1 == password[i+1] || password[i] - 1 == password[i+1] )
       cntweak++;

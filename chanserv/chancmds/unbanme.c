@@ -25,6 +25,10 @@
 #include <string.h>
 #include <stdio.h>
 
+static int nickmatchban_peerthroughhidehost(void *arg, struct chanban *ban) {
+  return nickmatchban(arg, ban, 0);
+}
+
 int csc_dounbanme(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
@@ -38,7 +42,7 @@ int csc_dounbanme(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
 
   /* Try to unban, if it fails we'll let the failure message speak for itself */
-  if (!cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1, 1)) {
+  if (!cs_unbanfn(sender, cip, nickmatchban_peerthroughhidehost, sender, 1, 1)) {
     chanservstdmessage(sender, QM_DONE);
   }  
 

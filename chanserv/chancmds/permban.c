@@ -85,9 +85,13 @@ int csc_dopermban(void *source, int cargc, char **cargv) {
   }
 
   if(count >= MAXBANS) {
-    freechanban(b);
-    chanservstdmessage(sender, QM_TOOMANYBANS);
-    return CMD_ERROR;
+    /* HACK: oper founder channels have 20x the ban limit */
+    reguser *founder=findreguserbyID(rcp->founder);
+    if(!founder || !UHasOperPriv(founder) || count >= MAXBANS * 20) {
+      freechanban(b);
+      chanservstdmessage(sender, QM_TOOMANYBANS);
+      return CMD_ERROR;
+    }
   }
 
   if(toreplace) {
