@@ -26,6 +26,10 @@
 #include <string.h>
 #include <stdio.h>
 
+static int nickmatchban_peerthroughhidehost(void *arg, struct chanban *ban) {
+  return nickmatchban(arg, ban, 0);
+}
+
 int csc_dorecover(void *source, int cargc, char **cargv) {
   nick *sender=source,*np;
   reguser *rup;
@@ -60,7 +64,7 @@ int csc_dorecover(void *source, int cargc, char **cargv) {
     }
 
     /* remove the registered bans that match on me */
-    cs_unbanfn(sender, cip, (UnbanFN)nickmatchban, sender, 1, 0);
+    cs_unbanfn(sender, cip, nickmatchban_peerthroughhidehost, sender, 1, 0);
 
     /* deopall */
     for (i=0,lp=cip->channel->users->content;
