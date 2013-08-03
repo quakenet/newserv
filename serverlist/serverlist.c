@@ -39,7 +39,6 @@ const flag servertypeflags[] = {
 
 struct {
   int used;
-  time_t ts;
   int lag;
   sstring *version1;
   sstring *version2;
@@ -87,7 +86,6 @@ void _init(void) {
     else
       serverinfo[i].used = 0;
 
-    serverinfo[i].ts = getnettime();
     serverinfo[i].lag = -1;
     serverinfo[i].version1 = NULL;
     serverinfo[i].version2 = NULL;
@@ -155,7 +153,7 @@ int cmd_serverlist(void *sender, int cargc, char **cargv) {
       controlreply(np, "%-7d %-30s %5d/%5d/%-5d %-7s %-7s %-20s %-8s %-20s - %s", i, serverlist[i].name->content,
             servercount[i], ucount, serverlist[i].maxusernum,
             printflags(serverlist[i].flags, smodeflags), buf,
-            longtoduration(getnettime() - serverinfo[i].ts, 0),
+            longtoduration(getnettime() - serverlist[i].ts, 0),
             lagstr,
             serverinfo[i].version1 ? serverinfo[i].version1->content : "Unknown",
             serverinfo[i].version2 ? serverinfo[i].version2->content : "Unknown");
@@ -212,7 +210,6 @@ void serverlist_hook_newserver(int hook, void *arg) {
   long num = (long)arg;
 
   serverinfo[num].used = 1;
-  serverinfo[num].ts = getnettime();
   serverinfo[num].version1 = NULL;
   serverinfo[num].version2 = NULL;
   serverinfo[num].type = getservertype(&serverlist[num]);
