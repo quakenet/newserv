@@ -6,6 +6,7 @@
 #include "../lib/sstring.h"
 #include "../irc/irc_config.h"
 #include "../lib/flags.h"
+#include <time.h>
 
 #define LS_INVALID   0   /* No server here */
 #define LS_LINKED    1   /* Server fully linked */
@@ -34,6 +35,7 @@ typedef struct {
   short      parent;
   short      linkstate;
   int        maxusernum;
+  time_t     ts;
   flag_t     flags;
   unsigned int marker;
 } server;

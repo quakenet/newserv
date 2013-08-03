@@ -11,8 +11,10 @@
  * CMDHELP: Usage: @UCOMMAND@ <oldpassword> <newpassword> <newpassword>
  * CMDHELP: Changes your account password.  Your new password must be at least 6 characters
  * CMDHELP: long, contain at least one number and one letter, and may not contain sequences
- * CMDHELP: of letters or numbers.  Your new password will be sent to your registered email
- * CMDHELP: address.  Where:
+ * CMDHELP: of letters or numbers, also note that your password will be truncated to 10
+ * CMDHELP: characters.
+ * CMDHELP: Your new password will be sent to your registered email address.
+ * CMDHELP: Where:
  * CMDHELP: oldpassword - your existing account password
  * CMDHELP: newpassword - your desired new password.  Must be entered the same both times.
  * CMDHELP: Note: due to the sensitive nature of this command, you must send the message to
@@ -61,12 +63,16 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
 
   pq = csa_checkpasswordquality(cargv[1]);
   if(pq == QM_PWTOSHORT) {
-    chanservstdmessage(sender, QM_PWTOSHORT); /* new password to short */
-    cs_log(sender,"NEWPASS FAIL username %s password to short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
+    chanservstdmessage(sender, QM_PWTOSHORT); /* new password too short */
+    cs_log(sender,"NEWPASS FAIL username %s password too short %s (%zu characters)",rup->username,cargv[1],strlen(cargv[1]));
     return CMD_ERROR;
   } else if(pq == QM_PWTOWEAK) {
     chanservstdmessage(sender, QM_PWTOWEAK); /* new password is weak */
-    cs_log(sender,"NEWPASS FAIL username %s password to weak %s",rup->username,cargv[1]);
+    cs_log(sender,"NEWPASS FAIL username %s password too weak %s",rup->username,cargv[1]);
+    return CMD_ERROR;
+  } else if(pq == QM_PWTOLONG) {
+    chanservstdmessage(sender, QM_PWTOLONG); /* new password too long */
+    cs_log(sender,"NEWPASS FAIL username %s password too long %s",rup->username,cargv[1]);
     return CMD_ERROR;
   } else if(pq == -1) {
     /* all good */

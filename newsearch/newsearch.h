@@ -183,9 +183,7 @@ void unregdisp( searchCmd *cmd, const char *name, void *handler);
 /* Special nick* printf */
 void nssnprintf(char *, size_t, const char *, nick *);
 
-#ifdef NEWSEARCH_NEWPARSER
 void displaystrerror(replyFunc reply, nick *np, const char *input);
-#endif
 
 extern const char *parseError;
 extern nick *senderNSExtern;
