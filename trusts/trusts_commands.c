@@ -18,7 +18,7 @@ static void deregistercommands(int, void *);
 
 extern void printnick_channels(searchCtx *, nick *, nick *);
 
-void calculatespaces(int spaces, int width, char *str, char **_prebuf, char **_postbuf) {
+void calculatespaces(int spaces, int width, const char *str, char **_prebuf, char **_postbuf) {
   static char prebuf[512], postbuf[512];
   int spacelen;
 
@@ -85,7 +85,8 @@ static void marktree(array *parents, unsigned int marker, trusthost *th, int sho
 }
 
 static void outputtree(nick *np, unsigned int marker, trustgroup *originalgroup, trusthost *th, int depth, int showchildren) {
-  char *cidrstr, *prespacebuf, *postspacebuf, parentbuf[512];
+  const char *cidrstr;
+  char *prespacebuf, *postspacebuf, parentbuf[512];
 
   if(th->marker != marker)
     return;
@@ -262,17 +263,6 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     controlreply(sender, "No matches found.");
 
   return CMD_OK;
-}
-
-static int comparetgs(const void *_a, const void *_b) {
-  const trustgroup *a = _a;
-  const trustgroup *b = _b;
-
-  if(a->id > b->id)
-    return 1;
-  if(a->id < b-> id)
-    return -1;
-  return 0;
 }
 
 static int trusts_cmdtrustglinesuggest(void *source, int cargc, char **cargv) {

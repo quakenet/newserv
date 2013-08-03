@@ -846,7 +846,7 @@ static void cleanuptrusts(void *arg) {
     }
 
     for(i=0;i<expiredths.cursi;i++) {
-      char *cidrstr;
+      const char *cidrstr;
 
       th = ((trusthost **)(expiredths.content))[i];
       triggerhook(HOOK_TRUSTS_DELHOST, th);
