@@ -9,7 +9,7 @@
 
 MODULE_VERSION("");
 
-static int ww_cmdwhowas(void *source, int cargc, char **cargv) {
+static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   nick *np = source;
   char *pattern;
   whowas *ww;
@@ -34,7 +34,10 @@ static int ww_cmdwhowas(void *source, int cargc, char **cargv) {
       if (matches <= limit) {
         strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
 
-        controlreply(np, "[%s] %s (%s): %s", timebuf, hostmask, ww->realname, ww->reason->content);
+        if (ww->type == WHOWAS_RENAME)
+          controlreply(np, "[%s] NICK %s (%s) -> %s", timebuf, hostmask, ww->realname, ww->newnick->content);
+        else
+          controlreply(np, "[%s] %s %s (%s): %s", timebuf, (ww->type == WHOWAS_QUIT) ? "QUIT" : "KILL", hostmask, ww->realname, ww->reason->content);
       } else if (matches == limit + 1) {
         controlreply(np, "--- More than %d matches, skipping the rest", limit);
       }
@@ -47,9 +50,9 @@ static int ww_cmdwhowas(void *source, int cargc, char **cargv) {
 }
 
 void _init(void) {
-  registercontrolhelpcmd("whowas", NO_OPER, 2, &ww_cmdwhowas, "Usage: whowas <mask> ?limit?\nLooks up information about recently disconnected users.");
+  registercontrolhelpcmd("whowas", NO_OPER, 2, &whowas_cmdwhowas, "Usage: whowas <mask> ?limit?\nLooks up information about recently disconnected users.");
 }
 
 void _fini(void) {
-  deregistercontrolcmd("whowas", &ww_cmdwhowas);
+  deregistercontrolcmd("whowas", &whowas_cmdwhowas);
 }
