@@ -4,10 +4,10 @@
 #define WW_REASONLEN 512
 
 typedef struct whowas {
-  char nick[NICKLEN+1];
-  char ident[USERLEN+1];
-  char host[HOSTLEN+1];
-  char realname[REALLEN+1];
+  char nick[NICKLEN + 1];
+  char ident[USERLEN + 1];
+  char host[HOSTLEN + 1];
+  char realname[REALLEN + 1];
   sstring *reason;
 
   time_t seen;
@@ -15,3 +15,7 @@ typedef struct whowas {
   struct whowas *next;
   struct whowas *prev;
 } whowas;
+
+extern whowas *whowas_head, *whowas_tail;
+extern int whowas_count;
+
