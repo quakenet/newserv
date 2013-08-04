@@ -537,10 +537,10 @@ static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
 
   time(&now);
 
-  controlreply(sender, "Server                             Connected for             Accepted        Rejected");
+  controlreply(sender, "Server                              Connected for        Accepted        Rejected");
 
   for(sock=tslist;sock;sock=sock->next)
-    controlreply(sender, "%-30s %-20s %-10d %-15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
+    controlreply(sender, "%-35s %-20s %-15d %-15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
 
   controlreply(sender, "-- End of list.");
   return CMD_OK;
