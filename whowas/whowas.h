@@ -28,3 +28,5 @@ extern int whowas_count;
 #define WHOWAS_QUIT 0
 #define WHOWAS_KILL 1
 #define WHOWAS_RENAME 2
+
+whowas *whowas_chase(const char *nick, int maxage);

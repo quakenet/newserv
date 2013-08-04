@@ -111,6 +111,23 @@ static void whowas_handlerename(int hooknum, void *arg) {
   whowas_linkrecord(ww);
 }
 
+whowas *whowas_chase(const char *nick, int maxage) {
+  whowas *ww;
+  time_t now;
+
+  now = getnettime();
+
+  for (ww = whowas_head; ww; ww = ww->next) {
+    if (ww->seen < now - maxage)
+      break; /* records are in timestamp order, we're done */
+
+    if (ircd_strcmp(ww->nick, nick) == 0)
+      return ww;
+  }
+
+  return NULL;
+}
+
 void _init(void) {
   registerhook(HOOK_NICK_QUIT, whowas_handlequitorkill);
   registerhook(HOOK_NICK_KILL, whowas_handlequitorkill);
