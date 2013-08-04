@@ -21,6 +21,7 @@ whowas *whowas_fromnick(nick *np) {
   strncpy(ww->nick, np->nick, NICKLEN);
   strncpy(ww->ident, np->ident, USERLEN);
   strncpy(ww->host, np->host->name->content, HOSTLEN);
+  memcpy(&ww->ip, &np->p_ipaddr, sizeof(struct irc_in_addr));
   strncpy(ww->realname, np->realname->name->content, REALLEN);
   ww->seen = getnettime();
 

@@ -8,6 +8,7 @@ typedef struct whowas {
   char nick[NICKLEN + 1];
   char ident[USERLEN + 1];
   char host[HOSTLEN + 1];
+  struct irc_in_addr ip;
   char realname[REALLEN + 1];
 
   int type;

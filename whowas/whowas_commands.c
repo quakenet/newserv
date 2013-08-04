@@ -13,7 +13,7 @@ static void whowas_spewrecord(whowas *ww, nick *np) {
   char timebuf[30];
   char hostmask[WW_MASKLEN + 1];
 
-  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s", ww->nick, ww->ident, ww->host);
+  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s [%s]", ww->nick, ww->ident, ww->host, IPtostr(ww->ip));
   strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
 
   if (ww->type == WHOWAS_RENAME)
