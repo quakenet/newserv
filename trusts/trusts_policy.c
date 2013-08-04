@@ -352,7 +352,12 @@ static void processtrustclient(int fd, short events) {
 
   if(!sock)
     return;
-  
+
+  if (events & (POLLPRI | POLLERR | POLLHUP | POLLNVAL)) {
+    trustfreeconnection(sock, 1);
+    return;
+  }
+
   if(events & POLLIN)
     if(!handletrustclient(sock))
       trustfreeconnection(sock, 1);
