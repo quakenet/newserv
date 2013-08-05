@@ -145,8 +145,12 @@ static void whowas_handlequitorkill(int hooknum, void *arg) {
     }
 
     ww->type = WHOWAS_KILL;
-  } else
-    ww->type = WHOWAS_QUIT;
+  } else {
+    if (strncmp(reason, "G-lined", 7) == 0)
+      ww->type = WHOWAS_KILL;
+    else
+      ww->type = WHOWAS_QUIT;
+  }
 
   ww->reason = getsstring(reason, WW_REASONLEN);
 
