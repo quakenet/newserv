@@ -94,6 +94,16 @@ void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator,
   }
 }
 
+void glinebufaddbywhowas(glinebuf *gbuf, whowas *ww, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
+  if (flags & GLINE_ALWAYS_NICK) {
+    char mask[512];
+    snprintf(mask, sizeof(mask), "%s!*@*", ww->nick);
+    glinebufadd(gbuf, mask, creator, reason, expire, lastmod, lifetime);
+  } else {
+    glinebufaddbyip(gbuf, ww->ident, &ww->ip, 128, flags, creator, reason, expire, lastmod, lifetime);
+  }
+}
+
 void glinebufcounthits(glinebuf *gbuf, int *users, int *channels) {
   gline *gl;
   int i, hit, slot;

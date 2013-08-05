@@ -55,15 +55,25 @@ void whowas_unlinkrecord(whowas *ww) {
   whowas_count--;
 }
 
+void whowas_free(whowas *ww) {
+  if (!ww)
+    return;
+
+  freesstring(ww->reason);
+  free(ww);
+}
+
 static void whowas_cleanup(void) {
   time_t now;
+  whowas *ww;
 
   time(&now);
 
   /* Clean up old records. */
   while (whowas_tail && (whowas_tail->seen < now - WW_MAXAGE || whowas_count >= WW_MAXENTRIES)) {
-    whowas_unlinkrecord(whowas_tail);
-    free(whowas_tail);
+    ww = whowas_tail;
+    whowas_unlinkrecord(ww);
+    whowas_free(ww);
   }
 }
 
@@ -127,6 +137,19 @@ whowas *whowas_chase(const char *nick, int maxage) {
   }
 
   return NULL;
+}
+
+void whowas_spew(whowas *ww, nick *np) {
+  char timebuf[30];
+  char hostmask[WW_MASKLEN + 1];
+
+  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s [%s]", ww->nick, ww->ident, ww->host, IPtostr(ww->ip));
+  strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
+
+  if (ww->type == WHOWAS_RENAME)
+    controlreply(np, "[%s] NICK %s (%s) -> %s", timebuf, hostmask, ww->realname, ww->newnick->content);
+  else
+    controlreply(np, "[%s] %s %s (%s): %s", timebuf, (ww->type == WHOWAS_QUIT) ? "QUIT" : "KILL", hostmask, ww->realname, ww->reason->content);
 }
 
 void _init(void) {

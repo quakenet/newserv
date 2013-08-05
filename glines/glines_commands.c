@@ -18,13 +18,16 @@ MODULE_VERSION("");
 static void registercommands(int, void *);
 static void deregistercommands(int, void *);
 
-static int parse_gline_flags(nick *sender, const char *flagparam, int *overridesanity, int *overridelimit, int *simulate, int *coff) {
+static int parse_gline_flags(nick *sender, const char *flagparam, int *overridesanity, int *overridelimit, int *simulate, int *chase, int *coff) {
   const char *pos;
 
   *coff = 0;
   *overridesanity = 0;
   *overridelimit = 0;
   *simulate = 0;
+
+  if (chase)
+    *chase = 0;
 
   if (flagparam[0] == '-') {
     *coff = 1;
@@ -40,46 +43,68 @@ static int parse_gline_flags(nick *sender, const char *flagparam, int *overrides
 	case 'S':
 	  *simulate = 1;
 	  break;
+        case 'c':
+          if (!chase)
+            goto invalid;
+
+          *chase = 1;
+          break;
 	default:
-	  controlreply(sender, "Invalid flag specified: %c", *pos);
-	  return 0;
+          goto invalid;
       }
     }
   }
 
   return 1;
+
+invalid:
+  controlreply(sender, "Invalid flag specified: %c", *pos);
+  return 0;
 }
 
 static int glines_cmdblock(void *source, int cargc, char **cargv) {
   nick *sender = source;
   nick *target;
+  whowas *ww;
   int hits, duration, id;
-  int coff, overridesanity, overridelimit, simulate;
+  int coff, overridesanity, overridelimit, simulate, chase;
   char *reason;
   char creator[128];
   glinebuf gbuf;
+  int ownww;
 
   if (cargc < 1)
     return CMD_USAGE;
 
-  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &coff))
+  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &chase, &coff))
     return CMD_ERROR;
 
   if (cargc < 3 + coff)
     return CMD_USAGE;
-
-  target = getnickbynick(cargv[coff]);
-
-  if (!target) {
-    controlreply(sender, "Sorry, couldn't find that user.");
-    return CMD_ERROR;
-  }
 
   duration = durationtolong(cargv[coff + 1]);
 
   if (duration <= 0) {
     controlreply(sender, "Invalid duration specified.");
     return CMD_ERROR;
+  }
+
+  target = getnickbynick(cargv[coff]);
+
+  if (!target) {
+    ww = whowas_chase(cargv[coff], 1800);
+   
+    if (!ww) {
+      controlreply(sender, "Sorry, couldn't find that user.");
+      return CMD_ERROR;
+    }
+   
+    ownww = 0;
+
+    controlreply(sender, "Found matching whowas record:");    whowas_spew(ww, sender);
+  } else {
+    ww = whowas_fromnick(target);
+    ownww = 1;
   }
 
   rejoinline(cargv[coff + 2], cargc - coff - 2);
@@ -92,18 +117,22 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "BLOCK", cargc + coff - 1, cargv);
-  glinebufaddbynick(&gbuf, target, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
+  glinebufaddbywhowas(&gbuf, ww, 0, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
   glinebufspew(&gbuf, sender);
 
   if (!glinebufchecksane(&gbuf, sender, overridesanity, overridelimit)) {
     glinebufabort(&gbuf);
+    if (ownww)
+      whowas_free(ww);
     controlreply(sender, "G-Lines failed sanity checks. Not setting G-Lines.");
     return CMD_ERROR;
   }
 
   if (simulate) {
     glinebufabort(&gbuf);
+    if (ownww)
+      whowas_free(ww);
     controlreply(sender, "Simulation complete. Not setting G-Lines.");
     return CMD_ERROR;
   }
@@ -111,7 +140,10 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufcounthits(&gbuf, &hits, NULL);
   id = glinebufcommit(&gbuf, 1);
 
-  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), target->nick, target->ident, target->host->name->content, longtoduration(duration, 0), reason, hits);
+  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), ww->nick, ww->ident, ww->host, longtoduration(duration, 0), reason, hits);
+
+  if (ownww)
+    whowas_free(ww);
 
   controlreply(sender, "Done. G-Line transaction ID: %d", id);
 
@@ -132,7 +164,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   if (cargc < 1)
     return CMD_USAGE;
 
-  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &coff))
+  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, NULL, &coff))
     return CMD_ERROR;
 
   if (cargc < 3 + coff)
@@ -218,7 +250,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
   if (cargc < 1)
     return CMD_USAGE;
 
-  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &coff))
+  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, NULL, &coff))
     return CMD_ERROR;
 
   if (cargc < 3 + coff)
@@ -368,7 +400,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
   if (cargc < 1)
     return CMD_USAGE;
 
-  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &coff))
+  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, NULL, &coff))
     return CMD_ERROR;
 
   if (cargc < 2 + coff)
@@ -522,7 +554,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   if (cargc < 1)
     return CMD_USAGE;
 
-  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, &coff))
+  if (!parse_gline_flags(sender, cargv[0], &overridesanity, &overridelimit, &simulate, NULL, &coff))
     return CMD_ERROR;
 
   if (cargc < 4 + coff)
@@ -968,7 +1000,7 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("block", NO_OPER, 4, glines_cmdblock, "Usage: block ?flags? <nick> <duration> <reason>\nSets a gline using an appropriate mask given the user's nickname.\nFlags can be one or more of:\n-f - bypass sanity checks\n-l - bypass hit limits\n-S - simulate who the glines would hit");
+  registercontrolhelpcmd("block", NO_OPER, 4, glines_cmdblock, "Usage: block ?flags? <nick> <duration> <reason>\nSets a gline using an appropriate mask given the user's nickname.\nFlags can be one or more of:\n-f - bypass sanity checks\n-l - bypass hit limits\n-S - simulate who the glines would hit\n-c - chase nick across quits/kills/nick changes");
   registercontrolhelpcmd("gline", NO_OPER, 4, glines_cmdgline, "Usage: gline ?flags? <mask> <duration> <reason>\nSets a gline.\nFlags can be one or more of:\n-f - bypass sanity checks\n-l - bypass hit limits\n-S - simulate who the glines would hit");
   registercontrolhelpcmd("smartgline", NO_OPER, 4, glines_cmdsmartgline, "Usage: smartgline ?flags? <user@host> <duration> <reason>\nSets a gline. Automatically adjusts the mask depending on whether the specified mask is trusted.\nFlags can be one or more of:\n-f - bypass sanity checks\n-l - bypass hit limits\n-S - simulate who the glines would hit");
   registercontrolhelpcmd("ungline", NO_OPER, 1, glines_cmdungline, "Usage: ungline <mask>\nDeactivates a gline.");

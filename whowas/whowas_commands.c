@@ -9,19 +9,6 @@
 
 MODULE_VERSION("");
 
-static void whowas_spewrecord(whowas *ww, nick *np) {
-  char timebuf[30];
-  char hostmask[WW_MASKLEN + 1];
-
-  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s [%s]", ww->nick, ww->ident, ww->host, IPtostr(ww->ip));
-  strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
-
-  if (ww->type == WHOWAS_RENAME)
-    controlreply(np, "[%s] NICK %s (%s) -> %s", timebuf, hostmask, ww->realname, ww->newnick->content);
-  else
-    controlreply(np, "[%s] %s %s (%s): %s", timebuf, (ww->type == WHOWAS_QUIT) ? "QUIT" : "KILL", hostmask, ww->realname, ww->reason->content);
-}
-
 static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *pattern;
@@ -44,7 +31,7 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
       matches++;
 
       if (matches <= limit)
-        whowas_spewrecord(ww, sender);
+        whowas_spew(ww, sender);
       else if (matches == limit + 1)
         controlreply(sender, "--- More than %d matches, skipping the rest", limit);
     }
@@ -69,7 +56,7 @@ static int whowas_cmdwhowaschase(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  whowas_spewrecord(ww, sender);
+  whowas_spew(ww, sender);
   controlreply(sender, "Done.");
 
   return CMD_OK;
