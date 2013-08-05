@@ -13,6 +13,7 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   nick *sender = source;
   char *pattern;
   whowas *ww;
+  nick *np;
   char hostmask[WW_MASKLEN + 1];
   int matches = 0, limit = 500;
 
@@ -25,13 +26,14 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
     limit = strtol(cargv[1], NULL, 10);
 
   for (ww = whowas_head; ww; ww = ww->next) {
-    snprintf(hostmask, sizeof(hostmask), "%s!%s@%s", ww->nick, ww->ident, ww->host);
+    np = ww->nick;
+    snprintf(hostmask, sizeof(hostmask), "%s!%s@%s", np->nick, np->ident, np->host->name->content);
 
     if (match2strings(pattern, hostmask)) {
       matches++;
 
       if (matches <= limit)
-        whowas_spew(ww, sender);
+        controlreply(sender, "%s", whowas_format(ww));
       else if (matches == limit + 1)
         controlreply(sender, "--- More than %d matches, skipping the rest", limit);
     }
@@ -56,7 +58,7 @@ static int whowas_cmdwhowaschase(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
-  whowas_spew(ww, sender);
+  controlreply(sender, "%s", whowas_format(ww));
   controlreply(sender, "Done.");
 
   return CMD_OK;

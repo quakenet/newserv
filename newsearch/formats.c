@@ -150,3 +150,6 @@ void printuser(searchCtx *ctx, nick *sender, authname *aup) {
   ctx->reply(sender,"%d", aup->userid);
 }
 
+void printwhowas(searchCtx *ctx, nick *sender, whowas *ww) {
+  ctx->reply(sender,"%s", whowas_format(ww));
+}

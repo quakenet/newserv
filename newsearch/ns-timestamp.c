@@ -33,7 +33,7 @@ void *timestamp_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) 
   nick *np = (nick *)theinput;
   chanindex *cip = (chanindex *)theinput;
 
-  if (ctx->searchcmd == reg_nicksearch) {  
+  if (ctx->searchcmd == reg_nicksearch || ctx->searchcmd == reg_whowassearch) {
     return (void *)np->timestamp;
   } else {
     if (cip->channel)

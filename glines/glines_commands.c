@@ -101,7 +101,8 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
    
     ownww = 0;
 
-    controlreply(sender, "Found matching whowas record:");    whowas_spew(ww, sender);
+    controlreply(sender, "Found matching whowas record:");
+    controlreply(sender, "%s", whowas_format(ww));
   } else {
     ww = whowas_fromnick(target);
     ownww = 1;
@@ -140,7 +141,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufcounthits(&gbuf, &hits, NULL);
   id = glinebufcommit(&gbuf, 1);
 
-  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), ww->nick, ww->ident, ww->host, longtoduration(duration, 0), reason, hits);
+  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), ww->nick->nick, ww->nick->ident, ww->nick->host->name->content, longtoduration(duration, 0), reason, hits);
 
   if (ownww)
     whowas_free(ww);

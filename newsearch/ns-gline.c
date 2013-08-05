@@ -43,6 +43,8 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
     localdata->marker = nextchanmarker();
   else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
+  else if (ctx->searchcmd == reg_whowassearch)
+    localdata->marker = nextwhowasmarker();
   else {
     free(localdata);
     parseError = "gline: invalid search type";
@@ -129,6 +131,7 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct gline_localdata *localdata;
   nick *np;
   chanindex *cip;
+  whowas *ww;
 
   localdata = thenode->localdata;
 
@@ -140,7 +143,12 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   }
   else {
     np = (nick *)theinput;
-    np->marker = localdata->marker;
+    if (ctx->searchcmd == reg_nicksearch)
+      np->marker = localdata->marker;
+    else {
+      ww = np->next;
+      ww->marker = localdata->marker;
+    }
     localdata->count++;
   }
 
@@ -162,6 +170,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
+  whowas *ww;
   int i, j, hits, safe=0;
   time_t ti = time(NULL);
   glinebuf gbuf;
@@ -195,8 +204,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
         }
       }
     }
-  }
-  else {
+  } else if (ctx->searchcmd == reg_nicksearch) {
     for (i=0;i<NICKHASHSIZE;i++) {
       for (np=nicktable[i];np;np=nnp) {
         nnp = np->next;
@@ -204,6 +212,13 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
           if(!glineuser(&gbuf, np, localdata, ti))
             safe++;
         }
+      }
+    }
+  } else {
+    for (ww = whowas_head; ww; ww = ww->next) {
+      if (ww->marker == localdata->marker) {
+        if(!glineuser(&gbuf, ww->nick, localdata, ti))
+          safe++;
       }
     }
   }

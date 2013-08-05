@@ -28,7 +28,7 @@ struct searchNode *modes_parse(searchCtx *ctx, int argc, char **argv) {
     
   if (ctx->searchcmd == reg_chansearch) {
     flaglist=cmodeflags;
-  } else if (ctx->searchcmd == reg_nicksearch) {
+  } else if (ctx->searchcmd == reg_nicksearch || ctx->searchcmd == reg_whowassearch) {
     flaglist=umodeflags;
   } else {
     parseError="modes: unsupported search type";
