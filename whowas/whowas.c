@@ -34,9 +34,9 @@ whowas *whowas_fromnick(nick *np) {
   wnp->realname = newrealname();
   memset(wnp->realname, 0, sizeof(realname));
   wnp->realname->name = getsstring(np->realname->name->content, REALLEN);
-  wnp->shident = np->away ? getsstring(np->shident->content, 512) : NULL;
-  wnp->sethost = np->away ? getsstring(np->sethost->content, 512) : NULL;
-  wnp->opername = np->away ? getsstring(np->opername->content, 512) : NULL;
+  wnp->shident = np->shident ? getsstring(np->shident->content, 512) : NULL;
+  wnp->sethost = np->sethost ? getsstring(np->sethost->content, 512) : NULL;
+  wnp->opername = np->opername ? getsstring(np->opername->content, 512) : NULL;
   wnp->umodes = np->umodes;
   if (np->auth) {
     wnp->auth = newauthname();
