@@ -43,9 +43,8 @@ whowas *whowas_fromnick(nick *np) {
     memset(wnp->auth, 0, sizeof(authname));
     wnp->auth->userid = np->auth->userid;
     strncpy(wnp->auth->name, np->auth->name, ACCOUNTLEN + 1);
-    wnp->auth = np->auth;
+    wnp->authname = wnp->auth->name;
   }
-  wnp->authname = wnp->auth->name;
   wnp->timestamp = np->timestamp;
   wnp->accountts = np->accountts;
   wnp->away = np->away ? getsstring(np->away->content, 512) : NULL;
