@@ -195,10 +195,11 @@ const char *whowas_format(whowas *ww) {
   char timebuf[30];
   char hostmask[512];
 
-  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s%s%s [%s]",
+  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s%s%s [%s] (%s)",
            np->nick, np->ident, np->host->name->content,
            np->auth ? "/" : "", np->auth ? np->authname : "",
-           IPtostr(np->p_ipaddr));
+           IPtostr(np->p_ipaddr),
+           printflags(np->umodes, umodeflags));
   strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&(ww->timestamp)));
 
   if (ww->type == WHOWAS_RENAME)
