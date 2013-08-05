@@ -107,7 +107,7 @@ void whowas_free(whowas *ww) {
   freesstring(np->opername);
   freeauthname(np->auth);
   freesstring(np->away);
-  free(np);
+  freenick(np);
   freesstring(ww->reason);
   free(ww);
 }
