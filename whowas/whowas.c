@@ -219,7 +219,7 @@ void _fini(void) {
   deregisterhook(HOOK_NICK_RENAME, whowas_handlerename);
 
   for (i = 0; i < WW_MAXENTRIES; i++) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+    ww = &whowasrecs[i];
     whowas_clean(ww);
   }
 }
