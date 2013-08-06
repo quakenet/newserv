@@ -95,7 +95,7 @@ void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator,
 }
 
 void glinebufaddbywhowas(glinebuf *gbuf, whowas *ww, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
-  nick *np = ww->nick;
+  nick *np = &ww->nick;
 
   if (flags & GLINE_ALWAYS_NICK) {
     char mask[512];
