@@ -1,5 +1,5 @@
 /*
- * quit functionality
+ * newnick functionality
  */
 
 #include "newsearch.h"
