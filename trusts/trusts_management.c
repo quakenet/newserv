@@ -487,6 +487,11 @@ static int modifynodebits(void *arg, char *num, nick *source, int override) {
   if(irc_in_addr_is_ipv4(&th->ip))
     nodebits += 96;
 
+  if(nodebits > 128) {
+    controlreply(source, "Node bits is invalid.");
+    return 0;
+  }
+
   if(!override) {
     int minbits = irc_in_addr_is_ipv4(&th->ip)?TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4:TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6;
 
