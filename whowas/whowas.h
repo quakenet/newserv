@@ -27,9 +27,10 @@ extern whowas whowasrecs[WW_MAXENTRIES];
 extern int whowasoffset; /* points to oldest record */
 
 #define WHOWAS_UNUSED 0
-#define WHOWAS_QUIT 1
-#define WHOWAS_KILL 2
-#define WHOWAS_RENAME 3
+#define WHOWAS_USED 1
+#define WHOWAS_QUIT 2
+#define WHOWAS_KILL 3
+#define WHOWAS_RENAME 4
 
 whowas *whowas_fromnick(nick *np, int standalone);
 nick *whowas_tonick(whowas *ww);

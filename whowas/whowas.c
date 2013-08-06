@@ -64,6 +64,7 @@ whowas *whowas_fromnick(nick *np, int standalone) {
   wnp->next = (nick *)ww; /* Yuck. */
 
   ww->timestamp = getnettime();
+  ww->type = WHOWAS_USED;
 
   return ww;
 }
