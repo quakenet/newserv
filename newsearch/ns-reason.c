@@ -30,7 +30,7 @@ void *reason_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   whowas *ww = (whowas *)np->next;
 
-  if (ww->type != WHOWAS_RENAME)
+  if (ww->type == WHOWAS_RENAME)
     return (void *)0;
   
   return (void *)ww->reason->content;
