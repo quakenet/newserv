@@ -110,7 +110,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
 
   wnp = &ww->nick;
 
-  if (IsService(wnp) || IsOper(wnp) || NickOnServiceServer(wnp)) {
+  if (sender != target && (IsService(wnp) || IsOper(wnp) || NickOnServiceServer(wnp))) {
     controlreply(sender, "Target user '%s' is an oper or a service. Not setting G-Lines.", wnp->nick);
     return CMD_ERROR;
   }
