@@ -18,7 +18,7 @@ struct searchNode *reason_parse(searchCtx *ctx, int argc, char **argv) {
     return NULL;
   }
 
-  thenode->returntype = RETURNTYPE_BOOL;
+  thenode->returntype = RETURNTYPE_STRING;
   thenode->localdata = NULL;
   thenode->exe = reason_exe;
   thenode->free = reason_free;
