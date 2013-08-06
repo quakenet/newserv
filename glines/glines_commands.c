@@ -108,6 +108,13 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
     ownww = 1;
   }
 
+  wnp = &ww->nick;
+
+  if (IsService(wnp) || IsOper(wnp) || NickOnServiceServer(wnp)) {
+    controlreply(sender, "Target user is an oper or a service. Not setting G-Lines.");
+    return CMD_ERROR;
+  }
+
   rejoinline(cargv[coff + 2], cargc - coff - 2);
   reason = cargv[coff + 2];
 
@@ -141,7 +148,6 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufcounthits(&gbuf, &hits, NULL);
   id = glinebufcommit(&gbuf, 1);
 
-  wnp = &ww->nick;
   controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender),
               wnp->nick, wnp->ident, wnp->host->name->content,
               longtoduration(duration, 0), reason, hits);
