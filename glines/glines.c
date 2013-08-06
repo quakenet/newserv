@@ -45,7 +45,7 @@ int gline_match_nick(gline *gl, nick *np) {
     return 0;
 
   if (gl->flags & GLINE_IPMASK) {
-    if (!ipmask_check(&gl->ip, &np->p_ipaddr, gl->bits))
+    if (!ipmask_check(&gl->ip, &np->ipaddress, gl->bits))
       return 0;
   } else {
     if (gl->host && match(gl->host->content, np->host->name->content) != 0)

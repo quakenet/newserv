@@ -263,7 +263,7 @@ int controlwhois(void *sender, int cargc, char **cargv) {
       }
     }
   }
-  controlreply((nick *)sender,"IP address: %s",IPtostr(target->p_ipaddr));
+  controlreply((nick *)sender,"IP address: %s",IPtostr(target->ipaddress));
   controlreply((nick *)sender,"Realname  : %s (%d user(s) have this realname)",target->realname->name->content,target->realname->usercount);
   if (target->umodes) {
     controlreply((nick *)sender,"Umode(s)  : %s",printflags(target->umodes,umodeflags));

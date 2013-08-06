@@ -29,7 +29,7 @@ struct searchNode *ip_parse(searchCtx *ctx, int argc, char **argv) {
 void *ip_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
-  return (void *)IPtostr(np->p_ipaddr);
+  return (void *)IPtostr(np->ipaddress);
 }
 
 void ip_free(searchCtx *ctx, struct searchNode *thenode) {

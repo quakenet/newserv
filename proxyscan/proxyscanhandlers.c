@@ -15,7 +15,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if (irc_in_addr_is_loopback(&np->p_ipaddr))
+  if (irc_in_addr_is_loopback(&np->ipaddress))
     return;
 
   /* slug: why is this here? why isn't it with the other queuing stuff? */
@@ -25,7 +25,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
    */
   /* disabled as the list is hopelessly out of date */
   if ((esp=findextrascan(np->ipnode))) {
-    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
+    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->ipaddress)); 
     for (espp=esp;espp;espp=espp->nextbynode) { 
       /* we force a scan on any hosts that may be an open proxy, even if they are:
        * a) already in the queue, b) we've been running < 120 seconds */

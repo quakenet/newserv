@@ -71,7 +71,7 @@ void *cidr_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   struct cidr_localdata *c = thenode->localdata;
 
-  if(!ipmask_check(&np->p_ipaddr, &c->ip, c->bits))
+  if(!ipmask_check(&np->ipaddress, &c->ip, c->bits))
     return (void *)0;
 
   return (void *)1;

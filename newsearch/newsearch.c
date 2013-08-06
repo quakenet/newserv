@@ -1036,11 +1036,11 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
       case 'h':
         c = np->host->name->content; break;
       case 'I':
-        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       case 'u':
-        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       default:

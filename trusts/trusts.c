@@ -69,13 +69,13 @@ static void whoisfn(int hooknum, void *arg) {
   triggerhook(HOOK_CONTROL_WHOISREPLY, message);
 
   if (th->maxpernode > 0) {
-    snprintf(message, sizeof(message), "Node      : %s", CIDRtostr(np->p_ipaddr, th->nodebits));
+    snprintf(message, sizeof(message), "Node      : %s", CIDRtostr(np->ipaddress, th->nodebits));
     triggerhook(HOOK_CONTROL_WHOISREPLY, message);
 
     patricia_node_t *node;
     int usercount = 0;
 
-    node = refnode(iptree, &(np->p_ipaddr), th->nodebits);
+    node = refnode(iptree, &(np->ipaddress), th->nodebits);
     usercount = node->usercount;
     derefnode(iptree, node);
 

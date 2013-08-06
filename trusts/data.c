@@ -297,6 +297,8 @@ trustgroup *tg_strtotg(char *name) {
 }
 
 void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
+  struct irc_in_addr ipaddress_canonical;
+
   /*
    * First and foremost, CIDR doesn't allow hosts to cross boundaries, i.e. everything with a smaller prefix
    * is entirely contained with the prefix that is one smaller.
@@ -362,7 +364,8 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
     nick *np, *nnp;
     for(np=superset->users;np;np=nnp) {
       nnp = nextbytrust(np);
-      if(ipmask_check(&np->p_nodeaddr, &th->ip, th->bits)) {
+      ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
+      if(ipmask_check(&ipaddress_canonical, &th->ip, th->bits)) {
         trusts_lostnick(np, 1);
         trusts_newnick(np, 1);
       }
@@ -373,10 +376,13 @@ void th_adjusthosts(trusthost *th, trusthost *superset, trusthost *subset) {
     nick *np;
     int i;
 
-    for(i=0;i<NICKHASHSIZE;i++)
-      for(np=nicktable[i];np;np=np->next)
-        if(!gettrusthost(np) && ipmask_check(&np->p_nodeaddr, &th->ip, th->bits))
+    for(i=0;i<NICKHASHSIZE;i++) {
+      for(np=nicktable[i];np;np=np->next) {
+        ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
+        if(!gettrusthost(np) && ipmask_check(&ipaddress_canonical, &th->ip, th->bits))
           trusts_newnick(np, 1);
+      }
+    }
   }
 }
 

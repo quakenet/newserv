@@ -172,7 +172,7 @@ const char *whowas_format(whowas *ww) {
   snprintf(hostmask, sizeof(hostmask), "%s!%s@%s%s%s [%s] (%s)",
            np->nick, np->ident, np->host->name->content,
            np->auth ? "/" : "", np->auth ? np->authname : "",
-           IPtostr(np->p_ipaddr),
+           IPtostr(np->ipaddress),
            printflags(np->umodes, umodeflags));
   strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&(ww->timestamp)));
 
