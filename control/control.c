@@ -68,6 +68,7 @@ const flag no_noticeflags[] = {
     { 'k', NL_KICKKILLS },    /* KICK/KILL commands */
     { 'I', NL_MISC },         /* misc commands */
     { 'g', NL_GLINES },       /* GLINE commands */
+    { 'G', NL_GLINES_AUTO },  /* automated gline messages */
     { 'h', NL_HITS },         /* Where a gline or kill is set automatically by the bot */
     { 'c', NL_CLONING },      /* Clone detection */
     { 'C', NL_CLEARCHAN },    /* When someone clearchans */

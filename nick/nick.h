@@ -11,7 +11,6 @@
 #include "../lib/base64.h"
 #include "../lib/irc_ipv6.h"
 #include "../patricia/patricia.h"
-#include "../lib/ccassert.h"
 
 #include "../authext/authext.h"
 
@@ -131,8 +130,6 @@ typedef struct realname {
   struct realname *next;
 } realname;
 
-CCASSERT(sizeof(host) == sizeof(realname));
-
 typedef struct nick {
   char nick[NICKLEN+1];
   long numeric;
@@ -148,6 +145,7 @@ typedef struct nick {
   time_t timestamp;
   time_t accountts;
   sstring *away;
+  struct irc_in_addr ipaddress;
   patricia_node_t *ipnode;
   unsigned int cloak_count;
   struct nick *cloak_extra;
@@ -161,7 +159,8 @@ typedef struct nick {
   void *exts[MAXNICKEXTS];
 } nick;
 
-#define p_ipaddr ipnode->prefix->sin
+#define p_ipaddr ipaddress
+#define p_nodeaddr ipnode->prefix->sin
 
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000

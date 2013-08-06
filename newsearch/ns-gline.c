@@ -13,6 +13,7 @@
 #include "../irc/irc.h" /* irc_send() */
 #include "../lib/irc_string.h" /* IPtostr(), longtoduration(), durationtolong() */
 #include "../lib/strlfunc.h"
+#include "../glines/glines.h"
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
@@ -42,6 +43,8 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
     localdata->marker = nextchanmarker();
   else if (ctx->searchcmd == reg_nicksearch)
     localdata->marker = nextnickmarker();
+  else if (ctx->searchcmd == reg_whowassearch)
+    localdata->marker = nextwhowasmarker();
   else {
     free(localdata);
     parseError = "gline: invalid search type";
@@ -128,6 +131,7 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   struct gline_localdata *localdata;
   nick *np;
   chanindex *cip;
+  whowas *ww;
 
   localdata = thenode->localdata;
 
@@ -139,21 +143,23 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   }
   else {
     np = (nick *)theinput;
-    np->marker = localdata->marker;
+    if (ctx->searchcmd == reg_nicksearch)
+      np->marker = localdata->marker;
+    else {
+      ww = np->next;
+      ww->marker = localdata->marker;
+    }
     localdata->count++;
   }
 
   return (void *)1;
 }
 
-static int glineuser(nick *np, struct gline_localdata *localdata, time_t ti) {
+static int glineuser(glinebuf *gbuf, nick *np, struct gline_localdata *localdata, time_t ti) {
   char msgbuf[512];
   if (!IsOper(np) && !IsService(np) && !IsXOper(np)) {
     nssnprintf(msgbuf, sizeof(msgbuf), localdata->reason, np);
-    if (np->host->clonecount <= NSMAX_GLINE_CLONES)
-      irc_send("%s GL * +*@%s %u %jd :%s", mynumeric->content, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
-    else
-      irc_send("%s GL * +%s@%s %u %jd :%s", mynumeric->content, np->ident, IPtostr(np->p_ipaddr), localdata->duration, (intmax_t)ti, msgbuf);
+    glinebufaddbynick(gbuf, np, 0, "newsearch", msgbuf, getnettime() + localdata->duration, getnettime(), getnettime() + localdata->duration);
     return 1;
   }
   
@@ -164,8 +170,10 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
-  int i, j, safe=0;
+  whowas *ww;
+  int i, j, hits, safe=0;
   time_t ti = time(NULL);
+  glinebuf gbuf;
 
   localdata = thenode->localdata;
 
@@ -177,6 +185,8 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
     return;
   }
 
+  glinebufinit(&gbuf, 0);
+
   if (ctx->searchcmd == reg_chansearch) {
     for (i=0;i<CHANNELHASHSIZE;i++) {
       for (cip=chantable[i];cip;cip=ncip) {
@@ -187,25 +197,35 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
               continue;
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
-              if(!glineuser(np, localdata, ti))
+              if(!glineuser(&gbuf, np, localdata, ti))
                 safe++;
             }
           }
         }
       }
     }
-  }
-  else {
+  } else if (ctx->searchcmd == reg_nicksearch) {
     for (i=0;i<NICKHASHSIZE;i++) {
       for (np=nicktable[i];np;np=nnp) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
-          if(!glineuser(np, localdata, ti))
+          if(!glineuser(&gbuf, np, localdata, ti))
             safe++;
         }
       }
     }
+  } else {
+    for (ww = whowas_head; ww; ww = ww->next) {
+      if (ww->marker == localdata->marker) {
+        if(!glineuser(&gbuf, ww->nick, localdata, ti))
+          safe++;
+      }
+    }
   }
+
+  glinebufcounthits(&gbuf, &hits, NULL);
+  glinebufcommit(&gbuf, 1);
+
   if (safe)
     ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);
   /* notify opers of the action */

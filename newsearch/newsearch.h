@@ -5,13 +5,13 @@
 #include "../lib/flags.h"
 #include "../authext/authext.h"
 #include "../patricia/patricia.h"
+#include "../whowas/whowas.h"
 
 #ifndef __NEWSEARCH_H
 #define __NEWSEARCH_H
 
 #define    NSMAX_KILL_LIMIT       500
 #define    NSMAX_GLINE_LIMIT      500
-#define    NSMAX_GLINE_CLONES     5
 
 /* gline duration, in seconds */
 #define    NSGLINE_DURATION       3600
@@ -43,6 +43,7 @@ typedef void *(*exeFunc)(struct searchCtx *, struct searchNode *, void *);
 typedef void (*ChanDisplayFunc)(struct searchCtx *, nick *, chanindex *);
 typedef void (*NickDisplayFunc)(struct searchCtx *, nick *, nick *);
 typedef void (*UserDisplayFunc)(struct searchCtx *, nick *, authname *);
+typedef void (*WhowasDisplayFunc)(struct searchCtx *, nick *, whowas *);
 typedef void (*HeaderFunc)(void *sender, void *arg);
 
 struct coercedata {
@@ -141,6 +142,13 @@ struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *ipv6_parse(searchCtx *ctx, int argc, char **argv);
 
+/* Whowas functions (various types) */
+struct searchNode *quit_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *killed_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *renamed_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *age_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *newnick_parse(searchCtx *ctx, int argc, char **argv);
+
 /* Channel functions (various types) */
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *services_parse(searchCtx *ctx, int argc, char **argv);
@@ -184,9 +192,7 @@ void unregdisp( searchCmd *cmd, const char *name, void *handler);
 /* Special nick* printf */
 void nssnprintf(char *, size_t, const char *, nick *);
 
-#ifdef NEWSEARCH_NEWPARSER
 void displaystrerror(replyFunc reply, nick *np, const char *input);
-#endif
 
 extern const char *parseError;
 extern nick *senderNSExtern;
@@ -194,14 +200,17 @@ extern nick *senderNSExtern;
 void printnick(searchCtx *, nick *, nick *);
 void printuser(searchCtx *, nick *, authname *);
 void printchannel(searchCtx *, nick *, chanindex *);
+void printwhowas(searchCtx *, nick *, whowas *);
 
 void nicksearch_exe(struct searchNode *search, searchCtx *sctx);
 void chansearch_exe(struct searchNode *search, searchCtx *sctx);
 void usersearch_exe(struct searchNode *search, searchCtx *ctx);
+void whowassearch_exe(struct searchNode *search, searchCtx *ctx);
 
 int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
+int do_whowassearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 
 void *literal_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void literal_free(searchCtx *ctx, struct searchNode *thenode);
@@ -264,6 +273,7 @@ searchNode *search_astparse(searchCtx *, char *);
 int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
+int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
@@ -277,10 +287,12 @@ extern searchList *globalterms;
 extern searchCmd *reg_nicksearch;
 extern searchCmd *reg_chansearch;
 extern searchCmd *reg_usersearch;
+extern searchCmd *reg_whowassearch;
 
 extern UserDisplayFunc defaultuserfn;
 extern NickDisplayFunc defaultnickfn;
 extern ChanDisplayFunc defaultchanfn;
+extern WhowasDisplayFunc defaultwhowasfn;
 
 struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p);
 

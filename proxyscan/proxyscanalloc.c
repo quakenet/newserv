@@ -40,6 +40,6 @@ extrascan *getextrascan() {
 }
 
 void freeextrascan(extrascan *esp) {
-  nsfree(POOL_PROXYSCAN, sizeof(extrascan));
+  nsfree(POOL_PROXYSCAN, esp);
 }
 

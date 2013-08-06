@@ -95,6 +95,7 @@
 #define HOOK_TRUSTS_DELHOST        909 /* Argument is trusthost* */
 #define HOOK_TRUSTS_MODIFYGROUP    910 /* Argument is trustgroup* */
 #define HOOK_TRUSTS_LOSTHOST       911 /* Argument is trusthost* */
+#define HOOK_TRUSTS_MODIFYHOST     912 /* Argument is trusthost* */
 
 #define HOOK_SIGNONTRACKER_HAVETIME 1100 /* Argument is nick* */
 

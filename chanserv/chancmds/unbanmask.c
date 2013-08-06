@@ -29,6 +29,10 @@
 #include <string.h>
 #include <stdio.h>
 
+static int banoverlap_wrapper(void *arg, struct chanban *ban) {
+  return banoverlap(arg, ban);
+}
+
 int csc_dounbanmask(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
@@ -44,7 +48,7 @@ int csc_dounbanmask(void *source, int cargc, char **cargv) {
 
   theban=makeban(cargv[1]);
   /* nice cast here */
-  cs_unbanfn(sender, cip, (UnbanFN)banoverlap, theban, 1, 0);
+  cs_unbanfn(sender, cip, banoverlap_wrapper, theban, 1, 0);
   cs_log(sender,"UNBANMASK %s",bantostring(theban));
   freechanban(theban);
 

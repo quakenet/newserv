@@ -1,6 +1,7 @@
 #include "chanserv.h"
 #include "../lib/irc_string.h"
 #include "../core/schedule.h"
+#include "../glines/glines.h"
 
 void chanservdgline(void* arg) {
   reguser *rup=(reguser*)arg;
@@ -29,8 +30,7 @@ void chanservdgline(void* arg) {
       if(rup->suspendreason)
         reason = rup->suspendreason->content;
 
-      irc_send("%s GL * +*!%s@%s 3600 :%s\r\n", mynumeric->content, nl->ident, 
-        IPtostr(nl->p_ipaddr), reason);
+      glinebynick(nl, 3600, reason, 0, "chanserv");
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (authed as %s) expires in 60 minute/s (hit %d user%s) (reason: %s)", 
         nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount, ucount==1?"":"s", reason);
     }

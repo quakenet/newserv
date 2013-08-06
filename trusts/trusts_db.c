@@ -1,8 +1,15 @@
+#include <stdio.h>
+#include <stdarg.h>
+#include "../lib/version.h"
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
 #include "../core/hooks.h"
 #include "../core/schedule.h"
+#include "../control/control.h"
+#include "../irc/irc.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 DBAPIConn *trustsdb;
 static int tgmaxid, thmaxid;
@@ -30,12 +37,17 @@ void createtrusttables(int mode) {
   }
 
   trustsdb->createtable(trustsdb, NULL, NULL,
-    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, mode INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxusereset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
+    "CREATE TABLE ? (id INT PRIMARY KEY, name VARCHAR(?), trustedfor INT, flags INT, maxperident INT, maxusage INT, expires INT, lastseen INT, lastmaxusereset INT, createdby VARCHAR(?), contact VARCHAR(?), comment VARCHAR(?))",
     "Tdddd", groups, TRUSTNAMELEN, CREATEDBYLEN, CONTACTLEN, COMMENTLEN
   );
 
   /* I'd like multiple keys here but that's not gonna happen on a cross-database platform :( */
-  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, lastseen INT)", "Td", hosts, TRUSTHOSTLEN);
+  trustsdb->createtable(trustsdb, NULL, NULL, "CREATE TABLE ? (id INT PRIMARY KEY, groupid INT, host VARCHAR(?), maxusage INT, created INT, lastseen INT, maxpernode INT, nodebits INT)", "Td", hosts, TRUSTHOSTLEN);
+
+  trustsdb->createtable(trustsdb, NULL, NULL,
+    "CREATE TABLE ? (groupid INT, groupname VARCHAR(?), ts INT, username VARCHAR(?), message VARCHAR(?))",
+    "Tddd", "log", TRUSTNAMELEN, CREATEDBYLEN, TRUSTLOGLEN
+  );
 }
 
 static void flushdatabase(void *arg) {
@@ -72,7 +84,7 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  if(result->fields != 5) {
+  if(result->fields != 8) {
     Error("trusts", ERR_ERROR, "Wrong number of fields in hosts table.");
     loaderror = 1;
 
@@ -98,13 +110,16 @@ static void loadhosts_data(const DBAPIResult *result, void *tag) {
     }
 
     host = result->get(result, 2);
-    if(!trusts_str2cidr(host, &th.ip, &th.mask)) {
+    if(!ipmask_parse(host, &th.ip, &th.bits)) {
       Error("trusts", ERR_WARNING, "Error parsing cidr for host: %s", host);
       continue;
     }
 
     th.maxusage = strtoul(result->get(result, 3), NULL, 10);
-    th.lastseen = (time_t)strtoul(result->get(result, 4), NULL, 10);
+    th.created = (time_t)strtoul(result->get(result, 4), NULL, 10);
+    th.lastseen = (time_t)strtoul(result->get(result, 5), NULL, 10);
+    th.maxpernode = strtol(result->get(result, 6), NULL, 10);
+    th.nodebits = strtol(result->get(result, 7), NULL, 10);
 
     if(!th_add(&th))
       Error("trusts", ERR_WARNING, "Error adding host to trust %d: %s", groupid, host);
@@ -150,7 +165,7 @@ static void loadgroups_data(const DBAPIResult *result, void *tag) {
 
     tg.name = getsstring(rtrim(result->get(result, 1)), TRUSTNAMELEN);
     tg.trustedfor = strtoul(result->get(result, 2), NULL, 10);
-    tg.mode = atoi(result->get(result, 3));
+    tg.flags = atoi(result->get(result, 3));
     tg.maxperident = strtoul(result->get(result, 4), NULL, 10);
     tg.maxusage = strtoul(result->get(result, 5), NULL, 10);
     tg.expires = (time_t)strtoul(result->get(result, 6), NULL, 10);
@@ -247,8 +262,8 @@ trusthost *th_copy(trusthost *ith) {
 
   trustsdb_insertth("hosts", th, th->group->id);
 
-  th_getsuperandsubsets(ith->ip, ith->mask, &superset, &subset);
-  th_adjusthosts(th, subset, superset);
+  th_getsuperandsubsets(&ith->ip, ith->bits, &superset, &subset);
+  th_adjusthosts(th, superset, subset);
   th_linktree();
 
   return th;
@@ -257,13 +272,17 @@ trusthost *th_copy(trusthost *ith) {
 trusthost *th_new(trustgroup *tg, char *host) {
   trusthost *th, nth;
 
-  if(!trusts_str2cidr(host, &nth.ip, &nth.mask))
+  if(!ipmask_parse(host, &nth.ip, &nth.bits))
     return NULL;
 
   nth.group = tg;
   nth.id = thmaxid + 1;
+  nth.created = getnettime();
   nth.lastseen = 0;
   nth.maxusage = 0;
+
+  nth.maxpernode = 0;
+  nth.nodebits = (irc_in_addr_is_ipv4(&nth.ip))?128:64;
 
   th = th_copy(&nth);
   if(!th)
@@ -302,31 +321,170 @@ trustgroup *tg_new(trustgroup *itg) {
 
 void trustsdb_insertth(char *table, trusthost *th, unsigned int groupid) {
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, groupid, host, maxusage, lastseen) VALUES (?, ?, ?, ?, ?)",
-    "Tuusut", table, th->id, groupid, trusts_cidr2str(th->ip, th->mask), th->maxusage, th->lastseen
+    "INSERT INTO ? (id, groupid, host, maxusage, created, lastseen, maxpernode, nodebits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tuusuutuu", table, th->id, groupid, CIDRtostr(th->ip, th->bits), th->maxusage, th->created, th->lastseen, th->maxpernode, th->nodebits
   );
 }
 
 void trustsdb_inserttg(char *table, trustgroup *tg) {
   trustsdb->squery(trustsdb,
-    "INSERT INTO ? (id, name, trustedfor, mode, maxperident, maxusage, expires, lastseen, lastmaxusereset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "Tusuuuutttsss", table, tg->id, tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content
+    "INSERT INTO ? (id, name, trustedfor, flags, maxperident, maxusage, expires, lastseen, lastmaxusereset, createdby, contact, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "Tusuuuutttsss", table, tg->id, tg->name->content, tg->trustedfor, tg->flags, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content
   );
 }
 
 void tg_update(trustgroup *tg) {
   trustsdb->squery(trustsdb,
-    "UPDATE ? SET name = ?, trustedfor = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxusereset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
-    "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->mode, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
+    "UPDATE ? SET name = ?, trustedfor = ?, flags = ?, maxperident = ?, maxusage = ?, expires = ?, lastseen = ?, lastmaxusereset = ?, createdby = ?, contact = ?, comment = ? WHERE id = ?",
+    "Tsuuuutttsssu", "groups", tg->name->content, tg->trustedfor, tg->flags, tg->maxperident, tg->maxusage, tg->expires, tg->lastseen, tg->lastmaxusereset, tg->createdby->content, tg->contact->content, tg->comment->content, tg->id
   );
 }
 
+void trustsdb_deletetg(char *table, trustgroup *tg)  {
+  trustsdb->squery(trustsdb,
+    "DELETE FROM ? WHERE id = ?",
+    "Tu", "groups", tg->id);
+}
+
 void tg_delete(trustgroup *tg) {
-  /* TODO */
+  trustgroup **pnext;
+
+  for(pnext=&tglist;*pnext;pnext=&((*pnext)->next)) {
+    if(*pnext == tg) {
+      *pnext = tg->next;
+      break;
+    }
+  }
+
+  trustsdb_deletetg("groups", tg);
+  tg_free(tg, 1);
+}
+
+void th_update(trusthost *th) {
+  trustsdb->squery(trustsdb,
+    "UPDATE ? SET maxpernode = ?, nodebits = ? WHERE id = ?",
+    "Tuuu", "hosts", th->maxpernode, th->nodebits, th->id
+  );
+}
+
+void trustsdb_deleteth(char *table, trusthost *th) {
+  trustsdb->squery(trustsdb,
+    "DELETE FROM ? WHERE id = ?",
+    "Tu", "hosts", th->id); 
 }
 
 void th_delete(trusthost *th) {
-  /* TODO */
+  trusthost **pnext;
+  nick *np;
+
+  for(pnext=&(th->group->hosts);*pnext;pnext=&((*pnext)->next)) {
+    if(*pnext == th) {
+      *pnext = th->next;
+      break;
+    }
+  }
+
+  if(th->parent) {
+    for(pnext=&(th->parent->children);*pnext;pnext=&((*pnext)->nextbychild)) {
+      if(*pnext == th) {
+        *pnext = th->nextbychild;
+        break;
+      }
+    }
+  }
+
+  for(np=th->users;np;np=nextbytrust(np))
+    settrusthost(np, NULL);
+
+  th->group->count -= th->count;
+
+  if(th->parent) {
+    th->parent->count += th->count;
+
+    if(th->lastseen > th->parent->lastseen)
+      th->parent->lastseen = th->lastseen;
+  }
+
+  trustsdb_deleteth("hosts", th);
+  th_free(th);
+
+  th_linktree();
+}
+
+void trustlog(trustgroup *tg, const char *user, const char *format, ...) {
+  char buf[TRUSTLOGLEN+1];
+  va_list va;
+  unsigned int now;
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  now = time(NULL);
+
+  trustsdb->squery(trustsdb,
+    "INSERT INTO ? (ts, groupid, groupname, username, message) VALUES (?, ?, ?, ?, ?)",
+    "Tuusss", "log", now, tg->id, tg->name->content, user, buf);
+}
+
+static void trustlogquery_callback(const struct DBAPIResult *result, void *arg) {
+  nick *np = (nick *)arg;
+  int rows = 0;
+
+  if(!result || !result->success) {
+    controlreply(np, "Error querying the log.");
+
+    if(result)
+      result->clear(result);
+
+    return;
+  }
+
+  if(result->fields != 5) {
+    Error("trusts", ERR_ERROR, "Wrong number of fields in log table.");
+
+    result->clear(result);
+    return;
+  }
+
+  while(result->next(result)) {
+    unsigned int ts, groupid;
+    char *groupname, *user, *message;
+
+    ts = strtoul(result->get(result, 0), NULL, 10);
+    groupid = strtoul(result->get(result, 1), NULL, 10);
+    groupname = result->get(result, 2);
+    user = result->get(result, 3);
+    message = result->get(result, 4);
+
+    controlreply(np, "[%s] #%d/%s (%s) %s", trusts_timetostr(ts), groupid, groupname, user, message);
+    rows++;
+  }
+
+  result->clear(result);
+
+  controlreply(np, "--- Done. Found %d entries.", rows);
+}
+
+void trustlogspewid(nick *np, unsigned int groupid, unsigned int limit) {
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE groupid = ? ORDER BY ts DESC LIMIT ?",
+    "Tuu", "log", groupid, limit);
+}
+
+void trustlogspewname(nick *np, const char *groupname, unsigned int limit) {
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE groupname = ? ORDER BY ts DESC LIMIT ?",
+    "Tsu", "log", groupname, limit);
+}
+
+void trustloggrep(nick *np, const char *pattern, unsigned int limit) {
+  char buf[512];
+  snprintf(buf, sizeof(buf), "%%%s%%", pattern);
+
+  trustsdb->query(trustsdb, trustlogquery_callback, (void *)np,
+    "SELECT ts, groupid, groupname, username, message FROM ? WHERE message LIKE ? ORDER BY ts DESC LIMIT ?",
+    "Tsu", "log", buf, limit);
 }
 
 void _init(void) {

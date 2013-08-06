@@ -1368,7 +1368,7 @@ reguser *findreguser(nick *sender, const char *str) {
  *
  * Return 0 if it works, 1 if it don't.
  */
-int cs_unbanfn(nick *sender, chanindex *cip, UnbanFN fn, void *arg, int removepermbans, int abortonfailure) {
+int cs_unbanfn(nick *sender, chanindex *cip, int (*fn)(void *arg, struct chanban *ban), void *arg, int removepermbans, int abortonfailure) {
   regban **rbh, *rbp;
   chanban **cbh, *cbp;
   regchan *rcp;

@@ -7,6 +7,7 @@
 #include "../core/config.h"
 #include "../core/error.h"
 #include "../control/control.h"
+#include "../lib/version.h"
 #include "../lib/sha1.h"
 #include "../lib/hmac.h"
 #include "../lib/irc_string.h"
@@ -14,6 +15,8 @@
 #include "../server/server.h"
 #include "../xsb/xsb.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 static int syncing, synced;
 static sstring *smasterserver;
@@ -423,6 +426,49 @@ static int xsb_trmodifygroup(void *source, int argc, char **argv) {
   return CMD_OK;
 }
 
+static int xsb_trmodifyhost(void *source, int argc, char **argv) {
+  trustgroup *tg;
+  trusthost th, *oth;
+  unsigned int groupid;
+
+  if(!synced)
+    return CMD_OK;
+
+  if(!masterserver(source))
+    return CMD_ERROR;
+
+  if(argc < 1) {
+    abandonreplication("bad number of arguments");
+    return CMD_ERROR;
+  }
+
+  if(!parseth(argv[0], &th, &groupid, 0)) {
+    abandonreplication("bad trusthost line: %s", argv[0]);
+    return CMD_ERROR;
+  }
+
+  tg = tg_getbyid(groupid);
+
+  for(oth=tg->hosts;oth;oth=oth->next) {
+    if(ipmask_check(&oth->ip, &th.ip, th.bits) && th.bits == oth->bits)
+      break;
+  }
+
+  if(oth && !th_modify(oth, &th)) {
+    abandonreplication("unable to modify database");
+    return CMD_ERROR;
+  }
+
+  if(!oth) {
+    abandonreplication("unable to lookup host");
+    return CMD_ERROR;
+  }
+
+  th_update(oth);
+
+  return CMD_OK;
+}
+
 static int loaded, masternumeric = -1;
 static void *syncsched;
 
@@ -497,6 +543,7 @@ void _init(void) {
   xsb_addcommand("trdelhost", 1, xsb_trdelhost);
   xsb_addcommand("trdelgroup", 1, xsb_trdelgroup);
   xsb_addcommand("trmodifygroup", 1, xsb_trmodifygroup);
+  xsb_addcommand("trmodifyhost", 1, xsb_trmodifyhost);
 
   registerhook(HOOK_SERVER_LINKED, __serverlinked);
   syncsched = schedulerecurring(time(NULL)+5, 0, 60, checksynced, NULL);
@@ -521,6 +568,7 @@ void _fini(void) {
   xsb_delcommand("trdelhost", xsb_trdelhost);
   xsb_delcommand("trdelgroup", xsb_trdelgroup);
   xsb_delcommand("trmodifygroup", xsb_trmodifygroup);
+  xsb_delcommand("trmodifyhost", xsb_trmodifyhost);
 
   deregisterhook(HOOK_SERVER_LINKED, __serverlinked);
 

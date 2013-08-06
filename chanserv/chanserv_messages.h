@@ -107,7 +107,7 @@ BeginMessages() {
   msg(QM_MAILTHROTTLED, "Sorry, but you have already requested a password. You will have to wait atleast $0 hours, before requesting again.", "g"),
   msg(QM_MAILQUEUED, "Mail queued for delivery", ""),
   msg(QM_PWDONTMATCH, "Sorry, but passwords do not match", ""),
-  msg(QM_PWTOSHORT, "Sorry, but new password is to short", ""),
+  msg(QM_PWTOSHORT, "Sorry, but new password is too short", ""),
   msg(QM_PWCHANGED, "Ok, password changed", ""),
   msg(QM_INVALIDDURATION2, "Duration too long or invalid: $0", "s"),
   msg(QM_EMAILCHANGED, "Ok, email changed to \"$0\"", "s"),
@@ -243,6 +243,7 @@ BeginMessages() {
   msg(QM_INVALIDTITLE,"Invalid title ID.",""),
   msg(QM_TITLETOOFAST,"You have already changed your title recently.  Please wait a while and try again.",""),
   msg(QM_INACTIVEACCOUNT,"This account has not yet been activated.",""),
+  msg(QM_PWTOLONG, "Sorry, but new password is too long (maximum length 10 chars)", ""),
 } 
 EndMessages()
 #endif

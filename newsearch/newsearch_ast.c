@@ -156,6 +156,35 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
+int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
+  searchCtx ctx;
+  searchASTCache cache;
+  searchNode *search;
+  char buf[1024];
+
+  memset(&cache, 0, sizeof(cache));
+  cache.tree = tree;
+
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_whowassearch, sender, display, limit);
+
+  buf[0] = '\0';
+  reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_whowassearch));
+  search = ctx.parser(&ctx, (char *)tree);
+  if(!search) {
+    reply(sender, "Parse error: %s", parseError);
+    return CMD_ERROR;
+  }
+
+  reply(sender, "Executing...");
+  if(header)
+    header(sender, headerarg);
+  whowassearch_exe(search, &ctx);
+
+  (search->free)(&ctx, search);
+
+  return CMD_OK;
+}
+
 int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
   searchCtx ctx;
   searchASTCache cache;

@@ -1,121 +1,245 @@
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include "../core/hooks.h"
 #include "../control/control.h"
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 #include "whowas.h"
 
-static whowas *wwhead, *wwtail;
-static int wwcount;
+MODULE_VERSION("");
 
-int ww_cmdwhowas(void *source, int cargc, char **cargv) {
-  nick *np = source;
-  char *pattern;
+whowas *whowas_head = NULL, *whowas_tail = NULL;
+int whowas_count = 0;
+
+whowas *whowas_fromnick(nick *np) {
   whowas *ww;
-  char hostmask[WW_MASKLEN+1];
-  char timebuf[30];
-  int matches = 0, limit = 500;
+  nick *wnp;
+  struct irc_in_addr ipaddress_canonical;
 
-  if(cargc<1)
-    return CMD_USAGE;
+  /* Create a new record. */
+  ww = malloc(sizeof(whowas));
+  memset(ww, 0, sizeof(whowas));
 
-  pattern = cargv[0];
+  wnp = newnick();
+  memset(wnp, 0, sizeof(nick));
+  strncpy(wnp->nick, np->nick, NICKLEN + 1);
+  wnp->numeric = np->numeric;
+  strncpy(wnp->ident, np->ident, USERLEN + 1);
 
-  if(cargc>1)
-    limit = strtol(cargv[1], NULL, 10);
+  wnp->host = newhost();
+  memset(wnp->host, 0, sizeof(host));
+  wnp->host->name = getsstring(np->host->name->content, HOSTLEN);
 
-  for(ww=wwhead;ww;ww=ww->next) {
-    snprintf(hostmask, sizeof(hostmask), "%s!%s@%s", ww->nick, ww->ident, ww->host);
-
-    if (match2strings(pattern, hostmask)) {
-      matches++;
-
-      if(matches<=limit) {
-        strftime(timebuf, 30, "%d/%m/%y %H:%M:%S", localtime(&(ww->seen)));
-
-        controlreply(np, "[%s] %s (%s): %s", timebuf, hostmask, ww->realname, ww->reason->content);
-      } else if(matches==limit+1) {
-        controlreply(np, "--- More than %d matches, skipping the rest", limit);
-      }
-    }
+  wnp->realname = newrealname();
+  memset(wnp->realname, 0, sizeof(realname));
+  wnp->realname->name = getsstring(np->realname->name->content, REALLEN);
+  wnp->shident = np->shident ? getsstring(np->shident->content, 512) : NULL;
+  wnp->sethost = np->sethost ? getsstring(np->sethost->content, 512) : NULL;
+  wnp->opername = np->opername ? getsstring(np->opername->content, 512) : NULL;
+  wnp->umodes = np->umodes;
+  if (np->auth) {
+    wnp->auth = newauthname();
+    memset(wnp->auth, 0, sizeof(authname));
+    wnp->auth->userid = np->auth->userid;
+    strncpy(wnp->auth->name, np->auth->name, ACCOUNTLEN + 1);
+    wnp->authname = wnp->auth->name;
   }
+  wnp->timestamp = np->timestamp;
+  wnp->accountts = np->accountts;
+  wnp->away = np->away ? getsstring(np->away->content, 512) : NULL;
 
-  controlreply(np, "--- Found %d entries.", matches);
+  memcpy(&wnp->ipaddress, &np->ipaddress, sizeof(struct irc_in_addr));
 
-  return CMD_OK;
+  ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
+  wnp->ipnode = refnode(iptree, &ipaddress_canonical, PATRICIA_MAXBITS);
+
+  wnp->next = (nick *)ww; /* Yuck. */
+
+  ww->nick = wnp;
+  ww->timestamp = getnettime();
+
+  return ww;
 }
 
-void ww_handlequitorkill(int hooknum, void *arg) {
-  void **args=arg;
-  nick *np=args[0];
-  char *reason=args[1];
-  char *rreason;
-  char resbuf[512];
-  whowas *ww;
+void whowas_linkrecord(whowas *ww) {
+  if (whowas_head)
+    whowas_head->prev = ww;
+
+  ww->next = whowas_head;
+  whowas_head = ww;
+
+  ww->prev = NULL;
+
+  if (!whowas_tail)
+    whowas_tail = ww;
+
+  whowas_count++;
+}
+
+void whowas_unlinkrecord(whowas *ww) {
+  if (!ww->next)
+    whowas_tail = ww->prev;
+
+  if (ww->prev)
+    ww->prev->next = NULL;
+  else
+    whowas_head = ww->prev;
+
+  whowas_count--;
+}
+
+void whowas_free(whowas *ww) {
+  nick *np;
+
+  if (!ww)
+    return;
+
+  np = ww->nick;
+
+  freesstring(np->host->name);
+  freehost(np->host);
+  freesstring(np->realname->name);
+  freerealname(np->realname);
+  freesstring(np->shident);
+  freesstring(np->sethost);
+  freesstring(np->opername);
+  freeauthname(np->auth);
+  freesstring(np->away);
+  freenick(np);
+  freesstring(ww->reason);
+  free(ww);
+}
+
+static void whowas_cleanup(void) {
   time_t now;
+  whowas *ww;
 
   time(&now);
 
   /* Clean up old records. */
-  while((ww = wwtail) && (ww->seen < now - WW_MAXAGE || wwcount >= WW_MAXENTRIES)) {
-    wwtail = ww->prev;
-
-    if (ww->prev)
-      ww->prev->next = NULL;
-    else
-      wwhead = ww->prev;
-
-    wwcount--;
-    free(ww);
+  while (whowas_tail && (whowas_tail->timestamp < now - WW_MAXAGE || whowas_count >= WW_MAXENTRIES)) {
+    ww = whowas_tail;
+    whowas_unlinkrecord(ww);
+    whowas_free(ww);
   }
+}
+
+static void whowas_handlequitorkill(int hooknum, void *arg) {
+  void **args = arg;
+  nick *np = args[0];
+  char *reason = args[1];
+  char *rreason;
+  char resbuf[512];
+  whowas *ww;
+
+  whowas_cleanup();
 
   /* Create a new record. */
-  ww = malloc(sizeof(whowas));
-  strncpy(ww->nick, np->nick, NICKLEN);
-  strncpy(ww->ident, np->ident, USERLEN);
-  strncpy(ww->host, np->host->name->content, HOSTLEN);
-  strncpy(ww->realname, np->realname->name->content, REALLEN);
-  ww->seen = getnettime();
+  ww = whowas_fromnick(np);
 
-  if(hooknum==HOOK_NICK_KILL && (rreason=strchr(reason,' '))) {
-    sprintf(resbuf,"Killed%s",rreason);
-    reason=resbuf;
+  if (hooknum == HOOK_NICK_KILL) {
+    if ((rreason = strchr(reason, ' '))) {
+      sprintf(resbuf, "Killed%s", rreason);
+      reason = resbuf;
+    }
+
+    ww->type = WHOWAS_KILL;
+  } else {
+    if (strncmp(reason, "G-lined", 7) == 0)
+      ww->type = WHOWAS_KILL;
+    else
+      ww->type = WHOWAS_QUIT;
   }
 
   ww->reason = getsstring(reason, WW_REASONLEN);
 
-  if(wwhead)
-    wwhead->prev = ww;
+  whowas_linkrecord(ww);
+}
 
-  ww->next = wwhead;
-  wwhead = ww;
+static void whowas_handlerename(int hooknum, void *arg) {
+  void **args = arg;
+  nick *np = args[0];
+  char *oldnick = args[1];
+  whowas *ww;
+  nick *wnp;
 
-  ww->prev = NULL;
+  whowas_cleanup();
 
-  if(!wwtail)
-    wwtail = ww;
+  ww = whowas_fromnick(np);
+  ww->type = WHOWAS_RENAME;
+  wnp = ww->nick;
+  ww->newnick = getsstring(wnp->nick, NICKLEN);
+  strncpy(wnp->nick, oldnick, NICKLEN + 1);
 
-  wwcount++;
+  whowas_linkrecord(ww);
+}
+
+whowas *whowas_chase(const char *nick, int maxage) {
+  whowas *ww;
+  time_t now;
+
+  now = getnettime();
+
+  for (ww = whowas_head; ww; ww = ww->next) {
+    if (ww->timestamp < now - maxage)
+      break; /* records are in timestamp order, we're done */
+
+    if (ircd_strcmp(ww->nick->nick, nick) == 0)
+      return ww;
+  }
+
+  return NULL;
+}
+
+const char *whowas_format(whowas *ww) {
+  nick *np = ww->nick;
+  static char buf[512];
+  char timebuf[30];
+  char hostmask[512];
+
+  snprintf(hostmask, sizeof(hostmask), "%s!%s@%s%s%s [%s] (%s)",
+           np->nick, np->ident, np->host->name->content,
+           np->auth ? "/" : "", np->auth ? np->authname : "",
+           IPtostr(np->p_ipaddr),
+           printflags(np->umodes, umodeflags));
+  strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M:%S", localtime(&(ww->timestamp)));
+
+  if (ww->type == WHOWAS_RENAME)
+    snprintf(buf, sizeof(buf), "[%s] NICK %s r(%s) -> %s", timebuf, hostmask, np->realname->name->content, ww->newnick->content);
+  else
+    snprintf(buf, sizeof(buf), "[%s] %s %s r(%s): %s", timebuf, (ww->type == WHOWAS_QUIT) ? "QUIT" : "KILL", hostmask, np->realname->name->content, ww->reason->content);
+
+  return buf;
+}
+
+unsigned int nextwhowasmarker() {
+  whowas *ww;
+  static unsigned int whowasmarker=0;
+
+  whowasmarker++;
+
+  if (!whowasmarker) {
+    /* If we wrapped to zero, zap the marker on all records */
+    for (ww = whowas_head; ww; ww = ww->next)
+        ww->marker=0;
+    whowasmarker++;
+  }
+
+  return whowasmarker;
 }
 
 void _init(void) {
-  registerhook(HOOK_NICK_QUIT, ww_handlequitorkill);
-  registerhook(HOOK_NICK_KILL, ww_handlequitorkill);
-
-  registercontrolhelpcmd("whowas", NO_OPER, 2, &ww_cmdwhowas, "Usage: whowas <mask> ?limit?\nLooks up information about recently disconnected users.");
+  registerhook(HOOK_NICK_QUIT, whowas_handlequitorkill);
+  registerhook(HOOK_NICK_KILL, whowas_handlequitorkill);
+  registerhook(HOOK_NICK_RENAME, whowas_handlerename);
 }
 
 void _fini(void) {
-  whowas *ww;
+  deregisterhook(HOOK_NICK_QUIT, whowas_handlequitorkill);
+  deregisterhook(HOOK_NICK_KILL, whowas_handlequitorkill);
+  deregisterhook(HOOK_NICK_RENAME, whowas_handlerename);
 
-  deregisterhook(HOOK_NICK_QUIT, ww_handlequitorkill);
-  deregisterhook(HOOK_NICK_KILL, ww_handlequitorkill);
-
-  deregistercontrolcmd("whowas", &ww_cmdwhowas);
-
-  while((ww = wwhead)) {
-    wwhead = ww->next;
-    free(ww);
-  }
+  while (whowas_head)
+    whowas_unlinkrecord(whowas_head);
 }

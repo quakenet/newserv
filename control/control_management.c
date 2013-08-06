@@ -381,6 +381,7 @@ void _init() {
     "  +t: Trusts\n"
     "  +k: KICK/KILL commands\n"
     "  +g: GLINE commands\n"
+    "  +G: automated gline messages\n"
     "  +h: Shows when glines are set by code (hits)\n"
     "  +c: Clone information\n"
     "  +C: CLEARCHAN command\n"

@@ -12,6 +12,7 @@
 #include "../server/server.h"
 #include "../parser/parser.h"
 #include "../lib/version.h"
+#include "../lib/ccassert.h"
 #include "../core/nsmalloc.h"
 
 #include <stdlib.h>
@@ -19,6 +20,8 @@
 #include <stdio.h>
 
 MODULE_VERSION("");
+
+CCASSERT(sizeof(host) == sizeof(realname));
 
 const flag umodeflags[] = {
    { 'i', UMODE_INV },
@@ -430,6 +433,7 @@ nick *getnickbynumeric(long numeric) {
 nick *getnickbynumericstr(char *numericstr) {
   return getnickbynumeric(numerictolong(numericstr,5));
 }
+
 
 #endif
 
