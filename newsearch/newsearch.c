@@ -218,6 +218,7 @@ void _init() {
   registersearchterm(reg_whowassearch, "renamed",renamed_parse, 0, "User changed nick");
   registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
   registersearchterm(reg_whowassearch, "newnick",newnick_parse, 0, "New nick (for rename whowas records)");
+  registersearchterm(reg_whowassearch, "reason",reason_parse, 0, "Quit/kill reason");
 
   /* Channel operations */
   registersearchterm(reg_chansearch, "exists",exists_parse, 0, "Returns if channel exists on network. Note: newserv may store data on empty channels");         /* channel only */
