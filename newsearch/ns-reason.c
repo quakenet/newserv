@@ -31,7 +31,7 @@ void *reason_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   whowas *ww = (whowas *)np->next;
 
   if (!ww->reason)
-    return (void *)0;
+    return (void *)"";
 
   return (void *)ww->reason->content;
 }
