@@ -9,7 +9,7 @@ void trusts_newnick(nick *sender, int moving) {
   void *arg[2];
   struct irc_in_addr ipaddress;
 
-  ip_canonicalize_tunnel(&ipaddress, &sender->p_ipaddr);
+  ip_canonicalize_tunnel(&ipaddress, &sender->ipaddress);
 
   th = th_getbyhost(&ipaddress);
 

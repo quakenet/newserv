@@ -64,7 +64,7 @@ invalid:
 
 static int glines_cmdblock(void *source, int cargc, char **cargv) {
   nick *sender = source;
-  nick *target;
+  nick *target, *wnp;
   whowas *ww;
   int hits, duration, id;
   int coff, overridesanity, overridelimit, simulate, chase;
@@ -104,8 +104,15 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
     controlreply(sender, "Found matching whowas record:");
     controlreply(sender, "%s", whowas_format(ww));
   } else {
-    ww = whowas_fromnick(target);
+    ww = whowas_fromnick(target, 1);
     ownww = 1;
+  }
+
+  wnp = &ww->nick;
+
+  if (sender != target && (IsService(wnp) || IsOper(wnp) || NickOnServiceServer(wnp))) {
+    controlreply(sender, "Target user '%s' is an oper or a service. Not setting G-Lines.", wnp->nick);
+    return CMD_ERROR;
   }
 
   rejoinline(cargv[coff + 2], cargc - coff - 2);
@@ -141,7 +148,9 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   glinebufcounthits(&gbuf, &hits, NULL);
   id = glinebufcommit(&gbuf, 1);
 
-  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender), ww->nick->nick, ww->nick->ident, ww->nick->host->name->content, longtoduration(duration, 0), reason, hits);
+  controlwall(NO_OPER, NL_GLINES, "%s BLOCK'ed user '%s!%s@%s' for %s with reason '%s' (%d hits)", controlid(sender),
+              wnp->nick, wnp->ident, wnp->host->name->content,
+              longtoduration(duration, 0), reason, hits);
 
   if (ownww)
     whowas_free(ww);

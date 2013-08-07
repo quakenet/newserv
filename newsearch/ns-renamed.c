@@ -1,5 +1,5 @@
 /*
- * quit functionality
+ * renamed functionality
  */
 
 #include "newsearch.h"

@@ -148,6 +148,7 @@ struct searchNode *killed_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *renamed_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *age_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *newnick_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *reason_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Channel functions (various types) */
 struct searchNode *exists_parse(searchCtx *ctx, int argc, char **argv);

@@ -1,5 +1,5 @@
 /*
- * quit functionality
+ * age functionality
  */
 
 #include "newsearch.h"

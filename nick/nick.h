@@ -159,9 +159,6 @@ typedef struct nick {
   void *exts[MAXNICKEXTS];
 } nick;
 
-#define p_ipaddr ipaddress
-#define p_nodeaddr ipnode->prefix->sin
-
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000
 #define REALNAMEHASHSIZE  40000

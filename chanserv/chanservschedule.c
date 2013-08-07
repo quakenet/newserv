@@ -24,7 +24,7 @@ void chanservdgline(void* arg) {
     
     if (ucount >= MAXGLINEUSERS) {
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (account %s) would hit %d users, aborting.", 
-        nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount);
+        nl->ident, IPtostr(nl->ipaddress), rup->username, ucount);
     } else {
       char *reason = "Network abuse";
       if(rup->suspendreason)
@@ -32,7 +32,7 @@ void chanservdgline(void* arg) {
 
       glinebynick(nl, 3600, reason, 0, "chanserv");
       chanservwallmessage("Delayed GLINE \"*!%s@%s\" (authed as %s) expires in 60 minute/s (hit %d user%s) (reason: %s)", 
-        nl->ident, IPtostr(nl->p_ipaddr), rup->username, ucount, ucount==1?"":"s", reason);
+        nl->ident, IPtostr(nl->ipaddress), rup->username, ucount, ucount==1?"":"s", reason);
     }
   }
 }

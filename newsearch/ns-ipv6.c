@@ -29,7 +29,7 @@ struct searchNode *ipv6_parse(searchCtx *ctx, int argc, char **argv) {
 void *ipv6_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
 
-  if (irc_in_addr_is_ipv4(&np->p_ipaddr))
+  if (irc_in_addr_is_ipv4(&np->ipaddress))
     return (void *)0;
   
   return (void *)1;

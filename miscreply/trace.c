@@ -22,14 +22,14 @@ static void trace_user(char *sourcenum, nick *tnick) {
      *  note: no info available on how long ago we last parsed something from this user -> 0 (not idle time)
      */
     irc_send("%s 204 %s Oper opers %s[%s@%s] 0", getmynumeric(), sourcenum, tnick->nick,
-      tnick->ident[0] != '~' ? tnick->ident : "", IPtostr(tnick->p_ipaddr));
+      tnick->ident[0] != '~' ? tnick->ident : "", IPtostr(tnick->ipaddress));
   } else {
     /*
      * 205 RPL_TRACEUSER "source 205 target User class nick[user@IP] last_parse"
      *                   "irc.netsplit.net 205 foobar User barfoo[fish@127.0.0.1] 0"
      */
     irc_send("%s 205 %s User users %s[%s@%s] 0", getmynumeric(), sourcenum, tnick->nick,
-      tnick->ident[0] != '~' ? tnick->ident : "", IPtostr(tnick->p_ipaddr));
+      tnick->ident[0] != '~' ? tnick->ident : "", IPtostr(tnick->ipaddress));
   }
 }
 

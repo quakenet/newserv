@@ -35,7 +35,7 @@ default: all
 
 .l.c:	;
 
-CFLAGS+=-I./ -DBUILDID=$(BUILDID) -fPIC
+CFLAGS+=-I. -I.. -DBUILDID=$(BUILDID) -fPIC
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
 
 ifndef NOC99

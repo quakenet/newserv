@@ -14,6 +14,7 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   char *pattern;
   whowas *ww;
   nick *np;
+  int i;
   char hostmask[WW_MASKLEN + 1];
   int matches = 0, limit = 500;
 
@@ -25,8 +26,13 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   if (cargc > 1)
     limit = strtol(cargv[1], NULL, 10);
 
-  for (ww = whowas_head; ww; ww = ww->next) {
-    np = ww->nick;
+  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
+    ww = &whowasrecs[i % WW_MAXENTRIES];
+
+    if (ww->type == WHOWAS_UNUSED)
+      continue;
+
+    np = &ww->nick;
     snprintf(hostmask, sizeof(hostmask), "%s!%s@%s", np->nick, np->ident, np->host->name->content);
 
     if (match2strings(pattern, hostmask)) {

@@ -205,7 +205,7 @@ int renamelocaluser(nick *np, char *newnick) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
-      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
+      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->ipaddress), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
       triggerhook(HOOK_NICK_RENAME,harg);     
       return 0;
     } else {
@@ -312,7 +312,7 @@ void sendnickmsg(nick *np) {
 
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
     mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->p_ipaddr),
+    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->ipaddress),
     sizeof(ipbuf),1),numericbuf,np->realname->name->content);
 }
 

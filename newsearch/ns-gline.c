@@ -146,7 +146,7 @@ void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
     if (ctx->searchcmd == reg_nicksearch)
       np->marker = localdata->marker;
     else {
-      ww = np->next;
+      ww = (whowas *)np->next;
       ww->marker = localdata->marker;
     }
     localdata->count++;
@@ -215,9 +215,14 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
       }
     }
   } else {
-    for (ww = whowas_head; ww; ww = ww->next) {
+    for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
+      ww = &whowasrecs[i % WW_MAXENTRIES];
+
+      if (ww->type == WHOWAS_UNUSED)
+        continue;
+
       if (ww->marker == localdata->marker) {
-        if(!glineuser(&gbuf, ww->nick, localdata, ti))
+        if(!glineuser(&gbuf, &ww->nick, localdata, ti))
           safe++;
       }
     }

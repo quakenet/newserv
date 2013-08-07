@@ -477,11 +477,14 @@ static void policycheck_irc(int hooknum, void *arg) {
   long moving = (long)args[1];
   char message[512];
   int verdict;
+  struct irc_in_addr ipaddress_canonical;
 
   if(moving)
     return;
 
-  verdict = checkconnectionth(np->ident, &np->p_nodeaddr, gettrusthost(np), hooknum, 0, message, sizeof(message));
+  ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
+
+  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message));
     
   if(!enforcepolicy_irc)
     verdict = POLICY_SUCCESS;
@@ -491,7 +494,7 @@ static void policycheck_irc(int hooknum, void *arg) {
       glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_IGNORE_TRUST, "trusts_policy");
       break;
     case POLICY_FAILURE_IDENTD:
-      glinebyip("~*", &np->p_ipaddr, 128, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
+      glinebyip("~*", &np->ipaddress, 128, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
       break;
     case POLICY_FAILURE_IDENTCOUNT:
       glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");

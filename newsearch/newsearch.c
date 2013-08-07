@@ -218,6 +218,7 @@ void _init() {
   registersearchterm(reg_whowassearch, "renamed",renamed_parse, 0, "User changed nick");
   registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
   registersearchterm(reg_whowassearch, "newnick",newnick_parse, 0, "New nick (for rename whowas records)");
+  registersearchterm(reg_whowassearch, "reason",reason_parse, 0, "Quit/kill reason");
 
   /* Channel operations */
   registersearchterm(reg_chansearch, "exists",exists_parse, 0, "Returns if channel exists on network. Note: newserv may store data on empty channels");         /* channel only */
@@ -603,7 +604,7 @@ int do_whowassearch(void *source, int cargc, char **cargv) {
 }
 
 void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
-  int matches = 0;
+  int i, matches = 0;
   whowas *ww;
   nick *sender = ctx->sender;
   senderNSExtern = sender;
@@ -613,10 +614,15 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
   /* The top-level node needs to return a BOOL */
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
 
-  for (ww = whowas_head; ww; ww = ww->next) {
+  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
+    ww = &whowasrecs[i % WW_MAXENTRIES];
+
+    if (ww->type == WHOWAS_UNUSED)
+      continue;
+
     /* Note: We're passing the nick to the filter function. The original
      * whowas record is in the nick's ->next field. */
-    if ((search->exe)(ctx, search, ww->nick)) {
+    if ((search->exe)(ctx, search, &ww->nick)) {
       if (matches<limit)
         display(ctx, sender, ww);
 
@@ -1031,11 +1037,11 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
       case 'h':
         c = np->host->name->content; break;
       case 'I':
-        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       case 'u':
-        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       default:
