@@ -1,0 +1,72 @@
+newserv Installation
+~~~~~~~~~~~~~~~~~~~
+
+In order to install newserv you will have to run the configure script:
+
+$ ./configure
+
+The configure script will list any missing dependencies. If you're unsure why
+a certain library or header file was not found you can run the configure script
+with the -v option or check the .configure.log file after your first configure
+run.
+
+Please refer to the "configure.ini.local" section in this file if you're
+using non-standard library/header search paths. Once you've resolved all
+dependency issues you can build newserv:
+
+$ make
+
+This might take a while. After all modules are built you can install
+newserv:
+
+$ make install
+
+By default the newserv binary and the modules are installed into your
+source tree. The recommended setup is to now create a separate directory
+and symlink the "newserv" binary and the "modules" directory into it:
+
+$ cd
+$ mkdir newserv-install && cd newserv-install
+$ mkdir data # Some modules depend on this directory being available
+$ ln -s ../newserv-src/newserv
+$ ln -s ../newserv-src/modules
+
+You will also need to copy the newserv.conf.example configuration file to your
+installation directory and rename it to newserv.conf.
+
+After you have updated your newserv.conf file you can start newserv:
+
+$ ./newserv
+
+newserv does not detach from the console. Consider running it in a
+screen(1) session.
+
+configure.ini.local
+~~~~~~~~~~~~~~~~~~
+
+If you are using non-standard library/include paths you can create a file
+called configure.ini.local (using configure.ini.local.example as a template)
+to override some of the settings.
+
+Workspaces
+~~~~~~~~~
+
+If you're planning to build your own modules you might consider using
+your own workspace.
+
+For this to work you will need to create a directory for your modules:
+
+$ mkdir custom
+
+Create a skeleton configure.ini in your new module directory:
+
+[modules]
+mymodule=
+
+And finally add your workspace to the workspaces.ini file:
+
+[workspaces]
+custom=
+
+You will need to re-run configure for it to pick up your new
+workspace and whatever modules you have in it.
