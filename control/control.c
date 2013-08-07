@@ -86,6 +86,7 @@ void handlemessages(nick *target, int messagetype, void **args);
 int controlstatus(void *sender, int cargc, char **cargv);
 void controlconnect(void *arg);
 int controlwhois(void *sender, int cargc, char **cargv);
+int controllistusers(void *sender, int cargc, char **cargv);
 int controlchannel(void *sender, int cargc, char **cargv);
 int relink(void *sender, int cargc, char **cargv);
 int die(void *sender, int cargc, char **cargv);
@@ -116,6 +117,7 @@ void _init() {
 
   registercontrolhelpcmd("status",NO_DEVELOPER,1,&controlstatus,"Usage: status ?level?\nDisplays status information, increasing level gives more verbose information.");
   registercontrolhelpcmd("whois",NO_OPERED,1,&controlwhois,"Usage: whois <nickname|#numeric>\nDisplays lots of information about the specified nickname or numeric.");
+  registercontrolhelpcmd("listusers", NO_OPERED | NO_ACCOUNT, 2, &controllistusers, "Syntax: LISTUSERS\nLists all accounts.");
   registercontrolhelpcmd("channel",NO_OPER,1,&controlchannel,"Usage: channel <#channel>\nDisplays channel information.");
   registercontrolhelpcmd("relink",NO_DEVELOPER,1,&relink,"Usage: relink\nRelinks service to the network.");
   registercontrolhelpcmd("die",NO_DEVELOPER,1,&die,"Usage: die <reason>\nTerminates the service.");
@@ -150,6 +152,7 @@ void _fini() {
   
   deregistercontrolcmd("status",&controlstatus);
   deregistercontrolcmd("whois",&controlwhois);
+  deregistercontrolcmd("listusers", &controllistusers);
   deregistercontrolcmd("channel",&controlchannel);
   deregistercontrolcmd("relink",&relink);
   deregistercontrolcmd("die",&die);
@@ -502,6 +505,39 @@ void noperserv_whois_account_handler(int hooknum, void *arg) {
   }
 }
 
+int controllistusers(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  int i, count = 0;
+  authname *anp;
+  no_autheduser *au;
+
+  hooknick = np;
+
+  registerhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (anp=authnametable[i];anp;anp=anp->next) {
+      au = noperserv_get_autheduser(anp);
+      if(!au)
+        continue;
+
+      if (count > 0)
+        controlreply(np, "---");
+
+      controlreply(np, "Account   : %s", au->authname->name);
+      noperserv_whois_account_handler(HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER, (void *)au);
+      controlreply(np, "Flags     : %s", printflags(NOGetAuthLevel(au), no_userflags));
+
+      count++;
+    }
+  }
+
+  deregisterhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+
+  controlreply(np, "--- Found %d users.", count);
+
+  return CMD_OK;
+}
 
 int controlinsmod(void *sender, int cargc, char **cargv) {
   if (cargc<1)
