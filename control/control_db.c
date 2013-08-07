@@ -50,7 +50,7 @@ void noperserv_load_users(const DBAPIResult *res, void *arg) {
   no_autheduser *nu;
 
   if(!res)
-    return;
+    Error("control", ERR_STOP, "Failed to load noperserv database. Your database might be corrupted or the schema is incompatible.");
 
   if(!res->success) {
     Error("noperserv", ERR_ERROR, "Error loading user list.");
