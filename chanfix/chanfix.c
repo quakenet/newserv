@@ -704,7 +704,7 @@ void cfsched_dosample(void *arg) {
         if ((cp->users->content[a] != nouser) && (cp->users->content[a] & CUMODE_OP)) {
           np = getnickbynumeric(cp->users->content[a]);
 
-          if (np)
+          if (!np)
             continue;
 
 #if !CFDEBUG
