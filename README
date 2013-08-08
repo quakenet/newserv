@@ -1,0 +1,56 @@
+
+              _    _    _    _    _    _    _  
+             / \  / \  / \  / \  / \  / \  / \ 
+            ( n )( e )( w )( s )( e )( r )( v )
+             \_/  \_/  \_/  \_/  \_/  \_/  \_/ 
+			 
+
+newserv is an IRC P10 protocol services daemon developed for the QuakeNet IRC Network since April 2002. It is modular, fast and easily customizable.
+
+newserv is available for download and use under the XXX open source license. 
+
+The official website for newserv is http://dev.quakenet.org/
+
+Requirements
+~~~~~~~~~~~
+
+* IRC Server running the P10 Protocol. Full support for all modules may require use of QuakeNet's snircd IRC server [available from https://www.quakenet.org/development], which is based upon Undernet's IRCU server [http://coder-com.undernet.org/].
+
+* Please read the INSTALL file for build and installation instructions.
+
+Features
+~~~~~~~
+
+ * Role-based access checks for oper commands
+
+ * Search functionality
+ 
+ * Lua integration
+ 
+ * Proxy detection (P)
+
+ * Connection limits ("trusts")
+
+ * Transactional g:line support
+
+ * Jupes
+
+ * Chanfix
+
+ * Chanserv (Q)
+ 
+ * Help Service (G)
+
+ * Channel Service Request (R)
+
+ * QA/Tutor Bots
+
+ * Server list with latency checks
+
+Support & Development
+~~~~~~~~~~~~~~~~~~~~
+
+Please read the documentation provided before you ask us for support. You may find some assistance in #dev on QuakeNet for specific questions.
+
+If you've found any bugs or you're working on any cool new features please give us a shout.
+

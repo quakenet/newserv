@@ -38,9 +38,10 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
     if (match2strings(pattern, hostmask)) {
       matches++;
 
-      if (matches <= limit)
+      if (matches <= limit) {
         controlreply(sender, "%s", whowas_format(ww));
-      else if (matches == limit + 1)
+        controlreply(sender, "%s", whowas_formatchannels(ww));
+      } else if (matches == limit + 1)
         controlreply(sender, "--- More than %d matches, skipping the rest", limit);
     }
   }
@@ -65,6 +66,7 @@ static int whowas_cmdwhowaschase(void *source, int cargc, char **cargv) {
   }
 
   controlreply(sender, "%s", whowas_format(ww));
+  controlreply(sender, "%s", whowas_formatchannels(ww));
   controlreply(sender, "Done.");
 
   return CMD_OK;

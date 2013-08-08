@@ -465,6 +465,9 @@ void clearcloaktargets(nick *cloaked)
   nick *tnp;
   int j;
 
+  if (cloaked->cloak_count == 0)
+    return;
+
   for(j=0;j<NICKHASHSIZE;j++)
     for(tnp=nicktable[j];tnp;tnp=tnp->next)
       if (tnp->cloak_extra == cloaked)

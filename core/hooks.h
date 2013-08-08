@@ -99,6 +99,9 @@
 
 #define HOOK_SIGNONTRACKER_HAVETIME 1100 /* Argument is nick* */
 
+#define HOOK_WHOWAS_NEWRECORD      1200 /* Argument is void*[2] (whowas *, nick *) */
+#define HOOK_WHOWAS_LOSTRECORD     1201 /* Argument is whowas * */
+
 #define PRIORITY_DEFAULT           0
 
 #define PRIORITY_MAX               LONG_MIN

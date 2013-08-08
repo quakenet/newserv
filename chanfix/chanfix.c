@@ -23,7 +23,8 @@ extern nick *mynick;
 
 int cfext;
 int cfnext;
-int cffailedinit;
+
+static int cffailedinit;
 
 /* user accessible commands */
 int cfcmd_debug(void *source, int cargc, char **cargv);
@@ -66,89 +67,89 @@ void _init() {
   if (cfext < 0 || cfnext < 0) {
     Error("chanfix", ERR_ERROR, "Couldn't register channel and/or nick extension");
     cffailedinit = 1;
-  } else {
-    schedulerecurring(time(NULL), 0, CFSAMPLEINTERVAL, &cfsched_dosample, NULL);
-    schedulerecurring(time(NULL), 0, CFEXPIREINTERVAL, &cfsched_doexpire, NULL);
-    schedulerecurring(time(NULL), 0, CFAUTOSAVEINTERVAL, &cfsched_dosave, NULL);
+    return;
+  }
 
-    registercontrolhelpcmd("cfdebug", NO_DEVELOPER, 1, &cfcmd_debug, "Display Debug Information on chanfix data for channel");
-    registercontrolhelpcmd("cfhistogram", NO_DEVELOPER, 1, &cfcmd_debughistogram, "Display Debug Histogram of chanfix data for channel");
-#if CFDEBUG
-    registercontrolhelpcmd("cfsample", NO_DEVELOPER, 1, &cfcmd_debugsample, "DEBUG Command - must not be loaded on live instances");
-    registercontrolhelpcmd("cfexpire", NO_DEVELOPER, 1, &cfcmd_debugexpire, "DEBUG Command - must not be loaded on live instances");
-#endif
-    registercontrolhelpcmd("chanopstat", NO_OPER, 1, &cfcmd_chanopstat, "Shows chanop statistics for a given channel");
-    registercontrolhelpcmd("chanoplist", NO_OPER, 1, &cfcmd_chanoplist, "Shows lists of known chanops, including scores");
+  schedulerecurring(time(NULL), 0, CFSAMPLEINTERVAL, &cfsched_dosample, NULL);
+  schedulerecurring(time(NULL), 0, CFEXPIREINTERVAL, &cfsched_doexpire, NULL);
+  schedulerecurring(time(NULL), 0, CFAUTOSAVEINTERVAL, &cfsched_dosave, NULL);
 
-    registercontrolhelpcmd("chanfix", NO_OPER, 1, &cfcmd_chanfix, "Perform a chanfix on a channel to op known users only");
-    registercontrolhelpcmd("showregs", NO_OPER, 1, &cfcmd_showregs, "Show regular ops known on a channel (including services)");
+  registercontrolhelpcmd("cfdebug", NO_DEVELOPER, 1, &cfcmd_debug, "Display Debug Information on chanfix data for channel");
+  registercontrolhelpcmd("cfhistogram", NO_DEVELOPER, 1, &cfcmd_debughistogram, "Display Debug Histogram of chanfix data for channel");
 #if CFDEBUG
-    /* should we disable this in the 'final' build? */
-    /* registercontrolcmd("requestop", 0, 2, &cfcmd_requestop); */
+  registercontrolhelpcmd("cfsample", NO_DEVELOPER, 1, &cfcmd_debugsample, "DEBUG Command - must not be loaded on live instances");
+  registercontrolhelpcmd("cfexpire", NO_DEVELOPER, 1, &cfcmd_debugexpire, "DEBUG Command - must not be loaded on live instances");
 #endif
-    registercontrolhelpcmd("cfsave", NO_DEVELOPER, 0, &cfcmd_save, "Force save of chanfix data");
-    registercontrolhelpcmd("cfload", NO_DEVELOPER, 0, &cfcmd_load, "Force load of chanfix data");
+  registercontrolhelpcmd("chanopstat", NO_OPER, 1, &cfcmd_chanopstat, "Shows chanop statistics for a given channel");
+  registercontrolhelpcmd("chanoplist", NO_OPER, 1, &cfcmd_chanoplist, "Shows lists of known chanops, including scores");
+
+  registercontrolhelpcmd("chanfix", NO_OPER, 1, &cfcmd_chanfix, "Perform a chanfix on a channel to op known users only");
+  registercontrolhelpcmd("showregs", NO_OPER, 1, &cfcmd_showregs, "Show regular ops known on a channel (including services)");
+#if CFDEBUG
+  /* should we disable this in the 'final' build? */
+  /* registercontrolcmd("requestop", 0, 2, &cfcmd_requestop); */
+#endif
+  registercontrolhelpcmd("cfsave", NO_DEVELOPER, 0, &cfcmd_save, "Force save of chanfix data");
+  registercontrolhelpcmd("cfload", NO_DEVELOPER, 0, &cfcmd_load, "Force load of chanfix data");
 
 #if CFAUTOFIX
-    registerhook(HOOK_CHANNEL_DEOPPED, &cfhook_autofix);
-    registerhook(HOOK_CHANNEL_PART, &cfhook_autofix);
-    registerhook(HOOK_CHANNEL_KICK, &cfhook_autofix);
-    registerhook(HOOK_CHANNEL_JOIN, &cfhook_autofix);
+  registerhook(HOOK_CHANNEL_DEOPPED, &cfhook_autofix);
+  registerhook(HOOK_CHANNEL_PART, &cfhook_autofix);
+  registerhook(HOOK_CHANNEL_KICK, &cfhook_autofix);
+  registerhook(HOOK_CHANNEL_JOIN, &cfhook_autofix);
 #endif
 
-    registerhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
-    registerhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
+  registerhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
+  registerhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
 
-    cf_loadchanfix();
+  cf_loadchanfix();
 
-    cffailedinit = 0;
-  }
+  cffailedinit = 0;
 }
 
 void _fini() {
-  if (cffailedinit == 0) {
-    deleteschedule(NULL, &cfsched_dosample, NULL);
-    deleteschedule(NULL, &cfsched_doexpire, NULL);
-    deleteschedule(NULL, &cfsched_dosave, NULL);
+  if (cffailedinit == 0)
+    return;
 
-    cf_storechanfix();
+  deleteschedule(NULL, &cfsched_dosample, NULL);
+  deleteschedule(NULL, &cfsched_doexpire, NULL);
+  deleteschedule(NULL, &cfsched_dosave, NULL);
 
-    cf_free();
+  cf_storechanfix();
 
-    deregistercontrolcmd("cfdebug", &cfcmd_debug);
-    deregistercontrolcmd("cfhistogram", &cfcmd_debughistogram);
+  cf_free();
+
+  deregistercontrolcmd("cfdebug", &cfcmd_debug);
+  deregistercontrolcmd("cfhistogram", &cfcmd_debughistogram);
 #if CFDEBUG
-    deregistercontrolcmd("cfsample", &cfcmd_debugsample);
-    deregistercontrolcmd("cfexpire", &cfcmd_debugexpire);
+  deregistercontrolcmd("cfsample", &cfcmd_debugsample);
+  deregistercontrolcmd("cfexpire", &cfcmd_debugexpire);
 #endif
-    deregistercontrolcmd("chanopstat", &cfcmd_chanopstat);
-    deregistercontrolcmd("chanoplist", &cfcmd_chanoplist);
-    deregistercontrolcmd("chanfix", &cfcmd_chanfix);
-    deregistercontrolcmd("showregs", &cfcmd_showregs);
+  deregistercontrolcmd("chanopstat", &cfcmd_chanopstat);
+  deregistercontrolcmd("chanoplist", &cfcmd_chanoplist);
+  deregistercontrolcmd("chanfix", &cfcmd_chanfix);
+  deregistercontrolcmd("showregs", &cfcmd_showregs);
 #if CFDEBUG
-//    deregistercontrolcmd("requestop", &cfcmd_requestop);
+//  deregistercontrolcmd("requestop", &cfcmd_requestop);
 #endif
-    deregistercontrolcmd("cfsave", &cfcmd_save);
-    deregistercontrolcmd("cfload", &cfcmd_load);
+  deregistercontrolcmd("cfsave", &cfcmd_save);
+  deregistercontrolcmd("cfload", &cfcmd_load);
 
 #if CFAUTOFIX
-    deregisterhook(HOOK_CHANNEL_DEOPPED, &cfhook_autofix);
-    deregisterhook(HOOK_CHANNEL_PART, &cfhook_autofix);
-    deregisterhook(HOOK_CHANNEL_KICK, &cfhook_autofix);
-    deregisterhook(HOOK_CHANNEL_JOIN, &cfhook_autofix);
+  deregisterhook(HOOK_CHANNEL_DEOPPED, &cfhook_autofix);
+  deregisterhook(HOOK_CHANNEL_PART, &cfhook_autofix);
+  deregisterhook(HOOK_CHANNEL_KICK, &cfhook_autofix);
+  deregisterhook(HOOK_CHANNEL_JOIN, &cfhook_autofix);
 #endif
 
-    deregisterhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
-    deregisterhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
-  }
+  deregisterhook(HOOK_CORE_STATSREQUEST, &cfhook_statsreport);
+  deregisterhook(HOOK_NICK_ACCOUNT, &cfhook_auth);
 
-  if (cfext >= 0) {
+  if (cfext >= 0)
     releasechanext(cfext);
-  }
 
-  if (cfnext >= 0) {
+  if (cfnext >= 0)
     releasenickext(cfnext);
-  }
 }
 
 int cfcmd_debug(void *source, int cargc, char **cargv) {
@@ -158,11 +159,8 @@ int cfcmd_debug(void *source, int cargc, char **cargv) {
   regop *ro;
   int i;
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: cfdebug <#channel>");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cip = findchanindex(cargv[0]);
 
@@ -170,8 +168,9 @@ int cfcmd_debug(void *source, int cargc, char **cargv) {
     controlreply(np, "No such channel.");
 
     return CMD_ERROR;
-  } else
-    controlreply(np, "Found channel %s. Retrieving chanfix information...", cargv[0]);
+  }
+
+  controlreply(np, "Found channel %s. Retrieving chanfix information...", cargv[0]);
 
   cf = cip->exts[cfext];
 
@@ -179,8 +178,9 @@ int cfcmd_debug(void *source, int cargc, char **cargv) {
     controlreply(np, "No chanfix information for %s", cargv[0]);
 
     return CMD_ERROR;
-  } else
-    controlreply(np, "Found chanfix information. Dumping...");
+  }
+
+  controlreply(np, "Found chanfix information. Dumping...");
 
   for (i=0;i<cf->regops.cursi;i++) {
     ro = ((regop**)cf->regops.content)[i];
@@ -283,9 +283,8 @@ int cf_getsortedregops(chanfix *cf, int max, regop **list) {
 
   qsort(cf->regops.content, cf->regops.cursi, sizeof(regop*), cmpregop);
 
-  for (i = 0; i < min(max, cf->regops.cursi); i++) {
+  for (i = 0; i < min(max, cf->regops.cursi); i++)
     list[i] = ((regop**)cf->regops.content)[i];
-  }
 
   return i;
 }
@@ -300,11 +299,8 @@ int cfcmd_chanopstat(void *source, int cargc, char **cargv) {
   int i, a, count;
   int *scores;
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: chanopstat <#channel>");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cp = findchannel(cargv[0]);
 
@@ -326,9 +322,8 @@ int cfcmd_chanopstat(void *source, int cargc, char **cargv) {
   count = cf_getsortedregops(cf, 10, rolist);
   controlreply(np, "Scores of \"best ops\" on %s are:", cargv[0]);
 
-  for (i=0;i<count;i++) {
+  for (i=0;i<count;i++)
     controlreply(np, "  %d", rolist[i]->score);
-  }
 
   /* current ops */
   scores = (int*)malloc(sizeof(int) * cp->users->hashsize);
@@ -374,11 +369,8 @@ int cfcmd_chanoplist(void *source, int cargc, char **cargv) {
   char date[50];
   unsigned long *hand;
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: chanoplist <#channel>");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cip = findchanindex(cargv[0]);
 
@@ -432,11 +424,8 @@ int cfcmd_chanfix(void *source, int cargc, char **cargv) {
   channel *cp;
   int ret;
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: chanfix <#channel>");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cp = findchannel(cargv[0]);
 
@@ -480,11 +469,8 @@ int cfcmd_showregs(void *source, int cargc, char **cargv) {
   int i, count, ops;
   regop *rolist[50];
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: showregs <#channel>");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cp = findchannel(cargv[0]);
 
@@ -545,11 +531,8 @@ int cfcmd_requestop(void *source, int cargc, char **cargv) {
   unsigned long *hand;
   modechanges changes;
 
-  if (cargc < 1) {
-    controlreply(np, "Syntax: requestop <#channel> [nick]");
-
-    return CMD_ERROR;
-  }
+  if (cargc < 1)
+    return CMD_USAGE;
 
   cp = findchannel(cargv[0]);
 
@@ -675,18 +658,17 @@ int cf_hasauthedcloneonchan(nick *np, channel *cp) {
 }
 
 void cfsched_dosample(void *arg) {
-  int i,a,now,cfscore,cfnewro,cfuhost,diff;
+  int i,a,now,cfscore,cfnewro,diff;
   channel *cp;
   chanindex *cip;
   nick *np;
   regop *ro, *roh;
   struct timeval start;
   struct timeval end;
-  char buf[USERLEN+1+HOSTLEN+1];
 
   now = getnettime();
 
-  cfuhost = cfscore = cfnewro = 0;
+  cfscore = cfnewro = 0;
 
   if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > CFMAXSPLITSERVERS)
     return;
@@ -704,7 +686,7 @@ void cfsched_dosample(void *arg) {
         if ((cp->users->content[a] != nouser) && (cp->users->content[a] & CUMODE_OP)) {
           np = getnickbynumeric(cp->users->content[a]);
 
-          if (np)
+          if (!np)
             continue;
 
 #if !CFDEBUG
@@ -722,34 +704,23 @@ void cfsched_dosample(void *arg) {
 
           /* lastopped == now if the user has clones, we obviously
            * don't want to give them points in this case */
-          if (ro && ro->lastopped != now) {
-            if (ro->type != CFHOST || !cf_hasauthedcloneonchan(np, cp)) {
-              ro->score++;
-              cfscore++;
-            }
+          if (!ro || ro->lastopped == now)
+            continue;
 
-            /* merge any matching CFHOST records */
-            if (roh && roh->type == CFHOST && ro->type == CFACCOUNT) {
-              /* hmm */
-              ro->score += roh->score;
-
-              cf_deleteregop(cip, roh);
-            }
-
-            /* store the user's account/host if we have to */
-            if (ro->uh == NULL && ro->score >= CFMINSCOREUH) {
-              if (ro->type == CFACCOUNT)
-                ro->uh = getsstring(np->authname, ACCOUNTLEN);
-              else {
-                snprintf(buf, sizeof(buf), "%s@%s", np->ident, np->host->name->content);
-                roh->uh = getsstring(buf, USERLEN+1+HOSTLEN);
-              }
-
-              cfuhost++;
-            }
-
-            ro->lastopped = now;
+          if (ro->type != CFHOST || !cf_hasauthedcloneonchan(np, cp)) {
+            ro->score++;
+            cfscore++;
           }
+
+          /* merge any matching CFHOST records */
+          if (roh && roh->type == CFHOST && ro->type == CFACCOUNT) {
+            /* hmm */
+            ro->score += roh->score;
+
+            cf_deleteregop(cip, roh);
+          }
+
+          ro->lastopped = now;
         }
       }
     }
@@ -764,8 +735,8 @@ void cfsched_dosample(void *arg) {
            (start.tv_sec * 1000 + start.tv_usec / 1000);
 
     sendmessagetochannel(mynick, cp, "sampled chanfix scores, assigned %d new"
-                         " points, %d new regops, %d user@hosts added, deltaT: %dms", cfscore,
-                         cfnewro, cfuhost, diff);
+                         " points, %d new regops, deltaT: %dms", cfscore,
+                         cfnewro, diff);
   }
 }
 
@@ -774,14 +745,14 @@ void cfsched_doexpire(void *arg) {
   chanindex *cip;
   chanindex *ncip;
   chanfix *cf;
-  int i,a,cfscore,cfregop,cffreeuh,diff;
+  int i,a,cfscore,cfregop,diff;
   regop **rolist;
   regop *ro;
   struct timeval start;
   struct timeval end;
   time_t currenttime;
 
-  cffreeuh = cfscore = cfregop = 0;
+  cfscore = cfregop = 0;
 
   gettimeofday(&start, NULL);
   currenttime=getnettime();
@@ -799,13 +770,6 @@ void cfsched_doexpire(void *arg) {
           if (((currenttime - ro->lastopped) > (2 * CFSAMPLEINTERVAL)) && ro->score) {
             ro->score--;
             cfscore++;
-          }
-
-          if ((ro->score < CFMINSCOREUH) && ro->uh) {
-            freesstring(ro->uh);
-            ro->uh = NULL;
-
-            cffreeuh++;
           }
 
           if (ro->score == 0 || ro->lastopped < (currenttime - CFREMEMBEROPS)) {
@@ -838,8 +802,8 @@ void cfsched_doexpire(void *arg) {
            (start.tv_sec * 1000 + start.tv_usec / 1000);
 
     sendmessagetochannel(mynick, cp, "expired chanfix scores, purged %d points,"
-                         " scrapped %6d regops, %d user@hosts freed, deltaT: %dms", cfscore,
-                         cfregop, cffreeuh, diff);
+                         " scrapped %6d regops, deltaT: %dms", cfscore,
+                         cfregop, diff);
   }
 
 }
@@ -1065,6 +1029,7 @@ regop *cf_createregop(nick *np, chanindex *cip) {
   chanfix *cf = cip->exts[cfext];
   int slot, type;
   regop **rolist;
+  char buf[USERLEN+1+HOSTLEN+1];
 
   if (cf == NULL) {
     cf = (chanfix*)malloc(sizeof(chanfix));
@@ -1081,14 +1046,18 @@ regop *cf_createregop(nick *np, chanindex *cip) {
 
   rolist[slot] = (regop*)malloc(sizeof(regop));
 
-  if (IsAccount(np))
+  if (IsAccount(np)) {
     type = CFACCOUNT;
-  else
+    rolist[slot]->uh = getsstring(np->authname, ACCOUNTLEN);
+  } else {
     type = CFHOST;
+
+    snprintf(buf, sizeof(buf), "%s@%s", np->ident, np->host->name->content);
+    rolist[slot]->uh = getsstring(buf, USERLEN+1+HOSTLEN);
+  }
 
   rolist[slot]->type = type;
   rolist[slot]->hash = cf_gethash(np, type);
-  rolist[slot]->uh = NULL;
   rolist[slot]->lastopped = 0;
   rolist[slot]->score = 0;
 
@@ -1277,11 +1246,7 @@ int cf_parseline(char *line) {
   rolist[slot]->hash = hash;
   rolist[slot]->lastopped = lastopped;
   rolist[slot]->score = score;
-
-  if (count >= 6)
-    rolist[slot]->uh = getsstring(host, USERLEN+1+HOSTLEN);
-  else
-    rolist[slot]->uh = NULL;
+  rolist[slot]->uh = getsstring(host, USERLEN+1+HOSTLEN);
 
   return 1;
 }
