@@ -86,7 +86,7 @@ void *server_exe_str(searchCtx *ctx, struct searchNode *thenode, void *theinput)
   sstring *n = serverlist[homeserver(np->numeric)].name;
 
   if(!n)
-    return NULL;
+    return "";
 
   return n->content;
 }
