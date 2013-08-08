@@ -1,10 +1,13 @@
 #include <string.h>
 #include <assert.h>
+#include "../lib/version.h"
 #include "../nick/nick.h"
 #include "../chanindex/chanindex.h"
 #include "../channel/channel.h"
 #include "../core/hooks.h"
 #include "whowas.h"
+
+MODULE_VERSION("");
 
 static int wwcnext, wwccext;
 
