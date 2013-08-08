@@ -238,6 +238,8 @@ unsigned int nextwhowasmarker() {
 }
 
 void _init(void) {
+  memset(whowasrecs, 0, sizeof(whowasrecs));
+
   registerhook(HOOK_NICK_QUIT, whowas_handlequitorkill);
   registerhook(HOOK_NICK_KILL, whowas_handlequitorkill);
   registerhook(HOOK_NICK_RENAME, whowas_handlerename);
