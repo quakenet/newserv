@@ -16,6 +16,7 @@ whowas *whowas_fromnick(nick *np, int standalone) {
   whowas *ww;
   nick *wnp;
   struct irc_in_addr ipaddress_canonical;
+  void *args[2];
 
   /* Create a new record. */
   if (standalone)
@@ -66,6 +67,10 @@ whowas *whowas_fromnick(nick *np, int standalone) {
   ww->timestamp = getnettime();
   ww->type = WHOWAS_USED;
 
+  args[0] = ww;
+  args[1] = np;
+  triggerhook(HOOK_WHOWAS_NEWRECORD, args);
+
   return ww;
 }
 
@@ -74,6 +79,8 @@ void whowas_clean(whowas *ww) {
 
   if (!ww || ww->type == WHOWAS_UNUSED)
     return;
+
+  triggerhook(HOOK_WHOWAS_LOSTRECORD, ww);
 
   np = &ww->nick;
   freesstring(np->host->name);
@@ -180,6 +187,32 @@ const char *whowas_format(whowas *ww) {
     snprintf(buf, sizeof(buf), "[%s] NICK %s r(%s) -> %s", timebuf, hostmask, np->realname->name->content, ww->newnick->content);
   else
     snprintf(buf, sizeof(buf), "[%s] %s %s r(%s): %s", timebuf, (ww->type == WHOWAS_QUIT) ? "QUIT" : "KILL", hostmask, np->realname->name->content, ww->reason->content);
+
+  return buf;
+}
+
+const char *whowas_formatchannels(whowas *ww) {
+  static char buf[512];
+  int i, first = 1;
+
+  strcpy(buf, "Channels: ");
+
+  for (i = 0; i < WW_MAXCHANNELS; i++) {
+    if (!ww->channels[i])
+      break;
+
+    if (!first)
+      strncat(buf, ", ", sizeof(buf));
+    else
+      first = 0;
+
+    strncat(buf, ww->channels[i]->name->content, sizeof(buf));
+  }
+
+  if (!ww->channels[0])
+    strncat(buf, "(No channels.)", sizeof(buf));
+
+  buf[sizeof(buf) - 1] = '\0';
 
   return buf;
 }

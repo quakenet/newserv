@@ -152,4 +152,5 @@ void printuser(searchCtx *ctx, nick *sender, authname *aup) {
 
 void printwhowas(searchCtx *ctx, nick *sender, whowas *ww) {
   ctx->reply(sender,"%s", whowas_format(ww));
+  ctx->reply(sender,"%s", whowas_formatchannels(ww));
 }
