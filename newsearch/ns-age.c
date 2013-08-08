@@ -2,6 +2,7 @@
  * age functionality
  */
 
+#include "../irc/irc.h"
 #include "newsearch.h"
 
 #include <stdio.h>
