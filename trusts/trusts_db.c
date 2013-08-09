@@ -284,6 +284,9 @@ trusthost *th_new(trustgroup *tg, char *host) {
   nth.maxpernode = 0;
   nth.nodebits = (irc_in_addr_is_ipv4(&nth.ip))?128:64;
 
+  if (nth.bits < nth.nodebits)
+    nth.nodebits = nth.bits;
+
   th = th_copy(&nth);
   if(!th)
     return NULL;
