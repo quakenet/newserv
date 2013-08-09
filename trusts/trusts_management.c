@@ -401,6 +401,20 @@ static int modifyreliableusername(void *arg, char *num, nick *source, int overri
   return 1;
 }
 
+static int modifyunthrottle(void *arg, char *num, nick *source, int override) {
+  trustgroup *tg = arg;
+
+  if(num[0] == '1') {
+    tg->flags |= TRUST_UNTHROTTLE;
+  } else if(num[0] == '0') {
+    tg->flags &= ~TRUST_UNTHROTTLE;
+  } else {
+    return 0;
+  }
+
+  return 1;
+}
+
 static int modifyexpires(void *arg, char *expires, nick *source, int override) {
   trustgroup *tg = arg;
   int howlong = durationtolong(expires);
@@ -803,6 +817,7 @@ static void setupmods(void) {
   MSGROUP(trustedfor);
   MSGROUP(cleanup);
   MSGROUP(protected);
+  MSGROUP(unthrottle);
 
   MSHOST(maxpernode);
   MSHOST(nodebits);

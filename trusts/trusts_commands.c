@@ -147,6 +147,13 @@ static char *formatflags(int flags) {
     strncat(buf, "reliable username", 512);
   }
 
+  if(flags & TRUST_UNTHROTTLE) {
+    if(buf[0])
+      strncat(buf, ", ", 512);
+
+    strncat(buf, "unthrottled", 512);
+  }
+
   buf[512-1] = '\0';
 
   return buf;
