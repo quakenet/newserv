@@ -51,6 +51,8 @@
 #define TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4 (96 + 24)
 #define TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6 48
 
+#define TRUST_MIN_TIME_RETHROTTLE 120
+
 struct trustmigration;
 
 struct trusthost;

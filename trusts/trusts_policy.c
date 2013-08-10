@@ -482,15 +482,16 @@ static void policycheck_irc(int hooknum, void *arg) {
   nick *np = args[0];
   long moving = (long)args[1];
   char message[512];
-  int verdict;
+  int verdict, unthrottle;
   struct irc_in_addr ipaddress_canonical;
+  trustsocket *ts;
 
   if(moving)
     return;
 
   ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
 
-  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message), NULL);
+  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message), &unthrottle);
     
   if(!enforcepolicy_irc)
     verdict = POLICY_SUCCESS;
@@ -505,6 +506,11 @@ static void policycheck_irc(int hooknum, void *arg) {
     case POLICY_FAILURE_IDENTCOUNT:
       glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
       break;
+  }
+
+  if (unthrottle && hooknum == HOOK_NICK_LOSTNICK && np->timestamp > getnettime() - TRUST_MIN_TIME_RETHROTTLE) {
+    for (ts = tslist; ts; ts = ts->next)
+      trustdowrite(ts, "THROTTLE %s", IPtostr(np->ipaddress));
   }
 }
 
