@@ -38,6 +38,8 @@ const flag umodeflags[] = {
    { 'R', UMODE_REGPRIV },
    { 'I', UMODE_HIDEIDLE },
    { 'P', UMODE_PARANOID },
+   { 'q', UMODE_COMCHANS },
+   { 'Q', UMODE_COMCHANSRESTR },
    { 'C', UMODE_CLOAKED },
    { '\0', 0 } };
 

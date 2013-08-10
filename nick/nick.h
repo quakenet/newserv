@@ -35,8 +35,10 @@
 #define UMODE_HIDEIDLE  0x1000
 #define UMODE_PARANOID  0x2000
 #define UMODE_CLOAKED   0x4000
+#define UMODE_COMCHANS  0x8000
+#define UMODE_COMCHANSRESTR 0x10000
 
-#define UMODE_ALL       0x7FFF
+#define UMODE_ALL       0x1FFFF
 
 #define AFLAG_STAFF     0x0001
 #define AFLAG_SUPPORT   0x0002
@@ -46,37 +48,41 @@
 
 #define AFLAG_ALL       0x001F
 
-#define IsInvisible(x)    ((x)->umodes & UMODE_INV)
-#define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
-#define IsDebug(x)        ((x)->umodes & UMODE_DEBUG)
-#define IsOper(x)         ((x)->umodes & UMODE_OPER)
-#define IsService(x)      ((x)->umodes & UMODE_SERVICE)
-#define IsXOper(x)        ((x)->umodes & UMODE_XOPER)
-#define IsDeaf(x)         ((x)->umodes & UMODE_DEAF)
-#define IsAccount(x)      ((x)->umodes & UMODE_ACCOUNT)
-#define IsHideChan(x)     ((x)->umodes & UMODE_HIDECHAN)
-#define IsHideHost(x)     ((x)->umodes & UMODE_HIDEHOST)
-#define IsSetHost(x)      ((x)->umodes & UMODE_SETHOST)
-#define IsRegPriv(x)      ((x)->umodes & UMODE_REGPRIV)
-#define IsHideIdle(x)     ((x)->umodes & UMODE_HIDEIDLE)
-#define IsParanoid(x)     ((x)->umodes & UMODE_PARANOID)
-#define IsCloaked(x)      ((x)->umodes & UMODE_CLOAKED)
+#define IsInvisible(x)      ((x)->umodes & UMODE_INV)
+#define IsWallops(x)        ((x)->umodes & UMODE_WALLOPS)
+#define IsDebug(x)          ((x)->umodes & UMODE_DEBUG)
+#define IsOper(x)           ((x)->umodes & UMODE_OPER)
+#define IsService(x)        ((x)->umodes & UMODE_SERVICE)
+#define IsXOper(x)          ((x)->umodes & UMODE_XOPER)
+#define IsDeaf(x)           ((x)->umodes & UMODE_DEAF)
+#define IsAccount(x)        ((x)->umodes & UMODE_ACCOUNT)
+#define IsHideChan(x)       ((x)->umodes & UMODE_HIDECHAN)
+#define IsHideHost(x)       ((x)->umodes & UMODE_HIDEHOST)
+#define IsSetHost(x)        ((x)->umodes & UMODE_SETHOST)
+#define IsRegPriv(x)        ((x)->umodes & UMODE_REGPRIV)
+#define IsHideIdle(x)       ((x)->umodes & UMODE_HIDEIDLE)
+#define IsParanoid(x)       ((x)->umodes & UMODE_PARANOID)
+#define IsComChans(x)       ((x)->umodes & UMODE_COMCHANS)
+#define IsComChansRestr(x)  ((x)->umodes & UMODE_COMCHANSRESTR)
+#define IsCloaked(x)        ((x)->umodes & UMODE_CLOAKED)
 
-#define SetInvisible(x)    ((x)->umodes |= UMODE_INV)
-#define SetWallops(x)      ((x)->umodes |= UMODE_WALLOPS)
-#define SetDebug(x)        ((x)->umodes |= UMODE_DEBUG)
-#define SetOper(x)         ((x)->umodes |= UMODE_OPER)
-#define SetService(x)      ((x)->umodes |= UMODE_SERVICE)
-#define SetXOper(x)        ((x)->umodes |= UMODE_XOPER)
-#define SetDeaf(x)         ((x)->umodes |= UMODE_DEAF)
-#define SetAccount(x)      ((x)->umodes |= UMODE_ACCOUNT)
-#define SetHideChan(x)     ((x)->umodes |= UMODE_HIDECHAN)
-#define SetHideHost(x)     ((x)->umodes |= UMODE_HIDEHOST)
-#define SetSetHost(x)      ((x)->umodes |= UMODE_SETHOST)
-#define SetRegPriv(x)      ((x)->umodes |= UMODE_REGPRIV)
-#define SetHideIdle(x)     ((x)->umodes |= UMODE_HIDEIDLE)
-#define SetParanoid(x)     ((x)->umodes |= UMODE_PARANOID)
-#define SetCloaked(x)      ((x)->umodes |= UMODE_CLOAKED)
+#define SetInvisible(x)      ((x)->umodes |= UMODE_INV)
+#define SetWallops(x)        ((x)->umodes |= UMODE_WALLOPS)
+#define SetDebug(x)          ((x)->umodes |= UMODE_DEBUG)
+#define SetOper(x)           ((x)->umodes |= UMODE_OPER)
+#define SetService(x)        ((x)->umodes |= UMODE_SERVICE)
+#define SetXOper(x)          ((x)->umodes |= UMODE_XOPER)
+#define SetDeaf(x)           ((x)->umodes |= UMODE_DEAF)
+#define SetAccount(x)        ((x)->umodes |= UMODE_ACCOUNT)
+#define SetHideChan(x)       ((x)->umodes |= UMODE_HIDECHAN)
+#define SetHideHost(x)       ((x)->umodes |= UMODE_HIDEHOST)
+#define SetSetHost(x)        ((x)->umodes |= UMODE_SETHOST)
+#define SetRegPriv(x)        ((x)->umodes |= UMODE_REGPRIV)
+#define SetHideIdle(x)       ((x)->umodes |= UMODE_HIDEIDLE)
+#define SetParanoid(x)       ((x)->umodes |= UMODE_PARANOID)
+#define SetComChans(x)       ((x)->umodes |= UMODE_COMCHANS)
+#define SetComChansRestr(x)  ((x)->umodes |= UMODE_COMCHANSRESTR)
+#define SetCloaked(x)        ((x)->umodes |= UMODE_CLOAKED)
 
 #define ClearInvisible(x)    ((x)->umodes &= ~UMODE_INV)
 #define ClearWallops(x)      ((x)->umodes &= ~UMODE_WALLOPS)
@@ -92,6 +98,8 @@
 #define ClearRegPriv(x)      ((x)->umodes &= ~UMODE_REGPRIV)
 #define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
 #define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
+#define SetComChans(x)       ((x)->umodes &= ~UMODE_COMCHANS)
+#define SetComChansRestr(x)  ((x)->umodes &= ~UMODE_COMCHANSRESTR)
 #define ClearCloaked(x)      ((x)->umodes &= ~UMODE_CLOAKED)
 
 #define IsStaff(x)           ((x)->flags & AFLAG_STAFF)
