@@ -145,6 +145,7 @@ typedef struct nick {
   time_t timestamp;
   time_t accountts;
   sstring *away;
+  struct irc_in_addr ipaddress;
   patricia_node_t *ipnode;
   unsigned int cloak_count;
   struct nick *cloak_extra;
@@ -157,8 +158,6 @@ typedef struct nick {
   array *channels;
   void *exts[MAXNICKEXTS];
 } nick;
-
-#define p_ipaddr ipnode->prefix->sin
 
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000

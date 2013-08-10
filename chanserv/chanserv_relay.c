@@ -232,6 +232,8 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     int r = csa_checkpasswordquality(password);
     if(r == QM_PWTOSHORT) {
       error_password = "passwordshort";
+    } else if(r == QM_PWTOLONG) {
+      error_password = "passwordlong";
     } else if(r == QM_PWTOWEAK) {
       error_password = "passwordweak";
     } else if(r != -1) {

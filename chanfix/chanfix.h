@@ -40,9 +40,6 @@ extern int cfnext;
 /* if you lose a channel after 30 minutes then
    you really don't need a channel at all */
 #define CFMINSCORE 6
-/* a user needs this many points to have his account/host
-   stored in the regop struct */
-#define CFMINSCOREUH 48
 /* chanfix won't ever reop more users than this */
 #define CFMAXOPS 10
 /* where we store our chanfix data */

@@ -14,9 +14,6 @@ sstring *getsstring(const char *inputstr, int maxlen) {
   if (inputstr == NULL)
     return NULL;
 
-  if (inputstr[0] == '\0')
-    return NULL;
-
   length = strlen(inputstr) + 1;
 
   if (length > maxlen)

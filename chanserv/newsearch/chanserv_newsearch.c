@@ -39,7 +39,7 @@ void _init() {
 void _fini() {
   unregdisp(reg_nicksearch, "auth", printnick_auth);
   unregdisp(reg_nicksearch, "authchans", printnick_authchans);
-  unregdisp(reg_chansearch, "qusers", printchannel_qusers);
+  unregdisp(reg_usersearch, "qusers", printchannel_qusers);
   unregdisp(reg_usersearch, "auth", printauth);
 
   deregistersearchterm(reg_chansearch, "qusers", qusers_parse);

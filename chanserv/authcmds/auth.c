@@ -2,7 +2,7 @@
  *
  *
  * CMDNAME: auth
- * CMDALIASES: login
+ * CMDALIASES: login ircdauth
  * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED
  * CMDARGS: 2
  * CMDDESC: Authenticates you on the bot.

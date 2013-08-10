@@ -15,6 +15,7 @@
 #include "../lib/strlfunc.h"
 #include "../lib/version.h"
 #include "../core/nsmalloc.h"
+#include "../glines/glines.h"
 #include <stdint.h>
 
 #define tmalloc(x)     nsmalloc(POOL_TROJANSCAN, x)
@@ -2006,36 +2007,12 @@ static void trojanscan_part_watch(int hook, void *arg) {
   trojanscan_process(np, cp, trojanscan_getmtfromhooktype(hook), reason);
 }
 
-static int trojanscan_hostcount(nick *sender, int hostmode, char *mask, int masklen) {
-  int usercount = 0, j;
-  nick *np = NULL; /* sigh at warnings */
-
-  if(hostmode)
-    usercount = sender->ipnode->usercount;
-
-  if(usercount > TROJANSCAN_MAX_HOST_GLINE) {
-    hostmode = 0;
-    usercount = 0;
-  }
-
-  /* should really go through the ipnode I guess */
-  if(!hostmode)
-    for (j=0;j<NICKHASHSIZE;j++)
-      for (np=nicktable[j];np;np=np->next)
-        if (np->ipnode==sender->ipnode && !ircd_strcmp(np->ident, sender->ident))
-          usercount++;
-
-  if(mask)
-    snprintf(mask, masklen, "%s@%s", hostmode?"*":sender->ident, IPtostr(sender->p_ipaddr));
-
-  return usercount;
-}
-
 void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phrase, char messagetype, char *matchbuf) {
   char glinemask[HOSTLEN + USERLEN + NICKLEN + 4], enick[TROJANSCAN_QUERY_TEMP_BUF_SIZE], eident[TROJANSCAN_QUERY_TEMP_BUF_SIZE], ehost[TROJANSCAN_QUERY_TEMP_BUF_SIZE];
   unsigned int frequency;
   int glining = 0, usercount;
   struct trojanscan_worms *worm = phrase->worm;
+  char reason[200];
 
   trojanscan_database.detections++;
   
@@ -2045,7 +2022,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   } else if(worm->glinehost || worm->glineuser) {
     glining = 1;
 
-    usercount = trojanscan_hostcount(sender, worm->glinehost, glinemask, sizeof(glinemask));
+    usercount = glinebynick(sender, 0, NULL, GLINE_SIMULATE, "trojanscan");
   }
   
   if (!usercount) {
@@ -2092,7 +2069,8 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
     trojanscan_database_query("INSERT INTO hits (nickname, ident, host, phrase, messagetype, glined) VALUES ('%s', '%s', '%s', %d, '%c', %d)", enick, eident, ehost, phrase->id, messagetype, glining);
     trojanscan_database.glines++;
     
-    irc_send("%s GL * +%s %d %jd :You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours\r\n", mynumeric->content, glinemask, glinetime * 3600, (intmax_t)time(NULL), sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+    snprintf(reason, sizeof(reason), "You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours", sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
+    glinebynick(sender, glinetime * 3600, reason, 0, "trojanscan");
 
     trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d%s%s", glinemask, messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", phrase->id, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
   }

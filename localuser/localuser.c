@@ -108,6 +108,8 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   ((unsigned char *)(ipaddress.in6_16))[14] = 1;
   ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
 
+  memcpy(&newuser->ipaddress, &ipaddress, sizeof(ipaddress));
+
   newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
   node_increment_usercount(newuser->ipnode);
 
@@ -203,7 +205,7 @@ int renamelocaluser(nick *np, char *newnick) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
-      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
+      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->ipaddress), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
       triggerhook(HOOK_NICK_RENAME,harg);     
       return 0;
     } else {
@@ -310,7 +312,7 @@ void sendnickmsg(nick *np) {
 
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
     mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->p_ipaddr),
+    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->ipaddress),
     sizeof(ipbuf),1),numericbuf,np->realname->name->content);
 }
 

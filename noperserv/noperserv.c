@@ -27,6 +27,8 @@ MODULE_VERSION("");
 #define NO_FOUND_NICKNAME 1
 #define NO_FOUND_AUTHNAME 2
 
+int noperserv_ext;
+
 const flag no_commandflags[] = {
     { 'o', __NO_OPER },
     { 't', __NO_TRUST },
@@ -57,6 +59,7 @@ const flag no_noticeflags[] = {
     { 'k', NL_KICKKILLS },    /* KICK/KILL commands */
     { 'I', NL_MISC },         /* misc commands */
     { 'g', NL_GLINES },       /* GLINE commands */
+    { 'G', NL_GLINES_AUTO },  /* automated gline messages */
     { 'h', NL_HITS },         /* Where a gline or kill is set automatically by the bot */
     { 'c', NL_CLONING },      /* Clone detection */
     { 'C', NL_CLEARCHAN },    /* When someone clearchans */
@@ -113,6 +116,7 @@ void _init() {
     "  +t: Trusts\n"
     "  +k: KICK/KILL commands\n"
     "  +g: GLINE commands\n"
+    "  +G: automated gline messages\n"
     "  +h: Shows when glines are set by code (hits)\n"
     "  +c: Clone information\n"
     "  +C: CLEARCHAN command\n"

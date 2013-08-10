@@ -45,7 +45,7 @@ struct searchNode *nick_parse(searchCtx *ctx, int argc, char **argv) {
       free(localdata);
       return NULL;
     }
-  } else if (ctx->searchcmd == reg_nicksearch) {
+  } else if (ctx->searchcmd == reg_nicksearch || ctx->searchcmd == reg_whowassearch) {
     if (argc) {
       parseError="nick: usage: (match (nick) target)";
       free(localdata);

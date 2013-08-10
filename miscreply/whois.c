@@ -125,7 +125,7 @@ static void do_whois(char *sourcenum, nick *snick, nick *tnick) {
      *                       "irc.netsplit.net 338 foobar barfoo foobar@localhost 127.0.0.1 :Actual user@host, Actual IP"
      */
     irc_send("%s 338 %s %s %s@%s %s :Actual user@host, Actual IP", getmynumeric(), sourcenum, tnick->nick,
-      tnick->ident, tnick->host->name->content, IPtostr(tnick->p_ipaddr));
+      tnick->ident, tnick->host->name->content, IPtostr(tnick->ipaddress));
   }
 
 
