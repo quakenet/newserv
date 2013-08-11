@@ -1,5 +1,3 @@
-/* Some utterly useless dog */
-
 #include "../core/schedule.h"
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
