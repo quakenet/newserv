@@ -13,6 +13,9 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -55,6 +58,12 @@ int main(int argc, char **argv) {
   }
 
   initconfig(config);
+
+  /* modules can rely on this directory always being there */
+  if (mkdir("data", 0700) < 0 && errno != EEXIST) {
+    perror("mkdir");
+    return 1;
+  }
 
   /* Loading the modules will bring in the bulk of the code */
   initmodules();
