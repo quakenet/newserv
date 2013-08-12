@@ -8,8 +8,8 @@
 #include "../core/schedule.h"
 #include "../irc/irc.h"
 #include "../lib/stringbuf.h"
-#include "../noperserv/noperserv.h"
-#include "../noperserv/noperserv_policy.h"
+#include "../control/control.h"
+#include "../control/control_policy.h"
 #include "trusts.h"
 
 MODULE_VERSION("");

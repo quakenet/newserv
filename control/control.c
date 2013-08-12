@@ -22,6 +22,7 @@
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
 #include "control.h"
+#include "control_policy.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -34,16 +35,58 @@ nick *hooknick;
 nick *mynick;
 
 CommandTree *controlcmds;
-ControlMsg controlreply;
-ControlWall controlwall;
-ControlPermitted controlpermitted;
 DestroyExt controldestroyext;
+int noperserv_ext;
+
+const flag no_commandflags[] = {
+    { 'o', __NO_OPER },
+    { 't', __NO_TRUST },
+    { 's', __NO_STAFF },
+    { 'S', __NO_SEC },
+    { 'd', __NO_DEVELOPER },
+    { 'L', __NO_LEGACY },
+    { 'O', __NO_OPERED },
+    { 'r', __NO_AUTHED },
+    { 'R', __NO_ACCOUNT },
+    { 'Y', __NO_RELAY },
+    { '\0', 0 }
+  };
+
+const flag no_userflags[] = {
+    { 'o', __NO_OPER },
+    { 't', __NO_TRUST },
+    { 's', __NO_STAFF },
+    { 'S', __NO_SEC },
+    { 'd', __NO_DEVELOPER },
+    { 'Y', __NO_RELAY },
+    { '\0', 0 }
+  };
+
+const flag no_noticeflags[] = {
+    { 'm', NL_MANAGEMENT },   /* hello, password, userflags, noticeflags */
+    { 't', NL_TRUSTS },       /* trust stuff... */
+    { 'k', NL_KICKKILLS },    /* KICK/KILL commands */
+    { 'I', NL_MISC },         /* misc commands */
+    { 'g', NL_GLINES },       /* GLINE commands */
+    { 'G', NL_GLINES_AUTO },  /* automated gline messages */
+    { 'h', NL_HITS },         /* Where a gline or kill is set automatically by the bot */
+    { 'c', NL_CLONING },      /* Clone detection */
+    { 'C', NL_CLEARCHAN },    /* When someone clearchans */
+    { 'f', NL_FAKEUSERS },    /* Fakeuser addition */
+    { 'b', NL_BROADCASTS },   /* Broadcast/mbroadcast/sbroadcast */
+    { 'o', NL_OPERATIONS },   /* insmod/rmmod/etc */
+    { 'O', NL_OPERING },      /* when someone opers */
+    { 'n', NL_NOTICES },      /* turn off to receive notices instead of privmsgs */
+    { 'A', NL_ALL_COMMANDS }, /* all commands sent */
+    { '\0', 0 }
+  };
 
 void controldestroycmdext(void *ext); 
 void handlemessages(nick *target, int messagetype, void **args);
 int controlstatus(void *sender, int cargc, char **cargv);
 void controlconnect(void *arg);
 int controlwhois(void *sender, int cargc, char **cargv);
+int controllistusers(void *sender, int cargc, char **cargv);
 int controlchannel(void *sender, int cargc, char **cargv);
 int relink(void *sender, int cargc, char **cargv);
 int die(void *sender, int cargc, char **cargv);
@@ -56,16 +99,25 @@ void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format
 void controlnoticeopers(flag_t permissionlevel, flag_t noticelevel, char *format, ...);
 int controlcheckpermitted(flag_t level, nick *user);
 void handlesignal(int hooknum, void *arg);
+void noperserv_oper_detection(int hooknum, void *arg);
+void noperserv_whois_handler(int hooknum, void *arg);
+void noperserv_whois_account_handler(int hooknum, void *arg);
+
+#define HOOK_CONTROL_WHOISREQUEST_AUTHNAME -1
+#define HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER -2
+
+static int init;
 
 void _init() {
+  if(!noperserv_load_db())
+    return;
+
   controlcmds=newcommandtree();
-  controlreply=&controlmessage;
-  controlwall=&controlnoticeopers;
-  controlpermitted=&controlcheckpermitted;
   controldestroyext=&controldestroycmdext;
 
   registercontrolhelpcmd("status",NO_DEVELOPER,1,&controlstatus,"Usage: status ?level?\nDisplays status information, increasing level gives more verbose information.");
   registercontrolhelpcmd("whois",NO_OPERED,1,&controlwhois,"Usage: whois <nickname|#numeric>\nDisplays lots of information about the specified nickname or numeric.");
+  registercontrolhelpcmd("listusers", NO_OPERED | NO_ACCOUNT, 2, &controllistusers, "Syntax: LISTUSERS\nLists all accounts.");
   registercontrolhelpcmd("channel",NO_OPER,1,&controlchannel,"Usage: channel <#channel>\nDisplays channel information.");
   registercontrolhelpcmd("relink",NO_DEVELOPER,1,&relink,"Usage: relink\nRelinks service to the network.");
   registercontrolhelpcmd("die",NO_DEVELOPER,1,&die,"Usage: die <reason>\nTerminates the service.");
@@ -79,10 +131,20 @@ void _init() {
  
   registerhook(HOOK_CORE_REHASH, &handlesignal);
   registerhook(HOOK_CORE_SIGINT, &handlesignal);
+  registerhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
+  registerhook(HOOK_CONTROL_WHOISREQUEST, &noperserv_whois_handler);
+
+  noperserv_ext = registerauthnameext("noperserv", 1);
+
   scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
+
+  init = 1;
 }
 
 void _fini() {
+  if (!init)
+    return;
+
   deleteallschedules(&controlconnect);
   if (mynick) {
     deregisterlocaluser(mynick,"Leaving");
@@ -90,6 +152,7 @@ void _fini() {
   
   deregistercontrolcmd("status",&controlstatus);
   deregistercontrolcmd("whois",&controlwhois);
+  deregistercontrolcmd("listusers", &controllistusers);
   deregistercontrolcmd("channel",&controlchannel);
   deregistercontrolcmd("relink",&relink);
   deregistercontrolcmd("die",&die);
@@ -105,6 +168,12 @@ void _fini() {
 
   deregisterhook(HOOK_CORE_REHASH, &handlesignal);
   deregisterhook(HOOK_CORE_SIGINT, &handlesignal);
+  deregisterhook(HOOK_NICK_MODEOPER, &noperserv_oper_detection);
+  deregisterhook(HOOK_CONTROL_WHOISREQUEST, &noperserv_whois_handler);
+
+  releaseauthnameext(noperserv_ext);
+
+  noperserv_cleanup_db();
 }
 
 void registercontrolhelpcmd(const char *name, int level, int maxparams, CommandHandler handler, char *helpstr) {
@@ -217,7 +286,7 @@ void handlewhois(int hooknum, void *arg) {
   controlreply(hooknick,"%s",(char *)arg);
 }
 
-int controlwhois(void *sender, int cargc, char **cargv) {
+static int controlwhois_plain(void *sender, int cargc, char **cargv) {
   nick *target;
   channel **channels;
   char buf[BUFSIZE];
@@ -313,6 +382,160 @@ int controlwhois(void *sender, int cargc, char **cargv) {
     }
   }
   
+  return CMD_OK;
+}
+
+int controlwhois(void *sender, int cargc, char **cargv) {
+  authname *an;
+  no_autheduser *au;
+  nick *np = (nick *)sender;
+
+  if(cargc < 1)
+    return controlwhois_plain(sender, cargc, cargv);
+
+  if(cargv[0][0] != '#') {
+    if(cargv[0][0] == '*')
+      cargv[0][0] = '#';
+    return controlwhois_plain(sender, cargc, cargv);
+  }
+
+  an = findauthnamebyname(cargv[0] + 1);
+  if(!an) {
+    controlreply(np, "Account not registered.");
+    return CMD_OK;
+  }
+
+  au = noperserv_get_autheduser(an);
+  if(!au) {
+    controlreply(np, "User does not have a NOperserv account.");
+    return CMD_OK;
+  }
+
+  controlreply(np, "Account   : %s", au->authname->name);
+
+  hooknick = np;
+
+  registerhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+  noperserv_whois_account_handler(HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER, (void *)au);
+  deregisterhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+
+  controlreply(np, "Flags     : %s", printflags(NOGetAuthLevel(au), no_userflags));
+
+  return CMD_OK;
+}
+
+void noperserv_whois_handler(int hooknum, void *arg) {
+  char message[100];
+  nick *np = (nick *)arg;
+  no_autheduser *au;
+  if(!np)
+    return;
+
+  if(IsAccount(np)) {
+    au = NOGetAuthedUser(np);
+    if(au) {
+      snprintf(message, sizeof(message), "Flags     : %s", printflags(NOGetAuthLevel(au), no_userflags));
+      noperserv_whois_account_handler(HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER, (void *)au);
+    } else {
+      snprintf(message, sizeof(message), "Flags     : (user not known)");
+      noperserv_whois_account_handler(HOOK_CONTROL_WHOISREQUEST_AUTHNAME, (void *)np->authname);
+    }
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  }
+}
+
+/* mmm, hacky */
+void noperserv_whois_account_handler(int hooknum, void *arg) {
+  int count = 0, found = 0;
+  char nickbuffer[(NICKLEN + 2) * NO_NICKS_PER_WHOIS_LINE - 1]; /* since we don't need space or comma for the first item we're fine NULL wise */
+  char accountspace[NICKLEN + 3]; /* space, comma, null */
+  char message[1024];
+  nick *np;
+
+  nickbuffer[0] = '\0';
+  if(hooknum == HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER) {
+    /* we can just read out the authed user linked list */
+    no_autheduser *au = (void *)arg;
+
+    if(au->authname->nicks)
+      found = 1;
+
+    for(np=au->authname->nicks;np;np=np->nextbyauthname) {
+      snprintf(accountspace, sizeof(accountspace), "%s%s", count++?", ":"", np->nick);
+      strncat(nickbuffer, accountspace, sizeof(nickbuffer));
+      nickbuffer[sizeof(nickbuffer) - 1] = '\0';
+
+      if(count >= NO_NICKS_PER_WHOIS_LINE) {
+        snprintf(message, sizeof(message), "Authed    : %s", nickbuffer);
+        triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+        nickbuffer[0] = '\0';
+        count = 0;
+      }
+    }
+  } else {
+    /* inefficient way */
+    char *authname = (char *)arg;
+    int i = 0;
+    nick *sp;
+
+    for(;i<NICKHASHSIZE;i++)
+      for(sp=nicktable[i];sp;sp=sp->next)
+        if(IsAccount(sp) && !ircd_strcmp(sp->authname, authname)) {
+          found = 1;
+
+          snprintf(accountspace, sizeof(accountspace), "%s%s", count++?", ":"", sp->nick);
+          strncat(nickbuffer, accountspace, sizeof(nickbuffer));
+          nickbuffer[sizeof(nickbuffer) - 1] = '\0';
+
+          if(count >= NO_NICKS_PER_WHOIS_LINE) {
+            snprintf(message, sizeof(message), "Authed    : %s", nickbuffer);
+            triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+            nickbuffer[0] = '\0';
+            count = 0;
+          }
+        }
+  }
+
+  if(!found) {
+    snprintf(message, sizeof(message), "Authed    : (no nicks authed)");
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  } else if(nickbuffer[0]) {
+    snprintf(message, sizeof(message), "Authed    : %s", nickbuffer);
+    triggerhook(HOOK_CONTROL_WHOISREPLY, message);
+  }
+}
+
+int controllistusers(void *sender, int cargc, char **cargv) {
+  nick *np = (nick *)sender;
+  int i, count = 0;
+  authname *anp;
+  no_autheduser *au;
+
+  hooknick = np;
+
+  registerhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (anp=authnametable[i];anp;anp=anp->next) {
+      au = noperserv_get_autheduser(anp);
+      if(!au)
+        continue;
+
+      if (count > 0)
+        controlreply(np, "---");
+
+      controlreply(np, "Account   : %s", au->authname->name);
+      noperserv_whois_account_handler(HOOK_CONTROL_WHOISREQUEST_AUTHEDUSER, (void *)au);
+      controlreply(np, "Flags     : %s", printflags(NOGetAuthLevel(au), no_userflags));
+
+      count++;
+    }
+  }
+
+  deregisterhook(HOOK_CONTROL_WHOISREPLY, &handlewhois);
+
+  controlreply(np, "--- Found %d users.", count);
+
   return CMD_OK;
 }
 
@@ -486,19 +709,19 @@ int controlchannel(void *sender, int cargc, char **cargv) {
 }
 
 int controlshowcommands(void *sender, int cargc, char **cargv) {
-  nick *np=(nick *)sender;
+  nick *np = (nick *)sender;
   Command *cmdlist[100];
-  int i,n;
-    
-  n=getcommandlist(controlcmds,cmdlist,100);
-  
-  controlreply(np,"The following commands are registered at present:");
-  
-  for(i=0;i<n;i++) {
-    controlreply(np,"%s",cmdlist[i]->command->content);
-  }
+  int i, n;
 
-  controlreply(np,"End of list.");
+  n = getcommandlist(controlcmds, cmdlist, 100);
+
+  controlreply(np, "The following commands are registered at present:");
+
+  for(i=0;i<n;i++)
+    if(noperserv_policy_command_permitted(cmdlist[i]->level, np))
+      controlreply(np, " %-25s %s", cmdlist[i]->command->content, printflags(cmdlist[i]->level, no_commandflags));
+
+  controlreply(np, "End of list.");
   return CMD_OK;
 }
   
@@ -512,30 +735,21 @@ void handlemessages(nick *target, int messagetype, void **args) {
     case LU_PRIVMSG:
     case LU_SECUREMSG:
       /* If it's a message, first arg is nick and second is message */
-      sender=(nick *)args[0];
+      sender = (nick *)args[0];
 
-      Error("control",ERR_INFO,"From: %s!%s@%s: %s",sender->nick,sender->ident,sender->host->name->content, (char *)args[1]);
+      controlwall(NO_DEVELOPER, NL_ALL_COMMANDS, "From: %s!%s@%s%s%s: %s", sender->nick, sender->ident, sender->host->name->content, IsAccount(sender)?"/":"", IsAccount(sender)?sender->authname:"", (char *)args[1]);
 
       /* Split the line into params */
-      cargc=splitline((char *)args[1],cargv,50,0);
+      cargc = splitline((char *)args[1], cargv, 50, 0);
       
-      if (!cargc) {
-        /* Blank line */
+      if(!cargc) /* Blank line */
         return;
-      } 
        	
-      cmd=findcommandintree(controlcmds,cargv[0],1);
-      if (cmd==NULL) {
-        controlreply(sender,"Unknown command.");
+      cmd = findcommandintree(controlcmds,cargv[0],1);
+      if(!cmd || !noperserv_policy_command_permitted(cmd->level, sender)) {
+        controlreply(sender, "Unknown command or access denied.");
         return;
       }
-      
-      if (cmd->level>0 && !IsOper(sender)) {
-        controlreply(sender,"You need to be opered to use this command.");
-        return;
-      }
-      
-      /* If we were doing "authed user tracking" here we'd put a check in for authlevel */
       
       /* Check the maxargs */
       if (cmd->maxparams<(cargc-1)) {
@@ -546,6 +760,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       
       if((cmd->handler)((void *)sender,cargc-1,&(cargv[1])) == CMD_USAGE)
         controlhelp(sender, cmd);
+
       break;
       
     case LU_KILLED:
@@ -553,6 +768,7 @@ void handlemessages(nick *target, int messagetype, void **args) {
       scheduleoneshot(time(NULL)+1,&controlconnect,NULL);
       mynick=NULL;
       triggerhook(HOOK_CONTROL_REGISTERED, NULL);
+
       break;
       
     default:
@@ -603,6 +819,51 @@ void controlnotice(nick *target, char *message, ... ) {
   va_end(va);
   
   sendnoticetouser(mynick,target,"%s",buf);
+}
+
+void controlreply(nick *np, char *format, ...) {
+  char buf[512];
+  va_list va;
+  no_autheduser *au = NOGetAuthedUser(np);
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  if(au && !(NOGetNoticeLevel(au) & NL_NOTICES)) {
+    controlmessage(np, "%s", buf);
+  } else {
+    controlnotice(np, "%s", buf);
+  }
+}
+
+void controlwall(flag_t permissionlevel, flag_t noticelevel, char *format, ...) {
+  char buf[512];
+  va_list va;
+  char *flags = printflags(noticelevel, no_noticeflags) + 1;
+  int i;
+  authname *anp;
+  no_autheduser *au;
+  nick *np;
+
+  va_start(va, format);
+  vsnprintf(buf, sizeof(buf), format, va);
+  va_end(va);
+
+  Error("noperserv", ERR_INFO, "$%s$ %s", flags, buf);
+
+  for (i=0;i<AUTHNAMEHASHSIZE;i++) {
+    for (anp=authnametable[i];anp;anp=anp->next) {
+      au = noperserv_get_autheduser(anp);
+      if(!au)
+        continue;
+      if((NOGetNoticeLevel(au) & noticelevel) && !(NOGetAuthLevel(au) & __NO_RELAY)) {
+        for(np=anp->nicks;np;np=np->nextbyauthname)
+          if(noperserv_policy_command_permitted(permissionlevel, np))
+            controlreply(np, "$%s$ %s", flags, buf);
+      }
+    }
+  }
 }
 
 void controlspecialrmmod(void *arg) {
@@ -671,12 +932,12 @@ int controlhelpcmd(void *sender, int cargc, char **cargv) {
   Command *cmd;
   nick *np = (nick *)sender;
 
-  if (cargc<1)
+  if(cargc < 1)
     return CMD_USAGE;
 
-  cmd=findcommandintree(controlcmds,cargv[0],1);
-  if (cmd==NULL) {
-    controlreply(np,"Unknown command.");
+  cmd = findcommandintree(controlcmds, cargv[0], 1);
+  if(!cmd || !noperserv_policy_command_permitted(cmd->level, np)) {
+    controlreply(np, "Unknown command or access denied.");
     return CMD_ERROR;
   }
 
@@ -711,8 +972,8 @@ void controlnswall(int noticelevel, char *format, ...) {
   controlwall(NO_OPER, noticelevel, "%s", broadcast);
 }
 
-int controlcheckpermitted(flag_t level, nick *user) {
-  return 1;
+int controlpermitted(flag_t level, nick *user) {
+  return noperserv_policy_command_permitted(level, user);
 }
 
 void handlesignal(int hooknum, void *arg) {
@@ -745,5 +1006,19 @@ char *controlid(nick *np) {
   snprintf(buf, sizeof(buf), "%s!%s@%s/%s", np->nick, np->ident, np->host->name->content, np->authname);
 
   return buf;
+}
+
+void noperserv_oper_detection(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+
+  if(np->umodes & UMODE_OPER) {
+    if(np->opername && strcmp(np->opername->content, "-")) {
+      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed as %s", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"", np->opername->content);
+    } else {
+      controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just OPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
+    }
+  } else {
+    controlwall(NO_OPER, NL_OPERING, "%s!%s@%s%s%s just DEOPERed", np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"");
+  }
 }
 
