@@ -9,6 +9,8 @@
 typedef struct nickwatch {
   int id;
 
+  char createdby[64];
+  int hits;
   char term[512];
   parsertree *tree;
 
@@ -27,13 +29,15 @@ static void nw_dummyreply(nick *np, char *format, ...) { }
 
 static void nw_dummywall(int level, char *format, ...) { }
 
-static int nw_currentid;
+static nickwatch *nw_currentwatch;
 static nickwatchevent *nw_currentevent;
 
 static void nw_printnick(searchCtx *ctx, nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
 
-  controlwall(NO_OPER, NL_HITS, "nickwatch(#%d, %s): %s [%s] (%s) (%s)", nw_currentid, nw_currentevent->description, visiblehostmask(np,hostbuf),
+  nw_currentwatch->hits++;
+
+  controlwall(NO_OPER, NL_HITS, "nickwatch(#%d, %s): %s [%s] (%s) (%s)", nw_currentwatch->id, nw_currentevent->description, visiblehostmask(np,hostbuf),
                IPtostr(np->ipaddress), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
@@ -69,7 +73,7 @@ static void nw_sched_processevent(void *arg) {
   nw_currentevent = nwe;
 
   for (nw = nickwatches; nw; nw = nw->next) {
-    nw_currentid = nw->id;
+    nw_currentwatch = nw;
     ast_nicksearch(nw->tree->root, &nw_dummyreply, mynick, &nw_dummywall, &nw_printnick, NULL, NULL, 10, np);
   }
 
@@ -114,6 +118,8 @@ static int nw_cmd_nickwatch(void *source, int cargc, char **cargv) {
 
   nw = malloc(sizeof(nickwatch));
   nw->id = nextnickwatch++;
+  snprintf(nw->createdby, sizeof(nw->createdby), "#%s", sender->authname);
+  nw->hits = 0;
   strncpy(nw->term, cargv[0], sizeof(nw->term));
   nw->tree = parse_string(reg_nicksearch, cargv[0]);
   nw->next = nickwatches;
@@ -156,10 +162,10 @@ static int nw_cmd_nickwatches(void *source, int cargc, char **cargv) {
   nick *sender = source;
   nickwatch *nw;
 
-  controlreply(sender, "ID    Term");
+  controlreply(sender, "ID    Created By      Hits    Term");
 
   for (nw = nickwatches; nw; nw = nw->next)
-    controlreply(sender, "%-5d %s", nw->id, nw->term);
+    controlreply(sender, "%-5d %-15s %-7d %s", nw->id, nw->createdby, nw->hits, nw->term);
 
   controlreply(sender, "--- End of nickwatches.");
 
