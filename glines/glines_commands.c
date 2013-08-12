@@ -118,10 +118,7 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   rejoinline(cargv[coff + 2], cargc - coff - 2);
   reason = cargv[coff + 2];
 
-  if (sender->auth)
-    snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  else
-    strncpy(creator, controlid(sender), sizeof(creator));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "BLOCK", cargc + coff - 1, cargv);
@@ -206,10 +203,7 @@ static int glines_cmdgline(void *source, int cargc, char **cargv) {
   }
 #endif /* SNIRCD_VERSION */
 
-  if (sender->auth)
-    snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  else
-    strncpy(creator, controlid(sender), sizeof(creator));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "GLINE", cargc + coff - 1, cargv);
@@ -311,10 +305,7 @@ static int glines_cmdsmartgline(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (sender->auth)
-    snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  else
-    strncpy(creator, controlid(sender), sizeof(creator));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "SMARTGLINE", cargc + coff - 1, cargv);
@@ -477,10 +468,7 @@ static int glines_cmdclearchan(void *source, int cargc, char **cargv) {
     (((nick **)victims.content)[slot]) = np;
   }
 
-  if (sender->auth)
-    snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  else
-    strncpy(creator, controlid(sender), sizeof(creator));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "CLEARCHAN", cargc + coff - 1, cargv);
@@ -587,10 +575,7 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
   rejoinline(cargv[coff + 3], cargc - coff - 3);
   reason = cargv[coff + 3];
 
-  if (sender->auth)
-    snprintf(creator, sizeof(creator), "#%s", sender->authname);
-  else
-    strncpy(creator, controlid(sender), sizeof(creator));
+  snprintf(creator, sizeof(creator), "#%s", sender->authname);
 
   glinebufinit(&gbuf, 0);
   glinebufcommentv(&gbuf, "TRUSTGLINE", cargc + coff - 1, cargv);
