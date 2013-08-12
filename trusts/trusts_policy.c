@@ -64,8 +64,11 @@ typedef struct trustaccount {
 
 trustaccount trustaccounts[MAXSERVERS];
 
-static int checkconnectionth(const char *username, struct irc_in_addr *ip, trusthost *th, int hooknum, int usercountadjustment, char *message, size_t messagelen) {
+static int checkconnectionth(const char *username, struct irc_in_addr *ip, trusthost *th, int hooknum, int usercountadjustment, char *message, size_t messagelen, int *unthrottle) {
   trustgroup *tg;
+
+  if (unthrottle)
+    *unthrottle = 0;
 
   if(messagelen>0)
     message[0] = '\0';
@@ -140,14 +143,10 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
   if(tg->trustedfor > 0)
     snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
 
+  if(unthrottle && (tg->flags & TRUST_UNTHROTTLE))
+    *unthrottle = 1; /* TODO: Do _some_ kind of rate-limiting */
+
   return POLICY_SUCCESS;
-}
-
-static int checkconnection(const char *username, struct irc_in_addr *ip, int hooknum, int cloneadjustment, char *message, size_t messagelen) {
-  struct irc_in_addr ip_canonicalized;
-  ip_canonicalize_tunnel(&ip_canonicalized, ip);
-
-  return checkconnectionth(username, &ip_canonicalized, th_getbyhost(&ip_canonicalized), hooknum, cloneadjustment, message, messagelen);
 }
 
 static int trustdowrite(trustsocket *sock, char *format, ...) {
@@ -171,22 +170,29 @@ static int trustdowrite(trustsocket *sock, char *format, ...) {
 
 static int policycheck_auth(trustsocket *sock, const char *sequence_id, const char *username, const char *host) {
   char message[512];
-  int verdict;
-  struct irc_in_addr ip;
+  int verdict, unthrottle;
+  struct irc_in_addr ip, ip_canonicalized;
   unsigned char bits;
+  trustsocket *ts;
   
   if(!ipmask_parse(host, &ip, &bits)) {
     sock->accepted++;
     return trustdowrite(sock, "PASS %s", sequence_id);
   }
-  
-  verdict = checkconnection(username, &ip, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message));
+
+  ip_canonicalize_tunnel(&ip_canonicalized, &ip);
+  verdict = checkconnectionth(username, &ip_canonicalized, th_getbyhost(&ip_canonicalized), HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message), &unthrottle);
 
   if(!enforcepolicy_auth)
     verdict = POLICY_SUCCESS;
 
   if (verdict == POLICY_SUCCESS) {
     sock->accepted++;
+
+    if (unthrottle) {
+      for (ts = tslist; ts; ts = ts->next)
+        trustdowrite(ts, "UNTHROTTLE %s", IPtostr(ip));
+    }
 
     if(message[0])
       return trustdowrite(sock, "PASS %s %s", sequence_id, message);
@@ -476,15 +482,16 @@ static void policycheck_irc(int hooknum, void *arg) {
   nick *np = args[0];
   long moving = (long)args[1];
   char message[512];
-  int verdict;
+  int verdict, unthrottle;
   struct irc_in_addr ipaddress_canonical;
+  trustsocket *ts;
 
   if(moving)
     return;
 
   ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
 
-  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message));
+  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message), &unthrottle);
     
   if(!enforcepolicy_irc)
     verdict = POLICY_SUCCESS;
@@ -499,6 +506,11 @@ static void policycheck_irc(int hooknum, void *arg) {
     case POLICY_FAILURE_IDENTCOUNT:
       glinebynick(np, POLICY_GLINE_DURATION, message, GLINE_ALWAYS_USER|GLINE_IGNORE_TRUST, "trusts_policy");
       break;
+  }
+
+  if (unthrottle && hooknum == HOOK_NICK_LOSTNICK && np->timestamp > getnettime() - TRUST_MIN_TIME_RETHROTTLE) {
+    for (ts = tslist; ts; ts = ts->next)
+      trustdowrite(ts, "THROTTLE %s", IPtostr(np->ipaddress));
   }
 }
 
