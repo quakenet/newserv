@@ -169,9 +169,19 @@ Does on-connect proxy scans and glines open proxies.
 request
 ~~~~~~
 
-This is QuakeNet's channel service request bot (R). Some of the module
-parameters are not configurable - instead you will have to modify the
-request/request.h header file and recompile the module.
+This is QuakeNet's channel service request bot (R).
+
+Configuration:
+
+[request]
+#nick=R
+#user=request
+#host=request.quakenet.org
+#real=Service Request v0.23
+#snick=S
+#sserver=spamscan.quakenet.org
+#qnick=Q
+#qserver=cserve.quakenet.org
 
 serverlist
 ~~~~~~~~~

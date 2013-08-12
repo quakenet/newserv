@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
+#include "../core/config.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
@@ -44,9 +45,16 @@ int rq_blocked = 0;
 /* log fd */
 FILE *rq_logfd;
 
+/* config */
+sstring *rq_qserver, *rq_qnick, *rq_sserver, *rq_snick;
+sstring *rq_nick, *rq_user, *rq_host, *rq_real, *rq_auth;
+int rq_authid;
+
 static int extloaded = 0;
 
 void _init(void) {
+  sstring *m;
+
   if(!rq_initblocks())
     return;
 
@@ -54,6 +62,22 @@ void _init(void) {
     return;
 
   extloaded = 1;
+
+  rq_nick = getcopyconfigitem("request", "nick", "R", BUFSIZE);
+  rq_user = getcopyconfigitem("request", "user", "request", BUFSIZE);
+  rq_host = getcopyconfigitem("request", "host", "request.quakenet.org", BUFSIZE);
+  rq_real = getcopyconfigitem("request", "real", "Service Request v0.23", BUFSIZE);
+  rq_auth = getcopyconfigitem("request", "auth", "R", BUFSIZE);
+  rq_qnick = getcopyconfigitem("request", "qnick", "Q", BUFSIZE);
+  rq_qserver = getcopyconfigitem("request", "qserver", "CServe.quakenet.org", BUFSIZE);
+  rq_snick = getcopyconfigitem("request", "snick", "S", BUFSIZE);
+  rq_sserver = getcopyconfigitem("request", "sserver", "services2.uk.quakenet.org", BUFSIZE);
+
+  m = getconfigitem("request", "authid");
+  if (!m)
+    rq_authid = 1780711;
+  else
+    rq_authid = atoi(m->content);
 
   rqcommands = newcommandtree();
 
@@ -69,7 +93,7 @@ void _init(void) {
   
   qr_initrequest();
 
-  rq_logfd = fopen(RQ_LOGFILE, "a");
+  rq_logfd = fopen("logs/request.log", "a");
   
   scheduleoneshot(time(NULL) + 1, (ScheduleCallback)&rq_registeruser, NULL);
 }
@@ -96,6 +120,12 @@ void _fini(void) {
   rq_finifasttrack();
   qr_finirequest();
 
+  freesstring(rq_nick);
+  freesstring(rq_user);
+  freesstring(rq_host);
+  freesstring(rq_real);
+  freesstring(rq_auth);
+
   if (rq_logfd != NULL)
     fclose(rq_logfd);
 
@@ -105,15 +135,15 @@ void _fini(void) {
 void rq_registeruser(void) {
   channel *cp;
 
-  rqnick = registerlocaluserflags(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
-                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH, RQ_REQUEST_AUTHID, 0,
+  rqnick = registerlocaluserflags(rq_nick->content, rq_user->content, rq_host->content,
+                             rq_real->content, rq_auth->content, rq_authid, 0,
                              UMODE_ACCOUNT | UMODE_SERVICE | UMODE_OPER,
                              rq_handler);
 
-  cp = findchannel(RQ_TLZ);
+  cp = findchannel("#twilightzone");
 
   if (cp == NULL)
-    localcreatechannel(rqnick, RQ_TLZ);
+    localcreatechannel(rqnick, "#twilightzone");
   else
     localjoinchannel(rqnick, cp);
 }
@@ -221,11 +251,11 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
     return RQ_ERROR;
   }
 
-  *qnick = getnickbynick(RQ_QNICK);
+  *qnick = getnickbynick(rq_qnick->content);
 
-  if (*qnick == NULL || findserver(RQ_QSERVER) < 0) {
+  if (*qnick == NULL || findserver(rq_qserver->content) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-          "Please try again later.", RQ_QNICK);
+          "Please try again later.", rq_qnick->content);
 
     return RQ_ERROR;
   }
@@ -317,7 +347,7 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   qhand = getnumerichandlefromchanhash(cp->users, qnick->numeric);
 
   if (qhand != NULL) {
-    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", RQ_QNICK);
+    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", rq_qnick->content);
 
     rq_failed++;
 
@@ -332,7 +362,7 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
     fprintf(rq_logfd, "%s: request (%s) for %s from %s!%s@%s%s%s: Request was %s.\n",
-      now, RQ_QNICK, cp->index->name->content,
+      now, rq_qnick->content, cp->index->name->content,
       np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"",
       (retval == RQ_OK) ? "accepted" : "denied");
     fflush(rq_logfd);
@@ -367,11 +397,11 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
     return RQ_ERROR;
   }
 
-  snick = getnickbynick(RQ_SNICK);
+  snick = getnickbynick(rq_snick->content);
 
-  if (snick == NULL || findserver(RQ_SSERVER) < 0) {
+  if (snick == NULL || findserver(rq_sserver->content) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-            "Please try again later.", RQ_SNICK);
+            "Please try again later.", rq_snick->content);
 
     rq_failed++;
 
@@ -382,7 +412,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
   shand = getnumerichandlefromchanhash(cp->users, snick->numeric);
 
   if (shand != NULL) {
-    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", RQ_SNICK);
+    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", rq_snick->content);
 
     rq_failed++;
 
@@ -406,7 +436,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
     /* channel apparently doesn't have Q */
     
    sendnoticetouser(rqnick, np, "Error: You need %s in order to be "
-        "able to request %s.", RQ_QNICK, RQ_SNICK);
+        "able to request %s.", rq_qnick->content, rq_snick->content);
 
     rq_failed++;
 
