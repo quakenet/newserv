@@ -31,3 +31,4 @@ lex.yy.c
 core.*
 .autobuild.mk
 .configure.log
+*.orig

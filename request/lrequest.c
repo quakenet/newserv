@@ -54,7 +54,7 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
   /* treat blocked users as if they're out of targets */
   if(rq_findblock(np->authname) || !rq_tryfasttrack(np)) {
     sendnoticetouser(svc, np, "Sorry, you may not request %s for another "
-      "channel at this time. Please try again in an hour.", RQ_QNICK);
+      "channel at this time. Please try again in an hour.", rq_qnick->content);
 
     lr_notargets++;
 
@@ -66,7 +66,7 @@ int lr_requestl(nick *svc, nick *np, channel *cp, nick *qnick) {
 
   sendnoticetouser(svc, np, "Success! %s has been added to '%s' "
         "(contact #help if you require further assistance).", 
-        RQ_QNICK, cp->index->name->content);
+        rq_qnick->content, cp->index->name->content);
 
   return RQ_OK;
 }
