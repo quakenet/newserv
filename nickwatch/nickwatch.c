@@ -82,6 +82,14 @@ static void nw_hook_newnick(int hooknum, void *arg) {
   scheduleoneshot(0, nw_sched_processevent, nwe);
 }
 
+static void nw_hook_rename(int hooknum, void *arg) {
+  void **args = arg;
+  nick *np = args[0];
+  char *oldnick = args[1];
+  nickwatchevent *nwe = nwe_new(np, "renamed from %s", oldnick);
+  scheduleoneshot(0, nw_sched_processevent, nwe);
+}
+
 static void nw_hook_joinchannel(int hooknum, void *arg) {
   void **args = arg;
   channel *cp = args[0];
@@ -164,6 +172,7 @@ void _init(void) {
   registercontrolhelpcmd("nickwatches", NO_OPER, 0, &nw_cmd_nickwatches, "Usage: nickwatches\nLists nickwatches.");
 
   registerhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  registerhook(HOOK_NICK_RENAME, &nw_hook_rename);
   registerhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   registerhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
 }
@@ -176,6 +185,7 @@ void _fini(void) {
   deregistercontrolcmd("nickwatches", &nw_cmd_nickwatches);
 
   deregisterhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  deregisterhook(HOOK_NICK_RENAME, &nw_hook_rename);
   deregisterhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   deregisterhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
 
