@@ -71,13 +71,13 @@ int setflags(flag_t *inflags, flag_t flagmask, char *flagstr, const flag *flagsl
  *  Prints out which flags are currently set in a flag block
  */
 char *printflags(flag_t inflags, const flag *flaglist) {
-  static char buf[18];
+  static char buf[34];
   int i;
   char *ch=buf;
   
   *ch++='+';
   
-  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+  for (i=0;flaglist[i].flagchar!='\0' && i<32;i++) {
     if (inflags&flaglist[i].flagbit) {
       *ch++=flaglist[i].flagchar;
     }
@@ -92,13 +92,13 @@ char *printflags(flag_t inflags, const flag *flaglist) {
  *  Prints out which flags are currently set in a flag block, or return "none"
  */
 char *printflagsornone(flag_t inflags, const flag *flaglist) {
-  static char buf[18];
+  static char buf[34];
   int i;
   char *ch=buf;
   
   *ch++='+';
   
-  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+  for (i=0;flaglist[i].flagchar!='\0' && i<32;i++) {
     if (inflags&flaglist[i].flagbit) {
       *ch++=flaglist[i].flagchar;
     }
@@ -113,11 +113,11 @@ char *printflagsornone(flag_t inflags, const flag *flaglist) {
 /* ugh */
 
 char *printflags_noprefix(flag_t inflags, const flag *flaglist) {
-  static char buf[18];
+  static char buf[34];
   int i;
   char *ch=buf;
   
-  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+  for (i=0;flaglist[i].flagchar!='\0' && i<32;i++) {
     if (inflags&flaglist[i].flagbit) {
       *ch++=flaglist[i].flagchar;
     }
@@ -135,14 +135,14 @@ char *printflags_noprefix(flag_t inflags, const flag *flaglist) {
  */
 
 char *printflagdiff(flag_t oldflags, flag_t newflags, const flag *flaglist) {
-  static char buf[30];
+  static char buf[40];
   int i;
   char *ch=buf;
   int chd=0;
  
   /* Removes first */
 
-  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+  for (i=0;flaglist[i].flagchar!='\0' && i<32;i++) {
     if ((oldflags & flaglist[i].flagbit) && !(newflags & flaglist[i].flagbit)) {
       if (chd==0) {
         chd=1;
@@ -155,7 +155,7 @@ char *printflagdiff(flag_t oldflags, flag_t newflags, const flag *flaglist) {
   /* Now adds */
   chd=0;
 
-  for (i=0;flaglist[i].flagchar!='\0' && i<16;i++) {
+  for (i=0;flaglist[i].flagchar!='\0' && i<32;i++) {
     if (!(oldflags & flaglist[i].flagbit) && (newflags & flaglist[i].flagbit)) {
       if (chd==0) {
 	chd=1;
