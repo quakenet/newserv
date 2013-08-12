@@ -42,6 +42,10 @@ Configuration:
 
 [control]
 nick=N3
+#ident=control
+#hostname=your.hostname.here
+#realname=NewServ Control Service
+#authname=C
 
 auth
 ~~~
@@ -92,6 +96,16 @@ glines
 Implements gline commands and general gline functionality that is used by other
 modules.
 
+geoip
+~~~~
+
+Provides geo-location services for other modules.
+
+Configuration:
+
+[geoip]
+#db=GeoIP.dat
+
 helpmod2
 ~~~~~~~
 
@@ -135,6 +149,18 @@ miscreply
 
 Implements rping and various other status query commands.
 
+Configuration:
+
+[miscreply]
+#admin1=Located at the Union Aerospace Corp. facility, Stroggos
+#admin2=Network IRC Service
+#admin3=No administrative info available
+
+patricia, patricianick, patriciasearch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implements finding nicks based on CIDR prefixes.
+
 proxyscan
 ~~~~~~~~
 
@@ -173,9 +199,10 @@ trusts
 ~~~~~
 
 Implements connection limits. Supports the TRUST protocol which is used
-by quakenet-iauthd to determine whether to allow users on the network.
+by quakenet-iauthd to determine whether to allow users to connect to the
+network.
 
-You will need to load the trusts_master module on one of your newserv
+You will need to load the trusts_master module on exactly one of your newserv
 instances. All other instances should load the trusts_slave module in order
 to receive replication updates from the trusts master:
 
@@ -201,11 +228,14 @@ You can use the QuakeNet IAuth daemon available at
 http://hg.quakenet.org/iauthd/ to enforce connection limits using IAuth rather
 than g:lines.
 
-whowas
-~~~~~
+whowas, whowas_channels
+~~~~~~~~~~~~~~~~~~~~~~
 
 Keeps track of historical user records. Used by the glines module to chase
 nicks and by newsearch.
+
+The whowas_channels module optionally keeps track of which channels users
+were on.
 
 xsb
 ~~
