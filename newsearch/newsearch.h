@@ -92,6 +92,7 @@ typedef struct searchCtx {
   struct searchCmd *searchcmd;
   nick *sender;
   int limit;
+  void *target;
   void *displayfn;
 } searchCtx;
 
@@ -220,7 +221,7 @@ struct searchVariable *var_register(searchCtx *ctx, char *arg, int type);
 searchNode *var_get(searchCtx *ctx, char *arg);
 void var_setstr(struct searchVariable *v, char *data);
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender, void *displayfn, int limit);
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *sender, void *displayfn, int limit, void *target);
 
 /* AST functions */
 
@@ -271,16 +272,16 @@ typedef struct searchASTCache {
 
 searchNode *search_astparse(searchCtx *, char *);
 
-int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
-int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
-int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
-int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
+int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit, nick *);
+int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit, chanindex *);
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit, authname *);
+int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit, whowas *);
 
 char *ast_printtree(char *buf, size_t bufsize, searchASTExpr *expr, searchCmd *cmd);
 
 int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void *display, CommandTree *sl, replyFunc reply, void *sender);
 
-typedef int (*ASTFunc)(searchASTExpr *, replyFunc, void *, wallFunc, void *, HeaderFunc, void *, int limit);
+typedef int (*ASTFunc)(searchASTExpr *, replyFunc, void *, wallFunc, void *, HeaderFunc, void *, int limit, void *target);
 
 /* erk */
 extern searchList *globalterms;

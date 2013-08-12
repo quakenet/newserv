@@ -315,7 +315,7 @@ static int trusts_cmdtrustspew(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
 
   tree = NSASTNode(tgroup_parse, NSASTLiteral(cargv[0]));
-  return ast_nicksearch(&tree, controlreply, sender, NULL, printnick_channels, NULL, NULL, 2000);
+  return ast_nicksearch(&tree, controlreply, sender, NULL, printnick_channels, NULL, NULL, 2000, NULL);
 }
 
 static int commandsregistered;

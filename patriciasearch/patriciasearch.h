@@ -11,7 +11,7 @@ void pnodesearch_exe(struct searchNode *search, searchCtx *ctx, patricia_node_t 
 
 int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv);
 
-int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit);
+int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit, patricia_node_t *target);
 
 void regpnodedisp(const char *name, NodeDisplayFunc handler);
 void unregpnodedisp(const char *name, NodeDisplayFunc handler);

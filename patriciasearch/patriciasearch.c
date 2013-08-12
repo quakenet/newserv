@@ -78,7 +78,7 @@ int do_pnodesearch_real(replyFunc reply, wallFunc wall, void *source, int cargc,
     return CMD_ERROR;
   }
 
-  ast_nodesearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_nodesearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
 

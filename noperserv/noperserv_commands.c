@@ -119,7 +119,7 @@ int controlspew(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
 
   tree = NSASTNode(match_parse, NSASTNode(hostmask_parse), NSASTLiteral(cargv[0]));
-  return ast_nicksearch(&tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500);
+  return ast_nicksearch(&tree, controlreply, sender, controlnswall, printnick, NULL, NULL, 500, NULL);
 }
 
 int controlspewchan(void *sender, int cargc, char **cargv) {
@@ -129,7 +129,7 @@ int controlspewchan(void *sender, int cargc, char **cargv) {
     return CMD_USAGE;
 
   tree = NSASTNode(match_parse, NSASTNode(name_parse), NSASTLiteral(cargv[0]));
-  return ast_chansearch(&tree, controlreply, sender, controlnswall, printchannel, NULL, NULL, 500);
+  return ast_chansearch(&tree, controlreply, sender, controlnswall, printchannel, NULL, NULL, 500, NULL);
 }
 
 int controlcompare(void *sender, int cargc, char **cargv) {
@@ -158,7 +158,7 @@ int controlcompare(void *sender, int cargc, char **cargv) {
   }
   tree = NSASTManualNode(and_parse, cargc, nodes);
   
-  return (execfn)(&tree, controlreply, sender, controlnswall, displayfn, NULL, NULL, 500);
+  return (execfn)(&tree, controlreply, sender, controlnswall, displayfn, NULL, NULL, 500, NULL);
 }
 
 int controlbroadcast(void *sender, int cargc, char **cargv) {
@@ -218,7 +218,7 @@ int controlobroadcast(void *sender, int cargc, char **cargv) {
   snprintf(message, sizeof(message), "(oBroadcast) %s", cargv[0]);
 
   tree = NSASTNode(and_parse, NSASTNode(modes_parse, NSASTLiteral("+o")), NSASTNode(notice_parse, NSASTLiteral(message)));
-  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1)) == CMD_OK) {
+  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1, NULL)) == CMD_OK) {
     controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent an obroadcast: %s", np->nick, np->authname, cargv[0]);
     controlreply(np, "Message obroadcasted.");
   } else {
@@ -239,7 +239,7 @@ int controlcbroadcast(void *sender, int cargc, char **cargv) {
 
   snprintf(message, sizeof(message), "(cBroadcast) %s", cargv[1]);
   tree = NSASTNode(and_parse, NSASTNode(country_parse, NSASTLiteral(cargv[0])), NSASTNode(notice_parse, NSASTLiteral(message)));
-  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1)) == CMD_OK) {
+  if((ret=ast_nicksearch(&tree, controlreply, sender, controlnswall, NULL, NULL, NULL, -1, NULL)) == CMD_OK) {
     controlwall(NO_OPER, NL_BROADCASTS, "%s/%s sent a cbroadcast %s: %s", np->nick, np->authname, cargv[0], cargv[1]);
     controlreply(np, "Message cbroadcasted.");
   } else {

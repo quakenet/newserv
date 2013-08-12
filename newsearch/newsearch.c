@@ -456,7 +456,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit, void *target) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
@@ -466,6 +466,7 @@ void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc reply
   ctx->searchcmd = cmd;
   ctx->sender = np;
   ctx->limit = limit;
+  ctx->target = target;
   ctx->displayfn = displayfn;
 }
 
@@ -502,7 +503,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_ERROR;
   }
 
-  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
 
@@ -531,7 +532,7 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
-    for (np=nicktable[i];np;np=np->next) {
+    for (np=ctx->target ? ctx->target : nicktable[i];np;np=np->next) {
       if ((search->exe)(ctx, search, np)) {
         /* Add total channels */
         tchans += np->channels->cursi;
@@ -552,9 +553,13 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
+
+      if (ctx->target)
+        goto done;
     }
   }
 
+done:
   ctx->reply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
                 matches, tchans, uchans, (float)tchans/uchans);
 }
@@ -592,7 +597,7 @@ int do_whowassearch_real(replyFunc reply, wallFunc wall, void *source, int cargc
     return CMD_ERROR;
   }
 
-  ast_whowassearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_whowassearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
 
@@ -615,10 +620,14 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
 
   for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+    if (ctx->target) {
+      ww = ctx->target;
+    } else {
+      ww = &whowasrecs[i % WW_MAXENTRIES];
 
-    if (ww->type == WHOWAS_UNUSED)
-      continue;
+      if (ww->type == WHOWAS_UNUSED)
+        continue;
+    }
 
     /* Note: We're passing the nick to the filter function. The original
      * whowas record is in the nick's ->next field. */
@@ -630,6 +639,9 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
         ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
       matches++;
     }
+
+    if (ctx->target)
+      break;
   }
 
   ctx->reply(sender,"--- End of list: %d matches", matches);
@@ -668,7 +680,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_ERROR;
   }
 
-  ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
 
@@ -691,17 +703,21 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
-    for (cip=chantable[i];cip;cip=cip->next) {
+    for (cip=ctx->target ? ctx->target : chantable[i];cip;cip=cip->next) {
       if ((search->exe)(ctx, search, cip)) {
 	if (matches<limit)
 	  display(ctx, sender, cip);
 	if (matches==limit)
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
+
+        if (ctx->target)
+          goto done;
       }
     }
   }
 
+done:
   ctx->reply(sender,"--- End of list: %d matches", matches);
 }
 
@@ -738,7 +754,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     return CMD_ERROR;
   }
 
-  ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
 
@@ -761,7 +777,7 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<AUTHNAMEHASHSIZE;i++) {
-    for (aup=authnametable[i];aup;aup=aup->next) {
+    for (aup=ctx->target ? ctx->target : authnametable[i];aup;aup=aup->next) {
       if ((search->exe)(ctx, search, aup)) {
 	if (matches<limit)
 	  display(ctx, sender, aup);
@@ -769,9 +785,13 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx) {
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
+
+      if (ctx->target)
+        goto done;
     }
   }
 
+done:
   ctx->reply(sender,"--- End of list: %d matches", matches);
 }
 
