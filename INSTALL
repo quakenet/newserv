@@ -32,7 +32,8 @@ $ ln -s ../newserv-src/newserv
 $ ln -s ../newserv-src/modules
 
 You will also need to copy the newserv.conf.example configuration file to your
-installation directory and rename it to newserv.conf.
+installation directory and rename it to newserv.conf. The MODULES file
+has a list of available modules.
 
 After you have updated your newserv.conf file you can start newserv:
 

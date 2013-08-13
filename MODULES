@@ -47,6 +47,16 @@ nick=N3
 #realname=NewServ Control Service
 #authname=C
 
+control_commands
+~~~~~~~~~~~~~~~
+
+Provides commonly-used oper commands.
+
+control_management
+~~~~~~~~~~~~~~~~~
+
+Provides user management commands.
+
 auth
 ~~~
 
@@ -144,6 +154,11 @@ newsearch
 Provides functionality to search for nicks and channels based on certain
 criteria.
 
+nickwatch
+~~~~~~~~
+
+Implements event-based nicksearch queries.
+
 miscreply
 ~~~~~~~~
 
@@ -155,6 +170,16 @@ Configuration:
 #admin1=Located at the Union Aerospace Corp. facility, Stroggos
 #admin2=Network IRC Service
 #admin3=No administrative info available
+
+patrol
+~~~~~
+
+Implements functionality to spawn trojanscan swarm clones.
+
+Configuration:
+
+[patrol]
+#minpoolhosts=5000
 
 patricia, patricianick, patriciasearch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
