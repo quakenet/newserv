@@ -68,14 +68,14 @@ void _fini() {
 }
 
 /*
- * registerlocaluserflags:
+ * registerlocaluserflagsip:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler handler) {
+nick *registerlocaluserflagsip(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, struct irc_in_addr *ipaddress, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
-  struct irc_in_addr ipaddress;
+  struct irc_in_addr tmpipaddress;
  
   i=0;
   currentlocalunum=(currentlocalunum+1)%262142;
@@ -102,15 +102,19 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
 
-  memset(&ipaddress, 0, sizeof(ipaddress));
-  ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
-  ((unsigned short *)(ipaddress.in6_16))[6] = 127;
-  ((unsigned char *)(ipaddress.in6_16))[14] = 1;
-  ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
+  if (!ipaddress) {
+    ipaddress = &tmpipaddress;
 
-  memcpy(&newuser->ipaddress, &ipaddress, sizeof(ipaddress));
+    memset(ipaddress, 0, sizeof(struct irc_in_addr));
+    ((unsigned short *)(ipaddress->in6_16))[5] = 65535;
+    ((unsigned short *)(ipaddress->in6_16))[6] = 127;
+    ((unsigned char *)(ipaddress->in6_16))[14] = 1;
+    ((unsigned char *)(ipaddress->in6_16))[15] = (currentlocalunum%253)+1;
+  }
 
-  newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
+  memcpy(&newuser->ipaddress, ipaddress, sizeof(struct irc_in_addr));
+
+  newuser->ipnode = refnode(iptree, ipaddress, PATRICIA_MAXBITS);
   node_increment_usercount(newuser->ipnode);
 
   newuser->timestamp=getnettime();
