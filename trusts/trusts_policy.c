@@ -27,6 +27,7 @@
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
 #include "../glines/glines.h"
+#include "../patricianick/patricianick.h"
 #include "trusts.h"
 
 MODULE_VERSION("");
@@ -64,8 +65,14 @@ typedef struct trustaccount {
 
 trustaccount trustaccounts[MAXSERVERS];
 
-static int checkconnectionth(const char *username, struct irc_in_addr *ip, trusthost *th, int hooknum, int usercountadjustment, char *message, size_t messagelen, int *unthrottle) {
+static int checkconnection(const char *username, struct irc_in_addr *ipaddress, int hooknum, int usercountadjustment, char *message, size_t messagelen, int *unthrottle) {
+  trusthost *th;
   trustgroup *tg;
+  struct irc_in_addr ipaddress_canonical;
+
+  ip_canonicalize_tunnel(&ipaddress_canonical, ipaddress);
+
+  th = th_getbyhost(&ipaddress_canonical);
 
   if (unthrottle)
     *unthrottle = 0;
@@ -73,7 +80,7 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
   if(messagelen>0)
     message[0] = '\0';
   
-  if(!th || !trustsdbloaded || irc_in_addr_is_loopback(ip))
+  if(!th || !trustsdbloaded || irc_in_addr_is_loopback(ipaddress))
     return POLICY_SUCCESS;
 
   tg = th->group;
@@ -86,16 +93,31 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
    */
 
   if(hooknum == HOOK_TRUSTS_NEWNICK) {
-    patricia_node_t *node;
-    int nodecount = 0;
+    patricia_node_t *head, *node;
+    int i, nodecount = 0;
+    patricianick_t *pnp;
+    nick *npp;
 
-    node = refnode(iptree, ip, th->nodebits);
-    nodecount = node->usercount;
-    derefnode(iptree, node);
+    head = refnode(iptree, &ipaddress_canonical, th->nodebits);
+    nodecount = head->usercount;
+
+    /* Account for borrowed IP addresses. */
+    PATRICIA_WALK(head, node) {
+      pnp = node->exts[pnode_ext];
+
+      if (pnp)
+        for (i = 0; i < PATRICIANICK_HASHSIZE; i++)
+          for (npp = pnp->identhash[i]; npp; npp=npp->exts[pnick_ext])
+            if (NickOnServiceServer(npp))
+              usercountadjustment--;
+    }
+    PATRICIA_WALK_END;
+
+    derefnode(iptree, head);
 
     if(th->maxpernode && nodecount + usercountadjustment > th->maxpernode) {
-      controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", CIDRtostr(*ip, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
-      snprintf(message, messagelen, "Too many connections from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded on subnet: %s (group: %s): %d connected, %d max.", CIDRtostr(*ipaddress, th->nodebits), tg->name->content, nodecount + usercountadjustment, th->maxpernode);
+      snprintf(message, messagelen, "Too many connections from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ipaddress));
       return POLICY_FAILURE_NODECOUNT;
     }
 
@@ -104,16 +126,16 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
         tg->exts[countext] = (void *)(long)tg->count;
 
         controlwall(NO_OPER, NL_CLONING, "Hard connection limit exceeded (group %s): %d connected, %d max.", tg->name->content, tg->count + usercountadjustment, tg->trustedfor);
-        snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+        snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ipaddress));
       }
 
-      snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      snprintf(message, messagelen, "Too many connections from your trust (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ipaddress));
       return POLICY_FAILURE_GROUPCOUNT;
     }
 
     if((tg->flags & TRUST_ENFORCE_IDENT) && (username[0] == '~')) {
-      controlwall(NO_OPER, NL_CLONING, "Ident required: %s@%s (group: %s).", username, IPtostr(*ip), tg->name->content);
-      snprintf(message, messagelen, "IDENTD required from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ip));
+      controlwall(NO_OPER, NL_CLONING, "Ident required: %s@%s (group: %s).", username, IPtostr(*ipaddress), tg->name->content);
+      snprintf(message, messagelen, "IDENTD required from your host (%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", IPtostr(*ipaddress));
       return POLICY_FAILURE_IDENTD;
     }
 
@@ -130,8 +152,8 @@ static int checkconnectionth(const char *username, struct irc_in_addr *ip, trust
       }
 
       if(identcount + usercountadjustment > tg->maxperident) {
-        controlwall(NO_OPER, NL_CLONING, "Hard ident limit exceeded: %s@%s (group: %s): %d connected, %d max.", username, IPtostr(*ip), tg->name->content, identcount + usercountadjustment, tg->maxperident);
-        snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ip));
+        controlwall(NO_OPER, NL_CLONING, "Hard ident limit exceeded: %s@%s (group: %s): %d connected, %d max.", username, IPtostr(*ipaddress), tg->name->content, identcount + usercountadjustment, tg->maxperident);
+        snprintf(message, messagelen, "Too many connections from your username (%s@%s) - see https://www.quakenet.org/help/trusts/connection-limit for details.", username, IPtostr(*ipaddress));
         return POLICY_FAILURE_IDENTCOUNT;
       }
     }
@@ -171,17 +193,16 @@ static int trustdowrite(trustsocket *sock, char *format, ...) {
 static int policycheck_auth(trustsocket *sock, const char *sequence_id, const char *username, const char *host) {
   char message[512];
   int verdict, unthrottle;
-  struct irc_in_addr ip, ip_canonicalized;
+  struct irc_in_addr ipaddress;
   unsigned char bits;
   trustsocket *ts;
   
-  if(!ipmask_parse(host, &ip, &bits)) {
+  if(!ipmask_parse(host, &ipaddress, &bits)) {
     sock->accepted++;
     return trustdowrite(sock, "PASS %s", sequence_id);
   }
 
-  ip_canonicalize_tunnel(&ip_canonicalized, &ip);
-  verdict = checkconnectionth(username, &ip_canonicalized, th_getbyhost(&ip_canonicalized), HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message), &unthrottle);
+  verdict = checkconnection(username, &ipaddress, HOOK_TRUSTS_NEWNICK, 1, message, sizeof(message), &unthrottle);
 
   if(!enforcepolicy_auth)
     verdict = POLICY_SUCCESS;
@@ -191,7 +212,7 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
 
     if (unthrottle) {
       for (ts = tslist; ts; ts = ts->next)
-        trustdowrite(ts, "UNTHROTTLE %s", IPtostr(ip));
+        trustdowrite(ts, "UNTHROTTLE %s", IPtostr(ipaddress));
     }
 
     if(message[0])
@@ -483,15 +504,12 @@ static void policycheck_irc(int hooknum, void *arg) {
   long moving = (long)args[1];
   char message[512];
   int verdict, unthrottle;
-  struct irc_in_addr ipaddress_canonical;
   trustsocket *ts;
 
   if(moving)
     return;
 
-  ip_canonicalize_tunnel(&ipaddress_canonical, &np->ipaddress);
-
-  verdict = checkconnectionth(np->ident, &ipaddress_canonical, gettrusthost(np), hooknum, 0, message, sizeof(message), &unthrottle);
+  verdict = checkconnection(np->ident, &np->ipaddress, hooknum, 0, message, sizeof(message), &unthrottle);
     
   if(!enforcepolicy_irc)
     verdict = POLICY_SUCCESS;
