@@ -283,6 +283,7 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
   nick *np;
   flag_t oldflags;
   char *fakehost;
+  void *args[2];
   
   if (cargc<2) {
     Error("nick",ERR_WARNING,"Mode message with too few parameters");
@@ -304,6 +305,10 @@ int handleusermodemsg(void *source, int cargc, char **cargv) {
     }
     oldflags=np->umodes;
     setflags(&(np->umodes),UMODE_ALL,cargv[1],umodeflags,REJECT_NONE);
+
+    args[0] = np;
+    args[1] = (void *)oldflags;
+    triggerhook(HOOK_NICK_MODECHANGE, args);
 
     if (strchr(cargv[1],'o')) { /* o always comes on its own when being set */
       if(serverlist[myhub].flags & SMODE_OPERNAME) {
