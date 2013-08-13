@@ -152,6 +152,7 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
 
   newuser->cloak_count = 0;
   newuser->cloak_extra = NULL;
+  newuser->message = NULL;
 
   if (connected) {
     /* Check for nick collision */

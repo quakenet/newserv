@@ -162,6 +162,7 @@ int handlenickmsg(void *source, int cargc, char **cargv) {
     np->accountts=0;
     np->cloak_count = 0;
     np->cloak_extra = NULL;
+    np->message = NULL;
     if(cargc>=9) {
       int sethostarg = 6, opernamearg = 6, accountarg = 6;
 
