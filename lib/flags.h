@@ -3,8 +3,8 @@
 #ifndef __FLAGS_H
 #define __FLAGS_H
 
-typedef unsigned short flag_t;
-#define FLAG_T_SPECIFIER "%hu"
+typedef unsigned int flag_t;
+#define FLAG_T_SPECIFIER "%u"
 
 typedef struct {
   unsigned char flagchar;
