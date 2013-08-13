@@ -301,8 +301,8 @@ void patrol_generaterealname(char *buf, int maxsize) {
     strlcpy(buf, np->realname->name->content, maxsize + 1);
 }
 
-nick *patrol_generateclone(UserMessageHandler handler) {
-  int loops = 0, modes = UMODE_XOPER | UMODE_INV;
+nick *patrol_generateclone(int extraumodes, UserMessageHandler handler) {
+  int loops = 0, modes = UMODE_XOPER | UMODE_INV | extraumodes;
   char c_nick[NICKLEN + 1], c_ident[USERLEN + 1], c_host[HOSTLEN + 1], c_real[REALLEN + 1];
   struct irc_in_addr ipaddress;
 

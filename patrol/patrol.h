@@ -14,5 +14,5 @@
 #define PATROL_MMIN(a, b) a > b ? b : a
 
 int patrol_repool(void);
-nick *patrol_generateclone(UserMessageHandler handler);
+nick *patrol_generateclone(int extraumodes, UserMessageHandler handler);
 void patrol_nickchange(nick *np);

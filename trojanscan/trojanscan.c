@@ -592,7 +592,7 @@ void trojanscan_generateclone(void *arg) {
 
   i = (int)((long)arg);
 
-  trojanscan_swarm[i].clone = patrol_generateclone(&trojanscan_clonehandlemessages);
+  trojanscan_swarm[i].clone = patrol_generateclone(0, &trojanscan_clonehandlemessages);
 
   if(trojanscan_swarm[i].clone && !trojanscan_swarm_created) {
     nick *np = trojanscan_selectuser();
