@@ -104,6 +104,14 @@ static void nw_hook_umodechange(int hooknum, void *arg) {
   scheduleoneshot(0, nw_sched_processevent, nwe);
 }
 
+static void nw_hook_message(int hooknum, void *arg) {
+  void **args = arg;
+  nick *np = args[0];
+  int isnotice = (uintptr_t)args[2];
+  nickwatchevent *nwe = nwe_new(np, isnotice ? "notice" : "message");
+  scheduleoneshot(0, nw_sched_processevent, nwe);
+}
+
 static void nw_hook_joinchannel(int hooknum, void *arg) {
   void **args = arg;
   channel *cp = args[0];
@@ -190,6 +198,7 @@ void _init(void) {
   registerhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
   registerhook(HOOK_NICK_RENAME, &nw_hook_rename);
   registerhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);
+  registerhook(HOOK_NICK_MESSAGE, &nw_hook_message);
   registerhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   registerhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
 }
@@ -204,6 +213,7 @@ void _fini(void) {
   deregisterhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
   deregisterhook(HOOK_NICK_RENAME, &nw_hook_rename);
   deregisterhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);
+  deregisterhook(HOOK_NICK_MESSAGE, &nw_hook_message);
   deregisterhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   deregisterhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
 

@@ -211,6 +211,7 @@ void _init() {
   registersearchterm(reg_whowassearch, "cidr",cidr_parse, 0, "CIDR matching");
   registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
   registersearchterm(reg_whowassearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
+  registersearchterm(reg_nicksearch, "message",message_parse, 0, "Last message");
 
   /* Whowas operations */
   registersearchterm(reg_whowassearch, "quit",quit_parse, 0, "User quit");

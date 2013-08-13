@@ -218,6 +218,7 @@ void deletenick(nick *np) {
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
   freesstring(np->opername); 
+  freesstring(np->message);
 
   node_decrement_usercount(np->ipnode);
   derefnode(iptree, np->ipnode);

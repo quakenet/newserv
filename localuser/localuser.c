@@ -364,7 +364,7 @@ int handlemessageornotice(void *source, int cargc, char **cargv, int isnotice) {
   char *ch;
   char targetnick[NICKLEN+1];
   int foundat;
-  void *nargs[2];
+  void *nargs[3];
   int i;
   
   /* Should have target and message */
@@ -372,13 +372,21 @@ int handlemessageornotice(void *source, int cargc, char **cargv, int isnotice) {
     return CMD_OK;
   }
 
-  if (cargv[0][0]=='#' || cargv[0][0]=='+') {
-    /* Channel message/notice */
-    return CMD_OK;
-  }
-  
   if ((sender=getnickbynumericstr((char *)source))==NULL) {
     Error("localuser",ERR_WARNING,"PRIVMSG from non existant user %s",(char *)source);
+    return CMD_OK;
+  }
+
+  freesstring(sender->message);
+  sender->message = getsstring(cargv[1], 512);
+
+  nargs[0] = sender;
+  nargs[1] = cargv[1];
+  nargs[2] = (void *)(uintptr_t)isnotice;
+  triggerhook(HOOK_NICK_MESSAGE, nargs);
+
+  if (cargv[0][0]=='#' || cargv[0][0]=='+') {
+    /* Channel message/notice */
     return CMD_OK;
   }
   

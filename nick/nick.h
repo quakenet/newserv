@@ -164,6 +164,7 @@ typedef struct nick {
   struct nick *nextbyauthname;
   /* These are extensions only used by other modules */
   array *channels;
+  sstring *message;
   void *exts[MAXNICKEXTS];
 } nick;
 

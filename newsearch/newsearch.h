@@ -142,6 +142,7 @@ struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *authid_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *cidr_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *ipv6_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *message_parse(searchCtx *ctx, int argc, char **argv);
 
 /* Whowas functions (various types) */
 struct searchNode *quit_parse(searchCtx *ctx, int argc, char **argv);
