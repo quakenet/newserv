@@ -67,7 +67,7 @@ void _init() {
   
   /* These values cannot be changed whilst the IRC module is running */
   mynumeric=getcopyconfigitem("irc","servernumeric","A]",2);
-  myserver=getcopyconfigitem("irc","servername","services.lame.net",HOSTLEN);
+  myserver=getcopyconfigitem("irc","servername","services.example.net",HOSTLEN);
   
   mylongnum=numerictolong(mynumeric->content,2);
 

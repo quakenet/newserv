@@ -27,7 +27,7 @@ int handleburstmsg(void *source, int cargc, char **cargv) {
   int isnewchan;
   
   /* (we don't see the first 2 params in cargc) */
-  /* AK B #+lod+ 1017561154 +tnk eits ATJWu:o,AiW1a,Ag3lV,AiWnl,AE6oI :%*!@D577A90D.kabel.telenet.be */
+  /* AK B #+lod+ 1017561154 +tnk eits ATJWu:o,AiW1a,Ag3lV,AiWnl,AE6oI :%*!@123.example.net */
   
   if (cargc<2) {
     Error("channel",ERR_WARNING,"Burst message with only %d parameters",cargc);

@@ -137,7 +137,7 @@ int parseth(char *line, trusthost *th, unsigned int *tgid, int oformat) {
   int maxpernode, nodebits;
   char *ip, xbuf[1024], *id;
 
-/* #id,213.230.192.128/26,20,23,1222732944
+/* #id,192.168.2.128/26,20,23,1222732944
        ip                ,cur,max,lastseen */
 
   strlcpy(xbuf, line, sizeof(xbuf));
