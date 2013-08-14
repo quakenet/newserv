@@ -107,6 +107,11 @@ static void nw_hook_newnick(int hooknum, void *arg) {
   nwe_enqueue(np, "new user");
 }
 
+static void nw_hook_account(int hooknum, void *arg) {
+  nick *np = arg;
+  nwe_enqueue(np, "logged in with account %s", np->authname);
+}
+
 static void nw_hook_lostnick(int hooknum, void *arg) {
   nick *np = arg;
   int i;
@@ -230,6 +235,7 @@ void _init(void) {
   registercontrolhelpcmd("nickwatches", NO_OPER, 0, &nw_cmd_nickwatches, "Usage: nickwatches\nLists nickwatches.");
 
   registerhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  registerhook(HOOK_NICK_ACCOUNT, &nw_hook_account);
   registerhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
   registerhook(HOOK_NICK_RENAME, &nw_hook_rename);
   registerhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);
@@ -248,6 +254,7 @@ void _fini(void) {
   deregistercontrolcmd("nickwatches", &nw_cmd_nickwatches);
 
   deregisterhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  deregisterhook(HOOK_NICK_ACCOUNT, &nw_hook_account);
   deregisterhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
   deregisterhook(HOOK_NICK_RENAME, &nw_hook_rename);
   deregisterhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);

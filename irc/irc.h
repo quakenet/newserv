@@ -9,7 +9,7 @@
 #include <time.h>
 
 /* This defines the maximum possible local masked numeric */
-#define MAXLOCALUSER     4095
+#define MAXLOCALUSER     65535
 
 /* Are we connected to IRC or not? */
 extern int connected;
