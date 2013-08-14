@@ -127,7 +127,7 @@ searchNode *search_astparse(searchCtx *ctx, char *loc) {
   }
 }
 
-int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit, nick *target) {
+int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NickDisplayFunc display, HeaderFunc header, void *headerarg, int limit, array *targets) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -136,17 +136,20 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch, sender, display, limit, target);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nicksearch, sender, display, limit, targets);
 
   buf[0] = '\0';
-  reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_nicksearch));
+  if (!targets)
+    reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_nicksearch));
   search = ctx.parser(&ctx, (char *)tree);
   if(!search) {
-    reply(sender, "Parse error: %s", parseError);
+    if (!targets)
+      reply(sender, "Parse error: %s", parseError);
     return CMD_ERROR;
   }
 
-  reply(sender, "Executing...");
+  if (!targets)
+    reply(sender, "Executing...");
   if(header)  
     header(sender, headerarg);
   nicksearch_exe(search, &ctx);
@@ -156,7 +159,7 @@ int ast_nicksearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
-int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit, whowas *target) {
+int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, WhowasDisplayFunc display, HeaderFunc header, void *headerarg, int limit, array *targets) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -165,7 +168,7 @@ int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFun
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_whowassearch, sender, display, limit, target);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_whowassearch, sender, display, limit, targets);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_whowassearch));
@@ -185,13 +188,13 @@ int ast_whowassearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFun
   return CMD_OK;
 }
 
-int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit, chanindex *target) {
+int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, ChanDisplayFunc display, HeaderFunc header, void *headerarg, int limit, array *targets) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
   char buf[1024];
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender, display, limit, target);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_chansearch, sender, display, limit, targets);
 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
@@ -214,7 +217,7 @@ int ast_chansearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   return CMD_OK;
 }
 
-int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit, authname *target) {
+int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, UserDisplayFunc display, HeaderFunc header, void *headerarg, int limit, array *targets) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
@@ -223,7 +226,7 @@ int ast_usersearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch, sender, display, limit, target);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_usersearch, sender, display, limit, targets);
 
   buf[0] = '\0';
   reply(sender, "Parsing: %s", ast_printtree(buf, sizeof(buf), tree, reg_usersearch));

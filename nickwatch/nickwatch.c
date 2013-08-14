@@ -19,79 +19,112 @@ typedef struct nickwatch {
 
 typedef struct nickwatchevent {
   char description[128];
-  long numeric;
+  struct nickwatchevent *next;
 } nickwatchevent;
 
 static nickwatch *nickwatches;
 static int nextnickwatch = 1;
+static int nickwatchext;
 
 static void nw_dummyreply(nick *np, char *format, ...) { }
-
 static void nw_dummywall(int level, char *format, ...) { }
 
 static nickwatch *nw_currentwatch;
-static nickwatchevent *nw_currentevent;
+static array nw_pendingnicks;
 
 static void nw_printnick(searchCtx *ctx, nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
+  char events[512];
+  nickwatchevent *nwe = np->exts[nickwatchext];
+  int len;
 
   nw_currentwatch->hits++;
 
-  controlwall(NO_OPER, NL_HITS, "nickwatch(#%d, %s): %s [%s] (%s) (%s)", nw_currentwatch->id, nw_currentevent->description, visiblehostmask(np,hostbuf),
+  events[0] = '\0';
+  len = 0;
+
+  for (nwe = np->exts[nickwatchext]; nwe; nwe = nwe->next) {
+    if (len > 0)
+      len += snprintf(events + len, sizeof(events) - len, ", ");
+
+    len += snprintf(events + len, sizeof(events) - len, "%s", nwe->description);
+  }
+
+  controlwall(NO_OPER, NL_HITS, "nickwatch(#%d, %s): %s [%s] (%s) (%s)", nw_currentwatch->id, events, visiblehostmask(np,hostbuf),
                IPtostr(np->ipaddress), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
-static nickwatchevent *nwe_new(nick *np, const char *format, ...) {
+static void nwe_enqueue(nick *np, const char *format, ...) {
   nickwatchevent *nwe;
   va_list va;
+  int slot;
 
   nwe = malloc(sizeof(nickwatchevent));
-  nwe->numeric = np->numeric;
 
   va_start(va, format);
   vsnprintf(nwe->description, sizeof(nwe->description), format, va);
   va_end(va);
 
-  return nwe;
+  nwe->next = np->exts[nickwatchext];
+  np->exts[nickwatchext] = nwe;
+
+  slot = array_getfreeslot(&nw_pendingnicks);
+  ((nick **)nw_pendingnicks.content)[slot] = np;
 }
 
-static void nwe_free(nickwatchevent *nwe) {
-  free(nwe);
-}
+static void nwe_clear(nick *np) {
+  nickwatchevent *nwe, *next;
 
-static void nw_sched_processevent(void *arg) {
-  nickwatchevent *nwe = arg;
-  nick *np;
-  nickwatch *nw;
-
-  np = getnickbynumeric(nwe->numeric);
-
-  if (!np) {
-    nwe_free(nwe);
-    return;
+  for (nwe = np->exts[nickwatchext]; nwe; nwe = next) {
+    next = nwe->next;
+    free(nwe);
   }
-  nw_currentevent = nwe;
+
+  np->exts[nickwatchext] = NULL;
+}
+
+static void nw_sched_processevents(void *arg) {
+  nickwatch *nw;
+  int i;
+  nick *np;
 
   for (nw = nickwatches; nw; nw = nw->next) {
     nw_currentwatch = nw;
-    ast_nicksearch(nw->tree->root, &nw_dummyreply, mynick, &nw_dummywall, &nw_printnick, NULL, NULL, 10, np);
+    ast_nicksearch(nw->tree->root, &nw_dummyreply, mynick, &nw_dummywall, &nw_printnick, NULL, NULL, 10, &nw_pendingnicks);
   }
 
-  nwe_free(nwe);
+  for (i = 0; i < nw_pendingnicks.cursi; i++) {
+    np = ((nick **)nw_pendingnicks.content)[i];
+    nwe_clear(np);
+  }
+
+  array_free(&nw_pendingnicks);
+  array_init(&nw_pendingnicks, sizeof(nick *));
 }
 
 static void nw_hook_newnick(int hooknum, void *arg) {
   nick *np = arg;
-  nickwatchevent *nwe = nwe_new(np, "new user");
-  scheduleoneshot(0, nw_sched_processevent, nwe);
+  nwe_enqueue(np, "new user");
+}
+
+static void nw_hook_lostnick(int hooknum, void *arg) {
+  nick *np = arg;
+  int i;
+
+  nwe_clear(np);
+
+  for (i = 0; i < nw_pendingnicks.cursi;)
+    if (((nick **)nw_pendingnicks.content)[i] == np)
+      array_delslot(&nw_pendingnicks, i);
+    else
+      i++;
 }
 
 static void nw_hook_rename(int hooknum, void *arg) {
   void **args = arg;
   nick *np = args[0];
   char *oldnick = args[1];
-  nickwatchevent *nwe = nwe_new(np, "renamed from %s", oldnick);
-  scheduleoneshot(0, nw_sched_processevent, nwe);
+  nwe_enqueue(np, "renamed from %s", oldnick);
 }
 
 static void nw_hook_umodechange(int hooknum, void *arg) {
@@ -100,24 +133,21 @@ static void nw_hook_umodechange(int hooknum, void *arg) {
   flag_t oldmodes = (uintptr_t)args[1];
   char buf[64];
   strncpy(buf, printflags(np->umodes, umodeflags), sizeof(buf));
-  nickwatchevent *nwe = nwe_new(np, "umodes %s -> %s", printflags(oldmodes, umodeflags), buf);
-  scheduleoneshot(0, nw_sched_processevent, nwe);
+  nwe_enqueue(np, "umodes %s -> %s", printflags(oldmodes, umodeflags), buf);
 }
 
 static void nw_hook_message(int hooknum, void *arg) {
   void **args = arg;
   nick *np = args[0];
   int isnotice = (uintptr_t)args[2];
-  nickwatchevent *nwe = nwe_new(np, isnotice ? "notice" : "message");
-  scheduleoneshot(0, nw_sched_processevent, nwe);
+  nwe_enqueue(np, isnotice ? "notice" : "message");
 }
 
 static void nw_hook_joinchannel(int hooknum, void *arg) {
   void **args = arg;
   channel *cp = args[0];
   nick *np = args[1];
-  nickwatchevent *nwe = nwe_new(np, "join channel %s", cp->index->name->content);
-  scheduleoneshot(0, nw_sched_processevent, nwe);
+  nwe_enqueue(np, "join channel %s", cp->index->name->content);
 }
 
 static int nw_cmd_nickwatch(void *source, int cargc, char **cargv) {
@@ -190,17 +220,41 @@ static int nw_cmd_nickwatches(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int nw_cmd_nickburst(void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  int i;
+  char *pargv[1];
+
+  pargv[0] = "(and (match (nick) \"*gunnar*\"))";
+
+  for (i = 0; i < 100; i++)
+    nw_cmd_nickwatch(source, 1, pargv);
+
+  for (i = 0; i < 50000; i++)
+    nwe_enqueue(sender, "new user");
+
+  return CMD_OK;
+}
+
 void _init(void) {
+  nickwatchext = registernickext("nickwatch");
+
+  array_init(&nw_pendingnicks, sizeof(nick *));
+
   registercontrolhelpcmd("nickwatch", NO_OPER, 1, &nw_cmd_nickwatch, "Usage: nickwatch <nicksearch term>\nAdds a nickwatch entry.");
   registercontrolhelpcmd("nickunwatch", NO_OPER, 1, &nw_cmd_nickunwatch, "Usage: nickunwatch <#id>\nRemoves a nickwatch entry.");
   registercontrolhelpcmd("nickwatches", NO_OPER, 0, &nw_cmd_nickwatches, "Usage: nickwatches\nLists nickwatches.");
+  registercontrolhelpcmd("nickburst", NO_OPER, 0, &nw_cmd_nickburst, "Usage: nickwatches\nSimulates a burst.");
 
   registerhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  registerhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
   registerhook(HOOK_NICK_RENAME, &nw_hook_rename);
   registerhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);
   registerhook(HOOK_NICK_MESSAGE, &nw_hook_message);
   registerhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   registerhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
+
+  schedulerecurring(time(NULL) + 5, 0, 1, &nw_sched_processevents, NULL);
 }
 
 void _fini(void) {
@@ -209,13 +263,24 @@ void _fini(void) {
   deregistercontrolcmd("nickwatch", &nw_cmd_nickwatch);
   deregistercontrolcmd("nickunwatch", &nw_cmd_nickunwatch);
   deregistercontrolcmd("nickwatches", &nw_cmd_nickwatches);
+  deregistercontrolcmd("nickburst", &nw_cmd_nickburst);
 
   deregisterhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
+  deregisterhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
   deregisterhook(HOOK_NICK_RENAME, &nw_hook_rename);
   deregisterhook(HOOK_NICK_MODECHANGE, &nw_hook_umodechange);
   deregisterhook(HOOK_NICK_MESSAGE, &nw_hook_message);
   deregisterhook(HOOK_CHANNEL_CREATE, &nw_hook_joinchannel);
   deregisterhook(HOOK_CHANNEL_JOIN, &nw_hook_joinchannel);
+
+  deleteallschedules(&nw_sched_processevents);
+
+  /* Process all pending events */
+  nw_sched_processevents(NULL);
+
+  array_free(&nw_pendingnicks);
+
+  releasenickext(nickwatchext);
 
   for (nw = nickwatches; nw; nw = next) {
     next = nw->next;

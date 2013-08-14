@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
@@ -457,7 +458,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit, void *target) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit, array *targets) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
@@ -467,7 +468,7 @@ void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc reply
   ctx->searchcmd = cmd;
   ctx->sender = np;
   ctx->limit = limit;
-  ctx->target = target;
+  ctx->targets = targets;
   ctx->displayfn = displayfn;
 }
 
@@ -516,7 +517,7 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 }
 
 void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
-  int i, j;
+  int i, j, k;
   int matches = 0;
   unsigned int cmarker;
   unsigned int tchans=0,uchans=0;
@@ -533,7 +534,13 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
-    for (np=ctx->target ? ctx->target : nicktable[i];np;np=np->next) {
+    for (np=nicktable[i], k = 0;ctx->targets ? (k < ctx->targets->cursi) : (np != NULL);np=np->next, k++) {
+      if (ctx->targets) {
+        np = ((nick **)ctx->targets->content)[k];
+        if (!np)
+          break;
+      }
+
       if ((search->exe)(ctx, search, np)) {
         /* Add total channels */
         tchans += np->channels->cursi;
@@ -554,13 +561,12 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
-
-      if (ctx->target)
-        goto done;
     }
+
+    if (ctx->targets)
+      break;
   }
 
-done:
   ctx->reply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
                 matches, tchans, uchans, (float)tchans/uchans);
 }
@@ -617,18 +623,16 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
   WhowasDisplayFunc display = ctx->displayfn;
   int limit = ctx->limit;
 
+  assert(!ctx->targets);
+
   /* The top-level node needs to return a BOOL */
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
 
   for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-    if (ctx->target) {
-      ww = ctx->target;
-    } else {
-      ww = &whowasrecs[i % WW_MAXENTRIES];
+    ww = &whowasrecs[i % WW_MAXENTRIES];
 
-      if (ww->type == WHOWAS_UNUSED)
-        continue;
-    }
+    if (ww->type == WHOWAS_UNUSED)
+      continue;
 
     /* Note: We're passing the nick to the filter function. The original
      * whowas record is in the nick's ->next field. */
@@ -640,9 +644,6 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
         ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
       matches++;
     }
-
-    if (ctx->target)
-      break;
   }
 
   ctx->reply(sender,"--- End of list: %d matches", matches);
@@ -700,25 +701,23 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx) {
   senderNSExtern = sender;
   ChanDisplayFunc display = ctx->displayfn;
   int limit = ctx->limit;
-  
+
+  assert(!ctx->targets);  
+
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
-    for (cip=ctx->target ? ctx->target : chantable[i];cip;cip=cip->next) {
+    for (cip=chantable[i];cip;cip=cip->next) {
       if ((search->exe)(ctx, search, cip)) {
 	if (matches<limit)
 	  display(ctx, sender, cip);
 	if (matches==limit)
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
-
-        if (ctx->target)
-          goto done;
       }
     }
   }
 
-done:
   ctx->reply(sender,"--- End of list: %d matches", matches);
 }
 
@@ -775,10 +774,12 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx) {
   UserDisplayFunc display = ctx->displayfn;
   senderNSExtern = sender;
 
+  assert(!ctx->targets);
+
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<AUTHNAMEHASHSIZE;i++) {
-    for (aup=ctx->target ? ctx->target : authnametable[i];aup;aup=aup->next) {
+    for (aup=authnametable[i];aup;aup=aup->next) {
       if ((search->exe)(ctx, search, aup)) {
 	if (matches<limit)
 	  display(ctx, sender, aup);
@@ -786,13 +787,9 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx) {
 	  ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
 	matches++;
       }
-
-      if (ctx->target)
-        goto done;
     }
   }
 
-done:
   ctx->reply(sender,"--- End of list: %d matches", matches);
 }
 
