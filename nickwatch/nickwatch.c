@@ -118,11 +118,9 @@ static void nw_hook_lostnick(int hooknum, void *arg) {
 
   nwe_clear(np);
 
-  for (i = 0; i < nw_pendingnicks.cursi;)
+  for (i = 0; i < nw_pendingnicks.cursi; i++)
     if (((nick **)nw_pendingnicks.content)[i] == np)
-      array_delslot(&nw_pendingnicks, i);
-    else
-      i++;
+      ((nick **)nw_pendingnicks.content)[i] = NULL;
 }
 
 static void nw_hook_rename(int hooknum, void *arg) {

@@ -538,7 +538,7 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
       if (ctx->targets) {
         np = ((nick **)ctx->targets->content)[k];
         if (!np)
-          break;
+          continue;
       }
 
       if ((search->exe)(ctx, search, np)) {
