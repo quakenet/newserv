@@ -220,22 +220,6 @@ static int nw_cmd_nickwatches(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-static int nw_cmd_nickburst(void *source, int cargc, char **cargv) {
-  nick *sender = source;
-  int i;
-  char *pargv[1];
-
-  pargv[0] = "(and (match (nick) \"*gunnar*\"))";
-
-  for (i = 0; i < 100; i++)
-    nw_cmd_nickwatch(source, 1, pargv);
-
-  for (i = 0; i < 50000; i++)
-    nwe_enqueue(sender, "new user");
-
-  return CMD_OK;
-}
-
 void _init(void) {
   nickwatchext = registernickext("nickwatch");
 
@@ -244,7 +228,6 @@ void _init(void) {
   registercontrolhelpcmd("nickwatch", NO_OPER, 1, &nw_cmd_nickwatch, "Usage: nickwatch <nicksearch term>\nAdds a nickwatch entry.");
   registercontrolhelpcmd("nickunwatch", NO_OPER, 1, &nw_cmd_nickunwatch, "Usage: nickunwatch <#id>\nRemoves a nickwatch entry.");
   registercontrolhelpcmd("nickwatches", NO_OPER, 0, &nw_cmd_nickwatches, "Usage: nickwatches\nLists nickwatches.");
-  registercontrolhelpcmd("nickburst", NO_OPER, 0, &nw_cmd_nickburst, "Usage: nickwatches\nSimulates a burst.");
 
   registerhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
   registerhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
@@ -263,7 +246,6 @@ void _fini(void) {
   deregistercontrolcmd("nickwatch", &nw_cmd_nickwatch);
   deregistercontrolcmd("nickunwatch", &nw_cmd_nickunwatch);
   deregistercontrolcmd("nickwatches", &nw_cmd_nickwatches);
-  deregistercontrolcmd("nickburst", &nw_cmd_nickburst);
 
   deregisterhook(HOOK_NICK_NEWNICK, &nw_hook_newnick);
   deregisterhook(HOOK_NICK_LOSTNICK, &nw_hook_lostnick);
