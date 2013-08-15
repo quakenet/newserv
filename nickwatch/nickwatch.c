@@ -85,21 +85,41 @@ static void nwe_clear(nick *np) {
 
 static void nw_sched_processevents(void *arg) {
   nickwatch *nw;
-  int i;
+  int i, slot;
+  unsigned int marker;
   nick *np;
+  array nicks;
 
-  for (nw = nickwatches; nw; nw = nw->next) {
-    nw_currentwatch = nw;
-    ast_nicksearch(nw->tree->root, &nw_dummyreply, mynick, &nw_dummywall, &nw_printnick, NULL, NULL, 10, &nw_pendingnicks);
-  }
+  array_init(&nicks, sizeof(nick *));
+  marker = nextnickmarker();
 
   for (i = 0; i < nw_pendingnicks.cursi; i++) {
     np = ((nick **)nw_pendingnicks.content)[i];
-    nwe_clear(np);
+
+    if (!np)
+      continue;
+
+    if (np->marker != marker) {
+      np->marker = marker;
+      slot = array_getfreeslot(&nicks);
+      ((nick **)nicks.content)[slot] = np;
+    }
   }
 
   array_free(&nw_pendingnicks);
   array_init(&nw_pendingnicks, sizeof(nick *));
+
+  for (nw = nickwatches; nw; nw = nw->next) {
+    nw_currentwatch = nw;
+    ast_nicksearch(nw->tree->root, &nw_dummyreply, mynick, &nw_dummywall, &nw_printnick, NULL, NULL, 10, &nicks);
+  }
+
+  for (i = 0; i < nicks.cursi; i++) {
+    np = ((nick **)nicks.content)[i];
+    nwe_clear(np);
+  }
+
+  array_free(&nicks);
 }
 
 static void nw_hook_newnick(int hooknum, void *arg) {
