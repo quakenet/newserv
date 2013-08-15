@@ -31,13 +31,6 @@ and modify user accounts.
 
 Other modules can register their own commands.
 
-You can create a user on your control instance using /msg N hello (where N is
-the nick of your control instance). You need to be opered in order to use this
-command.
-
-Once you have an account you should have a look at /msg N showcommands for a
-list of available commands.
-
 Configuration:
 
 [control]
