@@ -5,9 +5,9 @@
              \_/  \_/  \_/  \_/  \_/  \_/  \_/ 
 			 
 
-newserv is an IRC P10 protocol services daemon developed for the QuakeNet IRC Network since April 2002. It is modular, fast and easily customizable.
+newserv is a P10 protocol services daemon developed for the QuakeNet IRC Network since April 2002. It is modular, fast and easily customizable.
 
-newserv is available for download and use under the XXX open source license. 
+newserv is available for download and use under the GPLv2 open source license. 
 
 The official website for newserv is http://dev.quakenet.org/
 
