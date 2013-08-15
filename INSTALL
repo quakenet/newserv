@@ -27,7 +27,6 @@ and symlink the "newserv" binary and the "modules" directory into it:
 
 $ cd
 $ mkdir newserv-install && cd newserv-install
-$ mkdir data # Some modules depend on this directory being available
 $ ln -s ../newserv-src/newserv
 $ ln -s ../newserv-src/modules
 
