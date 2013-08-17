@@ -11,10 +11,10 @@ NSCOMMANDS=ns-not.o ns-and.o ns-or.o ns-eq.o ns-match.o ns-hostmask.o ns-realnam
 newsearch.so: newsearch.o formats.o y.tab.o lex.yy.o parser.o ${NSCOMMANDS}
 
 y.tab.c y.tab.h: newsearch.y
-	${YACC} -d newsearch.y
+	$(YACC) -y -d newsearch.y
 
 lex.yy.c: newsearch.l y.tab.h
-	${LEX} newsearch.l
+	$(LEX) newsearch.l
 
 clean:
 	rm -f *.o *.so y.tab.c y.tab.h lex.yy.c
