@@ -584,7 +584,7 @@ void killsock(scan *sp, int outcome) {
       loggline(chp, sp->node);   
       ip = &(((patricia_node_t *)sp->node)->prefix->sin);
       snprintf(reason, sizeof(reason), "Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d", chp->glineid);
-      glinebyip("*", ip, 128, 1800, reason, GLINE_IGNORE_TRUST, "proxyscan");
+      glinebyip("*", ip, 128, 43200, reason, GLINE_IGNORE_TRUST, "proxyscan");
       Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(*ip));
 
       snprintf(buf, sizeof(buf), "proxy-gline %lu %s %s %hu %s", time(NULL), IPtostr(*ip), scantostr(sp->type), sp->port, "irc.quakenet.org");
