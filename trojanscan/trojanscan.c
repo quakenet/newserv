@@ -1924,6 +1924,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   int glining = 0, usercount;
   struct trojanscan_worms *worm = phrase->worm;
   char reason[200];
+  glinebuf gbuf;
 
   trojanscan_database.detections++;
   
@@ -1933,7 +1934,11 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   } else if(worm->glinehost || worm->glineuser) {
     glining = 1;
 
-    usercount = glinebynick(sender, 0, NULL, GLINE_SIMULATE, "trojanscan");
+    glinebufinit(&gbuf, 0);
+    glinebufaddbynick(&gbuf, sender, 0, "trojanscan", NULL, getnettime(), getnettime(), getnettime());
+    glinebufcounthits(&gbuf, &usercount, NULL);
+    strncpy(glinemask, gbuf.glines ? glinetostring(gbuf.glines) : "<no mask>", sizeof(glinemask));
+    glinebufabort(&gbuf);
   }
   
   if (!usercount) {
@@ -1942,12 +1947,12 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
   }
    
   if (glining && (usercount > trojanscan_maxusers)) {
-    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too many users (%d) with mask: *!%s -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, usercount, glinemask, worm->name->content);
+    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too many users (%d) with mask: %s -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, usercount, glinemask, worm->name->content);
     return;
   }
 
   if (glining && !worm->datalen) {
-    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too lack of removal data with mask: *!%s (%d users) -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, glinemask, usercount, worm->name->content);
+    trojanscan_mainchanmsg("w: not glining %s!%s@%s due to too lack of removal data with mask: %s (%d users) -- worm: %s)", sender->nick, sender->ident, sender->host->name->content, glinemask, usercount, worm->name->content);
     return;
   }
     
@@ -1983,7 +1988,7 @@ void trojanscan_phrasematch(channel *chp, nick *sender, trojanscan_phrases *phra
     snprintf(reason, sizeof(reason), "You (%s!%s@%s) are infected with a trojan (%s/%d), see %s%d for details - banned for %d hours", sender->nick, sender->ident, sender->host->name->content, worm->name->content, phrase->id, TROJANSCAN_URL_PREFIX, worm->id, glinetime);
     glinebynick(sender, glinetime * 3600, reason, 0, "trojanscan");
 
-    trojanscan_mainchanmsg("g: *!%s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d%s%s", glinemask, messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", phrase->id, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
+    trojanscan_mainchanmsg("g: %s t: %c u: %s!%s@%s%s%s c: %d w: %s%s p: %d f: %d%s%s", glinemask, messagetype, sender->nick, sender->ident, sender->host->name->content, messagetype=='N'||messagetype=='M'||messagetype=='P'?" #: ":"", messagetype=='N'||messagetype=='M'||messagetype=='P'?chp->index->name->content:"", usercount, worm->name->content, worm->epidemic?"(E)":"", phrase->id, frequency, matchbuf[0]?" --: ":"", matchbuf[0]?matchbuf:"");
   }
 }
             
