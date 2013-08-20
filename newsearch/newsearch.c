@@ -196,7 +196,8 @@ void _init() {
   registersearchterm(reg_whowassearch, "ident",ident_parse, 0, "User's current ident");
   registersearchterm(reg_nicksearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");
   registersearchterm(reg_whowassearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");             
-  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       /* nick only */
+  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");
+  registersearchterm(reg_whowassearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       
   registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "User's Timestamp");
   registersearchterm(reg_whowassearch, "timestamp",timestamp_parse, 0, "User's Timestamp");
   registersearchterm(reg_nicksearch, "country",country_parse, 0, "2 letter country code (data source is geoip)");
