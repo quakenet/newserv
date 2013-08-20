@@ -33,7 +33,7 @@ static nickwatch *nw_currentwatch;
 static array nw_pendingnicks;
 
 static void nw_printnick(searchCtx *ctx, nick *sender, nick *np) {
-  char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
+  char hostbuf[HOSTLEN+NICKLEN+USERLEN+4], modebuf[34];
   char events[512];
   nickwatchevent *nwe = np->exts[nickwatchext];
   int len;
@@ -50,8 +50,10 @@ static void nw_printnick(searchCtx *ctx, nick *sender, nick *np) {
     len += snprintf(events + len, sizeof(events) - len, "%s", nwe->description);
   }
 
+  strncpy(modebuf, printflags(np->umodes, umodeflags), sizeof(modebuf));
+
   controlwall(NO_OPER, NL_HITS, "nickwatch(#%d, %s): %s [%s] (%s) (%s)", nw_currentwatch->id, events, visiblehostmask(np,hostbuf),
-               IPtostr(np->ipaddress), printflags(np->umodes, umodeflags), np->realname->name->content);
+               IPtostr(np->ipaddress), modebuf, np->realname->name->content);
 }
 
 static void nwe_enqueue(nick *np, const char *format, ...) {
