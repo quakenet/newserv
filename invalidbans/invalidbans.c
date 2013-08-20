@@ -54,7 +54,7 @@ static void ib_hook_modechange(int hooknum, void *arg) {
   int slot, i;
   array bans;
 
-  if (!(changeflags & MODECHANGE_BANS))
+  if (!np || !(changeflags & MODECHANGE_BANS))
     return;
 
   inp = np->exts[ib_nickext];
