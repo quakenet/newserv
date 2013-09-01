@@ -84,6 +84,7 @@ void chanservfinishinit(int hooknum, void *arg) {
   
   /* Schedule the dumps */
   schedulerecurring(time(NULL)+DUMPINTERVAL,0,DUMPINTERVAL,chanservdumpstuff,NULL);
+  schedulerecurring(time(NULL)+5,0,5,csdb_flushchannelcounters,NULL);
 
   chanserv_init_status = CS_INIT_NOUSER;
 
@@ -126,6 +127,8 @@ void chanserv_finalinit() {
 }
 
 void _fini() {
+  csdb_flushchannelcounters(NULL);
+
   dbfreeid(q9dbid);
 
   deleteallschedules(cs_hourlyfunc);
@@ -133,6 +136,7 @@ void _fini() {
   deleteallschedules(chanservreguser);
   deleteallschedules(chanservdumpstuff);
   deleteallschedules(chanservdgline);
+  deleteallschedules(csdb_flushchannelcounters);
 
   if (chanservext>-1 && chanservnext>-1 && chanservaext>-1) {
     int i;

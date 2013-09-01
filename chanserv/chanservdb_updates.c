@@ -92,8 +92,33 @@ void csdb_updatechannel(regchan *rcp) {
 		  escwelcome,esctopic,esckey,escreason,esccomment,(intmax_t)rcp->ltimestamp,rcp->ID);
 }
 
+#define CHANNELCOUNTER_BUFSIZE 512
+#define CHANNELCOUNTER_MAX 512
+
+static int channelcounter_count = 0;
+static char channelcounter_bufs[CHANNELCOUNTER_MAX][CHANNELCOUNTER_BUFSIZE];
+
+void csdb_flushchannelcounters(void *arg) {
+  int i;
+
+  if(!channelcounter_count)
+    return;
+
+  dbquery("BEGIN TRANSACTION;");
+
+  for(i=0;i<channelcounter_count;i++)
+    dbquery("%s", channelcounter_bufs[i]);
+
+  dbquery("COMMIT;");
+
+  channelcounter_count = 0;
+}
+
 void csdb_updatechannelcounters(regchan *rcp) {
-  dbquery("UPDATE chanserv.channels SET "
+  if(channelcounter_count == CHANNELCOUNTER_MAX)
+    csdb_flushchannelcounters(NULL);
+
+  snprintf(channelcounter_bufs[channelcounter_count], CHANNELCOUNTER_BUFSIZE - 1, "UPDATE chanserv.channels SET "
 		  "lastactive=%lu, totaljoins=%u,"
 		  "tripjoins=%u, maxusers=%u, tripusers=%u "
 		  "WHERE ID=%u",
@@ -101,6 +126,8 @@ void csdb_updatechannelcounters(regchan *rcp) {
 		  rcp->totaljoins,rcp->tripjoins,
 		  rcp->maxusers,rcp->tripusers,
 		  rcp->ID);
+
+  channelcounter_count++;
 }
 
 void csdb_updatechanneltimestamp(regchan *rcp) {
