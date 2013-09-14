@@ -25,10 +25,7 @@ static void pc_check(void) {
   channel *cp;
 
   for (pc = patrolchannels; pc; pc = pc->next) {
-    if (pc->nick)
-      patrol_nickchange(pc->nick);
-
-    if (pc->nick && pc->nick->channels && pc->nick->channels->cursi > 0)
+    if (pc->nick && pc->nick->timestamp > getnettime() - 900)
       continue;
 
     if (pc->nick)
@@ -147,7 +144,7 @@ void _init(void) {
   registercontrolhelpcmd("patrolpart", NO_OPER, 1, &pc_cmd_patrolpart, "Usage: patrolpart <#id>\nRemoves a patrol client from a channel.");
   registercontrolhelpcmd("patrollist", NO_OPER, 0, &pc_cmd_patrollist, "Usage: patrollist\nLists patrol channels.");
 
-  schedulerecurring(time(NULL) + 5, 0, 300, &pc_sched_check, NULL);
+  schedulerecurring(time(NULL) + 5, 0, 10, &pc_sched_check, NULL);
 }
 
 void _fini(void) {
