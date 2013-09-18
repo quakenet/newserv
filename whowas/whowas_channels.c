@@ -80,6 +80,8 @@ static void wwc_hook_newrecord(int hooknum, void *arg) {
     wwc_refchannel(wchans[i]);
     ww->channels[i] = wchans[i];
   }
+
+  np->exts[wwcnext] = NULL;
 }
 
 static void wwc_hook_lostrecord(int hooknum, void *arg) {
