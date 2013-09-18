@@ -54,6 +54,8 @@ static void rqhook_account(int hook, void *arg) {
   nick *np = (nick *)arg;
   rq_fasttrack *ft;
 
+  np->exts[rqnext] = NULL;
+
   /* Auth might be null for the newnick hook. */
   if(!np->auth)
     return;
