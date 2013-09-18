@@ -81,7 +81,9 @@ static int pc_part(char *name) {
 
     if (ircd_strcmp(pc->channel->content, name) == 0) {
       freesstring(pc->channel);
-      deregisterlocaluser(pc->nick, NULL);
+
+      if (pc->nick)
+        deregisterlocaluser(pc->nick, NULL);
 
       *pnext = pc->next;
       free(pc);
