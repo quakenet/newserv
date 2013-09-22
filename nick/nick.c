@@ -175,6 +175,9 @@ void handleserverchange(int hooknum, void *arg) {
 void deletenick(nick *np) {
   nick **nh;
 
+  /* Fire a pre-lostnick trigger to allow hooks to check the channels etc. of a lost nick */
+  triggerhook(HOOK_NICK_PRE_LOSTNICK, np);
+
   /* Fire the hook.  This will deal with removal from channels etc. */
   triggerhook(HOOK_NICK_LOSTNICK, np);
   
