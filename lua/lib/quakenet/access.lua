@@ -3,7 +3,13 @@ function onstaff(nick)
 end
 
 function ontlz(nick)
-  return irc_nickonchan(nick, "#twilightzone")
+  if not irc_nickonchan(nick, "#twilightzone") then
+    return false
+  end
+
+  local umodes = irc_getusermodes(nick)
+  if not umodes or not string.find(umodes, "o") then
+    return false
+  end
+  return true
 end
-
-
