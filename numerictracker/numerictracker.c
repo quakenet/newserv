@@ -98,7 +98,7 @@ static void list_numerics_callback(const DBAPIResult *result, void *tag) {
     return;
   }
 
-  controlreply(sender, "%s %-50s %s", "NN", "Server name", "Last seen");
+  controlreply(sender, "%s %4s %-50s %s", "nn", "NNNN", "Server name", "Last seen");
   while(result->next(result)) {
     char *numeric;
     char *server_name;
@@ -110,7 +110,7 @@ static void list_numerics_callback(const DBAPIResult *result, void *tag) {
     last_seen = strtoul(result->get(result, 2), NULL, 10);
 
     strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M GMT", gmtime(&last_seen));
-    controlreply(sender, " %s %-50s %s", numeric, server_name, timebuf);
+    controlreply(sender, " %s %4d %-50s %s", numeric, (int)numerictolong(numeric, 2), server_name, timebuf);
   }
   result->clear(result);
 

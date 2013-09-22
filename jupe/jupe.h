@@ -9,7 +9,7 @@ typedef struct jupe_s {
 
 extern jupe_t *jupes;
 
-#define JUPE_MAX_EXPIRE	604800
+#define JUPE_MAX_EXPIRE	6048000
 
 #define JUPE_ACTIVE	0x0001
 
