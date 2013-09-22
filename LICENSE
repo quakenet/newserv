@@ -1,10 +1,11 @@
-newserv is copyrighted by the individual authors who wrote it. It
-is licensed under the GNU General Public License version 2 and no
-later versions.
+Copyright (C) 2002-2013 David Mansell (splidge).
+Copyright (C) 2002-2013 QuakeNet development team.
+
+newserv is licensed under the GNU General Public License Version 2
+only (no later version).
 
 This license applies to all files in the newserv distribution unless
-a file's license header says otherwise. This license also does not
-apply to files contained in the "quakenet" directory.
+a file's license header says otherwise.
 
 A copy of the GNU General Public License version 2 follows below.
 ----------------------------------------------------------------------

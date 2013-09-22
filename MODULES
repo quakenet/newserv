@@ -1,29 +1,29 @@
 newserv Modules
-~~~~~~~~~~~~~~
+===============
 
 This is a brief overview of the newserv modules.
 
 core
-~~~
+----
 
 This is not actually a module. Instead, this is the code of the "newserv" binary
 which provides minimal support for loading modules.
 
 authext, bans, chanindex, channel, irc, nick, server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------------------
 
 These modules provide basic support for accounts, channels, nicks and server
 connections. Virtually all other modules depend on at least some of these
 modules.
 
 localuser
-~~~~~~~~
+---------
 
 Implements functionality for creating local users that are "connected" to the
 newserv instance.
 
 control
-~~~~~~
+-------
 
 Spawns the control user for your newserv instance. The control user provides
 an IRC-based interface for newserv commands, e.g. to manage loaded modules
@@ -37,39 +37,39 @@ Configuration:
 nick=N3
 #ident=control
 #hostname=your.hostname.here
-#realname=NewServ Control Service
+#realname=newserv Control Service
 #authname=C
 
 control_commands
-~~~~~~~~~~~~~~~
+----------------
 
 Provides commonly-used oper commands.
 
 control_management
-~~~~~~~~~~~~~~~~~
+------------------
 
 Provides user management commands.
 
 auth
-~~~
+----
 
 Supports sending AC tokens. You should only use this module if you don't have
 some other form of authentication service on your network (such as Q). This
 module lets opers use arbitrary account names and IDs.
 
 chanfix
-~~~~~~
+-------
 
 Keeps track of channel ops and can be used to re-op opless channels.
 
 chanserv
-~~~~~~~
+--------
 
 This is QuakeNet's channel service (Q). In order to load this module you will
 need also need to load the pqsql module.
 
 pqsql
-~~~~
+-----
 
 Provides support for PostgreSQL database queries.
 
@@ -82,25 +82,25 @@ username=gunnar
 password=changeme
 
 dbapi2
-~~~~~
+------
 
 Implements database functionality used by some other modules. In addition to
 loading the dbapi2 module you will also need to load one of the database
 provider modules: sqlite-dbapi2 or pqsql-dbapi2
 
 fakeusers
-~~~~~~~~
+---------
 
 Provides a way to spawn fake users.
 
 glines
-~~~~~
+------
 
 Implements gline commands and general gline functionality that is used by other
 modules.
 
 geoip
-~~~~
+-----
 
 Provides geo-location services for other modules.
 
@@ -110,23 +110,23 @@ Configuration:
 #db=GeoIP.dat
 
 helpmod2
-~~~~~~~
+--------
 
 This is QuakeNet's G service. It is primarily used on official support channels.
 
 invalidbans
-~~~~~~~~~~
+-----------
 
 This module automatically removes invalid IPv6 bans as these can desync channel
 modes on snircd 1.3.4a.
 
 jupe
-~~~
+----
 
 Provides commands to set, list and remove jupes.
 
 lua
-~~
+---
 
 Provides support for Lua scripts. For an example of a fairly complex script
 have a look at the labspace repository at http://hg.quakenet.org/lua-labspace/
@@ -142,18 +142,18 @@ installation directory (e.g. "luascripts" in this example) and symlink the
 lua/lib directory into it.
 
 newsearch
-~~~~~~~~
+---------
 
 Provides functionality to search for nicks and channels based on certain
 criteria.
 
 nickwatch
-~~~~~~~~
+---------
 
 Implements event-based nicksearch queries.
 
 miscreply
-~~~~~~~~
+---------
 
 Implements rping and various other status query commands.
 
@@ -165,7 +165,7 @@ Configuration:
 #admin3=No administrative info available
 
 patrol
-~~~~~
+------
 
 Implements functionality to spawn trojanscan swarm clones.
 
@@ -175,17 +175,17 @@ Configuration:
 #minpoolhosts=5000
 
 patricia, patricianick, patriciasearch
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------------
 
 Implements finding nicks based on CIDR prefixes.
 
 proxyscan
-~~~~~~~~
+---------
 
 Does on-connect proxy scans and glines open proxies.
 
 request
-~~~~~~
+-------
 
 This is QuakeNet's channel service request bot (R).
 
@@ -202,29 +202,29 @@ Configuration:
 #qserver=cserve.quakenet.org
 
 serverlist
-~~~~~~~~~
+----------
 
 Implements the serverlist command which shows various information about
 connected servers (including their network latency).
 
 settime
-~~~~~~
+-------
 
 Provides commands to set the network time.
 
 splitlist
-~~~~~~~~
+---------
 
 Keeps track of servers that were lost during a netsplit. This module is used
 by chanfix to determine when it shouldn't re-op users.
 
 trojanscan
-~~~~~~~~~
+----------
 
 Used to find and gline drones on the network.
 
 trusts
-~~~~~
+------
 
 Implements connection limits. Supports the TRUST protocol which is used
 by quakenet-iauthd to determine whether to allow users to connect to the
@@ -257,7 +257,7 @@ http://hg.quakenet.org/iauthd/ to enforce connection limits using IAuth rather
 than g:lines.
 
 whowas, whowas_channels
-~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 Keeps track of historical user records. Used by the glines module to chase
 nicks and by newsearch.
@@ -266,10 +266,10 @@ The whowas_channels module optionally keeps track of which channels users
 were on.
 
 xsb
-~~
+---
 
-Provides replication capabilities. Used by the trusts modules to sync
-trusts between newserv instances.
+Provides newserv<->newserv communication capabilities. Used by the trusts
+modules to sync trusts between newserv instances.
 
 Configuration:
 
