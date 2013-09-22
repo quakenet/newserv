@@ -1,5 +1,5 @@
 class RC4:
-  def __init__(self, key, burn=4096):
+  def __init__(self, key, burn=0):
     s = range(256)
     for i in xrange(256):
       s[i] = i
@@ -8,7 +8,7 @@ class RC4:
       j = (j + s[i] + ord(key[i % len(key)])) % 256
       s[j], s[i] = s[i], s[j]
     self.__s = s
-    self.crypt("\x00" * burn)
+#    self.crypt("\x00" * burn)
 
   def crypt(self, data):
     ret = []
