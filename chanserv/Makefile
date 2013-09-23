@@ -1,7 +1,7 @@
 include ../build.mk
 include build.mk
 
-CSDIRS=database chancmds usercmds authcmds authtracker newsearch achievements achcmds
+CSDIRS=database chancmds usercmds authcmds authtracker newsearch
 
 .PHONY: all dirs $(CSDIRS) clean distclean
 all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_relay.so chanserv_flags.so chanserv_cleanupdb.so dirs
