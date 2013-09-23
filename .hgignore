@@ -32,3 +32,4 @@ core.*
 .autobuild.mk
 .configure.log
 *.orig
+quakenet
