@@ -17,6 +17,8 @@ loadmodule=splitlist
 #loadmodule=fakeusers
 #loadmodule=settime
 
+loadmodule=trusts_master
+
 loadmodule=glines_store
 loadmodule=glines_commands
 
