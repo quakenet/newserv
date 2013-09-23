@@ -10,6 +10,8 @@
 #include "../lib/stringbuf.h"
 #include "../lib/version.h"
 
+#include <string.h>
+
 static DBAPI2_HANDLE *dbapi2_adapter_new(const DBAPIConn *);
 static void dbapi2_adapter_close(DBAPIConn *);
 
@@ -94,8 +96,11 @@ static DBAPIResult *wrapresult(DBAPIResult *r, DBConn *c) {
   if(!c)
     return NULL;
 
-  if(!r)
+  if(!r) {
     r = calloc(1, sizeof(DBAPIResult));
+  } else {
+    memset(r, 0, sizeof(DBAPIResult));
+  }
 
   r->clear = dbapi2_adapter_result_clear;
   r->handle = dbgetresult(c);
