@@ -33,7 +33,7 @@ loadmodule=whowas_channels
 #loadmodule=chanserv_authcmds
 #loadmodule=chanserv_grep
 #loadmodule=chanserv_protect
-#loadmodule=chansearch
+#loadmodule=chanserv_chansearch
 #loadmodule=chanstats
 #loadmodule=nickrate
 
