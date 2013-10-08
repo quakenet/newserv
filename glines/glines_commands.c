@@ -776,6 +776,11 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
 
   gline *searchgl = makegline(mask);
 
+  if (!searchgl) {
+    controlreply(sender, "Invalid G-line mask specified.");
+    return CMD_ERROR;
+  }
+
   for (gl = glinelist; gl; gl = next) {
     next = gl->next;
 
