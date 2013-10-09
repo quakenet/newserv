@@ -69,14 +69,14 @@ static int trusts_cmdtrustadd(void *source, int cargc, char **cargv) {
   /* OKAY! Lots of checking here!
    *
    * Need to check:
-   *   - host isn't already covered by given group (reject if it is)
+   *   - exact same host isn't already covered by given group (reject if it is)
    *   - host doesn't already exist exactly already (reject if it does)
    *   - host is more specific than an existing one (warn if it is, fix up later)
    *   - host is less specific than an existing one (warn if it is, don't need to do anything special)
    */
 
   for(th=tg->hosts;th;th=th->next) {
-    if(ipmask_check(&ip, &th->ip, th->bits)) {
+    if(ipmask_check(&ip, &th->ip, th->bits) && th->bits == bits) {
       controlreply(sender, "This host (or part of it) is already covered in the given group.");
       return CMD_ERROR;
     }
