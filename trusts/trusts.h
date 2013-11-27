@@ -87,7 +87,7 @@ typedef struct trustgroup {
   sstring *name;
   unsigned int trustedfor;
   int flags;
-  unsigned int maxperident;
+  int maxperident;
   unsigned int maxusage;
   time_t expires;
   time_t lastseen;
