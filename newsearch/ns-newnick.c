@@ -30,7 +30,7 @@ void *newnick_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
   whowas *ww = (whowas *)np->next;
 
-  if (ww->type == WHOWAS_RENAME)
+  if (ww->type != WHOWAS_RENAME)
     return "";
   
   return (void *)ww->newnick->content;
