@@ -18,6 +18,11 @@
 #define EndMessages() csrawmessages; extern char *defaultmessages[MAXMESSAGES*2];
 #endif
 
+/************************ DANGER WILL ROBINSON!!! **************************/
+/* if you want to add a new message you must add it at the end.            */
+/* also don't remove any, as these messages end up as ids in the database! */
+/************************ DANGER WILL ROBINSON!!! **************************/
+
 BeginMessages() {
   msg(QM_PROTECTED, "Channel $0 is protected by $1.", "ss"),
   msg(QM_UNKNOWNCMD, "Unknown command $0. Type SHOWCOMMANDS for a list of available commands.", "s"),
@@ -56,7 +61,6 @@ BeginMessages() {
   msg(QM_NOCHANBANAUTOREMOVE, "Bans on $0 will not be automatically removed.", "s"),
   msg(QM_INVALIDCHANNAME, "$0 is not a valid channel name.", "s"),
   msg(QM_ALREADYREGISTERED, "$0 is already registered.", "s"),
-  msg(QM_TOOMANYCHANNELS, "User is known on too many channels.", ""),
   msg(QM_CURUSERFLAGS, "User flags for $0: $1", "ss"),
   msg(QM_WELCOMEMESSAGEIS, "Welcome message for $0: $1", "ss"),
   msg(QM_GLOBALINFO, "Default info line: $0", "s"),
@@ -244,6 +248,7 @@ BeginMessages() {
   msg(QM_TITLETOOFAST,"You have already changed your title recently.  Please wait a while and try again.",""),
   msg(QM_INACTIVEACCOUNT,"This account has not yet been activated.",""),
   msg(QM_PWTOLONG, "Sorry, but new password is too long (maximum length 10 chars)", ""),
+  msg(QM_TOOMANYCHANNELS, "User is known on too many channels.", ""),
 } 
 EndMessages()
 #endif
