@@ -818,6 +818,7 @@ void csdb_updateban(regchan *rcp, regban *rbp);
 char *csdb_gethelpstr(char *command, int language);
 void csdb_createmail(reguser *rup, int type);
 void csdb_dohelp(nick *np, Command *cmd);
+void csdb_flushchannelcounters(void *arg);
 
 #define q9asyncquery(handler, tag, format, ...) dbasyncqueryi(q9dbid, handler, tag, format , ##__VA_ARGS__)
 #define q9a_asyncquery(handler, tag, format, ...) dbasyncqueryi(q9adbid, handler, tag, format , ##__VA_ARGS__)

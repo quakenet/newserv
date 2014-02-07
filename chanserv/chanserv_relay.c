@@ -19,6 +19,7 @@ MODULE_VERSION(QVERSION);
 int csa_docheckhashpass(void *source, int cargc, char **cargv);
 int csa_docreateaccount(void *source, int cargc, char **cargv);
 int csa_dosettempemail(void *source, int cargc, char **cargv);
+int csa_dosetemail(void *source, int cargc, char **cargv);
 int csa_doresendemail(void *source, int cargc, char **cargv);
 int csa_doactivateuser(void *source, int cargc, char **cargv);
 static int decrypt_password(unsigned char *secret, int keybits, char *buf, int bufsize, char *encrypted);
@@ -61,6 +62,7 @@ void _init(void) {
 
   registercontrolhelpcmd("checkhashpass", NO_RELAY, 3, csa_docheckhashpass, "Usage: checkhashpass <username> <digest> ?junk?");
   registercontrolhelpcmd("settempemail", NO_RELAY, 2, csa_dosettempemail, "Usage: settempemail <userid> <email address>");
+  registercontrolhelpcmd("setemail", NO_RELAY, 3, csa_dosetemail, "Usage: setmail <userid> <timestamp> <email address>");
   registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <userid>");
   registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <userid>");
 
@@ -70,7 +72,7 @@ void _init(void) {
   } else if(s->length != KEY_BITS / 8 * 2 || !hex_to_int(s->content, createaccountsecret, sizeof(createaccountsecret))) {
     Error("chanserv_relay",ERR_WARNING,"createaccountsecret must be a %d character hex string.", KEY_BITS / 8 * 2);
   } else {
-    registercontrolhelpcmd("createaccount", NO_RELAY, 4, csa_docreateaccount, "Usage: createaccount <execute> <username> <email address> <encrypted password>");
+    registercontrolhelpcmd("createaccount", NO_RELAY, 5, csa_docreateaccount, "Usage: createaccount <execute> <username> <email address> <encrypted password> <activate user>");
     createaccountsecret_ok = 1;
   }
 
@@ -80,6 +82,7 @@ void _init(void) {
 void _fini(void) {
   deregistercontrolcmd("checkhashpass", csa_docheckhashpass);
   deregistercontrolcmd("settempemail", csa_dosettempemail);
+  deregistercontrolcmd("setemail", csa_dosetemail);
   deregistercontrolcmd("resendemail", csa_doresendemail);
   deregistercontrolcmd("activateuser", csa_doactivateuser);
 
@@ -196,8 +199,9 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
   char account_info[512];
   char passbuf[512];
   int do_create;
+  int activate;
 
-  if(cargc<4) {
+  if(cargc<5) {
     controlreply(sender, "CREATEACCOUNT FALSE args");
     return CMD_ERROR;
   }
@@ -216,6 +220,7 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     }
     password = passbuf;
   }
+  activate = cargv[4][0] == '1';
 
   if(username) {
     if (findreguserbynick(username)) {
@@ -246,11 +251,13 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     do_create = 1;
 
     rup = csa_createaccount(username, password, email);
-    USetInactive(rup);
 
-    cs_log(sender,"CREATEACCOUNT created auth %s (%s)",rup->username,rup->email->content);
+    if(!activate)
+      USetInactive(rup);
+
+    cs_log(sender,"CREATEACCOUNT created auth %s (%s) %s",rup->username,rup->email->content,activate?"(active)": "(inactive)");
     csdb_createuser(rup);
-    snprintf(account_info, sizeof(account_info), " %u", rup->ID);
+    snprintf(account_info, sizeof(account_info), " %u %lu", rup->ID, (unsigned long)rup->lastpasschange);
 
     sendemail(rup);
   } else {
@@ -306,6 +313,57 @@ int csa_dosettempemail(void *source, int cargc, char **cargv) {
   sendemail(rup);
 
   controlreply(sender, "SETTEMPEMAIL TRUE");
+
+  return CMD_OK;
+}
+
+int csa_dosetemail(void *source, int cargc, char **cargv) {
+  char *email;
+  char *error;
+  reguser *rup;
+  nick *sender=(nick *)source;
+
+  if(cargc<3) {
+    controlreply(sender, "SETEMAIL FALSE args");
+    return CMD_ERROR;
+  }
+
+  rup = findreguserbyID(atoi(cargv[0]));
+  if(rup == NULL) {
+    controlreply(sender, "SETEMAIL FALSE useridnotexist");
+    return CMD_ERROR;
+  }
+
+  if(UHasStaffPriv(rup)) {
+    controlreply(sender, "SETEMAIL FALSE privuser");
+    return CMD_ERROR;
+  }
+
+  if(UHasSuspension(rup)) {
+    controlreply(sender, "SETEMAIL FALSE suspended");
+    return CMD_ERROR;
+  }
+
+  if(rup->lastpasschange > atoi(cargv[1])) {
+    controlreply(sender, "SETEMAIL FALSE passwordchanged");
+    return CMD_ERROR;
+  }
+
+  email = cargv[2];
+  error = email_to_error(email);
+  if(error) {
+    controlreply(sender, "SETEMAIL FALSE %s", error);
+    return CMD_ERROR;
+  }
+
+  freesstring(rup->email);
+  rup->email=getsstring(email,EMAILLEN);
+  cs_log(sender,"SETEMAIL OK username %s email %s",rup->username, rup->email->content);
+
+  csdb_updateuser(rup);
+  sendemail(rup);
+
+  controlreply(sender, "SETEMAIL TRUE");
 
   return CMD_OK;
 }
