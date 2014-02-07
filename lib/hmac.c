@@ -1,5 +1,6 @@
 #include "hmac.h"
 #include <string.h>
+#include <ctype.h>
 
 void hmacsha256_init(hmacsha256 *c, unsigned char *key, int keylen) {
   unsigned char realkey[64], outerkey[64], innerkey[64];
@@ -49,7 +50,6 @@ void hmacsha1_init(hmacsha1 *c, unsigned char *key, int keylen) {
     SHA1Init(&keyc);
     SHA1Update(&keyc, key, keylen);
     SHA1Final(realkey, &keyc);
-    keylen = 20;
   } else {
     memcpy(realkey, key, keylen);
   }
@@ -87,7 +87,6 @@ void hmacmd5_init(hmacmd5 *c, unsigned char *key, int keylen) {
     MD5Init(&keyc);
     MD5Update(&keyc, key, keylen);
     MD5Final(realkey, &keyc);
-    keylen = 16;
   } else {
     memcpy(realkey, key, keylen);
   }
@@ -130,3 +129,19 @@ char *hmac_printhex(unsigned char *data, char *out, size_t len) {
   *o = '\0';
   return out;
 }
+
+int hmac_strcmp(const char *a, const char *b) {
+  int result = 1;
+
+  if(!a || !b)
+    return 1;
+
+  if(strlen(a) != strlen(b))
+    return 1;
+
+  while(*a)
+    result&=(tolower(*a++) == tolower(*b++));
+
+  return !result;
+}
+

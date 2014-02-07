@@ -68,14 +68,14 @@ void _fini() {
 }
 
 /*
- * registerlocaluserflags:
+ * registerlocaluserflagsip:
  *  This function creates a local user, and broadcasts it's existence to the net (if connected).
  */
 
-nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler handler) {
+nick *registerlocaluserflagsip(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, struct irc_in_addr *ipaddress, UserMessageHandler handler) {
   int i;  
   nick *newuser,*np; 
-  struct irc_in_addr ipaddress;
+  struct irc_in_addr tmpipaddress;
  
   i=0;
   currentlocalunum=(currentlocalunum+1)%262142;
@@ -102,13 +102,19 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
   newuser->realname->nicks=newuser;
   newuser->umodes=umodes;
 
-  memset(&ipaddress, 0, sizeof(ipaddress));
-  ((unsigned short *)(ipaddress.in6_16))[5] = 65535;
-  ((unsigned short *)(ipaddress.in6_16))[6] = 127;
-  ((unsigned char *)(ipaddress.in6_16))[14] = 1;
-  ((unsigned char *)(ipaddress.in6_16))[15] = (currentlocalunum%253)+1;
+  if (!ipaddress) {
+    ipaddress = &tmpipaddress;
 
-  newuser->ipnode = refnode(iptree, &ipaddress, PATRICIA_MAXBITS);
+    memset(ipaddress, 0, sizeof(struct irc_in_addr));
+    ((unsigned short *)(ipaddress->in6_16))[5] = 65535;
+    ((unsigned short *)(ipaddress->in6_16))[6] = 127;
+    ((unsigned char *)(ipaddress->in6_16))[14] = 1;
+    ((unsigned char *)(ipaddress->in6_16))[15] = (currentlocalunum%253)+1;
+  }
+
+  memcpy(&newuser->ipaddress, ipaddress, sizeof(struct irc_in_addr));
+
+  newuser->ipnode = refnode(iptree, ipaddress, PATRICIA_MAXBITS);
   node_increment_usercount(newuser->ipnode);
 
   newuser->timestamp=getnettime();
@@ -147,6 +153,10 @@ nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *real
       strcpy(newuser->authname,authname);
     }
   }
+
+  newuser->cloak_count = 0;
+  newuser->cloak_extra = NULL;
+  newuser->message = NULL;
 
   if (connected) {
     /* Check for nick collision */
@@ -200,7 +210,7 @@ int renamelocaluser(nick *np, char *newnick) {
       /* Case only name change */
       strncpy(np->nick,newnick,NICKLEN);
       np->nick[NICKLEN]='\0';
-      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->p_ipaddr), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
+      irc_send("%s N %s %jd",iptobase64(ipbuf, &(np->ipaddress), sizeof(ipbuf), 1),np->nick,(intmax_t)np->timestamp);
       triggerhook(HOOK_NICK_RENAME,harg);     
       return 0;
     } else {
@@ -307,7 +317,7 @@ void sendnickmsg(nick *np) {
 
   irc_send("%s N %s 1 %ld %s %s %s%s%s %s %s :%s",
     mynumeric->content,np->nick,np->timestamp,np->ident,np->host->name->content,
-    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->p_ipaddr),
+    printflags(np->umodes,umodeflags),operbuf,accountbuf,iptobase64(ipbuf,&(np->ipaddress),
     sizeof(ipbuf),1),numericbuf,np->realname->name->content);
 }
 
@@ -359,7 +369,7 @@ int handlemessageornotice(void *source, int cargc, char **cargv, int isnotice) {
   char *ch;
   char targetnick[NICKLEN+1];
   int foundat;
-  void *nargs[2];
+  void *nargs[3];
   int i;
   
   /* Should have target and message */
@@ -367,13 +377,21 @@ int handlemessageornotice(void *source, int cargc, char **cargv, int isnotice) {
     return CMD_OK;
   }
 
-  if (cargv[0][0]=='#' || cargv[0][0]=='+') {
-    /* Channel message/notice */
-    return CMD_OK;
-  }
-  
   if ((sender=getnickbynumericstr((char *)source))==NULL) {
     Error("localuser",ERR_WARNING,"PRIVMSG from non existant user %s",(char *)source);
+    return CMD_OK;
+  }
+
+  freesstring(sender->message);
+  sender->message = getsstring(cargv[1], 512);
+
+  nargs[0] = sender;
+  nargs[1] = cargv[1];
+  nargs[2] = (void *)(uintptr_t)isnotice;
+  triggerhook(HOOK_NICK_MESSAGE, nargs);
+
+  if (cargv[0][0]=='#' || cargv[0][0]=='+') {
+    /* Channel message/notice */
     return CMD_OK;
   }
   
@@ -643,3 +661,20 @@ void localusersetaccountflags(authname *anp, u_int64_t accountflags) {
 
   triggerhook(HOOK_AUTH_FLAGSUPDATED, arg);
 }
+
+void localuseraddcloaktarget(nick *np, nick *target) {
+  char snumeric[10], tnumeric[10];
+
+  strcpy(snumeric, longtonumeric(np->numeric,5));
+  strcpy(tnumeric, longtonumeric(target->numeric,5));
+
+  irc_send("%s CA %s", snumeric, tnumeric);
+
+  addcloaktarget(np, target);
+}
+
+void localuserclearcloaktargets(nick *np) {
+  irc_send("%s CU", longtonumeric(np->numeric,5));
+  clearcloaktargets(np);
+}
+

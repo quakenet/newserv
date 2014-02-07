@@ -80,7 +80,7 @@ void initconfig(char *filename) {
   array_init((&sections),sizeof(configsection));
   
   if ((fp=fopen(filename,"r"))==NULL) {
-    Error("core",ERR_STOP,"Couldn't load config file.");
+    Error("core",ERR_STOP,"Couldn't load config file '%s'.", filename);
     exit(1);
   }
   

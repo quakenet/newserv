@@ -17,6 +17,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/flags.h"
 #include "../authext/authext.h"
+#include "../glines/glines.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -220,7 +221,6 @@ static int lua_gline(lua_State *ps) {
   nick *target;
   char mask[512];
   int duration, usercount = 0;
-  host *hp;
   
   if(!lua_isstring(ps, 1) || !lua_isint(ps, 2) || !lua_isstring(ps, 3))
     LUA_RETURN(ps, LUA_FAIL);
@@ -237,31 +237,10 @@ static int lua_gline(lua_State *ps) {
   if(!target || (IsOper(target) || IsXOper(target) || IsService(target)))
     LUA_RETURN(ps, LUA_FAIL);
 
-  hp = target->host;
-  if(!hp)
+  if(glinebynick(target, duration, reason, GLINE_SIMULATE, "lua") > 50)
     LUA_RETURN(ps, LUA_FAIL);
 
-  usercount = hp->clonecount;
-  if(usercount > 10) { /* (decent) trusted host */
-    int j;
-    nick *np;
-
-    usercount = 0;
-
-    for (j=0;j<NICKHASHSIZE;j++)
-      for (np=nicktable[j];np;np=np->next)
-        if (np && (np->host == hp) && (!ircd_strcmp(np->ident, target->ident)))
-          usercount++;
-
-    if(usercount > 50)
-      LUA_RETURN(ps, LUA_FAIL);
-
-    snprintf(mask, sizeof(mask), "*%s@%s", target->ident, IPtostr(target->p_ipaddr));
-  } else {
-    snprintf(mask, sizeof(mask), "*@%s", IPtostr(target->p_ipaddr));
-  }
-
-  irc_send("%s GL * +%s %d %jd :%s", mynumeric->content, mask, duration, (intmax_t)getnettime(), reason);
+  usercount = glinebynick(target, duration, reason, 0, "lua");
   LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
 }
 
@@ -959,6 +938,8 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_TIMESTAMP 13
 #define PUSHER_STRING_INDIRECT 14
 #define PUSHER_ACC_ID 15
+#define PUSHER_SERVER_NAME 16
+#define PUSHER_SERVER_NUMERIC 17
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -978,6 +959,8 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER(PUSHER_UMODES, umodes);
   PUSH_NICKPUSHER_CUSTOM(PUSHER_COUNTRY, "country");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NAME, "servername");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NUMERIC, "servernumeric");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1096,6 +1079,12 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
           lua_pushint(l, (long)((nick *)offset)->exts[geoipext]);
         }
         break;
+      case PUSHER_SERVER_NAME:
+        lua_pushstring(l, serverlist[homeserver(((nick *)offset)->numeric)].name->content);
+        break;
+      case PUSHER_SERVER_NUMERIC:
+        lua_pushint(l, homeserver(((nick *)offset)->numeric));
+        break;
     }
 
     i++;
@@ -1120,3 +1109,4 @@ void lua_initchanpusher(void) {
   chanpushercount = i;
   chanpusher[i].argtype = 0;
 }
+

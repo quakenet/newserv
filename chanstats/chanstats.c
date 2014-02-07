@@ -54,7 +54,6 @@ void _init() {
     Error("chanstats",ERR_ERROR,"Couldn't register channel extension");
     failedinit=1;
   } else {  
-    initchanstatsalloc();
     lastday=(getnettime()/(24*3600));
     uponehour=0;
     sampleindex=-1;

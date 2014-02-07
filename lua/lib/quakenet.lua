@@ -49,3 +49,16 @@ end
 function irc_localregisteruser(nickname, ident, hostname, realname, account, usermodes, handler_function)
   return irc_localregisteruserid(nickname, ident, hostname, realname, account, 0, usermodes, handler_function)
 end
+
+local __kills = {}
+function queuekill(nick, reason)
+  __kills[nick] = reason
+end
+
+function processkills()
+  for k, v in pairs(__kills) do
+    irc_kill(k, v)
+  end
+  __kills = {}
+end
+

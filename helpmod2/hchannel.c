@@ -217,9 +217,10 @@ void hchannel_remove_inactive_users(void)
 		    if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
                     {
                         const char *banmask = hban_ban_string((*hchanuser)->husr->real_user, HBAN_HOST);
-                        helpmod_setban(hchan, banmask, time(NULL) + 10 * HDEF_m, MCB_ADD, HLAZY);
+                        int bantime = 10;
+                        helpmod_setban(hchan, banmask, time(NULL) + bantime * HDEF_m, MCB_ADD, HLAZY);
 
-                        helpmod_kick(hchan, (*hchanuser)->husr, "Please do not idle in %s", hchannel_get_name(hchan));
+                        helpmod_kick(hchan, (*hchanuser)->husr, "Please do not idle in %s (%dmin anti-idle tempban). If you still require assistance, please try again later.", hchannel_get_name(hchan), bantime);
                         continue;
                     }
                     else
@@ -331,6 +332,7 @@ void hchannels_dnmo(struct huser_struct *husr)
                         break;
                 }
             *hchanuser = tmp;
+            assert(*hchanuser != NULL);
             (*hchanuser)->next = NULL;
             if (on_desk(husr, huserchan))
             {

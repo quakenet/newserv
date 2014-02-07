@@ -77,6 +77,48 @@ const char* ircd_ntoa_r(char* buf, const struct irc_in_addr* in)
     }
 }
 
+/** Convert a CIDR mask to printable ASCII form.
+ * This is generally deprecated in favor of ircd_ntoa_masked_r().
+ * @param[in] in Address to convert.
+ * @param[in] bits Mask bits.
+ * @return Pointer to a static buffer containing the readable form.
+ */
+const char* ircd_ntoa_masked(const struct irc_in_addr* in, unsigned char bits)
+{
+  static char buf[CIDRLEN];
+  return ircd_ntoa_masked_r(buf, in, bits);
+}
+
+/** Convert a CIDR mask to printable ASCII form.
+ * @param[out] buf Output buffer to write to.
+ * @param[in] in Address to format.
+ * @param[in] bits Mask bits.
+ * @return Pointer to the output buffer \a buf.
+ */
+const char* ircd_ntoa_masked_r(char* buf, const struct irc_in_addr* in, unsigned char bits)
+{
+  char inname[SOCKIPLEN];
+  struct irc_in_addr intemp;
+  int i;
+
+  for(i=0;i<8;i++) {
+    int curbits = bits - i * 16;
+
+    if (curbits<0)
+      curbits = 0;
+    else if (curbits>16)
+      curbits = 16;
+
+    uint16_t mask = 0xffff & ~((1 << (16 - curbits)) - 1);
+    intemp.in6_16[i] = htons(ntohs(in->in6_16[i]) & mask);
+  }
+
+  ircd_ntoa_r(inname, &intemp);
+  sprintf(buf, "%s/%u", inname, irc_bitlen(in, bits));
+
+  return buf;
+}
+
 /** Attempt to parse an IPv4 address into a network-endian form.
  * @param[in] input Input string.
  * @param[out] output Network-endian representation of the address.
@@ -247,6 +289,8 @@ ipmask_parse(const char *input, struct irc_in_addr *ip, unsigned char *pbits)
     default:
       return 0;
     }
+    if (input[pos] != '\0')
+      return 0;
   finish:
     if (colon < 8) {
       unsigned int jj;
@@ -413,7 +457,6 @@ const char* iptobase64(char* buf, const struct irc_in_addr* addr, unsigned int c
     if (curr_zeros > max_zeros) {
       max_start = ii - curr_zeros;
       max_zeros = curr_zeros;
-      curr_zeros = 0;
     }
     /* Print the rest of the address */
     for (ii = zero; ii < 8; ) {
@@ -485,3 +528,27 @@ int ipmask_check(const struct irc_in_addr *addr, const struct irc_in_addr *mask,
   }
   return -1;
 }
+
+/** Convert IP addresses to canonical form for comparison.  6to4 and Teredo addresses
+ * are converted to IPv4 addresses. All other addresses are left alone.
+ * @param[out] out Receives canonical format for address.
+ * @param[in] in IP address to canonicalize.
+ */
+void ip_canonicalize_tunnel(struct irc_in_addr *out, const struct irc_in_addr *in)
+{
+    if (in->in6_16[0] == htons(0x2002)) { /* 6to4 */
+        out->in6_16[0] = out->in6_16[1] = out->in6_16[2] = 0;
+        out->in6_16[3] = out->in6_16[4] = 0;
+        out->in6_16[5] = 0xffff;
+        out->in6_16[6] = in->in6_16[1];
+        out->in6_16[7] = in->in6_16[2];
+    } else if(in->in6_16[0] == htons(0x2001) && in->in6_16[1] == 0) { /* Teredo */
+        out->in6_16[0]  = out->in6_16[1] = out->in6_16[2] = 0;
+        out->in6_16[3] = out->in6_16[4] = 0;
+        out->in6_16[5] = 0xffff;
+        out->in6_16[6] = ~(in->in6_16[6]);
+        out->in6_16[7] = ~(in->in6_16[7]);
+    } else
+        memcpy(out, in, sizeof(*out));
+}
+

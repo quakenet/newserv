@@ -35,8 +35,8 @@ void trusts_replication_swap(void) {
 
   trustsdb->squery(trustsdb, "BEGIN TRANSACTION", "");
   trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "groups");
-  trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO ?", "Ts", "replication_groups", "groups");
+  trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO groups", "T", "replication_groups");
   trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "hosts");
-  trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO ?", "Ts", "replication_hosts", "hosts");
+  trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO hosts", "T", "replication_hosts");
   trustsdb->query(trustsdb, tr_complete, NULL, "COMMIT", "");
 }

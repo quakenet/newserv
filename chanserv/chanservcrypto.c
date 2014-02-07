@@ -119,7 +119,7 @@ int crsha1(char *username, const char *password, const char *challenge, const ch
 
   hmac_printhex(digest, hexbuf, sizeof(digest));
 
-  if(!strcasecmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
+  if(!hmac_strcmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
     return 1;
 
   return 0;
@@ -148,7 +148,7 @@ int crsha256(char *username, const char *password, const char *challenge, const 
   hmacsha256_update(&hmac, (unsigned char *)challenge, strlen(challenge));
   hmacsha256_final(&hmac, digest);
 
-  if(!strcasecmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
+  if(!hmac_strcmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
     return 1;
 
   return 0;
@@ -177,7 +177,7 @@ int crmd5(char *username, const char *password, const char *challenge, const cha
   hmacmd5_update(&hmac, (unsigned char *)challenge, strlen(challenge));
   hmacmd5_final(&hmac, digest);
 
-  if(!strcasecmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
+  if(!hmac_strcmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
     return 1;
 
   return 0;
@@ -194,7 +194,7 @@ int crlegacymd5(char *username, const char *password, const char *challenge, con
   MD5Update(&ctx, (unsigned char *)challenge, strlen(challenge));
   MD5Final(digest, &ctx);
 
-  if(!strcasecmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
+  if(!hmac_strcmp(hmac_printhex(digest, hexbuf, sizeof(digest)), response))
     return 1;
 
   return 0;
@@ -242,7 +242,7 @@ int cs_checkhashpass(const char *username, const char *password, const char *jun
   MD5Update(&ctx, (unsigned char *)buf, strlen(buf));
   MD5Final(digest, &ctx);
 
-  if(strcasecmp(hash, hmac_printhex(digest, hexbuf, sizeof(digest))))
+  if(hmac_strcmp(hash, hmac_printhex(digest, hexbuf, sizeof(digest))))
     return 0;
 
   return 1;
@@ -286,7 +286,7 @@ int csc_verifyqticket(char *data, char *digest) {
 
   hmac_printhex(digestbuf, hexbuf, sizeof(digestbuf));
 
-  if(!strcasecmp(hexbuf, digest))
+  if(!hmac_strcmp(hexbuf, digest))
     return 0;
 
   return 1;

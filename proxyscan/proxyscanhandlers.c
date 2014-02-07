@@ -1,18 +1,21 @@
+#include <stdio.h>
 #include "proxyscan.h"
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
 #include "../core/error.h"
+#include "../glines/glines.h"
 
 void proxyscan_newnick(int hooknum, void *arg) {
   nick *np=(nick *)arg;
   cachehost *chp;
   foundproxy *fpp, *nfpp;
   extrascan *esp, *espp;
+  char reason[200];
 
   int i;
 
   /* Skip 127.* and 0.* hosts */
-  if (irc_in_addr_is_loopback(&np->p_ipaddr))
+  if (irc_in_addr_is_loopback(&np->ipaddress))
     return;
 
   /* slug: why is this here? why isn't it with the other queuing stuff? */
@@ -22,7 +25,7 @@ void proxyscan_newnick(int hooknum, void *arg) {
    */
   /* disabled as the list is hopelessly out of date */
   if ((esp=findextrascan(np->ipnode))) {
-    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->p_ipaddr)); 
+    Error("proxyextra", ERR_ERROR, "connection from possible proxy %s", IPtostr(np->ipaddress)); 
     for (espp=esp;espp;espp=espp->nextbynode) { 
       /* we force a scan on any hosts that may be an open proxy, even if they are:
        * a) already in the queue, b) we've been running < 120 seconds */
@@ -76,8 +79,8 @@ void proxyscan_newnick(int hooknum, void *arg) {
     }
 
     /* set a SHORT gline - if they really have an open proxy the gline will be re-set, with a new ID */
-    irc_send("%s GL * +*@%s 600 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	     mynumeric->content,IPtostr(np->p_ipaddr),(intmax_t)getnettime(), chp->glineid);
+    snprintf(reason, sizeof(reason), "Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d", chp->glineid);
+    glinebynick(np, 600, reason, GLINE_IGNORE_TRUST, "proxyscan");
 
     chp->lastscan=time(NULL);
     chp->proxies=NULL;

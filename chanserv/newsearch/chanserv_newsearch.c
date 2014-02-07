@@ -18,7 +18,7 @@ void _init() {
   regdisp(reg_usersearch, "qusers", printchannel_qusers, 0, "");
   regdisp(reg_usersearch, "auth", printauth, 0, "");
 
-  registersearchterm(reg_usersearch, "qusers", qusers_parse, 0, "");
+  registersearchterm(reg_chansearch, "qusers", qusers_parse, 0, "");
   registersearchterm(reg_usersearch, "qlasthost", qlasthost_parse, 0, "");
   registersearchterm(reg_usersearch, "qemail", qemail_parse, 0, "");
   registersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse, 0, "");
@@ -42,7 +42,7 @@ void _fini() {
   unregdisp(reg_usersearch, "qusers", printchannel_qusers);
   unregdisp(reg_usersearch, "auth", printauth);
 
-  deregistersearchterm(reg_usersearch, "qusers", qusers_parse);
+  deregistersearchterm(reg_chansearch, "qusers", qusers_parse);
   deregistersearchterm(reg_usersearch, "qlasthost", qlasthost_parse);
   deregistersearchterm(reg_usersearch, "qemail", qemail_parse);
   deregistersearchterm(reg_usersearch, "qsuspendreason", qsuspendreason_parse);

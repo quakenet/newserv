@@ -31,7 +31,7 @@ haccount *haccount_get_by_name(const char *name)
 
 haccount *haccount_add(const char *name, hlevel lvl)
 {
-    haccount *tmp = (haccount*)malloc(sizeof (haccount));
+    haccount *tmp;
 
     if (haccount_get_by_name(name))
     {
@@ -42,6 +42,7 @@ haccount *haccount_add(const char *name, hlevel lvl)
     if (*name == '#')
         name++;
 
+    tmp = (haccount*)malloc(sizeof (haccount));
     tmp->name = getsstring(name, strlen(name));
     tmp->level = lvl;
     tmp->flags = H_ACCFLAGS_DEFAULT;

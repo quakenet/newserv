@@ -1,15 +1,17 @@
 #include "../core/hooks.h"
+#include "../irc/irc.h"
 #include "trusts.h"
 
 static void __counthandler(int hooknum, void *arg);
 
 void trusts_newnick(nick *sender, int moving) {
-  uint32_t host;
   trusthost *th;
   void *arg[2];
+  struct irc_in_addr ipaddress;
 
-  host = irc_in_addr_v4_to_int(&sender->p_ipaddr);
-  th = th_getbyhost(host);
+  ip_canonicalize_tunnel(&ipaddress, &sender->ipaddress);
+
+  th = th_getbyhost(&ipaddress);
 
   settrusthost(sender, th);
   if(!th) {
@@ -70,7 +72,7 @@ static void __lostnick(int hooknum, void *arg) {
 }
 
 static void __counthandler(int hooknum, void *arg) {
-  time_t t = time(NULL);
+  time_t t = getnettime();
   void **args = arg;
   trusthost *th = gettrusthost((nick *)args[0]);
   trustgroup *tg;

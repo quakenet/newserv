@@ -22,7 +22,7 @@ static int lua_scheduler_new(lua_State *ps) {
   result->entries = NULL;
   result->ps = ps;
   result->next = ll->schedulers;
-  ll->schedulers = result->next;
+  ll->schedulers = result;
 
   return 1;
 }

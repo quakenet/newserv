@@ -12,6 +12,7 @@
 #include "../server/server.h"
 #include "../parser/parser.h"
 #include "../lib/version.h"
+#include "../lib/ccassert.h"
 #include "../core/nsmalloc.h"
 
 #include <stdlib.h>
@@ -19,6 +20,8 @@
 #include <stdio.h>
 
 MODULE_VERSION("");
+
+CCASSERT(sizeof(host) == sizeof(realname));
 
 const flag umodeflags[] = {
    { 'i', UMODE_INV },
@@ -35,6 +38,9 @@ const flag umodeflags[] = {
    { 'R', UMODE_REGPRIV },
    { 'I', UMODE_HIDEIDLE },
    { 'P', UMODE_PARANOID },
+   { 'q', UMODE_COMCHANS },
+   { 'Q', UMODE_COMCHANSRESTR },
+   { 'C', UMODE_CLOAKED },
    { '\0', 0 } };
 
 const flag accountflags[] = {
@@ -65,7 +71,6 @@ void _init() {
     for (anp=authnametable[i];anp;anp=anp->next)
       anp->nicks=NULL;  
 
-  initnickalloc();
   initnickhelpers();
   memset(nicktable,0,sizeof(nicktable));
   memset(servernicks,0,sizeof(servernicks));
@@ -87,11 +92,11 @@ void _init() {
   registerserverhandler("D",&handlekillmsg,2);
   registerserverhandler("Q",&handlequitmsg,1);
   registerserverhandler("M",&handleusermodemsg,3);
-  registerserverhandler("W",&handlewhoismsg,2);
   registerserverhandler("AC",&handleaccountmsg,4);
-  registerserverhandler("R",&handlestatsmsg,2);
   registerserverhandler("P",&handleprivmsg,2);
   registerserverhandler("A",&handleawaymsg,1);
+  registerserverhandler("CA",&handleaddcloak,1);
+  registerserverhandler("CU",&handleclearcloak,0);
   
   /* Fake the addition of our own server */
   handleserverchange(HOOK_SERVER_NEWSERVER,(void *)numerictolong(mynumeric->content,2));
@@ -125,11 +130,11 @@ void _fini() {
   deregisterserverhandler("D",&handlekillmsg);
   deregisterserverhandler("Q",&handlequitmsg);
   deregisterserverhandler("M",&handleusermodemsg);
-  deregisterserverhandler("W",&handlewhoismsg);
-  deregisterserverhandler("AC",&handleaccountmsg);
-  deregisterserverhandler("R",&handlestatsmsg);  
+  deregisterserverhandler("AC",&handleaccountmsg); 
   deregisterserverhandler("P",&handleprivmsg);
   deregisterserverhandler("A",&handleawaymsg);
+  deregisterserverhandler("CA",&handleaddcloak);
+  deregisterserverhandler("CU",&handleclearcloak);
 }
 
 /*
@@ -169,6 +174,9 @@ void handleserverchange(int hooknum, void *arg) {
  
 void deletenick(nick *np) {
   nick **nh;
+
+  /* Fire a pre-lostnick trigger to allow hooks to check the channels etc. of a lost nick */
+  triggerhook(HOOK_NICK_PRE_LOSTNICK, np);
 
   /* Fire the hook.  This will deal with removal from channels etc. */
   triggerhook(HOOK_NICK_LOSTNICK, np);
@@ -213,11 +221,16 @@ void deletenick(nick *np) {
   freesstring(np->shident); /* freesstring(NULL) is OK */
   freesstring(np->sethost); 
   freesstring(np->opername); 
+  freesstring(np->message);
 
   node_decrement_usercount(np->ipnode);
   derefnode(iptree, np->ipnode);
   
   /* TODO: figure out how to cleanly remove nodes without affecting other modules */
+
+  /* Remove cloak entries for the user */
+  removecloaktarget(np);
+  clearcloaktargets(np);
 
   /* Delete the nick from the servernick table */  
   *(gethandlebynumericunsafe(np->numeric))=NULL;
@@ -427,5 +440,45 @@ nick *getnickbynumericstr(char *numericstr) {
   return getnickbynumeric(numerictolong(numericstr,5));
 }
 
+
 #endif
+
+int canseeuser(nick *np, nick *cloaked)
+{
+  return (np == cloaked ||
+          !IsCloaked(cloaked) ||
+          np->cloak_extra == cloaked);
+}
+
+void addcloaktarget(nick *cloaked, nick *target)
+{
+  removecloaktarget(target);
+
+  target->cloak_extra = cloaked;
+  cloaked->cloak_count++;
+}
+
+void removecloaktarget(nick *target)
+{
+  if (target->cloak_extra) {
+    target->cloak_extra->cloak_count--;
+    target->cloak_extra = NULL;
+  }
+}
+
+void clearcloaktargets(nick *cloaked)
+{
+  nick *tnp;
+  int j;
+
+  if (cloaked->cloak_count == 0)
+    return;
+
+  for(j=0;j<NICKHASHSIZE;j++)
+    for(tnp=nicktable[j];tnp;tnp=tnp->next)
+      if (tnp->cloak_extra == cloaked)
+        tnp->cloak_extra = NULL;
+
+  cloaked->cloak_count = 0;
+}
 

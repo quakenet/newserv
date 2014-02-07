@@ -113,6 +113,9 @@
 #define MAXCHANLEVS  500
 #define MAXBANS      50
 
+/* Maximum number of channels a user may be known on */
+#define MAXCHANNELS  500
+
 /* Sources of entropy and standard length defines */
 #define ENTROPYSOURCE "/dev/urandom"
 #define ENTROPYLEN    8
@@ -750,8 +753,6 @@ extern sstring *cs_quitreason;
 void chanserv_finalinit();
 
 /* chanservalloc.c */
-void chanservallocinit();
-void csfreeall();
 regchan *getregchan();
 void freeregchan(regchan *rcp);
 reguser *getreguser();

@@ -27,6 +27,7 @@ void lua_onauth(int hooknum, void *arg);
 void lua_ondisconnect(int hooknum, void *arg);
 void lua_onmode(int hooknum, void *arg);
 void lua_onop(int hooknum, void *arg);
+void lua_onprequit(int hooknum, void *arg);
 void lua_onquit(int hooknum, void *arg);
 void lua_onrename(int hooknum, void *arg);
 void lua_onconnect(int hooknum, void *arg);
@@ -45,6 +46,7 @@ void lua_registerevents(void) {
   registerhook(HOOK_CHANNEL_KICK, &lua_onkick);
   registerhook(HOOK_CHANNEL_OPPED, &lua_onop);
   registerhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
+  registerhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   registerhook(HOOK_NICK_LOSTNICK, &lua_onquit);
   registerhook(HOOK_NICK_RENAME, &lua_onrename);
   registerhook(HOOK_IRC_CONNECTED, &lua_onconnect);
@@ -62,6 +64,7 @@ void lua_deregisterevents(void) {
   deregisterhook(HOOK_IRC_CONNECTED, &lua_onconnect);
   deregisterhook(HOOK_NICK_RENAME, &lua_onrename);
   deregisterhook(HOOK_NICK_LOSTNICK, &lua_onquit);
+  deregisterhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   deregisterhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
   deregisterhook(HOOK_CHANNEL_OPPED, &lua_onop);
   deregisterhook(HOOK_CHANNEL_KICK, &lua_onkick);
@@ -248,7 +251,8 @@ void lua_bothandler(nick *target, int type, void **args) {
           p[le - 1] = '\000';
 
         lua_avpcall("irc_onctcp", "ls", np->numeric, p + 1);
-
+      } else {
+        lua_avpcall("irc_onnotice", "ls", np->numeric, p);
       }
 
       break;
@@ -352,11 +356,12 @@ void lua_onpart(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   chanindex *ci = ((channel *)arglist[0])->index;
   nick *np = arglist[1];
+  char *reason = arglist[2];
 
   if(!ci || !np)
     return;
 
-  lua_avpcall("irc_onpart", "Sl", ci->name, np->numeric);
+  lua_avpcall("irc_onpart", "Sls", ci->name, np->numeric, reason);
 }
 
 void lua_onrename(int hooknum, void *arg) {
@@ -377,6 +382,15 @@ void lua_onquit(int hooknum, void *arg) {
     return;
 
   lua_avpcall("irc_onquit", "l", np->numeric);
+}
+
+void lua_onprequit(int hooknum, void *arg) {
+  nick *np = (nick *)arg;
+
+  if(!np)
+    return;
+
+  lua_avpcall("irc_onprequit", "l", np->numeric);
 }
 
 void lua_onauth(int hooknum, void *arg) {
@@ -455,16 +469,25 @@ char *printallmodes(channel *cp) {
   return buf;
 }
 
+static char *printlimitedmodes(channel *cp, flag_t before) {
+  static char buf[1024];
+
+  snprintf(buf, sizeof(buf), "%s", printflags(cp->flags, cmodeflags));
+
+  return buf;
+}
+
 void lua_onmode(int hooknum, void *arg) {
   void **arglist = (void **)arg;
   channel *cp = (channel *)arglist[0];
   chanindex *ci = cp->index;
   nick *np = arglist[1];
+  flag_t beforeflags = (flag_t)(long)arglist[3];
 
   if(np) {
-    lua_avpcall("irc_onmode", "Sls", ci->name, np->numeric, printallmodes(cp));
+    lua_avpcall("irc_onmode", "Slss", ci->name, np->numeric, printallmodes(cp), printlimitedmodes(cp, beforeflags));
   } else {
-    lua_avpcall("irc_onmode", "S0s", ci->name, printallmodes(cp));
+    lua_avpcall("irc_onmode", "S0ss", ci->name, printallmodes(cp), printlimitedmodes(cp, beforeflags));
   }
 }
 

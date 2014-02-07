@@ -9,7 +9,7 @@
 #include <time.h>
 
 /* This defines the maximum possible local masked numeric */
-#define MAXLOCALUSER     4095
+#define MAXLOCALUSER     65535
 
 /* Are we connected to IRC or not? */
 extern int connected;
@@ -31,7 +31,7 @@ int deregisternumerichandler(const int numeric, CommandHandler handler);
 char *getmynumeric();
 time_t getnettime();
 void setnettime(time_t newtime);
-void stats_m(char *, char *);
+void stats_commands(char *sourcenum);
 
 /* Functions from irchandlers.c */
 int handleping(void *sender, int cargc, char **cargv);

@@ -171,7 +171,7 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
     fprintf(rq_logfd, "%s: request (%s) for %s (%d unique users, "
             "%d total users) from %s!%s@%s%s%s: Request was %s (%c).\n", now,
-            (req->what == QR_CSERVE) ? RQ_QNICK : RQ_SNICK,
+            (req->what == QR_CSERVE) ? rq_qnick->content : rq_snick->content,
             req->cip->name->content, unique, total,
             tnp->nick, tnp->ident, tnp->host->name->content, IsAccount(tnp)?"/":"", IsAccount(tnp)?tnp->authname:"",
             (outcome == QR_OK) ? "accepted" : "denied", failcode);
@@ -182,10 +182,10 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
     if (req->what == QR_SPAMSCAN) {
       /* Add S */
 
-      if (!(snp=getnickbynick(RQ_SNICK))) {
+      if (!(snp=getnickbynick(rq_snick->content))) {
         sendnoticetouser(rqnick, tnp,
                          "Cannot find %s on the network. "
-                         "Please try your request again later.", RQ_SNICK);
+                         "Please try your request again later.", rq_snick->content);
 
         free(req);
         return;
@@ -193,7 +193,7 @@ static void qr_result(requestrec *req, int outcome, char failcode, char *message
 
       sendnoticetouser(rqnick, tnp, "Success! %s has been added to '%s' "
                         "(contact #help if you require further assistance).",
-                        RQ_SNICK, req->cip->name->content);
+                        rq_snick->content, req->cip->name->content);
 
       /* auth */
       user = (sstring *)getcopyconfigitem("request", "user", "R", 30);
@@ -298,7 +298,7 @@ static int qr_checksize(chanindex *cip, int what, char *failcode) {
 
   /* make sure we can actually add Q */
   if (what == QR_CSERVE) {
-    qbot = getnickbynick(RQ_QNICK);
+    qbot = getnickbynick(rq_qnick->content);
 
     if (!qbot)
       return 0;
@@ -405,7 +405,7 @@ void qr_handle_notice(nick *sender, char *message) {
   int delrequest = 0, state, who;
   requestrec *nextreq;
 
-  if (!ircd_strcmp(sender->nick, RQ_QNICK) && nextqreq) {
+  if (!ircd_strcmp(sender->nick, rq_qnick->content) && nextqreq) {
     /* Message from Q */
     if (!ircd_strcmp(message,"Done.")) {
       /* Q added the channel: delete from L and tell the user. */
@@ -431,7 +431,7 @@ void qr_handle_notice(nick *sender, char *message) {
     }
   }
 
-  if (!ircd_strcmp(sender->nick, RQ_QNICK)) {
+  if (!ircd_strcmp(sender->nick, rq_qnick->content)) {
     who = QR_Q;
     state = (who == QR_Q) ? rqstate : rlstate;
     nextreq = (who == QR_Q) ? nextreqq : nextreql;
@@ -616,7 +616,7 @@ void qr_handle_notice(nick *sender, char *message) {
               qr_result(nextreq, QR_OK, '-', "OK");
             } else {
                 qr_result(nextreq, QR_FAILED, failcode,
-                          "Error: Sorry, Your channel '%s' does not require %s. Please try again in a few days.", nextreq->cip->name->content, RQ_SNICK);
+                          "Error: Sorry, Your channel '%s' does not require %s. Please try again in a few days.", nextreq->cip->name->content, rq_snick->content);
        
               qr_toosmall++;
             }
@@ -730,21 +730,10 @@ int qr_instantrequestq(nick *sender, channel *cp) {
 
 int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   chanindex *cip = cp->index;
-  int who = 0;
   requestrec *nextreq, *lastreq;
-
-  if (rq_isspam(sender)) {
-      sendnoticetouser(rqnick, sender, "Do not flood the request system."
-          " Try again in %s.", rq_longtoduration(rq_blocktime(sender)));
-    
-      return RQ_ERROR;
-  }
 
   /* check which service is on the channel */
   if (getnumerichandlefromchanhash(cp->users, qnick->numeric) != NULL) {
-    /* we've found Q */
-    who = QR_Q;
-
     /* Request stats from Q */
     sendmessagetouser(rqnick, qnick, "CHANLEV %s", cip->name->content);
 
@@ -774,7 +763,7 @@ int qr_requests(nick *rqnick, nick *sender, channel *cp, nick *qnick) {
   sendnoticetouser(rqnick, sender,
                    "Checking your %s access in '%s'. "
                    "This may take a while, please be patient...",
-                   RQ_QNICK, cip->name->content);
+                   rq_qnick->content, cip->name->content);
 
   return RQ_UNKNOWN;
 }
@@ -809,10 +798,10 @@ void qr_finirequest(void) {
 
 void qr_requeststats(nick *rqnick, nick *np) {
   sendnoticetouser(rqnick, np, "- Suspended (S):                  %d", qr_suspended);
-  sendnoticetouser(rqnick, np, "- No chanstats (S):             %d", qr_nohist);
-  sendnoticetouser(rqnick, np, "- Too small (S):                %d", qr_toosmall);
-  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):  %d", qr_nochanlev);
-  sendnoticetouser(rqnick, np, "- User was not the owner (S):   %d", qr_notowner);
+  sendnoticetouser(rqnick, np, "- No chanstats (S):               %d", qr_nohist);
+  sendnoticetouser(rqnick, np, "- Too small (S):                  %d", qr_toosmall);
+  sendnoticetouser(rqnick, np, "- User was not on chanlev (S):    %d", qr_nochanlev);
+  sendnoticetouser(rqnick, np, "- User was not the owner (S):     %d", qr_notowner);
   sendnoticetouser(rqnick, np, "- A:                              %d", qr_a);
   sendnoticetouser(rqnick, np, "- B:                              %d", qr_b);
   sendnoticetouser(rqnick, np, "- C:                              %d", qr_c);

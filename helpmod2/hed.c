@@ -94,7 +94,11 @@ helpmod_editor *hed_write(helpmod_editor *editor)
     hed_line *ptr;
 
     sprintf(fname_buffer, HELPMOD_TEXT_DIR"/%s" ,editor->filename);
-    if ((file = fopen(fname_buffer, "wt")) == NULL);
+    if ((file = fopen(fname_buffer, "wt")) == NULL)
+    {
+        Error("helpmod", ERR_ERROR, "hed: could not open file: %s", fname_buffer);
+        return editor;
+    }
 
     for (ptr = editor->start;ptr != NULL;ptr = ptr->next)
         fprintf(file, "%s\n", ptr->line);
@@ -194,21 +198,17 @@ void hed_command (huser *sender, channel* returntype, char* ostr, int argc, char
 		switch (argv[0][i])
 		{
 		case '.':
-		    sprintf(&buffer[j], "%d%n", editor->line + 1, &nread);
-                    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 1);
 		    break;
 		case '$':
-		    sprintf(&buffer[j], "%d%n", hed_line_count(editor) + 0, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", hed_line_count(editor) + 0);
 		    break;
 		case '-':
 		case '^':
-		    sprintf(&buffer[j], "%d%n", editor->line + 0, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 0);
 		    break;
 		case '+':
-		    sprintf(&buffer[j], "%d%n", editor->line + 2, &nread);
-		    j+=nread;
+		    j+=sprintf(&buffer[j], "%d", editor->line + 2);
 		    break;
 		default:
 		    buffer[j++] = argv[0][i];

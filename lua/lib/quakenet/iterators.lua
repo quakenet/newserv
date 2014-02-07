@@ -1,4 +1,4 @@
-nickpusher = { nick = 0, ident = 1, hostname = 2, realname = 3, authname = 4, ipaddress = 5, numeric = 6, timestamp = 7, accountts = 8, umodes = 9, country = 10, accountid = 11 }
+nickpusher = { nick = 0, ident = 1, hostname = 2, realname = 3, authname = 4, ipaddress = 5, numeric = 6, timestamp = 7, accountts = 8, umodes = 9, country = 10, accountid = 11, servername = 12, servernumeric = 13 }
 chanpusher = { name = 0, totalusers = 1, topic = 2, realusers = 3, timestamp = 4, modes = 5 }
 
 function channelusers_iter(channel, items)

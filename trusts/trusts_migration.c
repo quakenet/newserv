@@ -1,7 +1,10 @@
+#include "../lib/version.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
 #include "../core/config.h"
 #include "trusts.h"
+
+MODULE_VERSION("");
 
 int trusts_migration_start(TrustDBMigrationCallback, void *);
 void trusts_migration_stop(void);

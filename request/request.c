@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../localuser/localuser.h"
 #include "../localuser/localuserchannel.h"
+#include "../core/config.h"
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"
@@ -12,9 +13,9 @@
 #include "../splitlist/splitlist.h"
 #include "request.h"
 #include "request_block.h"
+#include "request_fasttrack.h"
 #include "lrequest.h"
 #include "sqrequest.h"
-#include "user.h"
 
 MODULE_VERSION("");
 
@@ -33,11 +34,6 @@ int rqcmd_listblocks(void *user, int cargc, char **cargv);
 int rqcmd_stats(void *user, int cargc, char **cargv);
 int rqcmd_requestop(void *user, int cargc, char **cargv);
 
-int rqcmd_adduser(void *user, int cargc, char **cargv);
-int rqcmd_deluser(void *user, int cargc, char **cargv);
-int rqcmd_changelev(void *user, int cargc, char **cargv);
-int rqcmd_userlist(void *user, int cargc, char **cargv);
-
 #define min(a,b) ((a > b) ? b : a)
 
 /* stats counters */
@@ -49,13 +45,39 @@ int rq_blocked = 0;
 /* log fd */
 FILE *rq_logfd;
 
+/* config */
+sstring *rq_qserver, *rq_qnick, *rq_sserver, *rq_snick;
+sstring *rq_nick, *rq_user, *rq_host, *rq_real, *rq_auth;
+int rq_authid;
+
 static int extloaded = 0;
 
 void _init(void) {
+  sstring *m;
+
   if(!rq_initblocks())
     return;
 
+  if(!rq_initfasttrack())
+    return;
+
   extloaded = 1;
+
+  rq_nick = getcopyconfigitem("request", "nick", "R", BUFSIZE);
+  rq_user = getcopyconfigitem("request", "user", "request", BUFSIZE);
+  rq_host = getcopyconfigitem("request", "host", "request.quakenet.org", BUFSIZE);
+  rq_real = getcopyconfigitem("request", "real", "Service Request v0.23", BUFSIZE);
+  rq_auth = getcopyconfigitem("request", "auth", "R", BUFSIZE);
+  rq_qnick = getcopyconfigitem("request", "qnick", "Q", BUFSIZE);
+  rq_qserver = getcopyconfigitem("request", "qserver", "CServe.quakenet.org", BUFSIZE);
+  rq_snick = getcopyconfigitem("request", "snick", "S", BUFSIZE);
+  rq_sserver = getcopyconfigitem("request", "sserver", "services2.uk.quakenet.org", BUFSIZE);
+
+  m = getconfigitem("request", "authid");
+  if (!m)
+    rq_authid = 1780711;
+  else
+    rq_authid = atoi(m->content);
 
   rqcommands = newcommandtree();
 
@@ -64,20 +86,14 @@ void _init(void) {
   addcommandtotree(rqcommands, "requestspamscan", RQU_ANY, 1, &rqcmd_requestspamscan);
   addcommandtotree(rqcommands, "requestop", RQU_ANY, 2, &rqcmd_requestop);
 
-  addcommandtotree(rqcommands, "addblock", RQU_ACCOUNT, 3, &rqcmd_addblock);
-  addcommandtotree(rqcommands, "delblock", RQU_ACCOUNT, 1, &rqcmd_delblock);
-  addcommandtotree(rqcommands, "listblocks", RQU_ACCOUNT, 1, &rqcmd_listblocks);
-  addcommandtotree(rqcommands, "stats", RQU_ACCOUNT, 1, &rqcmd_stats);
-
-  addcommandtotree(rqcommands, "adduser", RQU_OPER, 2, &rqcmd_adduser);
-  addcommandtotree(rqcommands, "deluser", RQU_OPER, 1, &rqcmd_deluser);
-  addcommandtotree(rqcommands, "changelev", RQU_OPER, 2, &rqcmd_changelev);
-  addcommandtotree(rqcommands, "userlist", RQU_OPER, 1, &rqcmd_userlist);
+  addcommandtotree(rqcommands, "addblock", RQU_OPER, 3, &rqcmd_addblock);
+  addcommandtotree(rqcommands, "delblock", RQU_OPER, 1, &rqcmd_delblock);
+  addcommandtotree(rqcommands, "listblocks", RQU_OPER, 1, &rqcmd_listblocks);
+  addcommandtotree(rqcommands, "stats", RQU_OPER, 1, &rqcmd_stats);
   
   qr_initrequest();
-  ru_load();
 
-  rq_logfd = fopen(RQ_LOGFILE, "a");
+  rq_logfd = fopen("logs/request.log", "a");
   
   scheduleoneshot(time(NULL) + 1, (ScheduleCallback)&rq_registeruser, NULL);
 }
@@ -98,16 +114,17 @@ void _fini(void) {
   deletecommandfromtree(rqcommands, "listblocks", &rqcmd_listblocks);
   deletecommandfromtree(rqcommands, "stats", &rqcmd_stats);
 
-  deletecommandfromtree(rqcommands, "adduser", &rqcmd_adduser);
-  deletecommandfromtree(rqcommands, "deluser", &rqcmd_deluser);
-  deletecommandfromtree(rqcommands, "changelev", &rqcmd_changelev);
-  deletecommandfromtree(rqcommands, "userlist", &rqcmd_userlist);
-
   destroycommandtree(rqcommands);
 
   rq_finiblocks();
+  rq_finifasttrack();
   qr_finirequest();
-  ru_persist();
+
+  freesstring(rq_nick);
+  freesstring(rq_user);
+  freesstring(rq_host);
+  freesstring(rq_real);
+  freesstring(rq_auth);
 
   if (rq_logfd != NULL)
     fclose(rq_logfd);
@@ -118,15 +135,15 @@ void _fini(void) {
 void rq_registeruser(void) {
   channel *cp;
 
-  rqnick = registerlocaluserflags(RQ_REQUEST_NICK, RQ_REQUEST_USER, RQ_REQUEST_HOST,
-                             RQ_REQUEST_REAL, RQ_REQUEST_AUTH, 1780711, 0,
+  rqnick = registerlocaluserflags(rq_nick->content, rq_user->content, rq_host->content,
+                             rq_real->content, rq_auth->content, rq_authid, 0,
                              UMODE_ACCOUNT | UMODE_SERVICE | UMODE_OPER,
                              rq_handler);
 
-  cp = findchannel(RQ_TLZ);
+  cp = findchannel("#twilightzone");
 
   if (cp == NULL)
-    localcreatechannel(rqnick, RQ_TLZ);
+    localcreatechannel(rqnick, "#twilightzone");
   else
     localjoinchannel(rqnick, cp);
 }
@@ -175,13 +192,6 @@ void rq_handler(nick *target, int type, void **params) {
         return;
       }
 
-      if ((cmd->level & RQU_ACCOUNT) && (!IsAccount(user) || ru_getlevel(user) == 0) && !IsOper(user)) {
-        sendnoticetouser(rqnick, user, "Sorry, this command is not "
-              "available to you.");
-
-	return;
-      }
-
       if (cargc - 1 > cmd->maxparams)
         rejoinline(cargv[cmd->maxparams], cargc - cmd->maxparams);
 
@@ -214,9 +224,6 @@ int rqcmd_showcommands(void *user, int cargc, char **cargv) {
     if ((cmdlist[i]->level & RQU_OPER) && !IsOper(np))
       continue;
  
-    if ((cmdlist[i]->level & RQU_ACCOUNT) && !(IsOper(np) || (IsAccount(np) && ru_getlevel(np) > 0)))
-      continue;
-
     sendnoticetouser(rqnick, np, "%s", cmdlist[i]->command->content);
   }
 
@@ -244,11 +251,11 @@ int rq_genericrequestcheck(nick *np, char *channelname, channel **cp, nick **qni
     return RQ_ERROR;
   }
 
-  *qnick = getnickbynick(RQ_QNICK);
+  *qnick = getnickbynick(rq_qnick->content);
 
-  if (*qnick == NULL || findserver(RQ_QSERVER) < 0) {
+  if (*qnick == NULL || findserver(rq_qserver->content) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-          "Please try again later.", RQ_QNICK);
+          "Please try again later.", rq_qnick->content);
 
     return RQ_ERROR;
   }
@@ -340,14 +347,12 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
   qhand = getnumerichandlefromchanhash(cp->users, qnick->numeric);
 
   if (qhand != NULL) {
-    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", RQ_QNICK);
+    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", rq_qnick->content);
 
     rq_failed++;
 
     return RQ_ERROR;
   }
-
-  retval = RQ_ERROR;
 
   retval = lr_requestl(rqnick, np, cp, qnick);
 
@@ -357,7 +362,7 @@ int rqcmd_request(void *user, int cargc, char **cargv) {
     strftime(now, sizeof(now), "%c", localtime(&now_ts));
 
     fprintf(rq_logfd, "%s: request (%s) for %s from %s!%s@%s%s%s: Request was %s.\n",
-      now, RQ_QNICK, cp->index->name->content,
+      now, rq_qnick->content, cp->index->name->content,
       np->nick, np->ident, np->host->name->content, IsAccount(np)?"/":"", IsAccount(np)?np->authname:"",
       (retval == RQ_OK) ? "accepted" : "denied");
     fflush(rq_logfd);
@@ -392,11 +397,11 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
     return RQ_ERROR;
   }
 
-  snick = getnickbynick(RQ_SNICK);
+  snick = getnickbynick(rq_snick->content);
 
-  if (snick == NULL || findserver(RQ_SSERVER) < 0) {
+  if (snick == NULL || findserver(rq_sserver->content) < 0) {
     sendnoticetouser(rqnick, np, "Error: %s does not seem to be online. "
-            "Please try again later.", RQ_SNICK);
+            "Please try again later.", rq_snick->content);
 
     rq_failed++;
 
@@ -407,7 +412,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
   shand = getnumerichandlefromchanhash(cp->users, snick->numeric);
 
   if (shand != NULL) {
-    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", RQ_SNICK);
+    sendnoticetouser(rqnick, np, "Error: %s is already on that channel.", rq_snick->content);
 
     rq_failed++;
 
@@ -431,7 +436,7 @@ int rqcmd_requestspamscan(void *user, int cargc, char **cargv) {
     /* channel apparently doesn't have Q */
     
    sendnoticetouser(rqnick, np, "Error: You need %s in order to be "
-        "able to request %s.", RQ_QNICK, RQ_SNICK);
+        "able to request %s.", rq_qnick->content, rq_snick->content);
 
     rq_failed++;
 
@@ -535,7 +540,7 @@ int rqcmd_requestop(void *source, int cargc, char **cargv) {
     }
   }
 
-  if (sp_countsplitservers() > 0) {
+  if (sp_countsplitservers(SERVERTYPEFLAG_USER_STATE) > 0) {
     sendnoticetouser(rqnick, np, "One or more servers are currently split. Wait until the"
 		    " netsplit is over and try again.");
 
@@ -567,9 +572,8 @@ int rqcmd_addblock(void *user, int cargc, char **cargv) {
   rq_block *block;
   time_t expires;
   char *account;
-  int level = ru_getlevel(np);
 
-  if (level < 20) {
+  if (!IsOper(np)) {
     sendnoticetouser(rqnick, np, "You do not have access to this command.");
 
     return RQ_ERROR;
@@ -597,12 +601,6 @@ int rqcmd_addblock(void *user, int cargc, char **cargv) {
 
   expires = getnettime() + durationtolong(cargv[1]);
 
-  if (expires > getnettime() + RQU_HELPER_MAXEXPIRE && level < 30) {
-    sendnoticetouser(rqnick, np, "Maximum expiry time is %s.", rq_longtoduration(RQU_HELPER_MAXEXPIRE));
-
-    return RQ_ERROR;
-  }
-  
   rq_addblock(cargv[0], cargv[2], account, 0, expires);
 
   sendnoticetouser(rqnick, np, "Blocked channels/accounts matching '%s' from "
@@ -613,12 +611,9 @@ int rqcmd_addblock(void *user, int cargc, char **cargv) {
 
 int rqcmd_delblock(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
-  int result, level;
-  rq_block *block;
+  int result;
 
-  level = ru_getlevel(np);
-  
-  if (level < 20) {
+  if (!IsOper(np)) {
     sendnoticetouser(rqnick, np, "You do not have access to this command.");
 
     return RQ_ERROR;
@@ -628,16 +623,6 @@ int rqcmd_delblock(void *user, int cargc, char **cargv) {
     sendnoticetouser(rqnick, np, "Syntax: delblock <mask>");
 
     return RQ_ERROR;
-  }
-
-  block = rq_findblock(cargv[0]);
-
-  if (block != NULL && level < 50) {
-    if (ircd_strcmp(block->creator->content, np->authname) != 0) {
-      sendnoticetouser(rqnick, np, "This block was created by someone else. You cannot remove it.");
-      
-      return RQ_ERROR;
-    }
   }
 
   result = rq_removeblock(cargv[0]);
@@ -656,11 +641,9 @@ int rqcmd_delblock(void *user, int cargc, char **cargv) {
 int rqcmd_listblocks(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
   rq_block block;
-  int i, level;
+  int i;
 
-  level = ru_getlevel(np);
-  
-  if (level < 10) {
+  if (!IsOper(np)) {
     sendnoticetouser(rqnick, np, "You do not have access to this command.");
 
     return RQ_ERROR;
@@ -690,9 +673,8 @@ int rqcmd_listblocks(void *user, int cargc, char **cargv) {
 
 int rqcmd_stats(void *user, int cargc, char **cargv) {
   nick *np = (nick*)user;
-  int level = ru_getlevel(np);
 
-  if (level < 10) {
+  if (!IsOper(np)) {
     sendnoticetouser(rqnick, np, "You do not have access to this command.");
 
     return RQ_ERROR;
@@ -705,115 +687,6 @@ int rqcmd_stats(void *user, int cargc, char **cargv) {
 
   lr_requeststats(rqnick, np);
   qr_requeststats(rqnick, np);
-
-  return RQ_OK;
-}
-
-int rqcmd_adduser(void *user, int cargc, char **cargv) {
-  nick *np = (nick*)user;
-  int result, level;
-
-  if (cargc < 2) {
-    sendnoticetouser(rqnick, np, "Syntax: adduser <account> <level>");
-
-    return RQ_ERROR;
-  }
-
-  level = atoi(cargv[1]);
-
-  if (level <= 0) {
-    sendnoticetouser(rqnick, np, "Level must be a positive integer.");
-
-    return RQ_ERROR;
-  }
-
-  result = ru_create(cargv[0], level);
-
-  if (result) {
-    sendnoticetouser(rqnick, np, "User '%s' was added with level '%d'.", cargv[0], level);
-
-    return RQ_OK;
-  } else {
-    sendnoticetouser(rqnick, np, "Something strange happened. Contact shroud.");
-
-    return RQ_ERROR;
-  }
-}
-
-int rqcmd_deluser(void *user, int cargc, char **cargv) {
-  nick *np = (nick*)user;
-  int level;
-
-  if (cargc < 1) {
-    sendnoticetouser(rqnick, np, "Syntax: deluser <account>");
-
-    return RQ_ERROR;
-  }
-
-  level = ru_getlevel_str(cargv[0]);
-
-  if (level <= 0) {
-    sendnoticetouser(rqnick, np, "There is no such user.");
-
-    return RQ_ERROR;
-  }
-
-  ru_destroy(cargv[0]);
-
-  sendnoticetouser(rqnick, np, "Done.");
-
-  return RQ_OK;
-}
-
-int rqcmd_changelev(void *user, int cargc, char **cargv) {
-  nick *np = (nick*)user;
-  int result, level;
-
-  if (cargc < 2) {
-    sendnoticetouser(rqnick, np, "Syntax: changelev <account> <level>");
-
-    return RQ_ERROR;
-  }
-
-  level = atoi(cargv[1]);
-
-  if (level <= 0) {
-    sendnoticetouser(rqnick, np, "Level must be a positive integer.");
-
-    return RQ_ERROR;
-  }
-
-  if (ru_getlevel_str(cargv[0]) <= 0) {
-    sendnoticetouser(rqnick, np, "Unknown user.");
-
-    return RQ_ERROR;
-  }
-  
-  result = ru_setlevel(cargv[0], level);
-  
-  if (result != 0) {
-    sendnoticetouser(rqnick, np, "Done.");
-
-    return RQ_OK;
-  } else {
-    sendnoticetouser(rqnick, np, "Something strange happened. Contact shroud.");
-
-    return RQ_ERROR;
-  }
-}
-
-int rqcmd_userlist(void *user, int cargc, char **cargv) {
-  nick *np = (nick*)user;
-  r_user_t *userp = r_userlist;
-
-  sendnoticetouser(rqnick, np, "User Level");
-
-  while (userp) {
-    sendnoticetouser(rqnick, np, "%s %d", userp->name, userp->level);
-    userp = userp->next;
-  }
-
-  sendnoticetouser(rqnick, np, "--- End of USERS.");
 
   return RQ_OK;
 }

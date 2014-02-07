@@ -223,6 +223,7 @@ int proxyscandolistopen(void *sender, int cargc, char **cargv) {
 void proxyscanspewip_real(DBConn *dbconn, void *arg) {
   nick *np=getnickbynumeric((unsigned long)arg);
   DBResult *pgres;
+  char timebuf[30];
 
   pgres=dbgetresult(dbconn);
   if (!dbquerysuccessful(pgres)) {
@@ -243,9 +244,12 @@ void proxyscanspewip_real(DBConn *dbconn, void *arg) {
 
   sendnoticetouser(proxyscannick,np,"%-5s %-20s %-22s %s","ID","IP","Found at","What was open");
   while(dbfetchrow(pgres)) {
+    time_t t = strtoul(dbgetvalue(pgres, 2), NULL, 10);
+    strftime(timebuf, sizeof(timebuf), "%d/%m/%y %H:%M GMT", gmtime(&t));
+
     sendnoticetouser(proxyscannick,np, "%-5s %-20s %-22s %s",dbgetvalue(pgres, 0),
                                                              dbgetvalue(pgres, 1),
-                                                             dbgetvalue(pgres, 2),
+                                                             timebuf,
 							     dbgetvalue(pgres, 3));
   }
   dbclear(pgres);

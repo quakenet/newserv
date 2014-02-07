@@ -709,6 +709,11 @@ void localdosetmode_nick (modechanges *changes, nick *target, short modes) {
     return;
   }
 
+  if (IsCloaked(target)) {
+    /* Target is cloaked, never set channel modes for cloaked users */
+    return;
+  }
+
   if ((modes & MC_DEOP) && (*lp & CUMODE_OP)) {
     (*lp) &= ~CUMODE_OP;
     if (changes->changecount >= MAXMODEARGS)

@@ -1,26 +1,7 @@
-#define RQ_TLZ "#twilightzone"
-
-#define RQ_QSERVER "CServe.quakenet.org"
-#define RQ_QNICK "Q"
-
-#define RQ_SSERVER "services.de.quakenet.org"
-#define RQ_SNICK "S"
-
-#define RQ_REQUEST_NICK "R"
-#define RQ_REQUEST_USER "request"
-#define RQ_REQUEST_HOST "request.quakenet.org"
-#define RQ_REQUEST_REAL "Service Request v0.23"
-#define RQ_REQUEST_AUTH "R"
+#include "../lib/sstring.h"
 
 #define RQU_ANY 0
 #define RQU_OPER 1
-#define RQU_ACCOUNT 2
-
-/* one week by default */
-#define RQU_HELPER_MAXEXPIRE 604800
-
-#define RQ_USERFILE "data/rqusers"
-#define RQ_LOGFILE "logs/request.log"
 
 #define RQ_OK 0
 #define RQ_ERROR 1
@@ -30,5 +11,10 @@ extern int rq_failed;
 extern int rq_success;
 
 extern FILE *rq_logfd;
+
+/* config */
+extern sstring *rq_qserver, *rq_qnick, *rq_sserver, *rq_snick;
+extern sstring *rq_nick, *rq_user, *rq_host, *rq_real, *rq_auth;
+extern int rq_authid;
 
 char *rq_longtoduration(unsigned long interval);

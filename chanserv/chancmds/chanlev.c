@@ -90,7 +90,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   nick *sender=source;
   chanindex *cip;
   regchan *rcp;
-  regchanuser *rcup, *rcuplist;
+  regchanuser *rcup, *trcup, *rcuplist;
   regchanuser **rusers;
   reguser *rup=getreguserfromnick(sender), *target;
   char time1[TIMELEN],time2[TIMELEN];
@@ -101,7 +101,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   int i,j;
   int newuser=0;
   int usercount;
-  void *args[2];
+  void *args[3];
 
   if (cargc<1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "chanlev");
@@ -267,17 +267,26 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       
       if (!rcuplist) {
         /* new user, we could store a count instead... that's probably better... */
-        unsigned int count;
+        unsigned int chanlevcount, channelcount;
 
-        for (count=i=0;i<REGCHANUSERHASHSIZE;i++)
+        for (chanlevcount=i=0;i<REGCHANUSERHASHSIZE;i++)
           for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
-            count++;
+            chanlevcount++;
 
-        if(count >= MAXCHANLEVS) {
+        if(chanlevcount >= MAXCHANLEVS) {
           chanservstdmessage(sender, QM_TOOMANYCHANLEVS);
           return CMD_ERROR;
         }
-   
+
+        channelcount=0;
+        for (trcup=target->knownon;trcup;trcup=trcup->nextbyuser)
+          channelcount++;
+
+        if(channelcount >= MAXCHANNELS) {
+          chanservstdmessage(sender, QM_TOOMANYCHANNELS);
+          return CMD_ERROR;
+        } 
+
 	rcuplist=getregchanuser();
 	rcuplist->user=target;
 	rcuplist->chan=rcp;

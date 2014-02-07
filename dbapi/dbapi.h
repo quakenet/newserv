@@ -7,6 +7,7 @@
 
 #define DB_NULLIDENTIFIER 0
 #define DB_CREATE 1
+#define DB_CALL 2
 
 #ifdef DBAPI_OVERRIDE
 #undef USE_DBAPI_PGSQL
@@ -43,6 +44,7 @@ typedef PQResult DBResult;
 #define dbgetvalue(result, column) pqgetvalue(result, column)
 
 #define dbclear(result) pqclear(result)
+#define dbcall(id, handler, tag, function, ...) pqasyncqueryf(id, handler, tag, (handler) == NULL ? DB_CALL : 0, "SELECT %s(%s)", function , ##__VA_ARGS__)
 
 #endif /* DBAPI_PGSQL */
 
@@ -74,6 +76,8 @@ typedef SQLiteResult DBResult;
 #define dbgetvalue(result, column) sqlitegetvalue(result, column)
 
 #define dbclear(result) sqliteclear(result)
+
+#define dbcall(...) abort() /* HA */
 
 #endif /* DBAPI_SQLITE */
 

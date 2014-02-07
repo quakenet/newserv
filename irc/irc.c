@@ -67,7 +67,7 @@ void _init() {
   
   /* These values cannot be changed whilst the IRC module is running */
   mynumeric=getcopyconfigitem("irc","servernumeric","A]",2);
-  myserver=getcopyconfigitem("irc","servername","services.lame.net",HOSTLEN);
+  myserver=getcopyconfigitem("irc","servername","services.example.net",HOSTLEN);
   
   mylongnum=numerictolong(mynumeric->content,2);
 
@@ -239,7 +239,7 @@ void irc_connect(void *arg) {
   sstring *mydesc;
   char *conto,*conpass;
   long portnum,pingfreq;
-  socklen_t opt=1460;
+/*  socklen_t opt=1460;*/
 
   nextline=inbuf;
   bytesleft=0;
@@ -366,8 +366,6 @@ void handledata(int fd, short events) {
   }
 
   while(again) {
-    again=0;
-    
     res=read(serverfd, inbuf+bytesleft, READBUFSIZE-bytesleft);
     if (res<=0) {
       Error("irc",ERR_ERROR,"Disconnected by remote server.");
@@ -606,13 +604,23 @@ void ircstats(int hooknum, void *arg) {
     triggerhook(HOOK_CORE_STATSREPLY,buf);
   }
 }
-void stats_m(char *str1, char *str2) {
+
+
+/* list stats commands / m to a user
+ *
+ *  sourcenum     numeric of the user requesting the listing
+ */
+void stats_commands(char *sourcenum) {
   Command *cmds[500];
   unsigned int c,i;
   
   c=getcommandlist(servercommands,cmds,500);
   
   for (i=0;i<c;i++) {
-    irc_send(":%s 212 %s %s %u 0", str1, str2, cmds[i]->command->content, cmds[i]->calls);
+    /*
+     * 212 RPL_STATSCOMMANDS "source 212 target command used_count bytes_count"
+     *                       "irc.netsplit.net 212 foobar ACCOUNT 41 462"
+     */
+    irc_send("%s 212 %s %s %u 0", getmynumeric(), sourcenum, cmds[i]->command->content, cmds[i]->calls);
   }
 }

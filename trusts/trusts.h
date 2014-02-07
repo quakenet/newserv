@@ -14,16 +14,44 @@
 #define TRUSTNAMELEN 100
 #define TRUSTHOSTLEN 100
 #define CREATEDBYLEN NICKLEN + 1
+#define TRUSTLOGLEN 200
 
 #define MAXTGEXTS 5
 
-#define MAXTRUSTEDFOR 50000
+#define MAXTRUSTEDFOR 5000
 #define MAXDURATION 365 * 86400 * 20
 #define MAXPERIDENT 1000
+#define MAXPERNODE 1000
 
 #define TABLES_REGULAR 0
 #define TABLES_MIGRATION 1
 #define TABLES_REPLICATION 2
+
+#define CLEANUP_TH_INACTIVE 60
+
+#define POLICY_GLINE_DURATION 1800
+
+#define POLICY_SUCCESS 0
+#define POLICY_FAILURE_NODECOUNT 1
+#define POLICY_FAILURE_GROUPCOUNT 2
+#define POLICY_FAILURE_IDENTD 3
+#define POLICY_FAILURE_IDENTCOUNT 4
+
+#define DEFAULT_TRUSTPORT 5776
+
+#define TRUST_ENFORCE_IDENT 1 /* This must be 1 for compatibility with O. */
+#define TRUST_NO_CLEANUP 2
+#define TRUST_PROTECTED 4
+#define TRUST_RELIABLE_USERNAME 8
+#define TRUST_UNTHROTTLE 16
+
+#define TRUST_MIN_UNPRIVILEGED_BITS_IPV4 (96 + 20)
+#define TRUST_MIN_UNPRIVILEGED_BITS_IPV6 32
+
+#define TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV4 (96 + 24)
+#define TRUST_MIN_UNPRIVILEGED_NODEBITS_IPV6 48
+
+#define TRUST_MIN_TIME_RETHROTTLE 120
 
 struct trustmigration;
 
@@ -32,14 +60,19 @@ struct trusthost;
 typedef struct trusthost {
   unsigned int id;
 
-  uint32_t ip, mask;
+  struct irc_in_addr ip;
+  unsigned char bits;
   unsigned int maxusage;
+  time_t created;
   time_t lastseen;
 
   nick *users;
   struct trustgroup *group;
 
   unsigned int count;
+
+  int maxpernode;
+  int nodebits;
 
   struct trusthost *parent, *children;
   unsigned int marker;
@@ -53,8 +86,8 @@ typedef struct trustgroup {
 
   sstring *name;
   unsigned int trustedfor;
-  int mode;
-  unsigned int maxperident;
+  int flags;
+  int maxperident;
   unsigned int maxusage;
   time_t expires;
   time_t lastseen;
@@ -85,9 +118,6 @@ int trusts_fullyonline(void);
 
 /* formats.c */
 char *trusts_timetostr(time_t);
-int trusts_parsecidr(const char *, uint32_t *, short *);
-int trusts_str2cidr(const char *, uint32_t *, uint32_t *);
-char *trusts_cidr2str(uint32_t, uint32_t);
 char *dumpth(trusthost *, int);
 char *dumptg(trustgroup *, int);
 int parseth(char *, trusthost *, unsigned int *, int);
@@ -101,19 +131,20 @@ void th_free(trusthost *);
 trusthost *th_add(trusthost *);
 void tg_free(trustgroup *, int);
 trustgroup *tg_add(trustgroup *);
-trusthost *th_getbyhost(uint32_t);
-trusthost *th_getbyhostandmask(uint32_t, uint32_t);
-trusthost *th_getsmallestsupersetbyhost(uint32_t, uint32_t);
+trusthost *th_getbyhost(struct irc_in_addr *);
+trusthost *th_getbyhostandmask(struct irc_in_addr *, uint32_t);
+trusthost *th_getsmallestsupersetbyhost(struct irc_in_addr *, uint32_t);
 trustgroup *tg_strtotg(char *);
 void th_adjusthosts(trusthost *th, trusthost *, trusthost *);
-void th_getsuperandsubsets(uint32_t, uint32_t, trusthost **, trusthost **);
-trusthost *th_getsubsetbyhost(uint32_t ip, uint32_t mask);
-trusthost *th_getnextsubsetbyhost(trusthost *th, uint32_t ip, uint32_t mask);
+void th_getsuperandsubsets(struct irc_in_addr *, uint32_t, trusthost **, trusthost **);
+trusthost *th_getsubsetbyhost(struct irc_in_addr *ip, uint32_t mask);
+trusthost *th_getnextsubsetbyhost(trusthost *th, struct irc_in_addr *ip, uint32_t mask);
 void th_linktree(void);
 unsigned int nexttgmarker(void);
 unsigned int nextthmarker(void);
 trusthost *th_getbyid(unsigned int);
 int tg_modify(trustgroup *, trustgroup *);
+int th_modify(trusthost *, trusthost *);
 
 /* migration.c */
 typedef void (*TrustMigrationGroup)(void *, trustgroup *);
@@ -132,7 +163,12 @@ trustgroup *tg_copy(trustgroup *);
 trusthost *th_copy(trusthost *);
 void tg_update(trustgroup *);
 void tg_delete(trustgroup *);
+void th_update(trusthost *);
 void th_delete(trusthost *);
+void trustlog(trustgroup *tg, const char *user, const char *format, ...);
+void trustlogspewid(nick *np, unsigned int groupid, unsigned int limit);
+void trustlogspewname(nick *np, const char *groupname, unsigned int limit);
+void trustloggrep(nick *np, const char *pattern, unsigned int limit);
 
 typedef struct trustmigration {
   int count, cur;
@@ -153,5 +189,6 @@ void trusts_lostnick(nick *, int);
 
 /* trusts_api.c */
 int istrusted(nick *);
+unsigned char getnodebits(struct irc_in_addr *ip);
 
 #endif

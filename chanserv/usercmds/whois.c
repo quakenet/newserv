@@ -22,7 +22,7 @@
 
 int csu_dowhois(void *source, int cargc, char **cargv) {
   nick *sender=source;
-  reguser *rup=getreguserfromnick(sender), *target;
+  reguser *rup, *target;
   char buf[200];
   char nbpos=0;
   regchanuser *rcup, *rcup2;
@@ -134,8 +134,8 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
   }
 
   if (rup==target)
-    flagmask|=(QUFLAG_OPER | QUFLAG_DEV | QUFLAG_HELPER | 
-	       QUFLAG_ADMIN | QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_STAFF);
+    flagmask|=(QUFLAG_OPER | QUFLAG_DEV | QUFLAG_HELPER | QUFLAG_ADMIN |
+	       QUFLAG_INFO | QUFLAG_NOTICE | QUFLAG_STAFF | QUFLAG_ACHIEVEMENTS);
 
   if (flagmask & target->flags)
     chanservstdmessage(sender, QM_WHOIS_FLAGS, printflagsornone(flagmask & target->flags, ruflags));

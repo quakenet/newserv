@@ -7,19 +7,10 @@
 /* array of blocks */
 array rqblocks;
 
-/* our anti-flood nick extension */
-int rqnext;
-
 /* are we currently loading blocks? */
 int rq_loading;
 
-void rqhook_lostnick(int hook, void *arg);
-
 int rq_initblocks(void) {
-  rqnext = registernickext("request");
-  if(rqnext < 0)
-    return 0;
-
   array_init(&rqblocks, sizeof(rq_block));
   array_setlim1(&rqblocks, 5);
   array_setlim2(&rqblocks, 20);
@@ -31,15 +22,12 @@ int rq_initblocks(void) {
   rq_addblock("#qnet*", "Reserved for QuakeNet use only.", "request", 0, 0);
   rq_addblock("#help*", "Reserved for QuakeNet use only.", "request", 0, 0);
 
-  registerhook(HOOK_NICK_LOSTNICK, &rqhook_lostnick);
-
   return 1;
 }
 
 void rq_finiblocks(void) {
   int i;
   rq_block block;
-  nick *nip;
 
   for (i = 0; i < rqblocks.cursi; i++) {
     block = ((rq_block*)rqblocks.content)[i];
@@ -50,64 +38,6 @@ void rq_finiblocks(void) {
   }
 
   array_free(&rqblocks);
-
-  for (i=0; i<NICKHASHSIZE; i++)
-    for (nip=nicktable[i]; nip; nip=nip->next)
-      free(nip->exts[rqnext]);
-
-  deregisterhook(HOOK_NICK_LOSTNICK, &rqhook_lostnick);
-
-  releasenickext(rqnext);
-}
-
-void rqhook_lostnick(int hook, void *arg) {
-  nick *np = (nick*)arg;
-
-  free(np->exts[rqnext]);
-}
-
-int rq_isspam(nick *np) {
-  rq_flood *lf;
-
-  if (np->exts[rqnext] == NULL) {
-    np->exts[rqnext] = lf = (rq_flood*)malloc(sizeof(rq_flood));
-
-    lf->count = 1;
-    lf->created = getnettime();
-    lf->expire = 0;
-
-    return 0;
-  } else {
-    lf = np->exts[rqnext];
-
-    lf->count -= (getnettime() - lf->created) / (RQ_SPAMBLOCK / RQ_SPAMCOUNT);
-    
-    if (lf->count < 0)
-      lf->count = 0;
-
-    if (lf->count > RQ_SPAMCOUNT && lf->expire > getnettime()) {
-      return 1;
-    } else {
-      lf->count++;
-
-      if (lf->count > RQ_SPAMCOUNT) {
-        lf->expire = getnettime() + RQ_SPAMBLOCK;
-        
-        rq_addblock(np->authname, "Flooding the request system.", "request", 0, getnettime() + 3600);
-
-        return 1;
-      }
-
-      return 0;
-    }
-  }
-}
-
-time_t rq_blocktime(nick *np) {
-  if (np->exts[rqnext] == NULL)
-    return 0;
-  else
-    return ((rq_flood*)np->exts[rqnext])->expire - getnettime();
 }
 
 rq_block *rq_findblock(const char *pattern) {

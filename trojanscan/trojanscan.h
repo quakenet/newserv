@@ -18,28 +18,21 @@
 #include <ctype.h>
 #include <strings.h>
 
-#define TROJANSCAN_VERSION "2.72"
-
-#define TROJANSCAN_MAX_HOST_GLINE   5
+#define TROJANSCAN_VERSION "2.73"
 
 #define TROJANSCAN_CLONE_MAX        75
 #define TROJANSCAN_WATCHCLONE_MAX   75
 #define TROJANSCAN_CLONE_TOTAL TROJANSCAN_CLONE_MAX + TROJANSCAN_WATCHCLONE_MAX
 
-#define TROJANSCAN_POOLSIZE 1000
-#define TROJANSCAN_MINPOOLSIZE 500 /* 500 */
-
-#define TROJANSCAN_MINIMUM_HOSTS_BEFORE_POOL 5000 /* 5000 */
-
 #define TROJANSCAN_DEFAULT_MAXCHANS 750
-#define TROJANSCAN_DEFAULT_CYCLETIME 1600
+#define TROJANSCAN_DEFAULT_CYCLETIME 16000
 
-#define TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE 100 /* 100 */
+#define TROJANSCAN_DEFAULT_MINIMUM_CHANNEL_SIZE 150 /* 100 */
 
-#define TROJANSCAN_NICKCHANGE_ODDS 16
+#define TROJANSCAN_NICKCHANGE_ODDS 32
 #define TROJANSCAN_INVISIBLE_ODDS 8
 
-#define TROJANSCAN_DEFAULT_PARTTIME 260
+#define TROJANSCAN_DEFAULT_PARTTIME 2600
 #define TROJANSCAN_DEFAULT_MAXUSERS 20
 
 #define TROJANSCAN_POOL_REGENERATION 3600
@@ -78,7 +71,6 @@
 typedef struct trojanscan_clones {
   int              remaining, sitting, index;
   nick             *clone;
-  patricia_node_t *fakeipnode;
 } trojanscan_clones;
 
 typedef struct trojanscan_channels {
@@ -241,7 +233,6 @@ struct trojanscan_worms *trojanscan_find_worm_by_id(int id);
 char *trojanscan_getuser(int id);
 
 int trojanscan_minmaxrand(float min, float max);
-char *trojanscan_iptostr(char *buf, int buflen, unsigned int ip);
 
 int trojanscan_database_connect(char *dbhost, char *dbuser, char *dbpass, char *db, unsigned int port);
 void trojanscan_database_close(void);
@@ -253,21 +244,7 @@ trojanscan_database_row trojanscan_database_fetch_row(trojanscan_database_res *r
 void trojanscan_database_free_result(trojanscan_database_res *res);
 nick *trojanscan_selectuser(void);
 
-int trojanscan_is_not_octet(char *begin, int length);
-void trojanscan_genreal(char *ptc, char size);
-char trojanscan_genchar(int ty);
-void trojanscan_gennick(char *ptc, char size);
-void trojanscan_genident(char *ptc, char size);
-void trojanscan_genhost(char *ptc, char size, patricia_node_t **fakeipnode);
-
-int trojanscan_generatepool(void);
 void trojanscan_watch_clone_update(struct trojanscan_prechannels *hp, int count);
-void trojanscan_repool(void *arg);
-
-void trojanscan_generatehost(char *buf, int maxsize, patricia_node_t **fakeipnode);
-void trojanscan_generatenick(char *buf, int maxsize);
-void trojanscan_generateident(char *buf, int maxsize);
-void trojanscan_generaterealname(char *buf, int maxsize);
 
 sstring *trojanscan_getsstring(char *string, int length);
 int trojanscan_strip_codes(char *buf, size_t max, char *original);
@@ -276,18 +253,16 @@ int trojanscan_isip(char *host);
 struct trojanscan_clones trojanscan_swarm[TROJANSCAN_CLONE_TOTAL];
 struct trojanscan_db trojanscan_database;
 
-sstring *trojanscan_hostpool[TROJANSCAN_POOLSIZE], *trojanscan_tailpool[TROJANSCAN_POOLSIZE];
 struct trojanscan_inchannel *trojanscan_chans = NULL;
 
-unsigned int trojanscan_cycletime, trojanscan_maxchans, trojanscan_part_time, trojanscan_activechans = 0, trojanscan_tailpoolsize = 0, trojanscan_hostpoolsize = 0, trojanscan_channumber = 0, trojanscan_maxusers;
+unsigned int trojanscan_cycletime, trojanscan_maxchans, trojanscan_part_time, trojanscan_activechans = 0, trojanscan_channumber = 0, trojanscan_maxusers;
 int trojanscan_watchclones_count = 0;
 
 int trojanscan_errorcode;
 struct trojanscan_realchannels *trojanscan_realchanlist;
-char trojanscan_hostmode;
 
 void *trojanscan_schedule, *trojanscan_connect_schedule;
-void *trojanscan_initialschedule, *trojanscan_rehashschedule, *trojanscan_poolschedule, *trojanscan_cloneschedule;
+void *trojanscan_initialschedule, *trojanscan_rehashschedule, *trojanscan_cloneschedule;
 
 int trojanscan_minchansize, trojanscan_min_hosts;
 int trojanscan_swarm_created = 0;

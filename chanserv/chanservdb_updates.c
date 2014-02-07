@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <sys/poll.h>
 #include <stdarg.h>
+#include <assert.h>
 
 void csdb_updateauthinfo(reguser *rup) {
   char eschost[2*HOSTLEN+1];
@@ -412,6 +413,7 @@ void csdb_updatemaildomain(maildomain *mdp) {
 
 void csdb_chanlevhistory_insert(regchan *rcp, nick *np, reguser *trup, flag_t oldflags, flag_t newflags) {
   reguser *rup=getreguserfromnick(np);
+  assert(rup != NULL);
 
   dbquery("INSERT INTO chanserv.chanlevhistory (userID, channelID, targetID, changetime, authtime, "
     "oldflags, newflags) VALUES (%u, %u, %u, %lu, %lu, %u, %u)",  rup->ID, rcp->ID, trup->ID, getnettime(), np->accountts,

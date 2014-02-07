@@ -27,6 +27,7 @@
 #include "../localuser/localuserchannel.h"
 #include "../core/nsmalloc.h"
 #include "../lib/irc_ipv6.h"
+#include "../glines/glines.h"
 
 MODULE_VERSION("")
 
@@ -525,6 +526,7 @@ void killsock(scan *sp, int outcome) {
   cachehost *chp;
   foundproxy *fpp;
   time_t now;
+  char reason[200];
 
   scansdone++;
   scansbyclass[sp->class]++;
@@ -574,18 +576,18 @@ void killsock(scan *sp, int outcome) {
     /* the purpose of this lastgline stuff is to stop gline spam from one scan */
     if (!chp->glineid || (now>=chp->lastgline+SCANTIMEOUT)) {
       char buf[512];
-      const char *ip;
+      struct irc_in_addr *ip;
 
       chp->lastgline=now;
       glinedhosts++;
 
       loggline(chp, sp->node);   
-      ip = IPtostr(((patricia_node_t *)sp->node)->prefix->sin);
-      irc_send("%s GL * +*@%s 1800 %jd :Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d",
-	       mynumeric->content,ip,(intmax_t)getnettime(), chp->glineid);
-      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",ip);
+      ip = &(((patricia_node_t *)sp->node)->prefix->sin);
+      snprintf(reason, sizeof(reason), "Open Proxy, see http://www.quakenet.org/openproxies.html - ID: %d", chp->glineid);
+      glinebyip("*", ip, 128, 43200, reason, GLINE_IGNORE_TRUST, "proxyscan");
+      Error("proxyscan",ERR_DEBUG,"Found open proxy on host %s",IPtostr(*ip));
 
-      snprintf(buf, sizeof(buf), "proxy-gline %lu %s %s %hu %s", time(NULL), ip, scantostr(sp->type), sp->port, "irc.quakenet.org");
+      snprintf(buf, sizeof(buf), "proxy-gline %lu %s %s %hu %s", time(NULL), IPtostr(*ip), scantostr(sp->type), sp->port, "irc.quakenet.org");
       triggerhook(HOOK_SHADOW_SERVER, (void *)buf);
     } else {
       loggline(chp, sp->node);  /* Update log only */
@@ -1024,6 +1026,10 @@ int proxyscandoscan(void *sender, int cargc, char **cargv) {
   if (0 == ipmask_parse(cargv[0],&sin, &bits)) {
     sendnoticetouser(proxyscannick,np,"Usage: scan <ip>");
   } else {
+    if (bits != 128 || !irc_in_addr_is_ipv4(&sin) || irc_in_addr_is_loopback(&sin)) {
+      sendnoticetouser(proxyscannick,np,"You may only scan single IPv4 IP's");
+      return CMD_OK;
+    }
     if (bits != 128 || irc_in_addr_is_loopback(&sin)) {
       sendnoticetouser(proxyscannick,np,"You may only scan single IP's");
       return CMD_OK;
@@ -1109,6 +1115,8 @@ int proxyscandoscanfile(void *sender, int cargc, char **cargv) {
       }
     }
   }
+
+  fclose(fp);
 
   sendnoticetouser(proxyscannick,np,"Started %d scans...", count);
   return CMD_OK;

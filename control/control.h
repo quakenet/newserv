@@ -2,19 +2,17 @@
 #ifndef __CONTROL_H
 #define __CONTROL_H
 
+#include "control_db.h"
+#include "../lib/flags.h"
 #include "../parser/parser.h"
 #include "../nick/nick.h"
 #include "../channel/channel.h"
 
 #define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
 
-typedef void (*ControlMsg)(nick *, char *, ... );
-typedef void (*ControlWall)(flag_t, flag_t, char *, ...);
-typedef int (*ControlPermitted)(flag_t, nick *);
-
-extern ControlMsg controlreply;
-extern ControlWall controlwall;
-extern ControlPermitted controlpermitted;
+void controlreply(nick *, char *, ...);
+void controlwall(flag_t, flag_t, char *, ...);
+int controlpermitted(flag_t, nick *);
 
 extern nick *mynick;
 
@@ -99,5 +97,20 @@ char *controlid(nick *);
 #define NL_OPERING         0x0800  /* when someone opers */
 #define NL_NOTICES         0x1000  /* turn off to receive privmsgs instead of notices */
 #define NL_ALL_COMMANDS    0x2000  /* every single command sent */
+#define NL_GLINES_AUTO     0x4000  /* automated gline messages */
+
+extern int noperserv_ext;
+
+extern const flag no_userflags[];
+extern const flag no_noticeflags[];
+extern const flag no_commandflags[];
+
+#define NO_NICKS_PER_WHOIS_LINE 3
+
+#define NOGetAuthedUser(user)  (no_autheduser *)(user->auth ? user->auth->exts[noperserv_ext] : NULL)
+#define NOGetAuthLevel(user)   user->authlevel
+#define NOGetNoticeLevel(user) user->noticelevel
+#define NOMax(a, b) (a>b?a:b)
+#define NOMin(a, b) (a<b?b:a)
 
 #endif  

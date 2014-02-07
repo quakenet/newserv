@@ -13,7 +13,7 @@ void printnick(searchCtx *ctx, nick *sender, nick *np) {
   char hostbuf[HOSTLEN+NICKLEN+USERLEN+4];
 
   ctx->reply(sender,"%s [%s] (%s) (%s)",visiblehostmask(np,hostbuf),
-	       IPtostr(np->p_ipaddr), printflags(np->umodes, umodeflags), np->realname->name->content);
+	       IPtostr(np->ipaddress), printflags(np->umodes, umodeflags), np->realname->name->content);
 }
 
 void printnick_channels(searchCtx *ctx, nick *sender, nick *np) {
@@ -150,3 +150,7 @@ void printuser(searchCtx *ctx, nick *sender, authname *aup) {
   ctx->reply(sender,"%d", aup->userid);
 }
 
+void printwhowas(searchCtx *ctx, nick *sender, whowas *ww) {
+  ctx->reply(sender,"%s", whowas_format(ww));
+  ctx->reply(sender,"%s", whowas_formatchannels(ww));
+}

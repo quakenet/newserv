@@ -22,7 +22,7 @@ void initmodules();
 int insmod(char *modulename);
 int getindex(char *modulename);
 int isloaded(char *modulename);
-int rmmod(char *modulename);
+int rmmod(char *modulename, int close);
 char *lsmod(int index, const char **ver, const char **buildid, time_t *loadedsince);
 void preparereload(char *modulename);
 void reloadmarked(void);

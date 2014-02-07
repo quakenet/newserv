@@ -1,6 +1,0 @@
-@include@ @includel@../build.mk@includel@
-
-.PHONY: all
-all: testmod.so  
-
-testmod.so: testmod.o

@@ -23,8 +23,9 @@ typedef void (*UserMessageHandler)(nick *,int,void **);
 
 extern UserMessageHandler umhandlers[MAXLOCALUSER+1];
 
+#define registerlocaluserflags(nickname, ident, host, realname, authname, authid, accountflags, umodes, handler) registerlocaluserflagsip(nickname, ident, host, realname, authname, authid, accountflags, umodes, NULL, handler)
 #define registerlocaluser(nickname, ident, host, realname, authname, umodes, handler) registerlocaluserflags(nickname, ident, host, realname, authname, 0, 0, umodes, handler)
-nick *registerlocaluserflags(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, UserMessageHandler hander);
+nick *registerlocaluserflagsip(char *nickname, char *ident, char *host, char *realname, char *authname, unsigned long authid, flag_t accountflags, flag_t umodes, struct irc_in_addr *ipaddress, UserMessageHandler hander);
 int renamelocaluser(nick *np, char *newnick);
 int deregisterlocaluser(nick *np, char *reason);
 UserMessageHandler hooklocaluserhandler(nick *np, UserMessageHandler newhandler);
@@ -41,5 +42,7 @@ void localusersetaccount(nick *np, char *accname, unsigned long accid, u_int64_t
 void localusersetumodes(nick *np, flag_t newmodes);
 void sethostuser(nick *target, char *ident, char *host);
 void localusersetaccountflags(authname *anp, u_int64_t accountflags);
+void localuseraddcloaktarget(nick *np, nick *target);
+void localuserclearcloaktargets(nick *np);
 
 #endif

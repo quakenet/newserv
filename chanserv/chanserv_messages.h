@@ -56,6 +56,7 @@ BeginMessages() {
   msg(QM_NOCHANBANAUTOREMOVE, "Bans on $0 will not be automatically removed.", "s"),
   msg(QM_INVALIDCHANNAME, "$0 is not a valid channel name.", "s"),
   msg(QM_ALREADYREGISTERED, "$0 is already registered.", "s"),
+  msg(QM_TOOMANYCHANNELS, "User is known on too many channels.", ""),
   msg(QM_CURUSERFLAGS, "User flags for $0: $1", "ss"),
   msg(QM_WELCOMEMESSAGEIS, "Welcome message for $0: $1", "ss"),
   msg(QM_GLOBALINFO, "Default info line: $0", "s"),

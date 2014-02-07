@@ -34,8 +34,11 @@
 #define UMODE_REGPRIV   0x0800
 #define UMODE_HIDEIDLE  0x1000
 #define UMODE_PARANOID  0x2000
+#define UMODE_CLOAKED   0x4000
+#define UMODE_COMCHANS  0x8000
+#define UMODE_COMCHANSRESTR 0x10000
 
-#define UMODE_ALL       0x3FFF
+#define UMODE_ALL       0x1FFFF
 
 #define AFLAG_STAFF     0x0001
 #define AFLAG_SUPPORT   0x0002
@@ -45,68 +48,77 @@
 
 #define AFLAG_ALL       0x001F
 
-#define IsInvisible(x)    ((x)->umodes & UMODE_INV)
-#define IsWallops(x)      ((x)->umodes & UMODE_WALLOPS)
-#define IsDebug(x)        ((x)->umodes & UMODE_DEBUG)
-#define IsOper(x)         ((x)->umodes & UMODE_OPER)
-#define IsService(x)      ((x)->umodes & UMODE_SERVICE)
-#define IsXOper(x)        ((x)->umodes & UMODE_XOPER)
-#define IsDeaf(x)         ((x)->umodes & UMODE_DEAF)
-#define IsAccount(x)      ((x)->umodes & UMODE_ACCOUNT)
-#define IsHideChan(x)     ((x)->umodes & UMODE_HIDECHAN)
-#define IsHideHost(x)     ((x)->umodes & UMODE_HIDEHOST)
-#define IsSetHost(x)      ((x)->umodes & UMODE_SETHOST)
-#define IsRegPriv(x)      ((x)->umodes & UMODE_REGPRIV)
-#define IsHideIdle(x)     ((x)->umodes & UMODE_HIDEIDLE)
-#define IsParanoid(x)     ((x)->umodes & UMODE_PARANOID)
+#define IsInvisible(x)        ((x)->umodes & UMODE_INV)
+#define IsWallops(x)          ((x)->umodes & UMODE_WALLOPS)
+#define IsDebug(x)            ((x)->umodes & UMODE_DEBUG)
+#define IsOper(x)             ((x)->umodes & UMODE_OPER)
+#define IsService(x)          ((x)->umodes & UMODE_SERVICE)
+#define IsXOper(x)            ((x)->umodes & UMODE_XOPER)
+#define IsDeaf(x)             ((x)->umodes & UMODE_DEAF)
+#define IsAccount(x)          ((x)->umodes & UMODE_ACCOUNT)
+#define IsHideChan(x)         ((x)->umodes & UMODE_HIDECHAN)
+#define IsHideHost(x)         ((x)->umodes & UMODE_HIDEHOST)
+#define IsSetHost(x)          ((x)->umodes & UMODE_SETHOST)
+#define IsRegPriv(x)          ((x)->umodes & UMODE_REGPRIV)
+#define IsHideIdle(x)         ((x)->umodes & UMODE_HIDEIDLE)
+#define IsParanoid(x)         ((x)->umodes & UMODE_PARANOID)
+#define IsComChans(x)         ((x)->umodes & UMODE_COMCHANS)
+#define IsComChansRestr(x)    ((x)->umodes & UMODE_COMCHANSRESTR)
+#define IsCloaked(x)          ((x)->umodes & UMODE_CLOAKED)
 
-#define SetInvisible(x)    ((x)->umodes |= UMODE_INV)
-#define SetWallops(x)      ((x)->umodes |= UMODE_WALLOPS)
-#define SetDebug(x)        ((x)->umodes |= UMODE_DEBUG)
-#define SetOper(x)         ((x)->umodes |= UMODE_OPER)
-#define SetService(x)      ((x)->umodes |= UMODE_SERVICE)
-#define SetXOper(x)        ((x)->umodes |= UMODE_XOPER)
-#define SetDeaf(x)         ((x)->umodes |= UMODE_DEAF)
-#define SetAccount(x)      ((x)->umodes |= UMODE_ACCOUNT)
-#define SetHideChan(x)     ((x)->umodes |= UMODE_HIDECHAN)
-#define SetHideHost(x)     ((x)->umodes |= UMODE_HIDEHOST)
-#define SetSetHost(x)      ((x)->umodes |= UMODE_SETHOST)
-#define SetRegPriv(x)      ((x)->umodes |= UMODE_REGPRIV)
-#define SetHideIdle(x)     ((x)->umodes |= UMODE_HIDEIDLE)
-#define SetParanoid(x)     ((x)->umodes |= UMODE_PARANOID)
+#define SetInvisible(x)       ((x)->umodes |= UMODE_INV)
+#define SetWallops(x)         ((x)->umodes |= UMODE_WALLOPS)
+#define SetDebug(x)           ((x)->umodes |= UMODE_DEBUG)
+#define SetOper(x)            ((x)->umodes |= UMODE_OPER)
+#define SetService(x)         ((x)->umodes |= UMODE_SERVICE)
+#define SetXOper(x)           ((x)->umodes |= UMODE_XOPER)
+#define SetDeaf(x)            ((x)->umodes |= UMODE_DEAF)
+#define SetAccount(x)         ((x)->umodes |= UMODE_ACCOUNT)
+#define SetHideChan(x)        ((x)->umodes |= UMODE_HIDECHAN)
+#define SetHideHost(x)        ((x)->umodes |= UMODE_HIDEHOST)
+#define SetSetHost(x)         ((x)->umodes |= UMODE_SETHOST)
+#define SetRegPriv(x)         ((x)->umodes |= UMODE_REGPRIV)
+#define SetHideIdle(x)        ((x)->umodes |= UMODE_HIDEIDLE)
+#define SetParanoid(x)        ((x)->umodes |= UMODE_PARANOID)
+#define SetComChans(x)        ((x)->umodes |= UMODE_COMCHANS)
+#define SetComChansRestr(x)   ((x)->umodes |= UMODE_COMCHANSRESTR)
+#define SetCloaked(x)         ((x)->umodes |= UMODE_CLOAKED)
 
-#define ClearInvisible(x)    ((x)->umodes &= ~UMODE_INV)
-#define ClearWallops(x)      ((x)->umodes &= ~UMODE_WALLOPS)
-#define ClearDebug(x)        ((x)->umodes &= ~UMODE_DEBUG)
-#define ClearOper(x)         ((x)->umodes &= ~UMODE_OPER)
-#define ClearService(x)      ((x)->umodes &= ~UMODE_SERVICE)
-#define ClearXOper(x)        ((x)->umodes &= ~UMODE_XOPER)
-#define ClearDeaf(x)         ((x)->umodes &= ~UMODE_DEAF)
-#define ClearAccount(x)      ((x)->umodes &= ~UMODE_ACCOUNT)
-#define ClearHideChan(x)     ((x)->umodes &= ~UMODE_HIDECHAN)
-#define ClearHideHost(x)     ((x)->umodes &= ~UMODE_HIDEHOST)
-#define ClearSetHost(x)      ((x)->umodes &= ~UMODE_SETHOST)
-#define ClearRegPriv(x)      ((x)->umodes &= ~UMODE_REGPRIV)
-#define ClearHideIdle(x)     ((x)->umodes &= ~UMODE_HIDEIDLE)
-#define ClearParanoid(x)     ((x)->umodes &= ~UMODE_PARANOID)
+#define ClearInvisible(x)     ((x)->umodes &= ~UMODE_INV)
+#define ClearWallops(x)       ((x)->umodes &= ~UMODE_WALLOPS)
+#define ClearDebug(x)         ((x)->umodes &= ~UMODE_DEBUG)
+#define ClearOper(x)          ((x)->umodes &= ~UMODE_OPER)
+#define ClearService(x)       ((x)->umodes &= ~UMODE_SERVICE)
+#define ClearXOper(x)         ((x)->umodes &= ~UMODE_XOPER)
+#define ClearDeaf(x)          ((x)->umodes &= ~UMODE_DEAF)
+#define ClearAccount(x)       ((x)->umodes &= ~UMODE_ACCOUNT)
+#define ClearHideChan(x)      ((x)->umodes &= ~UMODE_HIDECHAN)
+#define ClearHideHost(x)      ((x)->umodes &= ~UMODE_HIDEHOST)
+#define ClearSetHost(x)       ((x)->umodes &= ~UMODE_SETHOST)
+#define ClearRegPriv(x)       ((x)->umodes &= ~UMODE_REGPRIV)
+#define ClearHideIdle(x)      ((x)->umodes &= ~UMODE_HIDEIDLE)
+#define ClearParanoid(x)      ((x)->umodes &= ~UMODE_PARANOID)
+#define ClearComChans(x)      ((x)->umodes &= ~UMODE_COMCHANS)
+#define ClearComChansRestr(x) ((x)->umodes &= ~UMODE_COMCHANSRESTR)
+#define ClearCloaked(x)       ((x)->umodes &= ~UMODE_CLOAKED)
 
-#define IsStaff(x)           ((x)->flags & AFLAG_STAFF)
-#define IsDeveloper(x)       ((x)->flags & AFLAG_DEVELOPER)
-#define IsSupport(x)         ((x)->flags & AFLAG_SUPPORT)
-#define IsAdmin(x)           ((x)->flags & AFLAG_ADMIN)
-#define IsOperFlag(x)        ((x)->flags & AFLAG_OPER)
+#define IsStaff(x)            ((x)->flags & AFLAG_STAFF)
+#define IsDeveloper(x)        ((x)->flags & AFLAG_DEVELOPER)
+#define IsSupport(x)          ((x)->flags & AFLAG_SUPPORT)
+#define IsAdmin(x)            ((x)->flags & AFLAG_ADMIN)
+#define IsOperFlag(x)         ((x)->flags & AFLAG_OPER)
 
-#define SetStaff(x)          ((x)->flags |= AFLAG_STAFF)
-#define SetDeveloper(x)      ((x)->flags |= AFLAG_DEVELOPER)
-#define SetSupport(x)        ((x)->flags |= AFLAG_SUPPORT)
-#define SetAdmin(x)          ((x)->flags |= AFLAG_ADMIN)
-#define SetOperFlag(x)       ((x)->flags |= AFLAG_OPER)
+#define SetStaff(x)           ((x)->flags |= AFLAG_STAFF)
+#define SetDeveloper(x)       ((x)->flags |= AFLAG_DEVELOPER)
+#define SetSupport(x)         ((x)->flags |= AFLAG_SUPPORT)
+#define SetAdmin(x)           ((x)->flags |= AFLAG_ADMIN)
+#define SetOperFlag(x)        ((x)->flags |= AFLAG_OPER)
 
-#define ClearStaff(x)        ((x)->flags &= ~AFLAG_STAFF)
-#define ClearDeveloper(x)    ((x)->flags &= ~AFLAG_DEVELOPER)
-#define ClearSupport(x)      ((x)->flags &= ~AFLAG_SUPPORT)
-#define ClearAdmin(x)        ((x)->flags &= ~AFLAG_ADMIN)
-#define ClearOperFlag(x)     ((x)->flags &= ~AFLAG_OPER)
+#define ClearStaff(x)         ((x)->flags &= ~AFLAG_STAFF)
+#define ClearDeveloper(x)     ((x)->flags &= ~AFLAG_DEVELOPER)
+#define ClearSupport(x)       ((x)->flags &= ~AFLAG_SUPPORT)
+#define ClearAdmin(x)         ((x)->flags &= ~AFLAG_ADMIN)
+#define ClearOperFlag(x)      ((x)->flags &= ~AFLAG_OPER)
 
 #define NickOnServiceServer(target)   SIsService(&serverlist[homeserver((target)->numeric)])
 
@@ -141,7 +153,10 @@ typedef struct nick {
   time_t timestamp;
   time_t accountts;
   sstring *away;
+  struct irc_in_addr ipaddress;
   patricia_node_t *ipnode;
+  unsigned int cloak_count;
+  struct nick *cloak_extra;
   unsigned int marker;
   struct nick *next;
   struct nick *nextbyhost;
@@ -149,10 +164,9 @@ typedef struct nick {
   struct nick *nextbyauthname;
   /* These are extensions only used by other modules */
   array *channels;
+  sstring *message;
   void *exts[MAXNICKEXTS];
 } nick;
-
-#define p_ipaddr ipnode->prefix->sin
 
 #define NICKHASHSIZE      60000
 #define HOSTHASHSIZE      40000
@@ -179,13 +193,12 @@ extern char *NULLAUTHNAME;
                                   (((*gethandlebynumeric(x))->numeric==(x&MAXNUMERIC))?(*gethandlebynumeric(x)):NULL)))
 
 /* nickalloc.c functions */
-void initnickalloc();
 realname *newrealname();
 void freerealname(realname *rn);
 nick *newnick();
-void freenick (nick *np);
+void freenick(nick *np);
 host *newhost();
-void freehost (host *hp);
+void freehost(host *hp);
 
 /* nick.c functions */
 void handleserverchange(int hooknum, void *arg);
@@ -198,17 +211,21 @@ int findnickext(const char *name);
 void releasenickext(int index);
 char *visiblehostmask(nick *np, char *buf);
 char *visibleuserhost(nick *np, char *buf);
+int canseeuser(nick *np, nick *cloaked);
+void addcloaktarget(nick *cloaked, nick *target);
+void removecloaktarget(nick *target);
+void clearcloaktargets(nick *cloaked);
 
 /* nickhandlers.c functions */
 int handlenickmsg(void *source, int cargc, char **cargv);
 int handlequitmsg(void *source, int cargc, char **cargv);
 int handlekillmsg(void *source, int cargc, char **cargv);
 int handleusermodemsg(void *source, int cargc, char **cargv);
-int handlewhoismsg(void *source, int cargc, char **cargv);
 int handleaccountmsg(void *source, int cargc, char **cargv);
-int handlestatsmsg(void *source, int cargc, char **cargv);
 int handleprivmsg(void *source, int cargc, char **cargv);
 int handleawaymsg(void *source, int cargc, char **cargv);
+int handleaddcloak(void *source, int cargc, char **cargv);
+int handleclearcloak(void *source, int cargc, char **cargv);
 
 /* These functions have been replaced by macros 
 nick **gethandlebynumeric(long numeric);

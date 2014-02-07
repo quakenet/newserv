@@ -12,11 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ALLOCUNIT	100
-
 MODULE_VERSION("")
 
-patricianick_t *freepatricianicks;
 int pnode_ext;
 int pnick_ext;
 
@@ -68,19 +65,10 @@ void _fini() {
 }
 
 patricianick_t *getpatricianick() {
-  int i;
-  patricianick_t *pnp;
+  patricianick_t *pnp = nsmalloc(POOL_PATRICIANICK, sizeof(patricianick_t));
 
-  if (freepatricianicks==NULL) {
-    freepatricianicks=(patricianick_t *)nsmalloc(POOL_PATRICIANICK, ALLOCUNIT*sizeof(patricianick_t));
-    for(i=0;i<ALLOCUNIT-1;i++) {
-      freepatricianicks[i].identhash[0]=(nick *)&(freepatricianicks[i+1]);
-    }
-    freepatricianicks[ALLOCUNIT-1].identhash[0]=NULL;
-  }
-
-  pnp=freepatricianicks;
-  freepatricianicks=(patricianick_t *)pnp->identhash[0];
+  if (!pnp)
+    return NULL;
 
   memset(pnp, 0, sizeof(patricianick_t));
   return pnp;
@@ -130,8 +118,7 @@ void deletenickfromnode(patricia_node_t *node, nick *np) {
 }
 
 void freepatricianick(patricianick_t *pnp) {
-  pnp->identhash[0]=(nick *)freepatricianicks;
-  freepatricianicks=pnp;
+  nsfree(POOL_PATRICIANICK, pnp);
 }
 
 void pn_hook_newuser(int hook, void *arg) {

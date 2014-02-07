@@ -5,13 +5,13 @@
 #include <string.h>
 #include "patriciasearch.h"
 
-int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit) {
+int ast_nodesearch(searchASTExpr *tree, replyFunc reply, void *sender, wallFunc wall, NodeDisplayFunc display, HeaderFunc header, void *headerarg, int limit, patricia_node_t *target) {
   searchCtx ctx;
   searchASTCache cache;
   searchNode *search;
   char buf[1024];
 
-  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nodesearch, sender, display, limit);
+  newsearch_ctxinit(&ctx, search_astparse, reply, wall, &cache, reg_nodesearch, sender, display, limit, target);
 
   memset(&cache, 0, sizeof(cache));
   cache.tree = tree;

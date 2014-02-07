@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 
 #include "../irc/irc_config.h"
 #include "../lib/irc_string.h"
@@ -22,6 +23,7 @@ searchList *globalterms = NULL;
 int do_nicksearch(void *source, int cargc, char **cargv);
 int do_chansearch(void *source, int cargc, char **cargv);
 int do_usersearch(void *source, int cargc, char **cargv);
+int do_whowassearch(void *source, int cargc, char **cargv);
 
 void printnick_channels(searchCtx *, nick *, nick *);
 void printchannel(searchCtx *, nick *, chanindex *);
@@ -31,8 +33,9 @@ void printchannel_services(searchCtx *, nick *, chanindex *);
 UserDisplayFunc defaultuserfn = printuser;
 NickDisplayFunc defaultnickfn = printnick;
 ChanDisplayFunc defaultchanfn = printchannel;
+WhowasDisplayFunc defaultwhowasfn = printwhowas;
 
-searchCmd *reg_nicksearch, *reg_chansearch, *reg_usersearch;
+searchCmd *reg_nicksearch, *reg_chansearch, *reg_usersearch, *reg_whowassearch;
 void displaycommandhelp(nick *, Command *);
 void displaystrerror(replyFunc, nick *, const char *);
 
@@ -159,6 +162,7 @@ void _init() {
   reg_nicksearch = (searchCmd *)registersearchcommand("nicksearch",NO_OPER,&do_nicksearch, printnick);
   reg_chansearch = (searchCmd *)registersearchcommand("chansearch",NO_OPER,&do_chansearch, printchannel);
   reg_usersearch = (searchCmd *)registersearchcommand("usersearch",NO_OPER,&do_usersearch, printuser);
+  reg_whowassearch = (searchCmd *)registersearchcommand("whowassearch",NO_OPER,&do_whowassearch, printwhowas);
 
   /* Boolean operations */
   registerglobalsearchterm("and",and_parse, "usage: (and (X) (X))" );
@@ -176,22 +180,48 @@ void _init() {
   registerglobalsearchterm("length",length_parse, "usage: (length string)");
   
   /* Nickname operations */
-  registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");     /* nick only */
+  registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");
+  registersearchterm(reg_whowassearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");
+
   registersearchterm(reg_nicksearch, "realname",realname_parse, 0, "User's current realname");     /* nick only */
-  registersearchterm(reg_nicksearch, "away",away_parse, 0, "User's current away message");       /* nick only */
-  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "User's current authname or false");     /* nick only */
-  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "User's Auth timestamp");         /* nick only */
-  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "User's current ident");           /* nick only */
-  registersearchterm(reg_nicksearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");             /* nick only */
-  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       /* nick only */
-  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "User's Timestamp");   /* nick only */
-  registersearchterm(reg_nicksearch, "country",country_parse, 0, "2 letter country code (data source is geoip)");       /* nick only */
-  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "User's IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");                 /* nick only */
+  registersearchterm(reg_whowassearch, "realname",realname_parse, 0, "User's current realname");     /* nick only */
+
+  registersearchterm(reg_nicksearch, "away",away_parse, 0, "User's current away message");
+  registersearchterm(reg_whowassearch, "away",away_parse, 0, "User's current away message");
+  registersearchterm(reg_nicksearch, "authname",authname_parse, 0, "User's current authname or false");
+  registersearchterm(reg_whowassearch, "authname",authname_parse, 0, "User's current authname or false");
+  registersearchterm(reg_nicksearch, "authts",authts_parse, 0, "User's Auth timestamp");
+  registersearchterm(reg_whowassearch, "authts",authts_parse, 0, "User's Auth timestamp");
+  registersearchterm(reg_nicksearch, "ident",ident_parse, 0, "User's current ident");
+  registersearchterm(reg_whowassearch, "ident",ident_parse, 0, "User's current ident");
+  registersearchterm(reg_nicksearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");
+  registersearchterm(reg_whowassearch, "host",host_parse, 0, "User's host, allow \"host real\" to match real host");             
+  registersearchterm(reg_nicksearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");
+  registersearchterm(reg_whowassearch, "channel",channel_parse, 0, "Valid Channel Name to match users against");       
+  registersearchterm(reg_nicksearch, "timestamp",timestamp_parse, 0, "User's Timestamp");
+  registersearchterm(reg_whowassearch, "timestamp",timestamp_parse, 0, "User's Timestamp");
+  registersearchterm(reg_nicksearch, "country",country_parse, 0, "2 letter country code (data source is geoip)");
+  registersearchterm(reg_nicksearch, "ip",ip_parse, 0, "User's IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");
+  registersearchterm(reg_whowassearch, "ip",ip_parse, 0, "User's IP - ipv4 or ipv6 format as appropriate. Note: not 6to4");
   registersearchterm(reg_nicksearch, "channels",channels_parse, 0, "Channel Count");     /* nick only */
-  registersearchterm(reg_nicksearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");         /* nick only */
-  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "User's Auth ID");         /* nick only */
-  registersearchterm(reg_nicksearch, "cidr",cidr_parse, 0, "CIDR matching");         /* nick only */
-  registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");         /* nick only */
+  registersearchterm(reg_nicksearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");
+  registersearchterm(reg_whowassearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");
+  registersearchterm(reg_whowassearch, "server",server_parse, 0, "Server Name. Either (server string) or (match (server) string)");
+  registersearchterm(reg_nicksearch, "authid",authid_parse, 0, "User's Auth ID");
+  registersearchterm(reg_whowassearch, "authid",authid_parse, 0, "User's Auth ID");
+  registersearchterm(reg_nicksearch, "cidr",cidr_parse, 0, "CIDR matching");
+  registersearchterm(reg_whowassearch, "cidr",cidr_parse, 0, "CIDR matching");
+  registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
+  registersearchterm(reg_whowassearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
+  registersearchterm(reg_nicksearch, "message",message_parse, 0, "Last message");
+
+  /* Whowas operations */
+  registersearchterm(reg_whowassearch, "quit",quit_parse, 0, "User quit");
+  registersearchterm(reg_whowassearch, "killed",killed_parse, 0, "User was killed");
+  registersearchterm(reg_whowassearch, "renamed",renamed_parse, 0, "User changed nick");
+  registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
+  registersearchterm(reg_whowassearch, "newnick",newnick_parse, 0, "New nick (for rename whowas records)");
+  registersearchterm(reg_whowassearch, "reason",reason_parse, 0, "Quit/kill reason");
 
   /* Channel operations */
   registersearchterm(reg_chansearch, "exists",exists_parse, 0, "Returns if channel exists on network. Note: newserv may store data on empty channels");         /* channel only */
@@ -207,16 +237,19 @@ void _init() {
   registersearchterm(reg_chansearch, "kick",kick_parse, 0, "KICK users channels in newsearch result. Note: evaluation order");             /* channel only */
 
   /* Nickname / channel operations */
-  registersearchterm(reg_chansearch, "modes",modes_parse, 0, "User Modes");
-  registersearchterm(reg_nicksearch, "modes",modes_parse, 0, "Channel Modes");
+  registersearchterm(reg_chansearch, "modes",modes_parse, 0, "Channel Modes");
+  registersearchterm(reg_nicksearch, "modes",modes_parse, 0, "User Modes");
+  registersearchterm(reg_whowassearch, "modes",modes_parse, 0, "User Modes");
   registersearchterm(reg_chansearch, "nick",nick_parse, 0, "Nickname");
   registersearchterm(reg_nicksearch, "nick",nick_parse, 0, "Nickname");
+  registersearchterm(reg_whowassearch, "nick",nick_parse, 0, "Nickname");
 
   /* Kill / gline parameters */
   registersearchterm(reg_chansearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
   registersearchterm(reg_chansearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
   registersearchterm(reg_nicksearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
   registersearchterm(reg_nicksearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_whowassearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
 
   /* Iteration functionality */
   registerglobalsearchterm("any",any_parse, "usage: any (generatorfn x) (fn ... (var x) ...)");
@@ -426,7 +459,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
   return CMD_OK;
 }
 
-void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit) {
+void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc replyfn, wallFunc wallfn, void *arg, searchCmd *cmd, nick *np, void *displayfn, int limit, array *targets) {
   memset(ctx, 0, sizeof(searchCtx));
   
   ctx->reply = replyfn;
@@ -436,6 +469,7 @@ void newsearch_ctxinit(searchCtx *ctx, searchParseFunc searchfn, replyFunc reply
   ctx->searchcmd = cmd;
   ctx->sender = np;
   ctx->limit = limit;
+  ctx->targets = targets;
   ctx->displayfn = displayfn;
 }
 
@@ -445,12 +479,7 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int arg=0;
   NickDisplayFunc display=defaultnickfn;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  searchCtx ctx;
-  struct searchNode *search;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -471,27 +500,15 @@ int do_nicksearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_nicksearch, sender, display, limit);
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  nicksearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_nicksearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
-  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_nicksearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -501,7 +518,7 @@ int do_nicksearch(void *source, int cargc, char **cargv) {
 }
 
 void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
-  int i, j;
+  int i, j, k;
   int matches = 0;
   unsigned int cmarker;
   unsigned int tchans=0,uchans=0;
@@ -518,7 +535,13 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<NICKHASHSIZE;i++) {
-    for (np=nicktable[i];np;np=np->next) {
+    for (np=nicktable[i], k = 0;ctx->targets ? (k < ctx->targets->cursi) : (np != NULL);np=np->next, k++) {
+      if (ctx->targets) {
+        np = ((nick **)ctx->targets->content)[k];
+        if (!np)
+          continue;
+      }
+
       if ((search->exe)(ctx, search, np)) {
         /* Add total channels */
         tchans += np->channels->cursi;
@@ -540,10 +563,91 @@ void nicksearch_exe(struct searchNode *search, searchCtx *ctx) {
 	matches++;
       }
     }
+
+    if (ctx->targets)
+      break;
   }
 
   ctx->reply(sender,"--- End of list: %d matches; users were on %u channels (%u unique, %.1f average clones)", 
                 matches, tchans, uchans, (float)tchans/uchans);
+}
+
+int do_whowassearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
+  nick *sender = source;
+  int limit=500;
+  int arg=0;
+  WhowasDisplayFunc display=defaultwhowasfn;
+  int ret;
+  parsertree *tree;
+
+  if (cargc<1) {
+    reply( sender, "Usage: [flags] <criteria>");
+    reply( sender, "For help, see help whowassearch");
+    return CMD_OK;
+  }
+
+  ret = parseopts(cargc, cargv, &arg, &limit, NULL, (void *)&display, reg_whowassearch->outputtree, reply, sender);
+  if(ret != CMD_OK)
+    return ret;
+
+  if (arg>=cargc) {
+    reply(sender,"No search terms - aborting.");
+    return CMD_ERROR;
+  }
+
+  if (arg<(cargc-1)) {
+    rejoinline(cargv[arg],cargc-arg);
+  }
+
+  tree = parse_string(reg_whowassearch, cargv[arg]);
+  if(!tree) {
+    displaystrerror(reply, sender, cargv[arg]);
+    return CMD_ERROR;
+  }
+
+  ast_whowassearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
+
+  parse_free(tree);
+
+  return CMD_OK;
+}
+
+int do_whowassearch(void *source, int cargc, char **cargv) {
+  return do_whowassearch_real(controlreply, controlwallwrapper, source, cargc, cargv);
+}
+
+void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
+  int i, matches = 0;
+  whowas *ww;
+  nick *sender = ctx->sender;
+  senderNSExtern = sender;
+  WhowasDisplayFunc display = ctx->displayfn;
+  int limit = ctx->limit;
+
+  assert(!ctx->targets);
+
+  /* The top-level node needs to return a BOOL */
+  search=coerceNode(ctx, search, RETURNTYPE_BOOL);
+
+  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
+    ww = &whowasrecs[i % WW_MAXENTRIES];
+
+    if (ww->type == WHOWAS_UNUSED)
+      continue;
+
+    /* Note: We're passing the nick to the filter function. The original
+     * whowas record is in the nick's ->next field. */
+    if ((search->exe)(ctx, search, &ww->nick)) {
+      if (matches<limit)
+        display(ctx, sender, ww);
+
+      if (matches==limit)
+        ctx->reply(sender, "--- More than %d matches, skipping the rest",limit);
+      matches++;
+    }
+  }
+
+  ctx->reply(sender,"--- End of list: %d matches", matches);
 }  
 
 int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, char **cargv) {
@@ -552,12 +656,7 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int arg=0;
   ChanDisplayFunc display=defaultchanfn;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  struct searchNode *search;
-  searchCtx ctx;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -578,27 +677,15 @@ int do_chansearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_chansearch, sender, display, limit);
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  chansearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_chansearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
-  ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_chansearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -615,7 +702,9 @@ void chansearch_exe(struct searchNode *search, searchCtx *ctx) {
   senderNSExtern = sender;
   ChanDisplayFunc display = ctx->displayfn;
   int limit = ctx->limit;
-  
+
+  assert(!ctx->targets);  
+
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
   for (i=0;i<CHANNELHASHSIZE;i++) {
@@ -639,12 +728,7 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
   int arg=0;
   UserDisplayFunc display=defaultuserfn;
   int ret;
-#ifndef NEWSEARCH_NEWPARSER
-  struct searchNode *search;
-  searchCtx ctx;
-#else
   parsertree *tree;
-#endif
 
   if (cargc<1) {
     reply( sender, "Usage: [flags] <criteria>");
@@ -665,28 +749,15 @@ int do_usersearch_real(replyFunc reply, wallFunc wall, void *source, int cargc, 
     rejoinline(cargv[arg],cargc-arg);
   }
 
-#ifndef NEWSEARCH_NEWPARSER
-  newsearch_ctxinit(&ctx, search_parse, reply, wall, NULL, reg_usersearch, sender, display, limit);
-
-  if (!(search = ctx.parser(&ctx, cargv[arg]))) {
-    reply(sender,"Parse error: %s",parseError);
-    return CMD_ERROR;
-  }
-
-  usersearch_exe(search, &ctx);
-
-  (search->free)(&ctx, search);
-#else
   tree = parse_string(reg_usersearch, cargv[arg]);
   if(!tree) {
     displaystrerror(reply, sender, cargv[arg]);
     return CMD_ERROR;
   }
 
-  ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit);
+  ast_usersearch(tree->root, reply, sender, wall, display, NULL, NULL, limit, NULL);
 
   parse_free(tree);
-#endif
 
   return CMD_OK;
 }
@@ -703,6 +774,8 @@ void usersearch_exe(struct searchNode *search, searchCtx *ctx) {
   int limit = ctx->limit;
   UserDisplayFunc display = ctx->displayfn;
   senderNSExtern = sender;
+
+  assert(!ctx->targets);
 
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
   
@@ -946,172 +1019,6 @@ void literal_free(searchCtx *ctx, struct searchNode *thenode) {
   free(thenode);
 }
 
-static int unescape(char *input, char *output, size_t buflen) {
-  char *ch, *ch2;
-  int e=0;
-  
-  if (*input=='\"') {
-    for (ch=input;*ch;ch++) {
-      if(ch - input >= buflen) {
-        parseError="Buffer overflow";
-        return 0;
-      }
-    }
-      
-    if (*(ch-1) != '\"') {
-      parseError="Quote mismatch";
-      return 0;
-    }
-
-    *(ch-1)='\0';
-    input++;
-  }
-    
-  ch2=output;
-  for (ch=input;*ch;ch++) {
-    if(ch - input >= buflen) {
-      parseError="Buffer overflow";
-      return 0;
-    }
-    
-    if (e) {
-      e=0;
-      *ch2++=*ch;
-    } else if (*ch=='\\') {
-      e=1;
-    } else {
-      *ch2++=*ch;
-    }
-  }
-  *ch2='\0';
-  
-  return 1;
-}
-
-struct searchNode *search_parse(searchCtx *ctx, char *cinput) {
-  /* OK, we need to split the input into chunks on spaces and brackets.. */
-  char *argvector[100];
-  char inputb[1024];
-  char *input;
-  char thestring[500];
-  int i,j,q=0,e=0;
-  char *ch;
-  struct Command *cmd;
-  struct searchNode *thenode;
-
-  strlcpy(inputb, cinput, sizeof(inputb));
-  input = inputb;
-  
-  /* If it starts with a bracket, it's a function call.. */
-  if (*input=='(') {
-    /* Skip past string */
-    for (ch=input;*ch;ch++);
-    if (*(ch-1) != ')') {
-      parseError = "Bracket mismatch!";
-      return NULL;
-    }
-    input++;
-    *(ch-1)='\0';
-
-    /* Split further args */
-    i=-1; /* i = -1 BoW, 0 = inword, 1 = bracket nest depth */
-    j=0;  /* j = current arg */
-    e=0;
-    q=0;
-    argvector[0]="";
-    for (ch=input;*ch;ch++) {
-      /*printf("i: %d j: %d e: %d q: %d ch: '%c'\n", i, j, e, q, *ch);*/
-      if (i==-1) {
-        argvector[j]=ch;
-        if (*ch=='(') {
-          i=1;
-        } else if (*ch != ' ') {
-          i=0;
-          if (*ch=='\\') {
-            e=1;
-          } else if (*ch=='\"') {
-            q=1;
-          }
-        }
-      } else if (e==1) {
-        e=0;
-      } else if (q==1) {
-        if (*ch=='\\')	 {
-          e=1;
-        } else if (*ch=='\"')	{
-          q=0;
-        }
-      } else if (i==0) {
-        if (*ch=='\\') {
-          e=1;
-        } else if (*ch=='\"') {
-          q=1;
-        } else if (*ch==' ') {
-          *ch='\0';
-          j++;
-          if(j >= (sizeof(argvector) / sizeof(*argvector))) {
-            parseError = "Too many arguments";
-            return NULL;
-          }
-          i=-1;
-        }
-      } else {
-        if (*ch=='\\') {
-          e=1;
-        } else if (*ch=='\"') {
-          q=1;
-        } else if (*ch=='(') {
-          i++;
-        } else if (*ch==')') {
-          i--;
-        }
-      }
-    }
-    
-    if (i>0) {
-      parseError = "Bracket mismatch!";
-      return NULL;
-    }
-
-    if (*(ch-1) == 0) /* if the last character was a space */
-      j--; /* remove an argument */
-    
-/*    for(k=1;k<=j;k++)
-      if(!unescape(argvector[k], argvector[k], sizeof(inputb)))
-        return NULL;
-*/
-
-    if (!(cmd=findcommandintree(ctx->searchcmd->searchtree,argvector[0],1))) {
-      parseError = "Unknown command (for valid command list, see help <searchcmd>)";
-      return NULL;
-    } else {
-      if (!controlpermitted(cmd->level, ctx->sender)) { 
-        parseError = "Access denied (for valid command list, see help <searchcmd>)";
-        return NULL;
-      }
-      return ((parseFunc)cmd->handler)(ctx, j, argvector+1);
-    }
-  } else {
-    /* Literal */
-    
-    /* slug: disabled now we unescape during the main parse stage */
-    if(!unescape(input, thestring, sizeof(thestring)))
-      return NULL;
-
-    if (!(thenode=(struct searchNode *)malloc(sizeof(struct searchNode)))) {
-      parseError = "malloc: could not allocate memory for this search.";
-      return NULL;
-    }
-
-    thenode->localdata  = getsstring(thestring,512);
-    thenode->returntype = RETURNTYPE_CONST | RETURNTYPE_STRING;
-    thenode->exe        = literal_exe;
-    thenode->free       = literal_free;
-
-    return thenode;
-  }    
-}
-
 void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
   StringBuf b;
   const char *p;
@@ -1149,11 +1056,11 @@ void nssnprintf(char *buf, size_t size, const char *format, nick *np) {
       case 'h':
         c = np->host->name->content; break;
       case 'I':
-        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s", IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       case 'u':
-        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->p_ipaddr));
+        snprintf(hostbuf, sizeof(hostbuf), "%s!%s@%s", np->nick, np->ident, IPtostr(np->ipaddress));
         c = hostbuf;
         break;
       default:
@@ -1250,7 +1157,6 @@ void var_setstr(struct searchVariable *v, char *data) {
   v->cdata.u.stringbuf = data;
 }
 
-#ifdef NEWSEARCH_NEWPARSER
 void displaystrerror(replyFunc reply, nick *np, const char *input) {
   char buf[515];
 
@@ -1269,7 +1175,6 @@ void displaystrerror(replyFunc reply, nick *np, const char *input) {
 
   reply(np, "Parse error: %s", parseStrError);
 }
-#endif
 
 struct searchNode *argtoconststr(char *command, searchCtx *ctx, char *arg, char **p) {
   struct searchNode *c;

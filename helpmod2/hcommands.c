@@ -773,25 +773,26 @@ static void helpmod_cmd_welcome (huser *sender, channel* returntype, char* ostr,
     }
 }
 
+static void helpmod_list_aliases(huser *sender, channel *returntype, char *buf, int *p_i, alias_tree node)
+{
+    if (*p_i > 256)
+    {
+        helpmod_reply(sender, returntype, "%s", buf);
+        *p_i = 0;
+    }
+    if (!node)
+        return;
+    sprintf(buf+*p_i,"%.200s ",node->name->content);
+    *p_i+=(1+strlen(node->name->content));
+    helpmod_list_aliases(sender, returntype, buf, p_i, node->left);
+    helpmod_list_aliases(sender, returntype, buf, p_i, node->right);
+}
+
 static void helpmod_cmd_aliases (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     char buf[512];
     int i = 0;
-    void helpmod_list_aliases(alias_tree node)
-    {
-	if (i > 256)
-	{
-	    helpmod_reply(sender, returntype, "%s", buf);
-	    i = 0;
-	}
-	if (!node)
-	    return;
-        sprintf(buf+i,"%.200s ",node->name->content);
-	i+=(1+strlen(node->name->content));
-        helpmod_list_aliases(node->left);
-	helpmod_list_aliases(node->right);
-    }
-    helpmod_list_aliases(aliases);
+    helpmod_list_aliases(sender, returntype, buf, &i, aliases);
     if (i)
 	helpmod_reply(sender, returntype, "%s", buf);
 }
@@ -1081,7 +1082,7 @@ void helpmod_cmd_term (huser *sender, channel* returntype, char* ostr, int argc,
             char *name = argv[1], *description;
             SKIP_WORD; SKIP_WORD;
             description = ostr;
-            htrm = hterm_add(source, name, description);
+            hterm_add(source, name, description);
             helpmod_reply(sender, returntype, "Term %s added succesfully", name);
         }
     }
@@ -1888,7 +1889,6 @@ static void helpmod_cmd_stats (huser *sender, channel* returntype, char* ostr, i
 static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ostr, int argc, char *argv[])
 {
     hchannel *hchan;
-    hstat_channel *channel_stats;
     hstat_channel_entry *stat_entry;
 
     time_t timer = time(NULL);
@@ -1951,8 +1951,6 @@ static void helpmod_cmd_chanstats (huser *sender, channel* returntype, char* ost
                 SKIP_WORD;
             }
         }
-
-    channel_stats = hchan->stats;
 
     if (!days && !weeks)
         return;
@@ -2684,7 +2682,6 @@ static void helpmod_cmd_checkchannel(huser *sender, channel* returntype, char* o
     /* third pass - find status boundaries */
     {
 	for (;o_limit < nick_count && numeric_array[o_limit] & CUMODE_OP; o_limit++);
-        v_limit = o_limit;
 	for(v_limit = o_limit; (v_limit < nick_count) && numeric_array[v_limit] & CUMODE_VOICE; v_limit++);
     }
 
@@ -3180,7 +3177,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	DIR *dir;
 	struct dirent *dent;
 	char buffer[384], **lines, *start;
-        int nwritten, bufpos = 0, nlines = 0,i;
+        int bufpos = 0, nlines = 0,i;
 
 	dir = opendir(HELPMOD_TEXT_DIR);
 	assert(dir != NULL);
@@ -3231,8 +3228,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 		buffer[bufpos] = ' ';
 		bufpos++;
 	    }
-	    sprintf(buffer + bufpos, "%s%n", lines[i], &nwritten);
-	    bufpos+=nwritten;
+	    bufpos+=sprintf(buffer + bufpos, "%s", lines[i]);
 
 	    if (bufpos > (384 - (HED_FILENAME_LENGTH+1)))
 	    {
@@ -3305,6 +3301,7 @@ static void helpmod_cmd_text (huser *sender, channel* returntype, char* ostr, in
 	if ((in = fopen(fname_buffer, "rt")) != NULL)
 	{
 	    helpmod_reply(sender, returntype, "Can not add text: Text %s already exists", argv[1]);
+            fclose(in);
             return;
 	}
 	else

@@ -107,9 +107,9 @@ static void tm_final(void *tag, int errcode) {
 
     trustsdb->squery(trustsdb, "BEGIN TRANSACTION", "");
     trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "groups");
-    trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO ?", "Ts", "migration_groups", "groups");
+    trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO groups", "T", "migration_groups");
     trustsdb->squery(trustsdb, "DROP TABLE ?", "T", "hosts");
-    trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO ?", "Ts", "migration_hosts", "hosts");
+    trustsdb->squery(trustsdb, "ALTER TABLE ? RENAME TO hosts", "T", "migration_hosts");
     trustsdb->query(trustsdb, tm_complete, cbd, "COMMIT", "");
   }
 }

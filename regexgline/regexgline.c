@@ -15,6 +15,7 @@
 #include "../core/hooks.h"
 #include "../server/server.h"
 #include "../lib/strlfunc.h"
+#include "../glines/glines.h"
 #include <stdint.h>
 
 #define INSTANT_IDENT_GLINE  1
@@ -169,7 +170,7 @@ int rg_rescan(void *source, int cargc, char **cargv) {
 }
 
 void _fini(void) {
-  struct rg_struct *gp = rg_list, *oldgp;
+  struct rg_struct *gp, *oldgp;
   rg_delay *delay, *delaynext;
   
   if(started) {
@@ -293,6 +294,8 @@ void rg_dodelay(void *arg) {
   rg_delay *delay = (rg_delay *)arg;
   char hostname[RG_MASKLEN];
   int hostlen, usercount = 0;
+  char reason[200];
+  int glineflags = 0;
   
   /* User or regex gline no longer exists */
   if((!delay->np) || (!delay->reason)) {
@@ -310,7 +313,6 @@ void rg_dodelay(void *arg) {
   
   if (delay->reason->type == DELAYED_HOST_GLINE) {
     usercount = delay->np->host->clonecount;
-    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(delay->np->p_ipaddr));
   }
   
   if((delay->reason->type == DELAYED_IDENT_GLINE) || (usercount > rg_max_per_gline)) {
@@ -320,7 +322,7 @@ void rg_dodelay(void *arg) {
       if(!ircd_strcmp(delay->np->ident, tnp->ident))
         usercount++;
 
-    snprintf(hostname, sizeof(hostname), "%s@%s", delay->np->ident, IPtostr(delay->np->p_ipaddr));
+    glineflags = GLINE_ALWAYS_USER;
   }
   
   if ((delay->reason->type == DELAYED_KILL) || (usercount > rg_max_per_gline)) {
@@ -340,7 +342,8 @@ void rg_dodelay(void *arg) {
   }
   
   rg_shadowserver(delay->np, delay->reason, delay->reason->type);
-  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), delay->reason->reason->content, delay->reason->glineid);
+  snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", delay->reason->reason->content, delay->reason->glineid);
+  glinebynick(delay->np, rg_expiry_time, reason, glineflags, "regexgline");
   rg_deletedelay(delay);
 }
 
@@ -1107,15 +1110,15 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
 }
 
 int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char *matched) { /* PPA: if multiple users match the same user@host or *@host it'll send multiple glines?! */
-  char hostname[RG_MASKLEN];
   int usercount = 0;
   int validdelay;
+  char reason[200];
+  int glineflags = 0;
 
   rg_loggline(rp, np);
 
   if (rp->type == INSTANT_HOST_GLINE) {
     usercount = np->host->clonecount;
-    snprintf(hostname, sizeof(hostname), "*@%s", IPtostr(np->p_ipaddr));
   }
   
   if ((rp->type == INSTANT_IDENT_GLINE) || (usercount > rg_max_per_gline)) {
@@ -1125,11 +1128,14 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
       if(!ircd_strcmp(np->ident, tnp->ident))
         usercount++;
 
-    snprintf(hostname, sizeof(hostname), "%s@%s", np->ident, IPtostr(np->p_ipaddr));
+    glineflags = GLINE_ALWAYS_USER;
   }
 
-  if(!strcmp(rp->class, RESERVED_NICK_CLASS))
-    irc_send("%s GL * +%s!*@* %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, np->nick, RESERVED_NICK_GLINE_DURATION, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
+  if(!strcmp(rp->class, RESERVED_NICK_CLASS)) {
+    char reason[512];
+    snprintf(reason, sizeof(reason), "AUTO %s (ID: %08lx)", rp->reason->content, rp->glineid);
+    glinebynick(np, RESERVED_NICK_GLINE_DURATION, reason, GLINE_ALWAYS_NICK, "regexgline");
+  }
 
   validdelay = (rp->type == INSTANT_KILL) || (rp->type == DELAYED_IDENT_GLINE) || (rp->type == DELAYED_HOST_GLINE) || (rp->type == DELAYED_KILL);
   if (validdelay || (usercount > rg_max_per_gline)) {
@@ -1164,7 +1170,8 @@ int __rg_dogline(struct rg_glinelist *gll, nick *np, struct rg_struct *rp, char 
   }
   
   rg_shadowserver(np, rp, rp->type);
-  irc_send("%s GL * +%s %d %jd :AUTO: %s (ID: %08lx)\r\n", mynumeric->content, hostname, rg_expiry_time, (intmax_t)time(NULL), rp->reason->content, rp->glineid);
+  snprintf(reason, sizeof(reason), "AUTO: %s (ID: %08lx)", rp->reason->content, rp->glineid);
+  glinebynick(np, rg_expiry_time, reason, glineflags, "regexgline");
   return usercount;
 }
 

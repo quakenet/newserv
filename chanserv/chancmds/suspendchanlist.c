@@ -52,7 +52,7 @@ int csc_dosuspendchanlist(void *source, int cargc, char **cargv) {
       if (!CIsSuspended(rcp))
         continue;
       
-      if ((rcp->suspendby != rup->ID) && match(cargv[0], cip->name->content))
+      if (match(cargv[0], cip->name->content) != 0)
         continue;
 
       if(seewhom) {      
