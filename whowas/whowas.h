@@ -1,7 +1,6 @@
 #ifndef __WHOWAS_H
 #define __WHOWAS_H
 
-#define WW_MAXAGE 3600
 #define WW_MAXCHANNELS 20
 #define WW_MAXENTRIES 1000000
 #define WW_MASKLEN (HOSTLEN + USERLEN + NICKLEN)
