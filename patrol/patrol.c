@@ -157,7 +157,7 @@ void patrol_genhost(char *ptc, char size, struct irc_in_addr *ipaddress) {
 
   ptc[i] = '\0';
 
-  memset(ipaddress, 0, sizeof(ipaddress));
+  memset(ipaddress, 0, sizeof(*ipaddress));
   ((unsigned short *)(ipaddress->in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress->in6_16))[6] = patrol_minmaxrand(0, 65535);
   ((unsigned short *)(ipaddress->in6_16))[7] = patrol_minmaxrand(0, 65535);
