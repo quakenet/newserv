@@ -214,12 +214,14 @@ void _init() {
   registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
   registersearchterm(reg_whowassearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
   registersearchterm(reg_nicksearch, "message",message_parse, 0, "Last message");
+  registersearchterm(reg_nicksearch, "age",age_parse, 0, "Nick record age in seconds");
+  registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
+
 
   /* Whowas operations */
   registersearchterm(reg_whowassearch, "quit",quit_parse, 0, "User quit");
   registersearchterm(reg_whowassearch, "killed",killed_parse, 0, "User was killed");
   registersearchterm(reg_whowassearch, "renamed",renamed_parse, 0, "User changed nick");
-  registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
   registersearchterm(reg_whowassearch, "newnick",newnick_parse, 0, "New nick (for rename whowas records)");
   registersearchterm(reg_whowassearch, "reason",reason_parse, 0, "Quit/kill reason");
 
