@@ -20,8 +20,6 @@ static void wwc_derefchannel(chanindex *cip) {
   uintptr_t *refcount = (uintptr_t *)&cip->exts[wwccext];
   (*refcount)--;
 
-  assert(*refcount >= 0);
-
   if (*refcount == 0)
     releasechanindex(cip);
 }
