@@ -1254,15 +1254,15 @@ void rg_loggline(struct rg_struct *rg, nick *np) {
   rg->lastseen = time(NULL);
   rg->dirty = 1;
 
-  /* @paul: disabled */
+  /* @paul: disabled
 
-  return;
   dbescapestring(eenick, np->nick, strlen(np->nick));
   dbescapestring(eeuser, np->ident, strlen(np->ident));
   dbescapestring(eehost, np->host->name->content, strlen(np->host->name->content));
   dbescapestring(eereal, np->realname->name->content, strlen(np->realname->name->content));
 
   dbquery("INSERT INTO regexgline.glog (glineid, nickname, username, hostname, realname, ts) VALUES (%d, '%s', '%s', '%s', '%s', NOW())", rg->id, eenick, eeuser, eehost, eereal);
+  */
 }
 
 static unsigned int getrgmarker(void) {
