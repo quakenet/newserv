@@ -6,7 +6,7 @@ LDFLAGS+=-lc
 all: sqlite.so sqlite-dbapi2.so
 
 libsqlite3.o: libsqlite3.c libsqlite3/sqlite3.c
-	$(CC) $(CFLAGS) -c libsqlite3.c -w
+	$(CC) $(CFLAGS) -c libsqlite3.c -fPIC -w
 
 sqlite.so: sqlite.o libsqlite3.o
 

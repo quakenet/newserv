@@ -16,7 +16,7 @@ OBJS += lib/hmac.o lib/prng.o lib/stringbuf.o lib/cbc.o
 all: $(DIRS) newserv
 
 newserv: $(OBJS)
-	$(CC) $(CFLAGS) -Wl,--export-dynamic $(LDFLAGS) -o $@ $^ $(LIBDL) -lm
+	$(CC) $(CFLAGS) -Wl,--export-dynamic $(LDFLAGS) -o $@ $^ $(LIBDL) $(EXECFLAGS) -lm
 
 $(DIRS):
 	cd $@ && $(MAKE) $(MFLAGS) all
