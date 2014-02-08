@@ -816,7 +816,7 @@ char *displaytype(int type) {
       ctype = "??";
   }
 
-  snprintf(ctypebuf, sizeof(ctype), "%1d:%s", type, ctype);
+  snprintf(ctypebuf, sizeof(ctypebuf), "%1d:%s", type, ctype);
   return ctypebuf;
 }
 
