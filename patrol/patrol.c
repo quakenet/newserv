@@ -44,19 +44,10 @@ host *patrol_selecthost(void) {
 }
 
 int patrol_isip(char *host) {
-  char *p = host, components = 0, length = 0;
+  struct irc_in_addr ip;
+  unsigned char bits;
 
-  for (; *p; p++) {
-    if (*p == '.') {
-      if (((!length) || (length = 0)) || (++components > 3))
-        return 0;
-    } else {
-      if ((++length > 3) || !isdigit(*p))
-        return 0;
-    }
-  }
-
-  return components == 3;
+  return (ipmask_parse(host, &ip, &bits));
 }
 
 static int specialuseronhost(host *hp) {
