@@ -74,6 +74,8 @@ static int glstore_loadfile(const char *file) {
     glinelist = gl;
   }
 
+  fclose(fp);
+
   return count;
 }
 
