@@ -473,6 +473,7 @@ int versionscan_changelev(void* sender, int cargc, char** cargv) {
             vsauths=pv->next;
             free(pv);
           }
+          break;
         }
         prevv=pv;
       }
