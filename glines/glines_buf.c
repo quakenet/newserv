@@ -502,7 +502,7 @@ int glinebufwritelog(glinebuf *gbuf, int propagating) {
   }
 
   /* Make a new glinebuf for the log */
-  if (!gbl && gbuf->id == 0) {
+  if (!gbl) {
     gbl = malloc(sizeof(glinebuf));
     glinebufinit(gbl, (gbuf->id == 0) ? nextglinebufid++ : gbuf->id);
 
