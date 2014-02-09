@@ -168,6 +168,8 @@ void loadcachehosts() {
       }
     }
   }
+
+  fclose(fp);
  
   Error("proxyscan",ERR_INFO, "Loaded %d entries from cache", i); 
 }
