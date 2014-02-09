@@ -39,22 +39,26 @@ int createconnectsocket(struct irc_in_addr *ip, int socknum) {
     return -1;
   }
   if (ioctl(fd,FIONBIO,&res)!=0) {
+    close(fd);
     Error("proxyscan",ERR_ERROR,"Unable to make socket nonblocking");
     return -1;
   }
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &opt, sizeof(opt))!=0) {
+    close(fd);
     Error("proxyscan",ERR_ERROR,"Unable to set SO_REUSEADDR on scan socket.");
     return -1;
   }
 #ifdef __FreeBSD__
   opt=IP_PORTRANGE_HIGH;
   if (setsockopt(fd, IPPROTO_IP, IP_PORTRANGE, (char *) &opt, sizeof(opt))!=0) {
+    close(fd);
     Error("proxyscan",ERR_WARNING,"Error selecting high port range.");
   }
 #endif
 
   if (connect(fd,(const struct sockaddr *) &u, s)) {
     if (errno != EINPROGRESS) {
+      close(fd);
       Error("proxyscan",ERR_ERROR,"Unable to connect socket (%d)",errno);
       return -1;
     }
