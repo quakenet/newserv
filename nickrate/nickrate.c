@@ -104,7 +104,7 @@ void nr_handlelistensocket(int fd, short events) {
   socklen_t addrsize=sizeof(sin);
   char buf[20];
   int newfd;
-  if ((newfd=accept(fd, (struct sockaddr *)&sin, &addrsize))>0) {
+  if ((newfd=accept(fd, (struct sockaddr *)&sin, &addrsize))>-1) {
     /* Got new connection */
     sprintf(buf,"%u\n",nicks);
     write(newfd,buf,strlen(buf));
