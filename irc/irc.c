@@ -152,7 +152,7 @@ int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pin
   }
 
   conto_s=getconfigitem(section,s?"host":"hubhost");
-  if (!conto_s || !conto_s->content || !conto_s->content[0]) {
+  if (!conto_s || !conto_s->content[0]) {
     ret=0;
   } else {
     ret=1;

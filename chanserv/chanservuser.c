@@ -40,7 +40,7 @@ void chanservreguser(void *arg) {
   csuser=getcopyconfigitem("chanserv","user","TheQBot",USERLEN);
   cshost=getcopyconfigitem("chanserv","host","some.host",HOSTLEN);
   csrealname=getcopyconfigitem("chanserv","realname","ChannelService",REALLEN);
-  csaccount=getcopyconfigitem("chanserv","account",csnick&&csnick->content&&csnick->content[0]?csnick->content:"Q",ACCOUNTLEN);
+  csaccount=getcopyconfigitem("chanserv","account",csnick&&csnick->content[0]?csnick->content:"Q",ACCOUNTLEN);
 
   Error("chanserv",ERR_INFO,"Connecting %s...",csnick->content);
 

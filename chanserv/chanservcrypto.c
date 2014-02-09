@@ -65,7 +65,7 @@ void chanservcryptoinit(void) {
   codesecret=combinesecret("codegenerator");
 
   ticketsecret=getcopyconfigitem("chanserv","ticketsecret","",256);
-  if(!ticketsecret || !ticketsecret->content || !ticketsecret->content[0]) {
+  if(!ticketsecret || !ticketsecret->content[0]) {
     Error("chanserv",ERR_WARNING,"Ticket secret not set, ticketauth disabled.");
     freesstring(ticketsecret);
     ticketsecret = NULL;
