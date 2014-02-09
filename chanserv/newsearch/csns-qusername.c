@@ -27,7 +27,7 @@ struct searchNode *qusername_parse(searchCtx *ctx, int argc, char **argv) {
 
 void *qusername_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   authname *ap = (authname *)theinput;
-  reguser *rup = ap->exts[chanservext];
+  reguser *rup = ap->exts[chanservaext];
   if(!rup)
     return "";
 
