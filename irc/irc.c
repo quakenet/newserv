@@ -256,6 +256,7 @@ void irc_connect(void *arg) {
     exit(1);
   }
 
+  memset(&sockaddress, 0, sizeof(sockaddress));
   sockaddress.sin_family = AF_INET;
   sockaddress.sin_port = htons(portnum);
   host = gethostbyname(conto);
