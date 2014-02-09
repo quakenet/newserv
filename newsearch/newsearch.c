@@ -327,6 +327,8 @@ void registerglobalsearchterm(char *term, parseFunc parsefunc, char *help) {
     int len=strlen(help);
     sl->help=(char *)malloc(len+1);
     if(!sl->help) {
+      freesstring(sl->name);
+      free(sl);
       Error("newsearch", ERR_ERROR, "malloc failed: registerglobalsearchterm");
       return;
     }
