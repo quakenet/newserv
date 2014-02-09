@@ -251,6 +251,7 @@ int setup_listening_socket(void) {
   
   if(bind(fd, (struct sockaddr *) &sin, sizeof(sin))) {
     nterface_log(nrl, NL_ERROR, "Unable to bind listen socket (%d).", errno);
+    close(fd);
     return -1;
   }
   
@@ -258,6 +259,7 @@ int setup_listening_socket(void) {
   
   if(ioctl(fd, FIONBIO, &opt)) {
     nterface_log(nrl, NL_ERROR, "Unable to set listen socket non-blocking.");
+    close(fd);
     return -1;
   }
   
@@ -359,6 +361,7 @@ void nterfacer_accept_event(struct esocket *socket) {
 
   if(ioctl(newfd, FIONBIO, &opt)) {
     nterface_log(nrl, NL_ERROR, "Unable to set accepted socket non-blocking.");
+    close(newfd);
     return;
   }
   
