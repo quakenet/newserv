@@ -68,7 +68,7 @@
 #define   LINGERTIME          300
 #define   DUMPINTERVAL        300
 #define   EMAILLEN            60
-#define   CHANTYPES           8
+#define   CHANTYPES           9
 #define   CHANOPHISTORY       10
 
 /* Suspension and g-line hit count limits */
@@ -879,6 +879,7 @@ flag_t cs_sanitisechanlev(flag_t flags);
 int cs_unbanfn(nick *sender, chanindex *cip, int (*fn)(void *arg, struct chanban *ban), void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 int checkreason(nick *np, char *reason);
+regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *founder, flag_t flags, short type);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);
