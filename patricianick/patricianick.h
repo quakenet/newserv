@@ -4,7 +4,7 @@
 #include "../nick/nick.h"
 
 #define PATRICIANICK_HASHSIZE   5
-#define pn_getidenthash(x)      ((crc32i(x)) % PATRICIANICK_HASHSIZE)
+#define pn_getidenthash(x)      ((irc_crc32i(x)) % PATRICIANICK_HASHSIZE)
 #define PATRICIANICK_MAXRESULTS 1000
 
 typedef struct patricianick_s {

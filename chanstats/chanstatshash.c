@@ -3,7 +3,7 @@
 #include "../lib/irc_string.h"
 #include "../irc/irc_config.h"
 
-#define chanstatshash(x) (crc32i(x)%CHANSTATSHASHSIZE)
+#define chanstatshash(x) (irc_crc32i(x)%CHANSTATSHASHSIZE)
 
 /*
  * findchanstats:

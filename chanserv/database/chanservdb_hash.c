@@ -16,8 +16,8 @@ reguser *regusernicktable[REGUSERHASHSIZE];
 maildomain *maildomainnametable[MAILDOMAINHASHSIZE];
 maildomain *maildomainIDtable[MAILDOMAINHASHSIZE];
 
-#define regusernickhash(x)  ((crc32i(x))%REGUSERHASHSIZE)
-#define maildomainnamehash(x)   ((crc32i(x))%MAILDOMAINHASHSIZE)
+#define regusernickhash(x)  ((irc_crc32i(x))%REGUSERHASHSIZE)
+#define maildomainnamehash(x)   ((irc_crc32i(x))%MAILDOMAINHASHSIZE)
 #define maildomainIDhash(x)     ((x)%MAILDOMAINHASHSIZE)
 
 void chanservhashinit() {

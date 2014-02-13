@@ -451,7 +451,7 @@ void qabot_child_handler(nick* me, int type, void** args) {
       }
       
       if (bot->flags & QAB_FLOODDETECT) {
-        crc = crc32i(text);
+        crc = irc_crc32i(text);
         if (crc == qab_lastq_crc) {
           qab_lastq_count++;
           if (qab_lastq_count >= 3) {

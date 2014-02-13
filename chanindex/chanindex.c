@@ -12,7 +12,7 @@
 
 MODULE_VERSION("")
 
-#define channelhash(x)  (crc32i(x)%CHANNELHASHSIZE)
+#define channelhash(x)  (irc_crc32i(x)%CHANNELHASHSIZE)
 
 chanindex *chantable[CHANNELHASHSIZE];
 sstring *extnames[MAXCHANNELEXTS];

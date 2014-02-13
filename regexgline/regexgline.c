@@ -1078,7 +1078,7 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
       newrow->type = 0; /* just in case */
 
     snprintf(glineiddata, sizeof(glineiddata), "%s regexgline %s %s %s %d %d", mynumeric->content, mask, setby, reason, (int)iexpires, newrow->type);
-    newrow->glineid = crc32(glineiddata);
+    newrow->glineid = irc_crc32(glineiddata);
   }
   
   return newrow;

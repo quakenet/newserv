@@ -12,8 +12,8 @@ extern const char ToLowerTab_8859_1[];
 
 int match2strings(const char *patrn, const char *strng);
 int match2patterns(const char *patrn, const char *strng);
-unsigned long crc32(const char *s);
-unsigned long crc32i(const char *s);
+unsigned long irc_crc32(const char *s);
+unsigned long irc_crc32i(const char *s);
 int ircd_strcmp(const char *s1, const char *s2);
 int ircd_strncmp(const char *s1, const char *s2, size_t len);
 char *delchars(char *string, const char *badchars);

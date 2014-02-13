@@ -122,7 +122,7 @@ int match2patterns(const char *patrn, const char *string) {
 /*  COPYRIGHT (C) 1986 Gary S. Brown.  You may use this program, or      */
 /*  code or tables extracted from it, as desired without restriction.    */
 /* Modified by Fox: no more length parameter, always does the whole string */
-unsigned long crc32(const char *s) {
+unsigned long irc_crc32(const char *s) {
   const char *cp;
   unsigned long crc32val;
   
@@ -134,7 +134,7 @@ unsigned long crc32(const char *s) {
 }
 
 /* Case insensitive version of the above */
-unsigned long crc32i(const char *s) {
+unsigned long irc_crc32i(const char *s) {
   const char *cp;
   unsigned long crc32val;
   
