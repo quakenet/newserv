@@ -282,7 +282,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
         for (trcup=target->knownon;trcup;trcup=trcup->nextbyuser)
           channelcount++;
 
-        if(channelcount >= MAXCHANNELS) {
+        if(channelcount >= (!UIsNoAuthLimit(target) ? MAXCHANNELS : 5 * MAXCHANNELS)) {
           chanservstdmessage(sender, QM_TOOMANYCHANNELS);
           return CMD_ERROR;
         } 

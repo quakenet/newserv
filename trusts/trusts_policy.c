@@ -243,9 +243,8 @@ static void trustfreeconnection(trustsocket *sock, int unlink) {
     return;
   }
 
-  pnext = &tslist;
-  
-  for(ts=*pnext;*pnext;pnext=&((*pnext)->next)) {
+  for(pnext=&tslist;*pnext;pnext=&((*pnext)->next)) {
+    ts=*pnext;
     if(ts == sock) {
       *pnext = sock->next;
       trustfreeconnection(sock, 0);
@@ -260,6 +259,7 @@ static int handletrustauth(trustsocket *sock, char *server_name, char *mac) {
   unsigned char digest[16];
   char noncehexbuf[NONCELEN * 2 + 1];
   char hexbuf[sizeof(digest) * 2 + 1];
+  trustsocket *ts, **pnext;
 
   for(i=0;i<MAXSERVERS;i++) {
     if(trustaccounts[i].used && strcmp(trustaccounts[i].server, server_name) == 0) {
@@ -280,6 +280,16 @@ static int handletrustauth(trustsocket *sock, char *server_name, char *mac) {
   if(hmac_strcmp(mac, hmac_printhex(digest, hexbuf, sizeof(digest)))) {
     controlwall(NO_OPER, NL_TRUSTS, "Invalid password for policy socket with servername '%s'.", server_name);
     return trustkillconnection(sock, "Bad MAC.");
+  }
+
+  for(pnext=&tslist;*pnext;pnext=&((*pnext)->next)) {
+    ts = *pnext;
+    if(ts->authed && strcmp(ts->authuser, server_name) == 0) {
+      trustkillconnection(ts, "New connection with same server name.");
+      *pnext = ts->next;
+      trustfreeconnection(ts, 0);
+      break;
+    }
   }
 
   sock->authed = 1;
@@ -394,9 +404,8 @@ static void trustdotimeout(void *arg) {
   time_t t = time(NULL);
   trustsocket **pnext, *sock;
 
-  pnext = &tslist;
-    
-  for(sock=*pnext;*pnext;pnext=&((*pnext)->next)) {
+  for(pnext=&tslist;*pnext;pnext=&((*pnext)->next)) {
+    sock = *pnext;
     if(!sock->authed && t >= sock->timeout) {
       trustkillconnection(sock, "Auth timeout.");
       *pnext = sock->next;
