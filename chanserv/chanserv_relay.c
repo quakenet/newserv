@@ -476,7 +476,7 @@ int csa_doaddchan(void *source, int cargc, char **cargv) {
   }
 
   cs_log(sender, "ADDCHAN %s #%s %s %s", cip->name->content, founder->username, printflags(rcp->flags, rcflags), chantypes[type]->content);
-  controlreply(sender, "ADDCHAN TRUE");
+  controlreply(sender, "ADDCHAN TRUE %u", rcp->ID);
   return CMD_OK;
 }
 
