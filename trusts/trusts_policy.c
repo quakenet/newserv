@@ -49,6 +49,7 @@ typedef struct trustsocket {
   time_t timeout;
   int accepted;
   int rejected;
+  int unthrottled;
 
   struct trustsocket *next;
 } trustsocket;
@@ -166,7 +167,7 @@ static int checkconnection(const char *username, struct irc_in_addr *ipaddress, 
     snprintf(message, messagelen, "Trust has %d out of %d allowed connections.", tg->count + usercountadjustment, tg->trustedfor);
 
   if(unthrottle && (tg->flags & TRUST_UNTHROTTLE))
-    *unthrottle = 1; /* TODO: Do _some_ kind of rate-limiting */
+    *unthrottle = 1;
 
   return POLICY_SUCCESS;
 }
@@ -195,8 +196,7 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
   int verdict, unthrottle;
   struct irc_in_addr ipaddress;
   unsigned char bits;
-  trustsocket *ts;
-  
+
   if(!ipmask_parse(host, &ipaddress, &bits)) {
     sock->accepted++;
     return trustdowrite(sock, "PASS %s", sequence_id);
@@ -211,8 +211,8 @@ static int policycheck_auth(trustsocket *sock, const char *sequence_id, const ch
     sock->accepted++;
 
     if (unthrottle) {
-      for (ts = tslist; ts; ts = ts->next)
-        trustdowrite(ts, "UNTHROTTLE %s", IPtostr(ipaddress));
+      sock->unthrottled++;
+      trustdowrite(sock, "UNTHROTTLE %s", sequence_id);
     }
 
     if(message[0])
@@ -460,6 +460,7 @@ static void processtrustlistener(int fd, short events) {
       sock->timeout = time(NULL) + 30;
       sock->accepted = 0;
       sock->rejected = 0;
+      sock->unthrottled = 0;
       if(!trustdowrite(sock, "AUTH %s", hmac_printhex(sock->nonce, buf, NONCELEN))) {
         Error("trusts_policy", ERR_WARNING, "Error writing auth to fd %d.", newfd);
         deregisterhandler(newfd, 1);
@@ -513,7 +514,6 @@ static void policycheck_irc(int hooknum, void *arg) {
   long moving = (long)args[1];
   char message[512];
   int verdict, unthrottle;
-  trustsocket *ts;
 
   if(moving)
     return;
@@ -535,10 +535,6 @@ static void policycheck_irc(int hooknum, void *arg) {
       break;
   }
 
-  if (unthrottle && hooknum == HOOK_NICK_LOSTNICK && np->timestamp > getnettime() - TRUST_MIN_TIME_RETHROTTLE) {
-    for (ts = tslist; ts; ts = ts->next)
-      trustdowrite(ts, "THROTTLE %s", IPtostr(np->ipaddress));
-  }
 }
 
 static int trusts_cmdtrustpolicyirc(void *source, int cargc, char **cargv) {
@@ -579,10 +575,10 @@ static int trusts_cmdtrustsockets(void *source, int cargc, char **cargv) {
 
   time(&now);
 
-  controlreply(sender, "Server                              Connected for        Accepted        Rejected");
+  controlreply(sender, "Server                              Connected for        Accepted        Rejected        Unthrottled");
 
   for(sock=tslist;sock;sock=sock->next)
-    controlreply(sender, "%-35s %-20s %-15d %-15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected);
+    controlreply(sender, "%-35s %-20s %-15d %-15d %-15d", sock->authed?sock->authuser:"<unauthenticated connection>", longtoduration(now - sock->connected, 0), sock->accepted, sock->rejected, sock->unthrottled);
 
   controlreply(sender, "-- End of list.");
   return CMD_OK;
