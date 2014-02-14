@@ -6,11 +6,14 @@
 #include "../newsearch/newsearch.h"
 #include "../newsearch/parser.h"
 
+#define NW_FORMAT_TIME "%d/%m/%y %H:%M GMT"
+
 typedef struct nickwatch {
   int id;
 
   char createdby[64];
   int hits;
+  time_t lastactive;
   char term[512];
   parsertree *tree;
 
@@ -39,6 +42,7 @@ static void nw_printnick(searchCtx *ctx, nick *sender, nick *np) {
   int len;
 
   nw_currentwatch->hits++;
+  nw_currentwatch->lastactive = time(NULL);
 
   events[0] = '\0';
   len = 0;
@@ -193,6 +197,7 @@ static int nw_cmd_nickwatch(void *source, int cargc, char **cargv) {
   nw->id = nextnickwatch++;
   snprintf(nw->createdby, sizeof(nw->createdby), "#%s", sender->authname);
   nw->hits = 0;
+  nw->lastactive = 0;
   strncpy(nw->term, cargv[0], sizeof(nw->term));
   nw->tree = parse_string(reg_nicksearch, cargv[0]);
   nw->next = nickwatches;
@@ -234,11 +239,17 @@ static int nw_cmd_nickunwatch(void *source, int cargc, char **cargv) {
 static int nw_cmd_nickwatches(void *source, int cargc, char **cargv) {
   nick *sender = source;
   nickwatch *nw;
+  char timebuf[20];
 
-  controlreply(sender, "ID    Created By      Hits    Term");
+  controlreply(sender, "ID    Created By      Hits    Last active        Term");
 
-  for (nw = nickwatches; nw; nw = nw->next)
-    controlreply(sender, "%-5d %-15s %-7d %s", nw->id, nw->createdby, nw->hits, nw->term);
+  for (nw = nickwatches; nw; nw = nw->next) {
+    if (nw->lastactive == 0)
+      strncpy(timebuf, "(never)", sizeof(timebuf));
+    else
+      strftime(timebuf, sizeof(timebuf), NW_FORMAT_TIME, gmtime(&nw->lastactive));
+    controlreply(sender, "%-5d %-15s %-7d %-18s %s", nw->id, nw->createdby, nw->hits, timebuf, nw->term);
+  }
 
   controlreply(sender, "--- End of nickwatches.");
 
