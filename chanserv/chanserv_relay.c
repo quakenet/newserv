@@ -262,7 +262,8 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     csdb_createuser(rup);
     snprintf(account_info, sizeof(account_info), " %u %lu", rup->ID, (unsigned long)rup->lastpasschange);
 
-    sendemail(rup);
+    if(!activate)
+      sendemail(rup);
   } else {
     account_info[0] = '\0';
     do_create = 0;
@@ -353,6 +354,13 @@ int csa_dosetemail(void *source, int cargc, char **cargv) {
   }
 
   email = cargv[2];
+
+  if(!strcmp(email, rup->email->content)) {
+    /* setting to the same thing? fine! */
+    controlreply(sender, "SETEMAIL TRUE");
+    return CMD_OK;
+  }
+
   error = email_to_error(email);
   if(error) {
     controlreply(sender, "SETEMAIL FALSE %s", error);
