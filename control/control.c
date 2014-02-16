@@ -286,27 +286,11 @@ void handlewhois(int hooknum, void *arg) {
   controlreply(hooknick,"%s",(char *)arg);
 }
 
-static int controlwhois_plain(void *sender, int cargc, char **cargv) {
-  nick *target;
+void whoisnick(nick *sender, nick *target) {
   channel **channels;
   char buf[BUFSIZE];
   int i;
-  
-  if (cargc<1)
-    return CMD_USAGE;
-  
-  if (cargv[0][0]=='#') {
-    if (!(target=getnickbynumericstr(cargv[0]+1))) {
-      controlreply(sender,"Sorry, couldn't find numeric %s",cargv[0]+1);
-      return CMD_ERROR;
-    }
-  } else {
-    if ((target=getnickbynick(cargv[0]))==NULL) {
-      controlreply((nick *)sender,"Sorry, couldn't find that user");
-      return CMD_ERROR;
-    }
-  }
-  
+
   controlreply((nick *)sender,"Nick      : %s",target->nick);
   controlreply((nick *)sender,"Numeric   : %s",longtonumeric(target->numeric,5));
   controlreply((nick *)sender,"User@Host : %s@%s (%d user(s) on this host)",target->ident,target->host->name->content,target->host->clonecount);
@@ -341,11 +325,11 @@ static int controlwhois_plain(void *sender, int cargc, char **cargv) {
     controlreply((nick *)sender,"Opered as : %s",target->opername->content);
   if (IsAccount(target)) {
     controlreply((nick *)sender,"Account   : %s",target->authname);
-    if (target->accountts) 
+    if (target->accountts)
       controlreply((nick *)sender,"AccountTS : %ld",target->accountts);
     if (target->auth)  {
       controlreply((nick *)sender,"UserID    : %ld",target->auth->userid);
-      if (target->auth->flags) 
+      if (target->auth->flags)
         controlreply((nick *)sender,"AccFlags  : %s",printflags(target->auth->flags,accountflags));
     }
   }
@@ -381,6 +365,27 @@ static int controlwhois_plain(void *sender, int cargc, char **cargv) {
       }
     }
   }
+}
+
+static int controlwhois_plain(void *sender, int cargc, char **cargv) {
+  nick *target;
+  
+  if (cargc<1)
+    return CMD_USAGE;
+  
+  if (cargv[0][0]=='#') {
+    if (!(target=getnickbynumericstr(cargv[0]+1))) {
+      controlreply(sender,"Sorry, couldn't find numeric %s",cargv[0]+1);
+      return CMD_ERROR;
+    }
+  } else {
+    if ((target=getnickbynick(cargv[0]))==NULL) {
+      controlreply((nick *)sender,"Sorry, couldn't find that user");
+      return CMD_ERROR;
+    }
+  }
+ 
+  whoisnick(sender, target); 
   
   return CMD_OK;
 }
