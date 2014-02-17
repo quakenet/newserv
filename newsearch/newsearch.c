@@ -308,6 +308,7 @@ void _fini() {
   deregistersearchcommand( reg_nicksearch );
   deregistersearchcommand( reg_chansearch );
   deregistersearchcommand( reg_usersearch );
+  deregistersearchcommand( reg_whowassearch );
   destroycommandtree( searchCmdTree );
 }
 
