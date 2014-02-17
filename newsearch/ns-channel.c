@@ -48,7 +48,13 @@ void *channel_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   whowas *ww;
   int i;
 
-  if (ctx->searchcmd == reg_nicksearch) {
+  if (ctx->searchcmd == reg_whowassearch) {
+    ww = (whowas *)np->next; /* Eww. */
+
+    for (i = 0; i < WW_MAXCHANNELS; i++)
+      if (ww->channels[i] == cip)
+        return (void *)1;
+  } else {
     cp = cip->channel;
 
     if (!cp)
@@ -56,12 +62,6 @@ void *channel_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
 
     if (getnumerichandlefromchanhash(cp->users, np->numeric))
       return (void *)1;
-  } else {
-    ww = (whowas *)np->next; /* Eww. */
-
-    for (i = 0; i < WW_MAXCHANNELS; i++)
-      if (ww->channels[i] == cip)
-        return (void *)1;
   }
 
   return (void *)0;
