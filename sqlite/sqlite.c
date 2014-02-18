@@ -452,3 +452,6 @@ static void dbstatus(int hooknum, void *arg) {
   }
 }
 
+sqlite3 *sqlitegetconn(void) {
+  return conn;
+}

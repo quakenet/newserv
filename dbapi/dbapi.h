@@ -39,6 +39,7 @@ typedef PQResult DBResult;
 #define dbquerysuccessful(x) pqquerysuccessful(x)
 #define dbgetresult(conn) pqgetresult(conn)
 #define dbnumfields(x) PQnfields(x->result)
+#define dbnumaffected(c, x) strtoul(PGcmdTuples(x->result), NULL, 10)
 
 #define dbfetchrow(result) pqfetchrow(result)
 #define dbgetvalue(result, column) pqgetvalue(result, column)
@@ -71,6 +72,7 @@ typedef SQLiteResult DBResult;
 #define dbquerysuccessful(x) sqlitequerysuccessful(x)
 #define dbgetresult(conn) sqlitegetresult(conn)
 #define dbnumfields(x) sqlite3_column_count(x->r)
+#define dbnumaffected(c, x) sqlite3_changes(sqlitegetconn())
 
 #define dbfetchrow(result) sqlitefetchrow(result)
 #define dbgetvalue(result, column) sqlitegetvalue(result, column)

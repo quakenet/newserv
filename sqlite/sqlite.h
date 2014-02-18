@@ -36,5 +36,6 @@ int sqlitequerysuccessful(SQLiteResult *);
 void sqliteattach(char *schema);
 void sqlitedetach(char *schema);
 void sqliteloadtable(char *tablename, SQLiteQueryHandler init, SQLiteQueryHandler data, SQLiteQueryHandler fini, void *tag);
+sqlite3 *sqlitegetconn(void);
 
 #endif
