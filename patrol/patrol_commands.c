@@ -17,7 +17,16 @@ typedef struct patrolchannel {
 static patrolchannel *patrolchannels;
 
 static void patroluserhandler(nick *np, int event, void **args) {
-  /* Nothing to do here. */
+  patrolchannel *pc;
+
+  if (event == LU_KILLED) {
+    for (pc = patrolchannels; pc; pc = pc->next) {
+      if (pc->nick == np) {
+        pc->nick = NULL;
+        break;
+      }
+    }
+  }
 }
 
 static void pc_check(void) {
