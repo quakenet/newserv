@@ -296,6 +296,8 @@ lua_State *lua_loadscript(char *file) {
 }
 
 void lua_unloadscript(lua_list *l) {
+  triggerhook(HOOK_LUA_UNLOADSCRIPT, l->l);
+
   lua_onunload(l->l);
   lua_deregisternicks(l);
   lua_socket_closeall(l);
