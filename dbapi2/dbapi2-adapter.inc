@@ -105,12 +105,13 @@ static DBAPIResult *wrapresult(DBAPIResult *r, DBConn *c) {
   r->clear = dbapi2_adapter_result_clear;
   r->handle = dbgetresult(c);
 
+  r->affected = dbnumaffected(c, r->handle);
+
   if(!dbquerysuccessful(r->handle))
     return r;
 
   r->success = 1;
   r->fields = dbnumfields(r->handle);
-  r->affected = dbnumaffected(c, r->handle);
 
   r->get = dbapi2_adapter_result_get;
   r->next = dbapi2_adapter_result_next;

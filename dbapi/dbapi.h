@@ -39,7 +39,7 @@ typedef PQResult DBResult;
 #define dbquerysuccessful(x) pqquerysuccessful(x)
 #define dbgetresult(conn) pqgetresult(conn)
 #define dbnumfields(x) PQnfields(x->result)
-#define dbnumaffected(c, x) strtoul(PGcmdTuples(x->result), NULL, 10)
+#define dbnumaffected(c, x) strtoul(PQcmdTuples(x->result), NULL, 10)
 
 #define dbfetchrow(result) pqfetchrow(result)
 #define dbgetvalue(result, column) pqgetvalue(result, column)
