@@ -23,7 +23,7 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, active INT DEFAULT 1, privacy INT DEFAULT 1)", "T", "channels");
+    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT, active INT DEFAULT 1, privacy INT DEFAULT 1)", "T", "channels");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
     "CREATE TABLE ? (channelid INT, kicker VARCHAR(64), kickerid INT, victim VARCHAR(64), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
@@ -306,11 +306,20 @@ static int a4stats_lua_fetch_channels(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
-static int a4stats_lua_add_channel(lua_State *ps) {
+static int a4stats_lua_enable_channel(lua_State *ps) {
   if (!lua_isstring(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
-  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name) VALUES (?)", "Ts", "channels", lua_tostring(ps, 1));
+  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int a4stats_lua_disable_channel(lua_State *ps) {
+  if (!lua_isstring(ps, 1))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 0 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -357,7 +366,8 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
   void **args = arg;
   lua_State *l = args[1];
 
-  lua_register(l, "a4_add_channel", a4stats_lua_add_channel);
+  lua_register(l, "a4_enable_channel", a4stats_lua_enable_channel);
+  lua_register(l, "a4_disable_channel", a4stats_lua_disable_channel);
   lua_register(l, "a4_fetch_channels", a4stats_lua_fetch_channels);
   lua_register(l, "a4_add_kick", a4stats_lua_add_kick);
   lua_register(l, "a4_add_topic", a4stats_lua_add_topic);
@@ -381,7 +391,8 @@ static void a4stats_hook_unloadscript(int hooknum, void *arg) {
   }
 
   for (l = lua_head; l; l = l->next) {
-    lua_unregister(l->l, "a4_add_channel");
+    lua_unregister(l->l, "a4_enable_channel");
+    lua_unregister(l->l, "a4_disable_channel");
     lua_unregister(l->l, "a4_fetch_channels");
     lua_unregister(l->l, "a4_add_kick");
     lua_unregister(l->l, "a4_add_topic");
