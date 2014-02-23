@@ -376,7 +376,8 @@ static int lua_match(lua_State *ps) {
   if (!mask || !mask[0] || !string || !string[0])
     return 0;
 
-  LUA_RETURN(ps, match2strings(mask, string));
+  lua_pushboolean(ps, match2strings(mask, string));
+  return 1;
 }
 
 static int lua_getuserbyauth(lua_State *l) {
@@ -902,7 +903,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_sethost", lua_sethost);
 
   lua_register(l, "irc_numerictobase64", lua_numerictobase64);
-  lua_register(l, "irc_match", lua_match);
+  lua_register(l, "ircmatch", lua_match);
 }
 
 /* --- */
