@@ -84,6 +84,11 @@ static int handle_getuser(struct rline *ri, int argc, char **argv) {
   return 0;
 }
 
+static int handle_setprivacy(struct rline *ri, int argc, char **argv) {
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET privacy = ? WHERE name = ?", "Tss", "channels", argv[1], argv[0]);
+  return ri_final(ri);
+}
+
 void _init(void) {
   a4stats_node = register_service("a4stats");
   if (!a4stats_node)
@@ -95,6 +100,7 @@ void _init(void) {
   register_handler(a4stats_node, "getkicks", 1, handle_getkicks);
   register_handler(a4stats_node, "gettopics", 1, handle_gettopics);
   register_handler(a4stats_node, "getuser", 3, handle_getuser);
+  register_handler(a4stats_node, "setprivacy", 2, handle_setprivacy);
 }
 
 void _fini(void) {

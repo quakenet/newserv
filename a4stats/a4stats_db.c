@@ -310,7 +310,8 @@ static int a4stats_lua_enable_channel(lua_State *ps) {
   if (!lua_isstring(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
-  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
+  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (?, ?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 1 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -380,25 +381,14 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
 
 static void a4stats_hook_unloadscript(int hooknum, void *arg) {
   db_callback_info **pnext, *dci;
-  lua_list *l;
+  lua_State *l = arg;
 
   for (pnext = &dci_head; *pnext; pnext = &((*pnext)->next)) {
     dci = *pnext;
-    if (dci->interp == arg) {
+    if (dci->interp == l) {
       *pnext = dci->next;
       free(dci);
     }
-  }
-
-  for (l = lua_head; l; l = l->next) {
-    lua_unregister(l->l, "a4_enable_channel");
-    lua_unregister(l->l, "a4_disable_channel");
-    lua_unregister(l->l, "a4_fetch_channels");
-    lua_unregister(l->l, "a4_add_kick");
-    lua_unregister(l->l, "a4_add_topic");
-    lua_unregister(l->l, "a4_fetch_user");
-    lua_unregister(l->l, "a4_update_user");
-    lua_unregister(l->l, "a4_escape_string");
   }
 }
 
@@ -425,6 +415,15 @@ void _fini(void) {
 
   for (l = lua_head; l;l = l->next) {
     a4stats_hook_loadscript(HOOK_LUA_UNLOADSCRIPT, l->l);
+
+    lua_unregister(l->l, "a4_enable_channel");
+    lua_unregister(l->l, "a4_disable_channel");
+    lua_unregister(l->l, "a4_fetch_channels");
+    lua_unregister(l->l, "a4_add_kick");
+    lua_unregister(l->l, "a4_add_topic");
+    lua_unregister(l->l, "a4_fetch_user");
+    lua_unregister(l->l, "a4_update_user");
+    lua_unregister(l->l, "a4_escape_string");
   }
 
   deregisterhook(HOOK_LUA_LOADSCRIPT, a4stats_hook_loadscript);
