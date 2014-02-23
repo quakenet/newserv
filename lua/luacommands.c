@@ -364,6 +364,21 @@ static int lua_numerictobase64(lua_State *ps) {
   return 1;
 }
 
+static int lua_match(lua_State *ps) {
+  const char *mask, *string;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  mask = lua_tostring(ps, 1);
+  string = lua_tostring(ps, 2);
+
+  if (!mask || !mask[0] || !string || !string[0])
+    return 0;
+
+  LUA_RETURN(ps, match2strings(mask, string));
+}
+
 static int lua_getuserbyauth(lua_State *l) {
   nick *np;
   int found = 0;
@@ -887,6 +902,7 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_sethost", lua_sethost);
 
   lua_register(l, "irc_numerictobase64", lua_numerictobase64);
+  lua_register(l, "irc_match", lua_match);
 }
 
 /* --- */
