@@ -47,6 +47,7 @@ static int a4stats_connectdb(void) {
 
   a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON users (channelid)", "T", "users_channelid_index");
   a4statsdb->squery(a4statsdb, "CREATE UNIQUE INDEX ? ON users (channelid, account, accountid)", "T", "users_channelid_account_accountid_index");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON users (channelid, lines)", "T", "users_channelid_lines_index");
 
   return 1;
 }
