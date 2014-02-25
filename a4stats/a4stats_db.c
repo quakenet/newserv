@@ -23,7 +23,7 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT, active INT DEFAULT 1, privacy INT DEFAULT 1)", "T", "channels");
+    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1)", "T", "channels");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
     "CREATE TABLE ? (channelid INT, kicker VARCHAR(64), kickerid INT, victim VARCHAR(64), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
@@ -312,7 +312,7 @@ static int a4stats_lua_enable_channel(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (?, ?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
-  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 1 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 1, deleted = 0 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -321,7 +321,7 @@ static int a4stats_lua_disable_channel(lua_State *ps) {
   if (!lua_isstring(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
-  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 0 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 0, deleted = ? WHERE name = ?", "Tts", "channels", time(NULL), lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
