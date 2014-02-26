@@ -36,7 +36,7 @@ static void a4stats_nt_query_cb(const struct DBAPIResult *result, void *uarg) {
 }
 
 static int handle_getchannel(struct rline *ri, int argc, char **argv) {
-  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT timestamp, active, privacy FROM ? WHERE name = ?", "Ts", "channels", argv[0]);
+  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT timestamp, active, privacy, deleted FROM ? WHERE name = ?", "Ts", "channels", argv[0]);
   return 0;
 }
 
