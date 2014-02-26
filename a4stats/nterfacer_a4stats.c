@@ -53,21 +53,21 @@ static int handle_getusers(struct rline *ri, int argc, char **argv) {
     "h12, users.h13, users.h14, users.h15, users.h16, users.h17, users.h18, users.h19, users.h20, users.h21, users.h22, users.h23, users."
     "last, users.quote, users.quotereset, users.mood_happy, users.mood_sad, users.questions, users.yelling, users.caps, users."
     "slaps, users.slapped, users.highlights, users.kicks, users.kicked, users.ops, users.deops, users.actions, users.skitzo, users.foul, users."
-    "firstseen, users.curnick FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND users.quote IS NOT NULL ORDER BY lines DESC LIMIT 25", "Tss", "users", "channels", argv[0]);
+    "firstseen, users.curnick FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND users.quote IS NOT NULL ORDER BY lines DESC LIMIT 25", "Tss", "users", "channels", argv[0]);
 
   return 0;
 }
 
 static int handle_getkicks(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT kicks.kicker, kicks.kickerid, kicks.victim, kicks.victimid, kicks.timestamp, kicks.reason "
-    "FROM ? JOIN ? ON channels.id = kicks.channelid WHERE channels.name = ? ORDER BY kicks.timestamp DESC LIMIT 10", "TTs", "kicks", "channels", argv[0]);
+    "FROM ? LEFT JOIN ? ON channels.id = kicks.channelid WHERE channels.name = ? ORDER BY kicks.timestamp DESC LIMIT 10", "TTs", "kicks", "channels", argv[0]);
 
   return 0;
 }
 
 static int handle_gettopics(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT topics.topic, topics.timestamp, topics.setby, topics.setbyid "
-    "FROM ? JOIN ? ON channels.id = topics.channelid WHERE channels.name = ? ORDER BY topics.timestamp DESC LIMIT 10", "TTs", "topics", "channels", argv[0]);
+    "FROM ? LEFT JOIN ? ON channels.id = topics.channelid WHERE channels.name = ? ORDER BY topics.timestamp DESC LIMIT 10", "TTs", "topics", "channels", argv[0]);
 
   return 0;
 }
@@ -77,7 +77,7 @@ static int handle_getuser(struct rline *ri, int argc, char **argv) {
     "h12, users.h13, users.h14, users.h15, users.h16, users.h17, users.h18, users.h19, users.h20, users.h21, users.h22, users.h23, users."
     "last, users.quote, users.quotereset INT, users.mood_happy, users.mood_sad, users.questions, users.yelling, users.caps, users."
     "slaps, users.slapped, users.highlights, users.kicks, users.kicked, users.ops, users.deops, users.actions, users.skitzo, users.foul, users."
-    "firstseen, users.curnick FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND (users.accountid != 0 AND users.accountid = ? OR users.accountid = 0 AND users.account = ?)", "TTsss", "users", "channels", argv[0], argv[2], argv[1]);
+    "firstseen, users.curnick FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND (users.accountid != 0 AND users.accountid = ? OR users.accountid = 0 AND users.account = ?)", "TTsss", "users", "channels", argv[0], argv[2], argv[1]);
 
   return 0;
 }
