@@ -200,7 +200,7 @@ static void a4stats_update_user_cb(const struct DBAPIResult *result, void *uarg)
     a4statsdb->query(a4statsdb, a4stats_update_user_cb, uui, uui->update, "TUUs", "users", uui->channelid, uui->accountid, uui->account);
   else {
     if (result == NULL || result->affected > 0 || uui->stage == 4) {
-      if (result == NULL || result->affected == 0 && uui->stage == 4)
+      if (result == NULL || (result->affected == 0 && uui->stage == 4))
         Error("a4stats", ERR_WARNING, "Unable to update user.");
 
       free(uui->update);
