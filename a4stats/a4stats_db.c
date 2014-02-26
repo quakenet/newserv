@@ -23,7 +23,11 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1)", "T", "channels");
+    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1, "
+    "h0 INT DEFAULT 0, h1 INT DEFAULT 0, h2 INT DEFAULT 0, h3 INT DEFAULT 0, h4 INT DEFAULT 0, h5 INT DEFAULT 0, "
+    "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
+    "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
+    "h18 INT DEFAULT 0, h19 INT DEFAULT 0, h20 INT DEFAULT 0, h21 INT DEFAULT 0, h22 INT DEFAULT 0, h23 INT DEFAULT 0)", "T", "channels");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
     "CREATE TABLE ? (channelid INT, kicker VARCHAR(64), kickerid INT, victim VARCHAR(64), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
@@ -257,6 +261,24 @@ static int a4stats_lua_update_user(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int a4stats_lua_add_line(lua_State *ps) {
+  char query[256];
+  const char *channel;
+  int hour;
+
+  if (!lua_isstring(ps, 1) || !lua_isnumber(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  channel = lua_tostring(ps, 1);
+  hour = lua_tonumber(ps, 2);
+
+  snprintf(query, sizeof(query), "UPDATE ? SET h%d = h%d + 1 WHERE name = ?", hour, hour);
+
+  a4statsdb->squery(a4statsdb, query, "Ts", "channels", channel);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static void a4stats_fetch_channels_cb(const struct DBAPIResult *result, void *uarg) {
   db_callback_info *dci = uarg;
   unsigned long channelid;
@@ -373,6 +395,7 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
   lua_register(l, "a4_fetch_channels", a4stats_lua_fetch_channels);
   lua_register(l, "a4_add_kick", a4stats_lua_add_kick);
   lua_register(l, "a4_add_topic", a4stats_lua_add_topic);
+  lua_register(l, "a4_add_line", a4stats_lua_add_line);
   lua_register(l, "a4_fetch_user", a4stats_lua_fetch_user);
   lua_register(l, "a4_update_user", a4stats_lua_update_user);
   lua_register(l, "a4_escape_string", a4stats_lua_escape_string);
@@ -422,6 +445,7 @@ void _fini(void) {
     lua_unregister(l->l, "a4_fetch_channels");
     lua_unregister(l->l, "a4_add_kick");
     lua_unregister(l->l, "a4_add_topic");
+    lua_unregister(l->l, "a4_add_line");
     lua_unregister(l->l, "a4_fetch_user");
     lua_unregister(l->l, "a4_update_user");
     lua_unregister(l->l, "a4_escape_string");

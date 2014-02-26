@@ -41,11 +41,9 @@ static int handle_getchannel(struct rline *ri, int argc, char **argv) {
 }
 
 static int handle_getlines(struct rline *ri, int argc, char **argv) {
-  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT SUM(users.h0) AS h0, SUM(users.h1) AS h1, SUM(users.h2) AS h2, SUM(users.h3) AS h3, "
-    "SUM(users.h4) AS h4, SUM(users.h5) AS h5, SUM(users.h6) AS h6, SUM(users.h7) AS h7, SUM(users.h8) AS h8, SUM(users.h9) AS h9, SUM(users.h10) AS h10, "
-    "SUM(users.h11) AS h11, SUM(users.h12) AS h12, SUM(users.h13) AS h13, SUM(users.h14) AS h14, SUM(users.h15) AS h15, SUM(users.h16) AS h16, "
-    "SUM(users.h17) AS h17, SUM(users.h18) AS h18, SUM(users.h19) AS h19, SUM(users.h20) AS h20, SUM(users.h21) AS h21, SUM(users.h22) AS h22, SUM(users.h23) AS h23 "
-    "FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.name = ?", "TTs", "users", "channels", argv[0]);
+  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,"
+    "h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23 "
+    "FROM ? WHERE name = ?", "Ts", "users", "channels", argv[0]);
 
   return 0;
 }
