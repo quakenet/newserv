@@ -15,7 +15,7 @@ DBAPIConn *a4statsdb;
 
 static int a4stats_connectdb(void) {
   if(!a4statsdb) {
-    a4statsdb = dbapi2open(NULL, "a4stats");
+    a4statsdb = dbapi2open("pqsql", "a4stats");
     if(!a4statsdb) {
       Error("a4stats", ERR_WARNING, "Unable to connect to db -- not loaded.");
       return 0;
@@ -23,24 +23,25 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(64) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1, "
+    "CREATE TABLE ? (id SERIAL, name VARCHAR(256) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1, "
     "h0 INT DEFAULT 0, h1 INT DEFAULT 0, h2 INT DEFAULT 0, h3 INT DEFAULT 0, h4 INT DEFAULT 0, h5 INT DEFAULT 0, "
     "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
     "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
     "h18 INT DEFAULT 0, h19 INT DEFAULT 0, h20 INT DEFAULT 0, h21 INT DEFAULT 0, h22 INT DEFAULT 0, h23 INT DEFAULT 0)", "T", "channels");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, kicker VARCHAR(64), kickerid INT, victim VARCHAR(64), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
+    "CREATE TABLE ? (channelid INT, kicker VARCHAR(128), kickerid INT, victim VARCHAR(128), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
 
-  a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON kicks (channelid)", "T", "kicks_channelid_index");
-
-  a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, setby VARCHAR(64), setbyid INT, timestamp INT, topic VARCHAR(512))", "T", "topics");
-
-  a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON topics (channelid)", "T", "topics_channelid_index");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX kicks_channelid_index ON ? (channelid)", "T", "kicks");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX kicks_timestamp_index ON ? (timestamp)", "T", "kicks");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, account VARCHAR(64), accountid INT, seen INT DEFAULT 0, rating INT DEFAULT 0, lines INT DEFAULT 0, chars INT DEFAULT 0, words INT DEFAULT 0, "
+    "CREATE TABLE ? (channelid INT, setby VARCHAR(128), setbyid INT, timestamp INT, topic VARCHAR(512))", "T", "topics");
+
+  a4statsdb->squery(a4statsdb, "CREATE INDEX topics_channelid_index ON ? (channelid)", "T", "topics");
+
+  a4statsdb->createtable(a4statsdb, NULL, NULL,
+    "CREATE TABLE ? (channelid INT, account VARCHAR(128), accountid INT, seen INT DEFAULT 0, rating INT DEFAULT 0, lines INT DEFAULT 0, chars INT DEFAULT 0, words INT DEFAULT 0, "
     "h0 INT DEFAULT 0, h1 INT DEFAULT 0, h2 INT DEFAULT 0, h3 INT DEFAULT 0, h4 INT DEFAULT 0, h5 INT DEFAULT 0, "
     "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
     "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
@@ -49,9 +50,11 @@ static int a4stats_connectdb(void) {
     "slaps INT DEFAULT 0, slapped INT DEFAULT 0, highlights INT DEFAULT 0, kicks INT DEFAULT 0, kicked INT DEFAULT 0, ops INT DEFAULT 0, deops INT DEFAULT 0, actions INT DEFAULT 0, skitzo INT DEFAULT 0, foul INT DEFAULT 0, "
     "firstseen INT DEFAULT 0, curnick VARCHAR(16))", "T", "users");
 
-  a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON users (channelid)", "T", "users_channelid_index");
-  a4statsdb->squery(a4statsdb, "CREATE UNIQUE INDEX ? ON users (channelid, account, accountid)", "T", "users_channelid_account_accountid_index");
-  a4statsdb->squery(a4statsdb, "CREATE INDEX ? ON users (channelid, lines)", "T", "users_channelid_lines_index");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX users_account_index ON ? (account)", "T", "users");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX users_accountid_index ON ? (accountid)", "T", "users");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX users_channelid_index ON ? (channelid)", "T", "users");
+  a4statsdb->squery(a4statsdb, "CREATE UNIQUE INDEX users_channelid_account_accountid_index ON ? (channelid, account, accountid)", "T", "users");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX users_channelid_lines_index ON ? (channelid, lines)", "T", "users");
 
   return 1;
 }
@@ -149,7 +152,7 @@ static void a4stats_fetch_user_cb(const struct DBAPIResult *result, void *uarg) 
   }
 
   if (dci->interp) {
-    lua_vpcall(dci->interp, dci->callback, "llR", seen, quotereset, dci->uarg_index);
+    lua_vpcall(dci->interp, dci->callback, "llR", (long)seen, (long)quotereset, dci->uarg_index);
     luaL_unref(dci->interp, LUA_REGISTRYINDEX, dci->uarg_index);
   }
 
@@ -293,7 +296,7 @@ static void a4stats_fetch_channels_cb(const struct DBAPIResult *result, void *ua
         active = atoi(result->get(result, 2));
 
         if (dci->interp)
-          lua_vpcall(dci->interp, dci->callback, "lslR", channelid, channel, active, dci->uarg_index);
+          lua_vpcall(dci->interp, dci->callback, "lsiR", channelid, channel, active, dci->uarg_index);
       }
     }
 
