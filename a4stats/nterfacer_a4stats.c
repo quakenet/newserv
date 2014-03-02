@@ -99,7 +99,7 @@ static int handle_getuser(struct rline *ri, int argc, char **argv) {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USER_QUERY("SELECT ", " FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND (users.accountid = 0 AND users.account = ?)"),
       "TTss", "users", "channels", argv[0], &(argv[1][1]));
   } else if (atoi(argv[2]) == 0) {
-    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USER_QUERY("SELECT ", " FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND (users.accountid != 0 AND users.account = ?) ORDER BY users.accountid LIMIT 1"),
+    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USER_QUERY("SELECT ", " FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND (users.accountid != 0 AND users.account = ?) ORDER BY users.accountid DESC LIMIT 1"),
       "TTss", "users", "channels", argv[0], argv[1]);
   } else {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USER_QUERY("SELECT ", " FROM ? LEFT JOIN ? ON channels.id = users.channelid WHERE channels.name = ? AND users.accountid = ?"),
@@ -114,6 +114,49 @@ static int handle_setprivacy(struct rline *ri, int argc, char **argv) {
   return ri_final(ri);
 }
 
+static int handle_finduser(struct rline *ri, int argc, char **argv) {
+  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT DISTINCT ON (curnick) * FROM "
+    "(SELECT DISTINCT ON (account, accountid) account, accountid, seen, curnick "
+    "FROM ? WHERE curnick LIKE ? OR account LIKE ? ORDER BY account, accountid, curnick DESC) "
+    "AS users ORDER BY curnick, seen DESC LIMIT 50", "Tss", "users", argv[0], argv[0]);
+
+  return 0;
+}
+
+static int handle_findchan(struct rline *ri, int argc, char **argv) {
+  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT name, privacy FROM ? WHERE name LIKE ?",
+    "Ts", "channels", argv[0]);
+
+  return 0;
+}
+
+
+static int handle_getuserchans(struct rline *ri, int argc, char **argv) {
+#define USERCHANS_QUERY(b) "SELECT channels.name, channels.privacy FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.active = 1 AND " b
+  /*
+    Possible cases:
+    accountid = 0, account = "username" -> new-style account, look up latest account for user
+    accountid = 0, account = "#username" -> legacy account or user not authed, look up using "username" (remove #)
+    accountid = <some value>, account = <unused> -> new-style account, look up by account id
+  */
+
+  if (argv[0][0] == '#') {
+    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("(users.accountid = 0 AND users.account = ?)"),
+      "TTs", "users", "channels", &(argv[0][1]));
+  } else if (atoi(argv[1]) == 0) {
+    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT channels.name, channels.privacy "
+      "FROM ? JOIN ? ON channels.id = users.channelid "
+      "WHERE channels.active = 1 AND ROW(users.account, users.accountid) = "
+      "(SELECT account, accountid FROM a4stats.users WHERE users.accountid != 0 AND users.account = ? ORDER BY users.accountid DESC LIMIT 1)",
+      "TTs", "users", "channels", argv[0]);
+  } else {
+    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("users.accountid = ?"),
+      "TTs", "users", "channels", argv[1]);
+  }
+
+  return 0;
+}
+
 void _init(void) {
   a4stats_node = register_service("a4stats");
   if (!a4stats_node)
@@ -126,6 +169,9 @@ void _init(void) {
   register_handler(a4stats_node, "gettopics", 1, handle_gettopics);
   register_handler(a4stats_node, "getuser", 3, handle_getuser);
   register_handler(a4stats_node, "setprivacy", 2, handle_setprivacy);
+  register_handler(a4stats_node, "finduser", 1, handle_finduser);
+  register_handler(a4stats_node, "findchan", 1, handle_findchan);
+  register_handler(a4stats_node, "getuserchans", 2, handle_getuserchans);
 }
 
 void _fini(void) {

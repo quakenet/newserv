@@ -46,7 +46,7 @@ static int a4stats_connectdb(void) {
     "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
     "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
     "h18 INT DEFAULT 0, h19 INT DEFAULT 0, h20 INT DEFAULT 0, h21 INT DEFAULT 0, h22 INT DEFAULT 0, h23 INT DEFAULT 0, "
-    "last VARCHAR(512), quote VARCHAR(512), quotereset INT, mood_happy INT DEFAULT 0, mood_sad INT DEFAULT 0, questions INT DEFAULT 0, yelling INT DEFAULT 0, caps INT DEFAULT 0, "
+    "last VARCHAR(512), quote VARCHAR(512), quotereset INT DEFAULT 0, mood_happy INT DEFAULT 0, mood_sad INT DEFAULT 0, questions INT DEFAULT 0, yelling INT DEFAULT 0, caps INT DEFAULT 0, "
     "slaps INT DEFAULT 0, slapped INT DEFAULT 0, highlights INT DEFAULT 0, kicks INT DEFAULT 0, kicked INT DEFAULT 0, ops INT DEFAULT 0, deops INT DEFAULT 0, actions INT DEFAULT 0, skitzo INT DEFAULT 0, foul INT DEFAULT 0, "
     "firstseen INT DEFAULT 0, curnick VARCHAR(16))", "T", "users");
 
