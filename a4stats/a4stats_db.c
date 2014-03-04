@@ -56,6 +56,9 @@ static int a4stats_connectdb(void) {
   a4statsdb->squery(a4statsdb, "CREATE UNIQUE INDEX users_channelid_account_accountid_index ON ? (channelid, account, accountid)", "T", "users");
   a4statsdb->squery(a4statsdb, "CREATE INDEX users_channelid_lines_index ON ? (channelid, lines)", "T", "users");
 
+  a4statsdb->createtable(a4statsdb, NULL, NULL,
+    "CREATE TABLE ? (channelid INT, first VARCHAR(128), firstid INT, second VARCHAR(128), secondid INT, seen INT, score INT DEFAULT 1)", "T", "relations");
+
   return 1;
 }
 
@@ -264,6 +267,74 @@ static int a4stats_lua_update_user(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+typedef struct relation_update_info {
+  int stage;
+  unsigned long channelid;
+  char *first;
+  unsigned long firstid;
+  char *second;
+  unsigned long secondid;
+} relation_update_info;
+
+static void a4stats_update_relation_cb(const struct DBAPIResult *result, void *uarg) {
+  relation_update_info *rui = uarg;
+
+  rui->stage++;
+
+  if (rui->stage == 1) {
+    a4statsdb->query(a4statsdb, a4stats_update_relation_cb, rui, "UPDATE ? SET score = score + 1, seen = ? "
+      "WHERE channelid = ? AND first = ? AND firstid = ? AND second = ? AND secondid = ?",
+      "TtUsUsU", "relations", time(NULL), rui->channelid, rui->first, rui->firstid, rui->second, rui->secondid);
+    return;
+  } else if (rui->stage == 2 && result && result->affected == 0) {
+    a4statsdb->query(a4statsdb, a4stats_update_relation_cb, rui, "INSERT INTO ? (channelid, first, firstid, second, secondid, seen) VALUES (?, ?, ?, ?, ?, ?)",
+      "TUsUsUt", "relations", rui->channelid, rui->first, rui->firstid, rui->second, rui->secondid, time(NULL));
+    return;
+  }
+
+  if (!result || result->affected == 0)
+    Error("a4stats", ERR_WARNING, "Unable to update relation.");
+
+  free(rui->first);
+  free(rui->second);
+  free(rui);
+}
+
+static int a4stats_lua_update_relation(lua_State *ps) {
+  const char *user1, *user2;
+  unsigned long channelid, user1id, user2id;
+  relation_update_info *rui;
+
+  if (!lua_isnumber(ps, 1) || !lua_isstring(ps, 2) || !lua_isnumber(ps, 3) || !lua_isstring(ps, 4) || !lua_isnumber(ps, 5))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  channelid = lua_tonumber(ps, 1);
+  user1 = lua_tostring(ps, 2);
+  user1id = lua_tonumber(ps, 3);
+  user2 = lua_tostring(ps, 4);
+  user2id = lua_tonumber(ps, 5);
+
+  rui = malloc(sizeof(*rui));
+  rui->stage = 0;
+  rui->channelid = channelid;
+
+  if (user1id < user2id || (user1id == user2id && strcmp(user1, user2) <= 0)) {
+    rui->first = strdup(user1);
+    rui->firstid = user1id;
+    rui->second = strdup(user2);
+    rui->secondid = user2id;
+  } else {
+    rui->first = strdup(user2);
+    rui->firstid = user2id;
+    rui->second = strdup(user1);
+    rui->secondid = user1id;
+  }
+
+  a4stats_update_relation_cb(NULL, rui);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int a4stats_lua_add_line(lua_State *ps) {
   char query[256];
   const char *channel;
@@ -401,6 +472,7 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
   lua_register(l, "a4_add_line", a4stats_lua_add_line);
   lua_register(l, "a4_fetch_user", a4stats_lua_fetch_user);
   lua_register(l, "a4_update_user", a4stats_lua_update_user);
+  lua_register(l, "a4_update_relation", a4stats_lua_update_relation);
   lua_register(l, "a4_escape_string", a4stats_lua_escape_string);
 }
 
@@ -451,6 +523,7 @@ void _fini(void) {
     lua_unregister(l->l, "a4_add_line");
     lua_unregister(l->l, "a4_fetch_user");
     lua_unregister(l->l, "a4_update_user");
+    lua_unregister(l->l, "a4_update_relation");
     lua_unregister(l->l, "a4_escape_string");
   }
 
