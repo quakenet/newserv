@@ -957,6 +957,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_ACC_ID 15
 #define PUSHER_SERVER_NAME 16
 #define PUSHER_SERVER_NUMERIC 17
+#define PUSHER_IS_SERVICE 18
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -978,6 +979,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NAME, "servername");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NUMERIC, "servernumeric");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_IS_SERVICE, "isservice");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1101,6 +1103,9 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         break;
       case PUSHER_SERVER_NUMERIC:
         lua_pushint(l, homeserver(((nick *)offset)->numeric));
+        break;
+      case PUSHER_IS_SERVICE:
+        lua_pushboolean(l, NickOnServiceServer((nick *)offset));
         break;
     }
 
