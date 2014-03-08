@@ -62,8 +62,8 @@ static int handle_getkicks(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT kicks.kicker, kicks.kickerid, ukicker.seen, ukicker.curnick, kicks.victim, kicks.victimid, uvictim.seen, uvictim.curnick, kicks.timestamp, kicks.reason "
     "FROM ? "
     "LEFT JOIN ? ON channels.id = kicks.channelid "
-    "LEFT JOIN ? AS ukicker ON (ukicker.channelid = channels.id AND (kicks.kickerid != 0 AND kicks.kickerid = ukicker.accountid OR kicks.kickerid = 0 AND kicks.kicker = ukicker.account)) "
-    "LEFT JOIN ? AS uvictim ON (uvictim.channelid = channels.id AND (kicks.victimid != 0 AND kicks.victimid = uvictim.accountid OR kicks.victimid = 0 AND kicks.victim = uvictim.account)) "
+    "LEFT JOIN ? AS ukicker ON (ukicker.channelid = channels.id AND kicks.kickerid = ukicker.accountid AND kicks.kicker = ukicker.account) "
+    "LEFT JOIN ? AS uvictim ON (uvictim.channelid = channels.id AND kicks.victimid = uvictim.accountid AND kicks.victim = uvictim.account) "
     "WHERE channels.name = ? ORDER BY kicks.timestamp DESC LIMIT 10", "TTTTs", "kicks", "channels", "users", "users", argv[0]);
 
   return 0;
@@ -73,7 +73,7 @@ static int handle_gettopics(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT topics.topic, topics.timestamp, topics.setby, topics.setbyid, users.seen, users.curnick "
     "FROM ? "
     "LEFT JOIN ? ON channels.id = topics.channelid "
-    "LEFT JOIN ? ON (users.channelid = channels.id AND (topics.setbyid != 0 AND topics.setbyid = users.accountid OR topics.setbyid = 0 AND topics.setby = users.account)) "
+    "LEFT JOIN ? ON (users.channelid = channels.id AND topics.setbyid = users.accountid AND topics.setby = users.account) "
     "WHERE channels.name = ? ORDER BY topics.timestamp DESC LIMIT 10", "TTTs", "topics", "channels", "users", argv[0]);
 
   return 0;
@@ -113,8 +113,8 @@ static int handle_getrelations(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT relations.first, relations.firstid, ufirst.curnick, ufirst.seen, relations.second, relations.secondid, usecond.curnick, usecond.seen, relations.seen, relations.score "
     "FROM ? "
     "LEFT JOIN ? ON relations.channelid = channels.id "
-    "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND (relations.firstid != 0 AND relations.firstid = ufirst.accountid OR relations.firstid = 0 AND relations.first = ufirst.account)) "
-    "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND (relations.secondid != 0 AND relations.secondid = usecond.accountid OR relations.secondid = 0 AND relations.second = usecond.account)) "
+    "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) "
+    "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) "
     "WHERE channels.name = ? ORDER BY score DESC LIMIT 25",
     "TTTTs", "relations", "channels", "users", "users", argv[0]);
 
@@ -133,16 +133,16 @@ static int handle_getuserrelations(struct rline *ri, int argc, char **argv) {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT relations.first, relations.firstid, ufirst.curnick, ufirst.seen, relations.second, relations.secondid, usecond.curnick, usecond.seen, relations.seen, relations.score "
       "FROM ? "
       "LEFT JOIN ? ON relations.channelid = channels.id "
-      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND (relations.firstid != 0 AND relations.firstid = ufirst.accountid OR relations.firstid = 0 AND relations.first = ufirst.account)) "
-      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND (relations.secondid != 0 AND relations.secondid = usecond.accountid OR relations.secondid = 0 AND relations.second = usecond.account)) "
+      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) "
+      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) "
       "WHERE channels.name = ? AND (relations.first = ? AND relations.firstid = 0 OR relations.second = ? AND relations.secondid = 0) ORDER BY score DESC LIMIT 10",
-      "TTTTsss", "relations", "channels", "users", "users", argv[0], argv[1], argv[1]);
+      "TTTTsss", "relations", "channels", "users", "users", argv[0], &(argv[1][1]), &(argv[1][1]));
   } else if (atoi(argv[2]) == 0) {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT relations.first, relations.firstid, ufirst.curnick, ufirst.seen, relations.second, relations.secondid, usecond.curnick, usecond.seen, relations.seen, relations.score "
       "FROM ? "
       "LEFT JOIN ? ON relations.channelid = channels.id "
-      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND (relations.firstid != 0 AND relations.firstid = ufirst.accountid OR relations.firstid = 0 AND relations.first = ufirst.account)) "
-      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND (relations.secondid != 0 AND relations.secondid = usecond.accountid OR relations.secondid = 0 AND relations.second = usecond.account)) "
+      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) "
+      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) "
       "WHERE channels.name = ? AND (ROW(relations.first, relations.firstid) = "
       "(SELECT account, accountid FROM ? WHERE accountid != 0 AND account = ? ORDER BY accountid DESC LIMIT 1) OR "
       "ROW(relations.second, relations.secondid) = (SELECT account, accountid FROM ? WHERE accountid != 0 AND account = ? ORDER BY accountid DESC LIMIT 1)) "
@@ -152,8 +152,8 @@ static int handle_getuserrelations(struct rline *ri, int argc, char **argv) {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT relations.first, relations.firstid, ufirst.curnick, ufirst.seen, relations.second, relations.secondid, usecond.curnick, usecond.seen, relations.seen, relations.score "
       "FROM ? "
       "LEFT JOIN ? ON relations.channelid = channels.id "
-      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND (relations.firstid != 0 AND relations.firstid = ufirst.accountid OR relations.firstid = 0 AND relations.first = ufirst.account)) "
-      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND (relations.secondid != 0 AND relations.secondid = usecond.accountid OR relations.secondid = 0 AND relations.second = usecond.account)) "
+      "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) "
+      "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) "
       "WHERE channels.name = ? AND (relations.firstid = ? OR relations.secondid = ?) ORDER BY score DESC LIMIT 10",
       "TTTTsssss", "relations", "channels", "users", "users", argv[0], argv[1], argv[2], argv[1], argv[2]);
   }
@@ -170,7 +170,7 @@ static int handle_finduser(struct rline *ri, int argc, char **argv) {
   a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT users.account, users.accountid, users.seen, users.curnick, channels.name, channels.privacy  "
     "FROM ? "
     "LEFT JOIN ? ON channels.id = users.channelid "
-    "WHERE LOWER(curnick) LIKE ? OR LOWER(account) LIKE ? ORDER BY seen DESC LIMIT 150",
+    "WHERE (lines > 5 OR accountid != 0) AND (LOWER(curnick) LIKE ? OR LOWER(account) LIKE ?) ORDER BY seen DESC LIMIT 150",
     "TTss", "users", "channels", argv[0], argv[0]);
 
   return 0;
@@ -184,7 +184,7 @@ static int handle_findchan(struct rline *ri, int argc, char **argv) {
 }
 
 static int handle_getuserchans(struct rline *ri, int argc, char **argv) {
-#define USERCHANS_QUERY(b) "SELECT channels.name, channels.privacy FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.active = 1 AND " b
+#define USERCHANS_QUERY(b) "SELECT channels.name, channels.privacy, users.account, users.accountid, users.curnick, users.firstseen, users.seen FROM ? JOIN ? ON channels.id = users.channelid WHERE channels.active = 1 AND " b " ORDER BY channels.name"
   /*
     Possible cases:
     accountid = 0, account = "username" -> new-style account, look up latest account for user
@@ -196,10 +196,7 @@ static int handle_getuserchans(struct rline *ri, int argc, char **argv) {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("(users.accountid = 0 AND users.account = ?)"),
       "TTs", "users", "channels", &(argv[0][1]));
   } else if (atoi(argv[1]) == 0) {
-    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT channels.name, channels.privacy "
-      "FROM ? JOIN ? ON channels.id = users.channelid "
-      "WHERE channels.active = 1 AND ROW(users.account, users.accountid) = "
-      "(SELECT account, accountid FROM ? WHERE users.accountid != 0 AND users.account = ? ORDER BY users.accountid DESC LIMIT 1)",
+    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("(ROW(users.account, users.accountid) = (SELECT account, accountid FROM ? WHERE users.accountid != 0 AND users.account = ? ORDER BY users.accountid DESC LIMIT 1))"),
       "TTTs", "users", "channels", "users", argv[0]);
   } else {
     a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("users.accountid = ?"),

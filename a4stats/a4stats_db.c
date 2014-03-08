@@ -23,7 +23,7 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id SERIAL, name VARCHAR(256) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 1, "
+    "CREATE TABLE ? (id SERIAL, name VARCHAR(256) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 2, "
     "h0 INT DEFAULT 0, h1 INT DEFAULT 0, h2 INT DEFAULT 0, h3 INT DEFAULT 0, h4 INT DEFAULT 0, h5 INT DEFAULT 0, "
     "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
     "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
@@ -58,6 +58,10 @@ static int a4stats_connectdb(void) {
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
     "CREATE TABLE ? (channelid INT, first VARCHAR(128), firstid INT, second VARCHAR(128), secondid INT, seen INT, score INT DEFAULT 1)", "T", "relations");
+
+  a4statsdb->squery(a4statsdb, "CREATE INDEX relations_channelid_index ON ? (channelid)", "T", "relations");
+  a4statsdb->squery(a4statsdb, "CREATE INDEX relations_score_index ON ? (score)", "T", "relations");
+ 
 
   return 1;
 }
