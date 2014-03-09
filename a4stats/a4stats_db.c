@@ -11,6 +11,7 @@
 
 #define CLEANUP_KEEP 10 /* keep this many topics and kicks per channel around */
 #define CLEANUP_INTERVAL 84600 /* db cleanup interval (in seconds) */
+#define CLEANUP_INACTIVE_DAYS 30 /* disable channels where nothing happened for this many days */
 
 MODULE_VERSION("");
 
@@ -26,7 +27,7 @@ static int a4stats_connectdb(void) {
   }
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (id SERIAL, name VARCHAR(256) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 2, "
+    "CREATE TABLE ? (id SERIAL PRIMARY KEY, name VARCHAR(256) UNIQUE, timestamp INT DEFAULT 0, active INT DEFAULT 1, deleted INT DEFAULT 0, privacy INT DEFAULT 2, "
     "h0 INT DEFAULT 0, h1 INT DEFAULT 0, h2 INT DEFAULT 0, h3 INT DEFAULT 0, h4 INT DEFAULT 0, h5 INT DEFAULT 0, "
     "h6 INT DEFAULT 0, h7 INT DEFAULT 0, h8 INT DEFAULT 0, h9 INT DEFAULT 0, h10 INT DEFAULT 0, h11 INT DEFAULT 0, "
     "h12 INT DEFAULT 0, h13 INT DEFAULT 0, h14 INT DEFAULT 0, h15 INT DEFAULT 0, h16 INT DEFAULT 0, h17 INT DEFAULT 0, "
@@ -360,43 +361,85 @@ static int a4stats_lua_add_line(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
-static void a4stats_cleanupdb_count(const struct DBAPIResult *result, void *arg) {
-  unsigned long *cleanupdata = arg;
+typedef struct {
+  time_t now;
+  unsigned long pending;
+  unsigned long topicskicks;
+  unsigned long disabled;
+} cleanupdata;
+
+static void a4stats_cleanupdb_check_done(cleanupdata *cud) {
+  if (!--cud->pending)
+    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks. %lu channels disabled.",
+        cud->topicskicks, cud->disabled);
+}
+
+static void a4stats_cleanupdb_topicskicks(const struct DBAPIResult *result, void *arg) {
+  cleanupdata *cud = arg;
 
   if (result)
-    cleanupdata[1] += result->affected;
-  cleanupdata[0]--;
-  if (!cleanupdata[0])
-    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks.", cleanupdata[1]);
+    cud->topicskicks += result->affected;
+
+  a4stats_cleanupdb_check_done(cud);
+}
+
+static void a4stats_cleanupdb_disabled(const struct DBAPIResult *result, void *arg) {
+  cleanupdata *cud = arg;
+
+  if (result)
+    cud->disabled += result->affected;
+
+  a4stats_cleanupdb_check_done(cud);
 }
 
 static void a4stats_cleanupdb_cb(const struct DBAPIResult *result, void *arg) {
-  unsigned long channelid, *cleanupdata = arg;
+  cleanupdata *cud = arg;
+  unsigned long channelid;
+  time_t seen;
   
   if (result && result->success) {
     while (result->next(result)) {
       channelid = strtoul(result->get(result, 0), NULL, 10);
-      cleanupdata[0]++;
-      a4statsdb->query(a4statsdb, a4stats_cleanupdb_count, cleanupdata, 
-          "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
-          "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
-          "TUTUU", "kicks", channelid, "kicks", channelid, (unsigned long)CLEANUP_KEEP);
-      cleanupdata[0]++;
-      a4statsdb->query(a4statsdb, a4stats_cleanupdb_count, cleanupdata,
-          "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
-          "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
-          "TUTUU", "topics", channelid, "topics", channelid, (unsigned long)CLEANUP_KEEP);
+      seen = (time_t)strtoul(result->get(result, 2), NULL, 10);
+      /* use channel enabling timestamp if there was never any event */
+      if (!seen)
+        seen = (time_t)strtoul(result->get(result, 1), NULL, 10);
+
+      if (seen < cud->now - CLEANUP_INACTIVE_DAYS * 86400) {
+        /* delete inactive channels */
+        cud->pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_disabled, cud,
+            "UPDATE ? SET active = 0, deleted = ? WHERE id = ? AND active = 1",
+            "TtU", "channels", cud->now, channelid);
+      } else {
+        /* cleanup old kicks/topics */
+        cud->pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_topicskicks, cud, 
+            "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
+            "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
+            "TUTUU", "kicks", channelid, "kicks", channelid, (unsigned long)CLEANUP_KEEP);
+        cud->pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_topicskicks, cud,
+            "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
+            "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
+            "TUTUU", "topics", channelid, "topics", channelid, (unsigned long)CLEANUP_KEEP);
+      }
     }
   }
 }
 
 static void a4stats_cleanupdb(void *null) {
-  static unsigned long cleanupdata[2];
+  static cleanupdata cud;
 
-  cleanupdata[0] = 0; /* outstanding delete queries */
-  cleanupdata[1] = 0; /* deleted rows */
+  cud.now = time(NULL);
+  cud.pending = 0;
+  cud.topicskicks = 0;
+  cud.disabled = 0;
+
   controlwall(NO_OPER, NL_CLEANUP, "Starting a4stats_db cleanup.");
-  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb, cleanupdata, "SELECT id FROM ?", "T", "channels");
+  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb, &cud,
+      "SELECT id, timestamp, MAX(users.seen) FROM ? LEFT JOIN ? AS users ON id = users.channelid WHERE active = 1 GROUP BY id",
+      "TT", "channels", "users");
 }
 
 static void a4stats_fetch_channels_cb(const struct DBAPIResult *result, void *uarg) {
