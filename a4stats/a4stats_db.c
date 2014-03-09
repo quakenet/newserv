@@ -517,7 +517,7 @@ void _fini(void) {
   a4stats_closedb();
 
   for (l = lua_head; l;l = l->next) {
-    a4stats_hook_loadscript(HOOK_LUA_UNLOADSCRIPT, l->l);
+    a4stats_hook_unloadscript(HOOK_LUA_UNLOADSCRIPT, l->l);
 
     lua_unregister(l->l, "a4_enable_channel");
     lua_unregister(l->l, "a4_disable_channel");
