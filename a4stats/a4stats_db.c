@@ -9,6 +9,9 @@
 #include "../irc/irc.h"
 #include "../lua/lua.h"
 
+#define CLEANUP_KEEP 10 /* keep this many topics and kicks per channel around */
+#define CLEANUP_INTERVAL 84600 /* db cleanup interval (in seconds) */
+
 MODULE_VERSION("");
 
 DBAPIConn *a4statsdb;
@@ -131,7 +134,7 @@ typedef struct db_callback_info {
 static db_callback_info *dci_head;
 
 static void a4stats_delete_dci(db_callback_info *dci) {
-db_callback_info **pnext;
+  db_callback_info **pnext;
 
   for (pnext = &dci_head; *pnext; pnext = &((*pnext)->next)) {
     if (*pnext == dci) {
@@ -357,6 +360,45 @@ static int a4stats_lua_add_line(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static void a4stats_cleanupdb_count(const struct DBAPIResult *result, void *arg) {
+  unsigned long *cleanupdata = arg;
+
+  if (result)
+    cleanupdata[1] += result->affected;
+  cleanupdata[0]--;
+  if (!cleanupdata[0])
+    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks.", cleanupdata[1]);
+}
+
+static void a4stats_cleanupdb_cb(const struct DBAPIResult *result, void *arg) {
+  unsigned long channelid, *cleanupdata = arg;
+  
+  if (result && result->success) {
+    while (result->next(result)) {
+      channelid = strtoul(result->get(result, 0), NULL, 10);
+      cleanupdata[0]++;
+      a4statsdb->query(a4statsdb, a4stats_cleanupdb_count, cleanupdata, 
+          "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
+          "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
+          "TUTUU", "kicks", channelid, "kicks", channelid, (unsigned long)CLEANUP_KEEP);
+      cleanupdata[0]++;
+      a4statsdb->query(a4statsdb, a4stats_cleanupdb_count, cleanupdata,
+          "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
+          "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
+          "TUTUU", "topics", channelid, "topics", channelid, (unsigned long)CLEANUP_KEEP);
+    }
+  }
+}
+
+static void a4stats_cleanupdb(void *null) {
+  static unsigned long cleanupdata[2];
+
+  cleanupdata[0] = 0; /* outstanding delete queries */
+  cleanupdata[1] = 0; /* deleted rows */
+  controlwall(NO_OPER, NL_CLEANUP, "Starting a4stats_db cleanup.");
+  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb, cleanupdata, "SELECT id FROM ?", "T", "channels");
+}
+
 static void a4stats_fetch_channels_cb(const struct DBAPIResult *result, void *uarg) {
   db_callback_info *dci = uarg;
   unsigned long channelid;
@@ -503,6 +545,7 @@ void _init(void) {
 
   registerhook(HOOK_LUA_LOADSCRIPT, a4stats_hook_loadscript);
   registerhook(HOOK_LUA_UNLOADSCRIPT, a4stats_hook_unloadscript);
+  schedulerecurring(time(NULL), 0, CLEANUP_INTERVAL, a4stats_cleanupdb, NULL);
 
   args[0] = NULL;
   for (l = lua_head; l;l = l->next) {
@@ -514,6 +557,7 @@ void _init(void) {
 void _fini(void) {
   lua_list *l;
 
+  deleteschedule(NULL, a4stats_cleanupdb, NULL);
   a4stats_closedb();
 
   for (l = lua_head; l;l = l->next) {
