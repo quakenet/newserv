@@ -832,15 +832,18 @@ static void cleanuptrusts(void *arg) {
   trusthost *th;
   int thcount = 0, tgcount = 0;
   int i;
+  flag_t noticelevel;
   array expiredths, expiredtgs;
 
   now = getnettime();
   to_age = now - (CLEANUP_TH_INACTIVE * 3600 * 24);
 
   if(np) {
-    controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Manually started by %s.", np->nick);
+    noticelevel = NL_TRUSTS;
+    controlwall(NO_OPER, noticelevel, "CLEANUPTRUSTS: Manually started by %s.", np->nick);
   } else {
-    controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Automatically started.");
+    noticelevel = NL_CLEANUP;
+    controlwall(NO_OPER, noticelevel, "CLEANUPTRUSTS: Automatically started.");
   }
 
   if (cleanuptrusts_active) {
@@ -893,7 +896,7 @@ static void cleanuptrusts(void *arg) {
     tgcount++;
   }
 
-  controlwall(NO_OPER, NL_TRUSTS, "CLEANUPTRUSTS: Removed %d trust hosts (inactive for %d days) and %d empty trust groups.", thcount, CLEANUP_TH_INACTIVE, tgcount);
+  controlwall(NO_OPER, noticelevel, "CLEANUPTRUSTS: Removed %d trust hosts (inactive for %d days) and %d empty trust groups.", thcount, CLEANUP_TH_INACTIVE, tgcount);
 
   cleanuptrusts_active=0;
 }

@@ -98,6 +98,7 @@ char *controlid(nick *);
 #define NL_NOTICES         0x1000  /* turn off to receive privmsgs instead of notices */
 #define NL_ALL_COMMANDS    0x2000  /* every single command sent */
 #define NL_GLINES_AUTO     0x4000  /* automated gline messages */
+#define NL_CLEANUP         0x8000  /* automated cleanup notices */
 
 extern int noperserv_ext;
 

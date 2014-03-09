@@ -78,6 +78,7 @@ const flag no_noticeflags[] = {
     { 'O', NL_OPERING },      /* when someone opers */
     { 'n', NL_NOTICES },      /* turn off to receive notices instead of privmsgs */
     { 'A', NL_ALL_COMMANDS }, /* all commands sent */
+    { 'a', NL_CLEANUP },      /* automated cleanup notices */
     { '\0', 0 }
   };
 
