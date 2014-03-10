@@ -127,7 +127,7 @@ static int handle_getuserrelations(struct rline *ri, int argc, char **argv) {
                                "LEFT JOIN ? ON relations.channelid = channels.id " \
                                "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) " \
                                "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) " \
-                               "WHERE channels.name = ? " b " ORDER BY score DESC LIMIT 10"
+                               "WHERE channels.name = ? AND " b " ORDER BY score DESC LIMIT 10"
   /*
     Possible cases:
     accountid = 0, account = "username" -> new-style account, look up latest account for user
