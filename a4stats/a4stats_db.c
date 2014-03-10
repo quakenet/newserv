@@ -12,6 +12,7 @@
 #define CLEANUP_KEEP 10 /* keep this many topics and kicks per channel around */
 #define CLEANUP_INTERVAL 84600 /* db cleanup interval (in seconds) */
 #define CLEANUP_INACTIVE_DAYS 30 /* disable channels where nothing happened for this many days */
+#define CLEANUP_DELETE_DAYS 5 /* delete data for channels that have been disabled for this many days */
 
 MODULE_VERSION("");
 
@@ -34,13 +35,15 @@ static int a4stats_connectdb(void) {
     "h18 INT DEFAULT 0, h19 INT DEFAULT 0, h20 INT DEFAULT 0, h21 INT DEFAULT 0, h22 INT DEFAULT 0, h23 INT DEFAULT 0)", "T", "channels");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, kicker VARCHAR(128), kickerid INT, victim VARCHAR(128), victimid INT, timestamp INT, reason VARCHAR(256))", "T", "kicks");
+    "CREATE TABLE ? (channelid INT, kicker VARCHAR(128), kickerid INT, victim VARCHAR(128), victimid INT, timestamp INT, reason VARCHAR(256),"
+    "FOREIGN KEY (channelid) REFERENCES ? (id) ON DELETE CASCADE)", "TT", "kicks", "channels");
 
   a4statsdb->squery(a4statsdb, "CREATE INDEX kicks_channelid_index ON ? (channelid)", "T", "kicks");
   a4statsdb->squery(a4statsdb, "CREATE INDEX kicks_timestamp_index ON ? (timestamp)", "T", "kicks");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, setby VARCHAR(128), setbyid INT, timestamp INT, topic VARCHAR(512))", "T", "topics");
+    "CREATE TABLE ? (channelid INT, setby VARCHAR(128), setbyid INT, timestamp INT, topic VARCHAR(512),"
+    "FOREIGN KEY (channelid) REFERENCES ? (id) ON DELETE CASCADE)", "TT", "topics", "channels");
 
   a4statsdb->squery(a4statsdb, "CREATE INDEX topics_channelid_index ON ? (channelid)", "T", "topics");
 
@@ -52,7 +55,7 @@ static int a4stats_connectdb(void) {
     "h18 INT DEFAULT 0, h19 INT DEFAULT 0, h20 INT DEFAULT 0, h21 INT DEFAULT 0, h22 INT DEFAULT 0, h23 INT DEFAULT 0, "
     "last VARCHAR(512), quote VARCHAR(512), quotereset INT DEFAULT 0, mood_happy INT DEFAULT 0, mood_sad INT DEFAULT 0, questions INT DEFAULT 0, yelling INT DEFAULT 0, caps INT DEFAULT 0, "
     "slaps INT DEFAULT 0, slapped INT DEFAULT 0, highlights INT DEFAULT 0, kicks INT DEFAULT 0, kicked INT DEFAULT 0, ops INT DEFAULT 0, deops INT DEFAULT 0, actions INT DEFAULT 0, skitzo INT DEFAULT 0, foul INT DEFAULT 0, "
-    "firstseen INT DEFAULT 0, curnick VARCHAR(16))", "T", "users");
+    "firstseen INT DEFAULT 0, curnick VARCHAR(16), FOREIGN KEY (channelid) REFERENCES ? (id) ON DELETE CASCADE)", "TT", "users", "channels");
 
   a4statsdb->squery(a4statsdb, "CREATE INDEX users_account_index ON ? (account)", "T", "users");
   a4statsdb->squery(a4statsdb, "CREATE INDEX users_accountid_index ON ? (accountid)", "T", "users");
@@ -61,7 +64,8 @@ static int a4stats_connectdb(void) {
   a4statsdb->squery(a4statsdb, "CREATE INDEX users_channelid_lines_index ON ? (channelid, lines)", "T", "users");
 
   a4statsdb->createtable(a4statsdb, NULL, NULL,
-    "CREATE TABLE ? (channelid INT, first VARCHAR(128), firstid INT, second VARCHAR(128), secondid INT, seen INT, score INT DEFAULT 1)", "T", "relations");
+    "CREATE TABLE ? (channelid INT, first VARCHAR(128), firstid INT, second VARCHAR(128), secondid INT, seen INT, score INT DEFAULT 1,"
+    "FOREIGN KEY (channelid) REFERENCES ? (id) ON DELETE CASCADE)", "TT", "relations", "channels");
 
   a4statsdb->squery(a4statsdb, "CREATE INDEX relations_channelid_index ON ? (channelid)", "T", "relations");
   a4statsdb->squery(a4statsdb, "CREATE INDEX relations_score_index ON ? (score)", "T", "relations");
@@ -361,39 +365,32 @@ static int a4stats_lua_add_line(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
-typedef struct {
-  time_t now;
+static struct {
+  time_t start;
   unsigned long pending;
   unsigned long topicskicks;
   unsigned long disabled;
+  unsigned long deleted;
 } cleanupdata;
 
-static void a4stats_cleanupdb_check_done(cleanupdata *cud) {
-  if (!--cud->pending)
-    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks. %lu channels disabled.",
-        cud->topicskicks, cud->disabled);
+static void a4stats_cleanupdb_got_result(void) {
+  if (!--cleanupdata.pending) {
+    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks. Disabled %lu inactive channels. Deleted data for %lu channels.",
+        cleanupdata.topicskicks, cleanupdata.disabled, cleanupdata.deleted);
+    cleanupdata.start = 0;
+  }
 }
 
-static void a4stats_cleanupdb_topicskicks(const struct DBAPIResult *result, void *arg) {
-  cleanupdata *cud = arg;
+static void a4stats_cleanupdb_cb_countrows(const struct DBAPIResult *result, void *arg) {
+  unsigned long *counter = arg;
 
   if (result)
-    cud->topicskicks += result->affected;
+    *counter += result->affected;
 
-  a4stats_cleanupdb_check_done(cud);
+  a4stats_cleanupdb_got_result();
 }
 
-static void a4stats_cleanupdb_disabled(const struct DBAPIResult *result, void *arg) {
-  cleanupdata *cud = arg;
-
-  if (result)
-    cud->disabled += result->affected;
-
-  a4stats_cleanupdb_check_done(cud);
-}
-
-static void a4stats_cleanupdb_cb(const struct DBAPIResult *result, void *arg) {
-  cleanupdata *cud = arg;
+static void a4stats_cleanupdb_cb_active(const struct DBAPIResult *result, void *null) {
   unsigned long channelid;
   time_t seen;
   
@@ -405,21 +402,21 @@ static void a4stats_cleanupdb_cb(const struct DBAPIResult *result, void *arg) {
       if (!seen)
         seen = (time_t)strtoul(result->get(result, 1), NULL, 10);
 
-      if (seen < cud->now - CLEANUP_INACTIVE_DAYS * 86400) {
-        /* delete inactive channels */
-        cud->pending++;
-        a4statsdb->query(a4statsdb, a4stats_cleanupdb_disabled, cud,
+      if (seen < cleanupdata.start - CLEANUP_INACTIVE_DAYS * 86400) {
+        /* disable inactive channels */
+        cleanupdata.pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb_countrows, &cleanupdata.disabled,
             "UPDATE ? SET active = 0, deleted = ? WHERE id = ? AND active = 1",
-            "TtU", "channels", cud->now, channelid);
+            "TtU", "channels", cleanupdata.start, channelid);
       } else {
         /* cleanup old kicks/topics */
-        cud->pending++;
-        a4statsdb->query(a4statsdb, a4stats_cleanupdb_topicskicks, cud, 
+        cleanupdata.pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb_countrows, &cleanupdata.topicskicks, 
             "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
             "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
             "TUTUU", "kicks", channelid, "kicks", channelid, (unsigned long)CLEANUP_KEEP);
-        cud->pending++;
-        a4statsdb->query(a4statsdb, a4stats_cleanupdb_topicskicks, cud,
+        cleanupdata.pending++;
+        a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb_countrows, &cleanupdata.topicskicks,
             "DELETE FROM ? WHERE channelid = ? AND timestamp <= "
             "(SELECT timestamp FROM ? WHERE channelid = ? ORDER BY timestamp DESC OFFSET ? LIMIT 1)",
             "TUTUU", "topics", channelid, "topics", channelid, (unsigned long)CLEANUP_KEEP);
@@ -429,17 +426,25 @@ static void a4stats_cleanupdb_cb(const struct DBAPIResult *result, void *arg) {
 }
 
 static void a4stats_cleanupdb(void *null) {
-  static cleanupdata cud;
-
-  cud.now = time(NULL);
-  cud.pending = 0;
-  cud.topicskicks = 0;
-  cud.disabled = 0;
-
   controlwall(NO_OPER, NL_CLEANUP, "Starting a4stats_db cleanup.");
-  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb, &cud,
+
+  if (cleanupdata.start != 0) {
+    controlwall(NO_OPER, NL_CLEANUP, "a4stats cleanup already in progress.");
+    return;
+  }
+
+  cleanupdata.start = time(NULL);
+  cleanupdata.pending = 0;
+  cleanupdata.topicskicks = 0;
+  cleanupdata.disabled = 0;
+  cleanupdata.deleted = 0;
+
+  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb_active, NULL,
       "SELECT id, timestamp, MAX(users.seen) FROM ? LEFT JOIN ? AS users ON id = users.channelid WHERE active = 1 GROUP BY id",
       "TT", "channels", "users");
+  cleanupdata.pending++;
+  a4statsdb->query(a4statsdb, a4stats_cleanupdb_cb_countrows, &cleanupdata.deleted,
+      "DELETE FROM ? WHERE active = 0 AND deleted < ?", "Tt", "channels", (time_t)(cleanupdata.start - CLEANUP_DELETE_DAYS * 84600));
 }
 
 static void a4stats_fetch_channels_cb(const struct DBAPIResult *result, void *uarg) {
