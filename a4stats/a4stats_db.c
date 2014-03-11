@@ -375,7 +375,7 @@ static struct {
 
 static void a4stats_cleanupdb_got_result(void) {
   if (!--cleanupdata.pending) {
-    controlwall(NO_OPER, NL_CLEANUP, "Deleted %lu old topics and kicks. Disabled %lu inactive channels. Deleted data for %lu channels.",
+    controlwall(NO_OPER, NL_CLEANUP, "CLEANUPA4STATS: Deleted %lu old topics and kicks. Disabled %lu inactive channels. Deleted data for %lu channels.",
         cleanupdata.topicskicks, cleanupdata.disabled, cleanupdata.deleted);
     cleanupdata.start = 0;
   }
