@@ -10,7 +10,7 @@
 #include "../lua/lua.h"
 
 #define CLEANUP_KEEP 10 /* keep this many topics and kicks per channel around */
-#define CLEANUP_INTERVAL 84600 /* db cleanup interval (in seconds) */
+#define CLEANUP_INTERVAL 86400 /* db cleanup interval (in seconds) */
 #define CLEANUP_INACTIVE_DAYS 30 /* disable channels where nothing happened for this many days */
 #define CLEANUP_DELETE_DAYS 5 /* delete data for channels that have been disabled for this many days */
 
