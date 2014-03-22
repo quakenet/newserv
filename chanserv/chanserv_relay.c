@@ -22,6 +22,7 @@ int csa_dosettempemail(void *source, int cargc, char **cargv);
 int csa_dosetemail(void *source, int cargc, char **cargv);
 int csa_doresendemail(void *source, int cargc, char **cargv);
 int csa_doactivateuser(void *source, int cargc, char **cargv);
+int csa_doaddchan(void *source, int argc, char **argv);
 static int decrypt_password(unsigned char *secret, int keybits, char *buf, int bufsize, char *encrypted);
 static int hex_to_int(char *input, unsigned char *buf, int buflen);
 
@@ -65,6 +66,7 @@ void _init(void) {
   registercontrolhelpcmd("setemail", NO_RELAY, 3, csa_dosetemail, "Usage: setmail <userid> <timestamp> <email address>");
   registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <userid>");
   registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <userid>");
+  registercontrolhelpcmd("addchan", NO_RELAY, 3, csa_doaddchan, "Usage: addchan <channel> <userid> <channel type>");
 
   s=getcopyconfigitem("chanserv","createaccountsecret","",128);
   if(!s || !s->content || !s->content[0]) {
@@ -85,6 +87,7 @@ void _fini(void) {
   deregistercontrolcmd("setemail", csa_dosetemail);
   deregistercontrolcmd("resendemail", csa_doresendemail);
   deregistercontrolcmd("activateuser", csa_doactivateuser);
+  deregistercontrolcmd("addchan", csa_doaddchan);
 
   if(createaccountsecret_ok)
     deregistercontrolcmd("createaccount", csa_docreateaccount);
@@ -259,7 +262,8 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
     csdb_createuser(rup);
     snprintf(account_info, sizeof(account_info), " %u %lu", rup->ID, (unsigned long)rup->lastpasschange);
 
-    sendemail(rup);
+    if(!activate)
+      sendemail(rup);
   } else {
     account_info[0] = '\0';
     do_create = 0;
@@ -350,6 +354,13 @@ int csa_dosetemail(void *source, int cargc, char **cargv) {
   }
 
   email = cargv[2];
+
+  if(!strcmp(email, rup->email->content)) {
+    /* setting to the same thing? fine! */
+    controlreply(sender, "SETEMAIL TRUE");
+    return CMD_OK;
+  }
+
   error = email_to_error(email);
   if(error) {
     controlreply(sender, "SETEMAIL FALSE %s", error);
@@ -421,6 +432,59 @@ int csa_doactivateuser(void *source, int cargc, char **cargv) {
   cs_log(sender,"ACTIVATEUSER OK username %s",rup->username);
   controlreply(sender, "ACTIVATEUSER TRUE");
 
+  return CMD_OK;
+}
+
+int csa_doaddchan(void *source, int cargc, char **cargv) {
+  nick *sender=(nick *)source;
+  reguser *rup = getreguserfromnick(sender), *founder;
+  chanindex *cip;
+  short type;
+  regchan *rcp;
+
+  if(cargc<3) {
+    controlreply(sender, "ADDCHAN FALSE args");
+    return CMD_ERROR;
+  }
+
+  if (*cargv[0] != '#' || strlen(cargv[0]) > CHANNELLEN) {
+    controlreply(sender, "ADDCHAN FALSE invalidchannel");
+    return CMD_ERROR;
+  }
+
+  if (!(cip=findorcreatechanindex(cargv[0]))) {
+    controlreply(sender, "ADDCHAN FALSE invalidchannel");
+    return CMD_ERROR;
+  }
+
+  founder = findreguserbyID(atoi(cargv[1]));
+  if(founder == NULL) {
+    controlreply(sender, "ADDCHAN FALSE useridnotexist");
+    return CMD_ERROR;
+  }
+
+  if(UIsInactive(founder)) {
+    controlreply(sender, "ADDCHAN FALSE accountinactive");
+    return CMD_ERROR;
+  }
+
+  for(type=CHANTYPES-1;type;type--)
+    if(!ircd_strcmp(chantypes[type]->content, cargv[2]))
+      break;
+
+  if(!type) {
+    controlreply(sender, "ADDCHAN FALSE invalidchantype");
+    return CMD_ERROR;
+  }
+
+  rcp = cs_addchan(cip, sender, rup, founder, QCFLAG_JOINED, type);
+  if(!rcp) {
+    controlreply(sender, "ADDCHAN FALSE alreadyregistered");
+    return CMD_ERROR;
+  }
+
+  cs_log(sender, "ADDCHAN %s #%s %s %s", cip->name->content, founder->username, printflags(rcp->flags, rcflags), chantypes[type]->content);
+  controlreply(sender, "ADDCHAN TRUE %u", rcp->ID);
   return CMD_OK;
 }
 

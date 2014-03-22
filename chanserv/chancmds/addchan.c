@@ -37,8 +37,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
   reguser *founder;
   flag_t flags;
   short type=0;
-  unsigned int i, count;
-  void *args[3];
+  unsigned int count;
   
   if (!rup)
     return CMD_ERROR;
@@ -96,13 +95,6 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
   
-  if (cip->exts[chanservext]) {
-    chanservstdmessage(sender, QM_ALREADYREGISTERED, cip->name->content);
-    if (notify)
-      chanservstdmessage(notify, QM_ALREADYREGISTERED, cip->name->content);
-    return CMD_ERROR;
-  }
-
   count = 0;
 
   for (rcup=founder->knownon;rcup;rcup=rcup->nextbyuser)
@@ -115,87 +107,12 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  /* Initialise the channel */ 
-  rcp=getregchan();
-  
-  /* ID, index */
-  rcp->ID=++lastchannelID;
-  rcp->index=cip;
-  cip->exts[chanservext]=rcp;
-  
-  rcp->chantype=type;
-  rcp->flags=flags;
-  rcp->status=0;
-  rcp->bans=NULL;
-  rcp->lastcountersync=0;
-  
-  rcp->limit=0;
-  rcp->forcemodes=CHANMODE_DEFAULT;
-  rcp->denymodes=0;
-
-  if (CIsAutoLimit(rcp)) {
-    rcp->forcemodes |= CHANMODE_LIMIT;
-  }
-  
-  rcp->autolimit=5;
-  rcp->banstyle=0;
-  
-  rcp->created=rcp->lastactive=rcp->statsreset=rcp->ostatsreset=time(NULL);
-  rcp->banduration=0;
-  rcp->autoupdate=0;
-  rcp->lastbancheck=0;
-  
-  /* Added by */
-  rcp->addedby=rup->ID;
-  
-  /* Founder */
-  rcp->founder=founder->ID;
- 
-  /* Suspend by */
-  rcp->suspendby=0;
-  rcp->suspendtime=0;
-  
-  rcp->totaljoins=rcp->tripjoins=rcp->otripjoins=rcp->maxusers=rcp->tripusers=rcp->otripusers=0;
-  rcp->welcome=rcp->topic=rcp->key=rcp->suspendreason=rcp->comment=NULL;
-  
-  /* Users */
-  memset(rcp->regusers,0,REGCHANUSERHASHSIZE*sizeof(reguser *));   
-  
-  rcp->checksched=NULL;
-  rcp->ltimestamp=0;
-  for (i=0;i<CHANOPHISTORY;i++) {
-    rcp->chanopnicks[i][0]='\0';
-    rcp->chanopaccts[i]=0;
-  }
-  rcp->chanoppos=0;  
-
-  /* Add new channel to db.. */  
-  csdb_createchannel(rcp);
-  
-  /* Add the founder as +ano */
-  rcup=getregchanuser();
-  rcup->chan=rcp;
-  rcup->user=founder;
-  rcup->flags=(QCUFLAG_OWNER | QCUFLAG_OP | QCUFLAG_AUTOOP);
-  rcup->usetime=0;
-  rcup->info=NULL;
-  rcup->changetime=time(NULL);
-  
-  addregusertochannel(rcup);
-  csdb_createchanuser(rcup);
-  csdb_chanlevhistory_insert(rcp, sender, rcup->user, 0, rcup->flags);
-
-  args[0]=sender;
-  args[1]=rcup;
-  args[2]=(void *)0;
-  
-  triggerhook(HOOK_CHANSERV_CHANLEVMOD, args);
-
-  /* If the channel exists, get the ball rolling */
-  if (cip->channel) {
-    chanservjoinchan(cip->channel);
-    rcp->status |= QCSTAT_MODECHECK | QCSTAT_OPCHECK | QCSTAT_BANCHECK;
-    cs_timerfunc(cip);
+  rcp=cs_addchan(cip, sender, rup, founder, flags, type);
+  if(rcp == NULL) {
+    chanservstdmessage(sender, QM_ALREADYREGISTERED, cip->name->content);
+    if (notify)
+      chanservstdmessage(notify, QM_ALREADYREGISTERED, cip->name->content);
+    return CMD_ERROR;
   }
 
   cs_log(sender, "ADDCHAN %s #%s %s %s",cip->name->content,founder->username,printflags(rcp->flags,rcflags), chantypes[type]->content);

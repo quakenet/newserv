@@ -48,6 +48,7 @@ void _init() {
     chantypes[5]=getsstring("gamesite",20);
     chantypes[6]=getsstring("game",20);
     chantypes[7]=getsstring("upgrade",20);
+    chantypes[8]=getsstring("partner",20);
     
     /* And the log system */
     cs_initlog();
