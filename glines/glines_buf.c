@@ -54,9 +54,9 @@ gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const 
   return gl;
 }
 
-void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
+char *glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
   trusthost *th, *oth;
-  char mask[512];
+  static char mask[512];
   unsigned char nodebits;
 
   nodebits = getnodebits(ip);
@@ -68,7 +68,8 @@ void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, u
       for (oth = th->group->hosts; oth; oth = oth->next)
         glinebufaddbyip(gbuf, user, &oth->ip, oth->bits, flags | GLINE_ALWAYS_USER | GLINE_IGNORE_TRUST, creator, reason, expire, lastmod, lifetime);
 
-      return;
+      snprintf(mask, sizeof(mask), "%s@%s/tg%u", user, (bits == 128) ? IPtostr(*ip) : CIDRtostr(*ip, bits), th->group->id);
+      return mask;
     }
   }
 
@@ -82,15 +83,17 @@ void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, u
   snprintf(mask, sizeof(mask), "%s@%s", user, (bits == 128) ? IPtostr(*ip) : CIDRtostr(*ip, bits));
 
   glinebufadd(gbuf, mask, creator, reason, expire, lastmod, lifetime);
+  return mask;
 }
 
-void glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
+char *glinebufaddbynick(glinebuf *gbuf, nick *np, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime) {
   if (flags & GLINE_ALWAYS_NICK) {
-    char mask[512];
+    static char mask[512];
     snprintf(mask, sizeof(mask), "%s!*@*", np->nick);
     glinebufadd(gbuf, mask, creator, reason, expire, lastmod, lifetime);
+    return mask;
   } else {
-    glinebufaddbyip(gbuf, np->ident, &np->ipaddress, 128, flags, creator, reason, expire, lastmod, lifetime);
+    return glinebufaddbyip(gbuf, np->ident, &np->ipaddress, 128, flags, creator, reason, expire, lastmod, lifetime);
   }
 }
 

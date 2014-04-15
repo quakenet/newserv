@@ -20,22 +20,27 @@ int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int 
   return hits;
 }
 
-int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator) {
+glineinfo *glinebynickex(nick *np, int duration, const char *reason, int flags, const char *creator) {
+  static glineinfo info;
   glinebuf gbuf;
-  int hits;
 
   glinebufinit(&gbuf, 0);
   glinebufcommentf(&gbuf, "on nick %s!%s@%s, set by %s", np->nick, np->ident, np->host->name->content, creator);
-  glinebufaddbynick(&gbuf, np, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
+  info.mask = glinebufaddbynick(&gbuf, np, flags, creator, reason, getnettime() + duration, getnettime(), getnettime() + duration);
 
-  glinebufcounthits(&gbuf, &hits, NULL);
+  glinebufcounthits(&gbuf, &info.hits, NULL);
 
   if (flags & GLINE_SIMULATE)
     glinebufabort(&gbuf);
   else
     glinebufcommit(&gbuf, 1);
 
-  return hits;
+  return &info;
+}
+
+int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator) {
+  glineinfo *result = glinebynickex(np, duration, reason, flags, creator);
+  return result->hits;
 }
 
 void glineunsetmask(const char *mask) {

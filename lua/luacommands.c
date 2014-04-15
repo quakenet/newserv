@@ -217,10 +217,10 @@ static int lua_invite(lua_State *ps) {
 }
 
 static int lua_gline(lua_State *ps) {
+  glineinfo *info;
   const char *reason;
   nick *target;
-  char mask[512];
-  int duration, usercount = 0;
+  int duration;
   
   if(!lua_isstring(ps, 1) || !lua_isint(ps, 2) || !lua_isstring(ps, 3))
     LUA_RETURN(ps, LUA_FAIL);
@@ -240,8 +240,8 @@ static int lua_gline(lua_State *ps) {
   if(glinebynick(target, duration, reason, GLINE_SIMULATE, "lua") > 50)
     LUA_RETURN(ps, LUA_FAIL);
 
-  usercount = glinebynick(target, duration, reason, 0, "lua");
-  LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
+  info = glinebynickex(target, duration, reason, 0, "lua");
+  LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", info->mask, info->hits, duration, reason));
 }
 
 static int lua_fastgetchaninfo(lua_State *ps) {
