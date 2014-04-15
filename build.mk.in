@@ -26,7 +26,7 @@ default: all
 
 .c.o:
 	@if [ ! -d .deps ]; then mkdir .deps || true; fi
-	$(CC) $(CFLAGS) -MMD -MF .deps/$(subst .o,.d,$@) -c -o $@ $<
+	$(CC) $(CFLAGS) -MMD -MF .deps/$(subst .o,.d,$@) -fPIC -c -o $@ $<
 
 .o.so:
 	$(CC) -nostartfiles -Wl,--export-dynamic -shared -o $@ $^ $(LDFLAGS)
@@ -35,8 +35,9 @@ default: all
 
 .l.c:	;
 
-CFLAGS+=-I. -I.. -DBUILDID=$(BUILDID) -fPIC
+CFLAGS+=-I. -I.. -DBUILDID=$(BUILDID)
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
+EXECFLAGS=
 
 ifndef NOC99
 CFLAGS+=-std=c99

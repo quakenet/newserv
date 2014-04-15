@@ -27,7 +27,7 @@ struct searchNode *qemail_parse(searchCtx *ctx, int argc, char **argv) {
 
 void *qemail_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   authname *ap = (authname *)theinput;
-  reguser *rup = ap->exts[chanservext];
+  reguser *rup = ap->exts[chanservaext];
   if(!rup || !rup->email)
     return "";
 

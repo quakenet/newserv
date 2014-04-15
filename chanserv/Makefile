@@ -2,6 +2,7 @@ include ../build.mk
 include build.mk
 
 CSDIRS=database chancmds usercmds authcmds authtracker newsearch
+CLEANDIRS=chancmds usercmds authcmds
 
 .PHONY: all dirs $(CSDIRS) clean distclean
 all: chanserv.so chanserv_protect.so chanserv_grep.so chanserv_relay.so chanserv_flags.so chanserv_cleanupdb.so dirs
@@ -15,6 +16,7 @@ $(CSDIRS):
 clean:
 	rm -f */*.o */*.so *.o *.so
 	rm -rf */.deps .deps
+	for i in $(CLEANDIRS) ; do $(MAKE) -C $$i $(MFLAGS) clean ; done
 
 distclean:
 	rm -f */.autobuild.mk .autobuild.mk
