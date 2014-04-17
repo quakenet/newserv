@@ -115,7 +115,7 @@ static int handle_getrelations(struct rline *ri, int argc, char **argv) {
     "LEFT JOIN ? ON relations.channelid = channels.id "
     "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) "
     "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) "
-    "WHERE channels.name = ? ORDER BY score DESC LIMIT 25",
+    "WHERE channels.name = ? ORDER BY score DESC LIMIT 50",
     "TTTTs", "relations", "channels", "users", "users", argv[0]);
 
   return 0;
@@ -127,7 +127,7 @@ static int handle_getuserrelations(struct rline *ri, int argc, char **argv) {
                                "LEFT JOIN ? ON relations.channelid = channels.id " \
                                "LEFT JOIN ? AS ufirst ON (ufirst.channelid = channels.id AND relations.firstid = ufirst.accountid AND relations.first = ufirst.account) " \
                                "LEFT JOIN ? AS usecond ON (usecond.channelid = channels.id AND relations.secondid = usecond.accountid AND relations.second = usecond.account) " \
-                               "WHERE channels.name = ? AND " b " ORDER BY score DESC LIMIT 10"
+                               "WHERE channels.name = ? AND " b " ORDER BY score DESC LIMIT 25"
   /*
     Possible cases:
     accountid = 0, account = "username" -> new-style account, look up latest account for user
@@ -157,44 +157,11 @@ static int handle_setprivacy(struct rline *ri, int argc, char **argv) {
 }
 
 static int handle_finduser(struct rline *ri, int argc, char **argv) {
-  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT users.account, users.accountid, users.seen, users.curnick, channels.name, channels.privacy  "
+  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT users.account, users.accountid, users.seen, users.curnick, channels.privacy  "
     "FROM ? "
     "LEFT JOIN ? ON channels.id = users.channelid "
-    "WHERE (lines > 5 OR accountid != 0) AND (LOWER(curnick) LIKE ? OR LOWER(account) LIKE ?) ORDER BY seen DESC LIMIT 150",
-    "TTss", "users", "channels", argv[0], argv[0]);
-
-  return 0;
-}
-
-static int handle_findchan(struct rline *ri, int argc, char **argv) {
-  a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, "SELECT name, privacy FROM ? WHERE active = 1 AND LOWER(name) LIKE ? LIMIT 25",
-    "Ts", "channels", argv[0]);
-
-  return 0;
-}
-
-static int handle_getuserchans(struct rline *ri, int argc, char **argv) {
-#define USERCHANS_QUERY(b) "SELECT channels.name, channels.privacy, users.account, users.accountid, users.curnick, users.firstseen, users.seen " \
-                           "FROM ? " \
-                           "JOIN ? ON channels.id = users.channelid " \
-                           "WHERE channels.active = 1 AND " b " ORDER BY channels.name"
-  /*
-    Possible cases:
-    accountid = 0, account = "username" -> new-style account, look up latest account for user
-    accountid = 0, account = "#username" -> legacy account or user not authed, look up using "username" (remove #)
-    accountid = <some value>, account = <unused> -> new-style account, look up by account id
-  */
-
-  if (argv[0][0] == '#') {
-    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("users.accountid = 0 AND users.account = ?"),
-      "TTs", "users", "channels", &(argv[0][1]));
-  } else if (atoi(argv[1]) == 0) {
-    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("ROW(users.account, users.accountid) = (SELECT account, accountid FROM ? WHERE users.accountid != 0 AND users.account = ? ORDER BY users.accountid DESC LIMIT 1)"),
-      "TTTs", "users", "channels", "users", argv[0]);
-  } else {
-    a4statsdb->query(a4statsdb, a4stats_nt_query_cb, ri, USERCHANS_QUERY("users.accountid = ?"),
-      "TTs", "users", "channels", argv[1]);
-  }
+    "WHERE channels.name = ? AND (lines > 5 OR accountid != 0) AND (LOWER(curnick) LIKE ? OR LOWER(account) LIKE ?) ORDER BY seen DESC LIMIT 150",
+    "TTsss", "users", "channels", argv[0], argv[1], argv[1]);
 
   return 0;
 }
@@ -213,9 +180,7 @@ void _init(void) {
   register_handler(a4stats_node, "getrelations", 1, handle_getrelations);
   register_handler(a4stats_node, "getuserrelations", 3, handle_getuserrelations);
   register_handler(a4stats_node, "setprivacy", 2, handle_setprivacy);
-  register_handler(a4stats_node, "finduser", 1, handle_finduser);
-  register_handler(a4stats_node, "findchan", 1, handle_findchan);
-  register_handler(a4stats_node, "getuserchans", 2, handle_getuserchans);
+  register_handler(a4stats_node, "finduser", 2, handle_finduser);
 }
 
 void _fini(void) {
