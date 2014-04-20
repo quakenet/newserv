@@ -108,7 +108,7 @@ void _init() {
 }
 
 void _fini() {
-  if (cffailedinit == 0)
+  if (cffailedinit)
     return;
 
   deleteschedule(NULL, &cfsched_dosample, NULL);
