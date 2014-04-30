@@ -556,7 +556,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
     if(*p == ',')
       break;
 
-  if(!*p || !(p + 1))
+  if(!*p || !*(p + 1))
     return RE_BAD_LINE;
   
   *p = '\0';
