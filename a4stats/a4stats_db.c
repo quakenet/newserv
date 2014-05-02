@@ -480,6 +480,20 @@ static int a4stats_lua_disable_channel(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int a4stats_lua_set_privacy(lua_State *ps) {
+  const char *channel;
+  unsigned long privacy;
+
+  if (!lua_isstring(ps, 1) || !lua_isnumber(ps, 2))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  channel = lua_tostring(ps, 1);
+  privacy = lua_tonumber(ps, 2);
+
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET privacy = ? WHERE name = ?", "TUs", "channels", privacy, channel);
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int a4stats_lua_add_kick(lua_State *ps) {
   unsigned long channelid, kickerid, victimid;
   const char *kicker, *victim, *reason;
@@ -524,6 +538,7 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
 
   lua_register(l, "a4_enable_channel", a4stats_lua_enable_channel);
   lua_register(l, "a4_disable_channel", a4stats_lua_disable_channel);
+  lua_register(l, "a4_set_privacy", a4stats_lua_set_privacy);
   lua_register(l, "a4_fetch_channels", a4stats_lua_fetch_channels);
   lua_register(l, "a4_add_kick", a4stats_lua_add_kick);
   lua_register(l, "a4_add_topic", a4stats_lua_add_topic);
@@ -576,6 +591,7 @@ void _fini(void) {
 
     lua_unregister(l->l, "a4_enable_channel");
     lua_unregister(l->l, "a4_disable_channel");
+    lua_unregister(l->l, "a4_set_privacy");
     lua_unregister(l->l, "a4_fetch_channels");
     lua_unregister(l->l, "a4_add_kick");
     lua_unregister(l->l, "a4_add_topic");
