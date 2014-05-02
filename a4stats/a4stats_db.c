@@ -384,8 +384,10 @@ static void a4stats_cleanupdb_got_result(void) {
 static void a4stats_cleanupdb_cb_countrows(const struct DBAPIResult *result, void *arg) {
   unsigned long *counter = arg;
 
-  if (result)
+  if (result) {
     *counter += result->affected;
+    result->clear(result);
+  }
 
   a4stats_cleanupdb_got_result();
 }
@@ -393,8 +395,11 @@ static void a4stats_cleanupdb_cb_countrows(const struct DBAPIResult *result, voi
 static void a4stats_cleanupdb_cb_active(const struct DBAPIResult *result, void *null) {
   unsigned long channelid;
   time_t seen;
-  
-  if (result && result->success) {
+
+  if (!result)
+    return;
+
+  if (result->success) {
     while (result->next(result)) {
       channelid = strtoul(result->get(result, 0), NULL, 10);
       seen = (time_t)strtoul(result->get(result, 2), NULL, 10);
@@ -423,6 +428,7 @@ static void a4stats_cleanupdb_cb_active(const struct DBAPIResult *result, void *
       }
     }
   }
+  result->clear(result);
 }
 
 static void a4stats_cleanupdb(void *null) {
