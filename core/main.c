@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
 
   /* Loading the modules will bring in the bulk of the code */
   initmodules();
+  signal(SIGPIPE, SIG_IGN);
   signal(SIGINT, siginthandler);
   signal(SIGUSR1, sigusr1handler);
   signal(SIGHUP, sighuphandler);

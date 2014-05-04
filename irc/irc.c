@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+#include <errno.h>
 
 MODULE_VERSION("");
 
@@ -88,7 +89,7 @@ void _init() {
 void _fini() {
   if (connected) {
     irc_send("%s SQ %s 0 :Shutting down",mynumeric->content,myserver->content);
-    irc_disconnected();
+    irc_disconnected(0);
   }
 
   deregisterserverhandler("G",&handleping);
@@ -318,7 +319,22 @@ int irc_handleserver(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
-void irc_disconnected() {
+static void *disconnect_schedule;
+static void async_disconnect_handler(void *arg) {
+  disconnect_schedule = NULL;
+  irc_disconnected(0);
+}
+
+void irc_disconnected(int async) {
+  if (async) {
+    /* keep the fd "connected" until the next execution of the event loop */
+
+    if(disconnect_schedule == NULL)
+      disconnect_schedule = scheduleoneshot(time(NULL), &async_disconnect_handler, NULL);
+
+    return;
+  }
+
   if (serverfd>=0) {
     deregisterhandler(serverfd,1);
   }
@@ -330,15 +346,40 @@ void irc_disconnected() {
   } else {
     nexthub();
   }
+  if (disconnect_schedule) {
+    deleteschedule(disconnect_schedule, &async_disconnect_handler, NULL);
+    disconnect_schedule = NULL;
+  }
   deleteschedule(NULL,&irc_connect,NULL);
   deleteschedule(NULL,&sendping,NULL);
   scheduleoneshot(time(NULL)+2,&irc_connect,NULL);
 }
 
-void irc_send(char *format, ... ) {
+/*
+static int _write(int fd, char *buf, size_t len) {
+  if(rand() % 10 == 0) {
+    errno = EPIPE;
+    return -1;
+  }
+  return write(fd, buf, len);
+}
+*/
+
+int irc_send(char *format, ... ) {
   char buf[512];
   va_list val;
   int len;
+  int ret;
+
+  if(disconnect_schedule) {
+    Error("irc",ERR_WARNING,"Writing to disconnected socket!");
+    return -1;
+  }
+
+  if(serverfd < 0) {
+    Error("irc",ERR_WARNING,"Writing to closed socket!");
+    return -1;
+  }
 
   va_start(val,format);
   len=vsnprintf(buf,509,format,val);
@@ -351,7 +392,14 @@ void irc_send(char *format, ... ) {
   buf[len++]='\r';
   buf[len++]='\n';
   
-  write(serverfd,buf,len);
+  ret = write(serverfd,buf,len);
+  if(ret < 0) {
+    Error("irc",ERR_ERROR,"Got socket error %d, dropping connection.", errno);
+    irc_disconnected(1);
+    return -1;
+  }
+
+  return 0;
 }
 
 void handledata(int fd, short events) {
@@ -361,7 +409,7 @@ void handledata(int fd, short events) {
   if (events & (POLLPRI | POLLERR | POLLHUP | POLLNVAL)) {
     /* Oh shit, we got dropped */
     Error("irc",ERR_ERROR,"Got socket error, dropping connection.");
-    irc_disconnected();
+    irc_disconnected(0);
     return;  
   }
 
@@ -369,7 +417,7 @@ void handledata(int fd, short events) {
     res=read(serverfd, inbuf+bytesleft, READBUFSIZE-bytesleft);
     if (res<=0) {
       Error("irc",ERR_ERROR,"Disconnected by remote server.");
-      irc_disconnected();
+      irc_disconnected(0);
       return;
     }
 
@@ -570,7 +618,7 @@ void sendping(void *arg) {
       Error("irc",ERR_INFO,"Connection closed due to ping timeout.");
 
       irc_send("%s SQ %s 0 :Ping timeout",mynumeric->content,myserver->content);
-      irc_disconnected();
+      irc_disconnected(0);
     } else {
       awaitingping=1;
       irc_send("%s G :%s",mynumeric->content,myserver->content);
@@ -583,7 +631,7 @@ void sendping(void *arg) {
     nexthub();
 
     connected=1; /* EVIL HACK */
-    irc_disconnected();
+    irc_disconnected(0);
   }
 }
 
