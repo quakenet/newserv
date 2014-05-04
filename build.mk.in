@@ -14,7 +14,7 @@ HOOK_ENGINE=old
 endif
 
 ifndef BUILDID
-BUILDID = $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" )
+BUILDID := $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" )
 endif
 MFLAGS+=BUILDID=$(BUILDID)
 
