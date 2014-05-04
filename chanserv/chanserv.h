@@ -879,7 +879,7 @@ flag_t cs_sanitisechanlev(flag_t flags);
 int cs_unbanfn(nick *sender, chanindex *cip, int (*fn)(void *arg, struct chanban *ban), void *arg, int removepermbans, int abortonfailure);
 void cs_logchanop(regchan *rcp, char *nick, reguser *rup);
 int checkreason(nick *np, char *reason);
-regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *founder, flag_t flags, short type);
+regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *founder, flag_t flags, flag_t forcemodes, flag_t denymodes, short type);
 
 /* chanservstdcmds.c */
 int cs_doshowcommands(void *source, int cargc, char **cargv);

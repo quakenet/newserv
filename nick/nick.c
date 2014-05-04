@@ -79,7 +79,7 @@ void _init() {
    * before we register all our hooks which would otherwise get called
    * during the disconnect. */
   if (connected) {
-    irc_send("%s SQ %s 0 :Resync [adding nick support]",mynumeric->content,myserver->content); irc_disconnected();
+    irc_send("%s SQ %s 0 :Resync [adding nick support]",mynumeric->content,myserver->content); irc_disconnected(0);
   }
   
   /* Register our hooks */

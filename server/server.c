@@ -140,7 +140,7 @@ int handlesquitmsg(void *source, int cargc, char **cargv) {
   }
   if (servernum==myhub) {
     Error("server",ERR_WARNING,"Rejected by our hub: %s",cargv[cargc-1]);
-    irc_disconnected();
+    irc_disconnected(0);
     return CMD_OK;
   }
   deleteserver(servernum);

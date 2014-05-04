@@ -477,7 +477,7 @@ int csa_doaddchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  rcp = cs_addchan(cip, sender, rup, founder, QCFLAG_JOINED, type);
+  rcp = cs_addchan(cip, sender, rup, founder, QCFLAG_JOINED | QCFLAG_AUTOOP | QCFLAG_BITCH | QCFLAG_FORCETOPIC | QCFLAG_PROTECT | QCFLAG_TOPICSAVE, CHANMODE_NOCTCP | CHANMODE_DELJOINS | CHANMODE_MODNOAUTH | CHANMODE_NONOTICE | CHANMODE_NOEXTMSG | CHANMODE_SINGLETARG | CHANMODE_TOPICLIMIT | CHANMODE_NOQUITMSG, 0, type);
   if(!rcp) {
     controlreply(sender, "ADDCHAN FALSE alreadyregistered");
     return CMD_ERROR;
