@@ -224,11 +224,15 @@ static void a4stats_update_user_cb(const struct DBAPIResult *result, void *uarg)
       free(uui->update);
       free(uui->account);
       free(uui);
-      return;
+      goto a4_uuc_return;
     }
 
     a4statsdb->query(a4statsdb, a4stats_update_user_cb, uui, "INSERT INTO ? (channelid, account, accountid, firstseen) VALUES (?, ?, ?, ?)", "TUsUt", "users", uui->channelid, uui->account, uui->accountid, time(NULL));
   }
+
+a4_uuc_return:
+  if (result)
+    result->clear(result);
 }
 
 static int a4stats_lua_update_user(lua_State *ps) {
@@ -297,11 +301,11 @@ static void a4stats_update_relation_cb(const struct DBAPIResult *result, void *u
     a4statsdb->query(a4statsdb, a4stats_update_relation_cb, rui, "UPDATE ? SET score = score + 1, seen = ? "
       "WHERE channelid = ? AND first = ? AND firstid = ? AND second = ? AND secondid = ?",
       "TtUsUsU", "relations", time(NULL), rui->channelid, rui->first, rui->firstid, rui->second, rui->secondid);
-    return;
+    goto a4_urc_return;
   } else if (rui->stage == 2 && result && result->affected == 0) {
     a4statsdb->query(a4statsdb, a4stats_update_relation_cb, rui, "INSERT INTO ? (channelid, first, firstid, second, secondid, seen) VALUES (?, ?, ?, ?, ?, ?)",
       "TUsUsUt", "relations", rui->channelid, rui->first, rui->firstid, rui->second, rui->secondid, time(NULL));
-    return;
+    goto a4_urc_return;
   }
 
   if (!result || result->affected == 0)
@@ -310,6 +314,10 @@ static void a4stats_update_relation_cb(const struct DBAPIResult *result, void *u
   free(rui->first);
   free(rui->second);
   free(rui);
+
+a4_urc_return:
+  if (result)
+    result->clear(result);
 }
 
 static int a4stats_lua_update_relation(lua_State *ps) {
