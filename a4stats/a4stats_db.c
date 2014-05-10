@@ -151,56 +151,6 @@ static void a4stats_delete_dci(db_callback_info *dci) {
   free(dci);
 }
 
-static void a4stats_fetch_user_cb(const struct DBAPIResult *result, void *uarg) {
-  db_callback_info *dci = uarg;
-  time_t seen = 0, quotereset = 0;
-
-  if (result) {
-    if (result->success) {
-      while (result->next(result)) {
-        seen = (result->get(result, 0)) ? (time_t)strtoul(result->get(result, 0), NULL, 10) : 0;
-        quotereset = (result->get(result, 1)) ? (time_t)strtoul(result->get(result, 1), NULL, 10) : 0;
-      }
-    }
-
-    result->clear(result);
-  }
-
-  if (dci->interp) {
-    lua_vpcall(dci->interp, dci->callback, "llR", (long)seen, (long)quotereset, dci->uarg_index);
-    luaL_unref(dci->interp, LUA_REGISTRYINDEX, dci->uarg_index);
-  }
-
-  a4stats_delete_dci(dci);
-}
-
-static int a4stats_lua_fetch_user(lua_State *ps) {
-  const char *account, *callback;
-  unsigned long channelid, accountid;
-  db_callback_info *dci;
-
-  if (!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isnumber(ps, 3) || !lua_isstring(ps, 4))
-    LUA_RETURN(ps, LUA_FAIL);
-
-  channelid = lua_tonumber(ps, 1);
-  account = lua_tostring(ps, 2);
-  accountid = lua_tonumber(ps, 3);
-  callback = lua_tostring(ps, 4);
-
-  dci = malloc(sizeof(*dci));
-  dci->interp = ps;
-
-  strncpy(dci->callback, callback, sizeof(dci->callback));
-  dci->callback[sizeof(dci->callback) - 1] = '\0';
-
-  lua_pushvalue(ps, 5);
-  dci->uarg_index = luaL_ref(ps, LUA_REGISTRYINDEX);
-
-  a4statsdb->query(a4statsdb, a4stats_fetch_user_cb, dci, "SELECT seen, quotereset FROM ? WHERE channelid = ? AND (accountid != 0 AND accountid = ? OR accountid = 0 AND account = ?)", "TUUs", "users", channelid, accountid, account);
-
-  LUA_RETURN(ps, LUA_OK);
-}
-
 typedef struct user_update_info {
   int stage;
   char *update;
@@ -578,7 +528,6 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
   lua_register(l, "a4_add_kick", a4stats_lua_add_kick);
   lua_register(l, "a4_add_topic", a4stats_lua_add_topic);
   lua_register(l, "a4_add_line", a4stats_lua_add_line);
-  lua_register(l, "a4_fetch_user", a4stats_lua_fetch_user);
   lua_register(l, "a4_update_user", a4stats_lua_update_user);
   lua_register(l, "a4_update_relation", a4stats_lua_update_relation);
   lua_register(l, "a4_escape_string", a4stats_lua_escape_string);
