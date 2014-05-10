@@ -107,7 +107,7 @@ int csc_doaddchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  rcp=cs_addchan(cip, sender, rup, founder, flags, type);
+  rcp=cs_addchan(cip, sender, rup, founder, flags, CHANMODE_DEFAULT, 0, type);
   if(rcp == NULL) {
     chanservstdmessage(sender, QM_ALREADYREGISTERED, cip->name->content);
     if (notify)

@@ -18,7 +18,7 @@ void _init() {
   /* If we're connected to IRC, force a disconnect. */
   if (connected) {
     irc_send("%s SQ %s 0 :Resync [adding jupe support]", mynumeric->content, myserver->content);
-    irc_disconnected();
+    irc_disconnected(0);
   }
 
   registerserverhandler("JU", &handlejupe, 5);

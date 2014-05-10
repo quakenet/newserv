@@ -158,7 +158,7 @@ int relink(void *sender, int cargc, char **cargv) {
   }
   
   irc_send("%s SQ %s 0 :%s",mynumeric->content,myserver->content,cargv[0]);
-  irc_disconnected();
+  irc_disconnected(0);
   
   return CMD_OK;
 }

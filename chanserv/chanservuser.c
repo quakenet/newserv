@@ -1445,7 +1445,7 @@ int checkreason(nick *np, char *reason) {
   return 1;
 }
 
-regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *founder, flag_t flags, short type) {
+regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *founder, flag_t flags, flag_t forcemodes, flag_t denymodes, short type) {
   regchan *rcp;
   regchanuser *rcup;
   void *args[3];
@@ -1469,8 +1469,8 @@ regchan *cs_addchan(chanindex *cip, nick *sender, reguser *addedby, reguser *fou
   rcp->lastcountersync=0;
 
   rcp->limit=0;
-  rcp->forcemodes=CHANMODE_DEFAULT;
-  rcp->denymodes=0;
+  rcp->forcemodes=forcemodes;
+  rcp->denymodes=denymodes;
 
   if (CIsAutoLimit(rcp)) {
     rcp->forcemodes |= CHANMODE_LIMIT;
