@@ -532,6 +532,16 @@ static int a4stats_lua_add_topic(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int a4stats_lua_db_begin(lua_State *ps) {
+  a4statsdb->query(a4statsdb, NULL, NULL, "BEGIN TRANSACTION", "");
+  LUA_RETURN(ps, LUA_OK);
+}
+
+static int a4stats_lua_db_commit(lua_State *ps) {
+  a4statsdb->query(a4statsdb, NULL, NULL, "COMMIT TRANSACTION", "");
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static void a4stats_hook_loadscript(int hooknum, void *arg) {
   void **args = arg;
   lua_State *l = args[1];
@@ -546,6 +556,8 @@ static void a4stats_hook_loadscript(int hooknum, void *arg) {
   lua_register(l, "a4_update_user", a4stats_lua_update_user);
   lua_register(l, "a4_update_relation", a4stats_lua_update_relation);
   lua_register(l, "a4_escape_string", a4stats_lua_escape_string);
+  lua_register(l, "a4_db_begin", a4stats_lua_db_begin);
+  lua_register(l, "a4_db_commit", a4stats_lua_db_commit);
 }
 
 #define lua_unregister(L, n) (lua_pushnil(L), lua_setglobal(L, n))
@@ -600,6 +612,8 @@ void _fini(void) {
     lua_unregister(l->l, "a4_update_user");
     lua_unregister(l->l, "a4_update_relation");
     lua_unregister(l->l, "a4_escape_string");
+    lua_unregister(l->l, "a4_db_begin");
+    lua_unregister(l->l, "a4_db_commit");
   }
 
   deregisterhook(HOOK_LUA_LOADSCRIPT, a4stats_hook_loadscript);
