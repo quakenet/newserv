@@ -107,6 +107,9 @@ void hqueue_advance(hchannel *hchan, huser *oper, int nadv)
     char buffer[512];
     int counter = nadv;
     huser_channel *huserchan;
+
+    if (hchan == NULL) return;
+
     hchannel_user *hchanuser = hchan->channel_users;
 
     buffer[0] = '\0';
