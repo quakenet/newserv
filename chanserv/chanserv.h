@@ -252,9 +252,9 @@
 
 /* email */
 #define MAX_RESEND_TIME      2*3600L  /* cooling off period */
-#define VALID_EMAIL         "^[-_.+[:alpha:][:digit:]]+(\\.[-_[:digit:][:alpha:]]+)*@([[:digit:][:alpha:]](-?[[:digit:][:alpha:]])*\\.)+[[:alpha:]]{2}([zmuvtgol]|fo|me|seum|op|ro)?$"
+#define VALID_EMAIL         "\\A[^\\s\\+@]+@([a-z0-9][a-z0-9\\-]*\\.)+[a-z]{2,}\\Z"
 
-#define VALID_ACCOUNT_NAME  "^[a-z][-a-z0-9]+$"
+#define VALID_ACCOUNT_NAME  "\\A[a-z][a-z0-9\\-]+\\Z"
 
 #define QMAIL_NEWACCOUNT           1  /* new account */
 #define QMAIL_REQPW                2  /* requestpassword */
