@@ -634,8 +634,8 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
   /* The top-level node needs to return a BOOL */
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
 
-  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+  for (i = whowasoffset; i < whowasoffset + whowasmax; i++) {
+    ww = &whowasrecs[i % whowasmax];
 
     if (ww->type == WHOWAS_UNUSED)
       continue;

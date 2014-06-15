@@ -215,8 +215,8 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
       }
     }
   } else {
-    for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-      ww = &whowasrecs[i % WW_MAXENTRIES];
+    for (i = whowasoffset; i < whowasoffset + whowasmax; i++) {
+      ww = &whowasrecs[i % whowasmax];
 
       if (ww->type == WHOWAS_UNUSED)
         continue;
