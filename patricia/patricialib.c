@@ -27,6 +27,18 @@ char patricia_copyright[] =
 
 #include "patricia.h"
 
+//#define LEAK_DETECTION
+
+#ifdef LEAK_DETECTION
+#define MAGIC 0x6a3b4ef3
+
+struct fake_node {
+  patricia_node_t node;
+  uint32_t magic;
+  patricia_node_t *real_node;
+};
+#endif
+
 /* prefix_tochar
  * convert prefix information to bytes
  */
@@ -531,6 +543,16 @@ patricia_remove (patricia_tree_t *patricia, patricia_node_t *node)
     }
 }
 
+#ifdef LEAK_DETECTION
+static patricia_node_t *getrealnode(patricia_node_t *node) {
+  struct fake_node *f = (struct fake_node *)node;
+  if(f->magic != MAGIC) {
+    printf("magic failure\n");
+    abort();
+  }
+  return f->real_node;
+}
+#endif
 
 patricia_node_t *
 refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
@@ -547,6 +569,14 @@ refnode(patricia_tree_t *tree, struct irc_in_addr *sin, int bitlen) {
     patricia_ref_prefix(node->prefix);
   }
 
+#ifdef LEAK_DETECTION
+  struct fake_node *f = malloc(sizeof(struct fake_node));
+  f->magic = MAGIC;
+  f->node = *node;
+  f->real_node = node;
+  node = (patricia_node_t *)f;
+#endif
+
   return node;
 }
 
@@ -554,6 +584,15 @@ void
 derefnode(patricia_tree_t *tree, patricia_node_t *node) {
   if (!node || !node->prefix)
     return;
+
+#ifdef LEAK_DETECTION
+  patricia_node_t *real_node = getrealnode(node);
+  free(node);
+  node = real_node;
+
+  if (!node || !node->prefix)
+    return;
+#endif
 
   if (node->prefix->ref_count == 1) {
     patricia_remove(tree, node);
@@ -574,6 +613,10 @@ patricia_node_t *patricia_new_node(patricia_tree_t *patricia, unsigned char bit,
 }
 
 void node_increment_usercount( patricia_node_t *node) {
+#ifdef LEAK_DETECTION
+  node = getrealnode(node);
+#endif
+
   while(node) {
     node->usercount++;
     node=node->parent;
@@ -581,6 +624,10 @@ void node_increment_usercount( patricia_node_t *node) {
 }
 
 void node_decrement_usercount( patricia_node_t *node) {
+#ifdef LEAK_DETECTION
+  node = getrealnode(node);
+#endif
+
   while(node) {
     node->usercount--;
     node=node->parent;

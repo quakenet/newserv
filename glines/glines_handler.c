@@ -3,6 +3,14 @@
 #include "../localuser/localuserchannel.h"
 #include "glines.h"
 
+//#define DEBUG
+
+#ifdef DEBUG
+#define Debug(...) Error("debuggline", ERR_DEBUG, ##__VA_ARGS__)
+#else
+#define Debug(...)
+#endif
+
 /*
   <prefix> GL <target> [!][+|-|>|<]<mask> [<expiration>] [<lastmod>] [<lifetime>] [:<reason>]
 */
@@ -130,12 +138,12 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
          return CMD_ERROR;
     }
 
-    Error("debuggline", ERR_WARNING, "GL Received: Creator %s, Mask %s, Reason %s, Expire %lu, Lastmod %lu, Lifetime %lu", creator, mask, reason, expire, lastmod, lifetime);   
+    Debug("GL Received: Creator %s, Mask %s, Reason %s, Expire %lu, Lastmod %lu, Lifetime %lu", creator, mask, reason, expire, lastmod, lifetime);   
 
     agline = findgline(mask);
 
     if (agline) {
-      Error("debuggline", ERR_WARNING, "Update for existing gline received for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason ? agline->reason->content : "", agline->creator->content);
+      Debug("Update for existing gline received for %s - old lastmod %lu, expire %lu, lifetime %lu, reason %s, creator %s", mask, agline->lastmod, agline->expire, agline->lifetime, agline->reason ? agline->reason->content : "", agline->creator->content);
 
       agline->flags |= GLINE_ACTIVE;
 
@@ -149,7 +157,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
         freesstring(agline->reason);
         agline->reason = getsstring(reason, 255); 
       } else {
-        Error("debuggline", ERR_WARNING, "received a gline with a lower lastmod");
+        Debug("received a gline with a lower lastmod");
         /* Don't send our gline as that might cause loops in case we don't understand the gline properly. */
       } 
 
@@ -252,12 +260,12 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
         freesstring(agline->reason);
         agline->reason = getsstring(reason, 255);
       } else {
-        Error("debuggline", ERR_WARNING, "received a gline modification with a lower lastmod");
+        Debug("received a gline modification with a lower lastmod");
       }
 
       return CMD_OK;
     } else {
-      Error("gline", ERR_WARNING, "Received modification for G-Line that does not exist for mask %s", mask);
+      Debug("Received modification for G-Line that does not exist for mask %s", mask);
       return CMD_ERROR;
     }
   }

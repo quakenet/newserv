@@ -2,7 +2,7 @@
 #define __WHOWAS_H
 
 #define WW_MAXCHANNELS 20
-#define WW_MAXENTRIES 1000000
+#define WW_DEFAULT_MAXENTRIES 1000
 #define WW_MASKLEN (HOSTLEN + USERLEN + NICKLEN)
 #define WW_REASONLEN 512
 
@@ -24,7 +24,8 @@ typedef struct whowas {
   struct whowas *prev;
 } whowas;
 
-extern whowas whowasrecs[WW_MAXENTRIES];
+extern whowas *whowasrecs;
+extern int whowasmax;
 extern int whowasoffset; /* points to oldest record */
 
 #define WHOWAS_UNUSED 0
