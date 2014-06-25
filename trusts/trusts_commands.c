@@ -209,8 +209,6 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
     outputtree(sender, marker, tg, p2[i], 0, showchildren);
 
   array_free(&parents);
-
-  controlreply(sender, "End of list.");
 }
 
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
@@ -242,6 +240,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   if(tg) {
     displaygroup(sender, tg, showchildren);
+    controlreply(sender, "End of list.");
     return CMD_OK;
   }
 
@@ -254,6 +253,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     }
 
     displaygroup(sender, th->group, showchildren);
+    controlreply(sender, "End of list.");
     return CMD_OK;
   }
 
@@ -281,8 +281,11 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     found = 1;
   }
 
-  if(!found)
+  if(found) {
+    controlreply(sender, "End of list.");
+  } else {
     controlreply(sender, "No matches found.");
+  }
 
   return CMD_OK;
 }
