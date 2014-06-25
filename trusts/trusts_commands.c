@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <alloca.h>
+#include <strings.h>
 #include "../lib/version.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
@@ -220,6 +222,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   struct irc_in_addr ip;
   unsigned char bits;
   int showchildren;
+  char *cmpbuf;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -254,9 +257,21 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     return CMD_OK;
   }
 
+  if(name[0] == '&') {
+    int size = strlen(name) + strlen("Qwhois") + 1;
+    cmpbuf = alloca(size);
+    snprintf(cmpbuf, size, "Qwhois%s", name);
+  } else {
+    cmpbuf = NULL;
+  }
+
   for(tg=tglist;tg;tg=tg->next) {
-    if(match(name, tg->name->content))
+    if(cmpbuf) {
+      if(!tg->contact->content || strcasecmp(cmpbuf, tg->contact->content))
+        continue;
+    } else if(match(name, tg->name->content)) {
       continue;
+    }
 
     displaygroup(sender, tg, showchildren);
     if(--remaining == 0) {
@@ -332,7 +347,7 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("trustlist", NO_OPER, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustlist", NO_RELAY, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP|&qid>\nShows trust data for the specified trust group.");
   registercontrolhelpcmd("trustglinesuggest", NO_OPER, 1, trusts_cmdtrustglinesuggest, "Usage: trustglinesuggest <user@host>\nSuggests glines for the specified hostmask.");
   registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
 }
