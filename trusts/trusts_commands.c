@@ -180,16 +180,16 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   time_t t = getnettime();
 
   /* abusing the ternary operator a bit :( */
-  controlreply(sender, "Name:            : %s", tg->name->content);
+  controlreply(sender, "Name             : %s", tg->name->content);
   controlreply(sender, "Trusted for      : %s", formatlimit(tg->trustedfor));
   controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %s", formatlimit(tg->maxperident));
   controlreply(sender, "Flags            : %s", formatflags(tg->flags));
-  controlreply(sender, "Contact:         : %s", tg->contact->content);
+  controlreply(sender, "Contact          : %s", tg->contact->content);
   controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"the past (will be removed during next cleanup)"):"never");
   controlreply(sender, "Created by       : %s", tg->createdby->content);
-  controlreply(sender, "Comment:         : %s", tg->comment->content);
-  controlreply(sender, "ID:              : %u", tg->id);
+  controlreply(sender, "Comment          : %s", tg->comment->content);
+  controlreply(sender, "ID               : %u", tg->id);
   controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":((tg->lastseen>0)?trusts_timetostr(tg->lastseen):"(never)"));
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
