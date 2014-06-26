@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <alloca.h>
+#include <strings.h>
 #include "../lib/version.h"
 #include "../control/control.h"
 #include "../lib/irc_string.h"
@@ -178,16 +180,16 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
   time_t t = getnettime();
 
   /* abusing the ternary operator a bit :( */
-  controlreply(sender, "Name:            : %s", tg->name->content);
+  controlreply(sender, "Name             : %s", tg->name->content);
   controlreply(sender, "Trusted for      : %s", formatlimit(tg->trustedfor));
   controlreply(sender, "Currently using  : %d", tg->count);
   controlreply(sender, "Clients per user : %s", formatlimit(tg->maxperident));
   controlreply(sender, "Flags            : %s", formatflags(tg->flags));
-  controlreply(sender, "Contact:         : %s", tg->contact->content);
+  controlreply(sender, "Contact          : %s", tg->contact->content);
   controlreply(sender, "Expires in       : %s", (tg->expires)?((tg->expires>t)?longtoduration(tg->expires - t, 2):"the past (will be removed during next cleanup)"):"never");
   controlreply(sender, "Created by       : %s", tg->createdby->content);
-  controlreply(sender, "Comment:         : %s", tg->comment->content);
-  controlreply(sender, "ID:              : %u", tg->id);
+  controlreply(sender, "Comment          : %s", tg->comment->content);
+  controlreply(sender, "ID               : %u", tg->id);
   controlreply(sender, "Last used        : %s", (tg->count>0)?"(now)":((tg->lastseen>0)?trusts_timetostr(tg->lastseen):"(never)"));
   controlreply(sender, "Max usage        : %d", tg->maxusage);
   controlreply(sender, "Last max reset   : %s", tg->lastmaxusereset?trusts_timetostr(tg->lastmaxusereset):"(never)");
@@ -207,8 +209,6 @@ static void displaygroup(nick *sender, trustgroup *tg, int showchildren) {
     outputtree(sender, marker, tg, p2[i], 0, showchildren);
 
   array_free(&parents);
-
-  controlreply(sender, "End of list.");
 }
 
 static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
@@ -220,6 +220,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
   struct irc_in_addr ip;
   unsigned char bits;
   int showchildren;
+  char *cmpbuf;
 
   if(cargc < 1)
     return CMD_USAGE;
@@ -239,6 +240,7 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
 
   if(tg) {
     displaygroup(sender, tg, showchildren);
+    controlreply(sender, "End of list.");
     return CMD_OK;
   }
 
@@ -251,12 +253,25 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     }
 
     displaygroup(sender, th->group, showchildren);
+    controlreply(sender, "End of list.");
     return CMD_OK;
   }
 
+  if(name[0] == '&') {
+    int size = strlen(name) + strlen("Qwhois") + 1;
+    cmpbuf = alloca(size);
+    snprintf(cmpbuf, size, "Qwhois%s", name);
+  } else {
+    cmpbuf = NULL;
+  }
+
   for(tg=tglist;tg;tg=tg->next) {
-    if(match(name, tg->name->content))
+    if(cmpbuf) {
+      if(!tg->contact->content || strcasecmp(cmpbuf, tg->contact->content))
+        continue;
+    } else if(match(name, tg->name->content)) {
       continue;
+    }
 
     displaygroup(sender, tg, showchildren);
     if(--remaining == 0) {
@@ -266,8 +281,11 @@ static int trusts_cmdtrustlist(void *source, int cargc, char **cargv) {
     found = 1;
   }
 
-  if(!found)
+  if(found) {
+    controlreply(sender, "End of list.");
+  } else {
     controlreply(sender, "No matches found.");
+  }
 
   return CMD_OK;
 }
@@ -332,7 +350,7 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("trustlist", NO_OPER, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustlist", NO_RELAY, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP|&qid>\nShows trust data for the specified trust group.");
   registercontrolhelpcmd("trustglinesuggest", NO_OPER, 1, trusts_cmdtrustglinesuggest, "Usage: trustglinesuggest <user@host>\nSuggests glines for the specified hostmask.");
   registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
 }
