@@ -18,6 +18,9 @@
 #include "../lib/flags.h"
 #include "../authext/authext.h"
 #include "../glines/glines.h"
+#include "../trusts/trusts.h"
+#include "../bans/bans.h"
+#include "../core/modules.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -342,6 +345,107 @@ static int lua_versioninfo(lua_State *ps) {
   lua_pushstring(ps, LUA_AUXVERSION);
 
   return 5;
+}
+
+static int lua_nickmatchban(lua_State *ps) {
+  const char *chanban_str, *nick_str;
+  chanban *cb;
+  nick *np;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  nick_str = lua_tostring(ps, 1);
+  chanban_str = lua_tostring(ps, 2);
+
+  np = getnickbynick(nick_str);
+  if(!np)
+    return 0;
+
+  cb = makeban(chanban_str);
+  if(!cb)
+    return 0;
+
+  lua_pushboolean(ps, nickmatchban(np, cb, 1));
+
+  freechanban(cb);
+
+  return 1;
+}
+
+static int lua_nickbanned(lua_State *ps) {
+  const char *channel_str, *nick_str;
+  channel *cp;
+  nick *np;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  nick_str = lua_tostring(ps, 1);
+  channel_str = lua_tostring(ps, 2);
+
+  np = getnickbynick(nick_str);
+  if(!np)
+    return 0;
+
+  cp = findchannel((char *)channel_str);
+  if(!cp)
+    return 0;
+
+  lua_pushboolean(ps, nickbanned(np, cp, 1));
+
+  return 1;
+}
+
+static int lua_suggestbanmask(lua_State *ps) {
+  const char *nick_str;
+  nick *np;
+  glinebuf gb;
+  gline *gl;
+  int i = 1;
+
+  if (!lua_isstring(ps, 1))
+    return 0;
+
+  nick_str = lua_tostring(ps, 1);
+  np = getnickbynick(nick_str);
+  if (!np)
+    return 0;
+
+  glinebufinit(&gb, 0);
+  glinebufaddbynick(&gb, np, 0, "Auto", "None", time(NULL), time(NULL), time(NULL));
+
+  lua_newtable(ps);
+
+  for (gl = gb.glines; gl; gl = gl->next) {
+    if (gl->host && gl->host->content) {
+      char *mask = glinetostring(gl);
+      LUA_APUSHSTRING(ps, i, mask);
+      i++;
+    }
+  }
+
+  glinebufabort(&gb);
+
+  return 1;
+}
+
+static int lua_nickistrusted(lua_State *ps) {
+  const char *nick_str;
+  nick *np;
+
+  if(!lua_isstring(ps, 1))
+    return 0;
+
+  nick_str = lua_tostring(ps, 1);
+
+  np = getnickbynick(nick_str);
+  if(!np)
+    return 0;
+
+  lua_pushboolean(ps, istrusted(np));
+
+  return 1;
 }
 
 static int lua_basepath(lua_State *ps) {
@@ -904,6 +1008,11 @@ void lua_registercommands(lua_State *l) {
 
   lua_register(l, "irc_numerictobase64", lua_numerictobase64);
   lua_register(l, "ircmatch", lua_match);
+
+  lua_register(l, "irc_nickmatchban", lua_nickmatchban);
+  lua_register(l, "irc_nickistrusted", lua_nickistrusted);
+  lua_register(l, "irc_nickbanned", lua_nickbanned);
+  lua_register(l, "irc_suggestbanmask", lua_suggestbanmask);
 }
 
 /* --- */
