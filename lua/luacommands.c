@@ -348,17 +348,18 @@ static int lua_versioninfo(lua_State *ps) {
 }
 
 static int lua_nickmatchban(lua_State *ps) {
-  const char *chanban_str, *nick_str;
+  const char *chanban_str;
+  long numeric;
   chanban *cb;
   nick *np;
 
-  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
     return 0;
 
-  nick_str = lua_tostring(ps, 1);
+  numeric = lua_tolong(ps, 1);
   chanban_str = lua_tostring(ps, 2);
 
-  np = getnickbynick(nick_str);
+  np = getnickbynumeric(numeric);
   if(!np)
     return 0;
 
@@ -374,17 +375,18 @@ static int lua_nickmatchban(lua_State *ps) {
 }
 
 static int lua_nickbanned(lua_State *ps) {
-  const char *channel_str, *nick_str;
+  const char *channel_str;
+  long numeric;
   channel *cp;
   nick *np;
 
-  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
     return 0;
 
-  nick_str = lua_tostring(ps, 1);
+  numeric = lua_tolong(ps, 1);
   channel_str = lua_tostring(ps, 2);
 
-  np = getnickbynick(nick_str);
+  np = getnickbynumeric(numeric);
   if(!np)
     return 0;
 
@@ -398,17 +400,18 @@ static int lua_nickbanned(lua_State *ps) {
 }
 
 static int lua_suggestbanmask(lua_State *ps) {
-  const char *nick_str;
   nick *np;
   glinebuf gb;
   gline *gl;
+  long numeric;
   int i = 1;
 
-  if (!lua_isstring(ps, 1))
+  if (!lua_islong(ps, 1))
     return 0;
 
-  nick_str = lua_tostring(ps, 1);
-  np = getnickbynick(nick_str);
+  numeric = lua_tolong(ps, 1);
+
+  np = getnickbynumeric(numeric);
   if (!np)
     return 0;
 
@@ -431,15 +434,15 @@ static int lua_suggestbanmask(lua_State *ps) {
 }
 
 static int lua_nickistrusted(lua_State *ps) {
-  const char *nick_str;
+  long numeric;
   nick *np;
 
-  if(!lua_isstring(ps, 1))
+  if(!lua_islong(ps, 1))
     return 0;
 
-  nick_str = lua_tostring(ps, 1);
+  numeric = lua_tolong(ps, 1);
 
-  np = getnickbynick(nick_str);
+  np = getnickbynumeric(numeric);
   if(!np)
     return 0;
 
