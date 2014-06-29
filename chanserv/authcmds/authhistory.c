@@ -23,6 +23,7 @@
 struct authhistoryinfo {
   unsigned int numeric;
   unsigned int userID;
+  int realhost;
 };
 
 void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
@@ -66,6 +67,7 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
     free(ahi);
     return;
   }
+
   chanservstdmessage(np, QM_AUTHHISTORYHEADER); /* @TIMELEN */
   while(dbfetchrow(pgres)) {
     if (!UHasHelperPriv(rup) && (strtoul(dbgetvalue(pgres, 0), NULL, 10) != rup->ID)) {
@@ -83,7 +85,7 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
     if (ahdisconnecttime)
       q9strftime(tbuf2, sizeof(tbuf2), ahdisconnecttime);
 
-    snprintf(uhbuf,sizeof(uhbuf),"%s!%s@%s", ahnick, ahuser, ahhost);
+    snprintf(uhbuf,sizeof(uhbuf),"%s!%s@%s", ahnick, ahuser, ahi->realhost ? ahhost : "(hidden)");
     chanservsendmessage(np, "#%-2d %-50s %-19s %-19s %s", ++count, uhbuf, tbuf1, ahdisconnecttime?tbuf2:"never", dbgetvalue(pgres,6)); /* @TIMELEN */
   }
   chanservstdmessage(np, QM_ENDOFLIST);
@@ -92,7 +94,7 @@ void csdb_doauthhistory_real(DBConn *dbconn, void *arg) {
   free(ahi);
 }
 
-void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit) {
+void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit, int realhost) {
   struct authhistoryinfo *ahi;
   char limitstr[30];
 
@@ -105,6 +107,7 @@ void csdb_retreiveauthhistory(nick *np, reguser *rup, int limit) {
   ahi=(struct authhistoryinfo *)malloc(sizeof(struct authhistoryinfo));
   ahi->numeric=np->numeric;
   ahi->userID=rup->ID;
+  ahi->realhost=realhost;
   q9a_asyncquery(csdb_doauthhistory_real, (void *)ahi,
     "SELECT userID, nick, username, host, authtime, disconnecttime, quitreason from chanserv.authhistory where "
     "userID=%u order by authtime desc%s", rup->ID, limitstr);
@@ -115,7 +118,8 @@ int csa_doauthhistory(void *source, int cargc, char **cargv) {
   nick *sender=source;
   unsigned int arg=0;
   unsigned int limit=10;
-  
+  int realhost;
+
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
 
@@ -147,14 +151,23 @@ int csa_doauthhistory(void *source, int cargc, char **cargv) {
         return CMD_ERROR;
       }
 
+      if(cs_privcheck(QPRIV_VIEWREALHOST, sender)) {
+        realhost = 1;
+      } else {
+        realhost = 0;
+      }
+
       /* checks passed */
       chanservwallmessage("%s (%s) used AUTHHISTORY on %s", sender->nick, rup->username, trup->username);
+    } else {
+      realhost = 0;
     }
   } else {
     trup=rup;
+    realhost = 1;
   }
 
-  csdb_retreiveauthhistory(sender, trup, limit);
+  csdb_retreiveauthhistory(sender, trup, limit, realhost);
 
   return CMD_OK;
 }
