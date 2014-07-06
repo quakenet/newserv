@@ -204,13 +204,11 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
 
       return CMD_OK;
     } else {
+       if (cargc < 5)
+         return; /* U:lined gline, we're done */
        Error("gline", ERR_WARNING, "Gline addition - adding deactivated gline - mask not found (%s)", mask);
        expire = abs_expire(atoi(cargv[2]));
        switch (cargc) {
-         case 4:
-           /* asuka U:d, no lastmod */
-           reason = cargv[3];
-           break;
          case 5:
            /*asuka lastmod */
            lastmod = atoi(cargv[3]);
