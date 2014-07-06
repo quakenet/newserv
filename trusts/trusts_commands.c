@@ -350,7 +350,8 @@ static void registercommands(int hooknum, void *arg) {
     return;
   commandsregistered = 1;
 
-  registercontrolhelpcmd("trustlist", NO_RELAY, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP|&qid>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustlist", NO_OPER, 2, trusts_cmdtrustlist, "Usage: trustlist [-v] <#id|name|IP|&qid>\nShows trust data for the specified trust group.");
+  registercontrolhelpcmd("trustlistrelay", NO_RELAY, 2, trusts_cmdtrustlist, "Same as trustlist, but for the relay.");
   registercontrolhelpcmd("trustglinesuggest", NO_OPER, 1, trusts_cmdtrustglinesuggest, "Usage: trustglinesuggest <user@host>\nSuggests glines for the specified hostmask.");
   registercontrolhelpcmd("trustspew", NO_OPER, 1, trusts_cmdtrustspew, "Usage: trustspew <#id|name>\nShows currently connected users for the specified trust group.");
 }
@@ -361,6 +362,7 @@ static void deregistercommands(int hooknum, void *arg) {
   commandsregistered = 0;
 
   deregistercontrolcmd("trustlist", trusts_cmdtrustlist);
+  deregistercontrolcmd("trustlistrelay", trusts_cmdtrustlist);
   deregistercontrolcmd("trustglinesuggest", trusts_cmdtrustglinesuggest);
   deregistercontrolcmd("trustspew", trusts_cmdtrustspew);
 }
