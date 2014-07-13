@@ -8,34 +8,24 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
-#include <regex.h>
+#include <pcre.h>
 
-regex_t remail, raccount;
-static int regexinit;
+static pcre *remail, *raccount;
 
-int csa_initregex(void) {
-  if (regexinit)
-    return 1;
+void csa_initregex(void) {
+  const char *errptr;
+  int erroffset;
 
-  if (regcomp(&remail, VALID_EMAIL, REG_EXTENDED | REG_NOSUB | REG_ICASE))
-    return 0;
+  if (!(remail=pcre_compile(VALID_EMAIL, PCRE_CASELESS, &errptr, &erroffset, NULL)))
+    Error("chanserv", ERR_STOP, "Unable to compile email regex (error: %s, position: %d).", errptr, erroffset);
 
-  if (regcomp(&raccount, VALID_ACCOUNT_NAME, REG_EXTENDED | REG_NOSUB | REG_ICASE)) {
-    regfree(&remail);
-    return 0;
-  }
-
-  regexinit = 1;
-  return 1;
+  if (!(raccount=pcre_compile(VALID_ACCOUNT_NAME, PCRE_CASELESS, &errptr, &erroffset, NULL)))
+    Error("chanserv", ERR_STOP, "Unable to compile account name regex (error: %s, position: %d).", errptr, erroffset);
 }
 
 void csa_freeregex(void) {
-  if(!regexinit)
-    return;
-
-  regfree(&remail);
-  regfree(&raccount);
-  regexinit = 0;
+  pcre_free(remail);
+  pcre_free(raccount);
 }
 
 /*
@@ -43,27 +33,11 @@ void csa_freeregex(void) {
  */
 int csa_checkeboy_r(char *eboy)
 {
-  int i, len;
+  int len;
 
   len = (((strlen(eboy)) < (EMAILLEN)) ? (strlen(eboy)) : (EMAILLEN));
   if (len <= 4) {
     return QM_EMAILTOOSHORT;
-  }
-
-  if (strstr(&eboy[1], "@") == NULL) {
-    return QM_EMAILNOAT;
-  }
-
-  if (eboy[len - 1] == '@') {
-    return QM_EMAILATEND;
-  }
-
-  for (i = 0; i < len; i++) {
-    if (!isalpha(eboy[i]) && !isdigit(eboy[i])
-        && !(eboy[i] == '@') && !(eboy[i] == '.')
-        && !(eboy[i] == '_') && !(eboy[i] == '-')) {
-      return QM_EMAILINVCHR;
-    }
   }
 
   /* catch some real lame attempts */
@@ -75,7 +49,7 @@ int csa_checkeboy_r(char *eboy)
     return QM_NOTYOUREMAIL;
   }
 
-  if (regexec(&remail, eboy, (size_t) 0, NULL, 0)) {
+  if (pcre_exec(remail, NULL, eboy, strlen(eboy), 0, 0, NULL, 0) < 0) {
     return QM_INVALIDEMAIL;
   }
 
@@ -96,9 +70,10 @@ int csa_checkeboy(nick *sender, char *eboy)
 
 /*
  * use regex matching to determine if it's a valid account name or not
+ * returns 1 if bad, 0 if good
  */
 int csa_checkaccountname_r(char *accountname) {
-  if (regexec(&raccount, accountname, (size_t) 0, NULL, 0)) {
+  if (pcre_exec(raccount, NULL, accountname, strlen(accountname), 0, 0, NULL, 0) < 0) {
     return (1);
   }
   return (0);
