@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #ifndef __USE_MISC
 #define __USE_MISC /* inet_aton */
@@ -418,6 +419,7 @@ static void processtrustlistener(int fd, short events) {
   if(events & POLLIN) {
     trustsocket *sock;
     char buf[NONCELEN * 2 + 1];
+    int optval;
 
     int newfd = accept(fd, NULL, NULL), flags;
     if(newfd == -1)
@@ -435,6 +437,15 @@ static void processtrustlistener(int fd, short events) {
       close(newfd);
       return;
     }
+
+    optval = 10;
+    setsockopt(newfd, SOL_SOCKET, TCP_KEEPIDLE, &optval, sizeof(optval));
+    optval = 3;
+    setsockopt(newfd, SOL_SOCKET, TCP_KEEPCNT, &optval, sizeof(optval));
+    optval = 10;
+    setsockopt(newfd, SOL_SOCKET, TCP_KEEPINTVL, &optval, sizeof(optval));
+    optval = 1;
+    setsockopt(newfd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
 
     registerhandler(newfd, POLLIN|POLLERR|POLLHUP, processtrustclient);
       
