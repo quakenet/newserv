@@ -58,8 +58,12 @@ static unsigned char hexlookup[256] = {
                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff
                                   };
 
-void _init(void) {
+static void relayfinishinit(int, void *);
+
+void relayfinishinit(int hooknum, void *arg) {
   sstring *s;
+
+  deregisterhook(HOOK_CHANSERV_DBLOADED, relayfinishinit);
 
   registercontrolhelpcmd("checkhashpass", NO_RELAY, 3, csa_docheckhashpass, "Usage: checkhashpass <username> <digest> ?junk?");
   registercontrolhelpcmd("settempemail", NO_RELAY, 2, csa_dosettempemail, "Usage: settempemail <userid> <email address>");
@@ -81,6 +85,13 @@ void _init(void) {
   freesstring(s);
 }
 
+void _init(void) {
+  registerhook(HOOK_CHANSERV_DBLOADED, relayfinishinit);
+
+  if(chanservdb_ready)
+    relayfinishinit(HOOK_CHANSERV_DBLOADED, NULL);
+}
+
 void _fini(void) {
   deregistercontrolcmd("checkhashpass", csa_docheckhashpass);
   deregistercontrolcmd("settempemail", csa_dosettempemail);
@@ -91,6 +102,8 @@ void _fini(void) {
 
   if(createaccountsecret_ok)
     deregistercontrolcmd("createaccount", csa_docreateaccount);
+
+  deregisterhook(HOOK_CHANSERV_DBLOADED, relayfinishinit);
 }
 
 int csa_docheckhashpass(void *source, int cargc, char **cargv) {
