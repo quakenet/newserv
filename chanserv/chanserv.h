@@ -76,7 +76,7 @@
 #define   MAXSUSPENDHIT       500
 
 /* Maximum number of times a user may attempt to auth */
-#define   MAXAUTHATTEMPT      10
+#define   MAXAUTHATTEMPT      5
 
 /* Maximum number of hellos in a session */
 #define   MAXHELLOS           2
@@ -144,6 +144,7 @@
 #define   QPRIV_VIEWCHANSUSPENSION  110
 #define   QPRIV_VIEWSUSPENDEDBY     111
 #define   QPRIV_VIEWWALLMESSAGE     112
+#define   QPRIV_VIEWREALHOST        113
 
 #define   QPRIV_CHANGECHANFLAGS     200
 #define   QPRIV_CHANGECHANLEV       201

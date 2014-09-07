@@ -52,7 +52,7 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
         sender->nick, sender->ident, sender->host->name->content, aup->authattempts, authtype, cargv[0], cargv[1]);
 */
 
-    chanservstdmessage(sender, QM_AUTHFAIL);
+    chanservstdmessage(sender, QM_TOOMANYAUTHATTEMPTS);
     cs_log(sender,"%s FAIL too many auth attempts (last attempt: %s %s %s)", authtype, authtype, cargv[0], cargv[1]); 
     return CMD_ERROR;
   }

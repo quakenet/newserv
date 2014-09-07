@@ -172,7 +172,9 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
 /* Commenting out language until we implement some - splidge 
     chanservstdmessage(sender, QM_WHOIS_USERLANG, cslanguages[target->languageid] ?
 		       cslanguages[target->languageid]->name->content : "(unknown)");  */
-    chanservstdmessage(sender, QM_WHOIS_LASTUSERHOST, target->lastuserhost->content);
+    if(rup==target || cs_privcheck(QPRIV_VIEWREALHOST, sender)) {
+      chanservstdmessage(sender, QM_WHOIS_LASTUSERHOST, target->lastuserhost->content);
+    }
   }
 
   if (target->email && (rup==target || cs_privcheck(QPRIV_VIEWEMAIL, sender))) {

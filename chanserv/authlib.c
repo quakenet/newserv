@@ -140,6 +140,8 @@ int csa_checkpasswordquality(char *password) {
       cntdigits++;
     if(islower(password[i]) || isupper(password[i]))
       cntletters++;
+    if(password[i] < 32 || password[i] > 127)
+      return QM_PWINVALID;
   }
 
   if( cntweak > 3 || !cntdigits || !cntletters)

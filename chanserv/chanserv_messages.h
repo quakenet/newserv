@@ -249,6 +249,8 @@ BeginMessages() {
   msg(QM_INACTIVEACCOUNT,"This account has not yet been activated.",""),
   msg(QM_PWTOLONG, "Sorry, but new password is too long (maximum length 10 chars)", ""),
   msg(QM_TOOMANYCHANNELS, "User is known on too many channels.", ""),
+  msg(QM_PWINVALID, "Password contains invalid characters.", ""),
+  msg(QM_TOOMANYAUTHATTEMPTS, "Too many auth attempts -- reconnect to QuakeNet to try again.", ""),
 } 
 EndMessages()
 #endif
