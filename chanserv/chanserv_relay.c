@@ -257,6 +257,8 @@ int csa_docreateaccount(void *source, int cargc, char **cargv) {
       error_password = "passwordlong";
     } else if(r == QM_PWTOWEAK) {
       error_password = "passwordweak";
+    } else if(r == QM_PWINVALID) {
+      error_password = "passwordinvalid";
     } else if(r != -1) {
       error_password = "passwordunknown";
     }
