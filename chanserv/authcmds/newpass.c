@@ -74,6 +74,10 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     chanservstdmessage(sender, QM_PWTOLONG); /* new password too long */
     cs_log(sender,"NEWPASS FAIL username %s password too long %s",rup->username,cargv[1]);
     return CMD_ERROR;
+  } else if(pq == QM_PWINVALID) {
+    chanservstdmessage(sender, QM_PWINVALID);
+    cs_log(sender,"NEWPASS FAIL username %s password invalid %s",rup->username,cargv[1]);
+    return CMD_ERROR;
   } else if(pq == -1) {
     /* all good */
   } else {
