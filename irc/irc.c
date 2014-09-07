@@ -153,7 +153,7 @@ int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pin
   }
 
   conto_s=getconfigitem(section,s?"host":"hubhost");
-  if (!conto_s || !conto_s->content || !conto_s->content[0]) {
+  if (!conto_s || !conto_s->content[0]) {
     ret=0;
   } else {
     ret=1;
@@ -257,6 +257,7 @@ void irc_connect(void *arg) {
     exit(1);
   }
 
+  memset(&sockaddress, 0, sizeof(sockaddress));
   sockaddress.sin_family = AF_INET;
   sockaddress.sin_port = htons(portnum);
   host = gethostbyname(conto);

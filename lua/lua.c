@@ -192,6 +192,7 @@ lua_State *lua_loadscript(char *file) {
   lua_State *l;
   lua_list *n;
   char buf[1024];
+  void *args[2];
 
   if(!cpath || !suffix)
     return NULL;
@@ -232,6 +233,10 @@ lua_State *lua_loadscript(char *file) {
   lua_registersocketcommands(l);
   lua_registercryptocommands(l);
   lua_registerschedulercommands(l);
+
+  args[0] = file;
+  args[1] = l;
+  triggerhook(HOOK_LUA_LOADSCRIPT, args);
 
 #ifdef LUA_USEJIT
   lua_require(l, "lib/jit");
@@ -291,6 +296,8 @@ lua_State *lua_loadscript(char *file) {
 }
 
 void lua_unloadscript(lua_list *l) {
+  triggerhook(HOOK_LUA_UNLOADSCRIPT, l->l);
+
   lua_onunload(l->l);
   lua_deregisternicks(l);
   lua_socket_closeall(l);

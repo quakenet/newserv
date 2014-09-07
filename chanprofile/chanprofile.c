@@ -174,6 +174,8 @@ int reportprofiles(void *source, int cargc, char **cargv) {
     reportprofile(sender,cpary[i]);
   }
    
+  free(cpary);
+
   controlreply(sender,"--- End of list."); 
 
   clearprofiles();  

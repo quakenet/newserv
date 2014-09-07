@@ -87,8 +87,9 @@ void nsfree(unsigned int poolid, void *ptr) {
   nsmpools[poolid].count--;
 
   VALGRIND_MEMPOOL_FREE(nsmp, nsmp->data);
-  free(nsmp);
+
   VALGRIND_DESTROY_MEMPOOL(nsmp);
+  free(nsmp);
 
   return;
 }
@@ -147,8 +148,9 @@ void nsfreeall(unsigned int poolid) {
   for (nsmp=nsmpools[poolid].blocks;nsmp;nsmp=nnsmp) {
     nnsmp=nsmp->next;
     VALGRIND_MEMPOOL_FREE(nsmp, nsmp->data);
-    free(nsmp);
+
     VALGRIND_DESTROY_MEMPOOL(nsmp);
+    free(nsmp);
   }
   
   nsmpools[poolid].blocks=NULL;

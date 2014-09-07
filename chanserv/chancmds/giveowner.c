@@ -73,7 +73,7 @@ int csc_dogiveowner(void *source, int cargc, char **cargv) {
    
   /* Compute ze hash */
   sprintf(hashstr,"%u.%u.%u",rcp->ID,target->ID,rup->ID);
-  thehash=crc32(hashstr);
+  thehash=irc_crc32(hashstr);
   
   sprintf(hashstr,"%x",thehash);
 

@@ -18,6 +18,9 @@
 #include "../lib/flags.h"
 #include "../authext/authext.h"
 #include "../glines/glines.h"
+#include "../trusts/trusts.h"
+#include "../bans/bans.h"
+#include "../core/modules.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -217,10 +220,10 @@ static int lua_invite(lua_State *ps) {
 }
 
 static int lua_gline(lua_State *ps) {
+  glineinfo *info;
   const char *reason;
   nick *target;
-  char mask[512];
-  int duration, usercount = 0;
+  int duration;
   
   if(!lua_isstring(ps, 1) || !lua_isint(ps, 2) || !lua_isstring(ps, 3))
     LUA_RETURN(ps, LUA_FAIL);
@@ -240,8 +243,8 @@ static int lua_gline(lua_State *ps) {
   if(glinebynick(target, duration, reason, GLINE_SIMULATE, "lua") > 50)
     LUA_RETURN(ps, LUA_FAIL);
 
-  usercount = glinebynick(target, duration, reason, 0, "lua");
-  LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", mask, usercount, duration, reason));
+  info = glinebynickex(target, duration, reason, 0, "lua");
+  LUA_RETURN(ps, lua_cmsg(LUA_PUKECHAN, "lua-GLINE: %s (%d users, %d seconds -- %s)", info->mask, info->hits, duration, reason));
 }
 
 static int lua_fastgetchaninfo(lua_State *ps) {
@@ -344,6 +347,110 @@ static int lua_versioninfo(lua_State *ps) {
   return 5;
 }
 
+static int lua_nickmatchban(lua_State *ps) {
+  const char *chanban_str;
+  long numeric;
+  chanban *cb;
+  nick *np;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  numeric = lua_tolong(ps, 1);
+  chanban_str = lua_tostring(ps, 2);
+
+  np = getnickbynumeric(numeric);
+  if(!np)
+    return 0;
+
+  cb = makeban(chanban_str);
+  if(!cb)
+    return 0;
+
+  lua_pushboolean(ps, nickmatchban(np, cb, 1));
+
+  freechanban(cb);
+
+  return 1;
+}
+
+static int lua_nickbanned(lua_State *ps) {
+  const char *channel_str;
+  long numeric;
+  channel *cp;
+  nick *np;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  numeric = lua_tolong(ps, 1);
+  channel_str = lua_tostring(ps, 2);
+
+  np = getnickbynumeric(numeric);
+  if(!np)
+    return 0;
+
+  cp = findchannel((char *)channel_str);
+  if(!cp)
+    return 0;
+
+  lua_pushboolean(ps, nickbanned(np, cp, 1));
+
+  return 1;
+}
+
+static int lua_suggestbanmask(lua_State *ps) {
+  nick *np;
+  glinebuf gb;
+  gline *gl;
+  long numeric;
+  int i = 1;
+
+  if (!lua_islong(ps, 1))
+    return 0;
+
+  numeric = lua_tolong(ps, 1);
+
+  np = getnickbynumeric(numeric);
+  if (!np)
+    return 0;
+
+  glinebufinit(&gb, 0);
+  glinebufaddbynick(&gb, np, 0, "Auto", "None", time(NULL), time(NULL), time(NULL));
+
+  lua_newtable(ps);
+
+  for (gl = gb.glines; gl; gl = gl->next) {
+    if (gl->host && gl->host->content) {
+      char *mask = glinetostring(gl);
+      LUA_APUSHSTRING(ps, i, mask);
+      i++;
+    }
+  }
+
+  glinebufabort(&gb);
+
+  return 1;
+}
+
+static int lua_nickistrusted(lua_State *ps) {
+  long numeric;
+  nick *np;
+
+  if(!lua_islong(ps, 1))
+    return 0;
+
+  numeric = lua_tolong(ps, 1);
+
+  np = getnickbynumeric(numeric);
+  if(!np)
+    return 0;
+
+  lua_pushboolean(ps, istrusted(np));
+
+  return 1;
+}
+
 static int lua_basepath(lua_State *ps) {
   lua_pushfstring(ps, "%s/", cpath->content);
 
@@ -361,6 +468,22 @@ static int lua_numerictobase64(lua_State *ps) {
     return 0;
 
   lua_pushstring(ps, longtonumeric(lua_tolong(ps, 1), 5));
+  return 1;
+}
+
+static int lua_match(lua_State *ps) {
+  const char *mask, *string;
+
+  if(!lua_isstring(ps, 1) || !lua_isstring(ps, 2))
+    return 0;
+
+  mask = lua_tostring(ps, 1);
+  string = lua_tostring(ps, 2);
+
+  if (!mask || !mask[0] || !string || !string[0])
+    return 0;
+
+  lua_pushboolean(ps, match2strings(mask, string));
   return 1;
 }
 
@@ -887,6 +1010,12 @@ void lua_registercommands(lua_State *l) {
   lua_register(l, "irc_sethost", lua_sethost);
 
   lua_register(l, "irc_numerictobase64", lua_numerictobase64);
+  lua_register(l, "ircmatch", lua_match);
+
+  lua_register(l, "irc_nickmatchban", lua_nickmatchban);
+  lua_register(l, "irc_nickistrusted", lua_nickistrusted);
+  lua_register(l, "irc_nickbanned", lua_nickbanned);
+  lua_register(l, "irc_suggestbanmask", lua_suggestbanmask);
 }
 
 /* --- */
@@ -940,6 +1069,7 @@ static int lua_skill(lua_State *ps) {
 #define PUSHER_ACC_ID 15
 #define PUSHER_SERVER_NAME 16
 #define PUSHER_SERVER_NUMERIC 17
+#define PUSHER_IS_SERVICE 18
 
 void lua_initnickpusher(void) {
   int i = 0;
@@ -961,6 +1091,7 @@ void lua_initnickpusher(void) {
   PUSH_NICKPUSHER_CUSTOM(PUSHER_ACC_ID, "accountid");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NAME, "servername");
   PUSH_NICKPUSHER_CUSTOM(PUSHER_SERVER_NUMERIC, "servernumeric");
+  PUSH_NICKPUSHER_CUSTOM(PUSHER_IS_SERVICE, "isservice");
 
   nickpushercount = i;
   nickpusher[i].argtype = 0;
@@ -1084,6 +1215,9 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         break;
       case PUSHER_SERVER_NUMERIC:
         lua_pushint(l, homeserver(((nick *)offset)->numeric));
+        break;
+      case PUSHER_IS_SERVICE:
+        lua_pushboolean(l, NickOnServiceServer((nick *)offset));
         break;
     }
 

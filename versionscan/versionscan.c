@@ -23,7 +23,7 @@ void versionscan_addstat(char* reply) {
   vsstatistic* v, *pv;
   
   replylen = strlen(reply);
-  replycrc = crc32i(reply);
+  replycrc = irc_crc32i(reply);
   
   pv=NULL;
   for (v=vsstats; v; v=v->next) {
@@ -473,6 +473,7 @@ int versionscan_changelev(void* sender, int cargc, char** cargv) {
             vsauths=pv->next;
             free(pv);
           }
+          break;
         }
         prevv=pv;
       }

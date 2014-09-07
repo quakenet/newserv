@@ -5,12 +5,14 @@
 #include "../irc/irc.h"
 #include "../lib/irc_string.h"
 #include "../lib/version.h"
+#include "../core/config.h"
 #include "whowas.h"
 
 MODULE_VERSION("");
 
-whowas whowasrecs[WW_MAXENTRIES];
+whowas *whowasrecs;
 int whowasoffset = 0;
+int whowasmax;
 
 whowas *whowas_fromnick(nick *np, int standalone) {
   whowas *ww;
@@ -24,7 +26,7 @@ whowas *whowas_fromnick(nick *np, int standalone) {
   else {
     ww = &whowasrecs[whowasoffset];
     whowas_clean(ww);
-    whowasoffset = (whowasoffset + 1) % WW_MAXENTRIES;
+    whowasoffset = (whowasoffset + 1) % whowasmax;
   }
 
   memset(ww, 0, sizeof(whowas));
@@ -92,8 +94,9 @@ void whowas_clean(whowas *ww) {
   freesstring(np->opername);
   freeauthname(np->auth);
   freesstring(np->away);
-
+  derefnode(iptree, np->ipnode);
   freesstring(ww->reason);
+  freesstring(ww->newnick);
   ww->type = WHOWAS_UNUSED;
 }
 
@@ -152,8 +155,8 @@ whowas *whowas_chase(const char *target, int maxage) {
 
   now = getnettime();
 
-  for (i = whowasoffset + WW_MAXENTRIES - 1; i >= whowasoffset; i--) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+  for (i = whowasoffset + whowasmax - 1; i >= whowasoffset; i--) {
+    ww = &whowasrecs[i % whowasmax];
 
     if (ww->type == WHOWAS_UNUSED)
       continue;
@@ -226,8 +229,8 @@ unsigned int nextwhowasmarker() {
 
   if (!whowasmarker) {
     /* If we wrapped to zero, zap the marker on all records */
-    for (i = 0; i < WW_MAXENTRIES; i++) {
-      ww = &whowasrecs[i % WW_MAXENTRIES];
+    for (i = 0; i < whowasmax; i++) {
+      ww = &whowasrecs[i % whowasmax];
       ww->marker=0;
     }
 
@@ -238,7 +241,12 @@ unsigned int nextwhowasmarker() {
 }
 
 void _init(void) {
-  memset(whowasrecs, 0, sizeof(whowasrecs));
+  {
+    sstring *temp = getcopyconfigitem("whowas", "maxentries", XStringify(WW_DEFAULT_MAXENTRIES), 10);
+    whowasmax = atoi(temp->content);
+    freesstring(temp);
+  }
+  whowasrecs = calloc(whowasmax, sizeof(whowas));
 
   registerhook(HOOK_NICK_QUIT, whowas_handlequitorkill);
   registerhook(HOOK_NICK_KILL, whowas_handlequitorkill);
@@ -253,8 +261,10 @@ void _fini(void) {
   deregisterhook(HOOK_NICK_KILL, whowas_handlequitorkill);
   deregisterhook(HOOK_NICK_RENAME, whowas_handlerename);
 
-  for (i = 0; i < WW_MAXENTRIES; i++) {
+  for (i = 0; i < whowasmax; i++) {
     ww = &whowasrecs[i];
     whowas_clean(ww);
   }
+
+  free(whowasrecs);
 }

@@ -308,7 +308,7 @@ void pqstartloadtable(PGconn *dbconn, void *arg)
     return;
   }
 
-  tablecrc=crc32(tli->tablename->content);
+  tablecrc=irc_crc32(tli->tablename->content);
   count=strtoul(PQgetvalue(res, 0, 0), NULL, 10);
   PQclear(res);
 

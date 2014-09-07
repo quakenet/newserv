@@ -68,6 +68,7 @@ int nr_openlistensocket(int portnum) {
   }
   
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &opt, sizeof(opt))!=0) {
+    close(fd);
     Error("proxyscan",ERR_ERROR,"Unable to set SO_REUSEADDR on listen socket.");
     return -1;
   }
@@ -78,6 +79,7 @@ int nr_openlistensocket(int portnum) {
   sin.sin_port=htons(portnum);
   
   if (bind(fd, (struct sockaddr *) &sin, sizeof(sin))) {
+    close(fd);
     Error("proxyscan",ERR_ERROR,"Unable to bind listen socket (%d).",errno);
     return -1;
   }
@@ -85,6 +87,7 @@ int nr_openlistensocket(int portnum) {
   listen(fd,5);
   
   if (ioctl(fd, FIONBIO, &opt)!=0) {
+    close(fd);
     Error("proxyscan",ERR_ERROR,"Unable to set listen socket non-blocking.");
     return -1;
   }
@@ -101,7 +104,7 @@ void nr_handlelistensocket(int fd, short events) {
   socklen_t addrsize=sizeof(sin);
   char buf[20];
   int newfd;
-  if ((newfd=accept(fd, (struct sockaddr *)&sin, &addrsize))>0) {
+  if ((newfd=accept(fd, (struct sockaddr *)&sin, &addrsize))>-1) {
     /* Got new connection */
     sprintf(buf,"%u\n",nicks);
     write(newfd,buf,strlen(buf));

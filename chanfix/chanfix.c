@@ -108,7 +108,7 @@ void _init() {
 }
 
 void _fini() {
-  if (cffailedinit == 0)
+  if (cffailedinit)
     return;
 
   deleteschedule(NULL, &cfsched_dosample, NULL);
@@ -897,7 +897,7 @@ unsigned long cf_gethash(nick *np, int type) {
 
   if (IsAccount(np) && (type & CFACCOUNT)) {
     if (np->exts[cfnext] == NULL) {
-      np->exts[cfnext] = (void *)crc32(np->authname);
+      np->exts[cfnext] = (void *)irc_crc32(np->authname);
     }
 
     return (unsigned long)np->exts[cfnext];
@@ -909,7 +909,7 @@ unsigned long cf_gethash(nick *np, int type) {
       return (unsigned long)np->exts[cfnext];
     else {
       snprintf(buf, sizeof(buf), "%s@%s", np->ident, np->host->name->content);
-      hash = crc32(buf);
+      hash = irc_crc32(buf);
 
       /* if the user is not authed, update the hash */
       if (!IsAccount(np)) {

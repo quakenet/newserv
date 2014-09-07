@@ -109,7 +109,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
   }
 
   if (!(cip=cs_checkaccess(sender, cargv[0], CA_KNOWN,
-			   NULL, "chanlev", QPRIV_VIEWFULLCHANLEV, 0)))
+                           NULL, "chanlev", QPRIV_VIEWFULLCHANLEV, 0)))
     return CMD_ERROR;
   
   rcp=cip->exts[chanservext];
@@ -117,7 +117,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
   /* Set flagmask for +v/+o users (can't see bans etc.) */
   flagmask = (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOVOICE | 
-	      QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
+              QCUFLAG_AUTOOP | QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAG_KNOWN);
   
   /* masters and above can see everything except personal flags */
   if (rcup && CUHasMasterPriv(rcup)) {
@@ -171,7 +171,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     /* Count users */
     for (i=0,usercount=0;i<REGCHANUSERHASHSIZE;i++)
       for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan)
-	usercount++;
+        usercount++;
     
     /* Allocate array */
     rusers=(regchanuser **)malloc(usercount * sizeof(regchanuser *));
@@ -179,10 +179,10 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     /* Fill array */
     for (j=i=0;i<REGCHANUSERHASHSIZE;i++) {
       for (rcuplist=rcp->regusers[i];rcuplist;rcuplist=rcuplist->nextbychan) {
-	if (!(flags=rcuplist->flags & flagmask))
-	  continue;
-	
-	rusers[j++]=rcuplist;
+        if (!(flags=rcuplist->flags & flagmask))
+          continue;
+        
+        rusers[j++]=rcuplist;
       }
     }
 
@@ -194,7 +194,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       rcuplist=rusers[i];
 
       if (!(flags=rcuplist->flags & flagmask)) 
-	continue;
+        continue;
       
       /* If you're listing yourself, we should show personal flags too */
       if (rcuplist==rcup) {
@@ -212,29 +212,29 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
       if (flags & QCUFLAG_BANNED) bcnt++;
       
       if (!donehead) {
-	chanservstdmessage(sender, QM_CHANLEVHEADER, cip->name->content);
-	if (showtimes) 
-	  chanservstdmessage(sender, QM_CHANLEVCOLFULL);
-	else
-	  chanservstdmessage(sender, QM_CHANLEVCOLSHORT);
-	donehead=1;
+        chanservstdmessage(sender, QM_CHANLEVHEADER, cip->name->content);
+        if (showtimes) 
+          chanservstdmessage(sender, QM_CHANLEVCOLFULL);
+        else
+          chanservstdmessage(sender, QM_CHANLEVCOLSHORT);
+        donehead=1;
       }
       
       if (showtimes) {
-	if (!rcuplist->usetime) {
-	  strcpy(time1,"Never");
-	} else {
-	  q9strftime(time1,sizeof(time1),rcuplist->usetime);
-	}
-	if (!rcuplist->changetime) {
-	  strcpy(time2, "Unknown");
-	} else {
-	  q9strftime(time2,sizeof(time2),rcuplist->changetime);
-	}
-	chanservsendmessage(sender, " %-15s %-13s %-14s  %-14s  %s", rcuplist->user->username, 
-			    printflags(flags, rcuflags), time1, time2, rcuplist->info?rcuplist->info->content:"");
+        if (!rcuplist->usetime) {
+          strcpy(time1,"Never");
+        } else {
+          q9strftime(time1,sizeof(time1),rcuplist->usetime);
+        }
+        if (!rcuplist->changetime) {
+          strcpy(time2, "Unknown");
+        } else {
+          q9strftime(time2,sizeof(time2),rcuplist->changetime);
+        }
+        chanservsendmessage(sender, " %-15s %-13s %-14s  %-14s  %s", rcuplist->user->username, 
+                            printflags(flags, rcuflags), time1, time2, rcuplist->info?rcuplist->info->content:"");
       } else 
-	chanservsendmessage(sender, " %-15s %s", rcuplist->user->username, printflags(flags, rcuflags));
+        chanservsendmessage(sender, " %-15s %s", rcuplist->user->username, printflags(flags, rcuflags));
     }
     
     if (donehead) {
@@ -257,12 +257,12 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
     if (cargc>2) {
       /* To change chanlev you have to either.. */
       if (!( cs_privcheck(QPRIV_CHANGECHANLEV, sender) ||             /* Have override privilege */
-	     (rcup && rcuplist && (rcup==rcuplist) && CUKnown(rcup)) || /* Be manipulting yourself (oo er..) */
-	     (rcup && CUHasMasterPriv(rcup) &&                        /* Have +m or +n on the channel */
-	      !(rcuplist && CUIsOwner(rcuplist) && !CUIsOwner(rcup))) /* masters can't screw with owners */
-	     )) {
-	chanservstdmessage(sender, QM_NOACCESSONCHAN, cip->name->content, "chanlev");
-	return CMD_ERROR;
+             (rcup && rcuplist && (rcup==rcuplist) && CUKnown(rcup)) || /* Be manipulting yourself (oo er..) */
+             (rcup && CUHasMasterPriv(rcup) &&                        /* Have +m or +n on the channel */
+              !(rcuplist && CUIsOwner(rcuplist) && !CUIsOwner(rcup))) /* masters can't screw with owners */
+             )) {
+        chanservstdmessage(sender, QM_NOACCESSONCHAN, cip->name->content, "chanlev");
+        return CMD_ERROR;
       }
       
       if (!rcuplist) {
@@ -287,56 +287,56 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
           return CMD_ERROR;
         } 
 
-	rcuplist=getregchanuser();
-	rcuplist->user=target;
-	rcuplist->chan=rcp;
-	rcuplist->flags=0;
-	rcuplist->changetime=time(NULL);
-	rcuplist->usetime=0;
-	rcuplist->info=NULL;
-	newuser=1;
+        rcuplist=getregchanuser();
+        rcuplist->user=target;
+        rcuplist->chan=rcp;
+        rcuplist->flags=0;
+        rcuplist->changetime=time(NULL);
+        rcuplist->usetime=0;
+        rcuplist->info=NULL;
+        newuser=1;
       }
       
       if (cs_privcheck(QPRIV_CHANGECHANLEV, sender)) {
-	/* Opers are allowed to change everything */
-	changemask = QCUFLAG_ALL;
+        /* Opers are allowed to change everything */
+        changemask = QCUFLAG_ALL;
       } else {
-	changemask=0;
-	
-	/* Everyone can change their own flags (except +dqb), and control (and see) personal flags */
-	if (rcup==rcuplist) {
-	  changemask = (rcup->flags | QCUFLAGS_PERSONAL) & ~(QCUFLAGS_PUNISH);
-	  flagmask |= QCUFLAGS_PERSONAL;
-	}
-	
-	/* Masters are allowed to manipulate +ovagtbqdpk */
-	if (CUHasMasterPriv(rcup))
-	  changemask |= ( QCUFLAG_KNOWN | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | 
-			  QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAGS_PUNISH);
-	
-	/* Owners are allowed to manipulate +ms as well.
-	 * We allow +n to be given initially, but we check later to see if the flag has been added.
-	 * if it has, abort and say "use giveowner"
-	 */
-	if (CUIsOwner(rcup))
-	  changemask |= ( QCUFLAG_MASTER | QCUFLAG_OWNER );
+        changemask=0;
+        
+        /* Everyone can change their own flags (except +dqb), and control (and see) personal flags */
+        if (rcup==rcuplist) {
+          changemask = (rcup->flags | QCUFLAGS_PERSONAL) & ~(QCUFLAGS_PUNISH);
+          flagmask |= QCUFLAGS_PERSONAL;
+        }
+        
+        /* Masters are allowed to manipulate +ovagtbqdpk */
+        if (CUHasMasterPriv(rcup))
+          changemask |= ( QCUFLAG_KNOWN | QCUFLAG_OP | QCUFLAG_VOICE | QCUFLAG_AUTOOP | QCUFLAG_AUTOVOICE | 
+                          QCUFLAG_TOPIC | QCUFLAG_PROTECT | QCUFLAGS_PUNISH);
+        
+        /* Owners are allowed to manipulate +ms as well.
+         * We allow +n to be given initially, but we check later to see if the flag has been added.
+         * if it has, abort and say "use giveowner"
+         */
+        if (CUIsOwner(rcup))
+          changemask |= ( QCUFLAG_MASTER | QCUFLAG_OWNER );
       }
 
       oldflags=rcuplist->flags;
       if (setflags(&(rcuplist->flags), changemask, cargv[2], rcuflags, REJECT_UNKNOWN | REJECT_DISALLOWED)) {
-	chanservstdmessage(sender, QM_INVALIDCHANLEVCHANGE);
+        chanservstdmessage(sender, QM_INVALIDCHANLEVCHANGE);
         if (newuser)
           freeregchanuser(rcuplist);
-	return CMD_ERROR;
+        return CMD_ERROR;
       }
 
       /* check to see if +n has been given.  Opers can bypass this. */
       if (!cs_privcheck(QPRIV_CHANGECHANLEV, sender) && !(oldflags & QCUFLAG_OWNER) && (rcuplist->flags & QCUFLAG_OWNER)) {
         rcuplist->flags=oldflags;
-	chanservstdmessage(sender, QM_USEGIVEOWNER);
+        chanservstdmessage(sender, QM_USEGIVEOWNER);
         if (newuser)
           freeregchanuser(rcuplist);
-	return CMD_ERROR;
+        return CMD_ERROR;
       }
 
       /* Fix up impossible combinations */
@@ -344,7 +344,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
       /* Check if anything "significant" has changed */
       if ((oldflags ^ rcuplist->flags) & (QCUFLAG_OWNER | QCUFLAG_MASTER | QCUFLAG_OP))
-	rcuplist->changetime=time(NULL);
+        rcuplist->changetime=time(NULL);
 
       if(rcuplist->flags == oldflags) {
         chanservstdmessage(sender, QM_CHANLEVNOCHANGE);
@@ -355,7 +355,7 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
       strcpy(flagbuf,printflags(oldflags,rcuflags));
       cs_log(sender,"CHANLEV %s #%s %s (%s -> %s)",cip->name->content,rcuplist->user->username,cargv[2],
-	     flagbuf,printflags(rcuplist->flags,rcuflags));
+             flagbuf,printflags(rcuplist->flags,rcuflags));
       csdb_chanlevhistory_insert(rcp, sender, rcuplist->user, oldflags, rcuplist->flags);
 
       /* The user has to be on the relevant chanlev list before we trigger the hook.
@@ -372,25 +372,25 @@ int csc_dochanlev(void *source, int cargc, char **cargv) {
 
       /* Now see what we do next */
       if (rcuplist->flags) {
-	/* User still valid: update or create */
-	if (newuser) {
-	  csdb_createchanuser(rcuplist);
-	} else {
-	  csdb_updatechanuser(rcuplist);
-	}
-	chanservstdmessage(sender, QM_CHANLEVCHANGED, cargv[1], cip->name->content, 
+        /* User still valid: update or create */
+        if (newuser) {
+          csdb_createchanuser(rcuplist);
+        } else {
+          csdb_updatechanuser(rcuplist);
+        }
+        chanservstdmessage(sender, QM_CHANLEVCHANGED, cargv[1], cip->name->content, 
                            printflags(rcuplist->flags & flagmask, rcuflags));
       } else {
-	/* User has no flags: delete */
-	if (!newuser) {
-	  chanservstdmessage(sender, QM_CHANLEVREMOVED, cargv[1], cip->name->content);
-	  csdb_deletechanuser(rcuplist);
-	  delreguserfromchannel(rcp, target);
-	}
-	freeregchanuser(rcuplist);
-	rcuplist=NULL;
-	if (cs_removechannelifempty(sender, rcp)) {
-	  chanservstdmessage(sender, QM_CHANLEVEMPTIEDCHANNEL);
+        /* User has no flags: delete */
+        if (!newuser) {
+          chanservstdmessage(sender, QM_CHANLEVREMOVED, cargv[1], cip->name->content);
+          csdb_deletechanuser(rcuplist);
+          delreguserfromchannel(rcp, target);
+        }
+        freeregchanuser(rcuplist);
+        rcuplist=NULL;
+        if (cs_removechannelifempty(sender, rcp)) {
+          chanservstdmessage(sender, QM_CHANLEVEMPTIEDCHANNEL);
           return CMD_OK;
         }
       }

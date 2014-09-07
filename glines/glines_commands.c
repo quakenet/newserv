@@ -13,6 +13,9 @@
 #include "glines.h"
 #include "../trusts/trusts.h"
 
+#define BLOCK_CHASE_MIN 5 /* seconds to chase nicknames in block without -c */
+#define BLOCK_CHASE_MAX 1800 /* seconds to chase nicknames in block with -c */
+
 MODULE_VERSION("");
 
 static void registercommands(int, void *);
@@ -92,10 +95,10 @@ static int glines_cmdblock(void *source, int cargc, char **cargv) {
   target = getnickbynick(cargv[coff]);
 
   if (!target) {
-    ww = whowas_chase(cargv[coff], 1800);
+    ww = whowas_chase(cargv[coff], chase ? BLOCK_CHASE_MAX : BLOCK_CHASE_MIN);
    
     if (!ww) {
-      controlreply(sender, "Sorry, couldn't find that user.");
+      controlreply(sender, "Sorry, couldn't find that user.%s", chase ? "" : " Use -c to chase whowas entries.");
       return CMD_ERROR;
     }
    

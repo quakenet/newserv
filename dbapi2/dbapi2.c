@@ -345,7 +345,10 @@ static void dbvsnprintf(const DBAPIConn *db, char *buf, size_t size, const char 
   sbinit(&b, buf, size);
 
   for(arg=0,p=format;*p;p++) {
-    if(*p != '?') {
+    if (*p == '\\' && *(p + 1) == '?')
+      continue;
+
+    if((p != format && *(p - 1) == '\\') || *p != '?') {
       if(!sbaddchar(&b, *p))
         break;
       continue;

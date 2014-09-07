@@ -816,7 +816,7 @@ char *displaytype(int type) {
       ctype = "??";
   }
 
-  snprintf(ctypebuf, sizeof(ctype), "%1d:%s", type, ctype);
+  snprintf(ctypebuf, sizeof(ctypebuf), "%1d:%s", type, ctype);
   return ctypebuf;
 }
 
@@ -1078,7 +1078,7 @@ struct rg_struct *rg_newsstruct(unsigned long id, char *mask, char *setby, char 
       newrow->type = 0; /* just in case */
 
     snprintf(glineiddata, sizeof(glineiddata), "%s regexgline %s %s %s %d %d", mynumeric->content, mask, setby, reason, (int)iexpires, newrow->type);
-    newrow->glineid = crc32(glineiddata);
+    newrow->glineid = irc_crc32(glineiddata);
   }
   
   return newrow;
@@ -1254,15 +1254,15 @@ void rg_loggline(struct rg_struct *rg, nick *np) {
   rg->lastseen = time(NULL);
   rg->dirty = 1;
 
-  /* @paul: disabled */
+  /* @paul: disabled
 
-  return;
   dbescapestring(eenick, np->nick, strlen(np->nick));
   dbescapestring(eeuser, np->ident, strlen(np->ident));
   dbescapestring(eehost, np->host->name->content, strlen(np->host->name->content));
   dbescapestring(eereal, np->realname->name->content, strlen(np->realname->name->content));
 
   dbquery("INSERT INTO regexgline.glog (glineid, nickname, username, hostname, realname, ts) VALUES (%d, '%s', '%s', '%s', '%s', NOW())", rg->id, eenick, eeuser, eehost, eereal);
+  */
 }
 
 static unsigned int getrgmarker(void) {

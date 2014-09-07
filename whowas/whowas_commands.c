@@ -26,8 +26,8 @@ static int whowas_cmdwhowas(void *source, int cargc, char **cargv) {
   if (cargc > 1)
     limit = strtol(cargv[1], NULL, 10);
 
-  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+  for (i = whowasoffset; i < whowasoffset + whowasmax; i++) {
+    ww = &whowasrecs[i % whowasmax];
 
     if (ww->type == WHOWAS_UNUSED)
       continue;

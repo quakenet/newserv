@@ -95,6 +95,11 @@ typedef struct glinebuf {
   array hits;
 } glinebuf;
 
+typedef struct glineinfo {
+  int hits;
+  char *mask;
+} glineinfo;
+
 extern gline *glinelist;
 extern glinebuf *glinebuflog[MAXGLINELOG];
 extern int glinebuflogoffset;
@@ -118,14 +123,15 @@ char *glinetostring(gline *g);
 
 /* glines_util.c */
 int glinebyip(const char *user, struct irc_in_addr *ip, unsigned char bits, int duration, const char *reason, int flags, const char *creator);
+glineinfo *glinebynickex(nick *np, int duration, const char *reason, int flags, const char *creator);
 int glinebynick(nick *np, int duration, const char *reason, int flags, const char *creator);
 void glineunsetmask(const char *mask);
 
 /* glines_buf.c */
 void glinebufinit(glinebuf *gbuf, int id);
 gline *glinebufadd(glinebuf *gbuf, const char *mask, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
-void glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
-void glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
+char *glinebufaddbyip(glinebuf *gbuf, const char *user, struct irc_in_addr *ip, unsigned char bits, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
+char *glinebufaddbynick(glinebuf *gbuf, nick *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufaddbywhowas(glinebuf *gbuf, whowas *, int flags, const char *creator, const char *reason, time_t expire, time_t lastmod, time_t lifetime);
 void glinebufcounthits(glinebuf *gbuf, int *users, int *channels);
 int glinebufchecksane(glinebuf *gbuf, nick *spewto, int overridesanity, int overridelimit);

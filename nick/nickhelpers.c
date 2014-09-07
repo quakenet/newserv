@@ -9,8 +9,8 @@
 
 #include <string.h>
 
-#define hosthash(x)       ((crc32i(x))%HOSTHASHSIZE)
-#define realnamehash(x)   ((crc32(x))%REALNAMEHASHSIZE)
+#define hosthash(x)       ((irc_crc32i(x))%HOSTHASHSIZE)
+#define realnamehash(x)   ((irc_crc32(x))%REALNAMEHASHSIZE)
 
 host *hosttable[HOSTHASHSIZE];
 realname *realnametable[REALNAMEHASHSIZE];

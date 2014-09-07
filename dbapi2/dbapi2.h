@@ -105,7 +105,7 @@ typedef void (*DBAPIResultClear)(const struct DBAPIResult *);
 typedef struct DBAPIResult {
   DBAPI2_RESULT_HANDLE *handle;
 
-  unsigned short success, fields;
+  unsigned short success, fields, affected;
 
   DBAPIResultGet get;
   DBAPIResultNext next;

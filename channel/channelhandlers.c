@@ -432,11 +432,13 @@ int handlepartmsg(void *source, int cargc, char **cargv) {
       /* Erm, parting a channel that's not there?? */
       Error("channel",ERR_WARNING,"Nick %s left non-existent channel %s",np->nick,nextchan);
     } else {
-      /* Trigger hook *FIRST* */
-      harg[0]=cp;
-      triggerhook(HOOK_CHANNEL_PART,harg);
-      
-      delnickfromchannel(cp,np->numeric,1);
+      /* Skip ghost parts (confirmation for kick from target server). */
+      if (getnumerichandlefromchanhash(cp->users, np->numeric)) {
+        /* Trigger hook *FIRST* */
+        harg[0]=cp;
+        triggerhook(HOOK_CHANNEL_PART,harg);
+        delnickfromchannel(cp,np->numeric,1);
+      }
     }
     nextchan=pos;
   }

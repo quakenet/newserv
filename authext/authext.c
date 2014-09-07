@@ -18,7 +18,7 @@ MODULE_VERSION("")
 CCASSERT(sizeof(unsigned long long) == sizeof(u_int64_t))
 
 #define authnamehash(x)   ((x)%AUTHNAMEHASHSIZE)
-#define authnamehashbyname(x) (crc32i(x)%AUTHNAMEHASHSIZE)
+#define authnamehashbyname(x) (irc_crc32i(x)%AUTHNAMEHASHSIZE)
 
 authname *authnametable[AUTHNAMEHASHSIZE];
 

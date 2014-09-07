@@ -201,7 +201,7 @@ void lua_localnickhandler(nick *target, int type, void **args) {
       np = (nick *)args[0];
       c = (channel *)args[1];
 
-      if(!c || !np || !c->index || !c->index->name || !c->index->name->content)
+      if(!c || !np || !c->index || !c->index->name)
         return;
 
       lua_vlpcall(l, ln, "irc_oninvite", "Ns", np, c->index->name->content);

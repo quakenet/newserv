@@ -390,6 +390,7 @@ void _init() {
     "  +o: Operation commands, such as insmod, rmmod, die, etc\n"
     "  +O: /OPER\n"
     "  +I: Misc commands (resync, etc)\n"
+    "  +a: Automated cleanup notices\n"
     "  +n: Sends notices instead of privmsgs\n"
     "  +A: Every single command sent to the service (spammy)\n"
   );

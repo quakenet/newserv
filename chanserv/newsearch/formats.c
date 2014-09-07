@@ -92,6 +92,8 @@ void printnick_authchans(searchCtx *ctx, nick *sender, nick *np) {
 void printauth(searchCtx *ctx, nick *sender, authname *anp) {
   reguser *rup;
   char *la;
+  char timebuf[TIMELEN];
+
 /*  StringBuf b;
   char output[1024];
   nick *tnp;
@@ -120,7 +122,6 @@ void printauth(searchCtx *ctx, nick *sender, authname *anp) {
 */
 
   if (rup->lastauth) {
-    char timebuf[TIMELEN];
     q9strftime(timebuf, sizeof(timebuf), rup->lastauth);
     la = timebuf;
   } else {

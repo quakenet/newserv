@@ -32,6 +32,7 @@ struct searchNode *ps_nick_parse(searchCtx *ctx, int argc, char **argv) {
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
     parseError = "malloc: could not allocate memory for this search.";
+    free(localdata);
     return NULL;
   }
 

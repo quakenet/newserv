@@ -104,7 +104,7 @@ int csu_dowhois(void *source, int cargc, char **cargv) {
         whom = "(hidden)";
       }
 
-      if(target->suspendreason && target->suspendreason->content) {
+      if(target->suspendreason) {
         reason = target->suspendreason->content;
       } else {
         reason = "(none)";

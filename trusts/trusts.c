@@ -129,7 +129,7 @@ int registertgext(const char *name) {
     return -1;
   }
 
-  for(i=0;i<MAXNICKEXTS;i++) {
+  for(i=0;i<MAXTGEXTS;i++) {
     if(!tgextnames[i]) {
       tgextnames[i] = getsstring(name, 100);
       return i;

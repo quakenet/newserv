@@ -298,18 +298,11 @@ void lua_onkick(int hooknum, void *arg) {
   nick *kicked = arglist[1];
   nick *kicker = arglist[2];
   char *message = (char *)arglist[3];
-  int mode = 1;
 
-  if(!kicker || IsOper(kicker) || IsService(kicker) || IsXOper(kicker)) /* bloody Cruicky */
-    mode = 0;
-
-  if(mode) {
+  if(kicker)
     lua_avpcall("irc_onkick", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
-  } else if(kicker) {
-    lua_avpcall("irc_onkickall", "Slls", ci->name, kicked->numeric, kicker->numeric, message);
-  } else {
-    lua_avpcall("irc_onkickall", "Sl0s", ci->name, kicked->numeric, message);
-  }
+  else
+    lua_avpcall("irc_onkick", "Sl0s", ci->name, kicked->numeric, message);
 }
 
 void lua_ontopic(int hooknum, void *arg) {
@@ -317,12 +310,13 @@ void lua_ontopic(int hooknum, void *arg) {
   channel *cp=(channel*)arglist[0];
   nick *np = (nick *)arglist[1];
 
-  if(!np || IsOper(np) || IsService(np) || IsXOper(np))
-    return;
   if(!cp || !cp->topic) 
     return;
 
-  lua_avpcall("irc_ontopic", "SlS", cp->index->name, np->numeric, cp->topic);
+  if(np)
+    lua_avpcall("irc_ontopic", "SlS", cp->index->name, np->numeric, cp->topic);
+  else
+    lua_avpcall("irc_ontopic", "S0S", cp->index->name, cp->topic);
 }
 
 void lua_onop(int hooknum, void *arg) {

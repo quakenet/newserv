@@ -29,9 +29,17 @@ struct searchNode *age_parse(searchCtx *ctx, int argc, char **argv) {
 
 void *age_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
   nick *np = (nick *)theinput;
-  whowas *ww = (whowas *)np->next;
+  whowas *ww;
+  time_t ts;
 
-  return (void *)(getnettime() - ww->timestamp);
+  if (ctx->searchcmd == reg_nicksearch)
+    ts = np->timestamp;
+  else {
+    ww = (whowas *)np->next;
+    ts = ww->timestamp;
+  }
+
+  return (void *)(getnettime() - ts);
 }
 
 void age_free(searchCtx *ctx, struct searchNode *thenode) {

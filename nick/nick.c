@@ -51,7 +51,7 @@ const flag accountflags[] = {
    { 'd', AFLAG_DEVELOPER },
    { '\0', 0 } };
 
-#define nickhash(x)       ((crc32i(x))%NICKHASHSIZE)
+#define nickhash(x)       ((irc_crc32i(x))%NICKHASHSIZE)
 
 nick *nicktable[NICKHASHSIZE];
 nick **servernicks[MAXSERVERS];

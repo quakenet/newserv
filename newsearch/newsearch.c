@@ -214,12 +214,14 @@ void _init() {
   registersearchterm(reg_nicksearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
   registersearchterm(reg_whowassearch, "ipvsix",ipv6_parse, 0, "IPv6 user");
   registersearchterm(reg_nicksearch, "message",message_parse, 0, "Last message");
+  registersearchterm(reg_nicksearch, "age",age_parse, 0, "Nick record age in seconds");
+  registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
+
 
   /* Whowas operations */
   registersearchterm(reg_whowassearch, "quit",quit_parse, 0, "User quit");
   registersearchterm(reg_whowassearch, "killed",killed_parse, 0, "User was killed");
   registersearchterm(reg_whowassearch, "renamed",renamed_parse, 0, "User changed nick");
-  registersearchterm(reg_whowassearch, "age",age_parse, 0, "Whowas record age in seconds");
   registersearchterm(reg_whowassearch, "newnick",newnick_parse, 0, "New nick (for rename whowas records)");
   registersearchterm(reg_whowassearch, "reason",reason_parse, 0, "Quit/kill reason");
 
@@ -306,6 +308,7 @@ void _fini() {
   deregistersearchcommand( reg_nicksearch );
   deregistersearchcommand( reg_chansearch );
   deregistersearchcommand( reg_usersearch );
+  deregistersearchcommand( reg_whowassearch );
   destroycommandtree( searchCmdTree );
 }
 
@@ -325,6 +328,8 @@ void registerglobalsearchterm(char *term, parseFunc parsefunc, char *help) {
     int len=strlen(help);
     sl->help=(char *)malloc(len+1);
     if(!sl->help) {
+      freesstring(sl->name);
+      free(sl);
       Error("newsearch", ERR_ERROR, "malloc failed: registerglobalsearchterm");
       return;
     }
@@ -384,7 +389,7 @@ void deregistersearchterm(searchCmd *cmd, char *term, parseFunc parsefunc) {
   deletecommandfromtree(cmd->searchtree, term, (CommandHandler) parsefunc);
 }
 
-static void controlwallwrapper(int level, char *format, ...) __attribute__ ((format (printf, 2,	 3)));
+static void controlwallwrapper(int level, char *format, ...) __attribute__ ((format (printf, 2, 3)));
 static void controlwallwrapper(int level, char *format, ...) {
   char buf[1024];
   va_list ap;
@@ -629,8 +634,8 @@ void whowassearch_exe(struct searchNode *search, searchCtx *ctx) {
   /* The top-level node needs to return a BOOL */
   search=coerceNode(ctx, search, RETURNTYPE_BOOL);
 
-  for (i = whowasoffset; i < whowasoffset + WW_MAXENTRIES; i++) {
-    ww = &whowasrecs[i % WW_MAXENTRIES];
+  for (i = whowasoffset; i < whowasoffset + whowasmax; i++) {
+    ww = &whowasrecs[i % whowasmax];
 
     if (ww->type == WHOWAS_UNUSED)
       continue;

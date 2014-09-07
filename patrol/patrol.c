@@ -44,19 +44,10 @@ host *patrol_selecthost(void) {
 }
 
 int patrol_isip(char *host) {
-  char *p = host, components = 0, length = 0;
+  struct irc_in_addr ip;
+  unsigned char bits;
 
-  for (; *p; p++) {
-    if (*p == '.') {
-      if (((!length) || (length = 0)) || (++components > 3))
-        return 0;
-    } else {
-      if ((++length > 3) || !isdigit(*p))
-        return 0;
-    }
-  }
-
-  return components == 3;
+  return (ipmask_parse(host, &ip, &bits));
 }
 
 static int specialuseronhost(host *hp) {
@@ -166,7 +157,7 @@ void patrol_genhost(char *ptc, char size, struct irc_in_addr *ipaddress) {
 
   ptc[i] = '\0';
 
-  memset(ipaddress, 0, sizeof(ipaddress));
+  memset(ipaddress, 0, sizeof(*ipaddress));
   ((unsigned short *)(ipaddress->in6_16))[5] = 65535;
   ((unsigned short *)(ipaddress->in6_16))[6] = patrol_minmaxrand(0, 65535);
   ((unsigned short *)(ipaddress->in6_16))[7] = patrol_minmaxrand(0, 65535);
