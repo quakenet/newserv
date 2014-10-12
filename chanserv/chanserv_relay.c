@@ -387,7 +387,6 @@ int csa_dosetemail(void *source, int cargc, char **cargv) {
   cs_log(sender,"SETEMAIL OK username %s email %s",rup->username, rup->email->content);
 
   csdb_updateuser(rup);
-  sendemail(rup);
 
   controlreply(sender, "SETEMAIL TRUE");
 
