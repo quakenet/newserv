@@ -40,7 +40,11 @@ def email(userid, emailtype, prevemail):
   cur.execute("SELECT users.*, code FROM chanserv.users LEFT JOIN chanserv.languages ON language = languageid WHERE id = %d" % userid)
 
   unifieddict = {}
-  for key, value in cur.fetchone().items():
+  one = cur.fetchone()
+  if one is None:
+    return
+
+  for key, value in one.items():
     unifieddict["user.%s" % key] = value
 
   for key, value in CONFIG["templateoptions"].items():
@@ -58,7 +62,10 @@ def email(userid, emailtype, prevemail):
   if not mailto:
     mailto = "user.email"
 
-  print "%s -> %s" % (`subject`, `unifieddict[mailto]`)
+  if not unifieddict[mailto]:
+    return
+
+  print "%s -> %s (%d)" % (`subject`, `unifieddict[mailto]`, userid)
   inject(unifieddict[mailto], subject, template)
 
 def main():
