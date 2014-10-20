@@ -17,7 +17,7 @@ void at_logquit(unsigned long userid, time_t accountts, time_t when, char *reaso
 
   dbescapestring(escreason, lreason, strlen(lreason));
 
-  dbquery("UPDATE chanserv.authhistory SET disconnecttime=%lu, quitreason=E'%s' WHERE userID=%lu AND authtime=%lu",
+  dbquery("UPDATE chanserv.authhistory SET disconnecttime=%lu, quitreason='%s' WHERE userID=%lu AND authtime=%lu",
               when, escreason, userid, accountts);
 }
 
@@ -31,7 +31,7 @@ void at_lognewsession(unsigned int userid, nick *np) {
   dbescapestring(eschost, np->host->name->content, np->host->name->length);
 
   dbquery("INSERT INTO chanserv.authhistory (userID, nick, username, host, authtime, disconnecttime, numeric) "
-    "VALUES (%u, E'%s', E'%s', E'%s', %lu, %lu, %lu)",
+    "VALUES (%u, '%s', '%s', '%s', %lu, %lu, %lu)",
     userid, escnick, escuser, eschost, np->accountts, 0UL, np->numeric);
 }
 
