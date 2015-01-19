@@ -210,8 +210,7 @@ void hchannel_remove_inactive_users(void)
 		if (
 		    (huser_get_level((*hchanuser)->husr) == H_PEON) &&
 		    (time(NULL) - huser_on_channel((*hchanuser)->husr,hchan)->last_activity >= hchan->max_idle) &&
-		    !(on_queue((*hchanuser)->husr, huser_on_channel((*hchanuser)->husr, hchan))) &&
-                    !IsSetHost((*hchanuser)->husr->real_user)
+		    !(on_queue((*hchanuser)->husr, huser_on_channel((*hchanuser)->husr, hchan)))
 		   )
 		{
 		    if (huser_on_channel((*hchanuser)->husr, hchan)->flags & H_IDLE_WARNING)
