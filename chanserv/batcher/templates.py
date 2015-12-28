@@ -12,7 +12,7 @@ except ImportError:
 
 def generate_url(config, obj):
   s = os.urandom(4)
-  r = RC4(md5.md5("%s %s" % (s, config["urlkey"])).hexdigest())
+  r = RC4(md5.md5("%s %s" % (s, config["urlkey"])).hexdigest(), burn=0)
   a = r.crypt(obj["user.password"])
   b = md5.md5(md5.md5("%s %s %s %s" % (config["urlsecret"], obj["user.username"], a, s)).hexdigest()).hexdigest()
   obj["url"] = "%s?m=%s&h=%s&u=%s&r=%s" % (config["url"], a.encode("hex"), b, obj["user.username"].encode("hex"), s.encode("hex"))
