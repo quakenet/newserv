@@ -206,8 +206,14 @@ static void cleanupdb(void *arg) {
   /* This query returns a single column containing the userids of all users
    * who have active sessions now, or sessions which ended in the last
    * CLEANUP_ACCOUNT_INACTIVE days.  */
+
+  dbquery("BEGIN TRANSACTION;");
+
+  /* increase memory for aggregate (GROUP BY) -- query can take hours if this spills to disk */
+  dbquery("SET LOCAL work_mem = '512MB';");
   q9cleanup_asyncquery(cleanupdb_real, NULL,
-    "SELECT userID from chanserv.authhistory WHERE disconnecttime=0 OR disconnecttime > %d GROUP BY userID", to_age);
-  
+    "SELECT userID from chanserv.authhistory WHERE disconnecttime=0 OR disconnecttime > %d GROUP BY userID;", to_age);
+  dbquery("COMMIT;");
+
   cleanupdb_active=1;
 }
