@@ -197,7 +197,7 @@ static void loadgroups_fini(const DBAPIResult *result, void *tag) {
 
 static int trusts_connectdb(void) {
   if(!trustsdb) {
-    trustsdb = dbapi2open(NULL, "trusts");
+    trustsdb = dbapi2open("sqlite", "trusts");
     if(!trustsdb) {
       Error("trusts", ERR_WARNING, "Unable to connect to db -- not loaded.");
       return 0;
