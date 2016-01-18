@@ -14,9 +14,9 @@ HOOK_ENGINE=old
 endif
 
 ifndef BUILDID
-BUILDID := $(shell (hg id || echo "unknown") | sed -e "s/[()]//g;s/+ /+/g;s/ /-/g" )
+BUILDID := "$(shell (git describe --long --dirty --all --abbrev=10 || echo "unknown"))"
 endif
-MFLAGS+=BUILDID=$(BUILDID)
+MFLAGS+=BUILDID='${BUILDID}'
 
 default: all
 
@@ -35,7 +35,7 @@ default: all
 
 .l.c:	;
 
-CFLAGS+=-I. -I.. -DBUILDID=$(BUILDID)
+CFLAGS+=-I. -I.. -DBUILDID='${BUILDID}'
 CFLAGS+=-Wall -g -finline-functions -funroll-loops -Werror=format-security
 EXECFLAGS=
 
