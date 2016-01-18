@@ -1,5 +1,7 @@
 /* irc.c: handle the IRC interface */
 
+#define _POSIX_SOURCE
+
 #include "irc.h"
 #include "irc_config.h"
 #include "../parser/parser.h"
@@ -23,7 +25,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <netinet/in.h>
 #include <errno.h>
 
 MODULE_VERSION("");
@@ -136,9 +137,9 @@ void nexthub(void) {
     hubnum=(hubnum+1)%hubcount;
 }
 
-int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pingfreq) {
+int gethub(int servernum, char **conto, char **port, char **conpass, int *pingfreq) {
   sstring *conto_s, *portnum_s, *conpass_s, *pingfreq_s;
-  static char conto_b[512], conpass_b[512];
+  static char conto_b[512], conpass_b[512], conport_b[512];
   int ret, s;
   char *section;
 
@@ -167,9 +168,10 @@ int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pin
     freesstring(conto_s);
   }
 
-  if (portnum) {
-     portnum_s=getcopyconfigitem(section,s?"port":"hubport","4400",7);
-    *portnum=strtol(portnum_s->content,NULL,10);
+  if (port) {
+    portnum_s=getcopyconfigitem(section,s?"port":"hubport","4400",7);
+    strlcpy(conport_b, portnum_s->content, sizeof(conport_b));
+    *port = conport_b;
 
     freesstring(portnum_s);
   }
@@ -192,9 +194,18 @@ int gethub(int servernum, char **conto, long *portnum, char **conpass, long *pin
   return ret;
 }
 
+static struct addrinfo *getsockhints(void) {
+  static struct addrinfo hints;
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  return &hints;
+}
+
 /* we check at startup that (most things) resolve */
 void checkhubconfig(void) {
   array *servers_ar;
+  struct addrinfo *addrinfo;
   int i;
 
   resethubnum();
@@ -216,17 +227,19 @@ void checkhubconfig(void) {
   hubcount=servers_ar->cursi;
 
   for (i=0;i<hubcount;i++) {
-    char *conto;
+    char *conto, *conport;
 
-    if (!gethub(i, &conto, NULL, NULL, NULL)) {
+    if (!gethub(i, &conto, &conport, NULL, NULL)) {
       Error("irc",ERR_FATAL,"No server configuration specified for '%s'.",hublist[i]->content);
       exit(1);
     }
 
-    if (!gethostbyname(conto)) {
-      Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto);
+    if(getaddrinfo(conto, conport, getsockhints(), &addrinfo)) {
+      Error("irc",ERR_FATAL,"Couldn't resolve host %s:%s.",conto,conport);
       exit(1);
     }
+
+    freeaddrinfo(addrinfo);
   }
 }
 
@@ -235,11 +248,10 @@ void ircrehash(int hookhum, void *arg) {
 }
 
 void irc_connect(void *arg) {  
-  struct sockaddr_in sockaddress;
-  struct hostent *host;
+  struct addrinfo *addrinfo, *res;
   sstring *mydesc;
-  char *conto,*conpass;
-  long portnum,pingfreq;
+  char *conto,*conpass,*conport;
+  int pingfreq;
 /*  socklen_t opt=1460;*/
 
   nextline=inbuf;
@@ -247,50 +259,48 @@ void irc_connect(void *arg) {
   linesreceived=0;
   awaitingping=0;
 
-  gethub(hubnum, &conto, &portnum, &conpass, &pingfreq);
-  
-  mydesc=getcopyconfigitem("irc","serverdescription","newserv 0.01",100);
-
-  serverfd = socket(PF_INET, SOCK_STREAM, 0);
-  if (serverfd == -1) {
-    Error("irc",ERR_FATAL,"Couldn't create socket.");
-    exit(1);
+  if (!gethub(hubnum, &conto, &conport, &conpass, &pingfreq)) {
+    Error("irc",ERR_ERROR,"No server configuration specified for '%s'.",hublist[hubnum]->content);
+    goto fail;
   }
 
-  memset(&sockaddress, 0, sizeof(sockaddress));
-  sockaddress.sin_family = AF_INET;
-  sockaddress.sin_port = htons(portnum);
-  host = gethostbyname(conto);
-  if (!host) {
-    Error("irc",ERR_FATAL,"Couldn't resolve host %s.",conto);
-    exit(1);
+  if(getaddrinfo(conto, conport, getsockhints(), &addrinfo)) {
+    Error("irc",ERR_ERROR,"Couldn't resolve host %s",conto);
+    goto fail;
   }
 
-#if !defined(h_addr) /* h_addr is deprecated */
-  memcpy(&sockaddress.sin_addr, host->h_addr_list[0], sizeof(struct in_addr));
-#else
-  memcpy(&sockaddress.sin_addr, host->h_addr, sizeof(struct in_addr));
-#endif
-  
+  Error("irc",ERR_INFO,"Connecting to %s:%s",conto,conport);
+  for(res=addrinfo;res;res=res->ai_next) {
+    int fd = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
+    if (fd == -1)
+      continue;
+
+    if(connect(fd, addrinfo->ai_addr, addrinfo->ai_addrlen) != -1) {
+      serverfd = fd;
+      break;
+    }
+
+    close(fd);
+  }
+  freeaddrinfo(addrinfo);
+
+  if(!res) {
+    Error("irc",ERR_ERROR,"Couldn't connect to %s:%s",conto,conport);
+    goto fail;
+  }
+
 /*  if (setsockopt(serverfd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt))) {
     Error("irc",ERR_WARNING,"Error setting socket buffer.");
   }
   */
 
-  Error("irc",ERR_INFO,"Connecting to %s:%lu",conto,portnum);
-
-  if (connect(serverfd, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == -1) {
-    nexthub();
-    Error("irc",ERR_ERROR,"Couldn't connect to %s:%lu, will try next server in one minute",conto,portnum);
-    scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
-    close(serverfd);
-    freesstring(mydesc);
-    return;
-  }
-  
   irc_send("PASS :%s",conpass);
+
+  mydesc=getcopyconfigitem("irc","serverdescription","newserv 0.01",100);
+
   /* remember when changing modes to change server/server.c too */
   irc_send("SERVER %s 1 %ld %ld J10 %s%s +sh6n :%s",myserver->content,starttime,time(NULL),mynumeric->content,longtonumeric(MAXLOCALUSER,3),mydesc->content);
+  freesstring(mydesc);
 
   registerhandler(serverfd, POLLIN|POLLPRI|POLLERR|POLLHUP|POLLNVAL, &handledata);
 
@@ -298,8 +308,13 @@ void irc_connect(void *arg) {
    * to time out a failed connection.. */
 
   schedulerecurring(time(NULL)+pingfreq,0,pingfreq,&sendping,NULL);
-  
-  freesstring(mydesc);
+  return;
+
+fail:
+  Error("irc",ERR_INFO,"Will try next host in one minute");
+
+  nexthub();
+  scheduleoneshot(time(NULL)+60,&irc_connect,NULL);
 }
 
 int irc_handleserver(void *source, int cargc, char **cargv) {

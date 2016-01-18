@@ -342,24 +342,23 @@ def usage():
   print "    -m [additional module]"
   print "    -v: verbose"
 
-def main(workspacesfile):
+def main():
   global LOG, VERBOSE
 
-  workspacesconfig = IniParser(open(workspacesfile, "r"))
+  files, workspaces = [], []
+  for root, _, file_list in os.walk("."):
+    if "configure.ini" not in file_list:
+      continue
 
-  files = []
-  workspaces = []
+    print "found workspace: %s" % root
+    workspaces.append(root)
 
-  for workspace in ["."] + workspacesconfig["workspaces"].keys():
-    path = workspace + "/configure.ini"
-    if os.path.exists(path):
-      print "found workspace: %s" % workspace
-      workspaces.append(workspace)
-      files.append( (workspace, open(path, "r")) )
+    path = os.path.join(root, "configure.ini")
+    files.append( (root, open(path, "r")) )
 
-      local_path = workspace + "/configure.ini.local"
-      if os.path.exists(local_path):
-        files.append( (workspace, open(local_path, "r")) )
+    local_path = os.path.join(root, "configure.ini.local")
+    if os.path.exists(local_path):
+      files.append( (root, open(local_path, "r")) )
 
   config = MultiConfigureIniParser(files)
 
@@ -412,4 +411,4 @@ def main(workspacesfile):
   configure(config, overrides, workspaces)
 
 if __name__ == "__main__":
-  main("workspaces.ini")
+  main()
