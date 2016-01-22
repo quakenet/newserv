@@ -24,7 +24,7 @@ def iprint(x):
   sys.stdout.write(x)
   sys.stdout.flush()
   LOG.write(x)
-  
+
 class IniParser:
   def __init__(self, file):
     self.__d = {}
@@ -68,7 +68,7 @@ class ConfigureIniParser(IniParser):
     self.buildorder = []
     self.updatemodules(self.keys("modules"))
 
-    self.selectlibs = {}    
+    self.selectlibs = {}
     for k, v in self.setdefault("selectlibs", {}).items():
       self.selectlibs[k] = v.split()
 
@@ -329,6 +329,8 @@ def configure(config, selectoverrides, workspaces):
   if len(cantbuild) > 0:
     lprint("configure: can't select: %s" % " ".join(cantbuild))
 
+validopts = {}
+
 def usage():
   print
   print "  Usage: %s [-h] [-v] [options]" % sys.argv[0]
@@ -336,8 +338,7 @@ def usage():
   print "  Additional options are:"
   for k, v in validopts.items():
     print "    --with-%s=[%s]" % (v[0], "|".join(v[1]))
-
-  print "    -L [additional lib dir]" 
+  print "    -L [additional lib dir]"
   print "    -I [additional include dir]"
   print "    -m [additional module]"
   print "    -v: verbose"
@@ -363,7 +364,7 @@ def main():
   config = MultiConfigureIniParser(files)
 
   mopts = []
-  validopts = {}
+
   for k, v in config.selectlibs.items():
     mopts.append("with-%s=" % k)
     validopts["--with-%s" % k] = (k, v)
