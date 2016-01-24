@@ -1131,7 +1131,16 @@ int cs_removechannelifempty(nick *sender, regchan *rcp) {
         return 0;
     }
   }
-  
+
+  /*
+   * don't cleanup the last channel to prevent channel id reuse.
+   * the channel will be orphaned but will be cleaned up by cleanup eventually
+   */
+  if(rcp->ID == lastchannelID) {
+    cs_log(sender,"DELCHAN FAILED %s (last id)",rcp->index->name->content);
+    return 0;
+  }
+
   cs_log(sender,"DELCHAN %s (Empty)",rcp->index->name->content);
   cs_removechannel(rcp, "Last user removed - channel deleted.");
   

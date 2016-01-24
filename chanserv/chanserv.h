@@ -121,7 +121,7 @@
 #define ENTROPYLEN    8
 
 /* Minimum acceptable reason length for stuff like deluser */
-#define MIN_REASONLEN 20
+#define MIN_REASONLEN 15
 
 #include "chanserv_messages.h"
 
