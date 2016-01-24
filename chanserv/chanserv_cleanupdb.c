@@ -161,6 +161,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
         cs_log(NULL, "CLEANUPDB inactive channel %s", cip->name?cip->name->content:"??");
         cs_removechannel(rcp, "Channel deleted due to lack of activity.");
         chansvaped++;
+        continue;
       }
       
       /* Get rid of any dead chanlev entries */
@@ -175,11 +176,12 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
             freeregchanuser(rcup);
           }
         }
+      }
 
-        if (cs_removechannelifempty(NULL, rcp)) {
-          /* logged+parted by cs_removechannelifempty */
-          chansempty++;
-        }
+      if (cs_removechannelifempty(NULL, rcp)) {
+        /* logged+parted by cs_removechannelifempty */
+        chansempty++;
+        continue;
       }
     }
   }
