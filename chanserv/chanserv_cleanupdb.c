@@ -102,6 +102,10 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
       if (anp->marker == themarker)
         continue;
 
+      /* HACK: don't ever delete the last user -- prevents userids being reused */
+      if (vrup->ID == lastuserID)
+        continue;
+
       if(!anp->nicks && !UHasStaffPriv(vrup) && !UIsCleanupExempt(vrup)) {
         if(vrup->lastauth && (vrup->lastauth < to_age)) {
           expired++;
@@ -124,6 +128,10 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
     for (cip=chantable[i];cip;cip=ncip) {
       ncip=cip->next;
       if (!(rcp=cip->exts[chanservext]))
+        continue;
+
+      /* HACK: don't ever delete the last channel -- prevents channelids being reused */
+      if (rcp->ID == lastchannelID)
         continue;
 
       /* there's a bug here... if no joins or modes are done within the threshold
