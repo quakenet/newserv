@@ -1,7 +1,10 @@
 #include "chanserv.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION(QVERSION);
 
 static void cleanupdb(void *arg);
 static void schedulecleanup(int hooknum, void *arg);
