@@ -36,7 +36,12 @@ int csu_dodeluser(void *source, int cargc, char **cargv) {
 
   if (!(target=findreguser(sender, cargv[0])))
     return CMD_ERROR;
-  
+
+  if(target->ID == lastuserID) {
+    chanservsendmessage(sender, "Sorry, can't delete last user -- wait a while and try again.");
+    return CMD_ERROR;
+  }
+
   if(UHasStaffPriv(target)) {
     cs_log(sender,"DELUSER FAILED username %s (reason: %s)",target->username,reason);
     chanservwallmessage("%s (%s) just FAILED using DELUSER on %s (reason: %s)", sender->nick, rup->username, target->username, reason);

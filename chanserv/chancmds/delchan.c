@@ -41,6 +41,11 @@ int csc_dodelchan(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (rcp->ID == lastchannelID) {
+    chanservsendmessage(sender, "Sorry, can't delete last channel -- wait a while and try again.");
+    return CMD_ERROR;
+  }
+
   cs_log(sender,"DELCHAN %s (%s)",cip->name->content,cargc>1?cargv[1]:"");
   cs_removechannel(rcp, "Channel deleted.");
   chanservstdmessage(sender, QM_DONE);

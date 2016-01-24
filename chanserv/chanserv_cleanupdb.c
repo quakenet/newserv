@@ -53,7 +53,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
   authname *anp;
   int i,j;
   time_t t, to_age, unused_age, maxchan_age, authhistory_age;
-  int expired = 0, unauthed = 0, chansvaped = 0;
+  int expired = 0, unauthed = 0, chansvaped = 0, chansempty = 0;
   chanindex *cip, *ncip;
   regchan *rcp;
   DBResult *pgres;
@@ -172,7 +172,13 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
             cs_log(NULL, "Removing user %s from channel %s (no flags)",rcup->user->username,rcp->index->name->content);
             csdb_deletechanuser(rcup);
             delreguserfromchannel(rcp, rcup->user);
+            freeregchanuser(rcup);
           }
+        }
+
+        if (cs_removechannelifempty(NULL, rcp)) {
+          /* logged+parted by cs_removechannelifempty */
+          chansempty++;
         }
       }
     }
@@ -182,7 +188,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
     
   csdb_cleanuphistories(authhistory_age);
   
-  cleanuplog("Stats: %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE);
+  cleanuplog("Stats: %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days, %d channels empty.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE, chansempty);
 
 out:
   cleanupdb_active=0;
