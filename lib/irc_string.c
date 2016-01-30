@@ -523,9 +523,10 @@ break_while:
   if (!ch)
     return 0;                   /* mask ends with '*', we got it */
   ch = ToLower(ch);
-  while (ToLower(*s++) != ch)
+  do {
     if (!*s)
       return 1;
+  } while (ToLower(*s++) != ch);
   bs = s;                       /* Next try start from here */
 
   /* Check the rest of the "chunk" */
