@@ -24,6 +24,7 @@
 #include "../chanserv.h"
 #include "../authlib.h"
 #include "../../lib/irc_string.h"
+#include "../../lib/hmac.h"
 #include "../../core/hooks.h"
 #include <stdio.h>
 #include <string.h>
@@ -56,7 +57,7 @@ int csa_donewpw(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  if (!strcmp(cargv[0],cargv[1])) {
+  if (!hmac_strcmp(cargv[0],cargv[1])) {
     /* If they are the same then continue anyway but don't send the hook later. */
     same=1;
   }
