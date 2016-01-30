@@ -315,6 +315,32 @@ static int lua_localchanmsg(lua_State *ps) {
   LUA_RETURN(ps, LUA_OK);
 }
 
+static int lua_localchanopnotice(lua_State *ps) {
+  char *msg;
+  nick *source;
+  channel *target;
+
+  if(!lua_islong(ps, 1) || !lua_isstring(ps, 2) || !lua_isstring(ps, 3))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  source = getnickbynumeric(lua_tolong(ps, 1));
+  if(!source)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  target = findchannel((char *)lua_tostring(ps, 2));
+  if(!target)
+    LUA_RETURN(ps, LUA_FAIL);
+
+  msg = (char *)lua_tostring(ps, 3);
+
+  if(!lua_lineok(msg))
+    LUA_RETURN(ps, LUA_FAIL);
+
+  sendopnoticetochannel(source, target, "%s", msg);
+
+  LUA_RETURN(ps, LUA_OK);
+}
+
 static int lua_localnotice(lua_State *ps) {
   char *msg;
   nick *source;
@@ -668,5 +694,6 @@ void lua_registerlocalcommands(lua_State *l) {
   lua_register(l, "irc_localwallops", lua_localwallops);
 
   lua_register(l, "irc_localsimplechanmode", lua_localsimplechanmode);
+  lua_register(l, "irc_localchanopnotice", lua_localchanopnotice);
 }
 

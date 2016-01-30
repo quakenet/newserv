@@ -27,6 +27,7 @@ void lua_onauth(int hooknum, void *arg);
 void lua_ondisconnect(int hooknum, void *arg);
 void lua_onmode(int hooknum, void *arg);
 void lua_onop(int hooknum, void *arg);
+void lua_onvoice(int hooknum, void *arg);
 void lua_onprequit(int hooknum, void *arg);
 void lua_onquit(int hooknum, void *arg);
 void lua_onrename(int hooknum, void *arg);
@@ -46,6 +47,8 @@ void lua_registerevents(void) {
   registerhook(HOOK_CHANNEL_KICK, &lua_onkick);
   registerhook(HOOK_CHANNEL_OPPED, &lua_onop);
   registerhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
+  registerhook(HOOK_CHANNEL_VOICED, &lua_onvoice);
+  registerhook(HOOK_CHANNEL_DEVOICED, &lua_onvoice);
   registerhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   registerhook(HOOK_NICK_LOSTNICK, &lua_onquit);
   registerhook(HOOK_NICK_RENAME, &lua_onrename);
@@ -67,6 +70,8 @@ void lua_deregisterevents(void) {
   deregisterhook(HOOK_NICK_PRE_LOSTNICK, &lua_onprequit);
   deregisterhook(HOOK_CHANNEL_DEOPPED, &lua_onop);
   deregisterhook(HOOK_CHANNEL_OPPED, &lua_onop);
+  deregisterhook(HOOK_CHANNEL_DEVOICED, &lua_onvoice);
+  deregisterhook(HOOK_CHANNEL_VOICED, &lua_onvoice);
   deregisterhook(HOOK_CHANNEL_KICK, &lua_onkick);
   deregisterhook(HOOK_CHANNEL_TOPIC, &lua_ontopic);
   deregisterhook(HOOK_NICK_ACCOUNT, &lua_onauth);
@@ -310,7 +315,7 @@ void lua_ontopic(int hooknum, void *arg) {
   channel *cp=(channel*)arglist[0];
   nick *np = (nick *)arglist[1];
 
-  if(!cp || !cp->topic) 
+  if(!cp || !cp->topic)
     return;
 
   if(np)
@@ -332,6 +337,22 @@ void lua_onop(int hooknum, void *arg) {
     lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "Sll", ci->name, np->numeric, target->numeric);
   } else {
     lua_avpcall(hooknum == HOOK_CHANNEL_OPPED?"irc_onop":"irc_ondeop", "S0l", ci->name, target->numeric);
+  }
+}
+
+void lua_onvoice(int hooknum, void *arg) {
+  void **arglist = (void **)arg;
+  chanindex *ci = ((channel *)arglist[0])->index;
+  nick *np = arglist[1];
+  nick *target = arglist[2];
+
+  if(!target)
+    return;
+
+  if(np) {
+    lua_avpcall(hooknum == HOOK_CHANNEL_VOICED?"irc_onvoice":"irc_ondevoice", "Sll", ci->name, np->numeric, target->numeric);
+  } else {
+    lua_avpcall(hooknum == HOOK_CHANNEL_VOICED?"irc_onvoice":"irc_ondevoice", "S0l", ci->name, target->numeric);
   }
 }
 
@@ -484,5 +505,3 @@ void lua_onmode(int hooknum, void *arg) {
     lua_avpcall("irc_onmode", "S0ss", ci->name, printallmodes(cp), printlimitedmodes(cp, beforeflags));
   }
 }
-
-
