@@ -63,13 +63,13 @@ int nr_openlistensocket(int portnum) {
   unsigned int       opt=1;
   
   if ((fd=socket(AF_INET,SOCK_STREAM,0))==-1) {
-    Error("proxyscan",ERR_ERROR,"Unable to open listening socket (%d).",errno);
+    Error("nickrate",ERR_ERROR,"Unable to open listening socket (%d).",errno);
     return -1;
   }
   
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &opt, sizeof(opt))!=0) {
     close(fd);
-    Error("proxyscan",ERR_ERROR,"Unable to set SO_REUSEADDR on listen socket.");
+    Error("nickrate",ERR_ERROR,"Unable to set SO_REUSEADDR on listen socket.");
     return -1;
   }
   
@@ -80,7 +80,7 @@ int nr_openlistensocket(int portnum) {
   
   if (bind(fd, (struct sockaddr *) &sin, sizeof(sin))) {
     close(fd);
-    Error("proxyscan",ERR_ERROR,"Unable to bind listen socket (%d).",errno);
+    Error("nickrate",ERR_ERROR,"Unable to bind listen socket (%d).",errno);
     return -1;
   }
   
@@ -88,7 +88,7 @@ int nr_openlistensocket(int portnum) {
   
   if (ioctl(fd, FIONBIO, &opt)!=0) {
     close(fd);
-    Error("proxyscan",ERR_ERROR,"Unable to set listen socket non-blocking.");
+    Error("nickrate",ERR_ERROR,"Unable to set listen socket non-blocking.");
     return -1;
   }
   
