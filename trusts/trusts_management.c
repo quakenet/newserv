@@ -207,7 +207,7 @@ static int trusts_cmdtrustgroupadd(void *source, int cargc, char **cargv) {
   controlwall(NO_OPER, NL_TRUSTS, "%s TRUSTGROUPADD'ed '%s'", controlid(sender), tg->name->content);
   trustlog(tg, sender->authname, "Created trust group '%s' (ID #%d): howmany=%d, enforceident=%d, maxperident=%d, "
     "createdby=%s, contact=%s, comment=%s",
-    tg->name->content, howmany, tg->id, enforceident, maxperident, createdby, contact, comment);
+    tg->name->content, tg->id, howmany, enforceident, maxperident, createdby, contact, comment);
 
   return CMD_OK;
 }
