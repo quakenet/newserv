@@ -63,6 +63,10 @@ a certain library or header file was not found you can run the configure script
 with the -v option or check the .configure.log file after your first configure
 run.
 
+For Debian/Ubuntu based distributions you will need these packages:
+
+    libpcre3-dev liblua5.1-dev zlib1g-dev libpq-dev libmysqlclient-dev
+
 Please refer to the "Local Settings" section in this file if you're using
 non-standard library/header search paths. Once you've resolved all dependency
 issues you can build newserv:
