@@ -12,7 +12,6 @@ array splitlist;
 
 static void sphook_newserver(int hook, void *arg);
 static void sphook_lostserver(int hook, void *arg);
-static void sp_addsplit(const char *name, time_t ts, flag_t flags);
 
 void _init(void) {
   registerhook(HOOK_SERVER_NEWSERVER, &sphook_newserver);
@@ -72,7 +71,7 @@ void sp_deletesplit(const char *name) {
   }
 }
 
-static void sp_addsplit(const char *name, time_t ts, flag_t type) {
+void sp_addsplit(const char *name, time_t ts, flag_t type) {
   int slot;
   splitserver *srv;
 

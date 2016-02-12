@@ -17,10 +17,10 @@ extern array splitlist;
 
 void sp_deletesplit(const char *name);
 int sp_countsplitservers(flag_t orflags);
-/* I don't see why these are exported... */
+/* I don't see why this is exported... */
 /*
 int sp_issplitserver(const char *name);
-void sp_addsplit(const char *name, time_t ts);
 */
+void sp_addsplit(const char *name, time_t ts, flag_t type);
 
 #endif /* __SPLITLIST_H */
