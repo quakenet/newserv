@@ -32,7 +32,7 @@ void _init(void) {
       "  +S: S/spamscan\n"
       "  +X: Other critical service\n"
       " If no flags are given, an attempt to figure them out based on name\n"
-      " will be made, but it's likely not a good one.\n");
+      " will be made, but it's likely not a good one.");
 }
 
 void _fini(void) {
@@ -93,6 +93,20 @@ int spcmd_splitdel(void *source, int cargc, char **cargv) {
   return CMD_OK;
 }
 
+static int doessplitalreadyexist(const char *servername) {
+  splitserver srv;
+  unsigned int i;
+
+  for (i = 0; i < splitlist.cursi; i++) {
+    srv = ((splitserver*)splitlist.content)[i];
+
+    if (!strcasecmp(srv.name->content, servername))
+      return 1;
+  }
+
+  return 0;
+}
+
 int spcmd_splitadd(void *source, int cargc, char **cargv) {
   nick *np = (nick*)source;
   unsigned long long num;
@@ -117,6 +131,11 @@ int spcmd_splitadd(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
+  if (doessplitalreadyexist(servername)) {
+    controlreply(np, "There is a split for %s already.", servername);
+    return CMD_ERROR;
+  }
+
   if (servernamelen > SERVERLEN) {
     controlreply(np, "Server name %s is too long (max: %d characters)",
         servername, SERVERLEN);
@@ -127,7 +146,7 @@ int spcmd_splitadd(void *source, int cargc, char **cargv) {
   if (cargc > 1) {
     if (setflags(&servertype, (flag_t)-1, cargv[1], servertypeflags,
           REJECT_UNKNOWN) != REJECT_NONE) {
-      controlreply(np, "Flag string %s contained invalid flags.\n", cargv[1]);
+      controlreply(np, "Flag string %s contained invalid flags.", cargv[1]);
       return CMD_ERROR;
     }
   } else {
@@ -146,7 +165,7 @@ int spcmd_splitadd(void *source, int cargc, char **cargv) {
     errno = 0;
     num = strtoull(cargv[2], &end, 10);
     if (errno == ERANGE) {
-      controlreply(np, "%s is out of range for a timestamp.\n", cargv[2]);
+      controlreply(np, "%s is out of range for a timestamp.", cargv[2]);
       return CMD_ERROR;
     }
 
