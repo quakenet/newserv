@@ -60,13 +60,37 @@ module lets opers use arbitrary account names and IDs.
 chanfix
 -------
 
-Keeps track of channel ops and can be used to re-op opless channels.
+Keeps track of channel ops and can be used to re-op opless channels. However,
+since its chanfixing commands require oper, it should be paired with the request
+module, which provides REQUESTOP for users and uses chanfix internally.
 
 chanserv
 --------
 
 This is QuakeNet's channel service (Q). In order to load this module you will
 need also need to load the pqsql module.
+
+Configuration:
+
+[chanserv]
+nick=Q
+user=TheQBot
+host=some.host
+realname=ChannelService
+account=Q
+secret=
+ticketsecret=
+createaccountsecret=
+
+secret can be an arbitrary string, at most 128 characters long. If not set, Q
+will generate a random one and not write it to the configuration.
+
+ticketsecret can be an arbitrary string, at most 256 characters long and must
+be set for ticket auth to work. Note that you must implement ticket auth
+yourself if you wish to use it.
+
+createaccountsecret must be a hex string of exact 128 characters (i.e. 64 bytes
+of hex-encoded data).
 
 pqsql
 -----
@@ -80,6 +104,7 @@ host=127.0.0.1
 port=5432
 username=gunnar
 password=changeme
+#database=newserv
 
 dbapi2
 ------
@@ -134,6 +159,8 @@ have a look at the labspace repository at http://hg.quakenet.org/lua-labspace/
 Configuration:
 
 [lua]
+#botnick=U
+#scriptsuffix=.lua
 scriptdir=./luascripts
 script=labspace
 
@@ -151,6 +178,24 @@ nickwatch
 ---------
 
 Implements event-based nicksearch queries.
+
+nterfacer
+---------
+
+Implements a protocol that allows external services to communicate with this
+newserv instance.
+
+You will need to implement your own client if you wish to use this.
+
+Configuration:
+
+[nterfacer]
+#debug=0
+# listening port
+#port=2438
+# Each individual permit/allowed client must have a hostname and password
+hostname=127.0.0.1
+password=changeme
 
 miscreply
 ---------
@@ -184,6 +229,20 @@ proxyscan
 
 Does on-connect proxy scans and glines open proxies.
 
+Configuration:
+
+[proxyscan]
+# listen port
+port=9999
+# bind IP
+ip=127.0.0.1
+maxscans=200
+rescaninterval=3600
+nick=P
+user=proxyscan
+host=some.host
+realname=Proxyscan
+
 request
 -------
 
@@ -200,12 +259,26 @@ Configuration:
 #sserver=spamscan.quakenet.org
 #qnick=Q
 #qserver=cserve.quakenet.org
+#auth=R
+#authid=1780711
+# Auth to S
+#user=R
+#password=bla
 
 serverlist
 ----------
 
 Implements the serverlist command which shows various information about
 connected servers (including their network latency).
+
+Configuration:
+
+[serverlist]
+q_server=CServe.quakenet.org
+s_server=services2.uk.quakenet.org
+service_re=^services\d*\..*$
+hub_re=^hub\d*\..*$
+not_client_re=^(testserv\d*\.).*$
 
 settime
 -------
@@ -218,10 +291,51 @@ splitlist
 Keeps track of servers that were lost during a netsplit. This module is used
 by chanfix to determine when it shouldn't re-op users.
 
+ticketauth
+----------
+
+Provides ticketauth, a way to authenticate to noperserv using a one-time
+ticket. It works similar to the ticket auth in chanserv.
+
+If you want to use ticketauth, you'll need to implement a method to issue
+tickets using the shared secret yourself.
+
+Configuration:
+
+[ticketauth]
+sharedsecret=
+
+sharedsecret is an arbitrary string of at most 512 characters.
+
 trojanscan
 ----------
 
 Used to find and gline drones on the network.
+
+Note that this module uses MySQL exclusively and in a blocking manner, so that
+a hanging connection to the MySQL database can and will block all network I/O.
+For this reason, you will probably want a newserv instance dedicated to running
+trojanscan if you wish to run it.
+
+Configuration:
+
+[trojanscan]
+nick=T
+ident=trojanscan
+hostname=trojanscan.quakenet.org
+realname=Trojanscan v2.73
+authname=T
+# MySQL credentials
+dbhost=localhost
+dbport=3306
+dbuser=moo
+dbpass=changeme
+db=moo
+maxchans=750
+cycletime=16000
+parttime=2600
+maxusers=20
+minchansize=150
 
 trusts
 ------
@@ -253,7 +367,7 @@ server=gnb.netsplit.net,changeme
 server=test.gnb.netsplit.net,changeme
 
 You can use the QuakeNet IAuth daemon available at
-http://hg.quakenet.org/iauthd/ to enforce connection limits using IAuth rather
+https://hg.quakenet.org/iauthd/ to enforce connection limits using IAuth rather
 than g:lines.
 
 whowas, whowas_channels
@@ -264,6 +378,11 @@ nicks and by newsearch.
 
 The whowas_channels module optionally keeps track of which channels users
 were on.
+
+Configuration:
+
+[whowas]
+maxentries=1000
 
 xsb
 ---
