@@ -62,7 +62,7 @@ int lua_rmlua(void *sender, int cargc, char **cargv) {
   lua_list *l;
 
   if(cargc < 1) {
-    controlreply(np, "Usage: rmmod <script>");
+    controlreply(np, "Usage: rmlua <script>");
     return CMD_ERROR;
   }
 
