@@ -14,6 +14,8 @@
 #define CLEANUP_INACTIVE_DAYS 30 /* disable channels where nothing happened for this many days */
 #define CLEANUP_DELETE_DAYS 5 /* delete data for channels that have been disabled for this many days */
 
+#define A4STATS_DB_TOLOWER(x) "translate(lower(" x "), '[]\\~', '{}|^')"
+
 MODULE_VERSION("");
 
 DBAPIConn *a4statsdb;
@@ -316,7 +318,7 @@ static int a4stats_lua_add_line(lua_State *ps) {
   channel = lua_tostring(ps, 1);
   hour = lua_tonumber(ps, 2);
 
-  snprintf(query, sizeof(query), "UPDATE ? SET h%d = h%d + 1 WHERE name = ?", hour, hour);
+  snprintf(query, sizeof(query), "UPDATE ? SET h%d = h%d + 1 WHERE " A4STATS_DB_TOLOWER("name") " = " A4STATS_DB_TOLOWER("?"), hour, hour);
 
   a4statsdb->squery(a4statsdb, query, "Ts", "channels", channel);
 
@@ -465,8 +467,8 @@ static int a4stats_lua_enable_channel(lua_State *ps) {
   if (!lua_isstring(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
-  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (?, ?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
-  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 1, deleted = 0 WHERE name = ?", "Ts", "channels", lua_tostring(ps, 1));
+  a4statsdb->squery(a4statsdb, "INSERT INTO ? (name, timestamp) VALUES (" A4STATS_DB_TOLOWER("?") ", ?)", "Tst", "channels", lua_tostring(ps, 1), time(NULL));
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 1, deleted = 0 WHERE " A4STATS_DB_TOLOWER("name") " = " A4STATS_DB_TOLOWER("?"), "Ts", "channels", lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -475,7 +477,7 @@ static int a4stats_lua_disable_channel(lua_State *ps) {
   if (!lua_isstring(ps, 1))
     LUA_RETURN(ps, LUA_FAIL);
 
-  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 0, deleted = ? WHERE name = ?", "Tts", "channels", time(NULL), lua_tostring(ps, 1));
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET active = 0, deleted = ? WHERE " A4STATS_DB_TOLOWER("name") " = " A4STATS_DB_TOLOWER("?"), "Tts", "channels", time(NULL), lua_tostring(ps, 1));
 
   LUA_RETURN(ps, LUA_OK);
 }
@@ -490,7 +492,7 @@ static int a4stats_lua_set_privacy(lua_State *ps) {
   channel = lua_tostring(ps, 1);
   privacy = lua_tonumber(ps, 2);
 
-  a4statsdb->squery(a4statsdb, "UPDATE ? SET privacy = ? WHERE name = ?", "TUs", "channels", privacy, channel);
+  a4statsdb->squery(a4statsdb, "UPDATE ? SET privacy = ? WHERE " A4STATS_DB_TOLOWER("name") " = " A4STATS_DB_TOLOWER("?"), "TUs", "channels", privacy, channel);
   LUA_RETURN(ps, LUA_OK);
 }
 
