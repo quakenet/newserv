@@ -41,6 +41,8 @@ for (@arglist) {
     next if ($sym eq "_init");
     next if ($sym eq "_fini");
     next if ($sym eq "_version");
+    next if ($sym eq "__bss_start");
+    next if ($sym eq "_end");
 
     if ($type eq "U") {
       push @{$reqsyms{$modname}}, $sym;
