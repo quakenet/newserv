@@ -2386,7 +2386,7 @@ static void helpmod_cmd_ticket (huser *sender, channel* returntype, char* ostr, 
         helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s is considered improper and not worthy of a ticket", argv[1]);
         return;
     }
-    if (huser_get_level(husr) > H_PEON)
+    if (huser_get_level(husr) > H_FRIEND)
     {
         helpmod_reply(sender, returntype, "Cannot issue a ticket: User %s does not require a ticket", argv[1]);
         return;
