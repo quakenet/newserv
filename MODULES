@@ -196,6 +196,9 @@ Configuration:
 # Each individual permit/allowed client must have a hostname and password
 hostname=127.0.0.1
 password=changeme
+# Use legacy key exchange without perfect forward secrecy (protocol version 4).
+# To be used for backwards compatibility reasons only.
+#legacy_kex=0
 
 miscreply
 ---------

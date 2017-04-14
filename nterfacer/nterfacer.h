@@ -28,6 +28,8 @@
 
 #define PROTOCOL_VERSION "5"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
+#define PROTOCOL_VERSION_LEGACY "4"
+#define ANTI_FULL_VERSION_LEGACY "service_link " PROTOCOL_VERSION_LEGACY
 
 struct rline;
 
