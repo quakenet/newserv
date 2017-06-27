@@ -153,6 +153,7 @@
 #define   QPRIV_CHANGEBANTIMER      204
 #define   QPRIV_CHANGEUSERFLAGS     205
 #define   QPRIV_CHANGEWELCOME       206
+#define   QPRIV_RESETCHANSTAT       207
 
 /* List of access checks */
 
