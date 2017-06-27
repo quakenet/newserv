@@ -94,11 +94,11 @@
 #define   CHALLENGEAUTHSITE "http://www.quakenet.org/development/challengeauth/"
 
 /* Cleanup options */
-#define CLEANUP_ACCOUNT_INACTIVE  180 /* make sure you update CLEANUP_AUTHHISTORY too... */
+#define CLEANUP_ACCOUNT_INACTIVE  240 /* make sure you update CLEANUP_AUTHHISTORY too... */
 #define CLEANUP_ACCOUNT_UNUSED    3
-#define CLEANUP_CHANNEL_INACTIVE  40
+#define CLEANUP_CHANNEL_INACTIVE  120
 
-#define CLEANUP_AUTHHISTORY	  240
+#define CLEANUP_AUTHHISTORY	  300
 
 #define CLEANUP_MIN_CHAN_SIZE     2
 
@@ -153,6 +153,7 @@
 #define   QPRIV_CHANGEBANTIMER      204
 #define   QPRIV_CHANGEUSERFLAGS     205
 #define   QPRIV_CHANGEWELCOME       206
+#define   QPRIV_RESETCHANSTAT       207
 
 /* List of access checks */
 

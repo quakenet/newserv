@@ -105,7 +105,7 @@ def main():
         cur.execute("DELETE FROM chanserv.email WHERE mailid = %d" % x)
       cur.execute("COMMIT")
 
-    time.sleep(1)
+    time.sleep(5)
 
 if __name__ == "__main__":
   main()
