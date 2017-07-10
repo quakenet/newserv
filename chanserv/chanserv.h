@@ -930,11 +930,6 @@ int readlastjoindata(const char *filename);
 /* chanservschedule.c */
 void chanservdgline(void *arg);
 
-/* authlib.c */
-int csa_checkeboy(nick *sender, char *eboy);
-void csa_createrandompw(char *pw, int n);
-int csa_checkthrottled(nick *sender, reguser *rup, char *s);
-
 /* chanservdb_updates.c */
 void csdb_updateauthinfo(reguser *rup);
 void csdb_updatelastjoin(regchanuser *rcup);

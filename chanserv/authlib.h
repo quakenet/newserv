@@ -3,8 +3,9 @@
 #include "../nick/nick.h"
 
 /* Functions in authlib.c */
-int cs_checkeboy(nick *np, char *arg);
-void cs_createrandompw(char *arg, int n);
+int csa_checkeboy(nick *sender, char *eboy);
+void csa_createrandompw(char *pw, int n);
+int csa_checkthrottled(nick *sender, reguser *rup, char *s);
 void csa_initregex(void);
 void csa_freeregex(void);
 int csa_checkaccountname(nick *sender, char *accountname);
