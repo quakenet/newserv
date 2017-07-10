@@ -69,7 +69,7 @@
 /* 501 spare for now */
 #define HOOK_CHANSERV_RUNNING      502 /* No arg */
 
-#define HOOK_CHANSERV_AUTH         503 /* Argument is void*[2] (nick *, lastauth) */
+#define HOOK_CHANSERV_AUTH         503 /* Argument is void*[2] (nick *, lastauth) */ /* note: not triggered for REMOTEAUTH */
 #define HOOK_CHANSERV_PWCHANGE     504 /* Argument is nick * */
 #define HOOK_CHANSERV_CHANLEVMOD   505 /* Argument is void*[3] (nick *, regchanuser *, oldflags) */
 #define HOOK_CHANSERV_CHANLEVDUMP  506 /* Argument is nick * */

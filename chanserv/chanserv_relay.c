@@ -23,6 +23,8 @@ int csa_dosetemail(void *source, int cargc, char **cargv);
 int csa_doresendemail(void *source, int cargc, char **cargv);
 int csa_doactivateuser(void *source, int cargc, char **cargv);
 int csa_doaddchan(void *source, int argc, char **argv);
+int csa_doremoteauth(void *source, int argc, char **argv);
+
 static int decrypt_password(unsigned char *secret, int keybits, char *buf, int bufsize, char *encrypted);
 static int hex_to_int(char *input, unsigned char *buf, int buflen);
 
@@ -71,6 +73,7 @@ void relayfinishinit(int hooknum, void *arg) {
   registercontrolhelpcmd("resendemail", NO_RELAY, 1, csa_doresendemail, "Usage: resendemail <userid>");
   registercontrolhelpcmd("activateuser", NO_RELAY, 1, csa_doactivateuser, "Usage: activateuser <userid>");
   registercontrolhelpcmd("addchan", NO_RELAY, 3, csa_doaddchan, "Usage: addchan <channel> <userid> <channel type>");
+  registercontrolhelpcmd("remoteauth", NO_RELAY, 6, csa_doremoteauth, "Usage: remoteauth <username> <digest> <junk> <nick> <ident> <host>");
 
   s=getcopyconfigitem("chanserv","createaccountsecret","",128);
   if(!s || !s->content || !s->content[0]) {
@@ -131,6 +134,59 @@ int csa_docheckhashpass(void *source, int cargc, char **cargv) {
   } else {
     controlreply(sender, "CHECKHASHPASS OK %s %s %u %s", rup->username, flags, rup->ID, rup->email?rup->email->content:"-");
   }
+
+  return CMD_OK;
+}
+
+static void controlremotereply(nick *target, char *message) {
+  controlreply(target, "CHECKHASHPASS FAIL text %s", message);
+}
+
+static void remote_reply(nick *sender, int message_id, ...) {
+  va_list va;
+  va_start(va, message_id);
+  chanservstdvmessage(sender, NULL, message_id, -1 * (int)(strlen("CHECKHASHPASS FAIL text ")), controlremotereply, va);
+  va_end(va);
+}
+
+int csa_doremoteauth(void *source, int cargc, char **cargv) {
+  nick *sender=(nick *)source;
+  reguser *rup;
+
+  if(cargc<6) {
+    controlreply(sender, "REMOTEAUTH FAIL args");
+    controlreply(sender, "REMOTEAUTH END");
+    return CMD_ERROR;
+  }
+
+  char *account = cargv[0];
+  char *digest = cargv[1];
+  char *junk = cargv[2];
+  char *nick = cargv[3];
+  char *ident = cargv[4];
+  char *hostname = cargv[5];
+
+  if (!(rup=findreguserbynick(account))) {
+    controlreply(sender, "REMOTEAUTH FAIL user");
+    controlreply(sender, "REMOTEAUTH END");
+    return CMD_ERROR;
+  }
+
+  if(!checkhashpass(rup, junk, digest)) {
+    controlreply(sender, "REMOTEAUTH FAIL digest");
+    controlreply(sender, "REMOTEAUTH END");
+    return CMD_ERROR;
+  }
+
+  if (!csa_completeauth2(rup, nick, ident, hostname, "REMOTEAUTH", remote_reply, sender)) {
+    controlreply(sender, "REMOTEAUTH END");
+    return CMD_ERROR;
+  }
+
+  /* username:ts:authid */
+  controlreply(sender, "REMOTEAUTH OK %s %ld %ld", rup->username, rup->lastauth ? rup->lastauth : getnettime(), rup->ID);
+
+  /* note: NO HOOK_CHANSERV_AUTH */
 
   return CMD_OK;
 }

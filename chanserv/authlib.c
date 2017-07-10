@@ -197,3 +197,80 @@ reguser *csa_createaccount(char *username, char *password, char *email) {
 
   return rup;
 }
+
+int csa_completeauth2(reguser *rup, char *nickname, char *ident, char *hostname, char *authtype, void (*reply)(nick *, int, ...), nick *reply_to) {
+  int toomanyauths=0;
+  time_t now;
+  char userhost[USERLEN+HOSTLEN+2];
+  nick *onp;
+  authname *anp;
+
+  /* This should never fail but do something other than crashing if it does. */
+  if (!(anp=findauthname(rup->ID))) {
+    reply(reply_to, QM_AUTHFAIL);
+    return 0;
+  }
+
+  /* Check for too many auths.  Don't return immediately, since we will still warn
+   * other users on the acct in this case. */
+  if (!UHasStaffPriv(rup) && !UIsNoAuthLimit(rup)) {
+    if (anp->usercount >= MAXAUTHCOUNT) {
+      reply(reply_to, QM_TOOMANYAUTHS);
+      toomanyauths=1;
+    }
+  }
+
+  for (onp=anp->nicks;onp;onp=onp->nextbyauthname) {
+    if (toomanyauths) {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHEDLIMIT, nickname, ident, hostname, MAXAUTHCOUNT);
+    } else {
+      chanservstdmessage(onp, QM_OTHERUSERAUTHED, nickname, ident, hostname);
+    }
+  }
+
+  if (toomanyauths)
+    return 0;
+
+  now=time(NULL);
+
+  if (UHasSuspension(rup) && rup->suspendexp && (now >= rup->suspendexp)) {
+    /* suspension has expired, remove it */
+    rup->flags&=(~(QUFLAG_SUSPENDED|QUFLAG_GLINE|QUFLAG_DELAYEDGLINE));
+    rup->suspendby=0;
+    rup->suspendexp=0;
+    freesstring(rup->suspendreason);
+    rup->suspendreason=0;
+    csdb_updateuser(rup);
+  }
+
+  if (UIsSuspended(rup)) {
+    /* plain suspend */
+    reply(reply_to, QM_AUTHSUSPENDED);
+    if(rup->suspendreason)
+      reply(reply_to, QM_REASON, rup->suspendreason->content);
+    if (rup->suspendexp)
+      reply(reply_to, QM_EXPIRES, rup->suspendexp);
+    return 0;
+  }
+  if (UIsInactive(rup)) {
+    reply(reply_to, QM_INACTIVEACCOUNT);
+    return 0;
+  }
+
+  /* Guarantee a unique auth timestamp for each account */
+  if (rup->lastauth < now)
+    rup->lastauth=now;
+  else
+    rup->lastauth++;
+
+  sprintf(userhost,"%s@%s",ident,hostname);
+  if (rup->lastuserhost)
+    freesstring(rup->lastuserhost);
+  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
+
+  csdb_updateuser(rup);
+
+  cs_log(NULL,"%s!%s@%s [noauth] %s OK username %s",nickname,ident,hostname,authtype,rup->username);
+
+  return 1;
+}

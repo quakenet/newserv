@@ -851,6 +851,7 @@ void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1,
 void chanservcommandinit();
 void chanservcommandclose();
 void chanservstdmessage(nick *np, int messageid, ... );
+void chanservstdvmessage(nick *np, reguser *rup, int messageid, int max_line_len, void (*callback)(nick *, char *), va_list va);
 void chanservaddcommand(char *command, int flags, int maxparams, CommandHandler handler, char *description, const char *help);
 void chanservremovecommand(char *command, CommandHandler handler);
 void chanservaddctcpcommand(char *command, CommandHandler hander);
@@ -929,11 +930,6 @@ int readlastjoindata(const char *filename);
 
 /* chanservschedule.c */
 void chanservdgline(void *arg);
-
-/* authlib.c */
-int csa_checkeboy(nick *sender, char *eboy);
-void csa_createrandompw(char *pw, int n);
-int csa_checkthrottled(nick *sender, reguser *rup, char *s);
 
 /* chanservdb_updates.c */
 void csdb_updateauthinfo(reguser *rup);

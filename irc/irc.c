@@ -1,6 +1,7 @@
 /* irc.c: handle the IRC interface */
 
 #define _POSIX_SOURCE
+#define _POSIX_C_SOURCE 201112L
 
 #include "irc.h"
 #include "irc_config.h"
