@@ -13,3 +13,4 @@ int csa_checkaccountname_r(char *accountname);
 int csa_checkeboy_r(char *eboy);
 int csa_checkpasswordquality(char *password);
 reguser *csa_createaccount(char *username, char *password, char *email);
+int csa_completeauth2(reguser *rup, char *nickname, char *ident, char *hostname, char *authtype, void (*reply)(nick *, int, ...), nick *reply_to);
