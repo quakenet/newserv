@@ -48,7 +48,7 @@ void cs_log(nick *np, char *event, ... ) {
   va_end(va);
 
   if (np) {
-    snprintf(userbuf,511,"%s!%s@%s [%s%s]",np->nick,np->ident,np->host->name->content,
+    snprintf(userbuf,511,"%s!%s@%s [%s%s] ",np->nick,np->ident,np->host->name->content,
 	     getreguserfromnick(np)?"auth ":"noauth",getreguserfromnick(np)?getreguserfromnick(np)->username:"");
   } else {
     userbuf[0]='\0';
@@ -56,6 +56,6 @@ void cs_log(nick *np, char *event, ... ) {
 
   now=time(NULL);
   strftime(timebuf,sizeof(timebuf),Q9_LOG_FORMAT_TIME, gmtime(&now));
-  len=snprintf(buf2,sizeof(buf2),"[%s] %s %s\n",timebuf,userbuf,buf);
+  len=snprintf(buf2,sizeof(buf2),"[%s] %s%s\n",timebuf,userbuf,buf);
   write(logfd, buf2, len);
 }
