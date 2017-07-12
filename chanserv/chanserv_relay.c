@@ -139,13 +139,13 @@ int csa_docheckhashpass(void *source, int cargc, char **cargv) {
 }
 
 static void controlremotereply(nick *target, char *message) {
-  controlreply(target, "CHECKHASHPASS FAIL text %s", message);
+  controlreply(target, "REMOTEAUTH FAILTEXT %s", message);
 }
 
 static void remote_reply(nick *sender, int message_id, ...) {
   va_list va;
   va_start(va, message_id);
-  chanservstdvmessage(sender, NULL, message_id, -1 * (int)(strlen("CHECKHASHPASS FAIL text ")), controlremotereply, va);
+  chanservstdvmessage(sender, NULL, message_id, -1 * (int)(strlen("REMOTEAUTH FAILTEXT ")), controlremotereply, va);
   va_end(va);
 }
 
@@ -154,8 +154,7 @@ int csa_doremoteauth(void *source, int cargc, char **cargv) {
   reguser *rup;
 
   if(cargc<6) {
-    controlreply(sender, "REMOTEAUTH FAIL args");
-    controlreply(sender, "REMOTEAUTH END");
+    controlreply(sender, "REMOTEAUTH FAILREASON args");
     return CMD_ERROR;
   }
 
@@ -167,14 +166,12 @@ int csa_doremoteauth(void *source, int cargc, char **cargv) {
   char *hostname = cargv[5];
 
   if (!(rup=findreguserbynick(account))) {
-    controlreply(sender, "REMOTEAUTH FAIL user");
-    controlreply(sender, "REMOTEAUTH END");
+    controlreply(sender, "REMOTEAUTH FAILREASON user");
     return CMD_ERROR;
   }
 
   if(!checkhashpass(rup, junk, digest)) {
-    controlreply(sender, "REMOTEAUTH FAIL digest");
-    controlreply(sender, "REMOTEAUTH END");
+    controlreply(sender, "REMOTEAUTH FAILREASON digest");
     return CMD_ERROR;
   }
 
