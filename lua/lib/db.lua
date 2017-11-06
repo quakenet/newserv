@@ -1,21 +1,19 @@
 function db_queryiter()
-  local c = db_numrows()
-  local i = -1
-  local f = db_numfields()
+  local f = db_numfields() - 1
   local gb = db_getvalue
 
   return function()
-    i = i + 1
-    if i == c then
+    if not db_nextrow() then
       return nil
     end
 
     local t = {}
     for j=0,f do
-      table.insert(t, gb(i, j))
+      local v = gb(j)
+      table.insert(t, v)
     end
 
-    return t
+    return unpack(t)
   end
 end
 
