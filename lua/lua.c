@@ -44,6 +44,7 @@ void lua_startbot(void *arg);
 void lua_destroybot(void);
 void lua_startcontrol(void);
 void lua_destroycontrol(void);
+void lua_destroydb(void);
 
 void lua_onunload(lua_State *l);
 void lua_onload(lua_State *l);
@@ -151,6 +152,7 @@ void _fini() {
 
     lua_destroybot();
     lua_destroycontrol();
+    lua_destroydb();
   }
 
   freesstring(cpath);

@@ -1,7 +1,7 @@
 include ../build.mk
 
-CFLAGS+=$(INCLUA) $(INCDBAPI)
-LDFLAGS+=$(LIBLUA) $(LIBDBAPI)
+CFLAGS+=$(INCLUA)
+LDFLAGS+=$(LIBLUA)
 
 .PHONY: all
 all: lua.so nterfacer_lua.so
