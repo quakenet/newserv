@@ -88,6 +88,8 @@ int spcmd_splitdel(void *source, int cargc, char **cargv) {
     }
   }
 
+  if (count > 0)
+    controlwall(NO_OPERED, NL_MISC, "%s/%s used SPLITDEL on %s", np->nick, np->authname, cargv[0]);
   controlreply(np, "%d %s deleted.", count, count != 1 ? "splits" : "split");
 
   return CMD_OK;
