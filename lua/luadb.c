@@ -3,16 +3,45 @@
 
 #include "../dbapi2/dbapi2.h"
 
-static DBAPIConn *luadb;
-
 typedef struct lua_callback {
   lua_list *l;
   long handler, args;
 } lua_callback;
 
+static DBAPIConn *lua_getdb_l(lua_list *l) {
+  if(!l->db.attempted_load) {
+    char buf[512];
+    l->db.attempted_load = 1;
+    snprintf(buf, sizeof(buf), "lua_%s", l->name->content);
+
+    for(char *p=buf;*p;p++) {
+      char c = *p;
+      if(
+        (c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z') ||
+        (c >= '0' && c <= '9') ||
+        (c == '_')
+      )
+        continue;
+
+      Error("lua", ERR_ERROR, "Can't load database due to illegal name: %s (only A-Za-z0-9_ permitted)", buf);
+      return NULL;
+    }
+
+    l->db.db = dbapi2open(NULL, buf);
+  }
+
+  return l->db.db;
+}
+
+static DBAPIConn *lua_getdb(lua_State *ps) {
+  return lua_getdb_l(lua_listfromstate(ps));
+}
+
 static int lua_dbcreatequery(lua_State *ps) {
   char *s = (char *)lua_tostring(ps, 1);
 
+  DBAPIConn *luadb = lua_getdb(ps);
   if(!luadb)
     LUA_RETURN(ps, LUA_FAIL);
 
@@ -26,6 +55,7 @@ static int lua_dbcreatequery(lua_State *ps) {
 static int lua_dbtablename(lua_State *ps) {
   char *s = (char *)lua_tostring(ps, 1);
 
+  DBAPIConn *luadb = lua_getdb(ps);
   if(!luadb)
     LUA_RETURN(ps, LUA_FAIL);
 
@@ -62,9 +92,6 @@ static void lua_dbcallback(const DBAPIResult *result, void *tag) {
 }
 
 static int lua_dbnumfields(lua_State *ps) {
-  if(!luadb)
-    return 0;
-
   if(!active_result)
     return 0;
 
@@ -73,9 +100,6 @@ static int lua_dbnumfields(lua_State *ps) {
 }
 
 static int lua_dbgetvalue(lua_State *ps) {
-  if(!luadb)
-    return 0;
-
   if(!active_result)
     return 0;
 
@@ -94,9 +118,6 @@ static int lua_dbgetvalue(lua_State *ps) {
 }
 
 static int lua_dbnextrow(lua_State *ps) {
-  if(!luadb)
-    return 0;
-
   if(!active_result)
     return 0;
 
@@ -109,6 +130,7 @@ static int lua_dbquery(lua_State *ps) {
   lua_list *l = lua_listfromstate(ps);
   char *q = (char *)lua_tostring(ps, 1);
   lua_callback *cb;
+  DBAPIConn *luadb = lua_getdb_l(l);
 
   if(!luadb)
     LUA_RETURN(ps, LUA_FAIL);
@@ -140,6 +162,7 @@ static int lua_dbescape(lua_State *ps) {
   char *s = (char *)lua_tostring(ps, 1);
   int len;
 
+  DBAPIConn *luadb = lua_getdb(ps);
   if(!luadb)
     return 0;
 
@@ -156,7 +179,9 @@ static int lua_dbescape(lua_State *ps) {
   return 1;
 }
 
-void lua_registerdbcommands(lua_State *l) {
+void lua_registerdbcommands(lua_list *n) {
+  lua_State *l = n->l;
+
   lua_register(l, "db_tablename", lua_dbtablename);
 
   lua_register(l, "db_createquery", lua_dbcreatequery);
@@ -167,16 +192,22 @@ void lua_registerdbcommands(lua_State *l) {
   lua_register(l, "db_getvalue", lua_dbgetvalue);
   lua_register(l, "db_nextrow", lua_dbnextrow);
 
-  luadb = dbapi2open(NULL, "lua");
+  /* lazy open */
+  n->db.attempted_load = 0;
+  n->db.db = NULL;
 
   /* TODO */
-  /* open gets you a unique db */
   /* parameterised queries (huge pain due to no va_args in dbapi2) */
   /* loadtable */
   /* getrow */
 }
 
-void lua_destroydb(void) {
-  if(luadb)
-    luadb->close(luadb);
+void lua_destroydb(lua_list *n) {
+  if(!n->db.db)
+    return;
+
+  DBAPIConn *db = n->db.db;
+  db->close(db);
+  n->db.db = NULL;
+  n->db.attempted_load = 0;
 }

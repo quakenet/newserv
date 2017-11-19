@@ -63,6 +63,10 @@ typedef struct lua_list {
   struct timeval ru_utime, ru_stime;
   struct lua_list *next;
   struct lua_list *prev;
+  struct {
+    int attempted_load;
+    void *db;
+  } db;
   lua_localnick *nicks;
   lua_socket *sockets;
   lua_scheduler *schedulers;
