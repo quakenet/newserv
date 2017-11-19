@@ -117,6 +117,7 @@ struct searchNode *length_parse(searchCtx *ctx, int argc, char **argv);
 /* kill/gline actions (BOOL) */
 struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv);
+struct searchNode *delaygline_parse(searchCtx *ctx, int argc, char **argv);
 
 /* notice action (BOOL) */
 struct searchNode *notice_parse(searchCtx *ctx, int argc, char **argv);
