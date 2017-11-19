@@ -5,6 +5,7 @@
 /* Don't put this into the SVN repo. */
 
 #define _POSIX_C_SOURCE 200112L
+#define _DEFAULT_SOURCE
 #include <stdlib.h>
 
 #include "../core/config.h"
