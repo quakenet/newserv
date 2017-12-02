@@ -2,11 +2,11 @@
  * CMDALIASES: sendpass
  * CMDLEVEL: QCMD_HELPER
  * CMDARGS: 1
- * CMDDESC: Sends the user a reset code to the email.
+ * CMDDESC: Sends the user a reset code to their email address.
  * CMDFUNC: csa_dosendpw
  * CMDPROTO: int csa_dosendpw(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: @UCOMMAND@ <username>
- * CMDHELP: Sends the password for the specified account to the user's email address.
+ * CMDHELP: Sends the password for the specified account to the specified user's email address.
  */
 
 #include "../chanserv.h"
@@ -30,13 +30,13 @@ int csa_dosendpw(void *source, int cargc, char **cargv) {
 
   if(UHasStaffPriv(rup)) {
     chanservstdmessage(sender, QM_REQUESTPASSPRIVUSER);
-    cs_log(sender,"SENDPASSWORD FAIL privilidged user %s",rup->username);
+    cs_log(sender,"SENDPASSWORD FAIL privileged user %s",rup->username);
     return CMD_ERROR;
   }
 
   t = time(NULL);
 
-  if(rup->lockuntil && rup->lockuntil > t) {
+  if(rup->lockuntil && rup->lockuntil + 30 * 60 > t) {
     // Send same reset code.
     csdb_createmail(rup, QMAIL_NEWPW);
   } else {

@@ -1,8 +1,8 @@
 /* CMDNAME: lostpassword
  * CMDALIASES: lostpass
  * CMDLEVEL: QCMD_NOTAUTHED
- * CMDARGS: 2
- * CMDDESC: Sends a code to reset the password with.
+ * CMDARGS: 1
+ * CMDDESC: Sends instructions for resetting your account to your registered email address.
  * CMDFUNC: csa_dolostpw
  * CMDPROTO: int csa_dolostpw(void *source, int cargc, char **cargv);
  * CMDHELP: Usage: @UCOMMAND@ <email>

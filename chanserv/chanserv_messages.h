@@ -251,6 +251,7 @@ BeginMessages() {
   msg(QM_TOOMANYCHANNELS, "User is known on too many channels.", ""),
   msg(QM_PWINVALID, "Password contains invalid characters.", ""),
   msg(QM_TOOMANYAUTHATTEMPTS, "Too many auth attempts -- reconnect to QuakeNet to try again.", ""),
+  msg(QM_CMDDEPRECATEDPREFER, "This command has been removed -- please use $0 instead.", "s"),
 } 
 EndMessages()
 #endif
