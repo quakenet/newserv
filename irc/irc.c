@@ -1,6 +1,7 @@
 /* irc.c: handle the IRC interface */
 
 #define _POSIX_SOURCE
+#define _POSIX_C_SOURCE 201112L
 
 #include "irc.h"
 #include "irc_config.h"
@@ -16,6 +17,7 @@
 #include "../lib/irc_string.h"
 #include "../lib/strlfunc.h"
 #include <sys/poll.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -610,9 +612,30 @@ void setnettime(time_t newtime) {
 }
 
 int handleping(void *sender, int cargc, char **cargv) {
-  if (cargc>0) {
+  char *ss, *sms;
+  unsigned long long s, ms, diff;
+  struct timeval now;
+
+  if (cargc==0)
+    return CMD_OK;
+
+  if (cargc < 3) {
     irc_send("%s Z %s",mynumeric->content,cargv[cargc-1]);
+    return CMD_OK;
   }
+
+  gettimeofday(&now, NULL);
+
+  ss = cargv[2];
+  if ((sms = strchr(cargv[2], '.')) == NULL) {
+    diff = 0;
+  } else {
+    s = strtoull(ss, NULL, 10);
+    ms = strtoull(sms + 1, NULL, 10);
+    diff = (now.tv_sec - s) * 1000 + (now.tv_usec - ms) / 1000;
+  }
+
+  irc_send("%s Z %s %s %s %llu %llu.%llu",mynumeric->content,mynumeric->content,(const char *)sender,cargv[2],diff,(unsigned long long)now.tv_sec,(unsigned long long)now.tv_usec/1000);
   return CMD_OK;
 }
 

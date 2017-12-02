@@ -355,27 +355,28 @@ void chanservjoinchan(channel *cp) {
   }
 }
 
-void chanservstdmessage(nick *np, int messageid, ... ) {
+static void __chanservstdvmessage(nick *np, reguser *rup, int messageid, int max_line_len, void (*callback)(nick *, char *), ...) {
+  va_list va;
+  va_start(va, callback);
+  chanservstdvmessage(np, rup, messageid, max_line_len, callback, va);
+  va_end(va);
+}
+
+void chanservstdvmessage(nick *np, reguser *rup, int messageid, int max_line_len, void (*callback)(nick *, char *), va_list va) {
   char buf[5010];
   char buf2[512];
-  int notice;
-  reguser *rup;
   int language;
-  va_list va, va2;
+  va_list va2;
   char *message, *messageargs;
   char *bp2,*bp;
   int len;
 
-  if (getreguserfromnick(np) == NULL) { 
-    notice=1;
+  if(max_line_len <= 0)
+    max_line_len = 490 + max_line_len;
+
+  if (rup == NULL) {
     language=0;
   } else {
-    rup=getreguserfromnick(np);
-    if(UIsNotice(rup)) {
-      notice=1;
-    } else {
-      notice=0;
-    }
     language=rup->languageid;
   }
 
@@ -389,29 +390,22 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
 
   messageargs=defaultmessages[messageid*2+1];
 
-  va_start(va,messageid);
   va_copy(va2, va);
   q9vsnprintf(buf,5000,message,messageargs,va);
-  va_end(va);
 
   len=0;
   bp2=buf2;
   for (bp=buf; ;bp++) {
     /* We send something if we hit a \n, fill the buffer or run out of source */
-    if (*bp=='\n' || len>490 || !*bp) {
+    if (*bp=='\n' || len>max_line_len || !*bp) {
       if (*bp && *bp!='\n') {
 	bp--;
       }
       
       *bp2='\0';
 
-      if (chanservnick && *buf2) {
-	if (notice) {
-	  sendnoticetouser(chanservnick,np,"%s",buf2);
-	} else {
-	  sendmessagetouser(chanservnick,np,"%s",buf2);
-	}
-      }
+      if (chanservnick && *buf2)
+        callback(np, buf2);
 
       /* If we ran out of buffer, get out here */
       if (!*bp)
@@ -429,10 +423,31 @@ void chanservstdmessage(nick *np, int messageid, ... ) {
   if (messageid==QM_NOTENOUGHPARAMS) {
     char *command=va_arg(va2, char *);
     cs_sendhelp(np, command, 1);
-    chanservstdmessage(np, QM_TYPEHELPFORHELP, command); 
+    __chanservstdvmessage(np, rup, QM_TYPEHELPFORHELP, max_line_len, callback, command);
   }
   
   va_end(va2);
+}
+
+static void message_callback(nick *np, char *buf) {
+  sendmessagetouser(chanservnick,np,"%s",buf);
+}
+
+static void notice_callback(nick *np, char *buf) {
+  sendnoticetouser(chanservnick,np,"%s",buf);
+}
+
+void chanservstdmessage(nick *np, int messageid, ...) {
+  reguser *rup;
+  va_list va;
+  int notice;
+
+  rup = getreguserfromnick(np);
+  notice = rup == NULL ? 1 : UIsNotice(rup);
+
+  va_start(va, messageid);
+  chanservstdvmessage(np, rup, messageid, 0, notice ? notice_callback : message_callback, va);
+  va_end(va);
 }
 
 void chanservsendmessage_real(nick *np, int oneline, char *message, ... ) {
@@ -1131,7 +1146,16 @@ int cs_removechannelifempty(nick *sender, regchan *rcp) {
         return 0;
     }
   }
-  
+
+  /*
+   * don't cleanup the last channel to prevent channel id reuse.
+   * the channel will be orphaned but will be cleaned up by cleanup eventually
+   */
+  if(rcp->ID == lastchannelID) {
+    cs_log(sender,"DELCHAN FAILED %s (last id)",rcp->index->name->content);
+    return 0;
+  }
+
   cs_log(sender,"DELCHAN %s (Empty)",rcp->index->name->content);
   cs_removechannel(rcp, "Last user removed - channel deleted.");
   

@@ -249,8 +249,10 @@ void _init() {
   /* Kill / gline parameters */
   registersearchterm(reg_chansearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
   registersearchterm(reg_chansearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_chansearch,"delaygline",delaygline_parse, 0, "GLINE users in newsearch result with a delay. Note: evaluation order");
   registersearchterm(reg_nicksearch,"kill",kill_parse, 0, "KILL users in newsearch result. Note: evaluation order");
   registersearchterm(reg_nicksearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
+  registersearchterm(reg_nicksearch,"delaygline",delaygline_parse, 0, "GLINE users in newsearch result with a delay. Note: evaluation order");
   registersearchterm(reg_whowassearch,"gline",gline_parse, 0, "GLINE users in newsearch result. Note: evaluation order");
 
   /* Iteration functionality */

@@ -5,6 +5,7 @@
 /* Don't put this into the SVN repo. */
 
 #define _POSIX_C_SOURCE 200112L
+#define _DEFAULT_SOURCE
 #include <stdlib.h>
 
 #include "../core/config.h"
@@ -34,7 +35,6 @@ MODULE_VERSION(LUA_SMALLVERSION);
 void lua_startup(void *arg);
 void lua_loadscripts(void);
 void lua_registercommands(lua_State *l);
-void lua_registerdbcommands(lua_State *l);
 void lua_initnickpusher(void);
 void lua_initchanpusher(void);
 void lua_loadlibs(lua_State *l);
@@ -61,6 +61,9 @@ void lua_scheduler_freeall(lua_list *l);
 void lua_registersocketcommands(lua_State *ps);
 void lua_registercryptocommands(lua_State *ps);
 void lua_registerschedulercommands(lua_State *ps);
+
+void lua_registerdbcommands(lua_list *l);
+void lua_destroydb(lua_list *l);
 
 #ifdef LUA_DEBUGSOCKET
 
@@ -225,11 +228,13 @@ lua_State *lua_loadscript(char *file) {
   timerclear(&n->ru_utime);
   timerclear(&n->ru_stime);
 
+  n->l = l;
+
   lua_loadlibs(l);
   lua_registerdebug(l);
   lua_registercommands(l);
   lua_registerlocalcommands(l);
-  lua_registerdbcommands(l);
+  lua_registerdbcommands(n);
   lua_registersocketcommands(l);
   lua_registercryptocommands(l);
   lua_registerschedulercommands(l);
@@ -252,8 +257,6 @@ lua_State *lua_loadscript(char *file) {
     luafree(n);
     return NULL;
   }
-
-  n->l = l;
 
   n->next = NULL;
   n->prev = lua_tail;
@@ -302,6 +305,7 @@ void lua_unloadscript(lua_list *l) {
   lua_deregisternicks(l);
   lua_socket_closeall(l);
   lua_scheduler_freeall(l);
+  lua_destroydb(l);
   lua_close(l->l);
   freesstring(l->name);
 

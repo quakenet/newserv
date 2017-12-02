@@ -66,6 +66,10 @@ int csc_dochanstat(void *source, int cargc, char **cargv) {
 		     (float)rcp->tripjoins / ((time(NULL)-rcp->statsreset)/(3600*24)));
   
   if (cargc>1 && !ircd_strcmp(cargv[1],"reset")) {
+    if (!(cip=cs_checkaccess(sender, cargv[0], CA_MASTERPRIV,
+			     NULL, "chanstat", QPRIV_RESETCHANSTAT, 0)))
+      return CMD_ERROR;
+
     rcp->statsreset=time(NULL);
     rcp->tripusers=0;
     rcp->tripjoins=0;

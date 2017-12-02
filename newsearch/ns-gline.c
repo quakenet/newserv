@@ -13,12 +13,15 @@
 #include "../irc/irc.h" /* irc_send() */
 #include "../lib/irc_string.h" /* IPtostr(), longtoduration(), durationtolong() */
 #include "../lib/strlfunc.h"
+#include "../core/schedule.h"
 #include "../glines/glines.h"
 
 /* used for *_free functions that need to warn users of certain things
    i.e. hitting too many users in a (kill) or (gline) - declared in newsearch.c */
 extern nick *senderNSExtern;
 static const char *defaultreason = "You (%u) have been g-lined for violating our terms of service";
+static int defaultmindelay = 15;
+static int defaultvariance = 15;
 
 void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void gline_free(searchCtx *ctx, struct searchNode *thenode);
@@ -28,9 +31,11 @@ struct gline_localdata {
   unsigned int duration;
   int count;
   char reason[NSMAX_REASON_LEN];
+  int mindelay;
+  int maxdelay;
 };
 
-struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
+struct searchNode *common_gline_parse(searchCtx *ctx, int argc, char **argv, int withdelay) {
   struct gline_localdata *localdata;
   struct searchNode *thenode;
 
@@ -55,13 +60,13 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
   if(argc == 0) {
     localdata->duration = NSGLINE_DURATION;
     strlcpy(localdata->reason, defaultreason, sizeof(localdata->reason));
-  } else if(argc > 2) {
+  } else if(argc > (withdelay ? 4 : 2)) {
     free(localdata);
     parseError = "gline: invalid number of arguments";
     return NULL;
   } else {
-    char *argzerop, *reasonp, *durationp;
-    struct searchNode *durationsn, *reasonsn, *argzerosn;
+    char *argzerop, *reasonp, *durationp, *mindelayp, *maxdelayp;
+    struct searchNode *durationsn, *reasonsn, *mindelaysn, *maxdelaysn, *argzerosn;
     
     if (!(argzerosn=argtoconststr("gline", ctx, argv[0], &argzerop))) {
       free(localdata);
@@ -69,8 +74,8 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
     }
 
     if(argc == 1) {
-      durationp = reasonp = NULL;
-      durationsn = reasonsn = NULL;
+      durationp = reasonp = mindelayp = maxdelayp = NULL;
+      durationsn = reasonsn = mindelaysn = maxdelaysn = NULL;
       
       /* if we have a space it's a reason */
       if(strchr(argzerop, ' ')) {
@@ -88,7 +93,24 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
         durationsn->free(ctx, durationsn);
         free(localdata);
         return NULL;
-      }      
+      }
+
+      if (withdelay) {
+        mindelayp = maxdelayp = NULL;
+        mindelaysn = maxdelaysn = NULL;
+  
+        if (argc > 2 && !(mindelaysn=argtoconststr("gline", ctx, argv[2], &mindelayp))) {
+          mindelaysn->free(ctx, mindelaysn);
+          free(localdata);
+          return NULL;
+        }      
+  
+        if (argc > 3 && !(maxdelaysn=argtoconststr("gline", ctx, argv[3], &maxdelayp))) {
+          maxdelaysn->free(ctx, maxdelaysn);
+          free(localdata);
+          return NULL;
+        }
+      }
     }
     
     if(!reasonp) {
@@ -110,6 +132,43 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
         return NULL;
       }
     }
+
+    if (withdelay) {
+      if(!mindelayp) {
+        localdata->mindelay = defaultmindelay;
+      } else {
+        localdata->mindelay = durationtolong(mindelayp);
+        mindelaysn->free(ctx, mindelaysn);
+        
+        if (localdata->mindelay == 0) {
+          parseError = "gline mindelay invalid.";
+          free(localdata);
+          return NULL;
+        }
+      }
+  
+      if(!maxdelayp) {
+        localdata->maxdelay = localdata->mindelay + defaultvariance;
+      } else {
+        localdata->maxdelay = durationtolong(maxdelayp);
+        maxdelaysn->free(ctx, maxdelaysn);
+        
+        if (localdata->maxdelay == 0) {
+          parseError = "gline maxdelay invalid.";
+          free(localdata);
+          return NULL;
+        }
+      }
+    } else {
+      localdata->mindelay = 0;
+      localdata->maxdelay = 0;
+    }
+
+    if (localdata->mindelay < 0 || localdata->maxdelay < localdata->mindelay) {
+      parseError = "gline delay invalid.";
+      free(localdata);
+      return NULL;
+    }
   }
 
   if (!(thenode=(struct searchNode *)malloc(sizeof (struct searchNode)))) {
@@ -125,6 +184,14 @@ struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
   thenode->free = gline_free;
 
   return thenode;
+}
+
+struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv) {
+  return common_gline_parse(ctx, argc, argv, 0);
+}
+
+struct searchNode *delaygline_parse(searchCtx *ctx, int argc, char **argv) {
+  return common_gline_parse(ctx, argc, argv, 1);
 }
 
 void *gline_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput) {
@@ -166,14 +233,20 @@ static int glineuser(glinebuf *gbuf, nick *np, struct gline_localdata *localdata
   return 0;
 }
 
+static void commitglines(void *arg) {
+  glinebuf *gbuf = (glinebuf *)arg;
+  glinebufcommit(gbuf, 1);
+  free(gbuf);
+}
+
 void gline_free(searchCtx *ctx, struct searchNode *thenode) {
   struct gline_localdata *localdata;
   nick *np, *nnp;
   chanindex *cip, *ncip;
   whowas *ww;
-  int i, j, hits, safe=0;
+  int i, j, hits, safe=0, delay;
   time_t ti = time(NULL);
-  glinebuf gbuf;
+  glinebuf *gbuf;
 
   localdata = thenode->localdata;
 
@@ -185,7 +258,8 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
     return;
   }
 
-  glinebufinit(&gbuf, 0);
+  gbuf = malloc(sizeof(glinebuf));
+  glinebufinit(gbuf, 0);
 
   if (ctx->searchcmd == reg_chansearch) {
     for (i=0;i<CHANNELHASHSIZE;i++) {
@@ -197,7 +271,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
               continue;
     
             if ((np=getnickbynumeric(cip->channel->users->content[j]))) {
-              if(!glineuser(&gbuf, np, localdata, ti))
+              if(!glineuser(gbuf, np, localdata, ti))
                 safe++;
             }
           }
@@ -209,7 +283,7 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
       for (np=nicktable[i];np;np=nnp) {
         nnp = np->next;
         if (np->marker == localdata->marker) {
-          if(!glineuser(&gbuf, np, localdata, ti))
+          if(!glineuser(gbuf, np, localdata, ti))
             safe++;
         }
       }
@@ -222,14 +296,21 @@ void gline_free(searchCtx *ctx, struct searchNode *thenode) {
         continue;
 
       if (ww->marker == localdata->marker) {
-        if(!glineuser(&gbuf, &ww->nick, localdata, ti))
+        if(!glineuser(gbuf, &ww->nick, localdata, ti))
           safe++;
       }
     }
   }
 
-  glinebufcounthits(&gbuf, &hits, NULL);
-  glinebufcommit(&gbuf, 1);
+  glinebufcounthits(gbuf, &hits, NULL);
+
+  delay = (rand() % (localdata->maxdelay + 1 - localdata->mindelay)) + localdata->mindelay;
+
+  if (delay > 0) {
+    scheduleoneshot(time(NULL) + delay, commitglines, gbuf);
+  } else {
+    commitglines(gbuf);
+  }
 
   if (safe)
     ctx->reply(senderNSExtern, "Warning: your pattern matched privileged users (%d in total) - these have not been touched.", safe);

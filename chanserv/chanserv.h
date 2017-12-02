@@ -94,11 +94,11 @@
 #define   CHALLENGEAUTHSITE "http://www.quakenet.org/development/challengeauth/"
 
 /* Cleanup options */
-#define CLEANUP_ACCOUNT_INACTIVE  180 /* make sure you update CLEANUP_AUTHHISTORY too... */
+#define CLEANUP_ACCOUNT_INACTIVE  240 /* make sure you update CLEANUP_AUTHHISTORY too... */
 #define CLEANUP_ACCOUNT_UNUSED    3
-#define CLEANUP_CHANNEL_INACTIVE  40
+#define CLEANUP_CHANNEL_INACTIVE  120
 
-#define CLEANUP_AUTHHISTORY	  240
+#define CLEANUP_AUTHHISTORY	  300
 
 #define CLEANUP_MIN_CHAN_SIZE     2
 
@@ -121,7 +121,7 @@
 #define ENTROPYLEN    8
 
 /* Minimum acceptable reason length for stuff like deluser */
-#define MIN_REASONLEN 20
+#define MIN_REASONLEN 15
 
 #include "chanserv_messages.h"
 
@@ -153,6 +153,7 @@
 #define   QPRIV_CHANGEBANTIMER      204
 #define   QPRIV_CHANGEUSERFLAGS     205
 #define   QPRIV_CHANGEWELCOME       206
+#define   QPRIV_RESETCHANSTAT       207
 
 /* List of access checks */
 
@@ -850,6 +851,7 @@ void chanservwallmessage(char *message, ... ) __attribute__ ((format (printf, 1,
 void chanservcommandinit();
 void chanservcommandclose();
 void chanservstdmessage(nick *np, int messageid, ... );
+void chanservstdvmessage(nick *np, reguser *rup, int messageid, int max_line_len, void (*callback)(nick *, char *), va_list va);
 void chanservaddcommand(char *command, int flags, int maxparams, CommandHandler handler, char *description, const char *help);
 void chanservremovecommand(char *command, CommandHandler handler);
 void chanservaddctcpcommand(char *command, CommandHandler hander);
@@ -928,11 +930,6 @@ int readlastjoindata(const char *filename);
 
 /* chanservschedule.c */
 void chanservdgline(void *arg);
-
-/* authlib.c */
-int csa_checkeboy(nick *sender, char *eboy);
-void csa_createrandompw(char *pw, int n);
-int csa_checkthrottled(nick *sender, reguser *rup, char *s);
 
 /* chanservdb_updates.c */
 void csdb_updateauthinfo(reguser *rup);

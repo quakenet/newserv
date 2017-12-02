@@ -8,6 +8,9 @@
 #include "../core/config.h"
 #include "whowas.h"
 
+#define XStringify(x) Stringify(x)
+#define Stringify(x) #x
+
 MODULE_VERSION("");
 
 whowas *whowasrecs;

@@ -80,82 +80,18 @@ int csa_auth(void *source, int cargc, char **cargv, CRAlgorithm alg) {
   return csa_completeauth(sender, rup, authtype);
 }
 
+int csa_doauth(void *source, int cargc, char **cargv) {
+  return csa_auth(source, cargc, cargv, NULL);
+}
+
 int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
-  int toomanyauths=0;
-  time_t now, oldlastauth;
-  char userhost[USERLEN+HOSTLEN+2];
-  nick *onp;
   void *args[2];
-  authname *anp;
+  time_t oldlastauth;
 
-  /* This should never fail but do something other than crashing if it does. */
-  if (!(anp=findauthname(rup->ID))) {
-    chanservstdmessage(sender, QM_AUTHFAIL);
-    return CMD_ERROR;
-  }
-
-  /* Check for too many auths.  Don't return immediately, since we will still warn
-   * other users on the acct in this case. */
-  if (!UHasStaffPriv(rup) && !UIsNoAuthLimit(rup)) {
-    if (anp->usercount >= MAXAUTHCOUNT) {
-      chanservstdmessage(sender, QM_TOOMANYAUTHS);
-      toomanyauths=1;
-    }
-  }
-  
-  for (onp=anp->nicks;onp;onp=onp->nextbyauthname) {
-    if (toomanyauths) {
-      chanservstdmessage(onp, QM_OTHERUSERAUTHEDLIMIT, sender->nick, sender->ident, sender->host->name->content, MAXAUTHCOUNT);
-    } else {
-      chanservstdmessage(onp, QM_OTHERUSERAUTHED, sender->nick, sender->ident, sender->host->name->content);
-    }
-  }
-  
-  if (toomanyauths)
-    return CMD_ERROR;
-
-  now=time(NULL);
-
-  if (UHasSuspension(rup) && rup->suspendexp && (now >= rup->suspendexp)) {
-    /* suspension has expired, remove it */
-    rup->flags&=(~(QUFLAG_SUSPENDED|QUFLAG_GLINE|QUFLAG_DELAYEDGLINE));
-    rup->suspendby=0;
-    rup->suspendexp=0;
-    freesstring(rup->suspendreason);
-    rup->suspendreason=0;
-    csdb_updateuser(rup);  
-  }
-  
-  if (UIsSuspended(rup)) {
-    /* plain suspend */
-    chanservstdmessage(sender, QM_AUTHSUSPENDED);
-    if(rup->suspendreason)
-      chanservstdmessage(sender, QM_REASON, rup->suspendreason->content);
-    if (rup->suspendexp)
-      chanservstdmessage(sender, QM_EXPIRES, rup->suspendexp);
-    return CMD_ERROR;
-  }
-  if (UIsInactive(rup)) {
-    chanservstdmessage(sender, QM_INACTIVEACCOUNT);
-    return CMD_ERROR;
-  }
-  
-  /* Guarantee a unique auth timestamp for each account */
   oldlastauth=rup->lastauth;
-  
-  if (rup->lastauth < now) 
-    rup->lastauth=now;
-  else
-    rup->lastauth++;
 
-  sprintf(userhost,"%s@%s",sender->ident,sender->host->name->content);
-  if (rup->lastuserhost)
-    freesstring(rup->lastuserhost);
-  rup->lastuserhost=getsstring(userhost,USERLEN+HOSTLEN+1);
-  
-  csdb_updateuser(rup);  
-
-  cs_log(sender,"%s OK username %s", authtype,rup->username);
+  if(!csa_completeauth2(rup, sender->nick, sender->ident, sender->host->name->content, authtype, chanservstdmessage, sender))
+    return CMD_ERROR;
 
   localusersetaccount(sender, rup->username, rup->ID, cs_accountflagmap(rup), rup->lastauth);
 
@@ -163,11 +99,8 @@ int csa_completeauth(nick *sender, reguser *rup, char *authtype) {
 
   args[0]=sender;
   args[1]=(void *)oldlastauth;
+  /* note: not triggered for REMOTEAUTH */
   triggerhook(HOOK_CHANSERV_AUTH, args);
 
   return CMD_OK;
-}
-
-int csa_doauth(void *source, int cargc, char **cargv) {
-  return csa_auth(source, cargc, cargv, NULL);
 }

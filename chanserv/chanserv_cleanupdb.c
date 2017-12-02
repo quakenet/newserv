@@ -1,7 +1,10 @@
 #include "chanserv.h"
 #include "../lib/irc_string.h"
+#include "../lib/version.h"
 #include <stdio.h>
 #include <string.h>
+
+MODULE_VERSION(QVERSION);
 
 static void cleanupdb(void *arg);
 static void schedulecleanup(int hooknum, void *arg);
@@ -53,7 +56,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
   authname *anp;
   int i,j;
   time_t t, to_age, unused_age, maxchan_age, authhistory_age;
-  int expired = 0, unauthed = 0, chansvaped = 0;
+  int expired = 0, unauthed = 0, chansvaped = 0, chansempty = 0;
   chanindex *cip, *ncip;
   regchan *rcp;
   DBResult *pgres;
@@ -102,6 +105,10 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
       if (anp->marker == themarker)
         continue;
 
+      /* HACK: don't ever delete the last user -- prevents userids being reused */
+      if (vrup->ID == lastuserID)
+        continue;
+
       if(!anp->nicks && !UHasStaffPriv(vrup) && !UIsCleanupExempt(vrup)) {
         if(vrup->lastauth && (vrup->lastauth < to_age)) {
           expired++;
@@ -124,6 +131,10 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
     for (cip=chantable[i];cip;cip=ncip) {
       ncip=cip->next;
       if (!(rcp=cip->exts[chanservext]))
+        continue;
+
+      /* HACK: don't ever delete the last channel -- prevents channelids being reused */
+      if (rcp->ID == lastchannelID)
         continue;
 
       /* there's a bug here... if no joins or modes are done within the threshold
@@ -153,6 +164,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
         cs_log(NULL, "CLEANUPDB inactive channel %s", cip->name?cip->name->content:"??");
         cs_removechannel(rcp, "Channel deleted due to lack of activity.");
         chansvaped++;
+        continue;
       }
       
       /* Get rid of any dead chanlev entries */
@@ -164,8 +176,15 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
             cs_log(NULL, "Removing user %s from channel %s (no flags)",rcup->user->username,rcp->index->name->content);
             csdb_deletechanuser(rcup);
             delreguserfromchannel(rcp, rcup->user);
+            freeregchanuser(rcup);
           }
         }
+      }
+
+      if (cs_removechannelifempty(NULL, rcp)) {
+        /* logged+parted by cs_removechannelifempty */
+        chansempty++;
+        continue;
       }
     }
   }
@@ -174,7 +193,7 @@ static void cleanupdb_real(DBConn *dbconn, void *arg) {
     
   csdb_cleanuphistories(authhistory_age);
   
-  cleanuplog("Stats: %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE);
+  cleanuplog("Stats: %d accounts inactive for %d days, %d accounts weren't used within %d days, %d channels were inactive for %d days, %d channels empty.", expired, CLEANUP_ACCOUNT_INACTIVE, unauthed, CLEANUP_ACCOUNT_UNUSED, chansvaped, CLEANUP_CHANNEL_INACTIVE, chansempty);
 
 out:
   cleanupdb_active=0;
