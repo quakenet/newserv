@@ -43,14 +43,33 @@ int csu_dolistflags(void *source, int cargc, char **cargv) {
       }
     }
   }
-  
+
+  if (!matchflags || (matchflags == QUFLAG_NOTICE)) {
+    chanservsendmessage(sender, "Error: no flags selected");
+    return CMD_ERROR;
+  }
+
   chanservstdmessage(sender, QM_LISTFLAGSHEADER);
   for (i=0;i<REGUSERHASHSIZE;i++) {
     for (dbrup=regusernicktable[i]; dbrup; dbrup=dbrup->nextbyname) {
       if ((dbrup->flags & matchflags) == matchflags) {
-        chanservsendmessage(sender, "%-15s %-17s %-10s %-30s %s", dbrup->username, printflags(dbrup->flags, ruflags), 
-          UHasSuspension(dbrup)?"yes":"no", dbrup->email?dbrup->email->content:"none set", 
-          dbrup->lastuserhost?dbrup->lastuserhost->content:"none");
+        char tbuf[TIMELEN], *tdata;
+
+        if (dbrup->lastemailchange) {
+          q9strftime(tbuf, sizeof(tbuf), dbrup->lastemailchange);
+          tdata = tbuf;
+        } else {
+          tdata = "(none)";
+        }
+
+        char *email;
+        if (dbrup->email && dbrup->email->content[0]) {
+          email = dbrup->email->content;
+        } else {
+          email = "(none)";
+        }
+
+        chanservsendmessage(sender, " %-15s %-17s %-30s %-15s", dbrup->username, printflags(dbrup->flags, ruflags), email, tdata);
         count++;
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "users");
