@@ -153,7 +153,7 @@ BeginMessages() {
   msg(QM_TOOMANYRESULTS, "Found over $0 $1, truncating list.", "ds"),
   msg(QM_RESULTCOUNT, "Found $0 $1$2.", "uss"),
   msg(QM_SUSPENDKILL, "Attention: Your Q account has been suspended. You are being disconnected.", ""),
-  msg(QM_LISTFLAGSHEADER, "Username:       Flags:            Email:                         Last email change:", ""),
+  msg(QM_LISTFLAGSHEADER, "Username:       Id:        Flags:            Email:                         Last email change:", ""),
   msg(QM_SUSPENDUSERLISTHEADER, "Username:       Suspend type: Suspended by:   Date suspended:     Expires:        Reason:", ""), /* @TIMELEN */
   msg(QM_SUSPENDCHANLISTHEADER, "Channel:                       Suspended by:   Date suspended:     Reason:", ""), /* @TIMELEN */
   msg(QM_NOREQUESTOWNER, "You cannot request ownership of $0 as there is a channel $1 present.", "ss"),

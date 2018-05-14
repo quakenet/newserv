@@ -69,7 +69,7 @@ int csu_dolistflags(void *source, int cargc, char **cargv) {
           email = "(none)";
         }
 
-        chanservsendmessage(sender, " %-15s %-17s %-30s %-15s", dbrup->username, printflags(dbrup->flags, ruflags), email, tdata);
+        chanservsendmessage(sender, " %-15s %-10u %-17s %-30s %-15s", dbrup->username, dbrup->ID, printflags(dbrup->flags, ruflags), email, tdata);
         count++;
         if (count >= 2000) {
           chanservstdmessage(sender, QM_TOOMANYRESULTS, 2000, "users");
