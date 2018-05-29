@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 
 #include "../lib/irc_string.h"
 #include "../irc/irc.h"
