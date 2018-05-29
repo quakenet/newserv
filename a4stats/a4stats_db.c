@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "../lib/version.h"
 #include "../dbapi2/dbapi2.h"
 #include "../core/error.h"
