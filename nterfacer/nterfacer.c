@@ -17,6 +17,7 @@
 #include <strings.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdint.h>
 
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
@@ -562,7 +563,7 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
   *p = '\0';
   *number = positive_atoi(sp + 1);
   
-  if((*number < 1) || (*number > 0xffff))
+  if((*number < 1) || (*number > INT32_MAX))
     return RE_BAD_LINE;
 
   if (!service) {
