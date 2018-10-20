@@ -426,7 +426,8 @@ void _init()
     schedulerecurring(time(NULL)+1,0,HDEF_h,(ScheduleCallback)&huser_clear_inactives,NULL);
     schedulerecurring(time(NULL)+1,0,HDEF_d,(ScheduleCallback)&haccount_clear_inactives,NULL);
     schedulerecurring(time(NULL)+1,0,HDEF_m,(ScheduleCallback)&hban_remove_expired,NULL);
-    schedulerecurring(time(NULL)+1,0,30 * HDEF_s, (ScheduleCallback)&hchannel_remove_inactive_users, NULL);
+    /* disable idle kick - meeb 2017-03-22
+    schedulerecurring(time(NULL)+1,0,30 * HDEF_s, (ScheduleCallback)&hchannel_remove_inactive_users, NULL); */
     schedulerecurring(time(NULL)+1,0,60 * HDEF_m,(ScheduleCallback)&hchannel_report, NULL);
     schedulerecurring(time(NULL) + HDEF_h, 0, 6 * HDEF_h, (ScheduleCallback)&helpmod_config_scheduled_events, NULL);
     schedulerecurring(time(NULL)+1,0,10 * HDEF_m, (ScheduleCallback)&hticket_remove_expired, NULL);
@@ -449,7 +450,8 @@ void _fini()
     deleteallschedules((ScheduleCallback)&huser_clear_inactives);
     deleteallschedules((ScheduleCallback)&haccount_clear_inactives);
     deleteallschedules((ScheduleCallback)&hban_remove_expired);
-    deleteallschedules((ScheduleCallback)&hchannel_remove_inactive_users);
+    /* disable idle kick - meeb 2017-03-22
+    deleteallschedules((ScheduleCallback)&hchannel_remove_inactive_users); */
     deleteallschedules((ScheduleCallback)&hchannel_report);
     deleteallschedules((ScheduleCallback)&helpmod_config_scheduled_events);
     deleteallschedules((ScheduleCallback)&hstat_scheduler);
