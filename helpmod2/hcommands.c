@@ -3743,10 +3743,11 @@ void hcommands_add(void)
     hcommand_add("devoice", H_TRIAL, helpmod_cmd_devoice, "Sets mode -v on channels");
 
     hcommand_add("invite", H_PEON, helpmod_cmd_invite, "Invites you to a channel");
+    /* disabled ticketing - meeb 2017-03-22
     hcommand_add("ticket", H_TRIAL, helpmod_cmd_ticket, "Gives a ticket to be used with invite");
     hcommand_add("resolve", H_STAFF, helpmod_cmd_resolve, "Resolves (deletes) a ticket");
     hcommand_add("tickets", H_STAFF, helpmod_cmd_tickets, "Lists all valid tickets for a channel");
-    hcommand_add("showticket", H_STAFF, helpmod_cmd_showticket, "Shows the ticket for the user");
+    hcommand_add("showticket", H_STAFF, helpmod_cmd_showticket, "Shows the ticket for the user"); */
 
     hcommand_add("termstats", H_OPER, helpmod_cmd_termstats, "Lists usage statistics for terms");
     hcommand_add("checkchannel", H_STAFF, helpmod_cmd_checkchannel, "Shows channel information for any channel");
