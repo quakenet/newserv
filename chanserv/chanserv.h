@@ -82,7 +82,7 @@
 #define   MAXHELLOS           2
 
 /* Maximum number of times a user may actually be authed */
-#define   MAXAUTHCOUNT        2
+#define   MAXAUTHCOUNT        4
 
 /* Maximum number of accounts that may share an email address */
 #define   MD_DEFAULTACTLIMIT  2
