@@ -563,6 +563,11 @@ static int glines_cmdtrustgline(void *source, int cargc, char **cargv) {
 
   tg = tg_strtotg(cargv[coff]);
 
+  if (!tg) {
+    controlreply(sender, "Invalid trust group specified.");
+    return CMD_ERROR;
+  }
+
   if (!(tg->flags & TRUST_RELIABLE_USERNAME)) {
     controlreply(sender, "Sorry, that trust group does not have the \"reliable username\" flag.");
     return CMD_ERROR;
@@ -625,6 +630,11 @@ static int glines_cmdtrustungline(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
 
   tg = tg_strtotg(cargv[0]);
+
+  if (!tg) {
+    controlreply(sender, "Invalid trust group specified.");
+    return CMD_ERROR;
+  }
 
   if (!(tg->flags & TRUST_RELIABLE_USERNAME)) {
     controlreply(sender, "Sorry, that trust group does not have the \"reliable username\" flag.");
@@ -727,7 +737,7 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   if (cargc > 1) {
     char* ch = cargv[0];
 
-    for (; *ch; ch++)
+    for (; *ch; ch++) {
       switch (*ch) {
       case '-':
         break;
@@ -763,8 +773,8 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
         controlreply(sender, "Invalid flag '%c'.", *ch);
         return CMD_ERROR;
       }
-
-      mask = cargv[1];
+    }
+    mask = cargv[1];
   } else {
     mask = cargv[0];
   }
