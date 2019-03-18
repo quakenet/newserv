@@ -737,7 +737,7 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
   if (cargc > 1) {
     char* ch = cargv[0];
 
-    for (; *ch; ch++)
+    for (; *ch; ch++) {
       switch (*ch) {
       case '-':
         break;
@@ -773,8 +773,8 @@ static int glines_cmdglist(void *source, int cargc, char **cargv) {
         controlreply(sender, "Invalid flag '%c'.", *ch);
         return CMD_ERROR;
       }
-
-      mask = cargv[1];
+    }
+    mask = cargv[1];
   } else {
     mask = cargv[0];
   }

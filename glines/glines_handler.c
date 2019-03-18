@@ -205,7 +205,7 @@ int handleglinemsg(void *source, int cargc, char **cargv) {
       return CMD_OK;
     } else {
        if (cargc < 5)
-         return; /* U:lined gline, we're done */
+         return CMD_OK; /* U:lined gline, we're done */
        Error("gline", ERR_WARNING, "Gline addition - adding deactivated gline - mask not found (%s)", mask);
        expire = abs_expire(atoi(cargv[2]));
        switch (cargc) {
