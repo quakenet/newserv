@@ -3,7 +3,7 @@
  *
  * CMDNAME: ticketauth
  * CMDLEVEL: QCMD_SECURE | QCMD_NOTAUTHED | QCMD_HIDDEN
- * CMDARGS: 5
+ * CMDARGS: 1
  * CMDDESC: Authenticates you on the bot using a ticket.
  * CMDFUNC: csa_doticketauth
  * CMDPROTO: int csa_doticketauth(void *source, int cargc, char **cargv);
@@ -19,31 +19,46 @@
 int csa_completeauth(nick *sender, reguser *rup, char *authtype);
 
 int csa_doticketauth(void *source, int cargc, char **cargv) {
-  activeuser* aup;
-  time_t t;
-  nick *sender=(nick *)source;
-  long uid;
-  int ret;
-  reguser *rup;
-  time_t logintimestamp, expiry;
-  char buf[512], *digest, *junk;
+  nick *sender = source;
 
-  if(cargc!=5) {
+  if(cargc!=1) {
     chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "ticketauth");
     return CMD_ERROR;
   }
 
-  if (!(aup=getactiveuserfromnick(sender)))
+  char *ticket = cargv[0];
+  size_t ticket_len = strlen(ticket);
+
+  if(ticket_len < 65) {
+    chanservstdmessage(sender, QM_INVALIDHMAC);
     return CMD_ERROR;
+  }
 
-  t = time(NULL);
+  char *digest = &ticket[ticket_len - 64];
+  *(digest - 1) = '\0';
 
-  uid = atoi(cargv[0]);
-  logintimestamp = atoi(cargv[1]);
-  expiry = atoi(cargv[2]);
-  junk = cargv[3];
-  digest = cargv[4];
+  int ret = csc_verifyqticket(ticket, digest);
+  if(ret < 0) {
+    chanservstdmessage(sender, QM_CONFIGURATIONERROR);
+    return CMD_ERROR;
+  } else if(ret > 0) {
+    chanservstdmessage(sender, QM_INVALIDHMAC);
+    return CMD_ERROR;
+  }
 
+  time_t logintimestamp, expiry;
+  long uid;
+  {
+    intmax_t logintimestamp_i, expiry_i;
+    if(sscanf(ticket, "%ld %jd %jd ", &uid, &logintimestamp_i, &expiry_i) != 3) {
+      chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "ticketauth");
+      return CMD_ERROR;
+    }
+    logintimestamp = (time_t)logintimestamp_i;
+    expiry = (time_t)expiry_i;
+  }
+
+  time_t t = time(NULL);
   if(t < logintimestamp) {
     chanservstdmessage(sender, QM_TICKETNOTYETVALID);
     return CMD_ERROR;
@@ -53,17 +68,7 @@ int csa_doticketauth(void *source, int cargc, char **cargv) {
     return CMD_ERROR;
   }
 
-  snprintf(buf, sizeof(buf), "%ld %jd %jd %s", uid, (intmax_t)logintimestamp, (intmax_t)expiry, junk);
-
-  ret = csc_verifyqticket(buf, digest);
-  if(ret < 0) {
-    chanservstdmessage(sender, QM_CONFIGURATIONERROR);
-    return CMD_ERROR;
-  } else if(ret > 0) {
-    chanservstdmessage(sender, QM_INVALIDHMAC);
-    return CMD_ERROR;
-  }
-
+  reguser *rup;
   if(!(rup=findreguserbyID(uid))) {
     chanservstdmessage(sender, QM_UNKNOWNUSER, "??");
     return CMD_ERROR;
