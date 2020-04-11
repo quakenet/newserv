@@ -1,5 +1,6 @@
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
 #include "../lib/version.h"
 #include "../nick/nick.h"
 #include "../chanindex/chanindex.h"

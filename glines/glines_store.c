@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include "../lib/version.h"
 #include "../core/schedule.h"
 #include "../control/control.h"
