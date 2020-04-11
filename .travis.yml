@@ -5,4 +5,4 @@ addons:
       liblua5.1-0-dev
 
 script:
-  - ./configure && make && make install
+  - ./configure -R -v && make && make install
