@@ -1,7 +1,7 @@
 newserv
 =======
 
-[![Build Status](https://travis-ci.org/quakenet/newserv.png?branch=master)](https://travis-ci.org/quakenet/newserv)
+![C/C++ CI](https://github.com/quakenet/newserv/workflows/C/C++%20CI/badge.svg)
 
 Introduction
 ------------
