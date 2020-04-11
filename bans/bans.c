@@ -18,7 +18,7 @@ void _fini() {
   nsfreeall(POOL_BANS);
 }
 
-chanban *getchanban() {
+hanban *getchanban() {
   chanban *cbp;
 
   cbp = nsmalloc(POOL_BANS, sizeof(chanban));
