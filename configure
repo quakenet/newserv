@@ -7,6 +7,7 @@ import getopt
 
 LOG = None
 VERBOSE = False
+REQUIRE_ALL = False
 
 # standard line print
 def lprint(x):
@@ -153,6 +154,7 @@ def librarycheck(libraries, includes, libs):
       for x in haystack:
         p = os.path.join(x, needle)
         if os.path.exists(p):
+          vprint("  found: %s" % p)
           return x
 
     found = []
@@ -325,9 +327,16 @@ def configure(config, selectoverrides, workspaces):
   lprint("configure: selected: %s" % " ".join(building))
   if len(notfound) > 0:
     lprint("configure: couldn't find: %s" % " ".join(notfound))
+    check_require_all()
 
   if len(cantbuild) > 0:
     lprint("configure: can't select: %s" % " ".join(cantbuild))
+    check_require_all()
+
+def check_require_all():
+  if REQUIRE_ALL:
+    lprint("configure: require-all selected, so failing")
+    sys.exit(1)
 
 validopts = {}
 
@@ -341,10 +350,11 @@ def usage():
   print "    -L [additional lib dir]"
   print "    -I [additional include dir]"
   print "    -m [additional module]"
+  print "    -R: require everything"
   print "    -v: verbose"
 
 def main():
-  global LOG, VERBOSE
+  global LOG, VERBOSE, REQUIRE_ALL
 
   files, workspaces = [], []
   for root, _, file_list in os.walk("."):
@@ -370,7 +380,7 @@ def main():
     validopts["--with-%s" % k] = (k, v)
 
   try:
-    opts, args = getopt.getopt(sys.argv[1:], "hvcI:L:m:", mopts)
+    opts, args = getopt.getopt(sys.argv[1:], "hvcI:L:m:R", mopts)
   except getopt.GetoptError, err:
     print str(err)
     usage()
@@ -393,6 +403,8 @@ def main():
       return
     elif o == "-v":
       VERBOSE = True
+    elif o == "-R":
+      REQUIRE_ALL = True
     elif o == "-L":
       libs.append(a)
     elif o == "-I":

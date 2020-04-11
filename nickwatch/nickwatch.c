@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "../core/schedule.h"
 #include "../lib/irc_string.h"
 #include "../lib/splitline.h"

@@ -1,8 +1,19 @@
+dist: bionic
 language: c
 addons:
   apt:
     packages:
+      git
+      gcc
+      make
+      python2.7
+      python-minimal
+      flex
+      bison
       liblua5.1-0-dev
-
+      libmariadb-dev
+      libpq-dev
+      libpcre3-dev
+      zlib1g-dev
 script:
-  - ./configure && make && make install
+  - ./configure -R -v && make && make install
