@@ -6,12 +6,11 @@ newserv
 Introduction
 ------------
 
-newserv is a P10 protocol services daemon developed for the QuakeNet IRC
-Network.
+newserv is a P10 protocol services daemon developed for the QuakeNet IRC network.
 
 It is modular, fast and easily customisable.
 
-The official website for newserv is https://development.quakenet.org/.
+The official website for newserv is https://development.quakenet.org/
 
 Please refer to the LICENSE file for licensing details.
 
@@ -42,14 +41,12 @@ Requirements
 * GNU Make
 * Python 2.4
 
-Support & Development
+Support & development
 ---------------------
 
-Please read the documentation provided before you ask us for support. You may
-find some assistance in #dev on QuakeNet for specific questions.
+Please read the documentation provided before you ask us for support. You may find some assistance in #dev on QuakeNet for specific questions.
 
-If you've found any bugs or you're working on any cool new features please give
-us a shout.
+If you've found any bugs or you're working on any cool new features please give us a shout.
 
 Installation
 ------------
@@ -58,14 +55,9 @@ First run configure script:
 
     $ ./configure
 
-The configure script will list any missing dependencies. If you're unsure why
-a certain library or header file was not found you can run the configure script
-with the -v option or check the .configure.log file after your first configure
-run.
+The configure script will list any missing dependencies. If you're unsure why a certain library or header file was not found you can run the configure script with the -v option or check the .configure.log file after your first configure run.
 
-Please refer to the "Local Settings" section in this file if you're using
-non-standard library/header search paths. Once you've resolved all dependency
-issues you can build newserv:
+Please refer to the "Local Settings" section in this file if you're using non-standard library/header search paths. Once you've resolved all dependency issues you can build newserv:
 
     $ make
 
@@ -73,44 +65,33 @@ After all modules are built you can install newserv:
 
     $ make install
 
-By default the newserv binary and the modules are installed into your source
-tree. The recommended setup is to now create a separate directory and symlink
-the "newserv" binary and the "modules" directory into it:
+By default the newserv binary and the modules are installed into your source tree. The recommended setup is to now create a separate directory and symlink the "newserv" binary and the "modules" directory into it:
 
     $ cd
     $ mkdir newserv-install && cd newserv-install
     $ ln -s ../newserv-src/newserv
     $ ln -s ../newserv-src/modules
 
-You will also need to copy the newserv.conf.example configuration file to your
-installation directory and rename it to newserv.conf. The MODULES file has a
-list of available modules and their configuration settings.
+You will also need to copy the newserv.conf.example configuration file to your installation directory and rename it to newserv.conf.
+
+The MODULES file has a list of available modules and their configuration settings.
 
 After you have updated your newserv.conf file you can start newserv:
 
     $ ./newserv
 
-newserv does not detach from the console. Consider running it in a
-screen(1) session.
+newserv does not detach from the console. Consider running it in a screen(1) session.
 
-User Accounts
+User accounts
 -------------
 
-You can create a user on your control instance using /msg N hello (where N is
-the nick of your control user). You need to be opered and authed in order to
-use this command.
+You can create a user on your control instance using /msg N hello (where N is the nick of your control user). You need to be opered and authed in order to use this command.
 
-If your network does not have an authentication service that supports account
-IDs you can load the "auth" module. Note that this module lets opers set
-arbitrary account names and IDs and therefore should probably not be loaded on
-production networks.
+If your network does not have an authentication service that supports account IDs you can load the "auth" module. Note that this module lets opers set arbitrary account names and IDs and therefore should probably not be loaded on production networks.
 
-Once you have an account you should have a look at /msg N showcommands for a
-list of available commands.
+Once you have an account you should have a look at /msg N showcommands for a list of available commands.
 
-Local Settings
+Local settings
 --------------
 
-If you are using non-standard library/include paths you can create a file
-called configure.ini.local (using configure.ini.local.example as a template) to
-override some of the settings.
+If you are using non-standard library/include paths you can create a file called configure.ini.local (using configure.ini.local.example as a template) to override some of the settings.
