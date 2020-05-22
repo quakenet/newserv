@@ -1247,14 +1247,14 @@ void rg_logevent(nick *np, char *event, char *details, ...) {
 }
 
 void rg_loggline(struct rg_struct *rg, nick *np) {
-  char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
-
   rg->hits++;
   rg->hitssaved++;
   rg->lastseen = time(NULL);
   rg->dirty = 1;
 
   /* @paul: disabled
+
+  char eenick[RG_QUERY_BUF_SIZE], eeuser[RG_QUERY_BUF_SIZE], eehost[RG_QUERY_BUF_SIZE], eereal[RG_QUERY_BUF_SIZE];
 
   dbescapestring(eenick, np->nick, strlen(np->nick));
   dbescapestring(eeuser, np->ident, strlen(np->ident));
