@@ -225,7 +225,7 @@ void rg_checkexpiry(void *arg) {
   
   while(rp) {
     if (current >= rp->expires) {
-      dbquery("DELETE FROM regexglines WHERE id = %d", rp->id);
+      dbquery("DELETE FROM regexgline.glines WHERE id = %d", rp->id);
       if (lp) {
         lp->next = rp->next;
         rg_freestruct(rp);
