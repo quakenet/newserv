@@ -374,7 +374,7 @@ static void dbloaddata(DBConn *dbconn, void *arg) {
   DBResult *dbres = dbgetresult(dbconn);
 
   if(!dbquerysuccessful(dbres)) {
-    Error("chanserv", ERR_ERROR, "Error loading DB");
+    Error("regexgline", ERR_ERROR, "Error loading DB");
     return;
   }
 
