@@ -158,7 +158,7 @@ static void trojanscan_connect_nick(void *arg) {
   trojanscan_nick = registerlocaluser(mnick->content, myident->content, myhost->content, myrealname->content, myauthname->content, UMODE_SERVICE | UMODE_DEAF |
                                                                                                                           UMODE_OPER | UMODE_INV |
                                                                                                                           UMODE_ACCOUNT,
-                                                                                                                          &trojanscan_handlemessages);                                                                                                                            
+                                                                                                                          &trojanscan_handlemessages);
   freesstring(mnick);
   freesstring(myident);
   freesstring(myhost);
@@ -2118,6 +2118,9 @@ void trojanscan_database_close(void) {
 
 int trojanscan_database_connect(char *dbhost, char *dbuser, char *dbpass, char *db, unsigned int port) {
   mysql_init(&trojanscan_sql);
+  my_bool my_true = 1;
+  mysql_optionsv(&trojanscan_sql, MYSQL_OPT_RECONNECT, &my_true);
+
   if (!mysql_real_connect(&trojanscan_sql, dbhost, dbuser, dbpass, db, port, NULL, 0))
     return -1;
 
