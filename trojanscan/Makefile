@@ -1,7 +1,7 @@
 include ../build.mk
 
-CFLAGS+=$(INCMYSQL) $(INCPCRE)
-LDFLAGS+=$(LIBMYSQL) $(LIBPCRE)
+CFLAGS+=$(INCMARIADB) $(INCPCRE)
+LDFLAGS+=$(LIBMARIADB) $(LIBPCRE)
 
 .PHONY: all
 all: trojanscan.so
