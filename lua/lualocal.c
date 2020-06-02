@@ -410,7 +410,7 @@ static int lua_localinvite(lua_State *ps) {
     LUA_RETURN(ps, LUA_FAIL);
 
   chan = findchannel((char*)lua_tostring(ps, 3));
-  if(!chan)
+  if(!chan || !chan->index)
     LUA_RETURN(ps, LUA_FAIL);
 
   localinvite(source, chan->index, target);
