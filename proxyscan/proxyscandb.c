@@ -107,6 +107,10 @@ const char *scantostr(int type) {
     case STYPE_ROUTER:
       reason="router";
       break;
+
+    case STYPE_EXT:
+      reason="ext";
+      break;
   }
    
   return reason;

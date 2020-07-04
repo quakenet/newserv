@@ -16,6 +16,9 @@
 #define MAGICROUTERSTRING        "\r\nServer: Mikrotik HttpProxy\r\n"
 #define MAGICROUTERSTRINGLENGTH  30
 
+#define MAGICEXTSTRING        "DETECTED\n"
+#define MAGICEXTTRINGLENGTH    9
+
 #define PSCAN_MAXSCANS      100
 #define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
 
@@ -31,6 +34,8 @@
 #define STYPE_DIRECT        5 /* not sure what this is so I'm leaving it alone */
 #define STYPE_DIRECT_IRC    6
 #define STYPE_ROUTER        7
+
+#define STYPE_EXT           8
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1
@@ -115,6 +120,9 @@ extern int ps_scan_ext;
 extern int ps_extscan_ext;
 extern int ps_ready;
 extern int rescaninterval;
+
+extern sstring *exthost;
+extern int extport;
 
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;

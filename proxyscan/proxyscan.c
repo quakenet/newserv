@@ -71,6 +71,9 @@ unsigned int ps_mailip;
 unsigned int ps_mailport;
 sstring *ps_mailname;
 
+sstring *exthost;
+int extport;
+
 unsigned long scanspermin;
 unsigned long tempscanspermin=0;
 unsigned long lastscants=0;
@@ -192,6 +195,12 @@ void _init(void) {
   cachehostinit(rescaninterval);
   freesstring(cfgstr);
 
+  sstring *cfgextport = getcopyconfigitem("proxyscan","extport","0",16);
+  extport = strtol(cfgextport->content,NULL,10);
+  freesstring(cfgextport);
+
+  exthost = getcopyconfigitem("proxyscan","exthost","",16);
+
   /* this default will NOT work well */
   myipstr=getcopyconfigitem("proxyscan","ip","127.0.0.1",16);
   
@@ -309,6 +318,8 @@ void _init(void) {
   proxyscan_addscantype(STYPE_SOCKS5, 27977);
   proxyscan_addscantype(STYPE_SOCKS5, 45554);
 
+  proxyscan_addscantype(STYPE_EXT, 0);
+
   /* Schedule saves */
   schedulerecurring(time(NULL)+3600,0,3600,&dumpcachehosts,NULL);
  
@@ -379,6 +390,7 @@ void _fini(void) {
   
   freesstring(myipstr);
   freesstring(ps_mailname);
+  freesstring(exthost);
 #if defined(PROXYSCAN_MAIL)
   if (psm_mailerfd!=-1)
     deregisterhandler(psm_mailerfd,1);
@@ -758,6 +770,15 @@ void handlescansock(int fd, short events) {
       
       /* Do nothing */
       break;    
+
+    case STYPE_EXT:
+      sprintf(buf,"SCAN %s\n", IPtostr(((patricia_node_t *)sp->node)->prefix->sin));
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+        killsock(sp, SOUTCOME_CLOSED);
+        return;
+      }
+
+      break;
     }                
     break;
     
@@ -785,6 +806,9 @@ void handlescansock(int fd, short events) {
       } else if(sp->type == STYPE_ROUTER) {
         magicstring = MAGICROUTERSTRING;
         magicstringlength = MAGICROUTERSTRINGLENGTH;
+      } else if(sp->type == STYPE_EXT) {
+        magicstring = MAGICEXTSTRING;
+        magicstringlength = MAGICEXTTRINGLENGTH;
       } else {
         magicstring = MAGICSTRING;
         magicstringlength = MAGICSTRINGLENGTH;
