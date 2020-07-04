@@ -252,8 +252,8 @@ void _init(void) {
   addcommandtotree(ps_commands, "showkill", 0, 1, &proxyscandoshowkill);
   addcommandtotree(ps_commands, "scan", 0, 1, &proxyscandoscan);
   addcommandtotree(ps_commands, "scanfile", 0, 1, &proxyscandoscanfile);
-  addcommandtotree(ps_commands, "addscan", 0, 1, &proxyscandoaddscan);
-  addcommandtotree(ps_commands, "delscan", 0, 1, &proxyscandodelscan);
+//  addcommandtotree(ps_commands, "addscan", 0, 1, &proxyscandoaddscan);
+//  addcommandtotree(ps_commands, "delscan", 0, 1, &proxyscandodelscan);
 
   /* Default scan types */
   proxyscan_addscantype(STYPE_HTTP, 8080);
