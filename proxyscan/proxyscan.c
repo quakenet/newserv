@@ -35,8 +35,8 @@ MODULE_VERSION("")
 #define SCANHOSTHASHSIZE 1000
 #define SCANHASHSIZE     400
 
-/* It's unlikely you'll get 100k of preamble before a connect... */
-#define READ_SANITY_LIMIT 102400
+/* It's unlikely you'll get 10k of preamble before a connect... */
+#define READ_SANITY_LIMIT 10240
 
 scan *scantable[SCANHASHSIZE];
 
@@ -806,8 +806,9 @@ void handlescansock(int fd, short events) {
         magicstring = MAGICSTRING;
         magicstringlength = MAGICSTRINGLENGTH;
         if(sp->totalbytesread - res == 0) {
-          buf[0] = '\n';
-          write(fd,buf,1);
+          buf[0] = '\r';
+          buf[1] = '\n';
+          write(fd,buf,2);
         }
       }
 
