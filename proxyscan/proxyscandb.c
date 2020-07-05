@@ -1,4 +1,3 @@
-
 /*
  * proxyscandb:
  *  Handles the database interface routines for proxyscan.
@@ -95,17 +94,17 @@ const char *scantostr(int type) {
     case STYPE_CISCO:
       reason="router";
       break;
-      
-    case STYPE_DIRECT:
-      reason="forward";
-      break;
 
-    case STYPE_DIRECT_IRC:
+    case STYPE_DIRECT:
       reason="fwdirc";
       break;
 
     case STYPE_ROUTER:
       reason="router";
+      break;
+
+    case STYPE_EXT:
+      reason="ext";
       break;
   }
    

@@ -7,17 +7,25 @@
 #include <time.h>
 #include <stdint.h>
 
-#define MAGICSTRING         "NOTICE AUTH :*** Looking up your hostname\r\n"
-#define MAGICSTRINGLENGTH   42
+/* string seen when:
+ * - a HTTP/SOCKS/... proxy connects directly to our listener (because we told it to)
+ * - it's a proxy that forwards directly to a QuakeNet ircd (we get this because we sent PRIVMSG)
+ */
+#define MAGICSTRING      ".quakenet.org 451 *  :Register first.\r\n"
+#define MAGICSTRINGLENGTH (sizeof(MAGICSTRING)-1)
 
-#define MAGICIRCSTRING      ".quakenet.org 451 *  :Register first.\r\n"
-#define MAGICIRCSTRINGLENGTH 38
-
+/* string seen after a fake GET request */
 #define MAGICROUTERSTRING        "\r\nServer: Mikrotik HttpProxy\r\n"
-#define MAGICROUTERSTRINGLENGTH  30
+#define MAGICROUTERSTRINGLENGTH  (sizeof(MAGICROUTERSTRING)-1)
+
+/* string seen if the external program decided it is a proxy */
+#define MAGICEXTSTRING        "DETECTED\n"
+#define MAGICEXTTRINGLENGTH    (sizeof(MAGICEXTSTRING)-1)
 
 #define PSCAN_MAXSCANS      100
-#define PSCAN_READBUFSIZE   (MAGICSTRINGLENGTH * 2)
+
+#define P_MAX(a,b) (((a)>(b))?(a):(b))
+#define PSCAN_READBUFSIZE   (P_MAX(MAGICSTRINGLENGTH, P_MAX(MAGICROUTERSTRINGLENGTH, MAGICEXTTRINGLENGTH)))*2
 
 #define SSTATE_CONNECTING   0
 #define SSTATE_SENTREQUEST  1
@@ -28,9 +36,10 @@
 #define STYPE_HTTP          2
 #define STYPE_WINGATE       3
 #define STYPE_CISCO         4
-#define STYPE_DIRECT        5 /* not sure what this is so I'm leaving it alone */
-#define STYPE_DIRECT_IRC    6
-#define STYPE_ROUTER        7
+#define STYPE_DIRECT        5
+#define STYPE_ROUTER        6
+
+#define STYPE_EXT           7
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1
@@ -115,6 +124,9 @@ extern int ps_scan_ext;
 extern int ps_extscan_ext;
 extern int ps_ready;
 extern int rescaninterval;
+
+extern sstring *exthost;
+extern int extport;
 
 extern unsigned int normalqueuedscans;
 extern unsigned int prioqueuedscans;

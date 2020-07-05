@@ -187,6 +187,10 @@ int handleevents(int timeout) {
   res=epoll_wait(epollfd, epes, 100, timeout);
 
   if (res<0) {
+    if (errno == EINTR) {
+      return 0;
+    }
+
     Error("events",ERR_WARNING,"Error in epoll_wait(): %d",errno);
     return 1;
   }
