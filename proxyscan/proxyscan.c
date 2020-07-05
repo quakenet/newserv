@@ -192,7 +192,11 @@ static int open_listener(sstring *ip, int port) {
   return fd;
 }
 
+extern unsigned int polltoepoll(short events);
 void _init(void) {
+  /* HACK: make sure we're running in epoll mode -- no point running otherwise */
+  polltoepoll(0);
+
   sstring *cfgstr;
   int ipbits[4];
 
