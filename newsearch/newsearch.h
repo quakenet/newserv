@@ -114,6 +114,9 @@ struct searchNode *regex_parse(searchCtx *ctx, int argc, char **argv);
 /* Length (STRING -> INT) */
 struct searchNode *length_parse(searchCtx *ctx, int argc, char **argv);
 
+/* String concat (STRING -> STRING) */
+struct searchNode *concat_parse(searchCtx *ctx, int argc, char **argv);
+
 /* kill/gline actions (BOOL) */
 struct searchNode *kill_parse(searchCtx *ctx, int argc, char **argv);
 struct searchNode *gline_parse(searchCtx *ctx, int argc, char **argv);
