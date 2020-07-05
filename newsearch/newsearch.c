@@ -178,6 +178,7 @@ void _init() {
   registerglobalsearchterm("match",match_parse, "usage: (match (X) string)");
   registerglobalsearchterm("regex",regex_parse, "usage: (regex (X) string)");
   registerglobalsearchterm("length",length_parse, "usage: (length string)");
+  registerglobalsearchterm("concat",concat_parse, "usage: (concat (a) b (c))");
   
   /* Nickname operations */
   registersearchterm(reg_nicksearch, "hostmask",hostmask_parse, 0, "The user's nick!user@host; \"hostmask real\" returns nick!user@host\rreal");
