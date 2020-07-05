@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 
 #include "proxyscan.h"
 
@@ -16,6 +17,7 @@
 #include "../irc/irc_config.h"
 #include "../localuser/localuser.h"
 #include "../core/config.h"
+#include <arpa/inet.h>
 #include <unistd.h>
 #include "../core/schedule.h"
 #include <string.h>
@@ -42,7 +44,7 @@ scan *scantable[SCANHASHSIZE];
 
 CommandTree *ps_commands;
 
-int listenfd;
+static int listenfd = -1;
 int activescans;
 int maxscans;
 int queuedhosts;
@@ -141,6 +143,55 @@ int proxyscan_delscantype(int type, int port) {
   return 0;
 }
 
+static void listener_accept(int fd, short events) {
+  int newfd = accept4(fd, NULL, NULL, SOCK_NONBLOCK);
+  if (newfd < 0) {
+    return;
+  }
+
+  write(newfd, MAGICSTRING, MAGICSTRINGLENGTH);
+  close(newfd);
+}
+
+static int open_listener(sstring *ip, int port) {
+  /* ipv4 only for now */
+  struct sockaddr_in s;
+  int fd;
+  int optval;
+
+  memset(&s, 0, sizeof(struct sockaddr_in));
+  s.sin_family = AF_INET;
+  if (inet_aton(ip->content, &s.sin_addr) == 0) {
+    Error("proxyscan", ERR_STOP, "Invalid address %s", ip->content);
+    return -1;
+  }
+  s.sin_port = htons(port);
+
+  fd = socket(PF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0);
+  if(fd < 0) {
+    Error("proxyscan", ERR_STOP, "Unable to get socket for listener fd.");
+    return -1;
+  }
+
+  optval = 1;
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+  if(bind(fd, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0) {
+    Error("proxyscan", ERR_STOP, "Unable to bind listener fd.");
+    close(fd);
+    return -1;
+  }
+
+  if(listen(fd, 500) < 0) {
+    Error("proxyscan", ERR_STOP, "Unable to listen on listener fd.");
+    close(fd);
+    return -1;
+  }
+
+  registerhandler(fd, POLLIN, listener_accept);
+  return fd;
+}
+
 void _init(void) {
   sstring *cfgstr;
   int ipbits[4];
@@ -222,6 +273,8 @@ void _init(void) {
   }
 #endif
 
+  listenfd = open_listener(myipstr, listenport);
+
   proxyscannick=NULL;
   /* Set up our nick on the network */
   scheduleoneshot(time(NULL),&registerproxyscannick,NULL);
@@ -302,11 +355,11 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
   proxyscan_addscantype(STYPE_SOCKS4, 29992);
-  proxyscan_addscantype(STYPE_DIRECT_IRC, 6666);
-  proxyscan_addscantype(STYPE_DIRECT_IRC, 6667);
-  proxyscan_addscantype(STYPE_DIRECT_IRC, 6668);
-  proxyscan_addscantype(STYPE_DIRECT_IRC, 6669);
-  proxyscan_addscantype(STYPE_DIRECT_IRC, 6670);
+  proxyscan_addscantype(STYPE_DIRECT, 6666);
+  proxyscan_addscantype(STYPE_DIRECT, 6667);
+  proxyscan_addscantype(STYPE_DIRECT, 6668);
+  proxyscan_addscantype(STYPE_DIRECT, 6669);
+  proxyscan_addscantype(STYPE_DIRECT, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
   proxyscan_addscantype(STYPE_SOCKS5, 27977);
   proxyscan_addscantype(STYPE_SOCKS5, 45554);
@@ -355,6 +408,8 @@ void registerproxyscannick(void *arg) {
 }
 
 void _fini(void) {
+  if (listenfd != -1)
+    deregisterhandler(listenfd, 1);
 
   deregisterlocaluser(proxyscannick,NULL);
   
@@ -620,7 +675,6 @@ void handlescansock(int fd, short events) {
   scan *sp;
   char buf[512];
   int res;
-  int i;
   unsigned long netip;
   unsigned short netport;
 
@@ -741,27 +795,21 @@ void handlescansock(int fd, short events) {
       break;
       
     case STYPE_DIRECT:
-      /* Do nothing */
-      break;    
-
-    case STYPE_DIRECT_IRC:
       sprintf(buf,"PRIVMSG\r\n");
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
-	killsock(sp, SOUTCOME_CLOSED);
+        killsock(sp, SOUTCOME_CLOSED);
         return;
       }
       
-      /* Do nothing */
       break;    
 
     case STYPE_ROUTER:
       sprintf(buf,"GET /nonexistent HTTP/1.0\r\n\r\n");
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
-	killsock(sp, SOUTCOME_CLOSED);
+        killsock(sp, SOUTCOME_CLOSED);
         return;
       }
       
-      /* Do nothing */
       break;    
 
     case STYPE_EXT:
@@ -793,10 +841,7 @@ void handlescansock(int fd, short events) {
       char *magicstring;
       int magicstringlength;
 
-      if(sp->type == STYPE_DIRECT_IRC) {
-        magicstring = MAGICIRCSTRING;
-        magicstringlength = MAGICIRCSTRINGLENGTH;
-      } else if(sp->type == STYPE_ROUTER) {
+      if(sp->type == STYPE_ROUTER) {
         magicstring = MAGICROUTERSTRING;
         magicstringlength = MAGICROUTERSTRINGLENGTH;
       } else if(sp->type == STYPE_EXT) {
@@ -812,25 +857,9 @@ void handlescansock(int fd, short events) {
         }
       }
 
-      for (i=0;i<sp->bytesread - magicstringlength;i++) {
-        if (!strncmp(sp->readbuf+i, magicstring, magicstringlength)) {
-          /* Found the magic string */
-          /* If the offset is 0, this means it was the first thing we got from the socket, 
-           * so it's an actual IRCD (sheesh).  Note that when the buffer is full and moved,
-           * the thing moved to offset 0 would previously have been tested as offset 
-           * PSCAN_READBUFSIZE/2. 
-           *
-           * Skip this checking for STYPE_DIRECT scans, which are used to detect trojans setting
-           * up portforwards (which will therefore show up as ircds, we rely on the port being
-           * strange enough to avoid false positives */
-          if (i==0 && (sp->type != STYPE_DIRECT)) {
-            killsock(sp, SOUTCOME_CLOSED);
-            return;
-          }
-        
-          killsock(sp, SOUTCOME_OPEN);
-          return;
-        }
+      if (memmem(sp->readbuf, sp->bytesread, magicstring, magicstringlength)) {
+        killsock(sp, SOUTCOME_OPEN);
+        return;
       }
     }
     
