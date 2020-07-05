@@ -4,7 +4,6 @@
 #include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <signal.h>
 #include <netdb.h>
 #include "../core/error.h"
 #include "../core/events.h"
@@ -142,15 +141,9 @@ int proxyscan_delscantype(int type, int port) {
   return 0;
 }
 
-void ignorepipe(int signal_) {
-  signal(SIGPIPE, ignorepipe); /* HACK */
-}
-
 void _init(void) {
   sstring *cfgstr;
   int ipbits[4];
-
-  signal(SIGPIPE, ignorepipe); /* HACK */
 
   ps_start_ts = time(NULL);
   ps_ready = 0;
