@@ -51,18 +51,8 @@ int createconnectsocket(struct irc_in_addr *ip, int socknum) {
     }
   }
 
-  if ((fd=socket(proto,SOCK_STREAM,0))<0) {
+  if ((fd=socket(proto,SOCK_STREAM|SOCK_NONBLOCK,0))<0) {
     Error("proxyscan",ERR_ERROR,"Unable to create socket (%d)",errno);
-    return -1;
-  }
-  if (ioctl(fd,FIONBIO,&res)!=0) {
-    close(fd);
-    Error("proxyscan",ERR_ERROR,"Unable to make socket nonblocking");
-    return -1;
-  }
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &opt, sizeof(opt))!=0) {
-    close(fd);
-    Error("proxyscan",ERR_ERROR,"Unable to set SO_REUSEADDR on scan socket.");
     return -1;
   }
 #ifdef __FreeBSD__
