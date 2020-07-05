@@ -21,6 +21,7 @@
 #include "../core/modules.h"
 #include "../lib/version.h"
 #include "../lib/irc_string.h"
+#include "../lib/array.h"
 #include "control.h"
 #include "control_policy.h"
 
@@ -711,10 +712,10 @@ int controlchannel(void *sender, int cargc, char **cargv) {
 
 int controlshowcommands(void *sender, int cargc, char **cargv) {
   nick *np = (nick *)sender;
-  Command *cmdlist[100];
+  Command *cmdlist[200];
   int i, n;
 
-  n = getcommandlist(controlcmds, cmdlist, 100);
+  n = getcommandlist(controlcmds, cmdlist, COUNT_OF(cmdlist));
 
   controlreply(np, "The following commands are registered at present:");
 
