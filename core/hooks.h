@@ -65,6 +65,8 @@
 #define HOOK_CHANNEL_NEWNICK       415  /* Argument is void*[2] (channel, nick) */
 #define HOOK_CHANNEL_LOSTNICK      416  /* Argument is void*[2] (channel, nick) */
 
+#define HOOK_CHANNEL_JOIN_BYPASS_BAN 417 /* Argument is void*[2] (channel, nick) */
+
 #define HOOK_CHANSERV_DBLOADED     500 /* No arg */
 /* 501 spare for now */
 #define HOOK_CHANSERV_RUNNING      502 /* No arg */
