@@ -4,12 +4,25 @@
 #include "../lib/irc_string.h"
 #include "../channel/channel.h"
 #include "../bans/bans.h"
+#include "../control/control.h"
+#include "../localuser/localuser.h"
 
 #define BANEVADE_SPAM
 
 MODULE_VERSION("")
 
 int ircdbanned(nick *n, channel *c);
+
+static chanban *nickbanned2(nick *np, channel *cp, int visibleonly) {
+	chanban *cbp;
+
+	for (cbp=cp->bans;cbp;cbp=cbp->next) {
+		if (nickmatchban(np,cbp,visibleonly))
+			return cbp;
+	}
+
+	return NULL;
+}
 
 void be_onjoin(int hooknum, void *arg) {
 	void **arglist = (void **)arg;
@@ -25,16 +38,41 @@ void be_onjoin(int hooknum, void *arg) {
 		return;
 
 	int ircd_banned = ircdbanned(np, c);
-	int ns_banned = nickbanned(np, c, 0);
+	chanban *ns_banned = nickbanned2(np, c, 0);
 
 #ifdef BANEVADE_SPAM
-	Error("banevade", ERR_INFO, "Ban status ircd_banned=%d newserv_banned=%d", ircd_banned, ns_banned);
+	Error("banevade", ERR_INFO, "Ban status ircd_banned=%d newserv_banned=%s", ircd_banned, (ns_banned ? "here" : "(null)"));
 #endif
 
 	/* If we're not considered banned as per the ircd code,
 	 but banned according to newserv - trigger the hook */
-	if(!ircd_banned && ns_banned)
+	if(!ircd_banned && ns_banned) {
+		/* We kinda dont need this hook anymore - but we'll trigger it anyway for future scripts/modules */
 		triggerhook(HOOK_CHANNEL_JOIN_BYPASS_BAN, arg);
+
+		channel *cp = findchannel("#qnet.banevade");
+		if(cp)
+			controlchanmsg(cp, "banevade: bad user in %s: %s!%s@%s vs. %s", c->index->name->content, np->nick, np->ident, np->host->name->content, bantostring(ns_banned));
+
+		if(IsAccount(np)) {
+			/* Reset host to [cc].HIS_HIDDENHOST */
+			char host[HOSTLEN+1] = "";
+			snprintf(host, sizeof(host), "%s.%s", np->authname, HIS_HIDDENHOST);
+
+			/* I didnt find a function for this, so we're doing it R A W */
+			irc_send("%s SH %s %s %s", mynumeric->content, longtonumeric(np->numeric, 5), np->ident, host);
+		} else {
+			/* Honest to god, this should never happen since the IRCD is in a state where it
+			 * checks EITHER the sethost or the authname. So people shouldn't be able to avoid bans
+			 * unauthed. But we still need to handle it, incase shit hits the fan. */
+
+			/* User has a spoofed host but isn't authed, most likely a s:line (for some reason I want to write an s:line). Send them flying. */
+			killuser(NULL, np, "Please don't avoid bans on QuakeNet");
+
+			/* Also send an additional spam line to the amazing OGs in qnet.banevade */
+			if(cp) controlchanmsg(cp, "banevade: user %s appears to be un-authed, this might be a s:line!", np->nick);
+		}
+	}
 
 }
 void _init() {
@@ -80,7 +118,7 @@ int ircdbanned(nick *n, channel *c) {
 	*/
 	if (!IsAccount(n))
 		sr = NULL;
-	else if (IsHideHost(n) || IsSetHost(n))
+	else if (IsSetHost(n))
 		sr = n->sethost->content;
 	else {
 		snprintf(tmphost, sizeof(tmphost), "%s.%s", n->authname, HIS_HIDDENHOST);
