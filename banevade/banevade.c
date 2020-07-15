@@ -35,7 +35,7 @@ void be_onjoin(int hooknum, void *arg) {
 		return;
 
 	/* Services, opers and extended opers can bypass bans */
-	if (IsService(np) || IsOper(np) || IsXOper(np))
+	if (IsService(np) || IsOper(np) || IsXOper(np) || NickOnServiceServer(np))
 		return;
 
 	int ircd_banned = ircdbanned(np, c);
