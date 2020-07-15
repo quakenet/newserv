@@ -6,6 +6,7 @@
 #include "../bans/bans.h"
 #include "../control/control.h"
 #include "../localuser/localuser.h"
+#include "../localuser/localuserchannel.h"
 
 #define BANEVADE_SPAM
 
@@ -61,13 +62,19 @@ void be_onjoin(int hooknum, void *arg) {
 
 			/* I didnt find a function for this, so we're doing it R A W */
 			irc_send("%s SH %s %s %s", mynumeric->content, longtonumeric(np->numeric, 5), np->ident, host);
+
+			/* Also remove them from the channel they're not supposed to be in */
+			/* We're gonna go with the generic default-Q-kick-reason since we don't know the real reason for the kick */
+			localkickuser(NULL, c, np, "Banned.");
 		} else {
 			/* Honest to god, this should never happen since the IRCD is in a state where it
 			 * checks EITHER the sethost or the authname. So people shouldn't be able to avoid bans
 			 * unauthed. But we still need to handle it, incase shit hits the fan. */
 
 			/* User has a spoofed host but isn't authed, most likely a s:line (for some reason I want to write an s:line). Send them flying. */
-			killuser(NULL, np, "Please don't avoid bans on QuakeNet");
+			/* We're not gonna kill the user because they'll most likely just reconnect and rejoin, causing a buttload of spam. */
+			/* So just trigger an extra line of spam into qnet.banevade so we'll investigate manually! */
+			//killuser(NULL, np, "Please don't avoid bans on QuakeNet");
 
 			/* Also send an additional spam line to the amazing OGs in qnet.banevade */
 			if(cp) controlchanmsg(cp, "banevade: user %s appears to be un-authed, this might be a s:line!", np->nick);
