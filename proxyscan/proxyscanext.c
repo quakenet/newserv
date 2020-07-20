@@ -79,11 +79,19 @@ void loadextrascans() {
 	esp->nextbynode = (extrascan *)node->exts[ps_extscan_ext];
         node->exts[ps_extscan_ext] = esp;
 
-        esp=addextrascan(port, STYPE_SOCKS5);
+        esp=addextrascan(port, STYPE_SOCKS5_V4);
         esp->nextbynode = (extrascan *)node->exts[ps_extscan_ext];
         node->exts[ps_extscan_ext] = esp;
 
-        esp=addextrascan(port, STYPE_HTTP);
+        esp=addextrascan(port, STYPE_SOCKS5_V6);
+        esp->nextbynode = (extrascan *)node->exts[ps_extscan_ext];
+        node->exts[ps_extscan_ext] = esp;
+
+        esp=addextrascan(port, STYPE_HTTP_V4);
+        esp->nextbynode = (extrascan *)node->exts[ps_extscan_ext];
+        node->exts[ps_extscan_ext] = esp;
+
+        esp=addextrascan(port, STYPE_HTTP_V6);
         esp->nextbynode = (extrascan *)node->exts[ps_extscan_ext];
         node->exts[ps_extscan_ext] = esp;
       }

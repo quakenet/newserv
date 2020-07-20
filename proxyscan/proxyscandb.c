@@ -79,20 +79,29 @@ const char *scantostr(int type) {
       reason="socks4";
       break;
       
-    case STYPE_SOCKS5:
+    case STYPE_SOCKS5_V4:
       reason="socks5";
       break;
+    case STYPE_SOCKS5_V6:
+      reason="socks5_v6";
+      break;
       
-    case STYPE_HTTP:
+    case STYPE_HTTP_V4:
       reason="http";
+      break;
+    case STYPE_HTTP_V6:
+      reason="http_v6";
       break;
       
     case STYPE_WINGATE:
       reason="wingate";
       break;
       
-    case STYPE_CISCO:
+    case STYPE_CISCO_V4:
       reason="router";
+      break;
+    case STYPE_CISCO_V6:
+      reason="router_v6";
       break;
 
     case STYPE_DIRECT:

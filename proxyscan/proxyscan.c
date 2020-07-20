@@ -44,7 +44,7 @@ scan *scantable[SCANHASHSIZE];
 
 CommandTree *ps_commands;
 
-static int listenfd = -1;
+static int listenfdv4 = -1, listenfdv6 = -1;
 int activescans;
 int maxscans;
 int queuedhosts;
@@ -64,7 +64,8 @@ unsigned int hitsbyclass[10];
 unsigned int scansbyclass[10];
 
 unsigned int myip;
-sstring *myipstr;
+struct in6_addr myipv6;
+sstring *myipstr, *myipv6str;
 unsigned short listenport;
 int brokendb;
 
@@ -98,7 +99,7 @@ void killallscans();
 void proxyscanstats(int hooknum, void *arg);
 void sendlagwarning();
 void proxyscan_newip(nick *np, unsigned long ip);
-int proxyscan_addscantype(int type, int port);
+void proxyscan_addscantype(int type, int port);
 int proxyscan_delscantype(int type, int port);
 
 int proxyscandostatus(void *sender, int cargc, char **cargv);
@@ -112,19 +113,38 @@ int proxyscandoaddscan(void *sender, int cargc, char **cargv);
 int proxyscandodelscan(void *sender, int cargc, char **cargv);
 int proxyscandoshowcommands(void *sender, int cargc, char **cargv);
 
-int proxyscan_addscantype(int type, int port) {
+#define STYPE_HTTP    STYPE_MAX+100
+#define STYPE_SOCKS5  STYPE_MAX+101
+#define STYPE_CISCO   STYPE_MAX+102
+
+void proxyscan_addscantype(int type, int port) {
+  switch(type) {
+    case STYPE_HTTP:
+      proxyscan_addscantype(STYPE_HTTP_V4, port);
+      proxyscan_addscantype(STYPE_HTTP_V6, port);
+      return;
+    case STYPE_SOCKS5:
+      proxyscan_addscantype(STYPE_SOCKS5_V4, port);
+      proxyscan_addscantype(STYPE_SOCKS5_V6, port);
+      return;
+    case STYPE_CISCO:
+      proxyscan_addscantype(STYPE_CISCO_V4, port);
+      proxyscan_addscantype(STYPE_CISCO_V6, port);
+      return;
+  }
+
   /* Check we have a spare scan slot */
   
-  if (numscans>=PSCAN_MAXSCANS)
-    return 1;
+  if (numscans>=PSCAN_MAXSCANS) {
+    Error("proxyscan", ERR_STOP, "Too many scan types!");
+    return;
+  }
 
   thescans[numscans].type=type;
   thescans[numscans].port=port;
   thescans[numscans].hits=0;
   
   numscans++;
-  
-  return 0;
 }
 
 int proxyscan_delscantype(int type, int port) {
@@ -154,41 +174,57 @@ static void listener_accept(int fd, short events) {
 }
 
 static int open_listener(sstring *ip, int port) {
-  /* ipv4 only for now */
-  struct sockaddr_in s;
-  int fd;
-  int optval;
+  char port_s[20];
+  snprintf(port_s, sizeof(port_s), "%d", port);
 
-  memset(&s, 0, sizeof(struct sockaddr_in));
-  s.sin_family = AF_INET;
-  if (inet_aton(ip->content, &s.sin_addr) == 0) {
-    Error("proxyscan", ERR_STOP, "Invalid address %s", ip->content);
+  struct addrinfo hints = {0};
+  hints.ai_flags = AI_NUMERICSERV|AI_NUMERICHOST;
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+  struct addrinfo *result;
+  int s = getaddrinfo(ip->content, port_s, &hints, &result);
+  if (s != 0) {
+    Error("proxyscan", ERR_STOP, "Unable to getaddrinfo listener fd %s:%d: %s", ip->content, port, gai_strerror(s));
     return -1;
   }
-  s.sin_port = htons(port);
 
-  fd = socket(PF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0);
+  if (result->ai_next != NULL) {
+    freeaddrinfo(result);
+    Error("proxyscan", ERR_STOP, "More than one address returned for listener %s:%d", ip->content, port);
+    return -1;
+  }
+
+  int fd = socket(result->ai_family, result->ai_socktype|SOCK_NONBLOCK, result->ai_protocol);
   if(fd < 0) {
-    Error("proxyscan", ERR_STOP, "Unable to get socket for listener fd.");
+    Error("proxyscan", ERR_STOP, "Unable to get socket for listener: %s:%d", ip->content, port);
     return -1;
   }
 
-  optval = 1;
-  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+  {
+    int optval = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+  }
 
-  if(bind(fd, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0) {
-    Error("proxyscan", ERR_STOP, "Unable to bind listener fd.");
+  if (result->ai_family == AF_INET6) {
+    int optval = 1;
+    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, sizeof(optval));
+  }
+
+  if(bind(fd, result->ai_addr, result->ai_addrlen) < 0) {
+    Error("proxyscan", ERR_STOP, "Unable to bind listener fd: %s:%d", ip->content, port);
     close(fd);
     return -1;
   }
 
   if(listen(fd, 500) < 0) {
-    Error("proxyscan", ERR_STOP, "Unable to listen on listener fd.");
+    Error("proxyscan", ERR_STOP, "Unable to listen on listener: %s:%d", ip->content, port);
     close(fd);
     return -1;
   }
 
   registerhandler(fd, POLLIN, listener_accept);
+  Error("proxyscan", ERR_INFO, "Listening for connections on %s:%d", ip->content, port);
   return fd;
 }
 
@@ -250,7 +286,8 @@ void _init(void) {
   exthost = getcopyconfigitem("proxyscan","exthost","",16);
 
   /* this default will NOT work well */
-  myipstr=getcopyconfigitem("proxyscan","ip","127.0.0.1",16);
+  myipstr=getcopyconfigitem("proxyscan","ipv4","127.0.0.1",16);
+  myipv6str=getcopyconfigitem("proxyscan","ipv6","::1",100);
   
   sscanf(myipstr->content,"%d.%d.%d.%d",&ipbits[0],&ipbits[1],&ipbits[2],&ipbits[3]);
   
@@ -277,7 +314,8 @@ void _init(void) {
   }
 #endif
 
-  listenfd = open_listener(myipstr, listenport);
+  listenfdv4 = open_listener(myipstr, listenport);
+  listenfdv6 = open_listener(myipv6str, listenport);
 
   proxyscannick=NULL;
   /* Set up our nick on the network */
@@ -398,8 +436,10 @@ void registerproxyscannick(void *arg) {
 }
 
 void _fini(void) {
-  if (listenfd != -1)
-    deregisterhandler(listenfd, 1);
+  if (listenfdv4 != -1)
+    deregisterhandler(listenfdv4, 1);
+  if (listenfdv6 != -1)
+    deregisterhandler(listenfdv6, 1);
 
   deregisterlocaluser(proxyscannick,NULL);
   
@@ -427,6 +467,7 @@ void _fini(void) {
   nsfreeall(POOL_PROXYSCAN);
   
   freesstring(myipstr);
+  freesstring(myipv6str);
   freesstring(ps_mailname);
   freesstring(exthost);
 #if defined(PROXYSCAN_MAIL)
@@ -707,8 +748,16 @@ void handlescansock(int fd, short events) {
     sp->state=SSTATE_SENTREQUEST;
 
     switch(sp->type) {
-    case STYPE_HTTP:
+    case STYPE_HTTP_V4:
       sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n\r\n",myipstr->content,listenport);
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+	/* We didn't write the full amount, DIE */
+	killsock(sp,SOUTCOME_CLOSED);
+	return;
+      }
+      break;
+    case STYPE_HTTP_V6:
+      sprintf(buf,"CONNECT %s:%d HTTP/1.0\r\n\r\n\r\n",myipv6str->content,listenport);
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
 	/* We didn't write the full amount, DIE */
 	killsock(sp,SOUTCOME_CLOSED);
@@ -732,7 +781,7 @@ void handlescansock(int fd, short events) {
       }
       break;
 
-    case STYPE_SOCKS5:
+    case STYPE_SOCKS5_V4:
       /* Set up initial request buffer */
       buf[0]=5;
       buf[1]=1;
@@ -758,7 +807,32 @@ void handlescansock(int fd, short events) {
 	return;
       }
       break;
-      
+
+    case STYPE_SOCKS5_V6:
+      /* Set up initial request buffer */
+      buf[0]=5;
+      buf[1]=1;
+      buf[2]=0;
+      if ((write(fd,buf,3))>3) {
+	/* Didn't write enough, give up */
+	killsock(sp,SOUTCOME_CLOSED);
+	return;
+      }
+      /* Now the actual connect request */
+      buf[0]=5;
+      buf[1]=1;
+      buf[2]=0;
+      buf[3]=4;
+      netport=htons(listenport);
+      memcpy(&buf[4],&myipv6.s6_addr,16);
+      memcpy(&buf[20],&netport,2);
+      res=write(fd,buf,22);
+      if (res<22) {
+	killsock(sp,SOUTCOME_CLOSED);
+	return;
+      }
+      break;
+
     case STYPE_WINGATE:
       /* Send wingate request */
       sprintf(buf,"%s:%d\r\n",myipstr->content,listenport);
@@ -768,7 +842,7 @@ void handlescansock(int fd, short events) {
       }
       break;
     
-    case STYPE_CISCO:
+    case STYPE_CISCO_V4:
       /* Send cisco request */
       sprintf(buf,"cisco\r\n");
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
@@ -777,6 +851,22 @@ void handlescansock(int fd, short events) {
       }
       
       sprintf(buf,"telnet %s %d\r\n",myipstr->content,listenport);
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+	killsock(sp, SOUTCOME_CLOSED);
+        return;
+      }
+      
+      break;
+      
+    case STYPE_CISCO_V6:
+      /* Send cisco request */
+      sprintf(buf,"cisco\r\n");
+      if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
+	killsock(sp, SOUTCOME_CLOSED);
+        return;
+      }
+      
+      sprintf(buf,"telnet %s %d\r\n",myipv6str->content,listenport);
       if ((write(fd,buf,strlen(buf)))<strlen(buf)) {
 	killsock(sp, SOUTCOME_CLOSED);
         return;
@@ -958,9 +1048,9 @@ int proxyscandostatus(void *sender, int cargc, char **cargv) {
   
   qsort(ord,numscans,sizeof(int),pscansort);
   
-  sendnoticetouser(proxyscannick,np,"Scan type Port  Detections");
+  sendnoticetouser(proxyscannick,np,"Scan type    Port  Detections");
   for (i=0;i<numscans;i++)
-    sendnoticetouser(proxyscannick,np,"%-9s %-5d %d (%.2f%%)",
+    sendnoticetouser(proxyscannick,np,"%-12s %-5d %d (%.2f%%)",
                      scantostr(thescans[ord[i]].type), thescans[ord[i]].port, thescans[ord[i]].hits, ((float)thescans[ord[i]].hits*100)/totaldetects);
   
   sendnoticetouser(proxyscannick,np,"End of list.");

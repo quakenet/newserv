@@ -32,14 +32,18 @@
 #define SSTATE_GOTRESPONSE  2
 
 #define STYPE_SOCKS4        0
-#define STYPE_SOCKS5        1
-#define STYPE_HTTP          2
-#define STYPE_WINGATE       3
-#define STYPE_CISCO         4
-#define STYPE_DIRECT        5
-#define STYPE_ROUTER        6
+#define STYPE_SOCKS5_V4     1
+#define STYPE_SOCKS5_V6     2
+#define STYPE_HTTP_V4       3
+#define STYPE_HTTP_V6       4
+#define STYPE_WINGATE       5
+#define STYPE_CISCO_V4      6
+#define STYPE_CISCO_V6      7
+#define STYPE_DIRECT        8
+#define STYPE_ROUTER        9
+#define STYPE_EXT           10
 
-#define STYPE_EXT           7
+#define STYPE_MAX           10
 
 #define SOUTCOME_INPROGRESS 0
 #define SOUTCOME_OPEN       1
