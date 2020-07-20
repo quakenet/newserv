@@ -337,35 +337,21 @@ void _init(void) {
   proxyscan_addscantype(STYPE_HTTP, 6515);
   proxyscan_addscantype(STYPE_HTTP, 27977);
 
-  proxyscan_addscantype(STYPE_SOCKS4, 559);
   proxyscan_addscantype(STYPE_SOCKS4, 1080);
   proxyscan_addscantype(STYPE_SOCKS5, 1080);
-  proxyscan_addscantype(STYPE_SOCKS4, 1075);
-  proxyscan_addscantype(STYPE_SOCKS5, 1075);
-  proxyscan_addscantype(STYPE_SOCKS4, 2280);
-  proxyscan_addscantype(STYPE_SOCKS5, 2280);
   proxyscan_addscantype(STYPE_SOCKS4, 1180);
   proxyscan_addscantype(STYPE_SOCKS5, 1180);
   proxyscan_addscantype(STYPE_SOCKS4, 9999);
   proxyscan_addscantype(STYPE_SOCKS5, 9999);
   proxyscan_addscantype(STYPE_WINGATE, 23);
   proxyscan_addscantype(STYPE_CISCO, 23);
-  proxyscan_addscantype(STYPE_WINGATE, 1181);
-  proxyscan_addscantype(STYPE_SOCKS5, 1978);
-  proxyscan_addscantype(STYPE_SOCKS5, 1029);
-  proxyscan_addscantype(STYPE_SOCKS5, 3801);
-  proxyscan_addscantype(STYPE_SOCKS5, 3331);
-  proxyscan_addscantype(STYPE_HTTP, 65506);
   proxyscan_addscantype(STYPE_HTTP, 63809);
   proxyscan_addscantype(STYPE_HTTP, 63000);
-  proxyscan_addscantype(STYPE_SOCKS4, 29992);
   proxyscan_addscantype(STYPE_DIRECT, 6666);
   proxyscan_addscantype(STYPE_DIRECT, 6667);
   proxyscan_addscantype(STYPE_DIRECT, 6668);
   proxyscan_addscantype(STYPE_DIRECT, 6669);
-  proxyscan_addscantype(STYPE_DIRECT, 6670);
   proxyscan_addscantype(STYPE_ROUTER, 3128);
-  proxyscan_addscantype(STYPE_SOCKS5, 27977);
   proxyscan_addscantype(STYPE_SOCKS5, 45554);
 
   proxyscan_addscantype(STYPE_EXT, 0);
