@@ -21,8 +21,6 @@ int createconnectsocket(struct irc_in_addr *ip, int socknum) {
 
   int proto;
   int s;
-  int res=1;
-  unsigned int opt=1;
   int fd;
 
   if(socknum == 0) {
