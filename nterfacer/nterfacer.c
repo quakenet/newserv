@@ -147,6 +147,7 @@ void _fini(void) {
     for(i=0;i<permit_count;i++) {
       freesstring(permits[i].hostname);
       freesstring(permits[i].password);
+      freeacls(permits[i].acls);
     }
     ntfree(permits);
     permit_count = 0;
@@ -161,20 +162,23 @@ int load_permits(void) {
   int loaded_lines = 0, i, j;
   struct permitted *new_permits, *resized, *item;
   struct hostent *host;
-  array *hostnamesa, *passwordsa;
-  sstring **hostnames, **passwords;
+  array *hostnamesa, *passwordsa, *aclsa;
+  sstring **hostnames, **passwords, **aclss;
 
   hostnamesa = getconfigitems("nterfacer", "hostname");
   passwordsa = getconfigitems("nterfacer", "password");
-  if(!hostnamesa || !passwordsa)
+  aclsa = getconfigitems("nterfacer", "acls");
+  if(!hostnamesa || !passwordsa || !aclsa)
     return 0;
-  if(hostnamesa->cursi != passwordsa->cursi) {
-    nterface_log(nrl, NL_ERROR, "Different number of hostnames/passwords in config file.");
+
+  if(hostnamesa->cursi != passwordsa->cursi || hostnamesa->cursi != aclsa->cursi) {
+    nterface_log(nrl, NL_ERROR, "Different number of hostnames/passwords/acls in config file.");
     return 0;
   }
 
   hostnames = (sstring **)hostnamesa->content;
   passwords = (sstring **)passwordsa->content;
+  aclss = (sstring **)aclsa->content;
 
   new_permits = ntmalloc(hostnamesa->cursi * sizeof(struct permitted));
   memset(new_permits, 0, hostnamesa->cursi * sizeof(struct permitted));
@@ -204,7 +208,10 @@ int load_permits(void) {
     }
 
     item->password = getsstring(passwords[i]->content, passwords[i]->length);
-    nterface_log(nrl, NL_DEBUG, "Loaded permit, hostname: %s.", item->hostname->content);
+    item->acls = parseacls(aclss[i]->content);
+
+    char buf[1024];
+    nterface_log(nrl, NL_INFO, "Loaded permit, hostname: %s acls:[%s]", item->hostname->content, printacls(item->acls, buf, sizeof(buf)));
 
     item++;
     loaded_lines++;
@@ -511,7 +518,7 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       break;
     case SS_AUTHENTICATED:
       nterface_log(nrl, NL_INFO|NL_LOG_ONLY, "L(%s): %s", socket->permit->hostname->content, newline);
-      reason = nterfacer_new_rline(newline, sock, &number);
+      reason = nterfacer_new_rline(newline, sock, &number, socket->permit);
       if(reason) {
         if(reason == RE_SOCKET_ERROR)
           return BUF_ERROR;
@@ -529,7 +536,7 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
   return 0;
 }
 
-int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
+int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct permitted *permit) {
   char *sp, *p, *parsebuf = NULL, *pp, commandbuf[MAX_BUFSIZE], *args[MAX_ARGS], *newp;
   int argcount;
   struct service_node *service;
@@ -602,6 +609,11 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number) {
 
   if(!hl)
     return RE_COMMAND_NOT_FOUND;
+
+  if(!checkacls(permit->acls, service, hl)) {
+    nterface_log(nrl, NL_ERROR, "Access denied: %s %s,%s%s", permit->hostname->content, service->name->content, hl->command->content, pp);
+    return RE_ACCESS_DENIED;
+  }
 
   if(argcount) {
     parsebuf = (char *)ntmalloc(strlen(pp) + 1);
