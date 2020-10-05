@@ -13,6 +13,7 @@
 
 #include "esockets.h"
 #include "library.h"
+#include "acls.h"
 
 #define BF_OK      0x00
 #define BF_OVER    0xFF
@@ -64,6 +65,7 @@ typedef struct permitted {
   sstring *hostname;
   sstring *password;
   in_addr_t ihost;
+  struct acls *acls;
 } permitted;
 
 typedef struct sconnect {
@@ -93,7 +95,7 @@ int setup_listening_socket(void);
 void nterfacer_accept_event(struct esocket *socket);
 void nterfacer_disconnect_event(struct esocket *socket);
 int nterfacer_line_event(struct esocket *socket, char *newline);
-int nterfacer_new_rline(char *line, struct esocket *socket, int *number);
+int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct permitted *permit);
 struct sconnect *find_sconnect_from_fd(int fd);
 
 void *nterfacer_sendline(char *service, char *command, int argc, char **argv, rline_callback callback, void *tag);

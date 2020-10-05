@@ -199,6 +199,9 @@ char *request_error(int errn) {
     case RE_SERVICER_NOT_FOUND:
       snc(err, "Service not found on this nterfacer instance");
       break;
+    case RE_ACCESS_DENIED:
+      snc(err, "Access denied");
+      break;
     default:
       snc(err, "Unable to find error message");
   }
