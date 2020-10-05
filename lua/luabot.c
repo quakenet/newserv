@@ -34,6 +34,7 @@ void lua_onrename(int hooknum, void *arg);
 void lua_onconnect(int hooknum, void *arg);
 void lua_onjoin(int hooknum, void *arg);
 void lua_onpart(int hooknum, void *arg);
+void lua_onbanevade(int hooknum, void *arg);
 
 sstring *luabotnick;
 
@@ -57,6 +58,7 @@ void lua_registerevents(void) {
   registerhook(HOOK_CHANNEL_JOIN, &lua_onjoin);
   registerhook(HOOK_CHANNEL_PART, &lua_onpart);
   registerhook(HOOK_CHANNEL_CREATE, &lua_onjoin);
+  registerhook(HOOK_CHANNEL_JOIN_BYPASS_BAN, &lua_onbanevade);
 }
 
 void lua_deregisterevents(void) {
@@ -79,6 +81,7 @@ void lua_deregisterevents(void) {
   deregisterhook(HOOK_IRC_DISCON, &lua_ondisconnect);
   deregisterhook(HOOK_NICK_NEWNICK, &lua_onnewnick);
   deregisterhook(HOOK_CHANNEL_MODECHANGE, &lua_onmode);
+  deregisterhook(HOOK_CHANNEL_JOIN_BYPASS_BAN, &lua_onbanevade);
 }
 
 void lua_startbot(void *arg) {
@@ -378,7 +381,17 @@ void lua_onpart(int hooknum, void *arg) {
 
   lua_avpcall("irc_onpart", "Sls", ci->name, np->numeric, reason);
 }
+void lua_onbanevade(int hooknum, void *arg) {
+  void **arglist = (void**)arg;
+  channel *c = (channel*)arglist[0];
+  nick *np = (nick*)arglist[1];
 
+  /* Validate channel, channel index and nick */
+  if(!c || !c->index || !np)
+    return;
+
+  lua_avpcall("irc_onbanevade", "Sl", c->index->name, np->numeric);
+}
 void lua_onrename(int hooknum, void *arg) {
   void **harg = (void **)arg;
   nick *np = harg[0];
