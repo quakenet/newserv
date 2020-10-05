@@ -9,6 +9,7 @@
 #include "../localuser/localuserchannel.h"
 
 #define BANEVADE_SPAM
+//#define BANEVADE_ENFORCE
 
 MODULE_VERSION("")
 
@@ -60,12 +61,14 @@ void be_onjoin(int hooknum, void *arg) {
 			char host[HOSTLEN+1] = "";
 			snprintf(host, sizeof(host), "%s.%s", np->authname, HIS_HIDDENHOST);
 
+#ifdef BANEVADE_ENFORCE
 			/* I didnt find a function for this, so we're doing it R A W */
 			irc_send("%s SH %s %s %s", mynumeric->content, longtonumeric(np->numeric, 5), np->ident, host);
 
 			/* Also remove them from the channel they're not supposed to be in */
 			/* We're gonna go with the generic default-Q-kick-reason since we don't know the real reason for the kick */
 			localkickuser(NULL, c, np, "Banned.");
+#endif
 		} else {
 			/* Honest to god, this should never happen since the IRCD is in a state where it
 			 * checks EITHER the sethost or the authname. So people shouldn't be able to avoid bans
