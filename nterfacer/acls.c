@@ -11,11 +11,12 @@
 struct acls {
   char *service[MAX_ACLS];
   char *command[MAX_ACLS];
+  char *arg0[MAX_ACLS];
   int size;
   char buf[];
 };
 
-static int addacl(struct acls *a, char *service, char *command) {
+static int addacl(struct acls *a, char *service, char *command, char *arg0) {
   if(a->size == MAX_ACLS) {
     nterface_log(nrl, NL_ERROR, "Too many ACLs");
     return 0;
@@ -23,6 +24,7 @@ static int addacl(struct acls *a, char *service, char *command) {
 
   a->service[a->size] = service;
   a->command[a->size] = command;
+  a->arg0[a->size] = arg0;
   a->size++;
   return 1;
 }
@@ -31,7 +33,7 @@ struct acls *parseacls(const char *c) {
   size_t len = strlen(c);
   struct acls *a = ntmalloc(sizeof(struct acls) + len + 1);
   if (!a) {
-    nterface_log(nrl, NL_ERROR, "Unable to allocate memory for ACLs");
+    nterface_log(nrl, NL_ERROR, "Unable to allocate memory for ACL -- set to DENY ALL");
     return NULL;
   }
   memcpy(a->buf, c, len + 1);
@@ -39,21 +41,36 @@ struct acls *parseacls(const char *c) {
 
   char *sp1, *service = strtok_r(a->buf, " ", &sp1);
   while(service) {
-    char *token2 = strchr(service, ':');
-    if (token2 == NULL) {
-      nterface_log(nrl, NL_ERROR, "Invalid acl: %s -- IGNORED", service);
-    } else {
-      *token2 = '\0';
-      char *sp2, *command = strtok_r(token2 + 1, ",", &sp2);
-      while(command) {
-        addacl(a, service, command);
-        command = strtok_r(NULL, ",", &sp2);
+    char orig[512]; /* display only */
+    strlcpy(orig, service, sizeof(orig));
+
+    char *command = strchr(service, ':');
+    if (command == NULL) {
+      nterface_log(nrl, NL_ERROR, "Invalid acl: %s -- set to DENY ALL", orig);
+      goto error;
+    }
+
+    *command++ = '\0';
+    char *arg0 = strchr(command, ','); /* yeah we don't support commands with ',' in them... */
+    if(arg0) {
+      *arg0++ = '\0';
+      if(strchr(arg0, ',')) {
+        nterface_log(nrl, NL_ERROR, "Invalid acl (no more than one argument supported): %s -- set to DENY ALL", orig);
+        goto error;
       }
     }
+
+    if(!addacl(a, service, command, arg0))
+      goto error;
+
     service = strtok_r(NULL, " ", &sp1);
   }
 
   return a;
+
+error:
+  ntfree(a);
+  return NULL;
 }
 
 void freeacls(struct acls *a) {
@@ -61,33 +78,35 @@ void freeacls(struct acls *a) {
     ntfree(a);
 }
 
-int checkacls(struct acls *a, struct service_node *s, struct handler *hl) {
+int checkacls(struct acls *a, struct service_node *s, struct handler *hl, int argc, char **argv) {
   if(!a)
     return 0;
 
   char *service = s->name->content;
   char *command = hl->command->content;
-  for(int i=0;i<a->size;i++)
-    if (!strcmp(a->service[i], service) && !strcmp(a->command[i], command))
-      return 1;
+  for(int i=0;i<a->size;i++) {
+    if (!strcmp(a->service[i], service) && !strcmp(a->command[i], command)) {
+      if (a->arg0[i] == NULL)
+        return 1;
+      if (argc >= 1 && !strcmp(a->arg0[i], argv[0]))
+        return 1;
+    }
+  }
 
   return 0;
 }
 
 char *printacls(struct acls *a, char *buf, size_t len) {
   if(a == NULL)
-    return NULL;
+    return "DENY ALL";
 
   buf[0] = '\0';
 
   for(int i=0;i<a->size;i++) {
     char local[512];
-    snprintf(local, sizeof(local), "%s:%s ", a->service[i], a->command[i]);
+    snprintf(local, sizeof(local), "%s%s:%s%s%s", i > 0 ? " " : "", a->service[i], a->command[i], a->arg0[i] ? "," : "", a->arg0[i] ? a->arg0[i] : "");
     strlcat(buf, local, len);
   }
-  size_t l = strlen(buf);
-  if (l > 0)
-    buf[l - 1] = '\0';
 
   return buf;
 }

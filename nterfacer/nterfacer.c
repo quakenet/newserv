@@ -25,6 +25,7 @@
 #include "../core/events.h"
 #include "../lib/version.h"
 #include "../core/schedule.h"
+#include "../lib/strlfunc.h"
 
 #include "nterfacer.h"
 #include "logging.h"
@@ -544,6 +545,9 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct 
   struct handler *hl;
   int re;
 
+  char linecopy[512]; /* just for display */
+  strlcpy(linecopy, line, sizeof(linecopy));
+
   if(!line || !line[0] || (line[0] == ','))
     return 0;
 
@@ -610,11 +614,6 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct 
   if(!hl)
     return RE_COMMAND_NOT_FOUND;
 
-  if(!checkacls(permit->acls, service, hl)) {
-    nterface_log(nrl, NL_ERROR, "Access denied: %s %s,%s%s", permit->hostname->content, service->name->content, hl->command->content, pp);
-    return RE_ACCESS_DENIED;
-  }
-
   if(argcount) {
     parsebuf = (char *)ntmalloc(strlen(pp) + 1);
     MemCheckR(parsebuf, RE_MEM_ERROR);
@@ -644,6 +643,11 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct 
     if(argcount && parsebuf)
       ntfree(parsebuf);
     return RE_WRONG_ARG_COUNT;
+  }
+
+  if(!checkacls(permit->acls, service, hl, argcount, args)) {
+    nterface_log(nrl, NL_ERROR, "Access denied: %s %s", permit->hostname->content, linecopy);
+    return RE_ACCESS_DENIED;
   }
 
   prequest = (struct rline *)ntmalloc(sizeof(struct rline));
