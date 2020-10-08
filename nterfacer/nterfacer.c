@@ -39,7 +39,9 @@ struct rline *rlines = NULL;
 unsigned short nterfacer_token = BLANK_TOKEN;
 struct nterface_auto_log *nrl;
 
-struct service_node *ping = NULL;
+static struct service_node *ping;
+static struct handler *ping_hl;
+
 int accept_fd = -1;
 struct permitted *permits;
 int permit_count = 0;
@@ -69,7 +71,7 @@ void _init(void) {
   if(!ping) {
     MemError();
   } else {
-    register_handler(ping, "ping", 0, ping_handler);
+    ping_hl = register_handler(ping, "ping", 0, ping_handler);
   }
 
   accept_fd = setup_listening_socket();
@@ -645,7 +647,9 @@ int nterfacer_new_rline(char *line, struct esocket *socket, int *number, struct 
     return RE_WRONG_ARG_COUNT;
   }
 
-  if(!checkacls(permit->acls, service, hl, argcount, args)) {
+  if(hl == ping_hl) {
+    /* permitted */
+  } else if (!checkacls(permit->acls, service, hl, argcount, args)) {
     nterface_log(nrl, NL_ERROR, "Access denied: %s %s", permit->hostname->content, linecopy);
     return RE_ACCESS_DENIED;
   }
