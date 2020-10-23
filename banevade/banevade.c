@@ -126,17 +126,26 @@ int ircdbanned(nick *n, channel *c) {
 	if (!IsAccount(n))
 		sr = NULL;
 	else if (IsSetHost(n))
-		sr = n->sethost->content;
+		sr = n->host->name->content;
 	else {
 		snprintf(tmphost, sizeof(tmphost), "%s.%s", n->authname, HIS_HIDDENHOST);
 		sr = tmphost;
 	}
 
+	/* Bug 2020-10-22 anton
+	 * snircd is only checking the VISIBLE host (not the real rdns, if any)
+	 * we were checking real host, and if sethost'd we also checked the fake host.
+	 * We gotta do it the other way around, check visible host and if sethost'd
+	 * then check the real host to be as accurate as snircd as possible.
+	*/
+	/* Adding variable for visible host */
+	sstring *vh = n->sethost ? n->sethost : n->host->name;
+
 #ifdef BANEVADE_SPAM
 	Error("banevade", ERR_INFO, "---------------------------");
 	Error("banevade", ERR_INFO, "User %s has joined %s.", nick, c->index->name->content);
 	Error("banevade", ERR_INFO, "We will be checking the following:");
-	Error("banevade", ERR_INFO, " nick=%s ident=%s iphost=%s sr=%s host=%s", nick, ident, IPtostr(n->ipaddress), IFNULLELSE(sr, sr), n->host->name->content);
+	Error("banevade", ERR_INFO, " nick=%s ident=%s iphost=%s sr=%s host=%s", nick, ident, IPtostr(n->ipaddress), IFNULLELSE(sr, sr), vh->content);
 #endif
 
 	/* Walk through ban list. */
@@ -186,7 +195,7 @@ int ircdbanned(nick *n, channel *c) {
 		if(cb->host) {
 			if(
 				/* Check current host */
-				!match2strings(cb->host->content, n->host->name->content)
+				!match2strings(cb->host->content, vh->content)
 				/* Check IP if ip-ban */
 				&& !((cb->flags & CHANBAN_IP) && ipmask_check(&(n->ipnode->prefix->sin), &(cb->ipaddr), cb->prefixlen))
 				/* Check our real host (if +h/+x) */
