@@ -27,8 +27,10 @@
 
 #define MAX_ARGS 100
 
-#define PROTOCOL_VERSION "4"
+#define PROTOCOL_VERSION "5"
 #define ANTI_FULL_VERSION "service_link " PROTOCOL_VERSION
+#define PROTOCOL_VERSION_LEGACY "4"
+#define ANTI_FULL_VERSION_LEGACY "service_link " PROTOCOL_VERSION_LEGACY
 
 struct rline;
 
@@ -72,6 +74,7 @@ typedef struct sconnect {
   int status;
   char response[32 * 2 + 1], challenge[32 * 2 + 1];
   unsigned char iv[16];
+  unsigned char ecdhsecret[32], ecdhpkey[32];
   struct permitted *permit;
   unsigned char ournonce[16];
 } sconnect;

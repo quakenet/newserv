@@ -9,7 +9,7 @@ OBJS += lib/array.o lib/splitline.o parser/parser.o lib/base64.o
 OBJS += core/error.o core/modules.o core/config.o lib/flags.o lib/irc_string.o
 OBJS += core/schedulealloc.o core/nsmalloc.o lib/sha1.o lib/md5.o
 OBJS += lib/strlfunc.o lib/irc_ipv6.o lib/sha2.o lib/rijndael.o
-OBJS += lib/hmac.o lib/prng.o lib/stringbuf.o lib/cbc.o
+OBJS += lib/hmac.o lib/prng.o lib/stringbuf.o lib/cbc.o lib/curve25519-donna.o lib/curve25519.o
 
 .PHONY: all $(DIRS) clean distclean
 
