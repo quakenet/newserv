@@ -3,8 +3,8 @@
  *
  * CMDNAME: requestpassword
  * CMDALIASES: requestpass
- * CMDLEVEL: QCMD_NOTAUTHED
- * CMDARGS: 2
+ * CMDLEVEL: QCMD_HIDDEN
+ * CMDARGS: 1
  * CMDDESC: Requests the current password by email.
  * CMDFUNC: csa_doreqpw
  * CMDPROTO: int csa_doreqpw(void *source, int cargc, char **cargv);
@@ -20,51 +20,9 @@
 #include <string.h>
 
 int csa_doreqpw(void *source, int cargc, char **cargv) {
-  reguser *rup;
   nick *sender=source;
-  int i, matched = 0;
 
-  if (cargc<1) {
-    chanservstdmessage(sender, QM_NOTENOUGHPARAMS, "requestpassword");
-    return CMD_ERROR;
-  }
-
-  for (i=0;i<REGUSERHASHSIZE;i++) {
-    for (rup=regusernicktable[i];rup;rup=rup->nextbyname) {
-      if(!rup->email || strcasecmp(cargv[0],rup->email->content))
-        continue;
-
-      if(UHasStaffPriv(rup)) {
-        cs_log(sender,"REQUESTPASSWORD FAIL privileged email %s",cargv[0]);
-        continue;
-      }
-
-      matched = 1;
-
-      if(csa_checkthrottled(sender, rup, "REQUESTPASSWORD"))
-        continue;
-
-      rup->lastemailchange=time(NULL);
-      csdb_updateuser(rup);
-
-      if(rup->lastauth) {
-        csdb_createmail(rup, QMAIL_REQPW);
-      } else {
-        csdb_createmail(rup, QMAIL_NEWACCOUNT); /* user hasn't authed yet and needs to do the captcha */
-      }
-
-      cs_log(sender,"REQUESTPASSWORD OK username %s email %s", rup->username,rup->email->content);
-      chanservstdmessage(sender, QM_MAILQUEUED);
-    }
-  }
-
-  if(!matched) {
-    cs_log(sender,"REQUESTPASSWORD FAIL email %s",cargv[0]);
-    chanservstdmessage(sender, QM_BADEMAIL);
-    return CMD_ERROR;
-  } else {
-    chanservstdmessage(sender, QM_DONE);
-  }
+  chanservstdmessage(sender, QM_CMDDEPRECATEDPREFER, "LOSTPASSWORD");
 
   return CMD_OK;
 }
