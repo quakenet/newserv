@@ -4,6 +4,7 @@ CONFIG = {
   "smtpauth": None,
   "templateoptions": {
     "bot": "Q9",
+    "botsecure": "Q9@CServe.test.quakenet.org",
     "cleanup": 80,
     "securityurl": "http://www.quakenet.org/faq/faq.php?c=160",
     "siteurl": "http://www.quakenet.org/",
