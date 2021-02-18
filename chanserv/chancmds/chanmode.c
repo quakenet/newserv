@@ -172,6 +172,12 @@ int csc_dochanmode(void *source, int cargc, char **cargv) {
       forceflags &= ~CHANMODE_LIMIT;
     }
 
+    /* Check if chanflag +k is set and if so preserve the registered only */
+    if (CIsKnownOnly(rcp)) {
+      forceflags |= CHANMODE_REGONLY;
+      denyflags &= ~CHANMODE_REGONLY;
+    }
+
     /* It parsed OK, so update the structure.. */
     rcp->forcemodes=forceflags;
     rcp->denymodes=denyflags;      
