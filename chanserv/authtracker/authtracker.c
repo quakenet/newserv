@@ -14,7 +14,7 @@ DBModuleIdentifier authtrackerdb;
 void _init() {
   authtrackerdb = dbgetid();
 
-  chanservaddcommand("dumpauthtracker",QCMD_DEV,1,at_dumpdb,"Shows servers with dangling authtracker entries.\n","");
+  chanservaddcommand("dumpauthtracker",QCMD_DEV,0,at_dumpdb,"Shows servers with dangling authtracker entries.\n","");
   at_finddanglingsessions();
 }
 
