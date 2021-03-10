@@ -15,6 +15,7 @@ void _init() {
   authtrackerdb = dbgetid();
 
   chanservaddcommand("dumpauthtracker",QCMD_DEV,0,at_dumpdb,"Shows servers with dangling authtracker entries.\n","");
+  chanservaddcommand("delinkauthtracker",QCMD_DEV,1,at_delinkdb,"Removes a server's dangling authtracker entries (normally after delink).\n","");
   at_finddanglingsessions();
 }
 
@@ -23,6 +24,7 @@ void _fini() {
   nsfreeall(POOL_AUTHTRACKER);
   
   chanservremovecommand("dumpauthtracker",at_dumpdb);
+  chanservremovecommand("delinkauthtracker",at_delinkdb);
 
   dbfreeid(authtrackerdb);
 }
