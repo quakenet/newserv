@@ -111,7 +111,7 @@
 
 /* Maximum number of user chanlevs and bans */
 #define MAXCHANLEVS  500
-#define MAXBANS      50
+#define MAXBANS      100
 
 /* Maximum number of channels a user may be known on */
 #define MAXCHANNELS  500
