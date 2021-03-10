@@ -17,7 +17,7 @@ int au_auth(void *source, int cargc, char **cargv) {
   int authid;
   flag_t flags;
 
-  if(cargc < 2)
+  if(cargc < 3)
     return CMD_USAGE;
 
   if(sscanf(myserver->content, "%*s.quakenet.org") == 1) {

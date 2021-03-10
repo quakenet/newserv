@@ -93,24 +93,28 @@ int at_foundnick(unsigned int numeric, unsigned long userid, time_t accountts) {
 }
 
 /* When a server is back (fully linked), any remaining dangling users on that server are definately gone. */
-void at_serverback(unsigned int server) {
+/* Also called manually upon delink via command. */
+int at_serverback(unsigned int server) {
   int i;
   struct dangling_entry *dep, *ndep;
   
   if (!ds[server])
-    return;
+    return -1;
   
+  int count = 0;
   for (i=0;i<DANGLING_HASHSIZE;i++) {
     for (dep=ds[server]->de[i];dep;dep=ndep) {
       ndep=dep->next;
       
       at_logquit(dep->userid, dep->authts, time(NULL), (dep->reason==AT_NETSPLIT)? "(netsplit)" : "(restart)");
       free_de(dep);
+      count++;
     }
   }
   
   nsfree(POOL_AUTHTRACKER, ds[server]);
   ds[server]=NULL;
+  return count;
 }
 
 void at_flushghosts() {
@@ -141,5 +145,29 @@ int at_dumpdb(void *source, int argc, char **argv) {
 
   chanservstdmessage(np,QM_ENDOFLIST);
   
+  return CMD_OK;
+}
+
+int at_delinkdb(void *source, int argc, char **argv) {
+  nick *np = source;
+
+  if (argc < 1) {
+    chanservstdmessage(np, QM_NOTENOUGHPARAMS, "delinkauthtracker");
+    return CMD_ERROR;
+  }
+
+  unsigned int numeric = strtoul(argv[0], NULL, 10);
+  if (numeric >= MAXSERVERS) {
+    chanservsendmessage(np, "Invalid numeric.");
+    return CMD_ERROR;
+  }
+
+  int count = at_serverback(numeric);
+  if (count == -1) {
+    chanservsendmessage(np, "No such dangling server found.");
+    return CMD_ERROR;
+  }
+
+  chanservsendmessage(np, "Server %d (%s) had %d entries.", numeric, longtonumeric(numeric, 2), count);
   return CMD_OK;
 }
