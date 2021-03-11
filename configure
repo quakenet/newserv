@@ -4,10 +4,16 @@ import sys
 import os
 import platform
 import getopt
+import subprocess
+import errno
+import shlex
 
 LOG = None
 VERBOSE = False
 REQUIRE_ALL = False
+DEVNULL = open("/dev/null", "w+")
+
+class CheckCallException(Exception): pass
 
 # standard line print
 def lprint(x):
@@ -42,10 +48,9 @@ class IniParser:
         self.__d[x[1:-1]] = (sectiondata, keydata)
         continue
 
-      i = x.index("=")
-      key = x[:i]
-      sectiondata[key] = x[i+1:]
-      keydata.append((key, sectiondata[key]))
+      key, value = x.split("=", 1)
+      sectiondata[key] = value
+      keydata.append((key, value))
 
   def has_key(self, key):
     return self.__d.has_key(key)
@@ -73,22 +78,17 @@ class ConfigureIniParser(IniParser):
     for k, v in self.setdefault("selectlibs", {}).items():
       self.selectlibs[k] = v.split()
 
-    libs = self.setdefault("core", {"libs": ""})["libs"].split()
-    libs = [(x, self["lib%s" % x]) for x in libs]
-    for k, v in libs:
-      v.setdefault("libname", k)
-      v.setdefault("format", "lib%s.so")
-      v.setdefault("headerpath", None)
-      v.setdefault("additionaldirs", None)
-      v.setdefault("alwayspresent", None)
+    self.libs = {}
+    for x in self["core"]["libs"].split():
+      section = "lib%s" % x
+      if "run" in self[section]:
+        subsections = self[section]["run"].split(" ")
+      else:
+        subsections = [section]
 
-      if v["additionaldirs"]:
-        v["additionaldirs"] = v["additionaldirs"].split()
-      v["libname"] = v["libname"].split()
-
-    self.libs = dict(libs)
-    self.searchincludes = self["search"]["include"].split()
-    self.searchlibs = self["search"]["lib"].split()
+      self.libs[x] = []
+      for subsection in subsections:
+        self.libs[x].append(dict(self[subsection]))
 
     self.osflags = {}
     if self.has_key("osvars"):
@@ -126,12 +126,6 @@ class MultiConfigureIniParser(ConfigureIniParser):
       if c2.has_key("modules"):
         self.updatemodules(c2.keys("modules"), workspace)
 
-      if c2.has_key("search"):
-        if c2["search"].has_key("include"):
-          self.searchincludes = self.searchincludes + c2["search"]["include"].split()
-        if c2["search"].has_key("lib"):
-          self.searchlibs = self.searchlibs + c2["search"]["lib"].split()
-
       if c2.has_key("options"):
         self.options.update(c2["options"])
 
@@ -139,54 +133,71 @@ class MultiConfigureIniParser(ConfigureIniParser):
         for k, v in c2.keys("osvars"):
           self.osflags.setdefault(k, []).append(v)
 
-def librarycheck(libraries, includes, libs):
-  def findlibrarypaths(library, x, includes, libs):
-    if x["alwayspresent"]:
-      return True
-    def locate(needle, haystack):
-      vprint()
-      vprint("searching for %s in: %s" % (needle, haystack))
+def check_call(args):
+  vprint("invoking: %r" % args)
+  p = subprocess.Popen(args, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if p.returncode != 0:
+    raise CheckCallException("bad return code: %d, stderr: %r" % (p.returncode, stderr))
+  vprint("return code: %d, stdout: %r stderr: %r" % (p.returncode, stdout, stderr))
+  return stdout.split("\n")[0]
 
-      for x in haystack:
-        p = os.path.join(x, needle)
-        if os.path.exists(p):
-          vprint("  found: %s" % p)
-          return x
+def pkgconfig(args):
+  return check_call(["pkg-config"] + args)
 
-    found = []
+def check_pkgconfig(d):
+  package = d.get("pkgconfig")
+  if not package:
+    return
 
-    def mergepaths(a, b):
-      ret = list(a[:])
-      for x in a:
-        for y in b:
-          ret.append(os.path.join(x, y))
-      return ret
+  try:
+    pkgconfig(["--exists", package])
+  except CheckCallException:
+    return
 
-    libname = x["libname"]
+  libpath = pkgconfig(["--libs", package])
+  incpath = pkgconfig(["--cflags", package])
+  return libpath, incpath
 
-    searchdir = mergepaths(includes, libname)
-    incpath = locate(x["include"], searchdir)
-    if not incpath:
-      return
+def check_exec(d):
+  if "libexec" not in d or "incexec" not in d:
+    return
 
-    if x["headerpath"]:
-      incpath = os.path.abspath(os.path.join(incpath, x["headerpath"]))
+  try:
+    libpath = check_call(shlex.split(d["libexec"]))
+    incpath = check_call(shlex.split(d["incexec"]))
+  except OSError, e:
+    if e.errno != errno.ENOENT:
+      raise
+    return
 
-    searchdir = mergepaths(libs, libname)
-    if x["additionaldirs"]:
-      searchdir = mergepaths(searchdir, [""] + x["additionaldirs"])
+  libspec = d.get("libspec", "{}")
+  lib = libspec.replace("{}", libpath)
 
-    for l in x.has_key("soname") and [x["soname"]] or libname:
-      libpath = locate(x["format"] % l, searchdir)
-      if libpath:
-        return libpath, l, incpath
+  incspec = d.get("incspec", "{}")
+  inc = incspec.replace("{}", incpath)
+
+  return lib, inc
+
+def librarycheck(libraries):
+  def findlibrarypaths(library, defn):
+    for x in defn:
+      if x.get("alwayspresent"):
+        return True
+
+      v = check_pkgconfig(x)
+      if v is not None:
+        return v
+      v = check_exec(x)
+      if v is not None:
+        return v
 
   libsfound = []
   output = []
 
   for k in libraries.keys():
     iprint("checking for %s... " % k)
-    ret = findlibrarypaths(k, libraries[k], includes, libs)
+    ret = findlibrarypaths(k, libraries[k])
     if not ret:
       lprint("failed")
       continue
@@ -194,12 +205,12 @@ def librarycheck(libraries, includes, libs):
     libsfound.append(k)
 
     if ret is not True:
-      libpath, libname, incpath = ret
+      lib, inc = ret
       uk = k.upper()
 
       x = libraries[k]
-      libline = "LIB%s=-L%s -l%s" % (uk, libpath, libname)
-      incline = "INC%s=-I%s" % (uk, incpath)
+      libline = "LIB%s=%s" % (uk, lib)
+      incline = "INC%s=%s" % (uk, inc)
       output.append(libline)
       output.append(incline)
 
@@ -216,6 +227,17 @@ def systemcheck(osflags):
   iprint("checking for system... ")
   system = platform.system()
   lprint(system)
+
+  iprint("checking for pkg-config... ")
+  try:
+    pkgconfig(["--version"])
+  except OSError, e:
+    if e.errno != errno.ENOENT:
+      raise
+    lprint("not found")
+    lprint("pkg-config is required to continue, aborting!")
+    sys.exit(1)
+  lprint("ok")
 
   for v in osflags.setdefault(system, []):
     output.append(v)
@@ -296,7 +318,7 @@ def configure(config, selectoverrides, workspaces):
   flags, = systemcheck(config.osflags)
 
   # find the libraries/includes we have and their paths
-  f, libsfound = librarycheck(config.libs, config.searchincludes, config.searchlibs)
+  f, libsfound = librarycheck(config.libs)
   for k, v in selectoverrides.items():
     if not v in libsfound:
       lprint("configure: can't set %s to %s as %s was not found." % (k, v, v))
@@ -409,8 +431,6 @@ def main():
   LOG = open(".configure.log", "w")
   vprint("invoked as: %r" % sys.argv)
   config.updatemodules([(x, "") for x in modules])
-  config.searchlibs.extend(libs)
-  config.searchincludes.extend(includes)
   config.configprint()
 
   configure(config, overrides, workspaces)

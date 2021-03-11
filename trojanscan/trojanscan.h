@@ -9,7 +9,7 @@
 #include "../localuser/localuserchannel.h"
 
 #include <assert.h>
-#include <mariadb/mysql.h>
+#include <mysql.h>
 #include <pcre.h>
 #include <stdarg.h>
 #include <stdio.h>
