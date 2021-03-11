@@ -89,16 +89,12 @@ class ConfigureIniParser(IniParser):
     self.libs = dict(libs)
     self.searchincludes = self["search"]["include"].split()
     self.searchlibs = self["search"]["lib"].split()
-    self.makes = {}
-    for k, v in self.setdefault("makes", {}).items():
-      self.makes[k] = v
 
     self.osflags = {}
     if self.has_key("osvars"):
       for k, v in self.keys("osvars"):
         self.osflags.setdefault(k, []).append(v)
 
-    self.subs = [("-%s-" % k, v) for k, v in self.setdefault("subs", {}).items()]
     self.options = self["options"]
 
   def configprint(self):
@@ -214,20 +210,16 @@ def librarycheck(libraries, includes, libs):
 
   return output, libsfound
 
-def systemcheck(makes, osflags):
+def systemcheck(osflags):
   output = []
 
   iprint("checking for system... ")
   system = platform.system()
   lprint(system)
 
-  iprint("checking for make version... ")
-  make = makes.setdefault(system, "gmake")
-  lprint(make)
-
   for v in osflags.setdefault(system, []):
     output.append(v)
-  return output, make
+  return output,
 
 def modulecheck(modules, libsfound, buildorder, selectlibs, overrides):
   defaultselections = {}
@@ -300,8 +292,8 @@ def writeconfigh(file, modules, defaultselections):
   lprint("configure: wrote %s" % file)
 
 def configure(config, selectoverrides, workspaces):
-  # figure out make and any custom OS flags
-  flags, make = systemcheck(config.makes, config.osflags)
+  # figure out any custom OS flags
+  flags, = systemcheck(config.osflags)
 
   # find the libraries/includes we have and their paths
   f, libsfound = librarycheck(config.libs, config.searchincludes, config.searchlibs)
