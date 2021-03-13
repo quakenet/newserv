@@ -1,0 +1,22 @@
+[Unit]
+Description=newserv
+# changeme
+#After=network.target mariadb.service postgresql@11-main.service
+#After=network.target
+
+[Service]
+Type=simple
+# changeme
+WorkingDirectory=/path/to/newserv/newserv
+# changeme
+ExecStart=/path/to/newserv/newserv
+# changeme
+User=UID
+# changeme
+Group=GID
+
+Restart=always
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
