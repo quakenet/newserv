@@ -17,7 +17,7 @@ void *server_exe_bool(searchCtx *ctx, struct searchNode *thenode, void *theinput
 void *server_exe_str(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void server_free(searchCtx *ctx, struct searchNode *thenode);
 
-int ext;
+static int ext;
 
 struct searchNode *server_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode;
