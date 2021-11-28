@@ -15,7 +15,7 @@
 void *country_exe(searchCtx *ctx, struct searchNode *thenode, void *theinput);
 void country_free(searchCtx *ctx, struct searchNode *thenode);
 
-int ext;
+static int ext;
 
 struct searchNode *country_parse(searchCtx *ctx, int argc, char **argv) {
   struct searchNode *thenode, *countrysn;

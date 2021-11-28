@@ -23,7 +23,7 @@ struct nterface_auto_log {
   sstring *name;
   int debug;
   void *schedule;
-} nterface_auto_log;
+};
 
 void nterface_log(struct nterface_auto_log *ourlog, int loglevel, char *format, ...) __attribute__ ((format (printf, 3, 4)));
 struct nterface_auto_log *nterface_open_log(char *name, char *filename, int debug);
