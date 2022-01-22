@@ -313,7 +313,7 @@ int glinebufcommit(glinebuf *gbuf, int propagate) {
   glinebufcounthits(gbuf, &users, &channels);
 
   if (propagate && (users > MAXGLINEUSERHITS || channels > MAXGLINECHANNELHITS)) {
-    controlwall(NO_OPER, NL_GLINES_AUTO, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.");
+    controlwall(NO_OPER, NL_GLINES_AUTO, "G-Line buffer would hit %d users/%d channels. Not setting G-Lines.", users, channels);
     glinebufabort(gbuf);
     return 0;
   }
