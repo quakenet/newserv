@@ -1,5 +1,7 @@
 include ../build.mk
 
+LDFLAGS+=-lm
+
 .PHONY: all
 all: nsmstats.so
 

@@ -10,8 +10,8 @@
 
 #define registercontrolcmd(a, b, c, d) registercontrolhelpcmd(a, b, c, d, NULL)
 
-void controlreply(nick *, char *, ...);
-void controlwall(flag_t, flag_t, char *, ...);
+void controlreply(nick *, char *, ...) __attribute__ ((format (printf, 2, 3)));
+void controlwall(flag_t, flag_t, char *, ...) __attribute__ ((format (printf, 3, 4)));
 int controlpermitted(flag_t, nick *);
 
 extern nick *mynick;
