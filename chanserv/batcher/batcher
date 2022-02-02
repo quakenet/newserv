@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import psycopg2, psycopg2.extras, time, smtplib, traceback
 from config import CONFIG
 from templates import MAILTEMPLATES

@@ -1,14 +1,8 @@
 import md5, os, hmac, time
 from rc4 import RC4
 
-try:
-  import hashlib
-  sha256 = hashlib.sha256
-  sha256m = hashlib.sha256
-except ImportError:
-  import sha256 as __sha256
-  sha256 = __sha256.sha256
-  sha256m = __sha256
+import hashlib
+sha256 = hashlib.sha256
 
 def generate_url(config, obj):
   s = os.urandom(4)
