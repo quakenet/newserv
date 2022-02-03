@@ -1,7 +1,7 @@
 [Unit]
 Description=newserv
 # changeme
-#After=network.target mariadb.service postgresql@11-main.service
+#After=network.target mariadb.service postgresql@13-main.service
 #After=network.target
 
 [Service]
@@ -15,7 +15,7 @@ User=UID
 # changeme
 Group=GID
 
-Restart=always
+Restart=on-failure
 RestartSec=30s
 
 [Install]
