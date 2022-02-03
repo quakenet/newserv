@@ -1,0 +1,21 @@
+[Unit]
+Description=newserv email batcher
+# changeme
+After=network.target postgresql@13-main.service
+
+[Service]
+Type=simple
+# changeme
+WorkingDirectory=/path/to/newserv/batcher
+# changeme
+ExecStart=/path/to/newserv/batcher/venv/bin/python ./batcher
+# changeme
+User=UID
+# changeme
+Group=GID
+
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
