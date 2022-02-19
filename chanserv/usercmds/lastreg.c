@@ -43,7 +43,7 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
     }
   }
 
-  chanservsendmessage(sender, "%-9s %-19s %-18s %-19s", "ID:", "Created TS:", "Username:", "Last auth TS:");
+  chanservsendmessage(sender, "%-9s %-19s %-18s %-10s %-19s %s", "ID:", "Created TS:", "Username:", "Suspended:", "Last auth TS:", "last user@host");
   while (count < limit) {
     r=findreguserbyID(userID);
     if (!r) {
@@ -57,8 +57,8 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
       q9strftime(tbuf2, sizeof(tbuf2), r->lastauth);
     else
       strcpy(tbuf2, "-");
-    suspended = (r->suspendtime > 0) ? "   (Suspended)" : "";
-    chanservsendmessage(sender, "%-9u %-19s %-18s %-19s%s", userID, tbuf, r->username, tbuf2, suspended);
+    suspended = (r->suspendtime > 0) ? "Suspended" : "";
+    chanservsendmessage(sender, "%-9u %-19s %-18s %-10s %-19s %s", userID, tbuf, r->username, suspended, tbuf2, r->lastuserhost->content);
     count++;
     if (userID == 0)
       break;
