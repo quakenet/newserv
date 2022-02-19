@@ -92,7 +92,7 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
 
-  if (!UHasAdminPriv(rup)) {
+  if (!UHasOperPriv(rup)) {
     chanservstdmessage(sender, QM_NOACCESS, "lastreg", cargv[0]);
     return CMD_ERROR;
   }
