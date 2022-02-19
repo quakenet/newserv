@@ -13,82 +13,22 @@
 
 #include "../chanserv.h"
 #include "../../lib/irc_string.h"
-#include "../../dbapi/dbapi.h"
 
 #include <stdio.h>
 #include <string.h>
 
-/* This file is basically a copy of accounthistory.c, with adaptations of course */
-
-void csdb_dolastreg_real(DBConn *dbconn, void *arg) {
-  nick *np=getnickbynumeric((unsigned long)arg);
+int csa_dolastreg(void *source, int cargc, char **cargv) {
   reguser *rup;
-  char *username;
-  time_t created, lastauth, suspendtime;
-  DBResult *pgres;
+  reguser *r;
+  nick *sender=source;
+  char *endptr;
   char tbuf[TIMELEN];
   char tbuf2[TIMELEN];
   char *suspended;
-  unsigned int userID;
+  unsigned int limit=10;
+  unsigned int userID=lastuserID;
+  int count=0;
 
-  if(!dbconn)
-    return;
-
-  pgres=dbgetresult(dbconn);
-
-  if (!dbquerysuccessful(pgres)) {
-    Error("chanserv", ERR_ERROR, "Error loading lastreg data.");
-    return;
-  }
-
-  if (dbnumfields(pgres) != 5) {
-    Error("chanserv", ERR_ERROR, "lastreg data format error.");
-    dbclear(pgres);
-    return;
-  }
-
-  if (!np) {
-    dbclear(pgres);
-    return;
-  }
-
-  if (!(rup=getreguserfromnick(np)) || !UHasOperPriv(rup)) {
-    Error("chanserv", ERR_ERROR, "No reguser pointer or oper privs in lastreg.");
-    dbclear(pgres);
-    return;
-  }
-
-  chanservsendmessage(np, "%-9s %-19s %-18s %-19s", "ID:", "Created TS:", "Username:", "Last auth TS:");
-  while(dbfetchrow(pgres)) {
-    userID=strtoul(dbgetvalue(pgres, 0), NULL, 10);
-    username=dbgetvalue(pgres, 1);
-    created=strtoul(dbgetvalue(pgres, 2), NULL, 10);
-    lastauth=strtoul(dbgetvalue(pgres, 3), NULL, 10);
-    suspendtime=strtoul(dbgetvalue(pgres, 4), NULL, 10);
-    q9strftime(tbuf, sizeof(tbuf), created);
-    if (lastauth > 0)
-      q9strftime(tbuf2, sizeof(tbuf2), lastauth);
-    else
-      strcpy(tbuf2, "-");
-    suspended = (suspendtime > 0) ? "   (Suspended)" : "";
-    chanservsendmessage(np, "%-9u %-19s %-18s %-19s%s", userID, tbuf, username, tbuf2, suspended);
-  }
-  chanservstdmessage(np, QM_ENDOFLIST);
-
-  dbclear(pgres);
-}
-
-void csdb_retreivelastreg(nick *np, int limit) {
-  q9u_asyncquery(csdb_dolastreg_real, (void *)np->numeric,
-    "SELECT ID, username, created, lastauth, suspendtime from chanserv.users ORDER BY ID DESC LIMIT %d", limit);
-}
-
-int csa_dolastreg(void *source, int cargc, char **cargv) {
-  reguser *rup;
-  nick *sender=source;
-  char *endptr;
-  long limit=10;
-  
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
 
@@ -101,14 +41,35 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
     limit=strtol(cargv[0], &endptr, 10);
     if ((cargv[0] == endptr) || (*endptr != '\0')) {
       limit=10;
-      chanservsendmessage(sender, "Value '%s' is not a valid value. Using default: %ld", cargv[0], limit);
+      chanservsendmessage(sender, "Value '%s' is not valid. Using default: %u", cargv[0], limit);
     }
-    else if (limit > 100) {
-      limit=100;
-      chanservsendmessage(sender, "Value '%s' is too high. Maximum is 100.", cargv[0]);
+    else if (limit > MAX_LASTREG) {
+      limit=MAX_LASTREG;
+      chanservsendmessage(sender, "Value '%s' is too high. Using maximum: %u.", cargv[0], MAX_LASTREG);
     }
   }
 
-  csdb_retreivelastreg(sender, limit);
+  chanservsendmessage(sender, "%-9s %-19s %-18s %-19s", "ID:", "Created TS:", "Username:", "Last auth TS:");
+  while (count < limit) {
+    r=findreguserbyID(userID);
+    if (!r) {
+      if (userID == 0)
+        break;
+      userID--;
+      continue;
+    }
+    q9strftime(tbuf, sizeof(tbuf), r->created);
+    if (r->lastauth > 0)
+      q9strftime(tbuf2, sizeof(tbuf2), r->lastauth);
+    else
+      strcpy(tbuf2, "-");
+    suspended = (r->suspendtime > 0) ? "   (Suspended)" : "";
+    chanservsendmessage(sender, "%-9u %-19s %-18s %-19s%s", userID, tbuf, r->username, tbuf2, suspended);
+    count++;
+    if (userID == 0)
+      break;
+    userID--;
+  }
+  chanservstdmessage(sender, QM_ENDOFLIST);
   return CMD_OK;
 }

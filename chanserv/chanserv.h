@@ -123,6 +123,9 @@
 /* Minimum acceptable reason length for stuff like deluser */
 #define MIN_REASONLEN 15
 
+/* Maximum number of usernames displayed by the lastreg command */
+#define MAX_LASTREG 100
+
 #include "chanserv_messages.h"
 
 #define CSMIN(a, b) ((a)<(b)?(a):(b))
