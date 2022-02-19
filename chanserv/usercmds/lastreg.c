@@ -31,12 +31,6 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
 
   if (!(rup=getreguserfromnick(sender)))
     return CMD_ERROR;
-
-  if (!UHasOperPriv(rup)) {
-    chanservstdmessage(sender, QM_NOACCESS, "lastreg", cargv[0]);
-    return CMD_ERROR;
-  }
-
   if (cargc > 0) {
     limit=strtol(cargv[0], &endptr, 10);
     if ((cargv[0] == endptr) || (*endptr != '\0')) {
