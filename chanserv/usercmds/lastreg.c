@@ -58,7 +58,7 @@ int csa_dolastreg(void *source, int cargc, char **cargv) {
     else
       strcpy(tbuf2, "-");
     suspended = (r->suspendtime > 0) ? "Suspended" : "";
-    chanservsendmessage(sender, "%-9u %-19s %-18s %-10s %-19s %s", userID, tbuf, r->username, suspended, tbuf2, r->lastuserhost->content);
+    chanservsendmessage(sender, "%-9u %-19s %-18s %-10s %-19s %s", userID, tbuf, r->username, suspended, tbuf2, r->lastuserhost ? r->lastuserhost->content : "");
     count++;
     if (userID == 0)
       break;
