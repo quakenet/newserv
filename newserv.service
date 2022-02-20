@@ -18,5 +18,8 @@ Group=GID
 Restart=on-failure
 RestartSec=30s
 
+LimitCORE=infinity
+LimitCORESoft=infinity
+
 [Install]
 WantedBy=multi-user.target
