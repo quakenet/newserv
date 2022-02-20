@@ -415,7 +415,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
     for (ch=cargv[0]+1;*ch;ch++) {
       switch(*ch) {
       case 'l':
-	if (cargc<*arg) {
+	if (cargc<=*arg) {
 	  reply(sender,"Error: -l switch requires an argument (for help, see help <searchcmd>)");
 	  return CMD_ERROR;
 	}
@@ -423,7 +423,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
 	break;
 	
       case 'd':
-        if (cargc<*arg) {
+        if (cargc<=*arg) {
           reply(sender,"Error: -d switch requires an argument (for help, see help <searchcmd>)");
           return CMD_ERROR;
         }
@@ -445,7 +445,7 @@ int parseopts(int cargc, char **cargv, int *arg, int *limit, void **subset, void
           reply(sender,"Error: -s switch not supported for this search.");
           return CMD_ERROR;
         }
-        if (cargc<*arg) {
+        if (cargc<=*arg) {
           reply(sender,"Error: -s switch requires an argument (for help, see help <searchcmd>)");
           return CMD_ERROR;
         }
