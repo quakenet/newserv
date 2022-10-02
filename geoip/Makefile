@@ -1,21 +1,9 @@
 include ../build.mk
 
-GEOIPDIRS=libGeoIP
-LDFLAGS+=-lc
+CFLAGS+=$(INCGEOIP)
+LDFLAGS+=$(LIBGEOIP)
 
-.PHONY: all clean distclean $(GEOIPDIRS) dirs
+.PHONY: all
+all: geoip.so
 
-all: dirs geoip.so
-
-libGeoIP/libgeoip.a: dirs
-
-geoip.so: geoip.o libGeoIP/libgeoip.a
-
-dirs: $(GEOIPDIRS)
-
-$(GEOIPDIRS):
-	cd $@ && $(MAKE) $(MFLAGS) all
-
-clean:
-	rm -f */*.o */*.so *.o *.so */*.a
-	rm -rf .deps */.deps
+geoip.so: geoip.o
