@@ -12,7 +12,7 @@
 
 #include <strings.h>
 
-#include "libGeoIP/GeoIP.h"
+#include <GeoIP.h>
 #include "geoip.h"
 
 MODULE_VERSION("");
@@ -33,11 +33,14 @@ void _init(void) {
   sstring *filename;
 
   filename = getcopyconfigitem("geoip", "db", "GeoIP.dat", 256);
-  gi = GeoIP_open(filename->content, GEOIP_MEMORY_CACHE);
-  freesstring(filename);
 
-  if(!gi)
+  gi = GeoIP_open(filename->content, GEOIP_MEMORY_CACHE);
+  if(!gi) {
+    Error("geoip", ERR_WARNING, "Unable to load geoip database [filename: %s]", filename->content);
+    freesstring(filename);
     return;
+  }
+  freesstring(filename);
 
   geoip_nickext = registernickext("geoip");
   if(geoip_nickext == -1)
