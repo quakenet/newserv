@@ -21,6 +21,7 @@
 
 #include "../lib/sstring.h"
 #include "../lib/irc_string.h"
+#include "../lib/curve25519.h"
 #include "../core/config.h"
 #include "../core/events.h"
 #include "../lib/version.h"
@@ -45,6 +46,7 @@ static struct handler *ping_hl;
 int accept_fd = -1;
 struct permitted *permits;
 int permit_count = 0;
+int legacy_kex = 0;
 
 int ping_handler(struct rline *ri, int argc, char **argv);
 static void nterfacer_sendcallback(struct rline *ri, int error, char *buf);
@@ -83,6 +85,10 @@ void _init(void) {
 
   /* the main unix domain socket must NOT have a disconnect event. */
   nterfacer_events.on_disconnect = nterfacer_disconnect_event;
+
+  legacy_kex = getcopyconfigitemintpositive("nterfacer", "legacy_kex", 0);
+  if (legacy_kex)
+    nterface_log(nrl, NL_INFO, "Using legacy key exchange (protocol version 4).");
 }
 
 void free_handler(struct handler *hp) {
@@ -411,7 +417,10 @@ void nterfacer_accept_event(struct esocket *socket) {
   temp->status = SS_IDLE;
   temp->permit = item;
 
-  esocket_write_line(newsocket, "nterfacer " PROTOCOL_VERSION);
+  if (!legacy_kex)
+    esocket_write_line(newsocket, "nterfacer " PROTOCOL_VERSION);
+  else
+    esocket_write_line(newsocket, "nterfacer " PROTOCOL_VERSION_LEGACY);
 }
 
 void derive_key(unsigned char *out, char *password, char *segment, unsigned char *noncea, unsigned char *nonceb, unsigned char *extra, int extralen) {
@@ -435,26 +444,33 @@ void derive_key(unsigned char *out, char *password, char *segment, unsigned char
 
 int nterfacer_line_event(struct esocket *sock, char *newline) {
   struct sconnect *socket = sock->tag;
-  char *response, *theirnonceh = NULL, *theirivh = NULL;
-  unsigned char theirnonce[16], theiriv[16];
-  int number, reason;
+  char *response, *theirnonceh = NULL, *theirivh = NULL, *theirecdhpkeyh = NULL;
+  unsigned char theirnonce[16], theiriv[16], theirecdhpkey[32];
+  int number, reason, ret;
 
   switch(socket->status) {
     case SS_IDLE:
-      if(strcasecmp(newline, ANTI_FULL_VERSION)) {
+      if(strcasecmp(newline, legacy_kex ? ANTI_FULL_VERSION_LEGACY : ANTI_FULL_VERSION)) {
         nterface_log(nrl, NL_INFO, "Protocol mismatch from %s: %s", socket->permit->hostname->content, newline);
         return 1;
       } else {
         unsigned char challenge[32];
-        char ivhex[16 * 2 + 1], noncehex[16 * 2 + 1];
+        char ivhex[16 * 2 + 1], noncehex[16 * 2 + 1], ecdhpkeyhex[32 * 2 + 1];
 
-        if(!get_entropy(challenge, 32) || !get_entropy(socket->iv, 16)) {
+        if(!get_entropy(challenge, 32) || !get_entropy(socket->iv, 16) || (!legacy_kex && !get_entropy(socket->ecdhsecret, 32))) {
           nterface_log(nrl, NL_ERROR, "Unable to open challenge/IV entropy bin!");
           return 1;
         }
 
+        if(!legacy_kex) {
+          curve25519_clamp_secret(socket->ecdhsecret);
+          curve25519_make_public(socket->ecdhpkey, socket->ecdhsecret);
+        }
+
         int_to_hex(challenge, socket->challenge, 32);
         int_to_hex(socket->iv, ivhex, 16);
+        if(!legacy_kex)
+          int_to_hex(socket->ecdhpkey, ecdhpkeyhex, 32);
 
         memcpy(socket->response, challenge_response(socket->challenge, socket->permit->password->content), sizeof(socket->response));
         socket->response[sizeof(socket->response) - 1] = '\0'; /* just in case */
@@ -466,7 +482,12 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         }
         int_to_hex(socket->ournonce, noncehex, 16);
 
-        if(esocket_write_line(sock, "%s %s %s", socket->challenge, ivhex, noncehex))
+        if(!legacy_kex)
+          ret = esocket_write_line(sock, "%s %s %s %s", socket->challenge, ivhex, noncehex, ecdhpkeyhex);
+        else
+          ret = esocket_write_line(sock, "%s %s %s", socket->challenge, ivhex, noncehex);
+
+        if(ret)
            return BUF_ERROR;
         return 0;
       }
@@ -490,8 +511,19 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
         }
       }
 
+      if(!legacy_kex && theirnonceh) {
+        for(response=theirnonceh;*response;response++) {
+          if((*response == ' ') && (*(response + 1))) {
+            *response = '\0';
+            theirecdhpkeyh = response + 1;
+            break;
+          }
+        }
+      }
+
       if(!theirivh || (strlen(theirivh) != 32) || !hex_to_int(theirivh, theiriv, sizeof(theiriv)) ||
-         !theirnonceh || (strlen(theirnonceh) != 32) || !hex_to_int(theirnonceh, theirnonce, sizeof(theirnonce))) {
+         !theirnonceh || (strlen(theirnonceh) != 32) || !hex_to_int(theirnonceh, theirnonce, sizeof(theirnonce)) ||
+         (!legacy_kex && (!theirecdhpkeyh || (strlen(theirecdhpkeyh) != 64) || !hex_to_int(theirecdhpkeyh, theirecdhpkey, sizeof(theirecdhpkey))))) {
         nterface_log(nrl, NL_INFO, "Protocol error drop: %s", socket->permit->hostname->content);
         return 1;
       }
@@ -504,9 +536,14 @@ int nterfacer_line_event(struct esocket *sock, char *newline) {
       if(!strncasecmp(newline, socket->response, sizeof(socket->response))) {
         unsigned char theirkey[32], ourkey[32];
 
-        derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce, (unsigned char *)"SERVER", 6);
+        if (!legacy_kex) {
+          curve25519_compute_shared(ourkey, socket->ecdhsecret, socket->ecdhpkey, theirecdhpkey, 1);
+          curve25519_compute_shared(theirkey, socket->ecdhsecret, socket->ecdhpkey, theirecdhpkey, 0);
+        } else {
+          derive_key(ourkey, socket->permit->password->content, socket->challenge, socket->ournonce, theirnonce, (unsigned char *)"SERVER", 6);
+          derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce, (unsigned char *)"CLIENT", 6);
+        }
 
-        derive_key(theirkey, socket->permit->password->content, socket->response, theirnonce, socket->ournonce, (unsigned char *)"CLIENT", 6);
         nterface_log(nrl, NL_INFO, "Authed: %s", socket->permit->hostname->content);
         socket->status = SS_AUTHENTICATED;
         switch_buffer_mode(sock, ourkey, socket->iv, theirkey, theiriv);
