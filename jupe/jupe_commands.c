@@ -13,6 +13,8 @@ int ju_addjupe(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
+  jupe_expire();
+
   if (jupe_find(cargv[0]) != NULL) {
     controlreply(np, "There is already a jupe for that server.");
     return CMD_OK;
@@ -44,6 +46,8 @@ int ju_activatejupe(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
+  jupe_expire();
+
   jupe = jupe_find(cargv[0]);
 
   if (jupe == NULL) {
@@ -71,6 +75,8 @@ int ju_deactivatejupe(void *source, int cargc, char **cargv) {
   if (cargc < 1) {
     return CMD_USAGE;
   }
+
+  jupe_expire();
 
   jupe = jupe_find(cargv[0]);
 
