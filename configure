@@ -12,7 +12,8 @@ LOG = None
 VERBOSE = False
 REQUIRE_ALL = False
 
-class CheckCallException(Exception): pass
+class CheckCallException(Exception):
+  pass
 
 # standard line print
 def lprint(x):
@@ -79,7 +80,7 @@ class ConfigureIniParser(IniParser):
 
     self.libs = {}
     for x in self["core"]["libs"].split():
-      section = "lib%s" % x
+      section = f"lib{x}"
       if "run" in self[section]:
         subsections = self[section]["run"].split(" ")
       else:
@@ -104,7 +105,7 @@ class ConfigureIniParser(IniParser):
       v = getattr(self, x)
       if not isinstance(v, list) and not isinstance(v, dict):
         continue
-      vprint("%-50r: %r" % (x, v))
+      vprint(f"{x!r:50}: {v!r}")
     vprint("--- config --------------------------------------------")
 
   def updatemodules(self, x, workspace = None):
@@ -133,12 +134,12 @@ class MultiConfigureIniParser(ConfigureIniParser):
           self.osflags.setdefault(k, []).append(v)
 
 def check_call(args):
-  vprint("invoking: %r" % args)
+  vprint(f"invoking: {args!r}")
   p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="latin-1")
   stdout, stderr = p.communicate()
   if p.returncode != 0:
-    raise CheckCallException("bad return code: %d, stderr: %r" % (p.returncode, stderr))
-  vprint("return code: %d, stdout: %r stderr: %r" % (p.returncode, stdout, stderr))
+    raise CheckCallException(f"bad return code: {p.returncode}, stdout: {stdout!r} stderr: {stderr!r}")
+  vprint(f"return code: {p.returncode}, stdout: {stdout!r} stderr: {stderr!r}")
   return stdout.split("\n")[0]
 
 def pkgconfig(args):
@@ -193,8 +194,8 @@ def librarycheck(libraries):
   libsfound = []
   output = []
 
-  for k in libraries.keys():
-    iprint("checking for %s... " % k)
+  for k in libraries:
+    iprint(f"checking for {k}... ")
     ret = findlibrarypaths(k, libraries[k])
     if not ret:
       lprint("failed")
@@ -204,18 +205,15 @@ def librarycheck(libraries):
 
     if ret is not True:
       lib, inc = ret
-      uk = k.upper()
-
-      x = libraries[k]
-      libline = "LIB%s=%s" % (uk, lib)
-      incline = "INC%s=%s" % (uk, inc)
+      libline = f"LIB{k.upper()}={lib}"
+      incline = f"INC{k.upper()}={inc}"
       output.append(libline)
       output.append(incline)
 
     lprint("ok")
     if ret is not True:
-      vprint("library path: %s" % libline)
-      vprint("include path: %s" % incline)
+      vprint(f"library path: {libline}")
+      vprint(f"include path: {incline}")
 
   return output, libsfound
 
@@ -272,42 +270,37 @@ def modulecheck(modules, libsfound, buildorder, selectlibs, overrides):
     if x in building:
       orderedbuild.append(x)
 
-  build = ["DIRS=%s" % (" ".join(orderedbuild))]
+  build = [f"DIRS={' '.join(orderedbuild)}"]
   return build, orderedbuild, notfound, cantbuild, defaultselections
 
 def writemakefile(inc, out, appendstart=None, appendend=None, silent=False):
-  p = open(out, "w")
-  p.write("## AUTOMATICALLY GENERATED -- EDIT %s INSTEAD\n\n" % inc)
-  if appendstart:
-    p.write("\n".join(appendstart))
-    p.write("\n")
+  with open(out, "w") as p:
+    p.write(f"## AUTOMATICALLY GENERATED -- EDIT {inc} INSTEAD\n\n")
+    if appendstart:
+      p.write("\n".join(appendstart))
+      p.write("\n")
 
-  f = open(inc, "r")
-  try:
-    for l in f.readlines():
-      p.write(l)
-  finally:
-    f.close()
+    with open(inc, "r") as f:
+      for l in f.readlines():
+        p.write(l)
 
-  if appendend:
-    p.write("\n".join(appendend))
-    p.write("\n")
+    if appendend:
+      p.write("\n".join(appendend))
+      p.write("\n")
 
-  p.close()
   if not silent:
-    lprint("configure: wrote %s" % out)
+    lprint(f"configure: wrote {out}")
 
-def writeconfigh(file, modules, defaultselections):
-  f = open(file, "w")
-  f.write("/* AUTOMATICALLY GENERATED -- DO NOT EDIT */\n")
+def writeconfigh(filename, modules, defaultselections):
+  with open(filename, "w") as f:
+    f.write("/* AUTOMATICALLY GENERATED -- DO NOT EDIT */\n")
 
-  for x in modules:
-    f.write("#define HAVE_%s\n" % x.upper())
-  for k, v in defaultselections.items():
-    f.write("#define USE_%s_%s\n" % (k.upper(), v.upper()))
-  f.close()
+    for x in modules:
+      f.write(f"#define HAVE_{x.upper()}\n")
+    for k, v in defaultselections.items():
+      f.write(f"#define USE_{k.upper()}_{v.upper()}\n")
 
-  lprint("configure: wrote %s" % file)
+  lprint(f"configure: wrote {filename}")
 
 def configure(config, selectoverrides, workspaces):
   # figure out any custom OS flags
@@ -317,7 +310,7 @@ def configure(config, selectoverrides, workspaces):
   f, libsfound = librarycheck(config.libs)
   for k, v in selectoverrides.items():
     if not v in libsfound:
-      lprint("configure: can't set %s to %s as %s was not found." % (k, v, v))
+      lprint(f"configure: can't set {k} to {v} as {v} was not found.")
       return
 
   flags = flags + f
@@ -326,21 +319,21 @@ def configure(config, selectoverrides, workspaces):
   buildlines, building, notfound, cantbuild, defaultselections = modulecheck(config.modules, libsfound, config.buildorder, config.selectlibs, selectoverrides)
 
   for k, v in defaultselections.items():
-    lprint("configure: selected %s as %s" % (v, k))
-    flags.append("LIB%s=$(LIB%s)" % (k.upper(), v.upper()))
-    flags.append("INC%s=$(INC%s)" % (k.upper(), v.upper()))
+    lprint(f"configure: selected {v} as {k}")
+    flags.append(f"LIB{k.upper()}=$(LIB{v.upper()})")
+    flags.append(f"INC{k.upper()}=$(INC{v.upper()})")
 
   writemakefile("build.mk.in", "build.mk", appendend=flags + ["=".join(x) for x in config.options.items()] + ["DIRS=" + " ".join(building), "WORKSPACES=" + " ".join(workspaces)])
 
   writeconfigh("config.h", libsfound, defaultselections)
 
-  lprint("configure: selected: %s" % " ".join(building))
+  lprint(f"configure: selected: {' '.join(building)}")
   if len(notfound) > 0:
-    lprint("configure: couldn't find: %s" % " ".join(notfound))
+    lprint(f"configure: couldn't find: {' '.join(notfound)}")
     check_require_all()
 
   if len(cantbuild) > 0:
-    lprint("configure: can't select: %s" % " ".join(cantbuild))
+    lprint(f"configure: can't select: {' '.join(cantbuild)}")
     check_require_all()
 
 def check_require_all():
@@ -352,11 +345,11 @@ validopts = {}
 
 def usage():
   print()
-  print("  Usage: %s [-h] [-v] [options]" % sys.argv[0])
+  print(f"  Usage: {sys.argv[0]} [-h] [-v] [options]")
   print()
   print("  Additional options are:")
   for k, v in validopts.items():
-    print("    --with-%s=[%s]" % (v[0], "|".join(v[1])))
+    print(f"    --with-{v[0]}=[{'|'.join(v[1])}]")
   print("    -L [additional lib dir]")
   print("    -I [additional include dir]")
   print("    -m [additional module]")
@@ -371,7 +364,7 @@ def main():
     if "configure.ini" not in file_list:
       continue
 
-    print("found workspace: %s" % root)
+    print(f"found workspace: {root}")
     workspaces.append(root)
 
     path = os.path.join(root, "configure.ini")
@@ -386,8 +379,8 @@ def main():
   mopts = []
 
   for k, v in config.selectlibs.items():
-    mopts.append("with-%s=" % k)
-    validopts["--with-%s" % k] = (k, v)
+    mopts.append(f"with-{k}=")
+    validopts[f"--with-{k}"] = (k, v)
 
   try:
     opts, args = getopt.getopt(sys.argv[1:], "hvcI:L:m:R", mopts)
@@ -422,14 +415,14 @@ def main():
     elif o == "-m":
       modules.append(a)
     else:
-      assert False, "bad option"
+      raise Exception(f"unknown option: {o!r}")
 
-  LOG = open(".configure.log", "w")
-  vprint("invoked as: %r" % sys.argv)
-  config.updatemodules([(x, "") for x in modules])
-  config.configprint()
+  with open(".configure.log", "w") as LOG:
+    vprint(f"invoked as: {sys.argv!r}")
+    config.updatemodules([(x, "") for x in modules])
+    config.configprint()
 
-  configure(config, overrides, workspaces)
+    configure(config, overrides, workspaces)
 
 if __name__ == "__main__":
   main()
