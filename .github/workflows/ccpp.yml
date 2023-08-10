@@ -9,12 +9,12 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get install git gcc make python2.7 python-minimal flex bison liblua5.1-0-dev libmariadbclient-dev libpq-dev libpcre3-dev zlib1g-dev libgeoip-dev
+      run: sudo apt-get install git gcc make flex bison liblua5.1-0-dev libmariadb-dev libpq-dev libpcre3-dev zlib1g-dev libgeoip-dev
     - name: configure
       run: ./configure -R -v
     - name: make
