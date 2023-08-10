@@ -92,7 +92,7 @@ class ConfigureIniParser(IniParser):
     self.osflags = {}
     if self.has_key("osvars"):
       for k, v in self.keys("osvars"):
-        self.osflags.get(k, []).append(v)
+        self.osflags.setdefault(k, []).append(v)
 
     self.options = self["options"]
 
@@ -130,7 +130,7 @@ class MultiConfigureIniParser(ConfigureIniParser):
 
       if c2.has_key("osvars"):
         for k, v in c2.keys("osvars"):
-          self.osflags.get(k, []).append(v)
+          self.osflags.setdefault(k, []).append(v)
 
 def check_call(args):
   vprint("invoking: %r" % args)
