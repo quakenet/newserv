@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -11,19 +11,18 @@ import shlex
 LOG = None
 VERBOSE = False
 REQUIRE_ALL = False
-DEVNULL = open("/dev/null", "w+")
 
 class CheckCallException(Exception): pass
 
 # standard line print
 def lprint(x):
-  print x
+  print(x)
   LOG.write(x + "\n")
 
 # verbose print
 def vprint(x=""):
   if VERBOSE:
-    print x
+    print(x)
   LOG.write(x + "\n")
 
 # immediate (no newline) print
@@ -33,10 +32,10 @@ def iprint(x):
   LOG.write(x)
 
 class IniParser:
-  def __init__(self, file):
+  def __init__(self, f):
     self.__d = {}
     sectiondata = None
-    for x in file.readlines():
+    for x in f.readlines():
       x = x.replace("\r\n", "").replace("\n", "")
       xs = x.strip()
       if xs == "" or xs.startswith("#"):
@@ -53,12 +52,12 @@ class IniParser:
       keydata.append((key, value))
 
   def has_key(self, key):
-    return self.__d.has_key(key)
+    return key in self.__d
 
-  def setdefault(self, key, value=None):
-    if self.has_key(key):
-      return self[key]
-    return value
+  def get(self, key, value=None):
+    if key not in self.__d:
+      return value
+    return self[key]
 
   def __getitem__(self, key):
     return self.__d[key][0]
@@ -67,15 +66,15 @@ class IniParser:
     return self.__d[key][1]
 
 class ConfigureIniParser(IniParser):
-  def __init__(self, file):
-    IniParser.__init__(self, file)
+  def __init__(self, f):
+    super().__init__(f)
 
     self.modules = {}
     self.buildorder = []
     self.updatemodules(self.keys("modules"))
 
     self.selectlibs = {}
-    for k, v in self.setdefault("selectlibs", {}).items():
+    for k, v in self.get("selectlibs", {}).items():
       self.selectlibs[k] = v.split()
 
     self.libs = {}
@@ -93,7 +92,7 @@ class ConfigureIniParser(IniParser):
     self.osflags = {}
     if self.has_key("osvars"):
       for k, v in self.keys("osvars"):
-        self.osflags.setdefault(k, []).append(v)
+        self.osflags.get(k, []).append(v)
 
     self.options = self["options"]
 
@@ -105,7 +104,7 @@ class ConfigureIniParser(IniParser):
       v = getattr(self, x)
       if not isinstance(v, list) and not isinstance(v, dict):
         continue
-      vprint("%-50s: %s" % (`x`, `v`))
+      vprint("%-50r: %r" % (x, v))
     vprint("--- config --------------------------------------------")
 
   def updatemodules(self, x, workspace = None):
@@ -119,7 +118,7 @@ class ConfigureIniParser(IniParser):
 
 class MultiConfigureIniParser(ConfigureIniParser):
   def __init__(self, files):
-    ConfigureIniParser.__init__(self, files[0][1])
+    super().__init__(files[0][1])
 
     for workspace, file in files[1:]:
       c2 = IniParser(file)
@@ -131,11 +130,11 @@ class MultiConfigureIniParser(ConfigureIniParser):
 
       if c2.has_key("osvars"):
         for k, v in c2.keys("osvars"):
-          self.osflags.setdefault(k, []).append(v)
+          self.osflags.get(k, []).append(v)
 
 def check_call(args):
   vprint("invoking: %r" % args)
-  p = subprocess.Popen(args, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="latin-1")
   stdout, stderr = p.communicate()
   if p.returncode != 0:
     raise CheckCallException("bad return code: %d, stderr: %r" % (p.returncode, stderr))
@@ -166,9 +165,8 @@ def check_exec(d):
   try:
     libpath = check_call(shlex.split(d["libexec"]))
     incpath = check_call(shlex.split(d["incexec"]))
-  except OSError, e:
-    if e.errno != errno.ENOENT:
-      raise
+  except FileNotFoundError:
+    # already logged
     return
 
   libspec = d.get("libspec", "{}")
@@ -231,15 +229,13 @@ def systemcheck(osflags):
   iprint("checking for pkg-config... ")
   try:
     pkgconfig(["--version"])
-  except OSError, e:
-    if e.errno != errno.ENOENT:
-      raise
+  except FileNotFoundError:
     lprint("not found")
     lprint("pkg-config is required to continue, aborting!")
     sys.exit(1)
   lprint("ok")
 
-  for v in osflags.setdefault(system, []):
+  for v in osflags.get(system, []):
     output.append(v)
   return output,
 
@@ -247,7 +243,7 @@ def modulecheck(modules, libsfound, buildorder, selectlibs, overrides):
   defaultselections = {}
 
   for k, v in selectlibs.items():
-    if overrides.has_key(k):
+    if k in overrides:
       assert overrides[k] in libsfound
       libsfound.append(k)
       defaultselections[k] = overrides[k]
@@ -355,17 +351,17 @@ def check_require_all():
 validopts = {}
 
 def usage():
-  print
-  print "  Usage: %s [-h] [-v] [options]" % sys.argv[0]
-  print
-  print "  Additional options are:"
+  print()
+  print("  Usage: %s [-h] [-v] [options]" % sys.argv[0])
+  print()
+  print("  Additional options are:")
   for k, v in validopts.items():
-    print "    --with-%s=[%s]" % (v[0], "|".join(v[1]))
-  print "    -L [additional lib dir]"
-  print "    -I [additional include dir]"
-  print "    -m [additional module]"
-  print "    -R: require everything"
-  print "    -v: verbose"
+    print("    --with-%s=[%s]" % (v[0], "|".join(v[1])))
+  print("    -L [additional lib dir]")
+  print("    -I [additional include dir]")
+  print("    -m [additional module]")
+  print("    -R: require everything")
+  print("    -v: verbose")
 
 def main():
   global LOG, VERBOSE, REQUIRE_ALL
@@ -375,7 +371,7 @@ def main():
     if "configure.ini" not in file_list:
       continue
 
-    print "found workspace: %s" % root
+    print("found workspace: %s" % root)
     workspaces.append(root)
 
     path = os.path.join(root, "configure.ini")
@@ -395,10 +391,10 @@ def main():
 
   try:
     opts, args = getopt.getopt(sys.argv[1:], "hvcI:L:m:R", mopts)
-  except getopt.GetoptError, err:
-    print str(err)
+  except getopt.GetoptError as err:
+    print(str(err))
     usage()
-    return
+    sys.exit(1)
 
   overrides = {}
   libs = []
@@ -406,7 +402,7 @@ def main():
   modules = []
 
   for o, a in opts:
-    if validopts.has_key(o):
+    if o in validopts:
       v = validopts[o]
       if not a in v[1]:
         usage()
