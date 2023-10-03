@@ -10,9 +10,11 @@
 #include "../lib/irc_string.h"
 #include "jupe.h"
 
-jupe_t *jupes = NULL;
+static jupe_t *jupes = NULL;
 
-int handlejupe(void *source, int cargc, char **cargv);
+static int handlejupe(void *source, int cargc, char **cargv);
+static jupe_t *make_jupe(char *server, char *reason, time_t expirets, time_t lastmod, unsigned int flags);
+static void jupe_free(jupe_t *);
 
 void _init() {
   /* If we're connected to IRC, force a disconnect. */
@@ -25,13 +27,10 @@ void _init() {
 }
 
 void _fini() {
-  jupe_t *next;
-
   while (jupes) {
-    /* keep a pointer to the next item */
-    next = jupes->ju_next;
+    jupe_t *next = jupes->ju_next;
 
-    free(jupes);
+    jupe_free(jupes);
 
     jupes = next;
   }
@@ -39,7 +38,7 @@ void _fini() {
   deregisterserverhandler("JU", &handlejupe);
 }
 
-int handlejupe(void *source, int cargc, char **cargv) {
+static int handlejupe(void *source, int cargc, char **cargv) {
   char *server, *expire, *modtime, *reason;
   jupe_t *jupe;
   unsigned int flags;
@@ -115,46 +114,39 @@ void jupe_propagate(jupe_t *jupe) {
            JupeReason(jupe));
 }
 
-void jupe_expire(void) {
-  jupe_find(NULL);
+static void jupe_expire(void) {
+  time_t nettime = getnettime();
+
+  for (jupe_t **p = &jupes, *j = *p; j; j = *p) {
+    if (j->ju_expire <= nettime) {
+      *p = j->ju_next;
+      jupe_free(j);
+    } else {
+      p = &j->ju_next;
+    }
+  }
+}
+
+jupe_t *jupe_next(jupe_t *current) {
+  if (current == NULL) {
+    jupe_expire();
+    return jupes;
+  }
+
+  return current->ju_next;
 }
 
 jupe_t *jupe_find(char *server) {
-  jupe_t *jupe = jupes;
-
-  while (jupe) {
-    /* server == NULL if jupe_find() is used by jupe_expire */
-    if (server && ircd_strcmp(server, JupeServer(jupe)) == 0)
+  for (jupe_t *jupe = jupe_next(NULL); jupe; jupe = jupe_next(jupe)) {
+    if (ircd_strcmp(server, JupeServer(jupe)) == 0) {
       return jupe;
-
-    if (jupe->ju_next && jupe->ju_next->ju_expire < getnettime())
-      jupe_free(jupe->ju_next);
-
-      jupe = jupe->ju_next;
+    }
   }
-
-  if (jupes && jupes->ju_expire < getnettime())
-    jupe_free(jupes);
 
   return NULL;
 }
 
-void jupe_free(jupe_t *jupe) {
-  jupe_t *trav = jupes;
-
-  if (jupe == jupes)
-    jupes = jupe->ju_next;
-  else {
-    while (trav) {
-      if (trav->ju_next == jupe) {
-        trav->ju_next = jupe->ju_next;
-        break;
-      }
-
-      trav = trav->ju_next;
-    }
-  }
-
+static void jupe_free(jupe_t *jupe) {
   freesstring(jupe->ju_server);
   freesstring(jupe->ju_reason);
   free(jupe);

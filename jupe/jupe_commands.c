@@ -13,8 +13,6 @@ int ju_addjupe(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
-  jupe_expire();
-
   if (jupe_find(cargv[0]) != NULL) {
     controlreply(np, "There is already a jupe for that server.");
     return CMD_OK;
@@ -46,8 +44,6 @@ int ju_activatejupe(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
-  jupe_expire();
-
   jupe = jupe_find(cargv[0]);
 
   if (jupe == NULL) {
@@ -76,8 +72,6 @@ int ju_deactivatejupe(void *source, int cargc, char **cargv) {
     return CMD_USAGE;
   }
 
-  jupe_expire();
-
   jupe = jupe_find(cargv[0]);
 
   if (jupe == NULL) {
@@ -99,18 +93,11 @@ int ju_deactivatejupe(void *source, int cargc, char **cargv) {
 
 int ju_jupelist(void *source, int cargc, char **cargv) {
   nick *np = (nick*)source;
-  jupe_t *jupe;
 
-  jupe_expire();
-
-  jupe = jupes;
-	
   controlreply(np, "Server Reason Expires Status");
 
-  while (jupe) {
+  for (jupe_t *jupe = jupe_next(NULL); jupe; jupe = jupe_next(jupe)) {
     controlreply(np, "%s %s %s %s", JupeServer(jupe), JupeReason(jupe), longtoduration(jupe->ju_expire - getnettime(), 0), (jupe->ju_flags & JUPE_ACTIVE) ? "activated" : "deactivated");
-
-    jupe = jupe->ju_next;
   }
 
   controlreply(np, "--- End of JUPE list.");
