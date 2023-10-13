@@ -1,7 +1,7 @@
 include ../build.mk
 
-CFLAGS+=$(INCGEOIP)
-LDFLAGS+=$(LIBGEOIP)
+CFLAGS+=$(INCMAXMINDDB)
+LDFLAGS+=$(LIBMAXMINDDB)
 
 .PHONY: all
 all: geoip.so
