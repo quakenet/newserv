@@ -17,7 +17,7 @@ int createconnectsocket(struct irc_in_addr *ip, int socknum) {
   union {
     struct sockaddr_in sin;
     struct sockaddr_in6 sin6;
-  } u;
+  } u = {};
 
   int proto;
   int s;
