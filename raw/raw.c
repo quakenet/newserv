@@ -18,7 +18,7 @@ MODULE_VERSION("");
 int controlraw(void *sender, int cargc, char **cargv);
 
 void _init() {
-  registercontrolhelpcmd("raw", NO_OPER, 2, &controlraw, "Usage: raw <type> <text>\ntype is one of client,server,raw\nUSE THIS COMMAND WITH CAUTION, YOU WILL MOST LIKELY CORRUPT NEWSERV STATE.");
+  registercontrolhelpcmd("raw", NO_DEVELOPER, 2, &controlraw, "Usage: raw <type> <text>\ntype is one of client,server,raw\nUSE THIS COMMAND WITH CAUTION, YOU WILL MOST LIKELY CORRUPT NEWSERV STATE.");
 }
 
 void _fini() {
