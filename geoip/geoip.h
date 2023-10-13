@@ -1,7 +1,18 @@
-#define COUNTRY_MIN 0
-#define COUNTRY_MAX 253
+#ifndef __GEOIP_H
+#define __GEOIP_H
 
-extern int geoip_totals[COUNTRY_MAX + 1];
+struct country;
 
-int geoip_lookupcode(char *code);
-typedef int (*GeoIP_LookupCode)(char *);
+/* "code" -> GB/FR */
+/* "name" -> United Kingdom/France */
+
+struct country *geoip_lookup_code(const char *);
+struct country *geoip_lookup_nick(nick *);
+
+struct country *geoip_next(struct country *);
+
+const char *geoip_code(struct country *c);
+const char *geoip_name(struct country *c);
+int geoip_total(struct country *c);
+
+#endif
