@@ -175,6 +175,14 @@ struct country *geoip_next(struct country *c) {
   return NULL;
 }
 
+struct country *geoip_lookup_nick(nick *np) {
+  if (nickext == -1) {
+    return NULL;
+  }
+
+  return np->exts[nickext];
+}
+
 void _init(void) {
   nickext = registernickext("geoip");
   if (nickext == -1) {
@@ -210,8 +218,4 @@ void _fini(void) {
   deregisterhook(HOOK_NICK_NEWNICK, nick_new);
   deregisterhook(HOOK_NICK_LOSTNICK, nick_lost);
   deregisterhook(HOOK_CONTROL_WHOISREQUEST, whois_handler);
-}
-
-struct country *geoip_lookup_nick(nick *np) {
-  return np->exts[nickext];
 }
