@@ -21,6 +21,7 @@
 #include "../trusts/trusts.h"
 #include "../bans/bans.h"
 #include "../core/modules.h"
+#include "../geoip/geoip.h"
 
 #include "lua.h"
 #include "luabot.h"
@@ -548,7 +549,6 @@ static int lua_getnickchanindex(lua_State *l) {
 
 int hashindex;
 nick *lasthashnick;
-static int geoipext;
 
 struct lua_pusher *nickhashpusher[MAX_PUSHER];
 
@@ -575,7 +575,6 @@ static int lua_getfirstnick(lua_State *l) {
   lasthashnick = NULL;
 
   lua_setupnickpusher(l, 1, nickhashpusher, MAX_PUSHER);
-  geoipext = findnickext("geoip");
 
   return lua_getnextnick(l);
 }
@@ -651,11 +650,6 @@ static int lua_gethostusers(lua_State *l) {
 
 static int lua_getnickcountry(lua_State *l) {
   nick *np;
-  int ext;
-
-  ext = findnickext("geoip");
-  if(ext == -1)
-    return 0;
 
   if(!lua_islong(l, 1))
     return 0;
@@ -664,7 +658,15 @@ static int lua_getnickcountry(lua_State *l) {
   if(!np)
     return 0;
 
-  lua_pushint(l, (long)np->exts[ext]);
+  struct country *c = geoip_lookup_nick(np);
+  if(!c)
+    return 0;
+
+  const char *code = geoip_code(c);
+  if(!code)
+    return 0;
+
+  lua_pushstring(l, code);
   return 1;
 }
 
@@ -1204,10 +1206,18 @@ int lua_usepusher(lua_State *l, struct lua_pusher **lp, void *np) {
         }
         break;
       case PUSHER_COUNTRY:
-        if(geoipext < 0) {
-          lua_pushint(l, -1);
-        } else {
-          lua_pushint(l, (long)((nick *)offset)->exts[geoipext]);
+        {
+          struct country *c = geoip_lookup_nick((nick *)offset);
+          if(!c) {
+            lua_pushint(l, -1);
+          } else {
+            const char *code = geoip_code(c);
+            if(!code) {
+              lua_pushint(l, -1);
+            } else {
+              lua_pushstring(l, code);
+            }
+          }
         }
         break;
       case PUSHER_SERVER_NAME:
