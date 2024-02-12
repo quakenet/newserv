@@ -40,9 +40,14 @@ def generate_resetcode(config, obj):
   obj["lockuntil"] = time.ctime(obj["user.lockuntil"])
   obj["resetline"] = "/MSG %(config.bot)s RESET #%(user.username)s %(resetcode)s" % obj
 
+def generate_resetpassword(config, obj):
+  generate_resetcode(config, obj)
+  obj["resetline"] = "/MSG %(config.bot)s@%(config.server)s RESETPASSWORD #%(user.username)s %(resetcode)s <newpassword> <newpassword>" %obj
+
 MAILTEMPLATES = {
   "mutators": {
     1: generate_url,
+    2: generate_resetpassword,
     3: generate_resetcode,
     5: generate_resetcode,
     6: generate_activation_url,
@@ -79,15 +84,15 @@ AFTER %(config.cleanup)d DAYS, AND ALL CHANLEVS ARE LOST!
 NB: Save this email for future reference.
 """,
       },
-      2: { "subject": "%(config.bot)s password request", "body": """
-Your username/password is:
+      2: { "subject": "%(config.bot)s password reset request", "body": """
+A password reset has been requested for your account. To reset your password,
+please use:
+%(resetline)s
 
-Username: %(user.username)s
-Password: %(user.password)s
+Where <newpass> should be replaced with your desired password.
 
-To auth yourself to %(config.bot)s, type the following command
-
-   /MSG %(config.bot)s@%(config.server)s AUTH %(user.username)s %(user.password)s
+If you did not issue this command, you can ignore this email and no changes will
+be made to your account.
 """, },
       3: { "subject": "%(config.bot)s password change", "body": """
 Your password has recently changed. If this was not requested by you,

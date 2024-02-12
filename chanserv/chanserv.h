@@ -262,7 +262,7 @@
 #define VALID_ACCOUNT_NAME  "\\A[a-z][a-z0-9\\-]+\\Z"
 
 #define QMAIL_NEWACCOUNT           1  /* new account */
-#define QMAIL_REQPW                2  /* requestpassword */
+#define QMAIL_LOSTPW               2  /* lostpassword */
 #define QMAIL_NEWPW                3  /* new password */
 #define QMAIL_RESET                4  /* reset account */
 #define QMAIL_NEWEMAIL             5  /* new email address */
