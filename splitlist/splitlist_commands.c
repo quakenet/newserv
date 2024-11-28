@@ -21,6 +21,8 @@ int spcmd_splitadd(void *source, int cargc, char **cargv);
 
 void _init(void) {
   registercontrolhelpcmd("splitlist", NO_STAFF, 0, &spcmd_splitlist, "Usage: splitlist\nLists servers currently split from the network.");
+  registercontrolhelpcmd("splitlistrelay", NO_RELAY, 0, &spcmd_splitlist, "Same as splitlist, but for the relay.");
+
   registercontrolcmd("splitdel", 10, 1, &spcmd_splitdel);
   registercontrolhelpcmd("splitadd", 10, 3, &spcmd_splitadd,
       "Usage: splitadd <servername> [+flags] [split time as unix timestamp]\n"
@@ -38,6 +40,7 @@ void _init(void) {
 
 void _fini(void) {
   deregistercontrolcmd("splitlist", &spcmd_splitlist);
+  deregistercontrolcmd("splitlistrelay", &spcmd_splitlist);
   deregistercontrolcmd("splitdel", &spcmd_splitdel);
   deregistercontrolcmd("splitadd", &spcmd_splitadd);
 }
