@@ -126,6 +126,14 @@ int csc_dochanflags(void *source, int cargc, char **cargv) {
         cs_checkchanmodes(cip->channel);
     }
 
+    /* Handle known only to force registered only mode */
+    if (CIsKnownOnly(rcp) && !(oldflags & QCFLAG_KNOWNONLY)) {
+      rcp->forcemodes |= CHANMODE_REGONLY;
+      rcp->denymodes &= ~CHANMODE_REGONLY;
+      if (cip->channel)
+        cs_checkchanmodes(cip->channel);
+    }
+
     /* If nothing has changed, say so and don't do anything else */
     if (rcp->flags == oldflags) {
       chanservstdmessage(sender, QM_CHANLEVNOCHANGE);
