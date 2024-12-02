@@ -40,9 +40,14 @@ def generate_resetcode(config, obj):
   obj["lockuntil"] = time.ctime(obj["user.lockuntil"])
   obj["resetline"] = "/MSG %(config.bot)s RESET #%(user.username)s %(resetcode)s" % obj
 
+def generate_resetpassword(config, obj):
+  generate_resetcode(config, obj)
+  obj["resetline"] = "/MSG %(config.botsecure)s RESETPASSWORD #%(user.username)s <newpass> <newpass> %(resetcode)s" %obj
+
 MAILTEMPLATES = {
   "mutators": {
     1: generate_url,
+    2: generate_resetpassword,
     3: generate_resetcode,
     5: generate_resetcode,
     6: generate_activation_url,
@@ -79,15 +84,15 @@ AFTER %(config.cleanup)d DAYS, AND ALL CHANLEVS ARE LOST!
 NB: Save this email for future reference.
 """,
       },
-      2: { "subject": "%(config.bot)s password request", "body": """
-Your username/password is:
+      2: { "subject": "%(config.bot)s reset password", "body": """
+A password reset was requested for your account, to reset your password please use:
+%(resetline)s
 
-Username: %(user.username)s
-Password: %(user.password)s
+Where <newpass> should be replaced with your desired password.
 
-To auth yourself to %(config.bot)s, type the following command
+For more information please visit the resetpassword help link at http://www.quakenet.org/help/q-commands/resetpassword
 
-   /MSG %(config.bot)s@%(config.server)s AUTH %(user.username)s %(user.password)s
+If it was not you who issued this command, please disregard this mail.
 """, },
       3: { "subject": "%(config.bot)s password change", "body": """
 Your password has recently changed. If this was not requested by you,
